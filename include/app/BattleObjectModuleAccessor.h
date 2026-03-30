@@ -12,9 +12,12 @@ struct BattleObjectModuleAccessor {
     void* status_module;             // +0x40  StatusModule (vtable dispatch)
     void* fighter_control_module;    // +0x48  FighterControlModule
     void* work_module;               // +0x50  WorkModule (vtable dispatch)
-    u8 pad_0x58[0x10];
+    void* ground_module;             // +0x58  GroundModule (vtable dispatch)
+    u8 pad_0x60[0x08];
     void* item_kinetic_module;       // +0x68  ItemKineticModule
-    u8 pad_0x70[0x38];
+    u8 pad_0x70[0x18];
+    void* motion_module;             // +0x88  MotionModule (vtable dispatch)
+    u8 pad_0x90[0x18];
     void* damage_module;             // +0xA8  DamageModule (vtable dispatch)
     u8 pad_0xB0[0x10];
     void* fighter_area_module;       // +0xC0  FighterAreaModule

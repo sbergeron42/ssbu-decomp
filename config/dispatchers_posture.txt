@@ -1,0 +1,16 @@
+# PostureModule dispatchers (accessor+0x38)
+# field vtable_offset name [params] [return_type]
+posture_module 0x58 PostureModule__init_pos_impl pbb void
+posture_module 0x68 PostureModule__pos_2d_impl  p
+posture_module 0x78 PostureModule__set_pos_2d_impl p void
+posture_module 0x80 PostureModule__add_pos_impl p void
+posture_module 0x88 PostureModule__add_pos_2d_impl p void
+posture_module 0xa0 PostureModule__prev_pos_impl  p
+posture_module 0xa8 PostureModule__prev_pos_2d_impl  p
+posture_module 0xb0 PostureModule__lr_impl  f
+posture_module 0xb8 PostureModule__set_lr_impl f void
+posture_module 0xc0 PostureModule__reverse_lr_impl  void
+posture_module 0xc8 PostureModule__init_rot_impl pb void
+posture_module 0xd0 PostureModule__init_rot_2_impl pbb void
+posture_module 0xf8 PostureModule__rot_y_lr_impl  f
+posture_module 0x108 PostureModule__reverse_rot_y_lr_impl  void
