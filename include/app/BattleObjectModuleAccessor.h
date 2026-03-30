@@ -21,6 +21,10 @@ struct BattleObjectModuleAccessor {
     void* damage_module;             // +0xA8  DamageModule (vtable dispatch)
     u8 pad_0xB0[0x10];
     void* fighter_area_module;       // +0xC0  FighterAreaModule
+    // +0xC8..0x13F — unmapped
+    // +0x140 EffectModule
+    // +0x148 SoundModule
+    // +0x128 CancelModule (accessed via raw offset cast)
 };
 
 } // namespace app
