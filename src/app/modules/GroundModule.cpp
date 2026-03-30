@@ -1,35 +1,90 @@
 #include "app/BattleObjectModuleAccessor.h"
-
+// GroundModule — accessor+0x58
+#define GM(a) (a->ground_module)
+#define VT(m) (*reinterpret_cast<void***>(m))
 namespace app::lua_bind {
-
-// All GroundModule dispatchers — accessor+0x58
-
-// 7102029e80 — detach
-void GroundModule__detach_impl(BattleObjectModuleAccessor* accessor, u64 p1) {
-    auto* module = accessor->ground_module;
-    auto* vtable = *reinterpret_cast<void***>(module);
-    reinterpret_cast<void (*)(void*, u64)>(vtable[0x3e8 / 8])(module, p1);
-}
-
-// 710202a070 — center_pos
-void* GroundModule__center_pos_impl(BattleObjectModuleAccessor* accessor) {
-    auto* module = accessor->ground_module;
-    auto* vtable = *reinterpret_cast<void***>(module);
-    return reinterpret_cast<void* (*)(void*)>(vtable[0x5a0 / 8])(module);
-}
-
-// 7102029bb0 — can_entry_cliff
-bool GroundModule__can_entry_cliff_impl(BattleObjectModuleAccessor* accessor) {
-    auto* module = accessor->ground_module;
-    auto* vtable = *reinterpret_cast<void***>(module);
-    return reinterpret_cast<bool (*)(void*)>(vtable[0x260 / 8])(module);
-}
-
-// 7102029e70 — get_line_movement_speed
-void* GroundModule__get_line_movement_speed_impl(BattleObjectModuleAccessor* accessor, void* out) {
-    auto* module = accessor->ground_module;
-    auto* vtable = *reinterpret_cast<void***>(module);
-    return reinterpret_cast<void* (*)(void*, void*)>(vtable[0x3d0 / 8])(module, out);
-}
-
+// Pure dispatchers (4 instructions)
+void GroundModule__set_init_circle_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=GM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x100/8])(m,p1); }
+f32 GroundModule__get_circle_radius_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x118/8])(m); }
+f32 GroundModule__get_offset_x_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x130/8])(m); }
+f32 GroundModule__get_offset_y_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x138/8])(m); }
+void GroundModule__correct_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=GM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x148/8])(m,p1); }
+void GroundModule__set_correct_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=GM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x150/8])(m,p1); }
+u32 GroundModule__get_correct_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<u32(*)(void*)>(VT(m)[0x158/8])(m); }
+bool GroundModule__is_passable_check_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x198/8])(m); }
+bool GroundModule__is_ignore_fighter_other_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x1f0/8])(m); }
+bool GroundModule__is_ignore_fighter_other_wall_l_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x200/8])(m); }
+bool GroundModule__is_ignore_fighter_other_wall_r_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x208/8])(m); }
+void GroundModule__set_cliff_check_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=GM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x218/8])(m,p1); }
+u32 GroundModule__cliff_check_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<u32(*)(void*)>(VT(m)[0x220/8])(m); }
+bool GroundModule__is_status_cliff_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x240/8])(m); }
+void GroundModule__entry_cliff_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=GM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x250/8])(m,p1); }
+bool GroundModule__can_entry_cliff_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x260/8])(m); }
+bool GroundModule__can_entry_cliff_same_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x268/8])(m); }
+bool GroundModule__can_entry_cliff_hang_data_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x270/8])(m); }
+void* GroundModule__get_cliff_movement_speed_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x2a8/8])(m); }
+bool GroundModule__is_cliff_move_exception_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x2b0/8])(m); }
+void GroundModule__clear_cliff_point_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x2c8/8])(m); }
+void GroundModule__set_coll_stop_slidable_length_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=GM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x2e0/8])(m,p1); }
+bool GroundModule__is_ottotto_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x300/8])(m); }
+bool GroundModule__is_ottotto_lr_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x308/8])(m); }
+bool GroundModule__is_myground_nearcliff_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x310/8])(m); }
+bool GroundModule__is_near_cliff_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x318/8])(m); }
+bool GroundModule__is_miss_foot_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x320/8])(m); }
+void GroundModule__set_init_shape_kind_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=GM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x370/8])(m,p1); }
+u32 GroundModule__get_shape_kind_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<u32(*)(void*)>(VT(m)[0x378/8])(m); }
+bool GroundModule__is_attachable_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x3b0/8])(m); }
+void GroundModule__attach_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=GM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x3b8/8])(m,p1); }
+bool GroundModule__is_attach_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x3c8/8])(m); }
+void* GroundModule__get_line_movement_speed_impl(BattleObjectModuleAccessor* a,void* p1) { auto* m=GM(a); return reinterpret_cast<void*(*)(void*,void*)>(VT(m)[0x3d0/8])(m,p1); }
+void GroundModule__detach_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=GM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x3e8/8])(m,p1); }
+void* GroundModule__get_touch_normal_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=GM(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x408/8])(m,p1); }
+void* GroundModule__get_touch_normal_consider_gravity_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=GM(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x420/8])(m,p1); }
+void* GroundModule__get_touch_normal_fixed_consider_gravity_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=GM(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x440/8])(m,p1); }
+void* GroundModule__get_touch_normal_for_touch_attack_data_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=GM(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x448/8])(m,p1); }
+u32 GroundModule__get_touch_flag_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<u32(*)(void*)>(VT(m)[0x468/8])(m); }
+u32 GroundModule__get_touch_moment_flag_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<u32(*)(void*)>(VT(m)[0x470/8])(m); }
+u32 GroundModule__get_touch_material_type_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=GM(a); return reinterpret_cast<u32(*)(void*,u64)>(VT(m)[0x478/8])(m,p1); }
+bool GroundModule__is_touch_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=GM(a); return reinterpret_cast<bool(*)(void*,u64)>(VT(m)[0x4a0/8])(m,p1); }
+void* GroundModule__get_touch_line_raw_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=GM(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x4d8/8])(m,p1); }
+bool GroundModule__is_floor_touch_line_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=GM(a); return reinterpret_cast<bool(*)(void*,u64)>(VT(m)[0x4e8/8])(m,p1); }
+bool GroundModule__is_wall_touch_line_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=GM(a); return reinterpret_cast<bool(*)(void*,u64)>(VT(m)[0x4f0/8])(m,p1); }
+bool GroundModule__is_passable_ground_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x4f8/8])(m); }
+bool GroundModule__is_floor_vanishing_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x518/8])(m); }
+u32 GroundModule__get_cliff_id_uint32_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<u32(*)(void*)>(VT(m)[0x568/8])(m); }
+void* GroundModule__get_down_pos_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x580/8])(m); }
+void* GroundModule__get_left_pos_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x588/8])(m); }
+void* GroundModule__get_right_pos_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x590/8])(m); }
+void* GroundModule__get_center_pos_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x598/8])(m); }
+void* GroundModule__center_pos_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x5a0/8])(m); }
+void* GroundModule__get_down_movement_speed_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x5b0/8])(m); }
+void GroundModule__check_down_correct_pos_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=GM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x5c0/8])(m,p1); }
+void* GroundModule__get_latest_down_correct_pos_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x5c8/8])(m); }
+void* GroundModule__get_down_correct_edge_pos_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x5f0/8])(m); }
+f32 GroundModule__get_down_friction_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x5f8/8])(m); }
+void* GroundModule__get_correct_pos_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x6c8/8])(m); }
+void GroundModule__set_correct_pos_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=GM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x6d0/8])(m,p1); }
+void* GroundModule__get_correct_pos_local_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x6d8/8])(m); }
+bool GroundModule__is_attach_cliff_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x710/8])(m); }
+void GroundModule__clear_pass_floor_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=GM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x730/8])(m,p1); }
+void GroundModule__set_no_cliff_stop_energy_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=GM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x788/8])(m,p1); }
+void GroundModule__enable_recovery_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=GM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x7a0/8])(m,p1); }
+void* GroundModule__get_shape_data_rhombus_modify_node_offset_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=GM(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x7b0/8])(m,p1); }
+// Bool-mask dispatchers (5 instructions, and wN #1)
+void GroundModule__set_collidable_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=GM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x168/8])(m,p1); }
+void GroundModule__set_cloud_through_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=GM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x1a8/8])(m,p1); }
+void GroundModule__set_ignore_line_type1_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=GM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x1e0/8])(m,p1); }
+void GroundModule__set_ignore_boss_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=GM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x1e8/8])(m,p1); }
+void GroundModule__set_ignore_fighter_other_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=GM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x1f8/8])(m,p1); }
+void GroundModule__set_correct_ignore_slope_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=GM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x210/8])(m,p1); }
+void GroundModule__set_ignore_slide_up_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=GM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x2f0/8])(m,p1); }
+void GroundModule__attach_ground_impl(BattleObjectModuleAccessor* a,u64 p1,bool p2) { auto* m=GM(a); reinterpret_cast<void(*)(void*,u64,bool)>(VT(m)[0x398/8])(m,p1,p2); }
+void GroundModule__set_attach_ground_impl(BattleObjectModuleAccessor* a,u64 p1,bool p2) { auto* m=GM(a); reinterpret_cast<void(*)(void*,u64,bool)>(VT(m)[0x3a8/8])(m,p1,p2); }
+void GroundModule__get_distance_to_floor_impl(BattleObjectModuleAccessor* a,u64 p1,bool p2) { auto* m=GM(a); reinterpret_cast<void(*)(void*,u64,bool)>(VT(m)[0x600/8])(m,p1,p2); }
+void GroundModule__is_still_on_floor_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=GM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x608/8])(m,p1); }
+void GroundModule__set_ignore_friction_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=GM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x6c0/8])(m,p1); }
+void GroundModule__set_auto_detach_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=GM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x750/8])(m,p1); }
+void GroundModule__set_gr_collision_mode_impl(BattleObjectModuleAccessor* a,u64 p1,bool p2) { auto* m=GM(a); reinterpret_cast<void(*)(void*,u64,bool)>(VT(m)[0x7a8/8])(m,p1,p2); }
+void GroundModule__set_keep_distant_cliff_impl(BattleObjectModuleAccessor* a,u64 p1,bool p2) { auto* m=GM(a); reinterpret_cast<void(*)(void*,u64,bool)>(VT(m)[0x7d0/8])(m,p1,p2); }
+void GroundModule__set_is_ignore_geometry_move_power_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=GM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x818/8])(m,p1); }
 } // namespace app::lua_bind
