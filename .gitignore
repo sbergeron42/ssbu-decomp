@@ -1,0 +1,36 @@
+# Build
+build/
+*.o
+*.d
+*.elf
+*.nso
+
+# Tools (downloaded binaries)
+tools/bin/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Original binary (do not commit)
+original/
+*.nso
+*.nca
+
+# Ghidra
+*.gpr
+*.rep/
+*.lock
+*.lock~
+
+# Python
+__pycache__/
+*.pyc
+.venv/
