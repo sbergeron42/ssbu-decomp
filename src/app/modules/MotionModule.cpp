@@ -1,91 +1,79 @@
 #include "app/BattleObjectModuleAccessor.h"
-
+#define MO(a) (a->motion_module)
+#define VT(m) (*reinterpret_cast<void***>(m))
 namespace app::lua_bind {
-
-// All MotionModule dispatchers — accessor+0x88
-
-// 710205cb30 — change_motion (3 bool params, and w2-w4 #1)
-void MotionModule__change_motion_impl(BattleObjectModuleAccessor* accessor, u64 hash, f32 rate, bool unk1, bool unk2, bool unk3) {
-    auto* module = accessor->motion_module;
-    auto* vtable = *reinterpret_cast<void***>(module);
-    reinterpret_cast<void (*)(void*, u64, f32, bool, bool, bool)>(vtable[0xe0 / 8])(module, hash, rate, unk1, unk2, unk3);
-}
-
-// 710205cb50 — change_motion_inherit_frame (2 bool params)
-void MotionModule__change_motion_inherit_frame_impl(BattleObjectModuleAccessor* accessor, u64 hash, bool unk1, bool unk2) {
-    auto* module = accessor->motion_module;
-    auto* vtable = *reinterpret_cast<void***>(module);
-    reinterpret_cast<void (*)(void*, u64, bool, bool)>(vtable[0xe8 / 8])(module, hash, unk1, unk2);
-}
-
-// 710205cb70 — change_motion_inherit_frame_keep_rate
-void MotionModule__change_motion_inherit_frame_keep_rate_impl(BattleObjectModuleAccessor* accessor, u64 hash) {
-    auto* module = accessor->motion_module;
-    auto* vtable = *reinterpret_cast<void***>(module);
-    reinterpret_cast<void (*)(void*, u64)>(vtable[0xf0 / 8])(module, hash);
-}
-
-// 710205cb80 — change_motion_force_inherit_frame
-void MotionModule__change_motion_force_inherit_frame_impl(BattleObjectModuleAccessor* accessor, u64 hash) {
-    auto* module = accessor->motion_module;
-    auto* vtable = *reinterpret_cast<void***>(module);
-    reinterpret_cast<void (*)(void*, u64)>(vtable[0xf8 / 8])(module, hash);
-}
-
-// 710205cb90 — change_motion_kind
-void MotionModule__change_motion_kind_impl(BattleObjectModuleAccessor* accessor, u64 hash) {
-    auto* module = accessor->motion_module;
-    auto* vtable = *reinterpret_cast<void***>(module);
-    reinterpret_cast<void (*)(void*, u64)>(vtable[0x100 / 8])(module, hash);
-}
-
-// 710205cba0 — add_motion_2nd (1 bool param, and w2 #1)
-void MotionModule__add_motion_2nd_impl(BattleObjectModuleAccessor* accessor, u64 hash, bool unk1) {
-    auto* module = accessor->motion_module;
-    auto* vtable = *reinterpret_cast<void***>(module);
-    reinterpret_cast<void (*)(void*, u64, bool)>(vtable[0x108 / 8])(module, hash, unk1);
-}
-
-// 710205cbe0 — get_weight
-f32 MotionModule__get_weight_impl(BattleObjectModuleAccessor* accessor) {
-    auto* module = accessor->motion_module;
-    auto* vtable = *reinterpret_cast<void***>(module);
-    return reinterpret_cast<f32 (*)(void*)>(vtable[0x118 / 8])(module);
-}
-
-// 710205cc00 — is_blend
-bool MotionModule__is_blend_impl(BattleObjectModuleAccessor* accessor) {
-    auto* module = accessor->motion_module;
-    auto* vtable = *reinterpret_cast<void***>(module);
-    return reinterpret_cast<bool (*)(void*)>(vtable[0x128 / 8])(module);
-}
-
-// 710205cc10 — is_changing
-bool MotionModule__is_changing_impl(BattleObjectModuleAccessor* accessor) {
-    auto* module = accessor->motion_module;
-    auto* vtable = *reinterpret_cast<void***>(module);
-    return reinterpret_cast<bool (*)(void*)>(vtable[0x130 / 8])(module);
-}
-
-// 710205cc70 — frame
-f32 MotionModule__frame_impl(BattleObjectModuleAccessor* accessor) {
-    auto* module = accessor->motion_module;
-    auto* vtable = *reinterpret_cast<void***>(module);
-    return reinterpret_cast<f32 (*)(void*)>(vtable[0x160 / 8])(module);
-}
-
-// 710205ccd0 — end_frame
-f32 MotionModule__end_frame_impl(BattleObjectModuleAccessor* accessor) {
-    auto* module = accessor->motion_module;
-    auto* vtable = *reinterpret_cast<void***>(module);
-    return reinterpret_cast<f32 (*)(void*)>(vtable[0x180 / 8])(module);
-}
-
-// 710205cd90 — is_end
-bool MotionModule__is_end_impl(BattleObjectModuleAccessor* accessor) {
-    auto* module = accessor->motion_module;
-    auto* vtable = *reinterpret_cast<void***>(module);
-    return reinterpret_cast<bool (*)(void*)>(vtable[0x1c8 / 8])(module);
-}
-
+// change_motion variants
+void MotionModule__change_motion_impl(BattleObjectModuleAccessor* a,u64 h,f32 r,bool p1,bool p2,bool p3) { auto* m=MO(a); reinterpret_cast<void(*)(void*,u64,f32,bool,bool,bool)>(VT(m)[0xe0/8])(m,h,r,p1,p2,p3); }
+void MotionModule__change_motion_inherit_frame_impl(BattleObjectModuleAccessor* a,u64 h,bool p1,bool p2) { auto* m=MO(a); reinterpret_cast<void(*)(void*,u64,bool,bool)>(VT(m)[0xe8/8])(m,h,p1,p2); }
+void MotionModule__change_motion_inherit_frame_keep_rate_impl(BattleObjectModuleAccessor* a,u64 h) { auto* m=MO(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xf0/8])(m,h); }
+void MotionModule__change_motion_force_inherit_frame_impl(BattleObjectModuleAccessor* a,u64 h) { auto* m=MO(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xf8/8])(m,h); }
+void MotionModule__change_motion_kind_impl(BattleObjectModuleAccessor* a,u64 h) { auto* m=MO(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x100/8])(m,h); }
+void MotionModule__add_motion_2nd_impl(BattleObjectModuleAccessor* a,u64 h,bool p1) { auto* m=MO(a); reinterpret_cast<void(*)(void*,u64,bool)>(VT(m)[0x108/8])(m,h,p1); }
+// getters
+f32 MotionModule__get_weight_impl(BattleObjectModuleAccessor* a) { auto* m=MO(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x118/8])(m); }
+bool MotionModule__is_blend_impl(BattleObjectModuleAccessor* a) { auto* m=MO(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x128/8])(m); }
+bool MotionModule__is_changing_impl(BattleObjectModuleAccessor* a) { auto* m=MO(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x130/8])(m); }
+u64 MotionModule__motion_kind_impl(BattleObjectModuleAccessor* a) { auto* m=MO(a); return reinterpret_cast<u64(*)(void*)>(VT(m)[0x138/8])(m); }
+f32 MotionModule__rate_impl(BattleObjectModuleAccessor* a) { auto* m=MO(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x140/8])(m); }
+f32 MotionModule__rate_2nd_impl(BattleObjectModuleAccessor* a) { auto* m=MO(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x150/8])(m); }
+f32 MotionModule__frame_impl(BattleObjectModuleAccessor* a) { auto* m=MO(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x160/8])(m); }
+f32 MotionModule__prev_frame_impl(BattleObjectModuleAccessor* a) { auto* m=MO(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x168/8])(m); }
+void MotionModule__set_frame_impl(BattleObjectModuleAccessor* a,f32 f) { auto* m=MO(a); reinterpret_cast<void(*)(void*,f32)>(VT(m)[0x170/8])(m,f); }
+void MotionModule__set_frame_sync_anim_cmd_impl(BattleObjectModuleAccessor* a,f32 f,bool p1,bool p2,bool p3) { auto* m=MO(a); reinterpret_cast<void(*)(void*,f32,bool,bool,bool)>(VT(m)[0x178/8])(m,f,p1,p2,p3); }
+f32 MotionModule__end_frame_impl(BattleObjectModuleAccessor* a) { auto* m=MO(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x180/8])(m); }
+f32 MotionModule__end_frame_from_hash_impl(BattleObjectModuleAccessor* a) { auto* m=MO(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x188/8])(m); }
+void MotionModule__set_frame_2nd_impl(BattleObjectModuleAccessor* a,f32 f) { auto* m=MO(a); reinterpret_cast<void(*)(void*,f32)>(VT(m)[0x190/8])(m,f); }
+f32 MotionModule__frame_2nd_impl(BattleObjectModuleAccessor* a) { auto* m=MO(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x198/8])(m); }
+void* MotionModule__joint_local_tra_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=MO(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x1b8/8])(m,p1); }
+bool MotionModule__is_end_impl(BattleObjectModuleAccessor* a) { auto* m=MO(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x1c8/8])(m); }
+bool MotionModule__is_looped_impl(BattleObjectModuleAccessor* a) { auto* m=MO(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x1d0/8])(m); }
+bool MotionModule__is_loop_flag_impl(BattleObjectModuleAccessor* a) { auto* m=MO(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x1f8/8])(m); }
+u64 MotionModule__resource_id_impl(BattleObjectModuleAccessor* a) { auto* m=MO(a); return reinterpret_cast<u64(*)(void*)>(VT(m)[0x280/8])(m); }
+u64 MotionModule__animcmd_name_hash_impl(BattleObjectModuleAccessor* a) { auto* m=MO(a); return reinterpret_cast<u64(*)(void*)>(VT(m)[0x288/8])(m); }
+f32 MotionModule__prev_weight_impl(BattleObjectModuleAccessor* a) { auto* m=MO(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x2a0/8])(m); }
+void MotionModule__calc_joint_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=MO(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x2b8/8])(m,p1); }
+void* MotionModule__joint_local_rotation_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=MO(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x2d0/8])(m,p1); }
+f32 MotionModule__end_frame_2nd_impl(BattleObjectModuleAccessor* a) { auto* m=MO(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x2e0/8])(m); }
+u64 MotionModule__motion_kind_2nd_impl(BattleObjectModuleAccessor* a) { auto* m=MO(a); return reinterpret_cast<u64(*)(void*)>(VT(m)[0x2f0/8])(m); }
+bool MotionModule__is_flag_link_impl(BattleObjectModuleAccessor* a) { auto* m=MO(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x2f8/8])(m); }
+bool MotionModule__is_flag_start_1_frame_from_motion_kind_impl(BattleObjectModuleAccessor* a) { auto* m=MO(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x300/8])(m); }
+bool MotionModule__is_flag_start_1_frame_impl(BattleObjectModuleAccessor* a) { auto* m=MO(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x308/8])(m); }
+bool MotionModule__is_flag_start_1_frame_2nd_impl(BattleObjectModuleAccessor* a) { auto* m=MO(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x310/8])(m); }
+void MotionModule__joint_rotate_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=MO(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x318/8])(m,p1); }
+void MotionModule__add_motion_partial_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,f32 p3,bool p4,bool p5,bool p6,bool p7,bool p8) { auto* m=MO(a); reinterpret_cast<void(*)(void*,u64,u64,f32,bool,bool,bool,bool,bool)>(VT(m)[0x320/8])(m,p1,p2,p3,p4,p5,p6,p7,p8); }
+void MotionModule__remove_motion_partial_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=MO(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x328/8])(m,p1); }
+void MotionModule__remove_motion_partial_comp_impl(BattleObjectModuleAccessor* a) { auto* m=MO(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x338/8])(m); }
+u64 MotionModule__motion_kind_partial_impl(BattleObjectModuleAccessor* a) { auto* m=MO(a); return reinterpret_cast<u64(*)(void*)>(VT(m)[0x340/8])(m); }
+bool MotionModule__is_end_partial_impl(BattleObjectModuleAccessor* a) { auto* m=MO(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x348/8])(m); }
+f32 MotionModule__end_frame_partial_impl(BattleObjectModuleAccessor* a) { auto* m=MO(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x350/8])(m); }
+f32 MotionModule__rate_partial_impl(BattleObjectModuleAccessor* a) { auto* m=MO(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x360/8])(m); }
+f32 MotionModule__frame_partial_impl(BattleObjectModuleAccessor* a) { auto* m=MO(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x368/8])(m); }
+f32 MotionModule__prev_frame_partial_impl(BattleObjectModuleAccessor* a) { auto* m=MO(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x370/8])(m); }
+void MotionModule__set_frame_partial_impl(BattleObjectModuleAccessor* a,f32 f) { auto* m=MO(a); reinterpret_cast<void(*)(void*,f32)>(VT(m)[0x378/8])(m,f); }
+void MotionModule__set_frame_partial_sync_anim_cmd_impl(BattleObjectModuleAccessor* a,f32 f) { auto* m=MO(a); reinterpret_cast<void(*)(void*,f32)>(VT(m)[0x380/8])(m,f); }
+bool MotionModule__is_flag_start_1_frame_partial_impl(BattleObjectModuleAccessor* a) { auto* m=MO(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x388/8])(m); }
+bool MotionModule__is_flip_impl(BattleObjectModuleAccessor* a) { auto* m=MO(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x390/8])(m); }
+void MotionModule__set_flip_impl(BattleObjectModuleAccessor* a,u64 p1,bool p2,bool p3,bool p4) { auto* m=MO(a); reinterpret_cast<void(*)(void*,u64,bool,bool,bool)>(VT(m)[0x3a0/8])(m,p1,p2,p3,p4); }
+void MotionModule__set_link_flip_target_joint_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=MO(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x3a8/8])(m,p1); }
+void MotionModule__set_frame_material_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=MO(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x3b0/8])(m,p1); }
+void MotionModule__set_loop_flag_material_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=MO(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x3c0/8])(m,p1); }
+void MotionModule__set_helper_calculation_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=MO(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x3d0/8])(m,p1); }
+void MotionModule__set_recalc_ik_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=MO(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x420/8])(m,p1); }
+bool MotionModule__is_no_comp_impl(BattleObjectModuleAccessor* a) { auto* m=MO(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x440/8])(m); }
+void MotionModule__set_kind_offset_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=MO(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x448/8])(m,p1); }
+void MotionModule__enable_shift_material_animation_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=MO(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x468/8])(m,p1); }
+bool MotionModule__is_flip_resource_impl(BattleObjectModuleAccessor* a) { auto* m=MO(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x4a0/8])(m); }
+void MotionModule__set_force_progress_2nd_weight_impl(BattleObjectModuleAccessor* a,f32 f) { auto* m=MO(a); reinterpret_cast<void(*)(void*,f32)>(VT(m)[0x4f8/8])(m,f); }
+void MotionModule__clear_joint_srt_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=MO(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x500/8])(m,p1); }
+void MotionModule__set_keep_pose_change_motion_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=MO(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x588/8])(m,p1); }
+void MotionModule__enable_remove_2nd_change_motion_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=MO(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x5b8/8])(m,p1); }
+void MotionModule__enable_set_frame_2nd_partial_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=MO(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x5c0/8])(m,p1); }
+void MotionModule__set_frame_partial_sync_anim_cmd_revised_impl(BattleObjectModuleAccessor* a,f32 f) { auto* m=MO(a); reinterpret_cast<void(*)(void*,f32)>(VT(m)[0x5c8/8])(m,f); }
+void MotionModule__set_keep_pose_change_motion_with_update_pose_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=MO(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x5e0/8])(m,p1); }
+void MotionModule__set_animcmd_done_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=MO(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x5f8/8])(m,p1); }
+void MotionModule__set_link_no_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=MO(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x600/8])(m,p1); }
+// Missing from earlier: is_anim_resource
+bool MotionModule__is_anim_resource_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=MO(a); return reinterpret_cast<bool(*)(void*,u64)>(VT(m)[0x270/8])(m,p1); }
+bool MotionModule__is_end_2nd_impl(BattleObjectModuleAccessor* a) { auto* m=MO(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x2e8/8])(m); }
+f32 MotionModule__get_frame_material_impl(BattleObjectModuleAccessor* a) { auto* m=MO(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x3c8/8])(m); }
 } // namespace app::lua_bind

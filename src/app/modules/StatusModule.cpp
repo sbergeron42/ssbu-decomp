@@ -58,4 +58,40 @@ s32 StatusModule__prev_situation_kind_impl(BattleObjectModuleAccessor* accessor)
     return reinterpret_cast<s32 (*)(void*)>(vtable[0x150 / 8])(module);
 }
 
+// 71020876c0 [vtable+0x48] — change_status_request
+void StatusModule__change_status_request_impl(BattleObjectModuleAccessor* a, s32 kind, bool p2) {
+    auto* m = a->status_module; auto* vt = *reinterpret_cast<void***>(m);
+    reinterpret_cast<void(*)(void*,s32,bool)>(vt[0x48/8])(m,kind,p2);
+}
+// 71020876e0 [vtable+0x50] — change_status_request_from_script
+void StatusModule__change_status_request_from_script_impl(BattleObjectModuleAccessor* a, s32 kind, bool p2) {
+    auto* m = a->status_module; auto* vt = *reinterpret_cast<void***>(m);
+    reinterpret_cast<void(*)(void*,s32,bool)>(vt[0x50/8])(m,kind,p2);
+}
+// 7102087700 [vtable+0x58] — delete_status_request_from_script
+void StatusModule__delete_status_request_from_script_impl(BattleObjectModuleAccessor* a) {
+    auto* m = a->status_module; auto* vt = *reinterpret_cast<void***>(m);
+    reinterpret_cast<void(*)(void*)>(vt[0x58/8])(m);
+}
+// 7102087780 [vtable+0x158] — change_status_force
+void StatusModule__change_status_force_impl(BattleObjectModuleAccessor* a, s32 kind, bool p2) {
+    auto* m = a->status_module; auto* vt = *reinterpret_cast<void***>(m);
+    reinterpret_cast<void(*)(void*,s32,bool)>(vt[0x158/8])(m,kind,p2);
+}
+// 7102087810 [vtable+0x178] — set_situation_kind
+void StatusModule__set_situation_kind_impl(BattleObjectModuleAccessor* a, s32 kind, bool p2) {
+    auto* m = a->status_module; auto* vt = *reinterpret_cast<void***>(m);
+    reinterpret_cast<void(*)(void*,s32,bool)>(vt[0x178/8])(m,kind,p2);
+}
+// 7102087830 [vtable+0x188] — set_keep_situation_air
+void StatusModule__set_keep_situation_air_impl(BattleObjectModuleAccessor* a, bool p1) {
+    auto* m = a->status_module; auto* vt = *reinterpret_cast<void***>(m);
+    reinterpret_cast<void(*)(void*,bool)>(vt[0x188/8])(m,p1);
+}
+// 7102087850 [vtable+0x1a8] — set_succeeds_bit
+void StatusModule__set_succeeds_bit_impl(BattleObjectModuleAccessor* a, u64 p1) {
+    auto* m = a->status_module; auto* vt = *reinterpret_cast<void***>(m);
+    reinterpret_cast<void(*)(void*,u64)>(vt[0x1a8/8])(m,p1);
+}
+
 } // namespace app::lua_bind
