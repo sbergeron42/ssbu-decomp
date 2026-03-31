@@ -110,6 +110,22 @@ bool FighterInformation__is_battle_event_stick_reverse_impl(FighterInformation* 
     return *reinterpret_cast<bool*>(data + 0x9ca);
 }
 
+// 71020c9d60 — hit_point (14 instructions, vtable call + float math)
+f32 FighterInformation__hit_point_impl(FighterInformation* fi) {
+    auto* vtable = *reinterpret_cast<void***>(fi);
+    auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);
+    f32 base = *reinterpret_cast<f32*>(data + 0x38);
+    f32 temp = *reinterpret_cast<f32*>(data + 0x3c);
+    f32 total = base + temp;
+    auto fn = reinterpret_cast<f32 (*)(FighterInformation*)>(vtable[0x20 / 8]);
+    f32 damage = fn(fi);
+    f32 result = total - damage;
+    if (result <= 0.0f) {
+        result = 0.0f;
+    }
+    return result;
+}
+
 // 71020c9e50 — dead_count (11 instructions, branch on w1==-2)
 s32 FighterInformation__dead_count_impl(FighterInformation* fi, s32 index) {
     auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);

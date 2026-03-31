@@ -38,15 +38,15 @@ bool FighterManager__is_melee_mode_online_tournament_impl(FighterManager* mgr) {
     auto* data = *reinterpret_cast<u8**>(mgr);
     return data[0xc0] == 0x18; // cmp #0x18, cset eq
 }
-bool FighterManager__is_discretion_final_enabled_impl(FighterManager* mgr) {
+u8 FighterManager__is_discretion_final_enabled_impl(FighterManager* mgr) {
     auto* data = *reinterpret_cast<u8**>(mgr);
     return data[0xcc];
 }
-bool FighterManager__is_ready_go_impl(FighterManager* mgr) {
+u8 FighterManager__is_ready_go_impl(FighterManager* mgr) {
     auto* data = *reinterpret_cast<u8**>(mgr);
     return data[0xd2];
 }
-bool FighterManager__is_result_mode_impl(FighterManager* mgr) {
+u8 FighterManager__is_result_mode_impl(FighterManager* mgr) {
     auto* data = *reinterpret_cast<u8**>(mgr);
     return data[0xe9];
 }
@@ -105,4 +105,11 @@ bool FighterManager__is_process_movie_impl(FighterManager* mgr) {
 }
 
 void FighterManager__reset_fighter_impl(FighterManager* obj) { }
+
+// 71021410d0 — one_on_one_ratio (3 instructions, simple field read)
+f32 FighterManager__one_on_one_ratio_impl(FighterManager* mgr) {
+    auto* data = *reinterpret_cast<u8**>(mgr);
+    return *reinterpret_cast<f32*>(data + 0xf0);
+}
+
 } // namespace app::lua_bind
