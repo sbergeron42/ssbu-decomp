@@ -1,8 +1,20 @@
 #include "types.h"
 
+typedef float v4sf __attribute__((vector_size(16)));
+
 struct KineticEnergyNormal;
 
 namespace app::lua_bind {
+
+// SIMD vec2 copy with zeroed zw — uses v4sf to generate ldr q/ext/str q pattern
+void KineticEnergyNormal__set_speed_impl(KineticEnergyNormal* ke, v4sf* src) {
+    v4sf v = *src; v[2] = 0.0f; v[3] = 0.0f;
+    *reinterpret_cast<v4sf*>(reinterpret_cast<u8*>(ke) + 0x10) = v;
+}
+void KineticEnergyNormal__set_speed_3d_impl(KineticEnergyNormal* ke, v4sf* src) {
+    v4sf v = *src; v[3] = 0.0f;
+    *reinterpret_cast<v4sf*>(reinterpret_cast<u8*>(ke) + 0x10) = v;
+}
 
 // Getters — return pointer to field
 void* KineticEnergyNormal__get_accel_impl(KineticEnergyNormal* ke) { return reinterpret_cast<u8*>(ke) + 0x40; }
