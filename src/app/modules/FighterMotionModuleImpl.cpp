@@ -84,7 +84,9 @@ void FighterMotionModuleImpl__change_motion_inherit_frame_kirby_copy_impl(Battle
 
 // 71020aa100 — ldr module; hardcode w3=1,w2=0; b same target as above
 void FighterMotionModuleImpl__change_motion_inherit_frame_keep_rate_kirby_copy_impl(BattleObjectModuleAccessor* a, u64 hash) {
-    FUN_71006e27f0(a->motion_module, hash, false, true);
+    auto* m = a->motion_module;
+    bool t = true;
+    FUN_71006e27f0(m, hash, false, t);
 }
 
 // 71020aa110 — reads frame/rate via vtable, adjusts frame param, delegates to change_motion

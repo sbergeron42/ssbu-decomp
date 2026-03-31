@@ -154,22 +154,25 @@ void EffectModule__req_on_joint_impl(BattleObjectModuleAccessor* a, u64 p1, u64 
     reinterpret_cast<void(*)(void*,u64,u64,u64,u64,u64,u64,bool,u32,u32,u32)>(VTABLE(m)[0x70/8])(m,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10);
 }
 
-// 7102017730 — req_follow: load EffectModule, vtable+0x78, many params + bool masks
-void EffectModule__req_follow_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2, u64 p3, u64 p4, u64 p5, u64 p6, bool p7, u64 p8, u64 p9, u64 p10, u64 p11, u64 p12, u64 p13, u64 p14) {
+// 7102017730 — req_follow: load EffectModule, vtable+0x80, many params + bool masks
+// Signature: (accessor, Hash40, Hash40, Vec3f*, Vec3f*, float[s0], bool, uint, int, int, int, int, bool, bool)
+void EffectModule__req_follow_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2, u64 p3, u64 p4, bool p5, u32 p6, s32 p7, s32 p8, s32 p9, s32 p10, bool p11, bool p12) {
     auto* m = EFFECT_MODULE(a);
-    reinterpret_cast<void(*)(void*,u64,u64,u64,u64,u64,u64,bool,u64,u64,u64,u64,u64,u64,u64)>(VTABLE(m)[0x78/8])(m,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14);
+    reinterpret_cast<void(*)(void*,u64,u64,u64,u64,bool,u32,s32,s32,s32,s32,bool,bool)>(VTABLE(m)[0x80/8])(m,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12);
 }
 
-// 7102017900 — req_after_image: vtable+0x118
-void EffectModule__req_after_image_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2, u64 p3, u64 p4, u64 p5, u64 p6, bool p7, u64 p8, u64 p9, u64 p10, u64 p11, u64 p12, u64 p13, u64 p14) {
+// 7102017900 — req_after_image: vtable+0x118, many mixed-type params + 2 floats (s0/s1 passthrough)
+// Signature: (accessor, Hash40, Hash40, Hash40, Hash40, uint, Vec3f*, Vec3f*, uint, Hash40, Hash40, Vec3f*, Vec3f*, float[s0], uchar, uchar, float[s1], int, int, int)
+void EffectModule__req_after_image_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2, u64 p3, u64 p4, u32 p5, u64 p6, u64 p7, u32 p8, u64 p9, u64 p10, u64 p11, u64 p12, bool p13, bool p14, s32 p15, s32 p16, s32 p17) {
     auto* m = EFFECT_MODULE(a);
-    reinterpret_cast<void(*)(void*,u64,u64,u64,u64,u64,u64,bool,u64,u64,u64,u64,u64,u64,u64)>(VTABLE(m)[0x118/8])(m,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14);
+    reinterpret_cast<void(*)(void*,u64,u64,u64,u64,u32,u64,u64,u32,u64,u64,u64,u64,bool,bool,s32,s32,s32)>(VTABLE(m)[0x118/8])(m,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15,p16,p17);
 }
 
-// 7102017950 — req_after_image_no_parent: vtable+0x120
-void EffectModule__req_after_image_no_parent_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2, u64 p3, u64 p4, u64 p5, u64 p6, bool p7, u64 p8, u64 p9, u64 p10, u64 p11, u64 p12, u64 p13, u64 p14) {
+// 7102017950 — req_after_image_no_parent: vtable+0x128, mixed types + 2 floats (s0/s1 passthrough)
+// Signature: (accessor, Hash40, Hash40, uint, Vec3f*, Vec3f*, uint, Hash40, Hash40, Vec3f*, Vec3f*, float[s0], uchar, uchar, float[s1], int, int, int)
+void EffectModule__req_after_image_no_parent_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2, u32 p3, u64 p4, u64 p5, u32 p6, u64 p7, u64 p8, u64 p9, u64 p10, bool p11, bool p12, s32 p13, s32 p14, s32 p15) {
     auto* m = EFFECT_MODULE(a);
-    reinterpret_cast<void(*)(void*,u64,u64,u64,u64,u64,u64,bool,u64,u64,u64,u64,u64,u64,u64)>(VTABLE(m)[0x120/8])(m,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14);
+    reinterpret_cast<void(*)(void*,u64,u64,u32,u64,u64,u32,u64,u64,u64,u64,bool,bool,s32,s32,s32)>(VTABLE(m)[0x128/8])(m,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15);
 }
 
 // 71020179d0 — get_local_matrix: prologue/epilogue, vtable+0x148
