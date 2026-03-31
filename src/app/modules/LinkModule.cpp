@@ -146,8 +146,8 @@ void* LinkModule__get_parent_lr_impl(BattleObjectModuleAccessor* a,u64 p1) { aut
 void* LinkModule__get_parent_sum_speed_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64,u64)>(VT(m)[0x1b0/8])(m,p1,p2); }
 u32 LinkModule__get_parent_object_id_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<u32(*)(void*,u64)>(VT(m)[0x1b8/8])(m,p1); }
 bool LinkModule__is_capture_damage_parent_object_id_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<bool(*)(void*,u64)>(VT(m)[0x1c0/8])(m,p1); }
-void* LinkModule__get_parent_pos_impl(BattleObjectModuleAccessor* a) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x1c8/8])(m); }
-void* LinkModule__get_parent_prev_pos_impl(BattleObjectModuleAccessor* a) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x1d0/8])(m); }
+void* LinkModule__get_parent_pos_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xd0)); void* ret = reinterpret_cast<void*(*)(void*)>(VT(m)[0x1c8/8])(m); asm(""); return ret; }
+void* LinkModule__get_parent_prev_pos_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xd0)); void* ret = reinterpret_cast<void*(*)(void*)>(VT(m)[0x1d0/8])(m); asm(""); return ret; }
 void* LinkModule__get_parent_rot_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x1d8/8])(m,p1); }
 void* LinkModule__get_parent_damage_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x1e0/8])(m,p1); }
 void* LinkModule__get_parent_damage_reaction_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x1e8/8])(m,p1); }
@@ -178,9 +178,9 @@ void LinkModule__set_node_log_damage_player_impl(BattleObjectModuleAccessor* a,u
 void LinkModule__set_node_depth_offset_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x310/8])(m,p1); }
 void* LinkModule__get_parent_have_item_visibility_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x318/8])(m,p1); }
 void* LinkModule__get_parent_attach_item_visibility_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x320/8])(m,p1); }
-void* LinkModule__get_parent_main_color_impl(BattleObjectModuleAccessor* a) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x330/8])(m); }
+void* LinkModule__get_parent_main_color_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xd0)); void* ret = reinterpret_cast<void*(*)(void*)>(VT(m)[0x330/8])(m); asm(""); return ret; }
 bool LinkModule__is_parent_enable_sub_color_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<bool(*)(void*,u64)>(VT(m)[0x338/8])(m,p1); }
-void* LinkModule__get_parent_sub_color_impl(BattleObjectModuleAccessor* a) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x340/8])(m); }
+void* LinkModule__get_parent_sub_color_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xd0)); void* ret = reinterpret_cast<void*(*)(void*)>(VT(m)[0x340/8])(m); asm(""); return ret; }
 u32 LinkModule__get_parent_battle_object_kind_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<u32(*)(void*,u64)>(VT(m)[0x348/8])(m,p1); }
 u32 LinkModule__get_parent_object_id_motion_transactor_link_impl(BattleObjectModuleAccessor* a) { auto* m=LM(a); return reinterpret_cast<u32(*)(void*)>(VT(m)[0x350/8])(m); }
 void LinkModule__set_model_constraint_pos_ort_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,u64 p3,u64 p4,bool p5) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64,u64,u64,u64,bool)>(VT(m)[0x358/8])(m,p1,p2,p3,p4,p5); }

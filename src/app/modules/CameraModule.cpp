@@ -107,8 +107,8 @@ void CameraModule__set_being_carried_impl(BattleObjectModuleAccessor* a,u64 p1) 
 bool CameraModule__is_clip_in_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=CAMERA_MODULE(a); return reinterpret_cast<bool(*)(void*,bool)>(VT(m)[0x198/8])(m,p1); }
 bool CameraModule__is_clip_in_all_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=CAMERA_MODULE(a); return reinterpret_cast<bool(*)(void*,bool)>(VT(m)[0x1a0/8])(m,p1); }
 void CameraModule__set_camera_range_global_rect_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,u64,u64)>(VT(m)[0x1b8/8])(m,p1,p2); }
-void* CameraModule__get_main_camera_target_pos_impl(BattleObjectModuleAccessor* a) { auto* m=CAMERA_MODULE(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x1c8/8])(m); }
-void* CameraModule__get_internal_camera_target_pos_impl(BattleObjectModuleAccessor* a) { auto* m=CAMERA_MODULE(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x1d8/8])(m); }
+void* CameraModule__get_main_camera_target_pos_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x60)); void* ret = reinterpret_cast<void*(*)(void*)>(VT(m)[0x1c8/8])(m); asm(""); return ret; }
+void* CameraModule__get_internal_camera_target_pos_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x60)); void* ret = reinterpret_cast<void*(*)(void*)>(VT(m)[0x1d8/8])(m); asm(""); return ret; }
 void CameraModule__set_camera_type_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x1f0/8])(m,p1); }
 void* CameraModule__req_quake_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CAMERA_MODULE(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x200/8])(m,p1); }
 void* CameraModule__req_quake_pos_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=CAMERA_MODULE(a); return reinterpret_cast<void*(*)(void*,u64,u64)>(VT(m)[0x208/8])(m,p1,p2); }

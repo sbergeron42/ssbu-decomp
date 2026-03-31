@@ -14,7 +14,7 @@ f32 BattleObjectWorld__gravity_speed_coefficient_impl(BattleObjectWorld* world) 
 
 // 7101fca2d0 — 2 instructions
 bool BattleObjectWorld__is_move_impl(BattleObjectWorld* world) {
-    return reinterpret_cast<u8*>(world)[0x5a];
+    return *reinterpret_cast<bool*>(reinterpret_cast<u8*>(world) + 0x5a);
 }
 
 // 7101fca2e0 — 2 instructions (returns pointer to +0x20)
@@ -24,7 +24,7 @@ void* BattleObjectWorld__move_speed_impl(BattleObjectWorld* world) {
 
 // 7101fca2f0 — 2 instructions
 bool BattleObjectWorld__is_disable_reverse_impl(BattleObjectWorld* world) {
-    return reinterpret_cast<u8*>(world)[0x5d];
+    return *reinterpret_cast<bool*>(reinterpret_cast<u8*>(world) + 0x5d);
 }
 
 // 7101fca200 — scale_z (5 instructions, branch)

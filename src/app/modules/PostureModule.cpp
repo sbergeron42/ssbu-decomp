@@ -27,11 +27,7 @@ void PostureModule__add_pos_2d_impl(BattleObjectModuleAccessor* accessor, void* 
 }
 
 // 710206aee0 — prev_pos
-void* PostureModule__prev_pos_impl(BattleObjectModuleAccessor* accessor) {
-    auto* module = accessor->posture_module;
-    auto* vtable = *reinterpret_cast<void***>(module);
-    return reinterpret_cast<void* (*)(void*)>(vtable[0xa0 / 8])(module);
-}
+void* PostureModule__prev_pos_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x38)); void* ret = reinterpret_cast<void*(*)(void*)>(VT(m)[0x90/8])(m); asm(""); return ret; }
 
 // 710206af00 — prev_pos_2d
 void* PostureModule__prev_pos_2d_impl(BattleObjectModuleAccessor* accessor) {
@@ -84,10 +80,7 @@ void PostureModule__set_stick_lr_impl(BattleObjectModuleAccessor* a) { auto* m=r
 void PostureModule__set_sync_constraint_joint_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=a->posture_module; auto* vt=*reinterpret_cast<void***>(m); reinterpret_cast<void(*)(void*,u64)>(vt[0x180/8])(m,p1); }
 // blr wrappers — call vtable method returning Vector3f*, then extract component
 // pos_impl calls vtable[0x60/8] and returns the pointer directly (8 insns)
-void* PostureModule__pos_impl(BattleObjectModuleAccessor* a) {
-    auto* m = a->posture_module; auto* vt = *reinterpret_cast<void***>(m);
-    return reinterpret_cast<void*(*)(void*)>(vt[0x60/8])(m);
-}
+void* PostureModule__pos_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x38)); void* ret = reinterpret_cast<void*(*)(void*)>(VT(m)[0x60/8])(m); asm(""); return ret; }
 // pos_x calls vtable[0x60/8] then returns result[0] (9 insns)
 f32 PostureModule__pos_x_impl(BattleObjectModuleAccessor* a) {
     auto* m = a->posture_module; auto* vt = *reinterpret_cast<void***>(m);
@@ -107,10 +100,7 @@ f32 PostureModule__pos_z_impl(BattleObjectModuleAccessor* a) {
     return v[2];
 }
 // rot_impl calls vtable[0xd8/8] and returns pointer (8 insns)
-void* PostureModule__rot_impl(BattleObjectModuleAccessor* a) {
-    auto* m = a->posture_module; auto* vt = *reinterpret_cast<void***>(m);
-    return reinterpret_cast<void*(*)(void*)>(vt[0xd8/8])(m);
-}
+void* PostureModule__rot_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x38)); void* ret = reinterpret_cast<void*(*)(void*)>(VT(m)[0xd8/8])(m); asm(""); return ret; }
 // rot_x calls vtable[0xd8/8] then returns result[0] (9 insns)
 f32 PostureModule__rot_x_impl(BattleObjectModuleAccessor* a) {
     auto* m = a->posture_module; auto* vt = *reinterpret_cast<void***>(m);
