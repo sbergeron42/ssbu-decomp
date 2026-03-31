@@ -88,7 +88,20 @@ bool FighterManager__is_end_movie_impl(FighterManager* mgr) {
     return *reinterpret_cast<u32*>(p2 + 0x20) == 8;
 }
 
-// 71021418c0 — exit_movie (4 instructions, pointer chain + tail call)
-// Can't match — tail calls to external function
+// 71021418a0 — is_prepared_movie (7 instructions, pointer chain + cmp 4)
+bool FighterManager__is_prepared_movie_impl(FighterManager* mgr) {
+    auto* data = *reinterpret_cast<u8**>(mgr);
+    auto* p1 = *reinterpret_cast<u8**>(data + 0xb80);
+    auto* p2 = *reinterpret_cast<u8**>(p1);
+    return *reinterpret_cast<u32*>(p2 + 0x20) == 4;
+}
+
+// 71021418d0 — is_process_movie (7 instructions, pointer chain + cmp 0, ne)
+bool FighterManager__is_process_movie_impl(FighterManager* mgr) {
+    auto* data = *reinterpret_cast<u8**>(mgr);
+    auto* p1 = *reinterpret_cast<u8**>(data + 0xb80);
+    auto* p2 = *reinterpret_cast<u8**>(p1);
+    return *reinterpret_cast<u32*>(p2 + 0x20) != 0;
+}
 
 } // namespace app::lua_bind
