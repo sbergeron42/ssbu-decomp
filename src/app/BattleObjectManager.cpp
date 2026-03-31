@@ -9,6 +9,9 @@ namespace app::lua_bind {
 
 // 7101fca0b0 — 19 instructions (calls, branches, tbz, cset)
 bool BattleObjectManager__is_active_find_battle_object_impl(BattleObjectManager* mgr, u32 id) {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("" : "+r"(id)); // Prevent mov w0,w1 from being scheduled before prologue
+#endif
     auto* obj = reinterpret_cast<u8*>(get_battle_object_from_id(id));
     if (obj == nullptr) {
         return false;

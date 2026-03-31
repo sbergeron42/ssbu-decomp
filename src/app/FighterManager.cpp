@@ -5,6 +5,8 @@
 
 struct FighterManager;
 
+extern "C" [[noreturn]] void abort();
+
 namespace app::lua_bind {
 
 // 7102140d60 — entry_count (3 instructions)
@@ -67,16 +69,18 @@ u32 FighterManager__get_final_actor_entry_id_impl(FighterManager* mgr) {
 
 // 7102140f90 — get_fighter_entry (7 instructions, bounds check + indexed)
 void* FighterManager__get_fighter_entry_impl(FighterManager* mgr, u32 index) {
-    if (index >= 8) __builtin_trap();
+    if (index >= 8) abort();
     auto* data = *reinterpret_cast<u8**>(mgr);
-    return *reinterpret_cast<void**>(data + static_cast<u64>(index) * 8 + 0x20);
+    u64 off = static_cast<u64>(index) << 3;
+    return *reinterpret_cast<void**>(data + off + 0x20);
 }
 
 // 7102140fc0 — get_fighter_information (8 instructions, bounds check + offset)
 void* FighterManager__get_fighter_information_impl(FighterManager* mgr, u32 index) {
-    if (index >= 8) __builtin_trap();
+    if (index >= 8) abort();
     auto* data = *reinterpret_cast<u8**>(mgr);
-    auto* entry = *reinterpret_cast<u8**>(data + static_cast<u64>(index) * 8 + 0x20);
+    u64 off = static_cast<u64>(index) << 3;
+    auto* entry = *reinterpret_cast<u8**>(data + off + 0x20);
     return entry + 0xf0;
 }
 

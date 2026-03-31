@@ -99,7 +99,8 @@ def build_incremental():
     fix_script = PROJECT_ROOT / "tools" / "fix_prologue_sched.py"
     if fix_script.exists():
         prologue_targets = ["PostureModule", "KineticEnergy", "CameraModule",
-                           "GroundModule", "KineticModule", "LinkModule"]
+                           "GroundModule", "KineticModule", "LinkModule",
+                           "FighterControlModuleImpl", "BattleObjectManager"]
         objs = [str(build_dir / f"{t}.o") for t in prologue_targets if (build_dir / f"{t}.o").exists()]
         if objs:
             subprocess.run(["python", str(fix_script)] + objs, capture_output=True)

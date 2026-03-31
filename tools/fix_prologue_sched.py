@@ -40,14 +40,19 @@ from pathlib import Path
 # mov x29, sp  =  add x29, sp, #0
 MOV_X29_SP = 0x910003FD
 
+# add x29, sp, #imm  (any immediate, including mov x29, sp when imm=0)
+# Mask out imm12 (bits 21:10) to match any immediate:
+ADD_X29_SP_MASK  = 0xFFC003FF
+ADD_X29_SP_MATCH = 0x910003FD
+
 # stp x29, x30, [sp, #imm]!  (pre-indexed, signed offset)
 # Encoding: 1 01 0 1001 10 imm7 11110 11111 11101
 #   opc=10 (64-bit), V=0, L=0 (store), Rt2=30(0x1e), Rn=31(sp), Rt=29(0x1d)
 #   bits [31]=1, [30]=0, [29:27]=101, [26]=0, [25:23]=011, [22]=0 (store)
 #   Rt2 [14:10]=11110, Rn [9:5]=11111, Rt [4:0]=11101
-# Mask out the imm7 field (bits 21:15) to match any pre-indexed offset:
-STP_MASK  = 0x7FC07FFF
-STP_MATCH = 0x29807BFD
+# Mask out the imm7 field (bits 21:15) and bit 23 (pre-indexed vs offset):
+STP_MASK  = 0x7F407FFF
+STP_MATCH = 0x29007BFD
 
 # Maximum number of instructions between stp and mov x29, sp to consider.
 # If the gap is larger than this, it's not a simple prologue reorder.
@@ -212,7 +217,7 @@ def patch_prologue_sched(data: bytearray, sec_name: str, sec_offset: int,
         stp_off = off
         imm = decode_stp_imm(insn)
 
-        # Look ahead for mov x29, sp within MAX_GAP instructions
+        # Look ahead for add x29, sp, #imm (includes mov x29, sp) within MAX_GAP instructions
         mov_off = None
         gap_count = 0
         for k in range(1, MAX_GAP + 2):  # +2: check up to MAX_GAP+1 to detect gap size
@@ -220,8 +225,8 @@ def patch_prologue_sched(data: bytearray, sec_name: str, sec_offset: int,
             if check_off >= end:
                 break
             candidate = read_u32_le(data, check_off)
-            if candidate == MOV_X29_SP:
-                gap_count = k - 1  # number of instructions between stp and mov
+            if (candidate & ADD_X29_SP_MASK) == ADD_X29_SP_MATCH:
+                gap_count = k - 1  # number of instructions between stp and mov/add
                 if 1 <= gap_count <= MAX_GAP:
                     mov_off = check_off
                 break
@@ -262,8 +267,9 @@ def patch_prologue_sched(data: bytearray, sec_name: str, sec_offset: int,
         for k in range(1, gap_count + 1):
             gap_insns.append(read_u32_le(data, stp_off + k * 4))
 
-        # Write mov x29, sp right after stp
-        write_u32_le(data, stp_off + 4, MOV_X29_SP)
+        # Write add x29, sp, #imm (or mov x29, sp) right after stp
+        mov_insn = read_u32_le(data, mov_off)
+        write_u32_le(data, stp_off + 4, mov_insn)
 
         # Write the original gap instructions shifted down by one
         for k, gi in enumerate(gap_insns):

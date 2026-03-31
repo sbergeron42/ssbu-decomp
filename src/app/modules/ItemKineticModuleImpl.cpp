@@ -30,7 +30,8 @@ void ItemKineticModuleImpl__set_interpolate_rate_impl(BattleObjectModuleAccessor
     *reinterpret_cast<f32*>(reinterpret_cast<u8*>(a->item_kinetic_module) + 0xa70) = val;
 }
 void ItemKineticModuleImpl__it_ai_dir_rot_mode_impl(BattleObjectModuleAccessor* a, u32 val) {
-    reinterpret_cast<u8*>(a->item_kinetic_module)[0xa50] = val & 1;
+    auto* module = reinterpret_cast<u8*>(a->item_kinetic_module);
+    module[0xa50] = val & 1;
 }
 
 // Read-modify-write (5 instructions: ldr+orr/bic+str)

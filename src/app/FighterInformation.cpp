@@ -133,24 +133,41 @@ s32 FighterInformation__dead_count_impl(FighterInformation* fi, s32 index) {
         s32 a = *reinterpret_cast<s32*>(data + 0xcc);
         s32 b = *reinterpret_cast<s32*>(data + 0xd0);
         s32 c = *reinterpret_cast<s32*>(data + 0xd4);
-        return a + b + c;
+        s32 temp = b + a;
+#ifdef MATCHING_HACK_NX_CLANG
+        asm("" : "+r"(c), "+r"(temp));
+#endif
+        return c + temp;
     }
-    return *reinterpret_cast<s32*>(data + 0xcc + static_cast<s64>(index) * 4);
+    return *reinterpret_cast<s32*>(data + static_cast<s64>(index) * 4 + 0xcc);
 }
 
 // 71020c9e90 — suicide_count (20 instructions)
 s32 FighterInformation__suicide_count_impl(FighterInformation* fi, s32 index) {
     auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);
     if (index == -2) {
-        return *reinterpret_cast<s32*>(data + 0x14c) +
-               *reinterpret_cast<s32*>(data + 0x150) +
-               *reinterpret_cast<s32*>(data + 0x154) +
-               *reinterpret_cast<s32*>(data + 0x158) +
-               *reinterpret_cast<s32*>(data + 0x15c) +
-               *reinterpret_cast<s32*>(data + 0x160);
+        s32 a = *reinterpret_cast<s32*>(data + 0x14c);
+        s32 b = *reinterpret_cast<s32*>(data + 0x150);
+        s32 t1 = b + a;
+        s32 d = *reinterpret_cast<s32*>(data + 0x158);
+        s32 e = *reinterpret_cast<s32*>(data + 0x15c);
+        s32 c = *reinterpret_cast<s32*>(data + 0x154);
+        s32 f = *reinterpret_cast<s32*>(data + 0x160);
+        s32 t2 = e + d;
+#ifdef MATCHING_HACK_NX_CLANG
+        asm("" : "+r"(t1), "+r"(t2));
+#endif
+        s32 t3 = c + t1;
+        s32 t4 = f + t2;
+#ifdef MATCHING_HACK_NX_CLANG
+        asm("" : "+r"(t3), "+r"(t4));
+#endif
+        return t4 + t3;
     }
     auto* base = data + static_cast<s64>(index) * 4;
-    return *reinterpret_cast<s32*>(base + 0x14c) + *reinterpret_cast<s32*>(base + 0x158);
+    s32 v1 = *reinterpret_cast<s32*>(base + 0x14c);
+    s32 v2 = *reinterpret_cast<s32*>(base + 0x158);
+    return v2 + v1;
 }
 
 // 71020c9ee0 — total_beat_count (2 instructions, tail call)

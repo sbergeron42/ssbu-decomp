@@ -21,9 +21,6 @@ void FighterControlModuleImpl__set_command_life_count_impl(
 // 71020aeb10 — 22 instructions (vtable call + conditional selects + frame)
 f32 FighterControlModuleImpl__get_param_attack_hi4_flick_y_impl(BattleObjectModuleAccessor* accessor) {
     auto* module = reinterpret_cast<u8*>(accessor->fighter_control_module);
-#ifdef MATCHING_HACK_NX_CLANG
-    asm(""); // Prevent post-RA scheduler from moving fp setup past loads
-#endif
 
     // vtable call: module+0x118 -> obj -> vtable[0x98/8]
     auto* obj = *reinterpret_cast<void**>(module + 0x118);
@@ -75,13 +72,15 @@ void FighterControlModuleImpl__reserve_on_attack_button_impl(BattleObjectModuleA
     reinterpret_cast<u8*>(a->fighter_control_module)[0x645] = 1;
 }
 void FighterControlModuleImpl__set_button_smash_special_s_smash_impl(BattleObjectModuleAccessor* a, u32 val) {
-    reinterpret_cast<u8*>(a->fighter_control_module)[0xAD0] = val & 1;
+    auto* module = reinterpret_cast<u8*>(a->fighter_control_module);
+    module[0xAD0] = val & 1;
 }
 void FighterControlModuleImpl__reserve_on_special_button_impl(BattleObjectModuleAccessor* a, u32 val) {
     reinterpret_cast<u8*>(a->fighter_control_module)[0xAD2] = 1;
 }
 void FighterControlModuleImpl__set_ref_stick_x_org_impl(BattleObjectModuleAccessor* a, u32 val) {
-    reinterpret_cast<u8*>(a->fighter_control_module)[0xAB6] = val & 1;
+    auto* module = reinterpret_cast<u8*>(a->fighter_control_module);
+    module[0xAB6] = val & 1;
 }
 
 // Indexed pointer chain reads/writes (5-6 instructions)
