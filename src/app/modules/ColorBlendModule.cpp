@@ -56,4 +56,8 @@ void ColorBlendModule__set_disable_camera_depth_influence_impl(BattleObjectModul
     auto* m = COLORBLEND_MODULE(accessor); reinterpret_cast<void (*)(void*, bool)>(VTABLE(m)[0x1b0 / 8])(m, p1);
 }
 
+void ColorBlendModule__set_priority_impl(BattleObjectModuleAccessor* a,u64 p1,bool p2) { auto* m=COLORBLEND_MODULE(a); reinterpret_cast<void(*)(void*,u64,bool)>(VTABLE(m)[0xc8/8])(m,p1,p2); }
+void ColorBlendModule__set_shadow_bloom_impl(BattleObjectModuleAccessor* a,u64 p1,bool p2) { auto* m=COLORBLEND_MODULE(a); reinterpret_cast<void(*)(void*,u64,bool)>(VTABLE(m)[0xd8/8])(m,p1,p2); }
+void ColorBlendModule__set_main_color_impl(BattleObjectModuleAccessor* a,u64 p1,bool p2) { auto* m=COLORBLEND_MODULE(a); reinterpret_cast<void(*)(void*,u64,bool)>(VTABLE(m)[0xf8/8])(m,p1,p2); }
+void ColorBlendModule__set_status_impl(BattleObjectModuleAccessor* a,u64 p1,bool p2) { auto* m=COLORBLEND_MODULE(a); reinterpret_cast<void(*)(void*,u64,bool)>(VTABLE(m)[0x168/8])(m,p1,p2); }
 } // namespace app::lua_bind

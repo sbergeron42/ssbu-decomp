@@ -47,4 +47,10 @@ void SlowModule__clear_whole_impl(BattleObjectModuleAccessor* a) {
     auto* m = SLOW_MODULE(a); reinterpret_cast<void(*)(void*)>(VT(m)[0xc8/8])(m);
 }
 
+void SlowModule__set_impl(BattleObjectModuleAccessor* a,u64 p1,bool p2) { auto* m=SLOW_MODULE(a); reinterpret_cast<void(*)(void*,u64,bool)>(VT(m)[0x60/8])(m,p1,p2); }
+f32 SlowModule__rate_impl2(BattleObjectModuleAccessor* a) { auto* m=SLOW_MODULE(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0xa8/8])(m); }
+void SlowModule__set_whole_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=SLOW_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xc0/8])(m,p1); }
+f32 SlowModule__whole_mag_impl(BattleObjectModuleAccessor* a) { auto* m=SLOW_MODULE(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0xd0/8])(m); }
+void SlowModule__set_whole_frame_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=SLOW_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xd8/8])(m,p1); }
+f32 SlowModule__whole_frame_impl(BattleObjectModuleAccessor* a) { auto* m=SLOW_MODULE(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0xe0/8])(m); }
 } // namespace app::lua_bind
