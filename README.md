@@ -6,20 +6,23 @@ Targeting the final version: **patch 13.0.4**.
 
 ## Progress
 
-<!-- This section is updated by tools/progress.py -->
+<!-- Verified by tools/verify_all.py against real 13.0.4 binary -->
 
 | Category | Count | Percentage |
 |----------|------:|------------|
 | **Total functions** | 39,635 | |
-| Matching | ~1,636 | ~4.13% |
-| Equivalent | 14 | 0.04% |
-| Non-matching | 0 | 0.00% |
-| **Decompiled** | **~1,650** | **~4.16%** |
-| Undecompiled | ~37,985 | ~95.84% |
+| Verified matching | 474 | 1.20% |
+| Compiled (pending verification) | 1,178 | 2.97% |
+| **Total decompiled** | **1,652** | **4.17%** |
+| Undecompiled | 37,983 | 95.83% |
 
 ```
-Decompiled  [##                                      ]  ~1,650 / 39,635  (4.16%)
+Verified  [#                                       ]    474 / 39,635  (1.20%)
+Compiled  [##                                      ]  1,652 / 39,635  (4.17%)
 ```
+
+> **474 functions verified byte-identical** against the real 13.0.4 binary.
+> 1,178 more compiled and awaiting improved address mapping for verification.
 
 ## Build Info
 
