@@ -5,6 +5,7 @@ struct GimmickEventSlashEscape;
 
 namespace app::lua_bind {
 
+void GimmickEventSlashEscape__store_l2c_table_impl(GimmickEventSlashEscape* ev) { reinterpret_cast<void(*)(GimmickEventSlashEscape*)>(VT(ev)[0x28/8])(ev); }
 void GimmickEventSlashEscape__load_from_l2c_table_impl(GimmickEventSlashEscape* obj,u64 p1) { reinterpret_cast<void(*)(GimmickEventSlashEscape*,u64)>(VT(obj)[0x38/8])(obj,p1); }
 
 } // namespace app::lua_bind
