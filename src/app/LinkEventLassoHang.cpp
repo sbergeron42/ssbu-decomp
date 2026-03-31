@@ -9,4 +9,5 @@ namespace app::lua_bind {
 LargeRet LinkEventLassoHang__store_l2c_table_impl(LinkEventLassoHang* ev) { return reinterpret_cast<LargeRet(*)(LinkEventLassoHang*)>(VT(ev)[0x28/8])(ev); }
 void LinkEventLassoHang__load_from_l2c_table_impl(LinkEventLassoHang* obj,u64 p1) { reinterpret_cast<void(*)(LinkEventLassoHang*,u64)>(VT(obj)[0x38/8])(obj,p1); }
 
+LargeRet LinkEventLassoHang__store_l2c_table_impl_7102122390(LinkEventLassoHang* ev, u64 p1) { return reinterpret_cast<LargeRet(*)(LinkEventLassoHang*, u64)>(VT(ev)[0x30/8])(ev, p1); }
 } // namespace app::lua_bind

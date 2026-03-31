@@ -9,4 +9,5 @@ namespace app::lua_bind {
 LargeRet GimmickEventDrumEscape__store_l2c_table_impl(GimmickEventDrumEscape* ev) { return reinterpret_cast<LargeRet(*)(GimmickEventDrumEscape*)>(VT(ev)[0x28/8])(ev); }
 void GimmickEventDrumEscape__load_from_l2c_table_impl(GimmickEventDrumEscape* obj,u64 p1) { reinterpret_cast<void(*)(GimmickEventDrumEscape*,u64)>(VT(obj)[0x38/8])(obj,p1); }
 
+LargeRet GimmickEventDrumEscape__store_l2c_table_impl_71020ec750(GimmickEventDrumEscape* ev, u64 p1) { return reinterpret_cast<LargeRet(*)(GimmickEventDrumEscape*, u64)>(VT(ev)[0x30/8])(ev, p1); }
 } // namespace app::lua_bind
