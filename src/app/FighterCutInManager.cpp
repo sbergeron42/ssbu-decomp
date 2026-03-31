@@ -24,7 +24,54 @@ void FighterCutInManager__set_throw_finish_zoom_rate_impl(FighterCutInManager* m
     *reinterpret_cast<f32*>(data + 0x2d0) = rate;
 }
 
-// Skip: request_start_impl (ldr x0,[x0]; b to unknown target)
-// Skip: request_end_impl (ldr x0,[x0]; b to unknown target)
+// 71020a8b90 — ldr x0,[x0]; b external
+extern "C" void FUN_71006a7100(void*);
+void FighterCutInManager__request_start_impl(FighterCutInManager* mgr) {
+    FUN_71006a7100(*reinterpret_cast<void**>(mgr));
+}
+
+// 71020a8ba0 — ldr x0,[x0]; b external
+extern "C" void FUN_71006ab9d0(void*);
+void FighterCutInManager__request_end_impl(FighterCutInManager* mgr) {
+    FUN_71006ab9d0(*reinterpret_cast<void**>(mgr));
+}
+
+// 71020a8bb0 — check byte at data+0xb9, then word at data+0xbc == 6
+bool FighterCutInManager__is_play_motion_camera_impl(FighterCutInManager* mgr) {
+    auto* data = *reinterpret_cast<u8**>(mgr);
+    if (data[0xb9] == 0) return false;
+    return *reinterpret_cast<u32*>(data + 0xbc) == 6;
+}
+
+// 71020a8be0 — unrolled check: compare 8 u32s at data[0..0x1c] against param2->field_8
+bool FighterCutInManager__is_owner_impl(FighterCutInManager* mgr, void* entry_id_ptr) {
+    auto* data = *reinterpret_cast<u8**>(mgr);
+    u32 target = *reinterpret_cast<u32*>(reinterpret_cast<u8*>(entry_id_ptr) + 8);
+    u32* arr = reinterpret_cast<u32*>(data);
+    if (arr[0] == target) return true;
+    if (arr[1] == target) return true;
+    if (arr[2] == target) return true;
+    if (arr[3] == target) return true;
+    if (arr[4] == target) return true;
+    if (arr[5] == target) return true;
+    if (arr[6] == target) return true;
+    if (arr[7] == target) return true;
+    return false;
+}
+
+// 71020a8c60 — check 3 conditions: byte +0xb9, byte +0x1e8, s32 at +0x398 > 0
+bool FighterCutInManager__is_play_impl(FighterCutInManager* mgr) {
+    auto* data = *reinterpret_cast<u8**>(mgr);
+    if (data[0xb9]) return true;
+    if (data[0x1e8]) return true;
+    return *reinterpret_cast<s32*>(data + 0x398) > 0;
+}
+
+// 71020a8ca0 — check byte +0xb9, then byte +0x1e8 != 0
+bool FighterCutInManager__is_play_status_impl(FighterCutInManager* mgr) {
+    auto* data = *reinterpret_cast<u8**>(mgr);
+    if (data[0xb9]) return true;
+    return data[0x1e8] != 0;
+}
 
 } // namespace app::lua_bind
