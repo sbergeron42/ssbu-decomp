@@ -15,11 +15,8 @@ for /R src %%f in (*.cpp) do (
     if errorlevel 1 goto :error
 )
 
-echo.
-echo Post-processing (orr-to-movz fix)...
-for %%f in (build\*.o) do (
-    python tools\fix_orr_movz.py "%%f"
-)
+REM NOTE: fix_orr_movz.py is NOT needed! The original binary uses orr encoding,
+REM same as upstream Clang. Ghidra displays orr as "mov" (alias), which was misleading.
 
 echo.
 echo Disassembly:
