@@ -11,18 +11,18 @@ Targeting the final version: **patch 13.0.4**.
 | Category | Count | Percentage |
 |----------|------:|------------|
 | **Total functions** | 39,635 | |
-| Verified matching | 474 | 1.20% |
-| Compiled (pending verification) | 1,178 | 2.97% |
-| **Total decompiled** | **1,652** | **4.17%** |
-| Undecompiled | 37,983 | 95.83% |
+| Verified byte-identical | 1,538 | 3.88% |
+| Compiled (non-matching) | 475 | 1.20% |
+| **Total decompiled** | **2,013** | **5.08%** |
+| Undecompiled | 37,622 | 94.92% |
 
 ```
-Verified  [#                                       ]    474 / 39,635  (1.20%)
-Compiled  [##                                      ]  1,652 / 39,635  (4.17%)
+Verified  [##                                      ]  1,538 / 39,635  (3.88%)
+Compiled  [##                                      ]  2,013 / 39,635  (5.08%)
 ```
 
-> **474 functions verified byte-identical** against the real 13.0.4 binary.
-> 1,178 more compiled and awaiting improved address mapping for verification.
+> **1,538 functions verified byte-identical** against the real 13.0.4 binary.
+> 89.8% match rate on verified functions. Viking/asm-differ tooling operational.
 
 ## Build Info
 
@@ -53,10 +53,23 @@ clang++ -target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 \
   -Iinclude -c src/app/modules/FighterAreaModuleImpl.cpp -o build/FighterAreaModuleImpl.o
 ```
 
-Post-processing to fix NX Clang encoding differences:
+Link into a shared ELF for verification:
 
 ```bash
-python tools/fix_orr_movz.py build/*.o
+ld.lld -shared -o build/ssbu-decomp.elf build/*.o \
+  -Bsymbolic-functions --unresolved-symbols=ignore-all --no-undefined-version
+```
+
+## Verification
+
+```bash
+python tools/verify_all.py --summary
+```
+
+Or use [viking](https://github.com/open-ead/nx-decomp-tools) for semantic comparison:
+
+```bash
+tools/common/nx-decomp-tools/viking/target/release/check.exe FunctionName
 ```
 
 ## Project Structure
@@ -64,19 +77,19 @@ python tools/fix_orr_movz.py build/*.o
 ```
 src/           Decompiled C++ source
 include/       Headers (game structs, SDK types)
-asm/           Expected assembly from the original binary
-data/          Function database (functions.csv)
+data/          Function database (functions.csv), original ELF
 tools/         Build, diff, and verification scripts
-toolchain/     CMake cross-compilation config
+tools/common/  nx-decomp-tools submodule (viking, asm-differ)
 config/        Symbol maps, matching targets
 ```
 
 ## Tools
 
-- `tools/progress.py` — Show decompilation progress
-- `tools/fix_orr_movz.py` — Post-process compiled objects (NX Clang encoding fix)
+- `tools/verify_all.py` — Byte-compare all compiled functions against original binary
+- `tools/gen_from_elf.py` — Auto-generate vtable dispatch functions from original ELF
+- `tools/fix_params.py` — Fix parameter counts using original binary analysis
+- `tools/migrate_csv.py` — Convert functions.csv between formats
 - `tools/diff_function.py` — Compare compiled assembly against target
-- `tools/mark_status.py` — Update function status in the database
 
 ## References
 
