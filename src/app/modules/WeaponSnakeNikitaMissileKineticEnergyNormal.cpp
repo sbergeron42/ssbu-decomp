@@ -14,4 +14,9 @@ f32 WeaponSnakeNikitaMissileKineticEnergyNormal__rot_z_impl(WeaponSnakeNikitaMis
     return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(self) + 0xa0);
 }
 
+// 7102164040 — and w8,w1,#0x1; strb w8,[x0,#0xa4]; ret
+void WeaponSnakeNikitaMissileKineticEnergyNormal__set_enable_rot_impl(WeaponSnakeNikitaMissileKineticEnergyNormal* self, bool val) {
+    *reinterpret_cast<bool*>(reinterpret_cast<u8*>(self) + 0xa4) = val;
+}
+
 } // namespace app::lua_bind
