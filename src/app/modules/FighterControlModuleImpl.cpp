@@ -82,4 +82,39 @@ void FighterControlModuleImpl__set_ref_stick_x_org_impl(BattleObjectModuleAccess
     *reinterpret_cast<f32*>(reinterpret_cast<u8*>(a->fighter_control_module) + 0x608) = val;
 }
 
+// Indexed pointer chain reads/writes (5-6 instructions)
+// Pattern: module + (index * 8) + base → load ptr → read/write field
+u8 FighterControlModuleImpl__special_command_step_impl(BattleObjectModuleAccessor* a, s32 idx) {
+    auto* p = reinterpret_cast<u8*>(a->fighter_control_module);
+    auto* entry = *reinterpret_cast<u8**>(p + static_cast<s64>(idx) * 8 + 0x7f0);
+    return entry[0x9];
+}
+void FighterControlModuleImpl__set_special_command_life_max_impl(BattleObjectModuleAccessor* a, s32 idx, u8 val) {
+    auto* p = reinterpret_cast<u8*>(a->fighter_control_module);
+    auto* entry = *reinterpret_cast<u8**>(p + static_cast<s64>(idx) * 8 + 0x7f0);
+    entry[0xc] = val;
+}
+void FighterControlModuleImpl__set_special_command_life_impl(BattleObjectModuleAccessor* a, s32 idx, bool val) {
+    auto* p = reinterpret_cast<u8*>(a->fighter_control_module);
+    auto* entry = *reinterpret_cast<u8**>(p + static_cast<s64>(idx) * 8 + 0x7f0);
+    entry[0xd] = val & 1;
+}
+void FighterControlModuleImpl__reset_special_command_individual_impl(BattleObjectModuleAccessor* a, s32 idx) {
+    auto* p = reinterpret_cast<u8*>(a->fighter_control_module);
+    auto* entry = *reinterpret_cast<u8**>(p + static_cast<s64>(idx) * 8 + 0x7f0);
+    *reinterpret_cast<u16*>(entry + 0x8) = 0;
+}
+
+// Bit-test patterns (7 instructions: ldr field, lsl mask, tst, cset)
+bool FighterControlModuleImpl__get_stick_button_trigger_impl(BattleObjectModuleAccessor* a, s32 bit) {
+    auto* p = reinterpret_cast<u8*>(a->fighter_control_module);
+    u8 flags = p[0xabe];
+    return (flags & (1u << bit)) != 0;
+}
+bool FighterControlModuleImpl__get_stick_button_repeat_impl(BattleObjectModuleAccessor* a, s32 bit) {
+    auto* p = reinterpret_cast<u8*>(a->fighter_control_module);
+    u8 flags = p[0xac0];
+    return (flags & (1u << bit)) != 0;
+}
+
 } // namespace app::lua_bind
