@@ -6,20 +6,32 @@ void* LinkModule__get_node_object_id_impl(BattleObjectModuleAccessor* a,u64 p1) 
 void* LinkModule__chk_link_stop_impl(BattleObjectModuleAccessor* a) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0xE8/8])(m); }
 void* LinkModule__chk_link_visibility_impl(BattleObjectModuleAccessor* a) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x118/8])(m); }
 void* LinkModule__get_link_scale_impl(BattleObjectModuleAccessor* a) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x128/8])(m); }
+void* LinkModule__get_link_speed_impl(BattleObjectModuleAccessor* a,u64 p1) asm("_ZN3app8lua_bind31LinkModule__get_link_speed_implEPNS_26BattleObjectModuleAccessorE");
 void* LinkModule__get_link_speed_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xd0)); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x140/8])(m,p1); }
+u32 LinkModule__get_model_constraint_flag_impl(BattleObjectModuleAccessor* a) asm("_ZN3app8lua_bind42LinkModule__get_model_constraint_flag_implEPNS_26BattleObjectModuleAccessorEy");
 u32 LinkModule__get_model_constraint_flag_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xd0)); return reinterpret_cast<u32(*)(void*)>(VT(m)[0x368/8])(m); }
+void* LinkModule__get_model_constraint_joint_impl(BattleObjectModuleAccessor* a) asm("_ZN3app8lua_bind43LinkModule__get_model_constraint_joint_implEPNS_26BattleObjectModuleAccessorEy");
 void* LinkModule__get_model_constraint_joint_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xd0)); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x380/8])(m); }
+void* LinkModule__get_model_constraint_target_joint_impl(BattleObjectModuleAccessor* a) asm("_ZN3app8lua_bind50LinkModule__get_model_constraint_target_joint_implEPNS_26BattleObjectModuleAccessorEy");
 void* LinkModule__get_model_constraint_target_joint_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xd0)); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x388/8])(m); }
+u32 LinkModule__get_model_constraint_no_impl(BattleObjectModuleAccessor* a) asm("_ZN3app8lua_bind40LinkModule__get_model_constraint_no_implEPNS_26BattleObjectModuleAccessorEy");
 u32 LinkModule__get_model_constraint_no_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xd0)); return reinterpret_cast<u32(*)(void*)>(VT(m)[0x3a8/8])(m); }
+void* LinkModule__adjust_model_constraint_posture_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) asm("_ZN3app8lua_bind48LinkModule__adjust_model_constraint_posture_implEPNS_26BattleObjectModuleAccessorEy");
 void* LinkModule__adjust_model_constraint_posture_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xd0)); return reinterpret_cast<void*(*)(void*,u64,u64)>(VT(m)[0x3b0/8])(m,p1,p2); }
 void* LinkModule__get_model_constraint_joint_global_position_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x3E8/8])(m,p1); }
 void* LinkModule__get_model_constraint_joint_global_position_recursive_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x3F0/8])(m,p1); }
+void* LinkModule__get_model_constraint_target_joint_rotation_impl(BattleObjectModuleAccessor* a) asm("_ZN3app8lua_bind59LinkModule__get_model_constraint_target_joint_rotation_implEPNS_26BattleObjectModuleAccessorEy");
 void* LinkModule__get_model_constraint_target_joint_rotation_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xd0)); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x3f8/8])(m); }
+void* LinkModule__get_node_rotation_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,u64 p3) asm("_ZN3app8lua_bind34LinkModule__get_node_rotation_implEPNS_26BattleObjectModuleAccessorEy");
 void* LinkModule__get_node_rotation_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,u64 p3) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xd0)); return reinterpret_cast<void*(*)(void*,u64,u64,u64)>(VT(m)[0x400/8])(m,p1,p2,p3); }
+void* LinkModule__get_constraint_model_scale_impl(BattleObjectModuleAccessor* a) asm("_ZN3app8lua_bind43LinkModule__get_constraint_model_scale_implEPNS_26BattleObjectModuleAccessorEy");
 void* LinkModule__get_constraint_model_scale_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xd0)); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x408/8])(m); }
+void* LinkModule__get_constraint_translate_offset_impl(BattleObjectModuleAccessor* a) asm("_ZN3app8lua_bind48LinkModule__get_constraint_translate_offset_implEPNS_26BattleObjectModuleAccessorEy");
 void* LinkModule__get_constraint_translate_offset_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xd0)); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x410/8])(m); }
+bool LinkModule__chk_attribute_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) asm("_ZN3app8lua_bind30LinkModule__chk_attribute_implEPNS_26BattleObjectModuleAccessorEy");
 bool LinkModule__chk_attribute_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xd0)); return reinterpret_cast<bool(*)(void*,u64,u64)>(VT(m)[0x430/8])(m,p1,p2); }
 bool LinkModule__chk_linked_attribute_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<bool(*)(void*,u64)>(VT(m)[0x438/8])(m,p1); }
+void* LinkModule__get_node_catprue_pos_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) asm("_ZN3app8lua_bind37LinkModule__get_node_catprue_pos_implEPNS_26BattleObjectModuleAccessorEy");
 void* LinkModule__get_node_catprue_pos_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xd0)); return reinterpret_cast<void*(*)(void*,u64,u64)>(VT(m)[0x4b8/8])(m,p1,p2); }
 // Remaining 87 LinkModule dispatchers
 void LinkModule__v0x48(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x48/8])(m,p1); }
