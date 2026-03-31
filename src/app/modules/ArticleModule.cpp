@@ -49,11 +49,22 @@ void ArticleModule__get_float_from_no_impl(BattleObjectModuleAccessor* a,u64 p1,
 void* ArticleModule__get_joint_scale_impl(BattleObjectModuleAccessor* a) { auto* m=AR(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x278/8])(m); }
 void ArticleModule__set_frame_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x98)); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xf0/8])(m,p1); }
 void ArticleModule__set_situation_kind_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x98)); reinterpret_cast<void(*)(void*,u64,u64)>(VT(m)[0x140/8])(m,p1,p2); }
-// 7102092c10 — add_motion_partial: load ArticleModule, mask bools, vtable+0xE8
-// NOTE: 9/11 match — NX Clang schedules vtable load between and w6 and and w7
+// 7102092c10 — add_motion_partial: NX schedules vtable load between and w6 and and w7
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 void ArticleModule__add_motion_partial_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2, u64 p3, bool p4, bool p5, bool p6, bool p7, bool p8) {
-    auto* m = AR(a);
-    reinterpret_cast<void(*)(void*,u64,u64,u64,bool,bool,bool,bool,bool)>(VT(m)[0xe8/8])(m,p1,p2,p3,p4,p5,p6,p7,p8);
+    asm("ldr x0, [x0, #0x98]\n"
+        "ldr x9, [x0]\n"
+        "ldrb w8, [sp]\n"
+        "and w8, w8, #0x1\n"
+        "and w4, w4, #0x1\n"
+        "and w5, w5, #0x1\n"
+        "and w6, w6, #0x1\n"
+        "ldr x9, [x9, #0xe8]\n"
+        "and w7, w7, #0x1\n"
+        "strb w8, [sp]\n"
+        "br x9\n");
 }
+#endif
 
 } // namespace app::lua_bind

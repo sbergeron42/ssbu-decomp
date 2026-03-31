@@ -98,16 +98,23 @@ void WeaponKineticEnergyGravity__set_accel_impl(WeaponKineticEnergyGravity* ke, 
     *reinterpret_cast<f32*>(reinterpret_cast<u8*>(ke) + 0x34) = val;
 }
 
-// 7102136300 — SIMD: set speed Y component at +0x10
+// 7102136300 — SIMD: set speed Y component at +0x10 (ldr q1, mov v1.S[1], str q1)
+typedef float v4sf __attribute__((vector_size(16)));
 void WeaponKineticEnergyGravity__set_speed_impl(WeaponKineticEnergyGravity* ke, f32 val) {
-    // ldr q1,[x0,#0x10]; mov v1.S[1],v0.S[0]; str q1,[x0,#0x10]; ret
-    // Sets the Y component (index 1) of the Vec3 at offset +0x10
-    reinterpret_cast<f32*>(reinterpret_cast<u8*>(ke) + 0x10)[1] = val;
+    auto* p = reinterpret_cast<u8*>(ke) + 0x10;
+    v4sf v = *reinterpret_cast<v4sf*>(p);
+    v[1] = val;
+    *reinterpret_cast<v4sf*>(p) = v;
 }
 
 // 7102136310 — ldr s0,[x0,#0x38]; ret
 f32 WeaponKineticEnergyGravity__get_limit_speed_impl(WeaponKineticEnergyGravity* ke) {
     return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(ke) + 0x38);
+}
+
+// 7102136320 — str s0,[x0,#0x38]; ret
+void WeaponKineticEnergyGravity__set_limit_speed_impl(WeaponKineticEnergyGravity* ke, f32 val) {
+    *reinterpret_cast<f32*>(reinterpret_cast<u8*>(ke) + 0x38) = val;
 }
 
 } // namespace app::lua_bind

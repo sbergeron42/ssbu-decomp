@@ -223,5 +223,4 @@ void FighterMotionModuleImpl__set_update_finger_and_face_joint_impl(BattleObject
     auto fn = reinterpret_cast<void (*)(void*, bool)>(vt[0xa0 / 8]);
     fn(chain2, val & 1);
 }
-
 } // namespace app::lua_bind

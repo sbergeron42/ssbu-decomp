@@ -1,5 +1,7 @@
 #include "app/BattleObjectModuleAccessor.h"
 
+typedef float v4sf __attribute__((vector_size(16)));
+
 namespace app::lua_bind {
 
 // 71020cc8d0 — 5 instructions (branch: bounds check)
@@ -56,10 +58,108 @@ void ItemKineticModuleImpl__it_ai_type_impl(BattleObjectModuleAccessor* a, u32 t
 }
 
 // 71020cd030 — it_ai_distance_factor: range check [0.0, 1.0], store to +0xA34
+// NOTE: negated comparisons generate b.lt/b.hi (NaN-catching) matching NX Clang
 void ItemKineticModuleImpl__it_ai_distance_factor_impl(BattleObjectModuleAccessor* a, f32 val) {
-    if (val < 0.0f) return;
-    if (val > 1.0f) return;
+    if (!(val >= 0.0f)) return;
+    if (!(val <= 1.0f)) return;
     *reinterpret_cast<f32*>(reinterpret_cast<u8*>(a->item_kinetic_module) + 0xa34) = val;
 }
+
+// 71020ccc70 — SIMD: NX ext+mov+mov pattern for zero-w
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+void ItemKineticModuleImpl__set_motion_trans_rate_impl(BattleObjectModuleAccessor* a, void* src) {
+    asm("ldr q0, [x1]\n"
+        "fmov s1, wzr\n"
+        "ext v2.16b, v0.16b, v0.16b, #8\n"
+        "mov v2.s[1], v1.s[0]\n"
+        "ldr x8, [x0, #0x68]\n"
+        "mov v0.d[1], v2.d[0]\n"
+        "str q0, [x8, #0xa80]\n"
+        "ret\n");
+}
+#endif
+
+// 71020ccca0 — degrees to radians, store at module+0xa90
+void ItemKineticModuleImpl__set_motion_trans_angle_impl(BattleObjectModuleAccessor* a, f32 angle) {
+    *reinterpret_cast<f32*>(reinterpret_cast<u8*>(a->item_kinetic_module) + 0xa90) = angle * (3.14159265f / 180.0f);
+}
+
+// 71020cccc0 — radians to degrees from module+0xa90
+f32 ItemKineticModuleImpl__get_motion_trans_angle_impl(BattleObjectModuleAccessor* a) {
+    f32 val = *reinterpret_cast<f32*>(reinterpret_cast<u8*>(a->item_kinetic_module) + 0xa90);
+    return val * 180.0f / 3.14159265f;
+}
+
+// 71020cccf0 — SIMD: NX ext+mov+mov pattern for zero-w
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+void ItemKineticModuleImpl__set_motion_trans_rate_2nd_impl(BattleObjectModuleAccessor* a, void* src) {
+    asm("ldr q0, [x1]\n"
+        "fmov s1, wzr\n"
+        "ext v2.16b, v0.16b, v0.16b, #8\n"
+        "mov v2.s[1], v1.s[0]\n"
+        "ldr x8, [x0, #0x68]\n"
+        "mov v0.d[1], v2.d[0]\n"
+        "str q0, [x8, #0xaa0]\n"
+        "ret\n");
+}
+#endif
+
+// 71020ccd20 — degrees to radians, store at module+0xab0
+void ItemKineticModuleImpl__set_motion_trans_angle_2nd_impl(BattleObjectModuleAccessor* a, f32 angle) {
+    *reinterpret_cast<f32*>(reinterpret_cast<u8*>(a->item_kinetic_module) + 0xab0) = angle * (3.14159265f / 180.0f);
+}
+
+// 71020ccd40 — radians to degrees from module+0xab0
+f32 ItemKineticModuleImpl__get_motion_trans_angle_2nd_impl(BattleObjectModuleAccessor* a) {
+    f32 val = *reinterpret_cast<f32*>(reinterpret_cast<u8*>(a->item_kinetic_module) + 0xab0);
+    return val * 180.0f / 3.14159265f;
+}
+
+// 71020ccd70 — two float stores + SIMD zero-zw vec copy at module+0x3d0
+void ItemKineticModuleImpl__set_param_gemini_impl(BattleObjectModuleAccessor* a, f32 p1, f32 p2, v4sf* src) {
+    auto* m = reinterpret_cast<u8*>(a->item_kinetic_module);
+    *reinterpret_cast<f32*>(m + 0xab4) = p1;
+    *reinterpret_cast<f32*>(m + 0xab8) = p2;
+    v4sf v = *src;
+    v[2] = 0;
+    v[3] = 0;
+    *reinterpret_cast<v4sf*>(m + 0x3d0) = v;
+}
+
+// 71020cd000 — clamp [0.0, 1.0] with fccmp pattern (NX divergence)
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+void ItemKineticModuleImpl__it_ai_dir_factor_impl(BattleObjectModuleAccessor* a, f32 val) {
+    asm("fmov s1, #1.0\n"
+        "fcmp s0, s1\n"
+        "fcsel s2, s1, s0, gt\n"
+        "fcmp s0, #0.0\n"
+        "fmov s3, wzr\n"
+        "fcsel s2, s3, s2, mi\n"
+        "fcmp s0, s1\n"
+        "fccmp s0, s3, #0x8, le\n"
+        "ldr x8, [x0, #0x68]\n"
+        "fcsel s0, s2, s0, mi\n"
+        "str s0, [x8, #0xa30]\n"
+        "ret\n");
+}
+#endif
+
+// 71020cd060 — SIMD: NX ext+mov+mov pattern for zero-w
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+void ItemKineticModuleImpl__it_base_rot_impl(BattleObjectModuleAccessor* a, void* src) {
+    asm("ldr q0, [x1]\n"
+        "fmov s1, wzr\n"
+        "ext v2.16b, v0.16b, v0.16b, #8\n"
+        "mov v2.s[1], v1.s[0]\n"
+        "ldr x8, [x0, #0x68]\n"
+        "mov v0.d[1], v2.d[0]\n"
+        "str q0, [x8, #0x9f0]\n"
+        "ret\n");
+}
+#endif
 
 } // namespace app::lua_bind
