@@ -245,4 +245,73 @@ void WorkModule__set_customize_no_impl(BattleObjectModuleAccessor* accessor, s32
     reinterpret_cast<void (*)(void*, s32, s32, s32)>(vtable[0x278 / 8])(module, p1, p2, p3);
 }
 
+// Additional WorkModule dispatchers
+f32 WorkModule__rnd_float_impl(BattleObjectModuleAccessor* accessor, s32 index) {
+    auto* module = accessor->work_module;
+    auto* vtable = *reinterpret_cast<void***>(module);
+    return reinterpret_cast<f32 (*)(void*, s32)>(vtable[0x70 / 8])(module, index);
+}
+f32 WorkModule__sub_float_impl(BattleObjectModuleAccessor* accessor, s32 index, f32 value) {
+    auto* module = accessor->work_module;
+    auto* vtable = *reinterpret_cast<void***>(module);
+    return reinterpret_cast<f32 (*)(void*, s32, f32)>(vtable[0x80 / 8])(module, index, value);
+}
+s32 WorkModule__rnd_int_impl(BattleObjectModuleAccessor* accessor, s32 p1, s32 p2, s32 p3) {
+    auto* module = accessor->work_module;
+    auto* vtable = *reinterpret_cast<void***>(module);
+    return reinterpret_cast<s32 (*)(void*, s32, s32, s32)>(vtable[0xc0 / 8])(module, p1, p2, p3);
+}
+s32 WorkModule__sub_int_impl(BattleObjectModuleAccessor* accessor, s32 index, s32 value, s32 p3) {
+    auto* module = accessor->work_module;
+    auto* vtable = *reinterpret_cast<void***>(module);
+    return reinterpret_cast<s32 (*)(void*, s32, s32, s32)>(vtable[0xe0 / 8])(module, index, value, p3);
+}
+void WorkModule__turn_off_flag_impl(BattleObjectModuleAccessor* accessor, s32 index) {
+    auto* module = accessor->work_module;
+    auto* vtable = *reinterpret_cast<void***>(module);
+    reinterpret_cast<void (*)(void*, s32)>(vtable[0x138 / 8])(module, index);
+}
+
+// More WorkModule dispatchers
+void WorkModule__enable_transition_term_group_impl_2(BattleObjectModuleAccessor* accessor, s32 group) {
+    auto* module = accessor->work_module;
+    auto* vtable = *reinterpret_cast<void***>(module);
+    reinterpret_cast<void (*)(void*, s32)>(vtable[0x148 / 8])(module, group);
+}
+void WorkModule__unable_transition_term_group_impl(BattleObjectModuleAccessor* accessor, s32 group) {
+    auto* module = accessor->work_module;
+    auto* vtable = *reinterpret_cast<void***>(module);
+    reinterpret_cast<void (*)(void*, s32)>(vtable[0x170 / 8])(module, group);
+}
+void WorkModule__unable_transition_term_group_ex_impl(BattleObjectModuleAccessor* accessor, s32 group) {
+    auto* module = accessor->work_module;
+    auto* vtable = *reinterpret_cast<void***>(module);
+    reinterpret_cast<void (*)(void*, s32)>(vtable[0x178 / 8])(module, group);
+}
+void WorkModule__unable_transition_term_impl(BattleObjectModuleAccessor* accessor, s32 term) {
+    auto* module = accessor->work_module;
+    auto* vtable = *reinterpret_cast<void***>(module);
+    reinterpret_cast<void (*)(void*, s32)>(vtable[0x190 / 8])(module, term);
+}
+void WorkModule__v0x1a0(BattleObjectModuleAccessor* accessor, s32 p1) {
+    auto* module = accessor->work_module;
+    auto* vtable = *reinterpret_cast<void***>(module);
+    reinterpret_cast<void (*)(void*, s32)>(vtable[0x1a0 / 8])(module, p1);
+}
+void WorkModule__v0x1b0(BattleObjectModuleAccessor* accessor, s32 p1) {
+    auto* module = accessor->work_module;
+    auto* vtable = *reinterpret_cast<void***>(module);
+    reinterpret_cast<void (*)(void*, s32)>(vtable[0x1b0 / 8])(module, p1);
+}
+void WorkModule__v0x1c0(BattleObjectModuleAccessor* accessor, s32 p1) {
+    auto* module = accessor->work_module;
+    auto* vtable = *reinterpret_cast<void***>(module);
+    reinterpret_cast<void (*)(void*, s32)>(vtable[0x1c0 / 8])(module, p1);
+}
+void WorkModule__v0x200(BattleObjectModuleAccessor* accessor, s32 p1) {
+    auto* module = accessor->work_module;
+    auto* vtable = *reinterpret_cast<void***>(module);
+    reinterpret_cast<void (*)(void*, s32)>(vtable[0x200 / 8])(module, p1);
+}
+
 } // namespace app::lua_bind

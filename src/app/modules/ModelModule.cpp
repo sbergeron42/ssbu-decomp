@@ -17,4 +17,9 @@ void ModelModule__set_alpha_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m
 void ModelModule__set_color_rgb_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=MM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x1F8/8])(m,p1); }
 void ModelModule__enable_gold_eye_impl(BattleObjectModuleAccessor* a) { auto* m=MM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x358/8])(m); }
 void ModelModule__disable_gold_eye_impl(BattleObjectModuleAccessor* a) { auto* m=MM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x360/8])(m); }
+// Additional ModelModule dispatchers
+void ModelModule__set_rotation_order_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=MM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xe0/8])(m,p1); }
+void ModelModule__set_scale_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=MM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xf8/8])(m,p1); }
+void ModelModule__set_scale_z_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=MM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x108/8])(m,p1); }
+void ModelModule__set_temporary_scale_z_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=MM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x110/8])(m,p1); }
 } // namespace app::lua_bind

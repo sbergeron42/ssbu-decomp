@@ -32,4 +32,19 @@ void* ArticleModule__get_article_impl(BattleObjectModuleAccessor* a,u64 p1) { au
 void* ArticleModule__get_article_from_no_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=AR(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x210/8])(m,p1); }
 void* ArticleModule__get_joint_pos_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=AR(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x258/8])(m,p1); }
 void* ArticleModule__get_joint_rotate_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=AR(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x260/8])(m,p1); }
+// Additional ArticleModule dispatchers
+void ArticleModule__shoot_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,bool p3) { auto* m=AR(a); reinterpret_cast<void(*)(void*,u64,u64,bool)>(VT(m)[0x98/8])(m,p1,p2,p3); }
+void ArticleModule__shoot_exist_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,bool p3) { auto* m=AR(a); reinterpret_cast<void(*)(void*,u64,u64,bool)>(VT(m)[0xa0/8])(m,p1,p2,p3); }
+void ArticleModule__set_pos_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=AR(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xa8/8])(m,p1); }
+void ArticleModule__set_weight_impl(BattleObjectModuleAccessor* a,u64 p1,bool p2) { auto* m=AR(a); reinterpret_cast<void(*)(void*,u64,bool)>(VT(m)[0xd8/8])(m,p1,p2); }
+void ArticleModule__set_frame_2nd_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=AR(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xf0/8])(m,p1); }
+void ArticleModule__set_rate_impl(BattleObjectModuleAccessor* a,u64 p1,bool p2) { auto* m=AR(a); reinterpret_cast<void(*)(void*,u64,bool)>(VT(m)[0xf8/8])(m,p1,p2); }
+void ArticleModule__set_visibility_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=AR(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x100/8])(m,p1); }
+void ArticleModule__set_visibility_whole_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,bool p3) { auto* m=AR(a); reinterpret_cast<void(*)(void*,u64,u64,bool)>(VT(m)[0x118/8])(m,p1,p2,p3); }
+void ArticleModule__set_visibility_whole_2_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,u64 p3,u64 p4) { auto* m=AR(a); reinterpret_cast<void(*)(void*,u64,u64,u64,u64)>(VT(m)[0x128/8])(m,p1,p2,p3,p4); }
+void ArticleModule__set_int_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=AR(a); reinterpret_cast<void(*)(void*,u64,u64)>(VT(m)[0x140/8])(m,p1,p2); }
+void ArticleModule__set_int_from_no_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,u64 p3) { auto* m=AR(a); reinterpret_cast<void(*)(void*,u64,u64,u64)>(VT(m)[0x160/8])(m,p1,p2,p3); }
+void ArticleModule__set_float_from_no_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,u64 p3) { auto* m=AR(a); reinterpret_cast<void(*)(void*,u64,u64,u64)>(VT(m)[0x170/8])(m,p1,p2,p3); }
+void ArticleModule__get_float_from_no_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=AR(a); reinterpret_cast<void(*)(void*,u64,u64)>(VT(m)[0x190/8])(m,p1,p2); }
+void* ArticleModule__get_joint_scale_impl(BattleObjectModuleAccessor* a) { auto* m=AR(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x278/8])(m); }
 } // namespace app::lua_bind
