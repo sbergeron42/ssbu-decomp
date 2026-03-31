@@ -42,4 +42,44 @@ f32 FighterControlModuleImpl__get_param_attack_hi4_flick_y_impl(BattleObjectModu
     return static_cast<f32>(*reinterpret_cast<s32*>(param_data + param_offset));
 }
 
+// Field reads — 3 instructions (ldr module, ldr/ldrb field, ret)
+u32 FighterControlModuleImpl__get_attack_s4_turn_impl(BattleObjectModuleAccessor* a) {
+    return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(a->fighter_control_module) + 0x614);
+}
+u32 FighterControlModuleImpl__get_special_s_turn_impl(BattleObjectModuleAccessor* a) {
+    return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(a->fighter_control_module) + 0x610);
+}
+u8 FighterControlModuleImpl__special_command_623_step_impl(BattleObjectModuleAccessor* a) {
+    return reinterpret_cast<u8*>(a->fighter_control_module)[0x620];
+}
+u8 FighterControlModuleImpl__special_command_236236_step_impl(BattleObjectModuleAccessor* a) {
+    return reinterpret_cast<u8*>(a->fighter_control_module)[0x621];
+}
+u8 FighterControlModuleImpl__special_command_214214_step_impl(BattleObjectModuleAccessor* a) {
+    return reinterpret_cast<u8*>(a->fighter_control_module)[0x622];
+}
+u8 FighterControlModuleImpl__special_command_21416_step_impl(BattleObjectModuleAccessor* a) {
+    return reinterpret_cast<u8*>(a->fighter_control_module)[0x624];
+}
+u8 FighterControlModuleImpl__special_command_23634_step_impl(BattleObjectModuleAccessor* a) {
+    return reinterpret_cast<u8*>(a->fighter_control_module)[0x623];
+}
+
+// Field writes — 3-4 instructions
+void FighterControlModuleImpl__set_overwrite_pad_lr_impl(BattleObjectModuleAccessor* a, f32 val) {
+    *reinterpret_cast<f32*>(reinterpret_cast<u8*>(a->fighter_control_module) + 0x60c) = val;
+}
+void FighterControlModuleImpl__reserve_on_attack_button_impl(BattleObjectModuleAccessor* a, u32 val) {
+    *reinterpret_cast<u32*>(reinterpret_cast<u8*>(a->fighter_control_module) + 0x618) = val;
+}
+void FighterControlModuleImpl__set_button_smash_special_s_smash_impl(BattleObjectModuleAccessor* a, u32 val) {
+    *reinterpret_cast<u32*>(reinterpret_cast<u8*>(a->fighter_control_module) + 0x628) = val;
+}
+void FighterControlModuleImpl__reserve_on_special_button_impl(BattleObjectModuleAccessor* a, u32 val) {
+    *reinterpret_cast<u32*>(reinterpret_cast<u8*>(a->fighter_control_module) + 0x62c) = val;
+}
+void FighterControlModuleImpl__set_ref_stick_x_org_impl(BattleObjectModuleAccessor* a, f32 val) {
+    *reinterpret_cast<f32*>(reinterpret_cast<u8*>(a->fighter_control_module) + 0x608) = val;
+}
+
 } // namespace app::lua_bind
