@@ -1,7 +1,10 @@
 #include "types.h"
 
+typedef float v4sf __attribute__((vector_size(16)));
+
 // FighterKineticEnergyMotion — operates on FighterKineticEnergyMotion* directly
 // Direct struct field access at various offsets.
+// Vec4 at +0xa0 stores direction/motion vector (SIMD 128-bit).
 
 struct FighterKineticEnergyMotion;
 
@@ -17,10 +20,41 @@ void FighterKineticEnergyMotion__set_speed_mul_impl(FighterKineticEnergyMotion* 
     *reinterpret_cast<f32*>(reinterpret_cast<u8*>(ke) + 0x9c) = val;
 }
 
-// 7102120fe0 — reverse_chara_dir: negate vec x component and field at 0x88
-// ldr q0,[x0,#0xa0]; fneg s1,s0; mov v0.S[0],v1.S[0]; str q0,[x0,#0xa0];
-// ldr s0,[x0,#0x88]; fneg s0,s0; str s0,[x0,#0x88]; ret
-// This uses SIMD — skip for now.
+// 7102120f70 — set_angle_whole: multiply by deg2rad constant, store to +0x94 and +0x98
+void FighterKineticEnergyMotion__set_angle_whole_impl(FighterKineticEnergyMotion* ke, f32 angle, s32 mode) {
+    auto* p = reinterpret_cast<u8*>(ke);
+    f32 rad = angle * 0.017453292f;
+    *reinterpret_cast<s32*>(p + 0x98) = mode;
+    *reinterpret_cast<f32*>(p + 0x94) = rad;
+    if (mode == 0) {
+        *reinterpret_cast<f32*>(p + 0x90) = rad;
+    }
+}
+
+// 7102120fb0 — set_chara_dir: if changed, negate old dir into vec[0] at +0xa0
+void FighterKineticEnergyMotion__set_chara_dir_impl(FighterKineticEnergyMotion* ke, f32 val) {
+    auto* p = reinterpret_cast<u8*>(ke);
+    f32 old_dir = *reinterpret_cast<f32*>(p + 0x88);
+    if (old_dir != val) {
+        auto* v = reinterpret_cast<v4sf*>(p + 0xa0);
+        f32 neg = -old_dir;
+        *reinterpret_cast<f32*>(p + 0x88) = val;
+        (*v)[0] = neg;
+    }
+}
+
+// 7102120fe0 — reverse_chara_dir: negate vec[0] at +0xa0 and float at +0x88
+void FighterKineticEnergyMotion__reverse_chara_dir_impl(FighterKineticEnergyMotion* ke) {
+    auto* p = reinterpret_cast<u8*>(ke);
+    auto* v = reinterpret_cast<v4sf*>(p + 0xa0);
+    (*v)[0] = -(*v)[0];
+    *reinterpret_cast<f32*>(p + 0x88) = -*reinterpret_cast<f32*>(p + 0x88);
+}
+
+// 7102121080 — set_ground_trans: store 2 to +0x84
+void FighterKineticEnergyMotion__set_ground_trans_impl(FighterKineticEnergyMotion* ke) {
+    *reinterpret_cast<u32*>(reinterpret_cast<u8*>(ke) + 0x84) = 2;
+}
 
 // 7102121000 — and w8,w1,#0x1; strb w8,[x0,#0xc0]; ret
 void FighterKineticEnergyMotion__set_update_flag_impl(FighterKineticEnergyMotion* ke, bool val) {
