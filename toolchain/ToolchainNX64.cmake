@@ -11,8 +11,8 @@ if(NOT DEFINED NX_CLANG_PATH)
     find_program(CMAKE_C_COMPILER clang)
     find_program(CMAKE_CXX_COMPILER clang++)
 else()
-    set(CMAKE_C_COMPILER "${NX_CLANG_PATH}/bin/clang")
-    set(CMAKE_CXX_COMPILER "${NX_CLANG_PATH}/bin/clang++")
+    set(CMAKE_C_COMPILER "${NX_CLANG_PATH}/bin/clang.exe")
+    set(CMAKE_CXX_COMPILER "${NX_CLANG_PATH}/bin/clang++.exe")
 endif()
 
 set(CMAKE_ASM_COMPILER ${CMAKE_C_COMPILER})
@@ -50,5 +50,8 @@ add_compile_definitions(
     MATCHING_HACK_NX_CLANG
 )
 
-# Don't try to link — we just want object files for comparison
+# Allow shared library output for linked ELF with symbol table
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
+# Override the Generic platform's lack of shared lib support
+set(CMAKE_SHARED_LIBRARY_SUFFIX ".elf")
+set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS TRUE)

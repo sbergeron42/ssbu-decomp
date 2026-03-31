@@ -7,5 +7,16 @@ include_directories(include)
 # Collect source files
 file(GLOB_RECURSE SOURCES src/*.cpp src/*.c)
 
-# Build as object library (no linking, just compile to .o for diffing)
-add_library(ssbu-decomp OBJECT ${SOURCES})
+# Build as shared library (linked ELF with symbol table for viking diffing)
+add_library(ssbu-decomp SHARED ${SOURCES})
+
+# Linker flags for decomp matching
+target_link_options(ssbu-decomp PRIVATE
+    -fuse-ld=lld
+    -nostdlib
+    -shared
+    -fPIC
+    -Wl,-Bsymbolic-functions
+    -Wl,--unresolved-symbols=ignore-all
+    -Wl,--no-undefined-version
+)
