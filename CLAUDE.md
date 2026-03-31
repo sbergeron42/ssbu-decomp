@@ -48,6 +48,39 @@ Key module offsets: +0x38 Posture, +0x40 Status, +0x48 Control, +0x50 Work, +0x5
 - FighterManager, FighterInformation, BattleObjectSlow/World operate on their own struct pointers (not accessor)
 - Vtable offset macros: `#define VT(m) (*reinterpret_cast<void***>(m))`
 
+## Multi-Agent Parallel Workflow
+This repo supports parallel decomp work via git worktrees. Multiple Claude Code sessions can work simultaneously on different modules.
+
+### Architecture
+- **Orchestrator** (main repo on `master`): merges worker branches, runs global verification, updates `functions.csv`
+- **Workers** (git worktrees on `worker/pool-*` branches): decomp assigned modules, compile, verify locally
+
+### Worker Rules
+1. **ONLY edit .cpp files for your assigned modules** — see WORKER.md in your worktree
+2. **NEVER modify `data/functions.csv`** — the orchestrator handles this exclusively
+3. **NEVER edit modules assigned to other workers**
+4. Commit to your worker branch, never push to master directly
+
+### Worker Verification
+Workers use `tools/verify_local.py` for self-checks (read-only, no CSV writes):
+```bash
+python tools/verify_local.py --build --modules GroundModule
+```
+
+### Orchestrator Commands
+```bash
+python tools/setup_worktrees.py              # Create worker worktrees
+bash tools/merge_worker.sh pool-a            # Merge a worker branch
+python tools/verify_all.py --update          # Global verify + CSV update
+```
+
+### Setup
+```bash
+python tools/setup_worktrees.py   # Creates 3 worktrees: pool-a, pool-b, pool-c
+cd "../SSBU Decomp-pool-a"        # Open a worker directory
+claude                             # Start Claude Code in the worktree
+```
+
 ## Reference Projects
 - KinokoDecomp-S (Captain Toad, same SDK 8.2.x) — primary reference for toolchain and patterns
 - BotW decomp (zeldaret/botw) — pioneered upstream Clang approach
