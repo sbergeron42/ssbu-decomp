@@ -146,6 +146,7 @@ void GroundModule__v0x7b8(BattleObjectModuleAccessor* a,u64 p1) { auto* m=GM(a);
 void GroundModule__v0x7c0(BattleObjectModuleAccessor* a,u64 p1) { auto* m=GM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x7c0/8])(m,p1); }
 // Auto-generated named dispatchers
 void GroundModule__update_force_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x80/8])(m); }
+void* GroundModule__get_rhombus_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=GM(a); void* ret=reinterpret_cast<void*(*)(void*,bool)>(VT(m)[0xb8/8])(m,p1); asm(""); return ret; }
 void GroundModule__update_shape_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=GM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x88/8])(m,p1); }
 void GroundModule__modify_rhombus_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0xc0/8])(m); }
 void GroundModule__set_offset_x_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x120/8])(m); }
