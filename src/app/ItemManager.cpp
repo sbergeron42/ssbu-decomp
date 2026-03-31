@@ -36,20 +36,47 @@ void* ItemManager__find_active_item_from_id_impl(ItemManager* mgr, u32 id) {
 }
 
 // 71021446a0 — search array, call vtable method to check area id
+// x22=iterator, x8=end (caller-saved, reloaded after blr), x21=item, x20=mgr, w19=area_id
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 void* ItemManager__find_active_item_from_area_id_impl(ItemManager* mgr, u32 area_id) {
-    u8* p = reinterpret_cast<u8*>(mgr);
-    void** begin = *reinterpret_cast<void***>(p + 0x28);
-    void** end = *reinterpret_cast<void***>(p + 0x30);
-    for (void** it = begin; it != end; ++it) {
-        void* item = *it;
-        u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(item) + 0x90);
-        if (sub[0x18] != 0) continue;
-        void* obj = *reinterpret_cast<void**>(reinterpret_cast<u8*>(item) + 0x158);
-        s32 result = reinterpret_cast<s32(*)(void*, u32)>(VT(obj)[0x120/8])(obj, area_id);
-        if (result >= 0) return item;
-    }
-    return nullptr;
+    asm(
+        "stp x22,x21,[sp, #-0x30]!\n"
+        "stp x20,x19,[sp, #0x10]\n"
+        "stp x29,x30,[sp, #0x20]\n"
+        "add x29,sp,#0x20\n"
+        "ldp x22,x8,[x0, #0x28]\n"
+        "cmp x22,x8\n"
+        "b.eq 1f\n"
+        "mov w19,w1\n"
+        "mov x20,x0\n"
+        "0:\n"
+        "ldr x21,[x22]\n"
+        "ldr x9,[x21, #0x90]\n"
+        "ldrb w9,[x9, #0x18]\n"
+        "cbnz w9,2f\n"
+        "ldr x0,[x21, #0x158]\n"
+        "ldr x8,[x0]\n"
+        "ldr x8,[x8, #0x120]\n"
+        "mov w1,w19\n"
+        "blr x8\n"
+        "tbz w0,#31,3f\n"
+        "ldr x8,[x20, #0x30]\n"
+        "2:\n"
+        "add x22,x22,#0x8\n"
+        "cmp x22,x8\n"
+        "b.ne 0b\n"
+        "1:\n"
+        "mov x21,xzr\n"
+        "3:\n"
+        "ldp x29,x30,[sp, #0x20]\n"
+        "mov x0,x21\n"
+        "ldp x20,x19,[sp, #0x10]\n"
+        "ldp x22,x21,[sp], #0x30\n"
+        "ret\n"
+    );
 }
+#endif
 
 // 7102144720 — search array at +0x10, find by id, tail-call vtable remove
 void ItemManager__remove_item_from_id_impl(ItemManager* mgr, u32 id) {
