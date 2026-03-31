@@ -21722,7 +21722,7 @@ Address,Name,Status
 71020c9fa0,FighterInformation__get_log_int_impl,U
 71020cb7e0,FUN_71020cb7e0,U
 71020cb970,FUN_71020cb970,U
-71020cbc40,FighterEntry__fighter_num_impl,U
+71020cbc40,FighterEntry__fighter_num_impl,M
 71020cbc50,FighterEntry__get_fighter_id_impl,U
 71020cbcb0,FighterEntry__current_fighter_id_impl,U
 71020cbd10,FighterEntry__heal_impl,U
@@ -21916,7 +21916,7 @@ Address,Name,Status
 71020f1f20,Circle__store_l2c_table_impl,U
 71020f2800,FUN_71020f2800,U
 71020f2920,FUN_71020f2920,U
-71020f2d80,Article__get_battle_object_id_impl,U
+71020f2d80,Article__get_battle_object_id_impl,M
 71020f2e80,LinkEventTouchItem__load_from_l2c_table_impl,U
 71020f2e90,LinkEventTouchItem__store_l2c_table_impl,U
 71020f2ea0,LinkEventTouchItem__store_l2c_table_impl,U
