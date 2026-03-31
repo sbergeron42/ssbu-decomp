@@ -132,4 +132,7 @@ f32 PostureModule__rot_z_impl(BattleObjectModuleAccessor* a) {
     auto* v = reinterpret_cast<f32*>(reinterpret_cast<void*(*)(void*)>(vt[0xd8/8])(m));
     return v[2];
 }
+void PostureModule__update_rot_y_lr_impl(BattleObjectModuleAccessor* a) { auto* m=a->posture_module; auto* vt=*reinterpret_cast<void***>(m); reinterpret_cast<void(*)(void*)>(vt[0x100/8])(m); }
+void PostureModule__set_scale_2_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=a->posture_module; auto* vt=*reinterpret_cast<void***>(m); reinterpret_cast<void(*)(void*,bool)>(vt[0x120/8])(m,p1); }
+void PostureModule__set_scale_status_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=a->posture_module; auto* vt=*reinterpret_cast<void***>(m); reinterpret_cast<void(*)(void*,u64)>(vt[0x130/8])(m,p1); }
 } // namespace app::lua_bind

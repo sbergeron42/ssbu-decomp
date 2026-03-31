@@ -32,4 +32,10 @@ u32 CaptureModule__capture_node_impl(BattleObjectModuleAccessor* a) { auto* m=CP
 u32 CaptureModule__capture_node_value_impl(BattleObjectModuleAccessor* a) { auto* m=CP(a); return reinterpret_cast<u32(*)(void*)>(VT(m)[0x160/8])(m); }
 f32 CaptureModule__catch_node_pos_y_impl(BattleObjectModuleAccessor* a) { auto* m=CP(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x170/8])(m); }
 f32 CaptureModule__capture_to_catch_node_pos_diff_impl(BattleObjectModuleAccessor* a) { auto* m=CP(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x178/8])(m); }
+void CaptureModule__set_nodes_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CP(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x48/8])(m,p1); }
+void CaptureModule__set_ignore_object_id_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CP(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x58/8])(m,p1); }
+void CaptureModule__node_offset_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=CP(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x90/8])(m,p1); }
+void CaptureModule__thrown_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CP(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xb8/8])(m,p1); }
+void CaptureModule__set_capture_node_offset_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CP(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x158/8])(m,p1); }
+void CaptureModule__update_node_pos_impl(BattleObjectModuleAccessor* a) { auto* m=CP(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x168/8])(m); }
 } // namespace app::lua_bind

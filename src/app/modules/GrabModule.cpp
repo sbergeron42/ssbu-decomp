@@ -17,4 +17,6 @@ void GrabModule__set_rebound_impl(BattleObjectModuleAccessor* a,bool p1) { auto*
 bool GrabModule__is_rebound_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x108/8])(m); }
 bool GrabModule__check_rebound_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=GM(a); return reinterpret_cast<bool(*)(void*,u64)>(VT(m)[0x120/8])(m,p1); }
 void GrabModule__disable_sub_fighter_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x128/8])(m); }
+u32 GrabModule__size_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); return reinterpret_cast<u32(*)(void*)>(VT(m)[0x80/8])(m); }
+void GrabModule__set_size_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=GM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x88/8])(m,p1); }
 } // namespace app::lua_bind

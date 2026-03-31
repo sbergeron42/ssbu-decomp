@@ -24,4 +24,7 @@ void HitModule__set_status_joint_default_impl(BattleObjectModuleAccessor* a,u64 
 void HitModule__set_status_all_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=HM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xc8/8])(m,p1); }
 void HitModule__set_whole_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=HM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xd0/8])(m,p1); }
 void HitModule__set_xlu_global_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=HM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x108/8])(m,p1); }
+void HitModule__set_xlu_frame_global_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=HM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x118/8])(m,p1); }
+void HitModule__set_total_status_disguise_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=HM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x160/8])(m,p1); }
+void HitModule__set_reaction_frame_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=HM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x1d8/8])(m,p1); }
 } // namespace app::lua_bind

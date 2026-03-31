@@ -36,4 +36,7 @@ bool ShieldModule__is_no_m_ball_impl(BattleObjectModuleAccessor* a) { auto* m=SM
 void ShieldModule__set_no_team_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=SM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x158/8])(m,p1); }
 void ShieldModule__set_shield_type_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=SM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x160/8])(m,p1); }
 void ShieldModule__set_target_property_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=SM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x1b8/8])(m,p1); }
+void ShieldModule__set_target_category_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=SM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x1c0/8])(m,p1); }
+void ShieldModule__sleep_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=SM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x1d0/8])(m,p1); }
+void ShieldModule__set_hit_stop_slow_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=SM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x1e8/8])(m,p1); }
 } // namespace app::lua_bind

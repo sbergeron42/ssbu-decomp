@@ -35,4 +35,7 @@ void ReflectorModule__set_attack_limit_impl(BattleObjectModuleAccessor* a,u64 p1
 void ReflectorModule__set_hit_stop_mul_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=RF(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x130/8])(m,p1); }
 void ReflectorModule__set_no_team_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=RF(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x158/8])(m,p1); }
 void ReflectorModule__set_shield_type_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=RF(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x160/8])(m,p1); }
+void ReflectorModule__set_target_property_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=RF(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x1b8/8])(m,p1); }
+void ReflectorModule__set_target_category_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=RF(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x1c0/8])(m,p1); }
+void ReflectorModule__sleep_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=RF(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x1d0/8])(m,p1); }
 } // namespace app::lua_bind
