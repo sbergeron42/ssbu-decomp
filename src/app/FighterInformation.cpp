@@ -110,4 +110,16 @@ bool FighterInformation__is_battle_event_stick_reverse_impl(FighterInformation* 
     return data[0x9ca];
 }
 
+// 71020c9e50 — dead_count (11 instructions, branch on w1==-2)
+s32 FighterInformation__dead_count_impl(FighterInformation* fi, s32 index) {
+    auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);
+    if (index == -2) {
+        s32 a = *reinterpret_cast<s32*>(data + 0xcc);
+        s32 b = *reinterpret_cast<s32*>(data + 0xd0);
+        s32 c = *reinterpret_cast<s32*>(data + 0xd4);
+        return a + b + c;
+    }
+    return *reinterpret_cast<s32*>(data + 0xcc + static_cast<s64>(index) * 4);
+}
+
 } // namespace app::lua_bind
