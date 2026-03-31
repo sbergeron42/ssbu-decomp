@@ -127,4 +127,5 @@ void* KineticModule__suspend_energy_impl(BattleObjectModuleAccessor* a,u64 p1) {
 void* KineticModule__resume_energy_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=KINETIC_MODULE(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x148/8])(m,p1); }
 bool KineticModule__is_suspend_energy_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=KINETIC_MODULE(a); return reinterpret_cast<bool(*)(void*,u64)>(VT(m)[0x150/8])(m,p1); }
 void* KineticModule__sleep_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=KINETIC_MODULE(a); return reinterpret_cast<void*(*)(void*,bool)>(VT(m)[0x168/8])(m,p1); }
+// Multi-bool dispatchers (auto-generated)
 } // namespace app::lua_bind

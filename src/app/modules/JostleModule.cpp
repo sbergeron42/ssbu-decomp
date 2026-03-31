@@ -33,4 +33,5 @@ void JostleModule__set_layer_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* 
 void* JostleModule__target_weight_impl(BattleObjectModuleAccessor* a) { auto* m=COLOR_BLEND_MODULE(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0xa0/8])(m); }
 void JostleModule__set_propagate_push_speed_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=COLOR_BLEND_MODULE(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x140/8])(m,p1); }
 void JostleModule__set_overlap_rate_mul_impl(BattleObjectModuleAccessor* a) { auto* m=COLOR_BLEND_MODULE(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x158/8])(m); }
+// Multi-bool dispatchers (auto-generated)
 } // namespace app::lua_bind

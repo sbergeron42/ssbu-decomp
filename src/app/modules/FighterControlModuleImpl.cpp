@@ -123,4 +123,5 @@ bool FighterControlModuleImpl__get_stick_button_repeat_impl(BattleObjectModuleAc
 void* FighterControlModuleImpl__delete_reserve_turn_lr_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=CONTROL_MODULE(a); return reinterpret_cast<void*(*)(void*,u64,u64)>(VT(m)[0x450/8])(m,p1,p2); }
 void FighterControlModuleImpl__reset_special_command_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=CONTROL_MODULE(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x460/8])(m,p1); }
 void* FighterControlModuleImpl__get_special_command_lr_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CONTROL_MODULE(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x470/8])(m,p1); }
+// Multi-bool dispatchers (auto-generated)
 } // namespace app::lua_bind

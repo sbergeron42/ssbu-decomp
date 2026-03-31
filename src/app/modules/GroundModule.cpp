@@ -206,4 +206,7 @@ void GroundModule__update_lr_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a)
 void GroundModule__set_shape_data_rhombus_modify_node_offset_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x58)); reinterpret_cast<void(*)(void*,u64,u64)>(VT(m)[0x7c0/8])(m,p1,p2); }
 void GroundModule__set_rhombus_modify_air_lasso_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x58)); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x7f8/8])(m,p1); }
 void GroundModule__set_rhombus_modify_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=GM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x800/8])(m,p1); }
+// Multi-bool dispatchers (auto-generated)
+void* GroundModule__ground_touch_flag_ex_impl(BattleObjectModuleAccessor* a,bool p1,bool p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x58)); return reinterpret_cast<void*(*)(void*,bool,bool)>(VT(m)[0x460/8])(m,p1,p2); }
+void GroundModule__set_reverse_direction_impl(BattleObjectModuleAccessor* a,bool p1,bool p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x58)); reinterpret_cast<void(*)(void*,bool,bool)>(VT(m)[0x7d8/8])(m,p1,p2); }
 } // namespace app::lua_bind

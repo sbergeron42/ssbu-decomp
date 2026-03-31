@@ -53,4 +53,10 @@ void* ItemModule__scale_attach_impl(BattleObjectModuleAccessor* a,u64 p1) { auto
 void ItemModule__set_attach_item_action_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=HIT_MODULE(a); reinterpret_cast<void(*)(void*,u64,u64)>(VT(m)[0x280/8])(m,p1,p2); }
 void ItemModule__set_have_item_team_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=HIT_MODULE(a); reinterpret_cast<void(*)(void*,u64,u64)>(VT(m)[0x290/8])(m,p1,p2); }
 void ItemModule__set_change_status_event_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=HIT_MODULE(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x2b0/8])(m,p1); }
+// Multi-bool dispatchers (auto-generated)
+void ItemModule__have_item_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,u64 p3,bool p4,bool p5) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xc8)); reinterpret_cast<void(*)(void*,u64,u64,u64,bool,bool)>(VT(m)[0x58/8])(m,p1,p2,p3,p4,p5); }
+void ItemModule__have_item_instance_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,bool p3,bool p4,bool p5,bool p6) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xc8)); reinterpret_cast<void(*)(void*,u64,u64,bool,bool,bool,bool)>(VT(m)[0x68/8])(m,p1,p2,p3,p4,p5,p6); }
+void ItemModule__eject_have_item_impl(BattleObjectModuleAccessor* a,u64 p1,bool p2,bool p3) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xc8)); reinterpret_cast<void(*)(void*,u64,bool,bool)>(VT(m)[0x240/8])(m,p1,p2,p3); }
+void ItemModule__eject_attach_item_impl(BattleObjectModuleAccessor* a,u64 p1,bool p2,bool p3,bool p4) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xc8)); reinterpret_cast<void(*)(void*,u64,bool,bool,bool)>(VT(m)[0x248/8])(m,p1,p2,p3,p4); }
+void ItemModule__eject_attach_impl(BattleObjectModuleAccessor* a,u64 p1,bool p2,bool p3) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xc8)); reinterpret_cast<void(*)(void*,u64,bool,bool)>(VT(m)[0x250/8])(m,p1,p2,p3); }
 } // namespace app::lua_bind

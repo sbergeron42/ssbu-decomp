@@ -211,4 +211,5 @@ void LinkModule__set_constraint_translate_offset_impl(BattleObjectModuleAccessor
 void LinkModule__set_unreference_parent_scale_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x508/8])(m,p1); }
 void* LinkModule__model_constraint_node_top_z_impl(BattleObjectModuleAccessor* a) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x510/8])(m); }
 bool LinkModule__is_parent_spycloak_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<bool(*)(void*,u64)>(VT(m)[0x518/8])(m,p1); }
+// Multi-bool dispatchers (auto-generated)
 } // namespace app::lua_bind

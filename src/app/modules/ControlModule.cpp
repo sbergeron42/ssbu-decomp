@@ -159,4 +159,5 @@ void ControlModule__reset_special_command_impl(BattleObjectModuleAccessor* a,boo
 void* ControlModule__reverse_special_command_impl(BattleObjectModuleAccessor* a) { auto* m=CONTROL_MODULE(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x468/8])(m); }
 void* ControlModule__reverse_x_frame_impl(BattleObjectModuleAccessor* a) { auto* m=CONTROL_MODULE(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x478/8])(m); }
 void ControlModule__set_special_command_life_extend_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CONTROL_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x488/8])(m,p1); }
+// Multi-bool dispatchers (auto-generated)
 } // namespace app::lua_bind

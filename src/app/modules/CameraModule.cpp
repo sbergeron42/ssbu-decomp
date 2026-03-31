@@ -114,4 +114,5 @@ void* CameraModule__req_quake_impl(BattleObjectModuleAccessor* a,u64 p1) { auto*
 void* CameraModule__req_quake_pos_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=CAMERA_MODULE(a); return reinterpret_cast<void*(*)(void*,u64,u64)>(VT(m)[0x208/8])(m,p1,p2); }
 void* CameraModule__stop_quake_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CAMERA_MODULE(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x210/8])(m,p1); }
 void* CameraModule__start_final_zoom_out_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,u64 p3) { auto* m=CAMERA_MODULE(a); return reinterpret_cast<void*(*)(void*,u64,u64,u64)>(VT(m)[0x220/8])(m,p1,p2,p3); }
+// Multi-bool dispatchers (auto-generated)
 } // namespace app::lua_bind

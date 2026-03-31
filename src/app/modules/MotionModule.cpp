@@ -134,4 +134,7 @@ void MotionModule__set_next_no_comp_impl(BattleObjectModuleAccessor* a) { auto* 
 void MotionModule__set_remove_change_motion_partial_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=MOTION_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x598/8])(m,p1); }
 void MotionModule__set_remove_partial_after_intp_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=MOTION_MODULE(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x5a0/8])(m,p1); }
 void MotionModule__set_part_animcmd_fix_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=MOTION_MODULE(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x5d0/8])(m,p1); }
+// Multi-bool dispatchers (auto-generated)
+void* MotionModule__trans_tra_impl(BattleObjectModuleAccessor* a,u64 p1,bool p2,bool p3) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x88)); return reinterpret_cast<void*(*)(void*,u64,bool,bool)>(VT(m)[0x1a0/8])(m,p1,p2,p3); }
+void* MotionModule__trans_tra_2nd_impl(BattleObjectModuleAccessor* a,u64 p1,bool p2,bool p3) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x88)); return reinterpret_cast<void*(*)(void*,u64,bool,bool)>(VT(m)[0x1a8/8])(m,p1,p2,p3); }
 } // namespace app::lua_bind

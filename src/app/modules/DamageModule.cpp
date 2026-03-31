@@ -127,4 +127,6 @@ bool DamageModule__is_critical_hit_impl(BattleObjectModuleAccessor* a) {
     auto* m = DMG(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x2d8/8])(m);
 }
 
+// Multi-bool dispatchers (auto-generated)
+void* DamageModule__sleep_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xa8)); return reinterpret_cast<void*(*)(void*,bool)>(VT(m)[0x50/8])(m,p1); }
 } // namespace app::lua_bind

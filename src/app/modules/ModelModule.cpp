@@ -35,4 +35,6 @@ void ModelModule__set_render_offset_position_impl(BattleObjectModuleAccessor* a,
 void ModelModule__set_depth_offset_impl(BattleObjectModuleAccessor* a) { auto* m=TEAM_MODULE(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x2e8/8])(m); }
 void ModelModule__set_depth_stencil_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=TEAM_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x2f0/8])(m,p1); }
 void* ModelModule__virtual_joint_tra_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=TEAM_MODULE(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x328/8])(m,p1); }
+// Multi-bool dispatchers (auto-generated)
+void ModelModule__set_joint_translate_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,bool p3,bool p4) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x78)); reinterpret_cast<void(*)(void*,u64,u64,bool,bool)>(VT(m)[0x1a8/8])(m,p1,p2,p3,p4); }
 } // namespace app::lua_bind
