@@ -26,41 +26,60 @@ WORKERS = {
     'pool-a': {
         'branch': 'worker/pool-a',
         'modules': [
-            'GroundModule', 'ItemModule', 'LinkModule', 'PhysicsModule', 'AttackModule',
-            'HitModule', 'ShieldModule', 'CaptureModule', 'GrabModule', 'ReflectModule',
-            'ReflectorModule', 'AbsorberModule', 'SearchModule',
+            # Fix the 87 non-matching compiled functions (highest value)
+            'ALL_NON_MATCHING',
         ],
-        'desc': 'Large accessor modules — vtable dispatchers + complex patterns',
+        'desc': 'FIX non-matching functions — compiler tricks, register allocation, prologue scheduling. Use verify_all.py to list them, viking check for debugging.',
     },
     'pool-b': {
         'branch': 'worker/pool-b',
         'modules': [
-            'FighterManager', 'FighterInformation', 'FighterMotionModuleImpl',
-            'FighterControlModuleImpl', 'FighterWorkModuleImpl', 'FighterStatusModuleImpl',
-            'FighterAreaModuleImpl', 'ItemKineticModuleImpl', 'ItemCameraModuleImpl',
-            'KineticEnergy', 'KineticEnergyNormal', 'KineticEnergyRotNormal',
-            'ControlModule', 'StatusModule', 'WorkModule', 'KineticModule',
-            'BattleObjectManager', 'BattleObjectSlow', 'BattleObjectWorld',
-            'FighterEntry', 'Article',
+            # Item ecosystem
+            'Item', 'ItemKineticModuleImpl', 'ItemCameraModuleImpl', 'ItemParamAccessor',
+            'ItemDamageModuleImpl', 'ItemManager', 'ItemInkPaintModuleImpl',
+            # Weapon kinetic
+            'WeaponKineticEnergyGravity', 'WeaponSnakeNikitaMissileKineticEnergyNormal',
+            'WeaponSnakeMissileKineticEnergyNormal',
         ],
-        'desc': 'Struct/manager modules — field access + vtable dispatch',
+        'desc': 'Item + Weapon ecosystem — struct accessors, SIMD, vtable dispatch',
     },
     'pool-c': {
         'branch': 'worker/pool-c',
         'modules': [
-            'CameraModule', 'EffectModule', 'SoundModule', 'DamageModule', 'ModelModule',
-            'PostureModule', 'MotionModule', 'MotionAnimcmdModule', 'JostleModule',
-            'ShadowModule', 'ShakeModule', 'SlowModule', 'StopModule', 'TurnModule',
-            'TeamModule', 'CancelModule', 'VisibilityModule', 'InkPaintModule',
-            'ColorBlendModule', 'ComboModule', 'AreaModule', 'ArticleModule',
-            'LuaModule', 'SlopeModule',
-            # All event/weapon types
+            # Fighter subsystems
+            'FighterManager', 'FighterInformation', 'FighterEntry',
+            'FighterControlModuleImpl', 'FighterMotionModuleImpl',
+            'FighterStatusModuleImpl', 'FighterStopModuleImpl', 'FighterWorkModuleImpl',
+            'FighterCutInManager',
+        ],
+        'desc': 'Fighter subsystems — complex game logic, external branches, struct access',
+    },
+    'pool-d': {
+        'branch': 'worker/pool-d',
+        'modules': [
+            # New modules that need source files created
+            'FighterBayonettaFinalModule', 'FighterKineticEnergyController',
+            'FighterKineticEnergyGravity', 'FighterKineticEnergyMotion',
+            'FighterPitBFinalModule', 'FighterParamAccessor2',
+            'BossManager', 'StageManager', 'KineticEnergyNormal', 'KineticEnergy',
+        ],
+        'desc': 'Fighter kinetic/final modules + managers — new source files needed',
+    },
+    'pool-e': {
+        'branch': 'worker/pool-e',
+        'modules': [
+            # Serialization (store_l2c_table large variants) + data structs
+            'AreaContactLog', 'AttackAbsoluteData', 'AttackData', 'DamageInfo',
+            'DamageLog', 'stWaterAreaInfo', 'Rhombus2', 'Circle', 'lib',
+            # Remaining event store_l2c_table large functions
             'GimmickEvent*', 'LinkEvent*', 'FighterPikmin*', 'FighterCloud*',
             'FighterInkling*', 'FighterPokemon*', 'FighterRidley*', 'FighterRyu*',
-            'FighterSpirits*', 'FighterBayonetta*', 'Weapon*',
-            'OnCalcParam*', 'Item', 'Weapon', 'lib',
+            'WeaponRobotHominglaserLinkEvent*', 'WeaponShizueFishingrodLinkEvent*',
+            'OnCalcParam*', 'GimmickEventPresenter',
+            # Remaining misc
+            'AttackModule', 'StatusModule', 'BattleObjectWorld', 'BattleObjectSlow',
         ],
-        'desc': 'Small modules + events — boilerplate files + effects/audio',
+        'desc': 'Serialization functions (store/load_l2c_table) + data structs + misc remaining',
     },
 }
 
