@@ -104,4 +104,5 @@ bool FighterManager__is_process_movie_impl(FighterManager* mgr) {
     return *reinterpret_cast<u32*>(p2 + 0x20) != 0;
 }
 
+void FighterManager__reset_fighter_impl(FighterManager* obj) { }
 } // namespace app::lua_bind

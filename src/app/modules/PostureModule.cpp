@@ -83,6 +83,9 @@ void PostureModule__set_sync_constraint_joint_impl(BattleObjectModuleAccessor* a
 void* PostureModule__pos_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x38)); void* ret = reinterpret_cast<void*(*)(void*)>(VT(m)[0x60/8])(m); asm(""); return ret; }
 // pos_x calls vtable[0x60/8] then returns result[0] (9 insns)
 f32 PostureModule__pos_x_impl(BattleObjectModuleAccessor* a) {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("" ::: "memory");
+#endif
     auto* m = a->posture_module; auto* vt = *reinterpret_cast<void***>(m);
     auto* v = reinterpret_cast<f32*>(reinterpret_cast<void*(*)(void*)>(vt[0x60/8])(m));
     return v[0];

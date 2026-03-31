@@ -21,4 +21,6 @@ void VisibilityModule__set_status_default_impl2(BattleObjectModuleAccessor* a,u6
 void VisibilityModule__set_status_default_int64_impl2(BattleObjectModuleAccessor* a,u64 p1) { auto* m=VM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x68/8])(m,p1); }
 void VisibilityModule__set_whole_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=VM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0xc0/8])(m,p1); }
 void VisibilityModule__set_visibility_mode_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=VM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x110/8])(m,p1); }
+void VisibilityModule__set_status_default_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x150)); reinterpret_cast<void(*)(void*,u64,u64)>(VT(m)[0x60/8])(m,p1,p2); }
+void VisibilityModule__set_status_default_int64_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x150)); reinterpret_cast<void(*)(void*,u64,u64)>(VT(m)[0x68/8])(m,p1,p2); }
 } // namespace app::lua_bind

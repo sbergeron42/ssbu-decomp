@@ -91,4 +91,5 @@ void StatusModule__set_succeeds_bit_impl(BattleObjectModuleAccessor* a, u64 p1) 
     reinterpret_cast<void(*)(void*,u64)>(vt[0x1a8/8])(m,p1);
 }
 
+void* StatusModule__status_kind_que_from_script_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x40)); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x60/8])(m); }
 } // namespace app::lua_bind

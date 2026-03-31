@@ -38,7 +38,7 @@ bool FighterInformation__is_backshield_impl(FighterInformation* fi) {
 }
 bool FighterInformation__is_operation_cpu_impl(FighterInformation* fi) {
     auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);
-    return *reinterpret_cast<bool*>(data + 0x5f);
+    return *reinterpret_cast<bool*>(data + 0x92);
 }
 u32 FighterInformation__stock_count_impl(FighterInformation* fi) {
     auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);

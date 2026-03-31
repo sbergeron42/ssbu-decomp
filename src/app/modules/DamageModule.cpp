@@ -129,4 +129,5 @@ bool DamageModule__is_critical_hit_impl(BattleObjectModuleAccessor* a) {
 
 // Multi-bool dispatchers (auto-generated)
 void* DamageModule__sleep_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xa8)); return reinterpret_cast<void*(*)(void*,bool)>(VT(m)[0x50/8])(m,p1); }
+void DamageModule__start_damage_info_log_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xa8)); reinterpret_cast<void(*)(void*)>(VT(m)[0x290/8])(m); }
 } // namespace app::lua_bind

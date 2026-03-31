@@ -3,6 +3,8 @@
 // FighterMotionModuleImpl — accesses MotionModule at accessor+0x88
 // Simple tail-call wrappers that load module, mask bools, and branch
 
+struct FighterMotionModuleImpl;
+#define VT(m) (*reinterpret_cast<void***>(m))
 namespace app::lua_bind {
 
 // 71020aa010 — get_cancel_frame (3 insns: ldr+and+b)
@@ -21,4 +23,5 @@ void FighterMotionModuleImpl__set_blend_waist_impl(BattleObjectModuleAccessor* a
     module[0x2f2] = val & 1;
 }
 
+void FighterMotionModuleImpl__set_update_finger_and_face_joint_impl(FighterMotionModuleImpl* obj,bool p1) { reinterpret_cast<void(*)(FighterMotionModuleImpl*,bool)>(VT(obj)[0x10/8])(obj,p1); }
 } // namespace app::lua_bind
