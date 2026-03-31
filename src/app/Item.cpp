@@ -9,6 +9,9 @@ struct Item;
 struct LinkEventCaptureItem;
 struct LinkEventTouchItem;
 
+// LargeRet forces x8 reservation (indirect return), making vtable temp use x9
+struct LargeRet { u64 a, b, c; };
+
 #define VT(p) (*reinterpret_cast<void***>(p))
 
 namespace app::lua_bind {
@@ -56,9 +59,9 @@ void LinkEventCaptureItem__load_from_l2c_table_impl(LinkEventCaptureItem* ev, u6
 }
 
 // 71020b60f0 — ldr x9,[x0]; ldr x1,[x9,#0x28]; br x1
-// NOTE: NX Clang uses x9 for vtable temp; vanilla Clang 8 uses x8 (regalloc divergence)
-void LinkEventCaptureItem__store_l2c_table_impl(LinkEventCaptureItem* ev) {
-    reinterpret_cast<void(*)(LinkEventCaptureItem*)>(VT(ev)[0x28/8])(ev);
+// LargeRet reserves x8 for indirect return → compiler uses x9 for vtable temp
+LargeRet LinkEventCaptureItem__store_l2c_table_impl(LinkEventCaptureItem* ev) {
+    return reinterpret_cast<LargeRet(*)(LinkEventCaptureItem*)>(VT(ev)[0x28/8])(ev);
 }
 
 // --- LinkEventTouchItem ---
@@ -69,9 +72,8 @@ void LinkEventTouchItem__load_from_l2c_table_impl(LinkEventTouchItem* ev, u64 p1
 }
 
 // 71020f2e90 — ldr x9,[x0]; ldr x1,[x9,#0x28]; br x1
-// NOTE: NX Clang uses x9 for vtable temp; vanilla Clang 8 uses x8 (regalloc divergence)
-void LinkEventTouchItem__store_l2c_table_impl(LinkEventTouchItem* ev) {
-    reinterpret_cast<void(*)(LinkEventTouchItem*)>(VT(ev)[0x28/8])(ev);
+LargeRet LinkEventTouchItem__store_l2c_table_impl(LinkEventTouchItem* ev) {
+    return reinterpret_cast<LargeRet(*)(LinkEventTouchItem*)>(VT(ev)[0x28/8])(ev);
 }
 
 } // namespace app::lua_bind

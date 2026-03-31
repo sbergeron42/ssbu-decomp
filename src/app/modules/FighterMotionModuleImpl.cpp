@@ -23,5 +23,11 @@ void FighterMotionModuleImpl__set_blend_waist_impl(BattleObjectModuleAccessor* a
     module[0x2f2] = val & 1;
 }
 
-void FighterMotionModuleImpl__set_update_finger_and_face_joint_impl(FighterMotionModuleImpl* obj,bool p1) { reinterpret_cast<void(*)(FighterMotionModuleImpl*,bool)>(VT(obj)[0x10/8])(obj,p1); }
+// 71020aa490 — accessor dispatch: accessor→motion→+0x10→+0x8→vtable[0xa0/8]
+void FighterMotionModuleImpl__set_update_finger_and_face_joint_impl(BattleObjectModuleAccessor* a, bool p1) {
+    auto* motion = reinterpret_cast<u8*>(a->motion_module);
+    auto* sub = *reinterpret_cast<u8**>(motion + 0x10);
+    auto* obj = *reinterpret_cast<void**>(sub + 0x8);
+    reinterpret_cast<void(*)(void*, bool)>(VT(obj)[0xa0/8])(obj, p1);
+}
 } // namespace app::lua_bind
