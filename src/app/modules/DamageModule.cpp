@@ -130,4 +130,10 @@ bool DamageModule__is_critical_hit_impl(BattleObjectModuleAccessor* a) {
 // Multi-bool dispatchers (auto-generated)
 void* DamageModule__sleep_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xa8)); return reinterpret_cast<void*(*)(void*,bool)>(VT(m)[0x50/8])(m,p1); }
 void DamageModule__start_damage_info_log_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xa8)); reinterpret_cast<void(*)(void*)>(VT(m)[0x290/8])(m); }
+// 710200b6c0 — set_force_damage: load DamageModule, mask bools w5/w6/w7 + stack bool, vtable+0xA0
+void DamageModule__set_force_damage_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2, u64 p3, u64 p4, bool p5, bool p6, bool p7, bool p8) {
+    auto* m = DMG(a);
+    reinterpret_cast<void(*)(void*,u64,u64,u64,u64,bool,bool,bool,bool)>(VT(m)[0xa0/8])(m,p1,p2,p3,p4,p5,p6,p7,p8);
+}
+
 } // namespace app::lua_bind

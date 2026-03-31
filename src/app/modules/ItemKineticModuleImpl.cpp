@@ -29,6 +29,7 @@ void ItemKineticModuleImpl__set_kinetic_flags_impl(BattleObjectModuleAccessor* a
 void ItemKineticModuleImpl__set_interpolate_rate_impl(BattleObjectModuleAccessor* a, f32 val) {
     *reinterpret_cast<f32*>(reinterpret_cast<u8*>(a->item_kinetic_module) + 0xa70) = val;
 }
+// NOTE: NX Clang x8/x9 regalloc divergence — uses x8+w9 vs our x9+w8
 void ItemKineticModuleImpl__it_ai_dir_rot_mode_impl(BattleObjectModuleAccessor* a, u32 val) {
     reinterpret_cast<u8*>(a->item_kinetic_module)[0xa50] = val & 1;
 }
@@ -41,6 +42,23 @@ void ItemKineticModuleImpl__on_kinetic_flag_impl(BattleObjectModuleAccessor* a, 
 void ItemKineticModuleImpl__off_kinetic_flag_impl(BattleObjectModuleAccessor* a, u32 flag) {
     auto* p = reinterpret_cast<u8*>(a->item_kinetic_module);
     *reinterpret_cast<u32*>(p + 0x9d8) &= ~flag;
+}
+
+// 71020ccfd0 — it_ai_type: stores type + two Vec3 structs via 64-bit copies
+void ItemKineticModuleImpl__it_ai_type_impl(BattleObjectModuleAccessor* a, u32 type, u64* v1, u64* v2) {
+    auto* p = reinterpret_cast<u8*>(a->item_kinetic_module);
+    *reinterpret_cast<u32*>(p + 0xa04) = type;
+    *reinterpret_cast<u64*>(p + 0xa28) = v1[1];
+    *reinterpret_cast<u64*>(p + 0xa20) = v1[0];
+    *reinterpret_cast<u64*>(p + 0xa18) = v2[1];
+    *reinterpret_cast<u64*>(p + 0xa10) = v2[0];
+}
+
+// 71020cd030 — it_ai_distance_factor: range check [0.0, 1.0], store to +0xA34
+void ItemKineticModuleImpl__it_ai_distance_factor_impl(BattleObjectModuleAccessor* a, f32 val) {
+    if (val < 0.0f) return;
+    if (val > 1.0f) return;
+    *reinterpret_cast<f32*>(reinterpret_cast<u8*>(a->item_kinetic_module) + 0xa34) = val;
 }
 
 } // namespace app::lua_bind

@@ -5,6 +5,7 @@ struct WeaponRobotHominglaserLinkEventSearch;
 
 namespace app::lua_bind {
 
+void WeaponRobotHominglaserLinkEventSearch__store_l2c_table_impl(WeaponRobotHominglaserLinkEventSearch* ev) { reinterpret_cast<void(*)(WeaponRobotHominglaserLinkEventSearch*)>(VT(ev)[0x28/8])(ev); }
 void WeaponRobotHominglaserLinkEventSearch__load_from_l2c_table_impl(WeaponRobotHominglaserLinkEventSearch* obj,u64 p1) { reinterpret_cast<void(*)(WeaponRobotHominglaserLinkEventSearch*,u64)>(VT(obj)[0x38/8])(obj,p1); }
 
 } // namespace app::lua_bind

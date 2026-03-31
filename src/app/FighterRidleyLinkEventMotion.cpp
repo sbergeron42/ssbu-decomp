@@ -5,6 +5,7 @@ struct FighterRidleyLinkEventMotion;
 
 namespace app::lua_bind {
 
+void FighterRidleyLinkEventMotion__store_l2c_table_impl(FighterRidleyLinkEventMotion* ev) { reinterpret_cast<void(*)(FighterRidleyLinkEventMotion*)>(VT(ev)[0x28/8])(ev); }
 void FighterRidleyLinkEventMotion__load_from_l2c_table_impl(FighterRidleyLinkEventMotion* obj,u64 p1) { reinterpret_cast<void(*)(FighterRidleyLinkEventMotion*,u64)>(VT(obj)[0x38/8])(obj,p1); }
 
 } // namespace app::lua_bind

@@ -5,6 +5,7 @@ struct GimmickEventDrumCheckNeedHide;
 
 namespace app::lua_bind {
 
+void GimmickEventDrumCheckNeedHide__store_l2c_table_impl(GimmickEventDrumCheckNeedHide* ev) { reinterpret_cast<void(*)(GimmickEventDrumCheckNeedHide*)>(VT(ev)[0x28/8])(ev); }
 void GimmickEventDrumCheckNeedHide__load_from_l2c_table_impl(GimmickEventDrumCheckNeedHide* obj,u64 p1) { reinterpret_cast<void(*)(GimmickEventDrumCheckNeedHide*,u64)>(VT(obj)[0x38/8])(obj,p1); }
 
 } // namespace app::lua_bind
