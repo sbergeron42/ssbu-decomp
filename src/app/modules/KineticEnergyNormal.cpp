@@ -12,8 +12,14 @@ void KineticEnergyNormal__set_speed_impl(KineticEnergyNormal* ke, v4sf* src) {
     *reinterpret_cast<v4sf*>(reinterpret_cast<u8*>(ke) + 0x10) = v;
 }
 void KineticEnergyNormal__set_speed_3d_impl(KineticEnergyNormal* ke, v4sf* src) {
-    v4sf v = *src; v[3] = 0.0f;
-    *reinterpret_cast<v4sf*>(reinterpret_cast<u8*>(ke) + 0x10) = v;
+    v4sf v = *src;
+    f32 zero = 0.0f;
+    v4sf rot = __builtin_shufflevector(v, v, 2, 3, 0, 1);
+    rot[1] = zero;
+    typedef unsigned long long v2di __attribute__((vector_size(16)));
+    v2di vi = (v2di)v;
+    vi[1] = ((v2di)rot)[0];
+    *reinterpret_cast<v4sf*>(reinterpret_cast<u8*>(ke) + 0x10) = (v4sf)vi;
 }
 
 // Getters — return pointer to field
@@ -31,5 +37,10 @@ void KineticEnergyNormal__set_limit_speed_impl(KineticEnergyNormal* ke, void* sr
 // Bool flag at +0x80
 void KineticEnergyNormal__on_consider_ground_normal_impl(KineticEnergyNormal* ke) { *reinterpret_cast<u8*>(reinterpret_cast<u8*>(ke) + 0x80) = 1; }
 void KineticEnergyNormal__off_consider_ground_normal_impl(KineticEnergyNormal* ke) { *reinterpret_cast<u8*>(reinterpret_cast<u8*>(ke) + 0x80) = 0; }
+
+// 71020f8400 — ldrb w0,[x0,#0x80]; ret
+u8 KineticEnergyNormal__is_consider_ground_normal_impl(KineticEnergyNormal* ke) {
+    return *reinterpret_cast<u8*>(reinterpret_cast<u8*>(ke) + 0x80);
+}
 
 } // namespace app::lua_bind
