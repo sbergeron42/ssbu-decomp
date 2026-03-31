@@ -11,14 +11,14 @@ Targeting the final version: **patch 13.0.4**.
 | Category | Count | Percentage |
 |----------|------:|------------|
 | **Total functions** | 39,635 | |
-| Matching | 1,008 | 2.54% |
+| Matching | 1,138 | 2.87% |
 | Equivalent | 2 | 0.01% |
 | Non-matching | 0 | 0.00% |
-| **Decompiled** | **1,010** | **2.55%** |
-| Undecompiled | 38,625 | 97.45% |
+| **Decompiled** | **1,140** | **2.88%** |
+| Undecompiled | 38,495 | 97.12% |
 
 ```
-Decompiled  [#                                       ]  1,010 / 39,635  (2.55%)
+Decompiled  [#                                       ]  1,140 / 39,635  (2.88%)
 ```
 
 ## Build Info
