@@ -71,25 +71,13 @@ void WorkModule__add_int_impl(BattleObjectModuleAccessor* accessor, s32 index, s
 }
 
 // 710208dc50 — mul_int  [vtable+0xe8]
-void WorkModule__mul_int_impl(BattleObjectModuleAccessor* accessor, s32 index, s32 value, s32 p3) {
-    auto* module = accessor->work_module;
-    auto* vtable = *reinterpret_cast<void***>(module);
-    reinterpret_cast<void (*)(void*, s32, s32, s32)>(vtable[0xe8 / 8])(module, index, value, p3);
-}
+void* WorkModule__mul_int_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x50)); return reinterpret_cast<void*(*)(void*,u64,u64)>(VT(m)[0xe8/8])(m,p1,p2); }
 
 // 710208dc60 — div_int  [vtable+0xf0]
-void WorkModule__div_int_impl(BattleObjectModuleAccessor* accessor, s32 index, s32 value, s32 p3) {
-    auto* module = accessor->work_module;
-    auto* vtable = *reinterpret_cast<void***>(module);
-    reinterpret_cast<void (*)(void*, s32, s32, s32)>(vtable[0xf0 / 8])(module, index, value, p3);
-}
+void* WorkModule__div_int_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x50)); return reinterpret_cast<void*(*)(void*,u64,u64)>(VT(m)[0xf0/8])(m,p1,p2); }
 
 // 710208dc70 — count_down_int  [vtable+0xf8]
-void WorkModule__count_down_int_impl(BattleObjectModuleAccessor* accessor, s32 index, s32 value, s32 p3) {
-    auto* module = accessor->work_module;
-    auto* vtable = *reinterpret_cast<void***>(module);
-    reinterpret_cast<void (*)(void*, s32, s32, s32)>(vtable[0xf8 / 8])(module, index, value, p3);
-}
+void* WorkModule__count_down_int_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x50)); return reinterpret_cast<void*(*)(void*,u64,u64)>(VT(m)[0xf8/8])(m,p1,p2); }
 
 // 710208dc80 — is_flag  [vtable+0x108]
 bool WorkModule__is_flag_impl(BattleObjectModuleAccessor* accessor, s32 index) {
@@ -148,25 +136,13 @@ void WorkModule__clear_all_impl(BattleObjectModuleAccessor* accessor, s32 p1) {
 }
 
 // 710208de30 — get_param_int  [vtable+0x248]
-s32 WorkModule__get_param_int_impl(BattleObjectModuleAccessor* accessor, s32 p1, s32 p2, s32 p3) {
-    auto* module = accessor->work_module;
-    auto* vtable = *reinterpret_cast<void***>(module);
-    return reinterpret_cast<s32 (*)(void*, s32, s32, s32)>(vtable[0x248 / 8])(module, p1, p2, p3);
-}
+void* WorkModule__get_param_int_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x50)); return reinterpret_cast<void*(*)(void*,u64,u64)>(VT(m)[0x248/8])(m,p1,p2); }
 
 // 710208de40 — get_param_int64  [vtable+0x258]
-s64 WorkModule__get_param_int64_impl(BattleObjectModuleAccessor* accessor, s32 p1, s32 p2, s32 p3) {
-    auto* module = accessor->work_module;
-    auto* vtable = *reinterpret_cast<void***>(module);
-    return reinterpret_cast<s64 (*)(void*, s32, s32, s32)>(vtable[0x258 / 8])(module, p1, p2, p3);
-}
+void* WorkModule__get_param_int64_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x50)); return reinterpret_cast<void*(*)(void*,u64,u64)>(VT(m)[0x258/8])(m,p1,p2); }
 
 // 710208de50 — get_param_float  [vtable+0x268]
-f32 WorkModule__get_param_float_impl(BattleObjectModuleAccessor* accessor, s32 p1, s32 p2, s32 p3) {
-    auto* module = accessor->work_module;
-    auto* vtable = *reinterpret_cast<void***>(module);
-    return reinterpret_cast<f32 (*)(void*, s32, s32, s32)>(vtable[0x268 / 8])(module, p1, p2, p3);
-}
+void* WorkModule__get_param_float_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x50)); return reinterpret_cast<void*(*)(void*,u64,u64)>(VT(m)[0x268/8])(m,p1,p2); }
 
 // 710208db60 — set_float  [vtable+0x60]
 void WorkModule__set_float_impl(BattleObjectModuleAccessor* accessor, s32 index, f32 value) {
@@ -175,17 +151,9 @@ void WorkModule__set_float_impl(BattleObjectModuleAccessor* accessor, s32 index,
     reinterpret_cast<void (*)(void*, s32, f32)>(vtable[0x60 / 8])(module, index, value);
 }
 // 710208dbd0 — set_int  [vtable+0xa0]
-void WorkModule__set_int_impl(BattleObjectModuleAccessor* accessor, s32 index, s32 value, s32 p3) {
-    auto* module = accessor->work_module;
-    auto* vtable = *reinterpret_cast<void***>(module);
-    reinterpret_cast<void (*)(void*, s32, s32, s32)>(vtable[0xa0 / 8])(module, index, value, p3);
-}
+void WorkModule__set_int_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x50)); reinterpret_cast<void(*)(void*,u64,u64)>(VT(m)[0xa0/8])(m,p1,p2); }
 // 710208dbf0 — set_int64  [vtable+0xb8]
-void WorkModule__set_int64_impl(BattleObjectModuleAccessor* accessor, s32 index, s64 value, s32 p3) {
-    auto* module = accessor->work_module;
-    auto* vtable = *reinterpret_cast<void***>(module);
-    reinterpret_cast<void (*)(void*, s32, s64, s32)>(vtable[0xb8 / 8])(module, index, value, p3);
-}
+void WorkModule__set_int64_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x50)); reinterpret_cast<void(*)(void*,u64,u64)>(VT(m)[0xb8/8])(m,p1,p2); }
 // 710208dc90 — on_flag  [vtable+0x110]
 void WorkModule__on_flag_impl(BattleObjectModuleAccessor* accessor, s32 index) {
     auto* module = accessor->work_module;
@@ -242,11 +210,7 @@ void WorkModule__enable_transition_term_forbid_indivi_impl(BattleObjectModuleAcc
     reinterpret_cast<void (*)(void*, s32)>(vtable[0x1f8 / 8])(module, term);
 }
 // 710208de60 — set_customize_no  [vtable+0x278]
-void WorkModule__set_customize_no_impl(BattleObjectModuleAccessor* accessor, s32 p1, s32 p2, s32 p3) {
-    auto* module = accessor->work_module;
-    auto* vtable = *reinterpret_cast<void***>(module);
-    reinterpret_cast<void (*)(void*, s32, s32, s32)>(vtable[0x278 / 8])(module, p1, p2, p3);
-}
+void WorkModule__set_customize_no_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x50)); reinterpret_cast<void(*)(void*,u64,u64)>(VT(m)[0x278/8])(m,p1,p2); }
 
 // Additional WorkModule dispatchers
 f32 WorkModule__rnd_float_impl(BattleObjectModuleAccessor* accessor, s32 index) {
@@ -264,11 +228,7 @@ s32 WorkModule__rnd_int_impl(BattleObjectModuleAccessor* accessor, s32 p1, s32 p
     auto* vtable = *reinterpret_cast<void***>(module);
     return reinterpret_cast<s32 (*)(void*, s32, s32, s32)>(vtable[0xc0 / 8])(module, p1, p2, p3);
 }
-s32 WorkModule__sub_int_impl(BattleObjectModuleAccessor* accessor, s32 index, s32 value, s32 p3) {
-    auto* module = accessor->work_module;
-    auto* vtable = *reinterpret_cast<void***>(module);
-    return reinterpret_cast<s32 (*)(void*, s32, s32, s32)>(vtable[0xe0 / 8])(module, index, value, p3);
-}
+void* WorkModule__sub_int_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x50)); return reinterpret_cast<void*(*)(void*,u64,u64)>(VT(m)[0xe0/8])(m,p1,p2); }
 void WorkModule__turn_off_flag_impl(BattleObjectModuleAccessor* accessor, s32 index) {
     auto* module = accessor->work_module;
     auto* vtable = *reinterpret_cast<void***>(module);

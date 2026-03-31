@@ -11,21 +11,13 @@ void DamageModule__init_damage_impl(BattleObjectModuleAccessor* a) {
     auto* m = DMG(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x60/8])(m);
 }
 // 710200b6f0 [vtable+0xc0] — add_damage
-void DamageModule__add_damage_impl(BattleObjectModuleAccessor* a, f32 d) {
-    auto* m = DMG(a); reinterpret_cast<void(*)(void*,f32)>(VT(m)[0xc0/8])(m,d);
-}
+void DamageModule__add_damage_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xa8)); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xc0/8])(m,p1); }
 // 710200b700 [vtable+0xc8] — damage
-f32 DamageModule__damage_impl(BattleObjectModuleAccessor* a) {
-    auto* m = DMG(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0xc8/8])(m);
-}
+void* DamageModule__damage_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xa8)); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0xc8/8])(m,p1); }
 // 710200b710 [vtable+0xd0] — reaction
-f32 DamageModule__reaction_impl(BattleObjectModuleAccessor* a) {
-    auto* m = DMG(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0xd0/8])(m);
-}
+void* DamageModule__reaction_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xa8)); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0xd0/8])(m,p1); }
 // 710200b720 [vtable+0xd8] — power_max
-f32 DamageModule__power_max_impl(BattleObjectModuleAccessor* a) {
-    auto* m = DMG(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0xd8/8])(m);
-}
+void* DamageModule__power_max_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xa8)); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0xd8/8])(m,p1); }
 // 710200b730 [vtable+0xe0] — check_no_reaction
 void DamageModule__check_no_reaction_impl(BattleObjectModuleAccessor* a, u64 p1) {
     auto* m = DMG(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xe0/8])(m,p1);

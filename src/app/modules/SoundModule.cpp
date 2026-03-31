@@ -22,14 +22,10 @@ u64 SoundModule__get_no_hit_se_impl(BattleObjectModuleAccessor* accessor) {
 }
 
 // 7102081a50 — play_hit_se [vtable+0xf8]
-void SoundModule__play_hit_se_impl(BattleObjectModuleAccessor* accessor, u64 p1) {
-    auto* m = SOUND_MODULE(accessor); reinterpret_cast<void (*)(void*, u64)>(VTABLE(m)[0xf8 / 8])(m, p1);
-}
+void* SoundModule__play_hit_se_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x148)); return reinterpret_cast<void*(*)(void*,u64,u64)>(VTABLE(m)[0xf8/8])(m,p1,p2); }
 
 // 7102081a60 — play_damage_se [vtable+0x100]
-void SoundModule__play_damage_se_impl(BattleObjectModuleAccessor* accessor, u64 p1) {
-    auto* m = SOUND_MODULE(accessor); reinterpret_cast<void (*)(void*, u64)>(VTABLE(m)[0x100 / 8])(m, p1);
-}
+void* SoundModule__play_damage_se_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,u64 p3,u64 p4) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x148)); return reinterpret_cast<void*(*)(void*,u64,u64,u64,u64)>(VTABLE(m)[0x100/8])(m,p1,p2,p3,p4); }
 
 // 7102081a90 — play_landing_se [vtable+0x120]
 void SoundModule__play_landing_se_impl(BattleObjectModuleAccessor* accessor, u64 p1) {
@@ -42,19 +38,13 @@ void SoundModule__play_down_se_impl(BattleObjectModuleAccessor* accessor, u64 p1
 }
 
 // 7102081ab0 — play_fly_voice [vtable+0x130]
-void SoundModule__play_fly_voice_impl(BattleObjectModuleAccessor* accessor, u64 p1) {
-    auto* m = SOUND_MODULE(accessor); reinterpret_cast<void (*)(void*, u64)>(VTABLE(m)[0x130 / 8])(m, p1);
-}
+void* SoundModule__play_fly_voice_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x148)); return reinterpret_cast<void*(*)(void*,u64,u64)>(VTABLE(m)[0x130/8])(m,p1,p2); }
 
 // 7102081ad0 — get_se_vol [vtable+0x140]
-f32 SoundModule__get_se_vol_impl(BattleObjectModuleAccessor* accessor) {
-    auto* m = SOUND_MODULE(accessor); return reinterpret_cast<f32 (*)(void*)>(VTABLE(m)[0x140 / 8])(m);
-}
+void* SoundModule__get_se_vol_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x148)); return reinterpret_cast<void*(*)(void*,u64)>(VTABLE(m)[0x140/8])(m,p1); }
 
 // 7102081af0 — get_se_vol_db [vtable+0x150]
-f32 SoundModule__get_se_vol_db_impl(BattleObjectModuleAccessor* accessor) {
-    auto* m = SOUND_MODULE(accessor); return reinterpret_cast<f32 (*)(void*)>(VTABLE(m)[0x150 / 8])(m);
-}
+void* SoundModule__get_se_vol_db_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x148)); return reinterpret_cast<void*(*)(void*,u64)>(VTABLE(m)[0x150/8])(m,p1); }
 
 // 7102081b10 — get_auto_se_pitch [vtable+0x160]
 f32 SoundModule__get_auto_se_pitch_impl(BattleObjectModuleAccessor* accessor) {
@@ -87,14 +77,10 @@ u32 SoundModule__get_takeout_se_status_flag_impl(BattleObjectModuleAccessor* acc
 }
 
 // 7102081cb0 — is_playing [vtable+0x260]
-bool SoundModule__is_playing_impl(BattleObjectModuleAccessor* accessor) {
-    auto* m = SOUND_MODULE(accessor); return reinterpret_cast<bool (*)(void*)>(VTABLE(m)[0x260 / 8])(m);
-}
+bool SoundModule__is_playing_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x148)); return reinterpret_cast<bool(*)(void*,u64)>(VTABLE(m)[0x260/8])(m,p1); }
 
 // 7102081cc0 — is_playing_status [vtable+0x268]
-bool SoundModule__is_playing_status_impl(BattleObjectModuleAccessor* accessor) {
-    auto* m = SOUND_MODULE(accessor); return reinterpret_cast<bool (*)(void*)>(VTABLE(m)[0x268 / 8])(m);
-}
+bool SoundModule__is_playing_status_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x148)); return reinterpret_cast<bool(*)(void*,u64)>(VTABLE(m)[0x268/8])(m,p1); }
 
 // 7102081cd0 — is_playing_voice [vtable+0x270]
 bool SoundModule__is_playing_voice_impl(BattleObjectModuleAccessor* accessor) {
@@ -102,9 +88,7 @@ bool SoundModule__is_playing_voice_impl(BattleObjectModuleAccessor* accessor) {
 }
 
 // 7102081ce0 — get_common_sound_label [vtable+0x278]
-u64 SoundModule__get_common_sound_label_impl(BattleObjectModuleAccessor* accessor) {
-    auto* m = SOUND_MODULE(accessor); return reinterpret_cast<u64 (*)(void*)>(VTABLE(m)[0x278 / 8])(m);
-}
+void* SoundModule__get_common_sound_label_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x148)); return reinterpret_cast<void*(*)(void*,u64)>(VTABLE(m)[0x278/8])(m,p1); }
 
 // Remaining SoundModule dispatchers
 void SoundModule__set_position_sub_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=SOUND_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VTABLE(m)[0xa0/8])(m,p1); }
@@ -116,19 +100,19 @@ void SoundModule__play_sequence_impl(BattleObjectModuleAccessor* a,u64 p1,bool p
 void SoundModule__set_play_hit_se_flag_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=SOUND_MODULE(a); reinterpret_cast<void(*)(void*,bool)>(VTABLE(m)[0xd8/8])(m,p1); }
 void SoundModule__set_no_hit_se_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=SOUND_MODULE(a); reinterpret_cast<void(*)(void*,bool)>(VTABLE(m)[0xe8/8])(m,p1); }
 void SoundModule__play_step_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=SOUND_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VTABLE(m)[0x108/8])(m,p1); }
-void SoundModule__play_step_flippable_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=SOUND_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VTABLE(m)[0x110/8])(m,p1); }
-void SoundModule__set_se_vol_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=SOUND_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VTABLE(m)[0x138/8])(m,p1); }
-void SoundModule__set_se_vol_db_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=SOUND_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VTABLE(m)[0x148/8])(m,p1); }
-void SoundModule__set_auto_se_pitch_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=SOUND_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VTABLE(m)[0x158/8])(m,p1); }
+void* SoundModule__play_step_flippable_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x148)); return reinterpret_cast<void*(*)(void*,u64,u64)>(VTABLE(m)[0x110/8])(m,p1,p2); }
+void SoundModule__set_se_vol_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x148)); reinterpret_cast<void(*)(void*,u64,u64)>(VTABLE(m)[0x138/8])(m,p1,p2); }
+void SoundModule__set_se_vol_db_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x148)); reinterpret_cast<void(*)(void*,u64,u64)>(VTABLE(m)[0x148/8])(m,p1,p2); }
+void SoundModule__set_auto_se_pitch_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x148)); reinterpret_cast<void(*)(void*)>(VTABLE(m)[0x158/8])(m); }
 void SoundModule__set_se_pitch_cent_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=SOUND_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VTABLE(m)[0x168/8])(m,p1); }
 void SoundModule__set_se_pitch_ratio_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=SOUND_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VTABLE(m)[0x170/8])(m,p1); }
-void SoundModule__set_se_pitch_status_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=SOUND_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VTABLE(m)[0x178/8])(m,p1); }
+void SoundModule__set_se_pitch_status_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x148)); reinterpret_cast<void(*)(void*)>(VTABLE(m)[0x178/8])(m); }
 void SoundModule__set_se_pitch_status_handle_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=SOUND_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VTABLE(m)[0x180/8])(m,p1); }
 void SoundModule__set_continue_se_at_game_finish_impl(BattleObjectModuleAccessor* a,u64 p1,bool p2) { auto* m=SOUND_MODULE(a); reinterpret_cast<void(*)(void*,u64,bool)>(VTABLE(m)[0x188/8])(m,p1,p2); }
-void SoundModule__stop_se_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=SOUND_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VTABLE(m)[0x190/8])(m,p1); }
+void SoundModule__stop_se_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x148)); reinterpret_cast<void(*)(void*,u64,u64)>(VTABLE(m)[0x190/8])(m,p1,p2); }
 void SoundModule__stop_se_all_impl(BattleObjectModuleAccessor* a,u64 p1,bool p2,bool p3) { auto* m=SOUND_MODULE(a); reinterpret_cast<void(*)(void*,u64,bool,bool)>(VTABLE(m)[0x198/8])(m,p1,p2,p3); }
-void SoundModule__stop_loop_se_all_impl(BattleObjectModuleAccessor* a) { auto* m=SOUND_MODULE(a); reinterpret_cast<void(*)(void*)>(VTABLE(m)[0x1a0/8])(m); }
-void SoundModule__stop_se_handle_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=SOUND_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VTABLE(m)[0x1a8/8])(m,p1); }
+void SoundModule__stop_loop_se_all_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x148)); reinterpret_cast<void(*)(void*,u64)>(VTABLE(m)[0x1a0/8])(m,p1); }
+void SoundModule__stop_se_handle_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x148)); reinterpret_cast<void(*)(void*,u64,u64)>(VTABLE(m)[0x1a8/8])(m,p1,p2); }
 void SoundModule__stop_all_sound_impl(BattleObjectModuleAccessor* a) { auto* m=SOUND_MODULE(a); reinterpret_cast<void(*)(void*)>(VTABLE(m)[0x1b0/8])(m); }
 void SoundModule__set_se_speed_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=SOUND_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VTABLE(m)[0x1c0/8])(m,p1); }
 void SoundModule__set_landing_se_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=SOUND_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VTABLE(m)[0x1c8/8])(m,p1); }
@@ -136,7 +120,7 @@ void SoundModule__set_takeout_se_impl(BattleObjectModuleAccessor* a,u64 p1) { au
 void SoundModule__set_takeout_se_status_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=SOUND_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VTABLE(m)[0x228/8])(m,p1); }
 void SoundModule__reset_takeout_se_impl(BattleObjectModuleAccessor* a) { auto* m=SOUND_MODULE(a); reinterpret_cast<void(*)(void*)>(VTABLE(m)[0x238/8])(m); }
 void SoundModule__play_takeout_se_impl(BattleObjectModuleAccessor* a) { auto* m=SOUND_MODULE(a); reinterpret_cast<void(*)(void*)>(VTABLE(m)[0x240/8])(m); }
-void SoundModule__set_play_inhivit_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=SOUND_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VTABLE(m)[0x258/8])(m,p1); }
+void SoundModule__set_play_inhivit_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x148)); reinterpret_cast<void(*)(void*,u64,u64)>(VTABLE(m)[0x258/8])(m,p1,p2); }
 void SoundModule__play_status_bgm_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=SOUND_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VTABLE(m)[0x280/8])(m,p1); }
 void SoundModule__set_gamespeed_se_calibration_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=SOUND_MODULE(a); reinterpret_cast<void(*)(void*,bool)>(VTABLE(m)[0x2c0/8])(m,p1); }
 void SoundModule__set_remain_se_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=SOUND_MODULE(a); reinterpret_cast<void(*)(void*,bool)>(VTABLE(m)[0x2d8/8])(m,p1); }

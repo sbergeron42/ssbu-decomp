@@ -1,4 +1,5 @@
 #include "app/BattleObjectModuleAccessor.h"
+#define VT(m) (*reinterpret_cast<void***>(m))
 
 namespace app::lua_bind {
 
@@ -38,11 +39,7 @@ bool StatusModule__is_changing_impl(BattleObjectModuleAccessor* accessor) {
 }
 
 // 7102087770 — prev_status_kind
-s32 StatusModule__prev_status_kind_impl(BattleObjectModuleAccessor* accessor) {
-    auto* module = accessor->status_module;
-    auto* vtable = *reinterpret_cast<void***>(module);
-    return reinterpret_cast<s32 (*)(void*)>(vtable[0x138 / 8])(module);
-}
+void* StatusModule__prev_status_kind_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x40)); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x148/8])(m,p1); }
 
 // 71020877a0 — situation_kind
 s32 StatusModule__situation_kind_impl(BattleObjectModuleAccessor* accessor) {

@@ -57,7 +57,7 @@ void ColorBlendModule__set_disable_camera_depth_influence_impl(BattleObjectModul
 }
 
 void ColorBlendModule__set_priority_impl(BattleObjectModuleAccessor* a,u64 p1,bool p2) { auto* m=COLORBLEND_MODULE(a); reinterpret_cast<void(*)(void*,u64,bool)>(VTABLE(m)[0xc8/8])(m,p1,p2); }
-void ColorBlendModule__set_shadow_bloom_impl(BattleObjectModuleAccessor* a,u64 p1,bool p2) { auto* m=COLORBLEND_MODULE(a); reinterpret_cast<void(*)(void*,u64,bool)>(VTABLE(m)[0xd8/8])(m,p1,p2); }
-void ColorBlendModule__set_main_color_impl(BattleObjectModuleAccessor* a,u64 p1,bool p2) { auto* m=COLORBLEND_MODULE(a); reinterpret_cast<void(*)(void*,u64,bool)>(VTABLE(m)[0xf8/8])(m,p1,p2); }
-void ColorBlendModule__set_status_impl(BattleObjectModuleAccessor* a,u64 p1,bool p2) { auto* m=COLORBLEND_MODULE(a); reinterpret_cast<void(*)(void*,u64,bool)>(VTABLE(m)[0x168/8])(m,p1,p2); }
+void ColorBlendModule__set_shadow_bloom_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x70)); reinterpret_cast<void(*)(void*,bool)>(VTABLE(m)[0xd8/8])(m,p1); }
+void ColorBlendModule__set_main_color_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,u64 p3,bool p4) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x70)); reinterpret_cast<void(*)(void*,u64,u64,u64,bool)>(VTABLE(m)[0xf8/8])(m,p1,p2,p3,p4); }
+void ColorBlendModule__set_status_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x70)); reinterpret_cast<void(*)(void*,bool)>(VTABLE(m)[0x168/8])(m,p1); }
 } // namespace app::lua_bind
