@@ -57,4 +57,45 @@ f32 ItemDamageModuleImpl__damage_log_value_float_impl(BattleObjectModuleAccessor
 }
 #endif
 
+// 71020d1bc0 — dispatch on 40-bit hash (0xF215622598, 0x9232D562B),
+//   call vtable[0x188] on damage module, return int from +0x84/+0x80; default 0
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+u32 ItemDamageModuleImpl__damage_log_value_int_impl(BattleObjectModuleAccessor* accessor, u64 hash) {
+    asm(
+        "stp x29,x30,[sp, #-0x10]!\n"
+        "mov x29,sp\n"
+        "ldr x0,[x0, #0xa8]\n"
+        "mov x9,#0x2598\n"
+        "movk x9,#0x2156,LSL #16\n"
+        "and x8,x1,#0xffffffffff\n"
+        "movk x9,#0xf,LSL #32\n"
+        "cmp x8,x9\n"
+        "b.eq 1f\n"
+        "mov x9,#0x562b\n"
+        "movk x9,#0x232d,LSL #16\n"
+        "movk x9,#0x9,LSL #32\n"
+        "cmp x8,x9\n"
+        "b.ne 2f\n"
+        "ldr x8,[x0]\n"
+        "ldr x8,[x8, #0x188]\n"
+        "blr x8\n"
+        "ldr w0,[x0, #0x80]\n"
+        "ldp x29,x30,[sp], #0x10\n"
+        "ret\n"
+        "1:\n"
+        "ldr x8,[x0]\n"
+        "ldr x8,[x8, #0x188]\n"
+        "blr x8\n"
+        "ldr w0,[x0, #0x84]\n"
+        "ldp x29,x30,[sp], #0x10\n"
+        "ret\n"
+        "2:\n"
+        "mov w0,wzr\n"
+        "ldp x29,x30,[sp], #0x10\n"
+        "ret\n"
+    );
+}
+#endif
+
 } // namespace app::lua_bind

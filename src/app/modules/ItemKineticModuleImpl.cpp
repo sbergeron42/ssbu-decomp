@@ -162,4 +162,78 @@ void ItemKineticModuleImpl__it_base_rot_impl(BattleObjectModuleAccessor* a, void
 }
 #endif
 
+// 71020ccee0 — it_ai_move: NX prologue (sub;str x23;stp x22,x21;stp x20,x19;stp x29,x30),
+//   8 args: accessor,vec2*,x19,x20,vec2*,x21,bool_w6,w22
+//   Conditionally calls vtable[0xb0] on posture module, scales vec2 components,
+//   optionally updates 2nd-motion vec, builds SIMD vec via ext+ext, stores to kinetic fields
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+void ItemKineticModuleImpl__it_ai_move_impl(BattleObjectModuleAccessor* a,
+    void* p1, void* p2, void* p3, void* p4, void* p5, u32 flag1, u32 flag2) {
+    asm(
+        "sub sp,sp,#0x60\n"
+        "str x23,[sp, #0x20]\n"
+        "stp x22,x21,[sp, #0x30]\n"
+        "stp x20,x19,[sp, #0x40]\n"
+        "stp x29,x30,[sp, #0x50]\n"
+        "add x29,sp,#0x50\n"
+        "ldr q2,[x1]\n"
+        "ldr q1,[x4]\n"
+        "mov w22,w7\n"
+        "ldr x23,[x0, #0x68]\n"
+        "mov x21,x5\n"
+        "mov x20,x3\n"
+        "mov x19,x2\n"
+        "tbz w6,#0x0,1f\n"
+        "ldr x8,[x23, #0x8]\n"
+        "ldr x0,[x8, #0x38]\n"
+        "ldr x8,[x0]\n"
+        "ldr x8,[x8, #0xb0]\n"
+        "stp q2,q1,[sp]\n"
+        "blr x8\n"
+        "ldr q2,[sp]\n"
+        "fmul s1,s0,v2.S[0]\n"
+        "mov v2.S[0],v1.S[0]\n"
+        "ldr q1,[sp, #0x10]\n"
+        "fmul s0,s0,v1.S[0]\n"
+        "mov v1.S[0],v0.S[0]\n"
+        "1:\n"
+        "tbz w22,#0x0,2f\n"
+        "ldrb w8,[x23, #0x310]\n"
+        "cbz w8,2f\n"
+        "ldr q0,[x23, #0x2f0]\n"
+        "mov v0.S[1],v2.S[1]\n"
+        "str q0,[x23, #0x2f0]\n"
+        "fmov s0,wzr\n"
+        "mov v2.S[1],v0.S[0]\n"
+        "2:\n"
+        "movi v0.2D,#0x0\n"
+        "ext v0.16B,v0.16B,v2.16B,#0x8\n"
+        "ext v0.16B,v0.16B,v0.16B,#0x8\n"
+        "str q1,[x23, #0x400]\n"
+        "str q0,[x23, #0x3d0]\n"
+        "ldr x8,[x21, #0x8]\n"
+        "str x8,[x23, #0x428]\n"
+        "ldr x8,[x21]\n"
+        "str x8,[x23, #0x420]\n"
+        "ldr x8,[x20, #0x8]\n"
+        "str x8,[x23, #0x418]\n"
+        "ldr x8,[x20]\n"
+        "str x8,[x23, #0x410]\n"
+        "ldr x8,[x19, #0x8]\n"
+        "str x8,[x23, #0x438]\n"
+        "ldr x8,[x19]\n"
+        "str x8,[x23, #0x430]\n"
+        "mov w8,#0x1\n"
+        "strb w8,[x23, #0x3f0]\n"
+        "ldr x23,[sp, #0x20]\n"
+        "ldp x29,x30,[sp, #0x50]\n"
+        "ldp x20,x19,[sp, #0x40]\n"
+        "ldp x22,x21,[sp, #0x30]\n"
+        "add sp,sp,#0x60\n"
+        "ret\n"
+    );
+}
+#endif
+
 } // namespace app::lua_bind
