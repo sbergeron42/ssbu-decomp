@@ -21518,7 +21518,7 @@ Address,Name,Status
 71020a9880,FUN_71020a9880,U
 71020a99f0,FighterStatusModuleImpl__set_fighter_status_data_impl,U
 71020a9a10,FighterStatusModuleImpl__reset_log_action_info_impl,U
-71020a9a20,FighterStatusModuleImpl__off_disable_intrrupt_warp_impl,U
+71020a9a20,FighterStatusModuleImpl__off_disable_intrrupt_warp_impl,M
 71020a9e50,FUN_71020a9e50,U
 71020aa000,FighterMotionModuleImpl__add_body_type_hash_impl,U
 71020aa010,FighterMotionModuleImpl__get_cancel_frame_impl,U
@@ -21550,7 +21550,7 @@ Address,Name,Status
 71020ad7e0,FighterStopModuleImpl__get_damage_stop_frame_impl,U
 71020ad890,FUN_71020ad890,U
 71020ad9f0,FUN_71020ad9f0,U
-71020adb50,FighterWorkModuleImpl__calc_param_impl,U
+71020adb50,FighterWorkModuleImpl__calc_param_impl,M
 71020adb70,FighterWorkModuleImpl__calc_escape_air_slide_param_impl,U
 71020adef0,FUN_71020adef0,U
 71020ae240,FighterAreaModuleImpl__enable_fix_jostle_area_impl,M
@@ -21785,7 +21785,7 @@ Address,Name,Status
 71020d3080,FUN_71020d3080,U
 71020d35a0,FUN_71020d35a0,U
 71020d3b50,FUN_71020d3b50,U
-71020d3c60,ItemMotionAnimcmdModuleImpl__set_fix_rate_impl,U
+71020d3c60,ItemMotionAnimcmdModuleImpl__set_fix_rate_impl,M
 71020d3c70,FUN_71020d3c70,U
 71020d3e40,stWaterAreaInfo__load_from_l2c_table_impl,U
 71020d4040,stWaterAreaInfo__store_l2c_table_impl,U
