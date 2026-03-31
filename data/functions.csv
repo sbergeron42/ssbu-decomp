@@ -22111,7 +22111,7 @@ Address,Name,Status
 71021418d0,FighterManager__is_process_movie_impl,U
 71021418f0,FighterManager__start_movie_impl,U
 7102141900,FighterManager__start_movie_on_rendering_2d_impl,U
-7102141910,FighterManager__is_end_movie_impl,U
+7102141910,FighterManager__is_end_movie_impl,M
 7102141930,FighterManager__get_jack_final_cut_in_impl,U
 7102142790,FUN_7102142790,U
 7102143184,FUN_7102143184,U

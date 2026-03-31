@@ -80,4 +80,15 @@ void* FighterManager__get_fighter_information_impl(FighterManager* mgr, u32 inde
     return entry + 0xf0;
 }
 
+// 7102141910 — is_end_movie (7 instructions, pointer chain + cmp)
+bool FighterManager__is_end_movie_impl(FighterManager* mgr) {
+    auto* data = *reinterpret_cast<u8**>(mgr);
+    auto* p1 = *reinterpret_cast<u8**>(data + 0xb80);
+    auto* p2 = *reinterpret_cast<u8**>(p1);
+    return *reinterpret_cast<u32*>(p2 + 0x20) == 8;
+}
+
+// 71021418c0 — exit_movie (4 instructions, pointer chain + tail call)
+// Can't match — tail calls to external function
+
 } // namespace app::lua_bind
