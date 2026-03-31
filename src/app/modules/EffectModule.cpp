@@ -148,10 +148,10 @@ void* EffectModule__request_post_effect_line_circle_impl(BattleObjectModuleAcces
 void EffectModule__set_post_effect_line_circle_target_impl(BattleObjectModuleAccessor* a,u64 p1,bool p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x140)); reinterpret_cast<void(*)(void*,u64,bool)>(VTABLE(m)[0x468/8])(m,p1,p2); }
 void* EffectModule__request_post_effect_line_parallel_2d_impl(BattleObjectModuleAccessor* a,u64 p1,bool p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x140)); return reinterpret_cast<void*(*)(void*,u64,bool)>(VTABLE(m)[0x470/8])(m,p1,p2); }
 void EffectModule__req_2d_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,u64 p3,u64 p4,u64 p6) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x140)); reinterpret_cast<void(*)(void*,u64,u64,u64,u64,u32,u32,u32)>(VTABLE(m)[0x68/8])(m,p1,p2,p3,p4,static_cast<u32>(-1),1u,0u); }
-// 71020176f0 — req_on_joint: load EffectModule, reload stack args, mask bool w7, vtable+0x70
-void EffectModule__req_on_joint_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2, u64 p3, u64 p4, u64 p5, u64 p6, bool p7, u64 p8, u64 p9, u64 p10) {
+// 71020176f0 — req_on_joint: load EffectModule, reload stack args as u32, mask bool w7, vtable+0x70
+void EffectModule__req_on_joint_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2, u64 p3, u64 p4, u64 p5, u64 p6, bool p7, u32 p8, u32 p9, u32 p10) {
     auto* m = EFFECT_MODULE(a);
-    reinterpret_cast<void(*)(void*,u64,u64,u64,u64,u64,u64,bool,u64,u64,u64)>(VTABLE(m)[0x70/8])(m,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10);
+    reinterpret_cast<void(*)(void*,u64,u64,u64,u64,u64,u64,bool,u32,u32,u32)>(VTABLE(m)[0x70/8])(m,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10);
 }
 
 // 7102017730 — req_follow: load EffectModule, vtable+0x78, many params + bool masks
@@ -175,7 +175,11 @@ void EffectModule__req_after_image_no_parent_impl(BattleObjectModuleAccessor* a,
 // 71020179d0 — get_local_matrix: prologue/epilogue, vtable+0x148
 void* EffectModule__get_local_matrix_impl(BattleObjectModuleAccessor* a, u64 p1) {
     auto* m = EFFECT_MODULE(a);
-    return reinterpret_cast<void*(*)(void*, u64)>(VTABLE(m)[0x148/8])(m, p1);
+    auto* result = reinterpret_cast<void*(*)(void*, u64)>(VTABLE(m)[0x148/8])(m, p1);
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
+    return result;
 }
 
 } // namespace app::lua_bind

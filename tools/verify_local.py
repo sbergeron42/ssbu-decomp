@@ -100,16 +100,27 @@ def build_incremental():
     if fix_script.exists():
         prologue_targets = ["PostureModule", "KineticEnergy", "CameraModule",
                            "GroundModule", "KineticModule", "LinkModule",
-                           "FighterControlModuleImpl", "BattleObjectManager"]
+                           "FighterControlModuleImpl", "BattleObjectManager",
+                           "FighterManager", "FighterEntry", "FighterCutInManager",
+                           "FighterInformation", "ItemManager",
+                           "FighterMotionModuleImpl", "EffectModule",
+                           "FighterBayonettaFinalModule", "ItemKineticModuleImpl",
+                           "FighterKineticEnergyMotion", "KineticEnergyNormal"]
         objs = [str(build_dir / f"{t}.o") for t in prologue_targets if (build_dir / f"{t}.o").exists()]
         if objs:
             subprocess.run(["python", str(fix_script)] + objs, capture_output=True)
 
-    # Link
+    # Generate linker script for address-matched layout
+    gen_ld = PROJECT_ROOT / "tools" / "gen_linker_script.py"
+    linker_script = build_dir / "decomp.ld"
+    subprocess.run(["python", str(gen_ld)], capture_output=True)
+
+    # Link with linker script for correct symbol placement
     obj_files = list(build_dir.glob("*.o"))
-    cmd = [LLD, "--shared", "-o", str(DECOMP_ELF),
-           "-Bsymbolic-functions", "--unresolved-symbols=ignore-all",
-           "--no-undefined-version", "-nostdlib"] + [str(o) for o in obj_files]
+    cmd = [LLD, "-T", str(linker_script), "-o", str(DECOMP_ELF),
+           "--unresolved-symbols=ignore-all",
+           "--no-undefined-version", "-nostdlib",
+           "--noinhibit-exec"] + [str(o) for o in obj_files]
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
         print(f"  Link error: {result.stderr[:500]}")
@@ -237,7 +248,7 @@ def main():
     if details:
         print()
         print("  Non-matching:")
-        for name, mc, tc in sorted(details, key=lambda x: -x[1]/x[2] if x[2] else 0)[:20]:
+        for name, mc, tc in sorted(details, key=lambda x: -x[1]/x[2] if x[2] else 0):
             print("    %s: %d/%d" % (name, mc, tc))
 
     print()
