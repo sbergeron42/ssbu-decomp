@@ -37,7 +37,7 @@ void ArticleModule__shoot_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,bool 
 void ArticleModule__shoot_exist_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,bool p3) { auto* m=AR(a); reinterpret_cast<void(*)(void*,u64,u64,bool)>(VT(m)[0xa0/8])(m,p1,p2,p3); }
 void ArticleModule__set_pos_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=AR(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xa8/8])(m,p1); }
 void ArticleModule__set_weight_impl(BattleObjectModuleAccessor* a,u64 p1,bool p2) { auto* m=AR(a); reinterpret_cast<void(*)(void*,u64,bool)>(VT(m)[0xd8/8])(m,p1,p2); }
-void ArticleModule__set_frame_2nd_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=AR(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xf0/8])(m,p1); }
+void ArticleModule__set_frame_2nd_impl(BattleObjectModuleAccessor* a,u64 p1,bool p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x98)); reinterpret_cast<void(*)(void*,u64,bool)>(VT(m)[0xf8/8])(m,p1,p2); }
 void ArticleModule__set_rate_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x98)); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x100/8])(m,p1); }
 void ArticleModule__set_visibility_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,u64 p3,u64 p4) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x98)); reinterpret_cast<void(*)(void*,u64,u64,u64,u64)>(VT(m)[0x128/8])(m,p1,p2,p3,p4); }
 void ArticleModule__set_visibility_whole_impl(BattleObjectModuleAccessor* a,u64 p1,bool p2,u64 p3) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x98)); reinterpret_cast<void(*)(void*,u64,bool,u64)>(VT(m)[0x118/8])(m,p1,p2,p3); }

@@ -118,7 +118,7 @@ void ControlModule__set_rumble_body_impl(BattleObjectModuleAccessor* a,u64 p1) {
 void ControlModule__set_rumble_heavy_hit_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x2e0/8])(m,p1); }
 void ControlModule__set_rumble_hit_damage_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x2e8/8])(m,p1); }
 void ControlModule__set_keep_rumble_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=CM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x2f0/8])(m,p1); }
-void ControlModule__stop_rumble_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x2f8/8])(m); }
+void* ControlModule__stop_rumble_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x48)); return reinterpret_cast<void*(*)(void*,bool)>(VT(m)[0x2f0/8])(m,p1); }
 f32 ControlModule__get_flick_y_no_reset_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x328/8])(m); }
 s32 ControlModule__get_flick_y_no_reset_dir_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); return reinterpret_cast<s32(*)(void*)>(VT(m)[0x330/8])(m); }
 s32 ControlModule__get_attack_s4_kind_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); return reinterpret_cast<s32(*)(void*)>(VT(m)[0x398/8])(m); }
