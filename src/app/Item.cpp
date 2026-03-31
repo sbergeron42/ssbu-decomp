@@ -64,6 +64,11 @@ LargeRet LinkEventCaptureItem__store_l2c_table_impl(LinkEventCaptureItem* ev) {
     return reinterpret_cast<LargeRet(*)(LinkEventCaptureItem*)>(VT(ev)[0x28/8])(ev);
 }
 
+// 71020b6100 — ldr x9,[x0]; ldr x2,[x9,#0x30]; br x2
+LargeRet LinkEventCaptureItem__store_l2c_table_impl_71020b6100(LinkEventCaptureItem* ev, u64 p1) {
+    return reinterpret_cast<LargeRet(*)(LinkEventCaptureItem*, u64)>(VT(ev)[0x30/8])(ev, p1);
+}
+
 // --- LinkEventTouchItem ---
 
 // 71020f2e80 — ldr x8,[x0]; ldr x2,[x8,#0x38]; br x2
@@ -74,6 +79,11 @@ void LinkEventTouchItem__load_from_l2c_table_impl(LinkEventTouchItem* ev, u64 p1
 // 71020f2e90 — ldr x9,[x0]; ldr x1,[x9,#0x28]; br x1
 LargeRet LinkEventTouchItem__store_l2c_table_impl(LinkEventTouchItem* ev) {
     return reinterpret_cast<LargeRet(*)(LinkEventTouchItem*)>(VT(ev)[0x28/8])(ev);
+}
+
+// 71020f2ea0 — ldr x9,[x0]; ldr x2,[x9,#0x30]; br x2
+LargeRet LinkEventTouchItem__store_l2c_table_impl_71020f2ea0(LinkEventTouchItem* ev, u64 p1) {
+    return reinterpret_cast<LargeRet(*)(LinkEventTouchItem*, u64)>(VT(ev)[0x30/8])(ev, p1);
 }
 
 } // namespace app::lua_bind

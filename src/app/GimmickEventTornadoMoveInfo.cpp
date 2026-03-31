@@ -9,4 +9,5 @@ namespace app::lua_bind {
 LargeRet GimmickEventTornadoMoveInfo__store_l2c_table_impl(GimmickEventTornadoMoveInfo* ev) { return reinterpret_cast<LargeRet(*)(GimmickEventTornadoMoveInfo*)>(VT(ev)[0x28/8])(ev); }
 void GimmickEventTornadoMoveInfo__load_from_l2c_table_impl(GimmickEventTornadoMoveInfo* obj,u64 p1) { reinterpret_cast<void(*)(GimmickEventTornadoMoveInfo*,u64)>(VT(obj)[0x38/8])(obj,p1); }
 
+LargeRet GimmickEventTornadoMoveInfo__store_l2c_table_impl_71020e1bd0(GimmickEventTornadoMoveInfo* ev, u64 p1) { return reinterpret_cast<LargeRet(*)(GimmickEventTornadoMoveInfo*, u64)>(VT(ev)[0x30/8])(ev, p1); }
 } // namespace app::lua_bind

@@ -9,4 +9,5 @@ namespace app::lua_bind {
 LargeRet FighterRyuLinkEventFinalDeadDamage__store_l2c_table_impl(FighterRyuLinkEventFinalDeadDamage* ev) { return reinterpret_cast<LargeRet(*)(FighterRyuLinkEventFinalDeadDamage*)>(VT(ev)[0x28/8])(ev); }
 void FighterRyuLinkEventFinalDeadDamage__load_from_l2c_table_impl(FighterRyuLinkEventFinalDeadDamage* obj,u64 p1) { reinterpret_cast<void(*)(FighterRyuLinkEventFinalDeadDamage*,u64)>(VT(obj)[0x38/8])(obj,p1); }
 
+LargeRet FighterRyuLinkEventFinalDeadDamage__store_l2c_table_impl_7102195b40(FighterRyuLinkEventFinalDeadDamage* ev, u64 p1) { return reinterpret_cast<LargeRet(*)(FighterRyuLinkEventFinalDeadDamage*, u64)>(VT(ev)[0x30/8])(ev, p1); }
 } // namespace app::lua_bind

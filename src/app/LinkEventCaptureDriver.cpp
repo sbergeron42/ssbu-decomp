@@ -9,4 +9,5 @@ namespace app::lua_bind {
 LargeRet LinkEventCaptureDriver__store_l2c_table_impl(LinkEventCaptureDriver* ev) { return reinterpret_cast<LargeRet(*)(LinkEventCaptureDriver*)>(VT(ev)[0x28/8])(ev); }
 void LinkEventCaptureDriver__load_from_l2c_table_impl(LinkEventCaptureDriver* obj,u64 p1) { reinterpret_cast<void(*)(LinkEventCaptureDriver*,u64)>(VT(obj)[0x38/8])(obj,p1); }
 
+LargeRet LinkEventCaptureDriver__store_l2c_table_impl_71020b9570(LinkEventCaptureDriver* ev, u64 p1) { return reinterpret_cast<LargeRet(*)(LinkEventCaptureDriver*, u64)>(VT(ev)[0x30/8])(ev, p1); }
 } // namespace app::lua_bind

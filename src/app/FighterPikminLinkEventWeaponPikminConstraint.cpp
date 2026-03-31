@@ -9,4 +9,5 @@ namespace app::lua_bind {
 LargeRet FighterPikminLinkEventWeaponPikminConstraint__store_l2c_table_impl(FighterPikminLinkEventWeaponPikminConstraint* ev) { return reinterpret_cast<LargeRet(*)(FighterPikminLinkEventWeaponPikminConstraint*)>(VT(ev)[0x28/8])(ev); }
 void FighterPikminLinkEventWeaponPikminConstraint__load_from_l2c_table_impl(FighterPikminLinkEventWeaponPikminConstraint* obj,u64 p1) { reinterpret_cast<void(*)(FighterPikminLinkEventWeaponPikminConstraint*,u64)>(VT(obj)[0x38/8])(obj,p1); }
 
+LargeRet FighterPikminLinkEventWeaponPikminConstraint__store_l2c_table_impl_710216e6d0(FighterPikminLinkEventWeaponPikminConstraint* ev, u64 p1) { return reinterpret_cast<LargeRet(*)(FighterPikminLinkEventWeaponPikminConstraint*, u64)>(VT(ev)[0x30/8])(ev, p1); }
 } // namespace app::lua_bind

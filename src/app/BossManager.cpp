@@ -9,6 +9,7 @@ struct BossManager;
 
 extern "C" void FUN_71004e9e30(void*, s32);
 extern "C" bool FUN_71004e5780(void*);
+extern "C" void FUN_71039c20c0(void*);  // std::__1::__shared_weak_count::__release_weak
 
 // Global default entity reference (adrp pattern, won't byte-match but needed for logic)
 extern u8 g_BossDefaultEntity[];
@@ -123,6 +124,58 @@ bool BossManager__is_stoppable_se_impl(BossManager* bm, s32 id) {
         if (FUN_71004e5780(item)) return true;
     }
     return false;
+}
+
+// 7102145970 — iterate boss list; if hash==0x18e, clear entry and release shared_ptr refcount
+// won't byte-match (PC-relative bl calls)
+void BossManager__notify_on_boss_dead_impl(BossManager* bm, s32 id) {
+    if (id != 0x4d) return;
+
+    auto* inner = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(bm) + 0x8);
+
+    u64 begin = *reinterpret_cast<u64*>(inner + 0x110);
+    u64 end   = *reinterpret_cast<u64*>(inner + 0x118);
+    if (begin == end) return;
+
+    void* default_obj = reinterpret_cast<void*>(g_BossDefaultEntity);
+    u64 idx = 0;
+
+    do {
+        void** item = reinterpret_cast<void**>(begin + idx * 0x10);
+
+        void* raw = *item;
+        void* obj;
+        if (!raw) {
+            obj = default_obj;
+        } else {
+            bool expired = reinterpret_cast<bool(*)(void*)>(
+                (*reinterpret_cast<void***>(raw))[0x10/8])(raw);
+            obj = expired ? default_obj : raw;
+        }
+
+        s32 hash = reinterpret_cast<s32(*)(void*)>(
+            (*reinterpret_cast<void***>(obj))[0x30/8])(obj);
+
+        if (hash == 0x18e) {
+            void* ref = item[1];
+            item[0] = nullptr;
+            item[1] = nullptr;
+
+            if (ref) {
+                auto* refcount = reinterpret_cast<s64*>(reinterpret_cast<u8*>(ref) + 0x8);
+                s64 old_val = __atomic_fetch_sub(refcount, 1, __ATOMIC_ACQ_REL);
+                if (old_val == 0) {
+                    reinterpret_cast<void(*)(void*)>(
+                        (*reinterpret_cast<void***>(ref))[0x10/8])(ref);
+                    FUN_71039c20c0(ref);
+                }
+            }
+        }
+
+        begin = *reinterpret_cast<u64*>(inner + 0x110);
+        end   = *reinterpret_cast<u64*>(inner + 0x118);
+        idx++;
+    } while (idx < ((end - begin) >> 4));
 }
 
 } // namespace app::lua_bind
