@@ -27,4 +27,18 @@ bool BattleObjectWorld__is_disable_reverse_impl(BattleObjectWorld* world) {
     return reinterpret_cast<u8*>(world)[0x5d];
 }
 
+// 7101fca200 — scale_z (5 instructions, branch)
+f32 BattleObjectWorld__scale_z_impl(BattleObjectWorld* world) {
+    auto* p = reinterpret_cast<u8*>(world);
+    if (p[0xc]) return 1.0f;
+    return *reinterpret_cast<f32*>(p + 0x8);
+}
+
+// 7101fca2b0 — is_gravity_normal (8 instructions, branch)
+bool BattleObjectWorld__is_gravity_normal_impl(BattleObjectWorld* world) {
+    auto* p = reinterpret_cast<u8*>(world);
+    if (p[0x5c]) return true;
+    return p[0x59] != 0;
+}
+
 } // namespace app::lua_bind
