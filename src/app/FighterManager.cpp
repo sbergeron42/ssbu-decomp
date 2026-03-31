@@ -25,4 +25,33 @@ void FighterManager__disable_ko_camera_impl(FighterManager* mgr) {
     data[0xee] = 0;
 }
 
+// Simple field reads (3-5 instructions)
+bool FighterManager__is_disable_ko_camera_impl(FighterManager* mgr) {
+    auto* data = *reinterpret_cast<u8**>(mgr);
+    return data[0xee] == 0; // cmp #0, cset eq
+}
+bool FighterManager__is_melee_mode_homerun_impl(FighterManager* mgr) {
+    auto* data = *reinterpret_cast<u8**>(mgr);
+    return data[0xc0] == 9; // cmp #9, cset eq
+}
+bool FighterManager__is_melee_mode_online_tournament_impl(FighterManager* mgr) {
+    auto* data = *reinterpret_cast<u8**>(mgr);
+    return data[0xc0] == 0x18; // cmp #0x18, cset eq
+}
+bool FighterManager__is_discretion_final_enabled_impl(FighterManager* mgr) {
+    auto* data = *reinterpret_cast<u8**>(mgr);
+    return data[0xcc];
+}
+bool FighterManager__is_ready_go_impl(FighterManager* mgr) {
+    auto* data = *reinterpret_cast<u8**>(mgr);
+    return data[0xd2];
+}
+bool FighterManager__is_result_mode_impl(FighterManager* mgr) {
+    auto* data = *reinterpret_cast<u8**>(mgr);
+    return data[0xe9];
+}
+// Tail calls (2 instructions)
+bool FighterManager__is_final_impl(FighterManager* mgr);
+bool FighterManager__is_process_technique_impl(FighterManager* mgr);
+
 } // namespace app::lua_bind
