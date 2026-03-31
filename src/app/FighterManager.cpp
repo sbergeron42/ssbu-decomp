@@ -50,8 +50,19 @@ bool FighterManager__is_result_mode_impl(FighterManager* mgr) {
     auto* data = *reinterpret_cast<u8**>(mgr);
     return data[0xe9];
 }
-// Tail calls (2 instructions)
-bool FighterManager__is_final_impl(FighterManager* mgr);
-bool FighterManager__is_process_technique_impl(FighterManager* mgr);
+// 4-instruction setter with bool masking
+void FighterManager__set_cursor_whole_impl(FighterManager* mgr, bool val) {
+    auto* data = *reinterpret_cast<u8**>(mgr);
+    data[0xd6] = val & 1;
+}
+// 3-instruction getters
+u32 FighterManager__get_no_discretion_final_beat_count_impl(FighterManager* mgr) {
+    auto* data = *reinterpret_cast<u8**>(mgr);
+    return *reinterpret_cast<u32*>(data + 0xac);
+}
+u32 FighterManager__get_final_actor_entry_id_impl(FighterManager* mgr) {
+    auto* data = *reinterpret_cast<u8**>(mgr);
+    return *reinterpret_cast<u32*>(data + 0xa8);
+}
 
 } // namespace app::lua_bind
