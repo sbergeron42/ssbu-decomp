@@ -89,4 +89,21 @@ void KineticModule__add_speed_outside_impl(BattleObjectModuleAccessor* accessor,
     reinterpret_cast<void (*)(void*, void*, u64)>(vtable[0x160 / 8])(module, speed, p2);
 }
 
+// Remaining KineticModule dispatchers
+void KineticModule__v0x98(BattleObjectModuleAccessor* a) { auto* m=a->item_kinetic_module; auto* vt=*reinterpret_cast<void***>(m); reinterpret_cast<void(*)(void*)>(vt[0x98/8])(m); }
+void KineticModule__v0xa0(BattleObjectModuleAccessor* a,u64 p1) { auto* m=a->item_kinetic_module; auto* vt=*reinterpret_cast<void***>(m); reinterpret_cast<void(*)(void*,u64)>(vt[0xa0/8])(m,p1); }
+void KineticModule__v0xa8(BattleObjectModuleAccessor* a,u64 p1) { auto* m=a->item_kinetic_module; auto* vt=*reinterpret_cast<void***>(m); reinterpret_cast<void(*)(void*,u64)>(vt[0xa8/8])(m,p1); }
+void KineticModule__v0xb0(BattleObjectModuleAccessor* a,u64 p1) { auto* m=a->item_kinetic_module; auto* vt=*reinterpret_cast<void***>(m); reinterpret_cast<void(*)(void*,u64)>(vt[0xb0/8])(m,p1); }
+void KineticModule__v0xb8(BattleObjectModuleAccessor* a,u64 p1) { auto* m=a->item_kinetic_module; auto* vt=*reinterpret_cast<void***>(m); reinterpret_cast<void(*)(void*,u64)>(vt[0xb8/8])(m,p1); }
+void KineticModule__v0xe8(BattleObjectModuleAccessor* a,u64 p1) { auto* m=a->item_kinetic_module; auto* vt=*reinterpret_cast<void***>(m); reinterpret_cast<void(*)(void*,u64)>(vt[0xe8/8])(m,p1); }
+void KineticModule__v0xf0(BattleObjectModuleAccessor* a,bool p1) { auto* m=a->item_kinetic_module; auto* vt=*reinterpret_cast<void***>(m); reinterpret_cast<void(*)(void*,bool)>(vt[0xf0/8])(m,p1); }
+void KineticModule__v0x100(BattleObjectModuleAccessor* a,u64 p1) { auto* m=a->item_kinetic_module; auto* vt=*reinterpret_cast<void***>(m); reinterpret_cast<void(*)(void*,u64)>(vt[0x100/8])(m,p1); }
+void KineticModule__v0x108(BattleObjectModuleAccessor* a,u64 p1) { auto* m=a->item_kinetic_module; auto* vt=*reinterpret_cast<void***>(m); reinterpret_cast<void(*)(void*,u64)>(vt[0x108/8])(m,p1); }
+void KineticModule__v0x110(BattleObjectModuleAccessor* a,u64 p1) { auto* m=a->item_kinetic_module; auto* vt=*reinterpret_cast<void***>(m); reinterpret_cast<void(*)(void*,u64)>(vt[0x110/8])(m,p1); }
+void KineticModule__v0x128(BattleObjectModuleAccessor* a,u64 p1) { auto* m=a->item_kinetic_module; auto* vt=*reinterpret_cast<void***>(m); reinterpret_cast<void(*)(void*,u64)>(vt[0x128/8])(m,p1); }
+void KineticModule__v0x130(BattleObjectModuleAccessor* a,u64 p1) { auto* m=a->item_kinetic_module; auto* vt=*reinterpret_cast<void***>(m); reinterpret_cast<void(*)(void*,u64)>(vt[0x130/8])(m,p1); }
+void KineticModule__v0x140(BattleObjectModuleAccessor* a,u64 p1) { auto* m=a->item_kinetic_module; auto* vt=*reinterpret_cast<void***>(m); reinterpret_cast<void(*)(void*,u64)>(vt[0x140/8])(m,p1); }
+void KineticModule__v0x148(BattleObjectModuleAccessor* a,u64 p1) { auto* m=a->item_kinetic_module; auto* vt=*reinterpret_cast<void***>(m); reinterpret_cast<void(*)(void*,u64)>(vt[0x148/8])(m,p1); }
+void KineticModule__v0x150(BattleObjectModuleAccessor* a,u64 p1) { auto* m=a->item_kinetic_module; auto* vt=*reinterpret_cast<void***>(m); reinterpret_cast<void(*)(void*,u64)>(vt[0x150/8])(m,p1); }
+void KineticModule__v0x168(BattleObjectModuleAccessor* a,bool p1) { auto* m=a->item_kinetic_module; auto* vt=*reinterpret_cast<void***>(m); reinterpret_cast<void(*)(void*,bool)>(vt[0x168/8])(m,p1); }
 } // namespace app::lua_bind
