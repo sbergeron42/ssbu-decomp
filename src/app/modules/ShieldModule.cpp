@@ -17,4 +17,23 @@ void* ShieldModule__get_center_pos_impl(BattleObjectModuleAccessor* a) { auto* m
 f32 ShieldModule__get_lr_impl(BattleObjectModuleAccessor* a) { auto* m=SM(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x1A0/8])(m); }
 u32 ShieldModule__get_group_num_impl(BattleObjectModuleAccessor* a) { auto* m=SM(a); return reinterpret_cast<u32(*)(void*)>(VT(m)[0x1A8/8])(m); }
 f32 ShieldModule__get_pos_x_impl(BattleObjectModuleAccessor* a) { auto* m=SM(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x1B0/8])(m); }
+bool ShieldModule__is_shield_impl(BattleObjectModuleAccessor* a) { auto* m=SM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x88/8])(m); }
+void ShieldModule__set_size_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=SM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x90/8])(m,p1); }
+void ShieldModule__set_status_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=SM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x98/8])(m,p1); }
+void ShieldModule__set_status_all_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=SM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xa0/8])(m,p1); }
+bool ShieldModule__is_turn_impl(BattleObjectModuleAccessor* a) { auto* m=SM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0xa8/8])(m); }
+bool ShieldModule__is_hop_impl(BattleObjectModuleAccessor* a) { auto* m=SM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0xb8/8])(m); }
+bool ShieldModule__is_no_hop_impl(BattleObjectModuleAccessor* a) { auto* m=SM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0xc8/8])(m); }
+void ShieldModule__set_turn_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=SM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0xd0/8])(m,p1); }
+void ShieldModule__set_front_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=SM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xd8/8])(m,p1); }
+void ShieldModule__set_hop_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=SM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0xe0/8])(m,p1); }
+void ShieldModule__set_attack_mul_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=SM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xe8/8])(m,p1); }
+void ShieldModule__set_speed_mul_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=SM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xf8/8])(m,p1); }
+void ShieldModule__set_life_mul_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=SM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x108/8])(m,p1); }
+void ShieldModule__set_attack_limit_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=SM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x118/8])(m,p1); }
+void ShieldModule__set_hit_stop_mul_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=SM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x130/8])(m,p1); }
+bool ShieldModule__is_no_m_ball_impl(BattleObjectModuleAccessor* a) { auto* m=SM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x140/8])(m); }
+void ShieldModule__set_no_team_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=SM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x158/8])(m,p1); }
+void ShieldModule__set_shield_type_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=SM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x160/8])(m,p1); }
+void ShieldModule__set_target_property_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=SM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x1b8/8])(m,p1); }
 } // namespace app::lua_bind

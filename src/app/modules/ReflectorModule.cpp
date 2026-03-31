@@ -22,4 +22,17 @@ void* ReflectorModule__get_center_pos_impl(BattleObjectModuleAccessor* a) { auto
 f32 ReflectorModule__get_lr_impl(BattleObjectModuleAccessor* a) { auto* m=RF(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x1A0/8])(m); }
 u32 ReflectorModule__get_group_num_impl(BattleObjectModuleAccessor* a) { auto* m=RF(a); return reinterpret_cast<u32(*)(void*)>(VT(m)[0x1A8/8])(m); }
 f32 ReflectorModule__get_pos_x_impl(BattleObjectModuleAccessor* a) { auto* m=RF(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x1B0/8])(m); }
+void ReflectorModule__set_size_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=RF(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x90/8])(m,p1); }
+void ReflectorModule__set_status_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=RF(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x98/8])(m,p1); }
+void ReflectorModule__set_status_all_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=RF(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xa0/8])(m,p1); }
+void ReflectorModule__set_turn_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=RF(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0xd0/8])(m,p1); }
+void ReflectorModule__set_front_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=RF(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xd8/8])(m,p1); }
+void ReflectorModule__set_hop_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=RF(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0xe0/8])(m,p1); }
+void ReflectorModule__set_attack_mul_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=RF(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xe8/8])(m,p1); }
+void ReflectorModule__set_speed_mul_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=RF(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xf8/8])(m,p1); }
+void ReflectorModule__set_life_mul_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=RF(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x108/8])(m,p1); }
+void ReflectorModule__set_attack_limit_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=RF(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x118/8])(m,p1); }
+void ReflectorModule__set_hit_stop_mul_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=RF(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x130/8])(m,p1); }
+void ReflectorModule__set_no_team_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=RF(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x158/8])(m,p1); }
+void ReflectorModule__set_shield_type_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=RF(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x160/8])(m,p1); }
 } // namespace app::lua_bind

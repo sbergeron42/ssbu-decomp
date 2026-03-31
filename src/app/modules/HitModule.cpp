@@ -17,4 +17,11 @@ void HitModule__set_hit_stop_mul_impl(BattleObjectModuleAccessor* a,u64 p1) { au
 void* HitModule__get_center_pos_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=HM(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x200/8])(m,p1); }
 void HitModule__set_defense_mul_status_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=HM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x210/8])(m,p1); }
 bool HitModule__exist_log_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=HM(a); return reinterpret_cast<bool(*)(void*,u64)>(VT(m)[0x228/8])(m,p1); }
+void HitModule__sleep_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=HM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x70/8])(m,p1); }
+void HitModule__set_status_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=HM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xb0/8])(m,p1); }
+void HitModule__set_status_joint_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=HM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xb8/8])(m,p1); }
+void HitModule__set_status_joint_default_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=HM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xc0/8])(m,p1); }
+void HitModule__set_status_all_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=HM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xc8/8])(m,p1); }
+void HitModule__set_whole_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=HM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xd0/8])(m,p1); }
+void HitModule__set_xlu_global_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=HM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x108/8])(m,p1); }
 } // namespace app::lua_bind
