@@ -122,4 +122,22 @@ s32 FighterInformation__dead_count_impl(FighterInformation* fi, s32 index) {
     return *reinterpret_cast<s32*>(data + 0xcc + static_cast<s64>(index) * 4);
 }
 
+// 71020c9e90 — suicide_count (20 instructions)
+s32 FighterInformation__suicide_count_impl(FighterInformation* fi, s32 index) {
+    auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);
+    if (index == -2) {
+        return *reinterpret_cast<s32*>(data + 0x14c) +
+               *reinterpret_cast<s32*>(data + 0x150) +
+               *reinterpret_cast<s32*>(data + 0x154) +
+               *reinterpret_cast<s32*>(data + 0x158) +
+               *reinterpret_cast<s32*>(data + 0x15c) +
+               *reinterpret_cast<s32*>(data + 0x160);
+    }
+    auto* base = data + static_cast<s64>(index) * 4;
+    return *reinterpret_cast<s32*>(base + 0x14c) + *reinterpret_cast<s32*>(base + 0x158);
+}
+
+// 71020c9ee0 — total_beat_count (2 instructions, tail call)
+// Can't match without target function — skipping
+
 } // namespace app::lua_bind
