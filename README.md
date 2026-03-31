@@ -11,18 +11,18 @@ Targeting the final version: **patch 13.0.4**.
 | Category | Count | Percentage |
 |----------|------:|------------|
 | **Total functions** | 39,635 | |
-| Verified byte-identical | 1,538 | 3.88% |
-| Compiled (non-matching) | 475 | 1.20% |
+| Verified byte-identical | 1,547 | 3.90% |
+| Compiled (non-matching) | 466 | 1.18% |
 | **Total decompiled** | **2,013** | **5.08%** |
 | Undecompiled | 37,622 | 94.92% |
 
 ```
-Verified  [##                                      ]  1,538 / 39,635  (3.88%)
+Verified  [##                                      ]  1,547 / 39,635  (3.90%)
 Compiled  [##                                      ]  2,013 / 39,635  (5.08%)
 ```
 
-> **1,538 functions verified byte-identical** against the real 13.0.4 binary.
-> 89.8% match rate on verified functions. Viking/asm-differ tooling operational.
+> **1,547 functions verified byte-identical** against the real 13.0.4 binary.
+> 90% match rate on verified functions. Viking/asm-differ tooling operational.
 
 ## Build Info
 
