@@ -8,11 +8,11 @@ void ReflectModule__set_object_id_impl(BattleObjectModuleAccessor* a,u64 p1) { a
 u32 ReflectModule__team_no_impl(BattleObjectModuleAccessor* a) { auto* m=RM(a); return reinterpret_cast<u32(*)(void*)>(VT(m)[0x68/8])(m); }
 void ReflectModule__set_team_no_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=RM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x70/8])(m,p1); }
 f32 ReflectModule__attack_mul_impl(BattleObjectModuleAccessor* a) { auto* m=RM(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x78/8])(m); }
-void ReflectModule__set_attack_mul_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=RM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x80/8])(m,p1); }
+void ReflectModule__set_attack_mul_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xf8)); reinterpret_cast<void(*)(void*)>(VT(m)[0x80/8])(m); }
 f32 ReflectModule__speed_mul_impl(BattleObjectModuleAccessor* a) { auto* m=RM(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x88/8])(m); }
-void ReflectModule__set_speed_mul_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=RM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x90/8])(m,p1); }
+void ReflectModule__set_speed_mul_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xf8)); reinterpret_cast<void(*)(void*)>(VT(m)[0x90/8])(m); }
 f32 ReflectModule__life_mul_impl(BattleObjectModuleAccessor* a) { auto* m=RM(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x98/8])(m); }
-void ReflectModule__set_life_mul_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=RM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xa0/8])(m,p1); }
+void ReflectModule__set_life_mul_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xf8)); reinterpret_cast<void(*)(void*)>(VT(m)[0xa0/8])(m); }
 bool ReflectModule__is_reflect_impl(BattleObjectModuleAccessor* a) { auto* m=RM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0xa8/8])(m); }
 void ReflectModule__set_no_speed_mul_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=RM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0xb0/8])(m,p1); }
 bool ReflectModule__is_count_max_impl(BattleObjectModuleAccessor* a) { auto* m=RM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0xb8/8])(m); }

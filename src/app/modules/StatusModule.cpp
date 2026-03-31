@@ -34,7 +34,7 @@ s32 StatusModule__status_kind_interrupt_impl(BattleObjectModuleAccessor* accesso
 bool StatusModule__is_changing_impl(BattleObjectModuleAccessor* accessor) {
     auto* module = accessor->status_module;
     auto* vtable = *reinterpret_cast<void***>(module);
-    return reinterpret_cast<bool (*)(void*)>(vtable[0x130 / 8])(module);
+    return reinterpret_cast<bool (*)(void*)>(vtable[0x140 / 8])(module);
 }
 
 // 7102087770 — prev_status_kind
@@ -48,14 +48,14 @@ s32 StatusModule__prev_status_kind_impl(BattleObjectModuleAccessor* accessor) {
 s32 StatusModule__situation_kind_impl(BattleObjectModuleAccessor* accessor) {
     auto* module = accessor->status_module;
     auto* vtable = *reinterpret_cast<void***>(module);
-    return reinterpret_cast<s32 (*)(void*)>(vtable[0x148 / 8])(module);
+    return reinterpret_cast<s32 (*)(void*)>(vtable[0x168 / 8])(module);
 }
 
 // 71020877b0 — prev_situation_kind
 s32 StatusModule__prev_situation_kind_impl(BattleObjectModuleAccessor* accessor) {
     auto* module = accessor->status_module;
     auto* vtable = *reinterpret_cast<void***>(module);
-    return reinterpret_cast<s32 (*)(void*)>(vtable[0x150 / 8])(module);
+    return reinterpret_cast<s32 (*)(void*)>(vtable[0x170 / 8])(module);
 }
 
 // 71020876c0 [vtable+0x48] — change_status_request

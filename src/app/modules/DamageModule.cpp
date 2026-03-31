@@ -36,7 +36,7 @@ void DamageModule__set_no_reaction_mode_status_impl(BattleObjectModuleAccessor* 
 }
 // 710200b750 [vtable+0xf0] — reset_no_reaction_mode_status (search for this)
 void DamageModule__reset_no_reaction_mode_status_impl(BattleObjectModuleAccessor* a) {
-    auto* m = DMG(a); reinterpret_cast<void(*)(void*)>(VT(m)[0xf0/8])(m);
+    auto* m = DMG(a); reinterpret_cast<void(*)(void*)>(VT(m)[0xf8/8])(m);
 }
 // 710200b760 [vtable+0x120] — set_no_reaction_damage_power
 void DamageModule__set_no_reaction_damage_power_impl(BattleObjectModuleAccessor* a) {

@@ -15,12 +15,10 @@ import csv
 import struct
 import subprocess
 import sys
-import re
 from pathlib import Path
-from collections import defaultdict
 
 PROJECT_ROOT = Path(__file__).parent.parent
-ORIGINAL_ELF = PROJECT_ROOT / "original" / "main.elf"
+ORIGINAL_ELF = PROJECT_ROOT / "data" / "main.elf"
 DECOMP_ELF = PROJECT_ROOT / "build" / "ssbu-decomp.elf"
 FUNCTIONS_CSV = PROJECT_ROOT / "data" / "functions.csv"
 OBJDUMP = r"C:\llvm-8.0.0\bin\llvm-objdump.exe"
@@ -56,6 +54,32 @@ def read_bytes(f, segments, vaddr, size):
     return None
 
 
+def is_adrp(insn):
+    """Check if a 32-bit AArch64 instruction is ADRP."""
+    return (insn & 0x9F000000) == 0x90000000
+
+
+def is_add_imm(insn):
+    """Check if a 32-bit AArch64 instruction is ADD immediate."""
+    return (insn & 0x7F800000) == 0x11000000
+
+
+def insn_match_semantic(a, b):
+    """Compare two instructions, treating ADRP/ADD-imm page offsets as equivalent."""
+    if a == b:
+        return True
+    ai = struct.unpack('<I', a)[0]
+    bi = struct.unpack('<I', b)[0]
+    # ADRP: compare only Rd (bits 4:0), ignore page immediate
+    if is_adrp(ai) and is_adrp(bi):
+        return (ai & 0x1F) == (bi & 0x1F)
+    # ADD immediate: compare Rd, Rn, shift — ignore imm12 (bits 21:10)
+    if is_add_imm(ai) and is_add_imm(bi):
+        mask = 0xFFC003FF  # keep sf, op, S, shift, Rn, Rd — mask out imm12
+        return (ai & mask) == (bi & mask)
+    return False
+
+
 def get_decomp_symbols():
     """Get all function symbols from the decomp ELF."""
     result = subprocess.run(
@@ -74,51 +98,45 @@ def get_decomp_symbols():
     return symbols
 
 
-def demangle(name):
-    """Simple C++ demangling — extract the function name."""
-    # Try to use c++filt or llvm-cxxfilt
-    try:
-        result = subprocess.run(
-            [r"C:\llvm-8.0.0\bin\llvm-cxxfilt.exe", name],
-            capture_output=True, text=True, timeout=2
-        )
-        if result.returncode == 0:
-            return result.stdout.strip()
-    except:
-        pass
-    return name
+def extract_func_name(mangled):
+    """Extract the function name from an Itanium ABI mangled symbol.
+
+    All our symbols are _ZN3app8lua_bind<len><name>E<params>.
+    Parse the length-prefixed name directly — no demangler needed.
+    """
+    prefix = "_ZN3app8lua_bind"
+    if not mangled.startswith(prefix):
+        return None
+    rest = mangled[len(prefix):]
+    # Read decimal length prefix
+    i = 0
+    while i < len(rest) and rest[i].isdigit():
+        i += 1
+    if i == 0:
+        return None
+    length = int(rest[:i])
+    name = rest[i:i + length]
+    return name if len(name) == length else None
 
 
 def build_csv_lookup():
-    """Build a lookup from function name substrings to CSV addresses."""
+    """Build name → address lookups from functions.csv (viking 4-column format)."""
     lookup = {}
     with open(FUNCTIONS_CSV) as f:
-        for row in csv.DictReader(f):
-            name = row['Name']
-            addr = int(row['Address'], 16)
-            lookup[name] = addr
+        reader = csv.reader(f)
+        next(reader)  # skip header: Address,Quality,Size,Name
+        for row in reader:
+            addr = int(row[0], 16)
+            name = row[3]
+            # Index by full name (may be mangled or short)
+            if name not in lookup:
+                lookup[name] = addr
+            # Also index by short name extracted from mangled names
+            if name.startswith('_ZN3app8lua_bind'):
+                short = extract_func_name(name)
+                if short and short not in lookup:
+                    lookup[short] = addr
     return lookup
-
-
-def match_symbol_to_csv(mangled_name, demangled, csv_lookup):
-    """Try to match a decomp symbol to a CSV entry."""
-    # Extract the impl function name from demangled name
-    # e.g. "app::lua_bind::WorkModule__get_float_impl(app::BattleObjectModuleAccessor*, int)"
-    # -> "WorkModule__get_float_impl"
-    if '::' in demangled:
-        parts = demangled.split('::')
-        for part in parts:
-            if '__' in part:
-                func_name = part.split('(')[0]
-                if func_name in csv_lookup:
-                    return csv_lookup[func_name]
-
-    # Try matching the mangled name directly
-    for csv_name, csv_addr in csv_lookup.items():
-        if csv_name in mangled_name:
-            return csv_addr
-
-    return None
 
 
 def main():
@@ -134,23 +152,27 @@ def main():
     decomp_segments = load_elf_segments(DECOMP_ELF)
 
     perfect = 0
-    equivalent = 0
+    semantic = 0  # matches when ignoring ADRP/ADD-imm relocations
     mismatch = 0
     unmatched = 0
     total_bytes_matched = 0
     total_bytes_compared = 0
 
-    results = {}  # csv_name -> (status, match_pct)
+    results = {}  # func_name -> (status, match_pct)
     details = []
+    unmatched_names = []
 
     with open(ORIGINAL_ELF, 'rb') as orig_f, open(DECOMP_ELF, 'rb') as decomp_f:
         for mangled, decomp_addr, size in symbols:
-            demangled = demangle(mangled)
-            orig_addr = match_symbol_to_csv(mangled, demangled, csv_lookup)
+            func_name = extract_func_name(mangled)
 
-            if orig_addr is None:
+            if func_name is None or func_name not in csv_lookup:
                 unmatched += 1
+                if not summary_only and func_name:
+                    unmatched_names.append(func_name)
                 continue
+
+            orig_addr = csv_lookup[func_name]
 
             # Convert Ghidra address to ELF vaddr
             orig_vaddr = orig_addr - ELF_BASE if orig_addr >= ELF_BASE else orig_addr
@@ -161,43 +183,41 @@ def main():
 
             if orig_bytes is None or decomp_bytes is None:
                 unmatched += 1
+                if not summary_only:
+                    unmatched_names.append(f"{func_name} (bad address {orig_addr:#x})")
                 continue
 
             # Compare instruction by instruction (4 bytes each)
             num_insns = size // 4
-            match_count = 0
+            strict_count = 0
+            semantic_count = 0
             for i in range(0, min(len(orig_bytes), len(decomp_bytes)), 4):
-                if orig_bytes[i:i+4] == decomp_bytes[i:i+4]:
-                    match_count += 1
+                a = orig_bytes[i:i+4]
+                b = decomp_bytes[i:i+4]
+                if a == b:
+                    strict_count += 1
+                    semantic_count += 1
+                elif insn_match_semantic(a, b):
+                    semantic_count += 1
 
             total_bytes_compared += size
-            matched_bytes = match_count * 4
-            total_bytes_matched += matched_bytes
+            total_bytes_matched += strict_count * 4
 
-            # Extract short name for display
-            short_name = demangled.split('(')[0].split('::')[-1] if '::' in demangled else demangled
-
-            if match_count == num_insns:
+            if strict_count == num_insns:
                 perfect += 1
                 status = 'M'
-            elif match_count >= num_insns * 0.9:
-                equivalent += 1
-                status = 'E'
-                if not summary_only:
-                    details.append((short_name, match_count, num_insns))
+            elif semantic_count == num_insns:
+                semantic += 1
+                status = 'E'  # equivalent — differs only in relocations
             else:
                 mismatch += 1
                 status = 'N'
                 if not summary_only:
-                    details.append((short_name, match_count, num_insns))
+                    details.append((func_name, strict_count, semantic_count, num_insns))
 
-            # Find CSV name for update
-            for csv_name, csv_addr in csv_lookup.items():
-                if csv_addr == orig_addr:
-                    results[csv_name] = (status, match_count * 100 // num_insns if num_insns else 0)
-                    break
+            results[func_name] = (status, strict_count * 100 // num_insns if num_insns else 0)
 
-    total = perfect + equivalent + mismatch
+    total = perfect + semantic + mismatch
     total_funcs = len(symbols)
 
     print()
@@ -213,25 +233,35 @@ def main():
     if total > 0:
         bar_w = 40
         pf = perfect * bar_w // total
-        eq = equivalent * bar_w // total
-        mm = max(0, bar_w - pf - eq)
-        bar = '#' * pf + '~' * eq + '-' * mm
+        sm = semantic * bar_w // total
+        mm = max(0, bar_w - pf - sm)
+        bar = '#' * pf + '~' * sm + '-' * mm
         print(f"  [{bar}]")
         print()
-        print(f"  PERFECT MATCH:    {perfect:>5}  ({perfect*100/total:.1f}%)")
-        print(f"  Equivalent (>90%): {equivalent:>4}  ({equivalent*100/total:.1f}%)")
+        print(f"  BYTE-IDENTICAL:   {perfect:>5}  ({perfect*100/total:.1f}%)")
+        print(f"  SEMANTIC MATCH:   {semantic:>5}  ({semantic*100/total:.1f}%)  (ADRP/ADD reloc only)")
         print(f"  Non-matching:     {mismatch:>5}  ({mismatch*100/total:.1f}%)")
+        print(f"                    -----")
+        print(f"  TOTAL MATCHING:   {perfect+semantic:>5}  ({(perfect+semantic)*100/total:.1f}%)")
         print()
-        print(f"  Bytes: {total_bytes_matched:,} / {total_bytes_compared:,} match ({total_bytes_matched*100//total_bytes_compared}%)")
+        print(f"  Bytes: {total_bytes_matched:,} / {total_bytes_compared:,} strict match ({total_bytes_matched*100//total_bytes_compared}%)")
     print()
 
     if details and not summary_only:
-        print("  Non-perfect functions:")
-        for name, mc, tc in sorted(details, key=lambda x: -x[1]/x[2] if x[2] else 0)[:30]:
-            pct = mc * 100 // tc if tc else 0
-            print(f"    {name}: {mc}/{tc} ({pct}%)")
+        print("  Non-matching functions:")
+        for name, sc, smc, tc in sorted(details, key=lambda x: -x[2]/x[3] if x[3] else 0)[:30]:
+            pct = sc * 100 // tc if tc else 0
+            print(f"    {name}: {sc}/{tc} strict, {smc}/{tc} semantic")
         if len(details) > 30:
             print(f"    ... and {len(details) - 30} more")
+
+    if unmatched_names and not summary_only:
+        print()
+        print("  Unmatched symbols (no CSV entry):")
+        for name in unmatched_names[:20]:
+            print(f"    {name}")
+        if len(unmatched_names) > 20:
+            print(f"    ... and {len(unmatched_names) - 20} more")
 
     print()
 

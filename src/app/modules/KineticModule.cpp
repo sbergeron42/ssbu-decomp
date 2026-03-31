@@ -3,6 +3,9 @@
 // KineticModule uses the same accessor field as ItemKineticModule (+0x68)
 // The field is a polymorphic KineticModule base — Item and Fighter variants share it
 
+#define KINETIC_MODULE(a) (a->item_kinetic_module)
+#define VT(m) (*reinterpret_cast<void***>(m))
+
 namespace app::lua_bind {
 
 // 7102043990 — clear_speed_all
@@ -106,4 +109,22 @@ void KineticModule__v0x140(BattleObjectModuleAccessor* a,u64 p1) { auto* m=a->it
 void KineticModule__v0x148(BattleObjectModuleAccessor* a,u64 p1) { auto* m=a->item_kinetic_module; auto* vt=*reinterpret_cast<void***>(m); reinterpret_cast<void(*)(void*,u64)>(vt[0x148/8])(m,p1); }
 void KineticModule__v0x150(BattleObjectModuleAccessor* a,u64 p1) { auto* m=a->item_kinetic_module; auto* vt=*reinterpret_cast<void***>(m); reinterpret_cast<void(*)(void*,u64)>(vt[0x150/8])(m,p1); }
 void KineticModule__v0x168(BattleObjectModuleAccessor* a,bool p1) { auto* m=a->item_kinetic_module; auto* vt=*reinterpret_cast<void***>(m); reinterpret_cast<void(*)(void*,bool)>(vt[0x168/8])(m,p1); }
+// Auto-generated named dispatchers
+void* KineticModule__get_energy_impl(BattleObjectModuleAccessor* a) { auto* m=KINETIC_MODULE(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x60/8])(m); }
+void KineticModule__clear_speed_energy_id_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=KINETIC_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x98/8])(m,p1); }
+void KineticModule__clear_speed_attr_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=KINETIC_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xa0/8])(m,p1); }
+void* KineticModule__suspend_energy_all_impl(BattleObjectModuleAccessor* a) { auto* m=KINETIC_MODULE(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0xa8/8])(m); }
+void* KineticModule__resume_energy_all_impl(BattleObjectModuleAccessor* a) { auto* m=KINETIC_MODULE(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0xb0/8])(m); }
+void KineticModule__unable_energy_all_impl(BattleObjectModuleAccessor* a) { auto* m=KINETIC_MODULE(a); reinterpret_cast<void(*)(void*)>(VT(m)[0xb8/8])(m); }
+void* KineticModule__get_sum_rotation_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=KINETIC_MODULE(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0xe8/8])(m,p1); }
+void KineticModule__set_consider_ground_friction_impl(BattleObjectModuleAccessor* a,bool p1,u64 p2) { auto* m=KINETIC_MODULE(a); reinterpret_cast<void(*)(void*,bool,u64)>(VT(m)[0xf0/8])(m,p1,p2); }
+void* KineticModule__mul_accel_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=KINETIC_MODULE(a); return reinterpret_cast<void*(*)(void*,u64,u64)>(VT(m)[0x100/8])(m,p1,p2); }
+void* KineticModule__reflect_speed_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=KINETIC_MODULE(a); return reinterpret_cast<void*(*)(void*,u64,u64)>(VT(m)[0x108/8])(m,p1,p2); }
+void* KineticModule__reflect_accel_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=KINETIC_MODULE(a); return reinterpret_cast<void*(*)(void*,u64,u64)>(VT(m)[0x110/8])(m,p1,p2); }
+void KineticModule__enable_energy_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=KINETIC_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x128/8])(m,p1); }
+void KineticModule__unable_energy_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=KINETIC_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x130/8])(m,p1); }
+void* KineticModule__suspend_energy_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=KINETIC_MODULE(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x140/8])(m,p1); }
+void* KineticModule__resume_energy_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=KINETIC_MODULE(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x148/8])(m,p1); }
+bool KineticModule__is_suspend_energy_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=KINETIC_MODULE(a); return reinterpret_cast<bool(*)(void*,u64)>(VT(m)[0x150/8])(m,p1); }
+void* KineticModule__sleep_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=KINETIC_MODULE(a); return reinterpret_cast<void*(*)(void*,bool)>(VT(m)[0x168/8])(m,p1); }
 } // namespace app::lua_bind

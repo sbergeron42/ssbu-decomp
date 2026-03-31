@@ -1,0 +1,2 @@
+build_target = "ssbu-decomp.elf"
+functions_csv = "data/functions.csv"

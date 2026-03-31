@@ -36,7 +36,7 @@ void* PostureModule__prev_pos_impl(BattleObjectModuleAccessor* accessor) {
 void* PostureModule__prev_pos_2d_impl(BattleObjectModuleAccessor* accessor) {
     auto* module = accessor->posture_module;
     auto* vtable = *reinterpret_cast<void***>(module);
-    return reinterpret_cast<void* (*)(void*)>(vtable[0xa8 / 8])(module);
+    return reinterpret_cast<void* (*)(void*)>(vtable[0x98 / 8])(module);
 }
 
 // 710206af10 — lr

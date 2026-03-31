@@ -1,5 +1,8 @@
 #include "app/BattleObjectModuleAccessor.h"
 
+#define WORK_MODULE(a) (a->work_module)
+#define VT(m) (*reinterpret_cast<void***>(m))
+
 namespace app::lua_bind {
 
 // WorkModule vtable dispatchers — accessor+0x50
@@ -281,12 +284,12 @@ void WorkModule__enable_transition_term_group_impl_2(BattleObjectModuleAccessor*
 void WorkModule__unable_transition_term_group_impl(BattleObjectModuleAccessor* accessor, s32 group) {
     auto* module = accessor->work_module;
     auto* vtable = *reinterpret_cast<void***>(module);
-    reinterpret_cast<void (*)(void*, s32)>(vtable[0x170 / 8])(module, group);
+    reinterpret_cast<void (*)(void*, s32)>(vtable[0x148 / 8])(module, group);
 }
 void WorkModule__unable_transition_term_group_ex_impl(BattleObjectModuleAccessor* accessor, s32 group) {
     auto* module = accessor->work_module;
     auto* vtable = *reinterpret_cast<void***>(module);
-    reinterpret_cast<void (*)(void*, s32)>(vtable[0x178 / 8])(module, group);
+    reinterpret_cast<void (*)(void*, s32)>(vtable[0x170 / 8])(module, group);
 }
 void WorkModule__unable_transition_term_impl(BattleObjectModuleAccessor* accessor, s32 term) {
     auto* module = accessor->work_module;
@@ -314,4 +317,10 @@ void WorkModule__v0x200(BattleObjectModuleAccessor* accessor, s32 p1) {
     reinterpret_cast<void (*)(void*, s32)>(vtable[0x200 / 8])(module, p1);
 }
 
+// Auto-generated named dispatchers
+void WorkModule__unable_transition_term_group_ex_all_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=WORK_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x178/8])(m,p1); }
+bool WorkModule__is_enable_transition_term_forbid_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=WORK_MODULE(a); return reinterpret_cast<bool(*)(void*,u64)>(VT(m)[0x1a0/8])(m,p1); }
+void WorkModule__unable_transition_term_forbid_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=WORK_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x1b0/8])(m,p1); }
+void WorkModule__unable_transition_term_forbid_group_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=WORK_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x1c0/8])(m,p1); }
+void WorkModule__unable_transition_term_forbid_indivi_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=WORK_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x200/8])(m,p1); }
 } // namespace app::lua_bind

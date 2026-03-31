@@ -1,6 +1,7 @@
 #include "app/BattleObjectModuleAccessor.h"
 // ControlModule — accessor+0x48 (same field as FighterControlModule)
 #define CM(a) (a->fighter_control_module)
+#define CONTROL_MODULE(a) CM(a)
 #define VT(m) (*reinterpret_cast<void***>(m))
 namespace app::lua_bind {
 f32 ControlModule__get_stick_angle_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x48/8])(m); }
@@ -13,15 +14,15 @@ void ControlModule__set_dec_time_impl(BattleObjectModuleAccessor* a,u64 p1) { au
 void ControlModule__set_dec_time_recovery_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x88/8])(m,p1); }
 void ControlModule__set_clatter_time_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x90/8])(m,p1); }
 void ControlModule__add_clatter_time_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x98/8])(m,p1); }
-f32 ControlModule__get_clatter_time_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0xa0/8])(m); }
+void* ControlModule__get_clatter_time_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x48)); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0xa0/8])(m,p1); }
 void ControlModule__set_clatter_stop_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=CM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0xa8/8])(m,p1); }
 bool ControlModule__is_clatter_stop_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0xb0/8])(m); }
 void ControlModule__end_clatter_motion_rate_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0xc0/8])(m); }
-void ControlModule__end_clatter_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0xc8/8])(m); }
+void* ControlModule__end_clatter_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x48)); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0xc8/8])(m,p1); }
 bool ControlModule__is_input_clatter_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0xd0/8])(m); }
-void ControlModule__set_clatter_shake_scale_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xe8/8])(m,p1); }
-void ControlModule__set_main_stick_x_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x110/8])(m,p1); }
-void ControlModule__set_main_stick_y_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x120/8])(m,p1); }
+void ControlModule__set_clatter_shake_scale_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x48)); reinterpret_cast<void(*)(void*)>(VT(m)[0xe8/8])(m); }
+void ControlModule__set_main_stick_x_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x48)); reinterpret_cast<void(*)(void*)>(VT(m)[0x110/8])(m); }
+void ControlModule__set_main_stick_y_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x48)); reinterpret_cast<void(*)(void*)>(VT(m)[0x120/8])(m); }
 f32 ControlModule__get_stick_x_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x178/8])(m); }
 f32 ControlModule__get_stick_prev_x_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x180/8])(m); }
 f32 ControlModule__get_stick_y_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x188/8])(m); }
@@ -44,8 +45,8 @@ f32 ControlModule__get_sub_stick_prev_x_impl(BattleObjectModuleAccessor* a) { au
 f32 ControlModule__get_sub_stick_y_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x210/8])(m); }
 f32 ControlModule__get_sub_stick_prev_y_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x218/8])(m); }
 u32 ControlModule__get_trigger_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); return reinterpret_cast<u32(*)(void*)>(VT(m)[0x220/8])(m); }
-u32 ControlModule__get_trigger_count_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); return reinterpret_cast<u32(*)(void*)>(VT(m)[0x228/8])(m); }
-u32 ControlModule__get_trigger_count_prev_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); return reinterpret_cast<u32(*)(void*)>(VT(m)[0x230/8])(m); }
+u32 ControlModule__get_trigger_count_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x48)); return reinterpret_cast<u32(*)(void*,u64)>(VT(m)[0x228/8])(m,p1); }
+u32 ControlModule__get_trigger_count_prev_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x48)); return reinterpret_cast<u32(*)(void*,u64)>(VT(m)[0x230/8])(m,p1); }
 u32 ControlModule__get_button_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); return reinterpret_cast<u32(*)(void*)>(VT(m)[0x238/8])(m); }
 u32 ControlModule__get_button_prev_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); return reinterpret_cast<u32(*)(void*)>(VT(m)[0x240/8])(m); }
 u32 ControlModule__get_release_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); return reinterpret_cast<u32(*)(void*)>(VT(m)[0x248/8])(m); }
@@ -56,12 +57,12 @@ bool ControlModule__check_button_off_impl(BattleObjectModuleAccessor* a,u64 p1) 
 bool ControlModule__check_button_on_trriger_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CM(a); return reinterpret_cast<bool(*)(void*,u64)>(VT(m)[0x270/8])(m,p1); }
 bool ControlModule__check_button_on_release_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CM(a); return reinterpret_cast<bool(*)(void*,u64)>(VT(m)[0x278/8])(m,p1); }
 void ControlModule__set_off_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=CM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x280/8])(m,p1); }
-bool ControlModule__is_stick_reversed_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x298/8])(m); }
-f32 ControlModule__get_clatter_threshold_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x2a0/8])(m); }
-void ControlModule__set_rumble_hit_data_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,bool p3) { auto* m=CM(a); reinterpret_cast<void(*)(void*,u64,u64,bool)>(VT(m)[0x2b0/8])(m,p1,p2,p3); }
+bool ControlModule__is_stick_reversed_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x48)); return reinterpret_cast<bool(*)(void*,u64)>(VT(m)[0x298/8])(m,p1); }
+void* ControlModule__get_clatter_threshold_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x48)); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x2a0/8])(m,p1); }
+void ControlModule__set_rumble_hit_data_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,bool p3,u64 p4,u64 p5) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x48)); reinterpret_cast<void(*)(void*,u64,u64,bool,u64,u64)>(VT(m)[0x2b0/8])(m,p1,p2,p3,p4,p5); }
 void ControlModule__clear_rumble_hit_data_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x2b8/8])(m); }
-void ControlModule__set_rumble_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,bool p3) { auto* m=CM(a); reinterpret_cast<void(*)(void*,u64,u64,bool)>(VT(m)[0x2d0/8])(m,p1,p2,p3); }
-void ControlModule__set_rumble_all_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x2d8/8])(m,p1); }
+void ControlModule__set_rumble_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,bool p3,u64 p4) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x48)); reinterpret_cast<void(*)(void*,u64,u64,bool,u64)>(VT(m)[0x2d0/8])(m,p1,p2,p3,p4); }
+void ControlModule__set_rumble_all_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,u64 p3) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x48)); reinterpret_cast<void(*)(void*,u64,u64,u64)>(VT(m)[0x2d8/8])(m,p1,p2,p3); }
 void ControlModule__set_reverse_x_frame_impl(BattleObjectModuleAccessor* a,u64 p1,bool p2) { auto* m=CM(a); reinterpret_cast<void(*)(void*,u64,bool)>(VT(m)[0x308/8])(m,p1,p2); }
 f32 ControlModule__get_lr_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x310/8])(m); }
 f32 ControlModule__get_flick_bonus_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x318/8])(m); }
@@ -71,13 +72,13 @@ f32 ControlModule__get_stick_y_no_clamp_impl(BattleObjectModuleAccessor* a) { au
 u32 ControlModule__get_pad_flag_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); return reinterpret_cast<u32(*)(void*)>(VT(m)[0x348/8])(m); }
 u32 ControlModule__get_command_flag_cat_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CM(a); return reinterpret_cast<u32(*)(void*,u64)>(VT(m)[0x350/8])(m,p1); }
 void ControlModule__clear_command_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=CM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x358/8])(m,p1); }
-void ControlModule__clear_command_one_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x360/8])(m,p1); }
-u32 ControlModule__get_command_life_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); return reinterpret_cast<u32(*)(void*)>(VT(m)[0x368/8])(m); }
+void ControlModule__clear_command_one_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x48)); reinterpret_cast<void(*)(void*,u64,u64)>(VT(m)[0x360/8])(m,p1,p2); }
+void* ControlModule__get_command_life_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x48)); return reinterpret_cast<void*(*)(void*,u64,u64)>(VT(m)[0x368/8])(m,p1,p2); }
 u32 ControlModule__get_command_life_count_max_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); return reinterpret_cast<u32(*)(void*)>(VT(m)[0x370/8])(m); }
 void ControlModule__set_command_life_extend_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x378/8])(m,p1); }
 bool ControlModule__is_clear_command_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x380/8])(m); }
 void ControlModule__exec_command_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=CM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x388/8])(m,p1); }
-void ControlModule__set_back_command_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x390/8])(m,p1); }
+void ControlModule__set_back_command_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x48)); reinterpret_cast<void(*)(void*)>(VT(m)[0x390/8])(m); }
 s32 ControlModule__get_attack_hi3_fb_kind_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); return reinterpret_cast<s32(*)(void*)>(VT(m)[0x3a0/8])(m); }
 s32 ControlModule__get_attack_lw3_fb_kind_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); return reinterpret_cast<s32(*)(void*)>(VT(m)[0x3a8/8])(m); }
 s32 ControlModule__get_attack_air_kind_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); return reinterpret_cast<s32(*)(void*)>(VT(m)[0x3b0/8])(m); }
@@ -90,10 +91,10 @@ void ControlModule__set_down_stand_fb_kind_impl(BattleObjectModuleAccessor* a,u6
 bool ControlModule__is_jump_mini_button_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x428/8])(m); }
 void ControlModule__set_add_jump_mini_button_life_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x430/8])(m,p1); }
 bool ControlModule__is_remake_command_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x440/8])(m); }
-f32 ControlModule__get_reserve_turn_lr_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x448/8])(m); }
-void ControlModule__delete_reserve_turn_lr_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x450/8])(m); }
+void* ControlModule__get_reserve_turn_lr_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x48)); return reinterpret_cast<void*(*)(void*,u64,u64)>(VT(m)[0x448/8])(m,p1,p2); }
+void* ControlModule__delete_reserve_turn_lr_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x48)); return reinterpret_cast<void*(*)(void*,u64,u64)>(VT(m)[0x450/8])(m,p1,p2); }
 void ControlModule__set_special_command_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=CM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x458/8])(m,p1); }
-f32 ControlModule__get_special_command_lr_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x470/8])(m); }
+void* ControlModule__get_special_command_lr_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x48)); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x470/8])(m,p1); }
 void ControlModule__set_overwrite_special_button_raw_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=CM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x480/8])(m,p1); }
 void ControlModule__set_special_command_life_count_extend_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x490/8])(m,p1); }
 // Remaining ControlModule dispatchers
@@ -103,14 +104,14 @@ void ControlModule__reset_button_impl(BattleObjectModuleAccessor* a) { auto* m=C
 void ControlModule__reset_button_on_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0xf8/8])(m); }
 void ControlModule__reset_button_off_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x100/8])(m); }
 void ControlModule__reset_button_trigger_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x108/8])(m); }
-void ControlModule__reset_main_stick_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x118/8])(m); }
-void ControlModule__reset_sub_stick_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x128/8])(m); }
-void ControlModule__reset_main_stick_x_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x130/8])(m); }
-void ControlModule__reset_main_stick_y_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x138/8])(m); }
-void ControlModule__reset_flick_x_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x140/8])(m); }
-void ControlModule__reset_flick_sub_x_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x158/8])(m); }
-void ControlModule__reset_flick_sub_y_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x160/8])(m); }
-void ControlModule__reset_trigger_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x168/8])(m); }
+void ControlModule__reset_main_stick_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x128/8])(m); }
+void ControlModule__reset_sub_stick_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x140/8])(m); }
+void ControlModule__reset_main_stick_x_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x108/8])(m); }
+void ControlModule__reset_main_stick_y_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x118/8])(m); }
+void ControlModule__reset_flick_x_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x158/8])(m); }
+void ControlModule__reset_flick_sub_x_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x168/8])(m); }
+void ControlModule__reset_flick_sub_y_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x170/8])(m); }
+void ControlModule__reset_trigger_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0xf8/8])(m); }
 void ControlModule__reset_trigger_count_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x170/8])(m); }
 void ControlModule__set_near_cliff_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=CM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x290/8])(m,p1); }
 void ControlModule__set_rumble_body_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x2c0/8])(m,p1); }
@@ -133,4 +134,29 @@ void ControlModule__set_special_command_reserve_impl(BattleObjectModuleAccessor*
 bool ControlModule__get_special_command_reserve_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x468/8])(m); }
 f32 ControlModule__get_special_command_stick_lr_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x478/8])(m); }
 void ControlModule__set_special_command_life_count_max_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x488/8])(m,p1); }
+// Auto-generated named dispatchers
+void ControlModule__reset_trigger_2_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CONTROL_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x100/8])(m,p1); }
+void ControlModule__reset_sub_stick_x_impl(BattleObjectModuleAccessor* a) { auto* m=CONTROL_MODULE(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x130/8])(m); }
+void ControlModule__reset_sub_stick_y_impl(BattleObjectModuleAccessor* a) { auto* m=CONTROL_MODULE(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x138/8])(m); }
+void ControlModule__reset_flick_y_impl(BattleObjectModuleAccessor* a) { auto* m=CONTROL_MODULE(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x160/8])(m); }
+void ControlModule__set_stick_reverse_impl(BattleObjectModuleAccessor* a,bool p1,u64 p2) { auto* m=CONTROL_MODULE(a); reinterpret_cast<void(*)(void*,bool,u64)>(VT(m)[0x290/8])(m,p1,p2); }
+void* ControlModule__request_rumble_hit_impl(BattleObjectModuleAccessor* a) { auto* m=CONTROL_MODULE(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x2c0/8])(m); }
+void* ControlModule__stop_rumble_kind_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=CONTROL_MODULE(a); return reinterpret_cast<void*(*)(void*,u64,u64)>(VT(m)[0x2e0/8])(m,p1,p2); }
+void* ControlModule__stop_rumble_id_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CONTROL_MODULE(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x2e8/8])(m,p1); }
+void* ControlModule__stop_rumble_all_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=CONTROL_MODULE(a); return reinterpret_cast<void*(*)(void*,u64,u64)>(VT(m)[0x2f8/8])(m,p1,p2); }
+void ControlModule__reset_flick_bonus_impl(BattleObjectModuleAccessor* a) { auto* m=CONTROL_MODULE(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x328/8])(m); }
+void ControlModule__reset_flick_bonus_lr_impl(BattleObjectModuleAccessor* a) { auto* m=CONTROL_MODULE(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x330/8])(m); }
+void ControlModule__reset_turn_lr_impl(BattleObjectModuleAccessor* a) { auto* m=CONTROL_MODULE(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x398/8])(m); }
+void ControlModule__reset_attack_air_kind_impl(BattleObjectModuleAccessor* a) { auto* m=CONTROL_MODULE(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x3b8/8])(m); }
+void ControlModule__reset_down_stand_fb_kind_impl(BattleObjectModuleAccessor* a) { auto* m=CONTROL_MODULE(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x3e8/8])(m); }
+void* ControlModule__item_light_throw_fb_kind_impl(BattleObjectModuleAccessor* a) { auto* m=CONTROL_MODULE(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x3f8/8])(m); }
+void* ControlModule__item_light_throw_fb4_kind_impl(BattleObjectModuleAccessor* a) { auto* m=CONTROL_MODULE(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x400/8])(m); }
+void* ControlModule__item_light_throw_air_fb_kind_impl(BattleObjectModuleAccessor* a) { auto* m=CONTROL_MODULE(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x408/8])(m); }
+void* ControlModule__item_light_throw_air_fb4_kind_impl(BattleObjectModuleAccessor* a) { auto* m=CONTROL_MODULE(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x410/8])(m); }
+void* ControlModule__item_heavy_throw_fb_kind_impl(BattleObjectModuleAccessor* a) { auto* m=CONTROL_MODULE(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x418/8])(m); }
+void* ControlModule__special_s_turn_impl(BattleObjectModuleAccessor* a) { auto* m=CONTROL_MODULE(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x420/8])(m); }
+void ControlModule__reset_special_command_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=CONTROL_MODULE(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x460/8])(m,p1); }
+void* ControlModule__reverse_special_command_impl(BattleObjectModuleAccessor* a) { auto* m=CONTROL_MODULE(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x468/8])(m); }
+void* ControlModule__reverse_x_frame_impl(BattleObjectModuleAccessor* a) { auto* m=CONTROL_MODULE(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x478/8])(m); }
+void ControlModule__set_special_command_life_extend_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CONTROL_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x488/8])(m,p1); }
 } // namespace app::lua_bind
