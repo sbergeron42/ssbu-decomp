@@ -22064,7 +22064,7 @@ Address,Name,Status
 7102140670,FUN_7102140670,U
 7102140760,FUN_7102140760,U
 71021408e0,FUN_71021408e0,U
-7102140d60,FighterManager__entry_count_impl,U
+7102140d60,FighterManager__entry_count_impl,M
 7102140d70,FighterManager__total_fighter_num_impl,U
 7102140e10,FighterManager__get_entry_id_impl,U
 7102140ee0,FighterManager__get_entry_no_impl,U
@@ -22098,8 +22098,8 @@ Address,Name,Status
 7102141610,FighterManager__is_process_technique_impl,U
 7102141620,FighterManager__is_result_mode_impl,U
 7102141630,FighterManager__is_disable_ko_camera_impl,U
-7102141650,FighterManager__enable_ko_camera_impl,U
-7102141660,FighterManager__disable_ko_camera_impl,U
+7102141650,FighterManager__enable_ko_camera_impl,M
+7102141660,FighterManager__disable_ko_camera_impl,M
 7102141670,FighterManager__set_dead_up_camera_hit_cursor_status_impl,U
 71021417b0,FighterManager__set_controller_rumble_all_impl,U
 71021417c0,FighterManager__is_rebirth_plate_line_impl,U
