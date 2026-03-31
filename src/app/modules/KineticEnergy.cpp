@@ -42,4 +42,18 @@ void KineticEnergy__off_consider_ground_friction_impl(KineticEnergy* ke) { reint
 void KineticEnergy__enable_impl(KineticEnergy* ke) { *reinterpret_cast<u8*>(reinterpret_cast<u8*>(ke) + 0x30) = 1; }
 void KineticEnergy__unable_impl(KineticEnergy* ke) { *reinterpret_cast<u8*>(reinterpret_cast<u8*>(ke) + 0x30) = 0; }
 
+// 71020f6580 — ldrb w0,[x0,#0x30]; ret
+u8 KineticEnergy__is_enable_impl(KineticEnergy* ke) {
+    return *reinterpret_cast<u8*>(reinterpret_cast<u8*>(ke) + 0x30);
+}
+
+// 71020f6430 — framed vtable call, ldr d0,[x0], movi d1,#0, mov v0.D[1],v1.D[0]
+typedef double v2f64 __attribute__((vector_size(16)));
+v2f64 KineticEnergy__get_speed_impl(KineticEnergy* ke) {
+    auto fn = reinterpret_cast<double*(*)(KineticEnergy*)>(VT(ke)[0x20/8]);
+    double* ptr = fn(ke);
+    asm("");
+    return {*ptr, 0.0};
+}
+
 } // namespace app::lua_bind
