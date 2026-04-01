@@ -279,6 +279,20 @@ def generate(name, addr, insns):
                 return code, 'vtable-dispatch'
 
         if is_ret(i2):
+            # Pattern 9c-extra: ldrb w8, [x0, #off]; lsl x0, x8, #shift; ret → scaled byte read
+            # UBFM x0, x8, #(64-shift), #(63-shift) encodes LSL x0, x8, #shift
+            if ((i0 & 0xFFC00000) == 0x39400000 and (i0 & 0x1F) == 8 and ((i0 >> 5) & 0x1F) == 0 and
+                    (i1 & 0xFF800000) == 0xD3000000 and (i1 & 0x1F) == 0 and ((i1 >> 5) & 0x1F) == 8):
+                off0 = (i0 >> 10) & 0xFFF
+                # Decode LSL shift from UBFM: immr = 64-shift, imms = 63-shift (for LSL)
+                immr = (i1 >> 16) & 0x3F
+                imms = (i1 >> 10) & 0x3F
+                shift = 64 - immr  # LSL #shift → UBFM immr=64-shift, imms=63-shift
+                if 1 <= shift <= 63 and imms == 63 - shift:
+                    ptr = 'reinterpret_cast<u8*>(obj)' if off0 == 0 else 'reinterpret_cast<u8*>(obj) + %s' % hex(off0)
+                    return ('u64 %s(void* obj) { u8 t = *reinterpret_cast<u8*>(%s); return (u64)t << %d; }' % (fn, ptr, shift),
+                            'ldrb-lsl-ret')
+
             # Pattern 9d: mov wN, #imm16 + strb wN, [x0, #off]; ret  → set byte to constant
             if ((i0 & 0xFF800000) == 0x52800000 and
                     (i1 & 0xFFC00000) == 0x39000000 and ((i1 >> 5) & 0x1F) == 0):
