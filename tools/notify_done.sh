@@ -1,18 +1,21 @@
 #!/bin/bash
-# Worker notification: signal orchestrator + desktop toast
+# Worker notification: triggers orchestrator lambda to merge + reassign.
+# Usage: bash tools/notify_done.sh pool-a "Fixed 5 functions"
+
 POOL="$1"
 MSG="${2:-done}"
-BUS_DIR="$(dirname "$0")/../.claude_bus"
-mkdir -p "$BUS_DIR"
-echo "$(date +%H:%M:%S) $MSG" > "$BUS_DIR/$POOL.done"
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
-# Windows desktop toast notification
-powershell.exe -Command "
-  [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
-  [Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom, ContentType = WindowsRuntime] | Out-Null
-  \$xml = [Windows.Data.Xml.Dom.XmlDocument]::new()
-  \$xml.LoadXml('<toast><visual><binding template=\"ToastText02\"><text id=\"1\">SSBU Decomp: $POOL done</text><text id=\"2\">$MSG — tell orchestrator to check</text></binding></visual></toast>')
-  [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('Claude Code').Show([Windows.UI.Notifications.ToastNotification]::new(\$xml))
-" 2>/dev/null
+echo "[$POOL] Triggering orchestrator lambda..."
+echo "[$POOL] Message: $MSG"
 
-echo "Notified orchestrator: $POOL is done ($MSG)"
+# Invoke Claude as a one-shot orchestrator lambda
+claude -p "Run this command and report the output: python tools/orchestrate_merge.py $POOL" \
+  --cwd "$REPO_ROOT" \
+  --model sonnet \
+  --allowedTools "Bash(run python scripts and git commands:*)" \
+  2>&1
+
+echo ""
+echo "[$POOL] Orchestrator complete. Check WORKER.md for your next assignment."
+echo "[$POOL] Run: cat WORKER.md"
