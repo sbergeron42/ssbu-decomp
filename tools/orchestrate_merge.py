@@ -160,12 +160,35 @@ def get_non_matching_modules(verify_output):
     return non_matching
 
 
+def is_pool_active(pool):
+    """Check if a pool has uncommitted work or pending commits (i.e., actively working)."""
+    worktree = PARENT_DIR / f"SSBU Decomp-{pool}"
+    if not worktree.exists():
+        return False
+    # Check for uncommitted changes
+    r = subprocess.run('git status --porcelain', shell=True, capture_output=True,
+                      text=True, cwd=str(worktree))
+    has_changes = bool(r.stdout.strip())
+    # Check for unpushed commits ahead of master
+    r = subprocess.run(f'git log master..worker/{pool} --oneline', shell=True,
+                      capture_output=True, text=True, cwd=str(PROJECT_ROOT))
+    has_commits = bool(r.stdout.strip())
+    return has_changes or has_commits
+
+
 def get_claimed_modules(exclude_pool):
-    """Read all other pools' WORKER.md to find claimed modules."""
+    """Read ACTIVE pools' WORKER.md to find claimed modules.
+
+    Only counts modules from pools that are actively working (have uncommitted
+    changes or pending commits). Idle pools don't claim anything.
+    """
     claimed = set()
     for pool in ALL_POOLS:
         if pool == exclude_pool:
             continue
+        if not is_pool_active(pool):
+            continue
+
         worktree = PARENT_DIR / f"SSBU Decomp-{pool}"
         worker_md = worktree / "WORKER.md"
         if not worker_md.exists():
@@ -183,7 +206,6 @@ def get_claimed_modules(exclude_pool):
                 continue
             if '__' in mod or mod.startswith('FUN_'):
                 continue
-            # Likely a module name
             claimed.add(mod)
 
     return claimed
