@@ -228,4 +228,168 @@ u64 GetConstantBufferForVertexShader_54150(void* param_1, void* param_2) {
     return p + *reinterpret_cast<u32*>(reinterpret_cast<u8*>(param_1) + 0x30);
 }
 
+
+// MANUAL: 0x7100112be0  nn::pia::inet::NexSessionInfo::SetUserPasswordEnabled  (and-1+strb)
+void SetUserPasswordEnabled_112be0(void* obj, u8 val) {
+    *reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj) + 0x234) = val & 1;
+}
+
+// MANUAL: 0x7100112bf0  nn::pia::inet::NexSessionInfo::SetSystemPasswordEnabled  (and-1+strb)
+void SetSystemPasswordEnabled_112bf0(void* obj, u8 val) {
+    *reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj) + 0x235) = val & 1;
+}
+
+// MANUAL: 0x7100112c00  nn::pia::inet::NexSessionInfo::SetSessionType  (str+and-1+strb)
+// and w8,w2,#1; str w1,[x0,#0x238]; strb w8,[x0,#0x23c]; ret
+void SetSessionType_112c00(void* obj, u32 param2, u8 val) {
+    *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x238) = param2;
+    *reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj) + 0x23c) = val & 1;
+}
+
+// MANUAL: 0x7100114d90  nn::pia::inet::NexSessionSearchCriteriaParticipant::SetApplicationDataEnabled  (and-1+strb)
+void SetApplicationDataEnabled_114d90(void* obj, u8 val) {
+    *reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj) + 0x97f) = val & 1;
+}
+
+// MANUAL: 0x7100255b10  nn::nex::MatchmakeSessionSearchCriteria::SetExcludeLocked  (and-1+strb)
+void SetExcludeLocked_255b10(void* obj, u8 val) {
+    *reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj) + 0xc9) = val & 1;
+}
+
+// MANUAL: 0x7100255b20  nn::nex::MatchmakeSessionSearchCriteria::SetVacantOnly  (and-1+strb+orr-1+strh)
+// and w8,w1,#1; strb w8,[x0,#0xc8]; orr w8,wzr,#1; strh w8,[x0,#0xd0]; ret
+void SetVacantOnly_255b20(void* obj, u8 val) {
+    *reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj) + 0xc8) = val & 1;
+    *reinterpret_cast<u16*>(reinterpret_cast<u8*>(obj) + 0xd0) = 1;
+}
+
+// MANUAL: 0x7100255b40  nn::nex::MatchmakeSessionSearchCriteria::SetExcludeNonHostPid  (and-1+strb)
+void SetExcludeNonHostPid_255b40(void* obj, u8 val) {
+    *reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj) + 0xca) = val & 1;
+}
+
+// MANUAL: 0x7100255b50  nn::nex::MatchmakeSessionSearchCriteria::SetExcludeUserPasswordSet  (and-1+strb)
+void SetExcludeUserPasswordSet_255b50(void* obj, u8 val) {
+    *reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj) + 0x100) = val & 1;
+}
+
+// MANUAL: 0x71001b08c0  nn::nex::DateTime::GetYear  (ldr+ubfx-14bits-at-26)
+// ldr x8,[x0]; ubfm x0,x8,#26,#39; ret
+u64 GetYear_1b08c0(void* obj) {
+    return *reinterpret_cast<u64*>(obj) >> 26 & 0x3fff;
+}
+
+// MANUAL: 0x71001b08e0  nn::nex::DateTime::GetDay  (ldr-w+ubfx-5bits-at-17)
+// ldr w8,[x0]; ubfm w0,w8,#17,#21; ret
+u32 GetDay_1b08e0(void* obj) {
+    return *reinterpret_cast<u32*>(obj) >> 17 & 0x1f;
+}
+
+// MANUAL: 0x71001b08f0  nn::nex::DateTime::GetHour  (ldr-w+ubfx-5bits-at-12)
+u32 GetHour_1b08f0(void* obj) {
+    return *reinterpret_cast<u32*>(obj) >> 12 & 0x1f;
+}
+
+// MANUAL: 0x71001b0900  nn::nex::DateTime::GetMinute  (ldr-w+ubfx-6bits-at-6)
+u32 GetMinute_1b0900(void* obj) {
+    return *reinterpret_cast<u32*>(obj) >> 6 & 0x3f;
+}
+
+// MANUAL: 0x71001b11f0  nn::nex::qResult::GetFacility  (ldrh+and-0x7ff)
+// ldrh w8,[x0,#2]; and w0,w8,#0x7ff; ret
+u16 GetFacility_1b11f0(void* obj) {
+    return *reinterpret_cast<u16*>(reinterpret_cast<u8*>(obj) + 2) & 0x7ff;
+}
+
+// MANUAL: 0x71001b6170  nn::nex::StringStream::GetLength  (ldr-ldr-sub)
+// ldr x8,[x0,#0x18]; ldr x9,[x0,#8]; sub x0,x8,x9; ret
+u64 GetLength_1b6170(void* obj) {
+    return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x18) -
+           *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 8);
+}
+
+// MANUAL: 0x71001cbc40  nn::nex::Key::GetLength  (ldp+sub)
+// ldp x8,x9,[x0,#0x10]; sub x0,x9,x8; ret
+u64 GetLength_1cbc40(void* obj) {
+    return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x18) -
+           *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x10);
+}
+
+// MANUAL: 0x71001d0c80  nn::nex::CallContext::SetDependentConnection  (str-x1+str-w2)
+// str x1,[x0,#0x70]; str w2,[x0,#0x78] (actually +0xf0? check); ret
+void SetDependentConnection_1d0c80(void* obj, u64 param2, u32 param3) {
+    *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x70) = param2;
+    *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x78) = param3;
+}
+
+// MANUAL: 0x71001b3e70  nn::nex::qReservedQueue::clear  (stp-xzr+str-xzr)
+// stp xzr,xzr,[x0,#0x28]; str xzr,[x0,#0x20]; ret
+void clear_1b3e70(void* obj) {
+    *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x28) = 0;
+    *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x30) = 0;
+    *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x20) = 0;
+}
+
+// MANUAL: 0x71001aead0  nn::pia::session::SyncClock::SetBaseTime  (ldr-src+str-dst+orr-1+strb)
+// ldr x8,[x1]; str x8,[x0]; orr w8,wzr,#1; strb w8,[x0,#8]; ret
+void SetBaseTime_1aead0(void* obj, void* src) {
+    *reinterpret_cast<u64*>(obj) = *reinterpret_cast<u64*>(src);
+    *reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj) + 8) = 1;
+}
+
+// MANUAL: 0x71001aea30  nn::pia::transport::StationIdTable::SetAvailableEntryNum  (ldr+cmp+blo+str)
+// ldr w8,[x0,#0x38]; cmp w8,w1; b.lo skip; str w1,[x0,#0x48]; ret
+void SetAvailableEntryNum_1aea30(void* obj, u32 val) {
+    if (val <= *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x38))
+        *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x48) = val;
+}
+
+// MANUAL: 0x71001b20e0  nn::nex::PacketBufferManager::GetMaxUnitSize  (ldr+cbz+ldr-ret+mov0+ret)
+u64 GetMaxUnitSize_1b20e0(void* obj) {
+    u64 p = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x60);
+    if (p == 0) return 0;
+    return *reinterpret_cast<u64*>(p + 0x10);
+}
+
+// MANUAL: 0x71001d6920  nn::nex::Key::GetContentPtr  (ldp+cmp+csel)
+// ldp x8,x9,[x0,#0x10]; cmp x8,x9; csel x0,xzr,x8,eq; ret
+u64 GetContentPtr_1d6920(void* obj) {
+    u64 a = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x10);
+    u64 b = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x18);
+    return (a != b) ? a : 0;
+}
+
+// MANUAL: 0x71001d6b80  nn::nex::OperationManager::GetCurrentOperation  (ldr-check+cbz+ldr+ldr-ret+mov0+ret)
+// ldr x8,[x0,#0x30]; cbz x8,+20; ldr x8,[x0,#0x20]; ldr x0,[x8,#0x10]; ret; mov x0,xzr; ret
+u64 GetCurrentOperation_1d6b80(void* obj) {
+    if (*reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x30) == 0) return 0;
+    return *reinterpret_cast<u64*>(
+        *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x20) + 0x10);
+}
+
+// MANUAL: 0x71001cfb70  nn::nex::Buffer::SetHeadShiftSize  (ldr-cur+ldr-old+str+sub+add+str)
+// ldr x8,[x0,#0x18]; ldr x9,[x0,#0x28]; str x1,[x0,#0x28]; sub x8,x8,x1; add x8,x8,x9; str x8,[x0,#0x18]
+void SetHeadShiftSize_1cfb70(void* obj, u64 val) {
+    u64 cur = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x18);
+    u64 old = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x28);
+    *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x28) = val;
+    *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x18) = (cur - val) + old;
+}
+
+// MANUAL: 0x7100146c10  nn::pia::session::Session::GetMatchmakeSessionParticipantNum
+// ldr x0,[x0,#8]; cbz x0,→ret; ldr x8,[x0]; ldr x1,[x8,#0x58]; br x1; ret
+void GetMatchmakeSessionParticipantNum_146c10(void* obj) {
+    void* p = *reinterpret_cast<void**>(reinterpret_cast<u8*>(obj) + 8);
+    if (p == nullptr) return;
+    reinterpret_cast<void(*)(void*)>((*reinterpret_cast<void***>(p))[0x58/8])(p);
+}
+
+// MANUAL: 0x7100146e00  nn::pia::session::Session::GetMatchmakeSessionStationNum
+// ldr x0,[x0,#8]; cbz x0,→ret; ldr x8,[x0]; ldr x1,[x8,#0x50]; br x1; ret
+void GetMatchmakeSessionStationNum_146e00(void* obj) {
+    void* p = *reinterpret_cast<void**>(reinterpret_cast<u8*>(obj) + 8);
+    if (p == nullptr) return;
+    reinterpret_cast<void(*)(void*)>((*reinterpret_cast<void***>(p))[0x50/8])(p);
+}
+
 } // namespace app::lua_bind
