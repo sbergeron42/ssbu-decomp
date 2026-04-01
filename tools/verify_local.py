@@ -95,6 +95,13 @@ def build_incremental():
     if compiled > 0:
         print(f"  Compiled {compiled} file(s)")
 
+    # Post-process: patch movz → orr to match NX original encoding
+    fix_movz = PROJECT_ROOT / "tools" / "fix_movz_to_orr.py"
+    if fix_movz.exists():
+        objs = [str(o) for o in (build_dir).glob("*.o")]
+        if objs:
+            subprocess.run(["python", str(fix_movz)] + objs, capture_output=True)
+
     # Check for fix_prologue_sched.py and run it if present
     fix_script = PROJECT_ROOT / "tools" / "fix_prologue_sched.py"
     if fix_script.exists():
@@ -163,20 +170,31 @@ def main():
         print("ERROR: %s not found. Symlink the original ELF." % ORIGINAL_ELF)
         sys.exit(1)
 
-    # Build CSV lookup (read-only)
+    # Build CSV lookup (read-only) — store all entries per name for disambiguation
     csv_lookup = {}
     with open(FUNCTIONS_CSV) as f:
         reader = csv.reader(f)
         next(reader)
         for row in reader:
             addr = int(row[0], 16)
+            csv_size = int(row[2])
             name = row[3]
-            if name not in csv_lookup:
-                csv_lookup[name] = addr
+            csv_lookup.setdefault(name, []).append((addr, csv_size))
             if name.startswith('_ZN3app8lua_bind'):
                 short = extract_func_name(name)
-                if short and short not in csv_lookup:
-                    csv_lookup[short] = addr
+                if short:
+                    csv_lookup.setdefault(short, []).append((addr, csv_size))
+
+    def resolve_addr(name, decomp_size):
+        entries = csv_lookup.get(name, [])
+        if not entries:
+            return None
+        if len(entries) == 1:
+            return entries[0][0]
+        for addr, cs in entries:
+            if cs == decomp_size:
+                return addr
+        return min(entries, key=lambda e: e[1])[0]
 
     # Get decomp symbols
     result = subprocess.run([OBJDUMP, "-t", str(DECOMP_ELF)], capture_output=True, text=True)
@@ -208,11 +226,14 @@ def main():
 
     with open(ORIGINAL_ELF, 'rb') as orig_f, open(DECOMP_ELF, 'rb') as decomp_f:
         for mangled, func_name, decomp_addr, size in symbols:
-            if func_name not in csv_lookup:
+            # Prefer full mangled name match, then short name.
+            # resolve_addr picks the CSV entry whose size best matches decomp.
+            orig_addr = resolve_addr(mangled, size)
+            if orig_addr is None:
+                orig_addr = resolve_addr(func_name, size)
+            if orig_addr is None:
                 unmatched += 1
                 continue
-
-            orig_addr = csv_lookup[func_name]
             orig_vaddr = orig_addr - ELF_BASE if orig_addr >= ELF_BASE else orig_addr
 
             orig_bytes = read_bytes(orig_f, orig_segments, orig_vaddr, size)

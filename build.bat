@@ -15,8 +15,12 @@ for /R src %%f in (*.cpp) do (
     if errorlevel 1 goto :error
 )
 
-REM NOTE: fix_orr_movz.py is NOT needed! The original binary uses orr encoding,
-REM same as upstream Clang. Ghidra displays orr as "mov" (alias), which was misleading.
+REM Post-process: upstream Clang emits movz for bitmask immediates,
+REM but the NX original uses orr-with-wzr. Patch to match.
+echo Patching movz-^>orr...
+for %%f in (build\*.o) do (
+    python tools\fix_movz_to_orr.py "%%f"
+)
 
 echo.
 echo Disassembly:

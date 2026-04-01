@@ -120,23 +120,40 @@ def extract_func_name(mangled):
 
 
 def build_csv_lookup():
-    """Build name → address lookups from functions.csv (viking 4-column format)."""
+    """Build name → (address, size) lookups from functions.csv (viking 4-column format).
+    Returns dict mapping name → list of (addr, csv_size) tuples to handle duplicates."""
     lookup = {}
     with open(FUNCTIONS_CSV) as f:
         reader = csv.reader(f)
         next(reader)  # skip header: Address,Quality,Size,Name
         for row in reader:
             addr = int(row[0], 16)
+            csv_size = int(row[2])
             name = row[3]
             # Index by full name (may be mangled or short)
-            if name not in lookup:
-                lookup[name] = addr
+            lookup.setdefault(name, []).append((addr, csv_size))
             # Also index by short name extracted from mangled names
             if name.startswith('_ZN3app8lua_bind'):
                 short = extract_func_name(name)
-                if short and short not in lookup:
-                    lookup[short] = addr
+                if short:
+                    lookup.setdefault(short, []).append((addr, csv_size))
     return lookup
+
+
+def resolve_addr(csv_lookup, name, decomp_size):
+    """Resolve the best matching address for a function name.
+    Prefers exact size match, then smallest CSV entry."""
+    entries = csv_lookup.get(name, [])
+    if not entries:
+        return None
+    if len(entries) == 1:
+        return entries[0][0]
+    # Prefer entry whose size matches decomp
+    for addr, csv_size in entries:
+        if csv_size == decomp_size:
+            return addr
+    # Fallback: smallest entry (more likely to be the dispatcher)
+    return min(entries, key=lambda e: e[1])[0]
 
 
 def main():
@@ -166,13 +183,16 @@ def main():
         for mangled, decomp_addr, size in symbols:
             func_name = extract_func_name(mangled)
 
-            if func_name is None or func_name not in csv_lookup:
+            # Prefer full mangled name match, then short name.
+            # resolve_addr picks the CSV entry whose size best matches decomp.
+            orig_addr = resolve_addr(csv_lookup, mangled, size)
+            if orig_addr is None and func_name is not None:
+                orig_addr = resolve_addr(csv_lookup, func_name, size)
+            if orig_addr is None:
                 unmatched += 1
                 if not summary_only and func_name:
                     unmatched_names.append(func_name)
                 continue
-
-            orig_addr = csv_lookup[func_name]
 
             # Convert Ghidra address to ELF vaddr
             orig_vaddr = orig_addr - ELF_BASE if orig_addr >= ELF_BASE else orig_addr

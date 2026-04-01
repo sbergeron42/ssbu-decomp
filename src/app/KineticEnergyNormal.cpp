@@ -76,18 +76,7 @@ void KineticEnergyNormal__off_consider_ground_normal_impl(KineticEnergyNormal* k
 // Skip: set_speed_3d_impl (SIMD: ldr q0, fmov, ext, mov, mov, str q0)
 
 // --- WeaponSnakeNikitaMissileKineticEnergyNormal ---
-
-// 7102164020 — str s0,[x0,#0xa0]; ret
-void WeaponSnakeNikitaMissileKineticEnergyNormal__set_rot_z_impl(
-        WeaponSnakeNikitaMissileKineticEnergyNormal* ke, f32 val) {
-    *reinterpret_cast<f32*>(reinterpret_cast<u8*>(ke) + 0xa0) = val;
-}
-
-// 7102164030 — ldr s0,[x0,#0xa0]; ret
-f32 WeaponSnakeNikitaMissileKineticEnergyNormal__rot_z_impl(
-        WeaponSnakeNikitaMissileKineticEnergyNormal* ke) {
-    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(ke) + 0xa0);
-}
+// (moved to modules/WeaponSnakeNikitaMissileKineticEnergyNormal.cpp)
 
 // --- WeaponKineticEnergyGravity ---
 
