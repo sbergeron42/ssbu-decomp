@@ -1,35 +1,37 @@
-# Worker: pool-d (Round 3)
+# Worker: pool-b (Round 4)
 
 ## Assignment
-Fighter kinetic/final + managers
+Remaining Item complex functions + event store_l2c_table serialization (split with pool-d)
 
 ## Assigned Modules
-- `FighterBayonettaFinalModule`
-- `FighterKineticEnergyController`
-- `FighterKineticEnergyGravity`
-- `FighterKineticEnergyMotion`
-- `FighterPitBFinalModule`
-- `FighterParamAccessor2`
-- `BossManager`
-- `StageManager`
-- `KineticEnergyNormal`
-- `KineticEnergy`
+- `Item` (10 remaining — complex, 48-288B)
+- `ItemKineticModuleImpl` (7 remaining — SIMD patterns)
+- `ItemCameraModuleImpl` (6 remaining — complex vtable chains)
+- `ItemParamAccessor` (3 remaining)
+- `ItemDamageModuleImpl` (1 remaining)
+- `ItemManager` (1 remaining)
+- `WeaponKineticEnergyGravity` (1 remaining)
+- Event store_l2c_table (first half, alphabetically A-G):
+  - `FighterCloudLinkEventFinal`, `FighterInklingLinkEventPaint`
+  - `FighterPikminLinkEvent*` (all 9 modules)
+  - `FighterPokemonLinkEventChange`, `FighterRidleyLinkEventMotion`
+  - `FighterRyuLinkEventFinal*` (2 modules)
+  - `GimmickEvent`, `GimmickEventBarrel`, `GimmickEventCatch`
+  - `GimmickEventDrum*` (5 modules)
 
 ## Rules
 1. **ONLY edit .cpp files for your assigned modules**
 2. **NEVER modify data/functions.csv**
-3. **NEVER edit modules assigned to other workers**
-4. Commit to your branch (`worker/pool-d`), never push to master
+3. Commit to branch `worker/pool-b`
 
 ## Key Notes
-- For store_l2c_table_impl: use `LargeRet` return type (forces x9 scratch register)
-- For bool fields: use `bool*` cast, not `u8` to avoid cmp+cset
-- New modules need new .cpp files with `#include "types.h"` or `#include "app/BattleObjectModuleAccessor.h"`
-- Use Ghidra MCP to disassemble functions: `mcp__ghidra__disassemble_function`
+- store_l2c_table functions use `b` (external branch) — won't byte-match but decompile anyway
+- Use Ghidra MCP: `mcp__ghidra__decompile_function_by_address`
+- SIMD patterns: use `v4sf` type with `__attribute__((vector_size(16)))`
 
 ## Workflow
 ```bash
-python tools/verify_local.py --build --modules YourModule
-git add src/app/YourModule.cpp
-git commit -m "Match N functions in YourModule"
+python tools/verify_local.py --build --modules Item ItemKineticModuleImpl
+git add src/app/*.cpp src/app/modules/*.cpp
+git commit -m "Decompile N functions across Item + events"
 ```

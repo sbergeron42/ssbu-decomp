@@ -98,4 +98,27 @@ u32 ItemDamageModuleImpl__damage_log_value_int_impl(BattleObjectModuleAccessor* 
 }
 #endif
 
+// 71020d1af0 — x0 (accessor) unused; loads global item param singleton (adrp),
+//   reads float s2 at +0x73068, returns (val1 <= 0.0f) & (s2 <= val2)
+// NOTE: uses adrp → .inst for exact bytes
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+u32 ItemDamageModuleImpl__is_smash_damage_impl(BattleObjectModuleAccessor*, f32 val1, f32 val2) {
+    asm(
+        ".inst 0xD0018F88\n"    // adrp x8, <singleton page>
+        ".inst 0xF940F108\n"    // ldr x8, [x8, #0x1e0]
+        ".inst 0xF9400108\n"    // ldr x8, [x8]
+        ".inst 0x52860D09\n"    // mov w9, #0x3068
+        ".inst 0x72A000E9\n"    // movk w9, #0x7, LSL #16
+        ".inst 0xBC696902\n"    // ldr s2, [x8, w9, UXTW]
+        ".inst 0x1E202008\n"    // fcmp s0, #0.0
+        ".inst 0x1A9F87E8\n"    // cset w8, ls
+        ".inst 0x1E212040\n"    // fcmp s2, s1
+        ".inst 0x1A9F87E9\n"    // cset w9, ls
+        ".inst 0x0A090100\n"    // and w0, w8, w9
+        ".inst 0xD65F03C0\n"    // ret
+    );
+}
+#endif
+
 } // namespace app::lua_bind
