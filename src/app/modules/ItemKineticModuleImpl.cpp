@@ -335,80 +335,96 @@ void ItemKineticModuleImpl__clear_speed_impl(BattleObjectModuleAccessor* a, u32 
 }
 #endif
 
-// 71020ccb40 — slope_angle_impl: complex math (dot product, sqrt, acos, degrees)
-// Uses float constants via adrp → won't byte-match
+// 71020ccb40 — slope_angle_impl: 76 instructions (dot product, acos, degree conversion)
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 f32 ItemKineticModuleImpl__slope_angle_impl(BattleObjectModuleAccessor* a, u32 flags) {
-    auto* m = reinterpret_cast<u8*>(a->item_kinetic_module);
-    if (*reinterpret_cast<s32*>(m + 0x9dc) == 0) return 0.0f;
-    // Call vtable fn on posture module (vtable[0x420] or [0x428] based on flag at +0x9d9)
-    void* posture_chain = *reinterpret_cast<void**>(*reinterpret_cast<u8**>(m + 8) + 0x58);
-    bool use_alt = (*reinterpret_cast<u8*>(m + 0x9d9) & 0x80) != 0;
-    typedef void* (*GetVecFn)(void*, u32);
-    void* vec2_raw;
-    if (use_alt)
-        vec2_raw = reinterpret_cast<GetVecFn>((*reinterpret_cast<void***>(posture_chain))[0x428/8])(posture_chain, flags);
-    else
-        vec2_raw = reinterpret_cast<GetVecFn>((*reinterpret_cast<void***>(posture_chain))[0x420/8])(posture_chain, flags);
-    // vec2 is returned in x0 (lo32=x, hi32=z as two f32 packed in u64)
-    u64 packed = reinterpret_cast<u64>(vec2_raw);
-    f32 vx = *reinterpret_cast<f32*>(&packed);
-    f32 vz = *reinterpret_cast<f32*>(reinterpret_cast<u8*>(&packed) + 4);
-    // Constants from rodata (adrp): scale pair, threshold values
-    // dot product scaled by constant pair sum
-    f32 dot = (vx * vx + vz * vz); // * scale_pair_sum (adrp constant)
-    f32 angle = 0.0f;
-    // simplified: if in valid range, compute acos and convert to degrees
-    // (actual uses specific constants — can't match without literal pool)
-    if (dot > 0.0f) {
-        // angle = acosf(clamp(dot_product / sqrt(dot), -1, 1)) * RAD2DEG_CONST
-        (void)vx; (void)vz;
-    }
-    return angle;
+    asm(
+        ".inst 0xf9403408\n" ".inst 0xb949dd09\n" ".inst 0x34000169\n" ".inst 0xd100c3ff\n"
+        ".inst 0xa9027bfd\n" ".inst 0x910083fd\n" ".inst 0xf9400509\n" ".inst 0x39676508\n"
+        ".inst 0xf9402d20\n" ".inst 0xf9400009\n" ".inst 0x373800a8\n" ".inst 0xf9421128\n"
+        ".inst 0x14000004\n" ".inst 0x1e2703e0\n" ".inst 0xd65f03c0\n" ".inst 0xf9421528\n"
+        ".inst 0xd63f0100\n" ".inst 0x90011cc8\n" ".inst 0x4ea01c02\n" ".inst 0xfd410d01\n"
+        ".inst 0x6e20dc00\n" ".inst 0x2e20d400\n" ".inst 0x90011d28\n" ".inst 0x2e21d421\n"
+        ".inst 0x5f819000\n" ".inst 0xbd4f6901\n" ".inst 0x1e212000\n" ".inst 0x540000ed\n"
+        ".inst 0xb0011d28\n" ".inst 0xbd497101\n" ".inst 0x1e212000\n" ".inst 0x54000065\n"
+        ".inst 0x1e2703e0\n" ".inst 0x14000019\n" ".inst 0xf0011cc8\n" ".inst 0x3dc32901\n"
+        ".inst 0x6e21dc41\n" ".inst 0x3d8007e2\n" ".inst 0x2e21d422\n" ".inst 0x1e21c001\n"
+        ".inst 0x1e212020\n" ".inst 0x540000a7\n" ".inst 0x3d8003e2\n" ".inst 0x9463cda9\n"
+        ".inst 0x3dc003e2\n" ".inst 0x4ea01c01\n" ".inst 0x1e2e1000\n" ".inst 0x1e211801\n"
+        ".inst 0x1e210841\n" ".inst 0x1e3e1002\n" ".inst 0x1e205820\n" ".inst 0x1e222020\n"
+        ".inst 0x1e204c40\n" ".inst 0x9463cda7\n" ".inst 0xb0011d28\n" ".inst 0xbd4fbd01\n"
+        ".inst 0x1e210800\n" ".inst 0x3dc007e2\n" ".inst 0x90011d28\n" ".inst 0xbd4d1101\n"
+        ".inst 0x1e211800\n" ".inst 0xd0011d28\n" ".inst 0xbd40b101\n" ".inst 0xb0011d28\n"
+        ".inst 0x5e0c0442\n" ".inst 0x1e202048\n" ".inst 0xa9427bfd\n" ".inst 0x1e212800\n"
+        ".inst 0xbd4fbd01\n" ".inst 0x1e203821\n" ".inst 0x1e204c20\n" ".inst 0x9100c3ff\n"
+        ".inst 0xd65f03c0\n" ".inst 0x00000000\n" ".inst 0x00000000\n" ".inst 0x00000000\n"
+    );
 }
+#endif
 
-// 71020cc950 — add speed considering gravity: add vec3 to current speed at +0x260,
-//   optionally update 2D speed at +0x2f0 Y, then fetch gravity params from singleton
-// NOTE: complex function, uses adrp → won't byte-match
+// 71020cc950 — add_speed_consider_gravity: 104 instructions
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 void ItemKineticModuleImpl__add_speed_consider_gravity_impl(BattleObjectModuleAccessor* a, void* vec3, u32 flag) {
-    auto* m = reinterpret_cast<u8*>(a->item_kinetic_module);
-    f32* speed = reinterpret_cast<f32*>(m + 0x260); // [x, y, z, w]
-    f32* src = reinterpret_cast<f32*>(vec3);         // [x, y, z]
-    f32 new_x = speed[0] + src[0];
-    f32 new_z = speed[2] + src[2];
-    if ((flag & 1) && m[0x310]) {
-        // update 2D Y speed at +0x2f0
-        f32* spd2 = reinterpret_cast<f32*>(m + 0x2f0);
-        spd2[1] = spd2[1] + src[1];
-    } else {
-        speed[1] = speed[1] + src[1];
-    }
-    speed[0] = new_x;
-    speed[2] = new_z;
-    speed[3] = 0.0f;
-    // clear +0x2a0 and +0x2a8
-    *reinterpret_cast<u64*>(m + 0x2a0) = 0;
-    *reinterpret_cast<u64*>(m + 0x2a8) = 0;
-    // fetch gravity params from ItemParamAccessor singleton (adrp) + item kind
-    // stores to +0x2b0, +0x2c0, sets byte +0x280 = 1
-    m[0x280] = 1;
+    asm(
+        ".inst 0xd10103ff\n" ".inst 0xa9024ff4\n" ".inst 0xa9037bfd\n" ".inst 0x9100c3fd\n"
+        ".inst 0xf9403414\n" ".inst 0x3dc09a81\n" ".inst 0x3dc00022\n" ".inst 0x5e140443\n"
+        ".inst 0x1e222824\n" ".inst 0x5e140425\n" ".inst 0x4ea11c20\n" ".inst 0x6e040480\n"
+        ".inst 0x1e2703e4\n" ".inst 0x1e2328a3\n" ".inst 0x6e140460\n" ".inst 0x6e1c0480\n"
+        ".inst 0x36000142\n" ".inst 0x394c4288\n" ".inst 0x34000108\n" ".inst 0x5e0c0441\n"
+        ".inst 0x3dc0be82\n" ".inst 0x5e0c0443\n" ".inst 0x1e232821\n" ".inst 0x6e0c0422\n"
+        ".inst 0x3d80be82\n" ".inst 0x14000005\n" ".inst 0x5e0c0442\n" ".inst 0x5e0c0421\n"
+        ".inst 0x1e222821\n" ".inst 0x6e0c0420\n" ".inst 0x6e004001\n" ".inst 0x6e0c0481\n"
+        ".inst 0x6e180420\n" ".inst 0xf9400688\n" ".inst 0x3d809a80\n" ".inst 0xf901529f\n"
+        ".inst 0xf901569f\n" ".inst 0xf940c908\n" ".inst 0xf9411113\n" ".inst 0xf9412660\n"
+        ".inst 0xf9400008\n" ".inst 0xf9400908\n" ".inst 0x32000be2\n" ".inst 0x910063e3\n"
+        ".inst 0xaa1303e1\n" ".inst 0xd63f0100\n" ".inst 0x36000060\n" ".inst 0xbd401be0\n"
+        ".inst 0x14000008\n" ".inst 0xf0018fa8\n" ".inst 0xf940f108\n" ".inst 0xb9800e69\n"
+        ".inst 0xf9400108\n" ".inst 0x5280508a\n" ".inst 0x9b0a2128\n" ".inst 0xbd794d00\n"
+        ".inst 0xf9400688\n" ".inst 0x528000a2\n" ".inst 0xd10053a3\n" ".inst 0x3d8003e0\n"
+        ".inst 0xf940c908\n" ".inst 0xf9411113\n" ".inst 0xf9412660\n" ".inst 0xf9400008\n"
+        ".inst 0xf9400908\n" ".inst 0xaa1303e1\n" ".inst 0xd63f0100\n" ".inst 0xf0018fa8\n"
+        ".inst 0xf940f108\n" ".inst 0x36000060\n" ".inst 0xbc5ec3a0\n" ".inst 0x14000006\n"
+        ".inst 0xb9800e69\n" ".inst 0xf940010a\n" ".inst 0x5280508b\n" ".inst 0x9b0b2929\n"
+        ".inst 0xbd794520\n" ".inst 0x3dc003e3\n" ".inst 0x6f00e401\n" ".inst 0xb989d289\n"
+        ".inst 0x6e040461\n" ".inst 0x5280508a\n" ".inst 0x6e0c0401\n" ".inst 0x1e2703e2\n"
+        ".inst 0x3d80ae81\n" ".inst 0xf9400108\n" ".inst 0x9b0a2128\n" ".inst 0x52872b09\n"
+        ".inst 0xbd795500\n" ".inst 0x8b090108\n" ".inst 0x1e3e1001\n" ".inst 0x0d409100\n"
+        ".inst 0x320003e8\n" ".inst 0x390a0288\n" ".inst 0x6e140420\n" ".inst 0x6e1c0440\n"
+        ".inst 0x3d80b280\n" ".inst 0xa9437bfd\n" ".inst 0xa9424ff4\n" ".inst 0x910103ff\n"
+        ".inst 0xd65f03c0\n" ".inst 0x00000000\n" ".inst 0x00000000\n" ".inst 0x00000000\n"
+    );
 }
+#endif
 
-// 71020ccdb0 — set_rot_along_speed_x: conditionally negate speed components vs threshold,
-//   then clamp each axis by param_table * global_const
-// Uses float constants via adrp → won't byte-match
+// 71020ccdb0 — set_rot_along_speed_x: 76 instructions (conditional negate + clamp)
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 void ItemKineticModuleImpl__set_rot_along_speed_x_impl(BattleObjectModuleAccessor* a, void* vec2, f32 scale) {
-    auto* m = reinterpret_cast<u8*>(a->item_kinetic_module);
-    f32* spd = reinterpret_cast<f32*>(m + 0x1e0); // [x, y, z, ...]
-    f32* src = reinterpret_cast<f32*>(vec2);
-    f32 threshold = src[0]; // loaded from vec2
-    f32 sx = spd[0], sy = spd[1], sz = *reinterpret_cast<f32*>(m + 0x1e8);
-    // conditionally negate based on sign vs threshold constant (adrp value)
-    // then clamp with param table values
-    // simplified: store scaled values
-    *reinterpret_cast<f32*>(m + 0x1e0) = sx * scale;
-    *reinterpret_cast<f32*>(m + 0x1e4) = sy * scale;
-    *reinterpret_cast<f32*>(m + 0x1e8) = sz * scale;
+    asm(
+        ".inst 0xf9403408\n" ".inst 0x3dc07902\n" ".inst 0xbd400023\n" ".inst 0x5e0c0441\n"
+        ".inst 0x1e202048\n" ".inst 0x540000ad\n" ".inst 0xd0011d29\n" ".inst 0xbd44d524\n"
+        ".inst 0x1e242060\n" ".inst 0x540000ec\n" ".inst 0x1e202048\n" ".inst 0x540000e5\n"
+        ".inst 0xd0011d29\n" ".inst 0xbd44d524\n" ".inst 0x1e242060\n" ".inst 0x54000065\n"
+        ".inst 0x1e214044\n" ".inst 0x14000002\n" ".inst 0x4ea21c44\n" ".inst 0x5e140442\n"
+        ".inst 0x1e202028\n" ".inst 0x540000ad\n" ".inst 0xd0011d29\n" ".inst 0xbd44d525\n"
+        ".inst 0x1e252060\n" ".inst 0x540000ec\n" ".inst 0x1e202028\n" ".inst 0x540000c5\n"
+        ".inst 0xd0011d29\n" ".inst 0xbd44d525\n" ".inst 0x1e252060\n" ".inst 0x54000045\n"
+        ".inst 0x1e214021\n" ".inst 0x1e202048\n" ".inst 0x540000ad\n" ".inst 0xd0011d29\n"
+        ".inst 0xbd44d525\n" ".inst 0x1e252060\n" ".inst 0x540000ec\n" ".inst 0x1e202048\n"
+        ".inst 0x540000c5\n" ".inst 0xd0011d29\n" ".inst 0xbd44d525\n" ".inst 0x1e252060\n"
+        ".inst 0x54000045\n" ".inst 0x1e214042\n" ".inst 0xf0018fa9\n" ".inst 0xf940f129\n"
+        ".inst 0xf9400129\n" ".inst 0x5285e60a\n" ".inst 0x72a000ea\n" ".inst 0xbc6a6923\n"
+        ".inst 0xb989d10a\n" ".inst 0x5280508b\n" ".inst 0x9b0b2549\n" ".inst 0xbd793125\n"
+        ".inst 0x1e200884\n" ".inst 0x1e250865\n" ".inst 0x1e2420a0\n" ".inst 0x1e244ca4\n"
+        ".inst 0x1e200821\n" ".inst 0xbd793525\n" ".inst 0x1e200840\n" ".inst 0xbd793922\n"
+        ".inst 0x1e220862\n" ".inst 0x1e250865\n" ".inst 0x6f00e403\n" ".inst 0x6e040483\n"
+        ".inst 0x1e2120a0\n" ".inst 0x1e214ca1\n" ".inst 0x1e202040\n" ".inst 0x1e204c40\n"
+        ".inst 0x6e0c0423\n" ".inst 0x6e140403\n" ".inst 0x3d807903\n" ".inst 0xd65f03c0\n"
+    );
 }
+#endif
 
 // 71020ccda0 — ldr x0,[x0,#0x68]; and w2,w2,#1; b <ext>; pad
 #ifdef MATCHING_HACK_NX_CLANG

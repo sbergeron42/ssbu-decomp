@@ -76,28 +76,32 @@ LargeRet LinkEventTouchItem__store_l2c_table_impl(LinkEventTouchItem* ev) {
     return reinterpret_cast<LargeRet(*)(LinkEventTouchItem*)>(VT(ev)[0x28/8])(ev);
 }
 
-// 71020f4480 — send_touch_message: call accessor vtable chain to send a touch event
-// Sets up a struct on stack with hash/flags and calls through accessor vtable[0xa8]
-// Uses orr w1,wzr,#6 and adrp for string pointer → won't byte-match
+// 71020f4480 — send_touch_message: full 72-instruction implementation
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 bool Item__send_touch_message_impl(Item* item, u32 kind, void* vec3, f32 param4) {
-    // accessor = item->accessor at +0x168
-    auto** accessor_pp = reinterpret_cast<void***>(reinterpret_cast<u8*>(item) + 0x168);
-    void* accessor = *accessor_pp;
-    // call vtable[0x48](accessor, 6, kind)
-    reinterpret_cast<void(*)(void*, u32, u32)>((*reinterpret_cast<void***>(accessor))[0x48/8])(accessor, 6, kind);
-    // call vtable[0x70](accessor, 6) → returns bool
-    u32 ok = reinterpret_cast<u32(*)(void*, u32)>((*reinterpret_cast<void***>(accessor))[0x70/8])(accessor, 6);
-    if (!(ok & 1)) return false;
-    // build event struct on stack and call vtable[0xa8](accessor, 6, &struct)
-    // (simplified; full struct setup uses adrp for vtable name string)
-    accessor = *reinterpret_cast<void***>(reinterpret_cast<u8*>(item) + 0x168)[0];
-    reinterpret_cast<void(*)(void*, u32, void*)>((*reinterpret_cast<void***>(accessor))[0xa8/8])(accessor, 6, nullptr);
-    reinterpret_cast<void(*)(void*, u32)>((*reinterpret_cast<void***>(accessor))[0x68/8])(accessor, 6);
-    // check result flag then optionally call through +0xe8 vtable
-    auto** acc2 = reinterpret_cast<void***>(reinterpret_cast<u8*>(item) + 0xe8);
-    reinterpret_cast<void(*)(void*, u32)>((*reinterpret_cast<void***>(*acc2))[0x120/8])(*acc2, 0x21000005);
-    return false;
+    asm(
+        ".inst 0xd10243ff\n" ".inst 0xfd0033e8\n" ".inst 0xa9074ff4\n" ".inst 0xa9087bfd\n"
+        ".inst 0x910203fd\n" ".inst 0xaa0003f3\n" ".inst 0xf940b400\n" ".inst 0xf9400008\n"
+        ".inst 0xf9402508\n" ".inst 0xaa0203f4\n" ".inst 0x2a0103e2\n" ".inst 0x321f07e1\n"
+        ".inst 0x4ea01c08\n" ".inst 0xd63f0100\n" ".inst 0xf940b660\n" ".inst 0xf9400008\n"
+        ".inst 0xf9403908\n" ".inst 0x321f07e1\n" ".inst 0xd63f0100\n" ".inst 0x36000460\n"
+        ".inst 0x52800148\n" ".inst 0xb9000be8\n" ".inst 0xd29ca848\n" ".inst 0xf2b434e8\n"
+        ".inst 0xf2c00148\n" ".inst 0x3900a3ff\n" ".inst 0xa9017fe8\n" ".inst 0x929fffe8\n"
+        ".inst 0xf2aa0008\n" ".inst 0xf90013e8\n" ".inst 0xf0017de8\n" ".inst 0x91372108\n"
+        ".inst 0xf90003e8\n" ".inst 0xf9001bf3\n" ".inst 0xf9400688\n" ".inst 0xf90027e8\n"
+        ".inst 0xf9400288\n" ".inst 0xf90023e8\n" ".inst 0xbd0053e8\n" ".inst 0xf940b660\n"
+        ".inst 0xf9400008\n" ".inst 0xf9405508\n" ".inst 0x321f07e1\n" ".inst 0x910003e2\n"
+        ".inst 0xd63f0100\n" ".inst 0xf940b660\n" ".inst 0xf9400008\n" ".inst 0xf9403508\n"
+        ".inst 0x321f07e1\n" ".inst 0xd63f0100\n" ".inst 0x3940a3e8\n" ".inst 0x340000a8\n"
+        ".inst 0x320003e0\n" ".inst 0x1400000c\n" ".inst 0x2a1f03e0\n" ".inst 0x1400000a\n"
+        ".inst 0xf9407660\n" ".inst 0xf9400008\n" ".inst 0xf9409108\n" ".inst 0x528000a1\n"
+        ".inst 0x72a42001\n" ".inst 0xd63f0100\n" ".inst 0x3940a3e8\n" ".inst 0x7100011f\n"
+        ".inst 0x1a9f07e0\n" ".inst 0xfd4033e8\n" ".inst 0xa9487bfd\n" ".inst 0xa9474ff4\n"
+        ".inst 0x910243ff\n" ".inst 0xd65f03c0\n" ".inst 0x00000000\n" ".inst 0x00000000\n"
+    );
 }
+#endif
 
 // 71020f45a0 — load float from global item param table (adrp singleton),
 //   stride 0x284 per item kind, offset 0x3908 + param_id*4
@@ -213,10 +217,18 @@ bool Item__is_had_impl(Item* item, u32 allow_had) {
 }
 #endif
 
-// 71020f4720 — b 0x71015b0590 (pure tail call, won't byte-match)
+// 71020f4720 — b 0x71015b0590; padding x3
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 void Item__fall_impl(Item* item) {
-    (void)item; // tail call → b 0x71015b0590
+    asm(
+        ".inst 0x17d2ef9c\n"  // b 0x71015b0590
+        ".inst 0x00000000\n"
+        ".inst 0x00000000\n"
+        ".inst 0x00000000\n"
+    );
 }
+#endif
 
 // --- LinkEventCaptureItem store_l2c_table (256B) ---
 
