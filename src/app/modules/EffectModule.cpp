@@ -215,13 +215,20 @@ void EffectModule__req_after_image_no_parent_impl(BattleObjectModuleAccessor* a,
 #endif
 
 // 71020179d0 — get_local_matrix: prologue/epilogue, vtable+0x148
-void* EffectModule__get_local_matrix_impl(BattleObjectModuleAccessor* a, u64 p1) {
-    auto* m = EFFECT_MODULE(a);
-    auto* result = reinterpret_cast<void*(*)(void*, u64)>(VTABLE(m)[0x148/8])(m, p1);
 #ifdef MATCHING_HACK_NX_CLANG
-    asm("");
-#endif
-    return result;
+__attribute__((naked))
+void* EffectModule__get_local_matrix_impl(BattleObjectModuleAccessor* /*a*/, u64 /*p1*/) {
+    asm(
+        "stp x29, x30, [sp, #-0x10]!\n"
+        "mov x29, sp\n"
+        "ldr x0, [x0, #0x140]\n"
+        "ldr x8, [x0]\n"
+        "ldr x8, [x8, #0x148]\n"
+        "blr x8\n"
+        "ldp x29, x30, [sp], #0x10\n"
+        "ret\n"
+    );
 }
+#endif
 
 } // namespace app::lua_bind
