@@ -187,4 +187,45 @@ u64 InitiateCall_b4160(void* obj) {
     return 1;
 }
 
+
+// MANUAL: 0x71000a4f20  nn::vfx::System::InitializeEmitter  (ldr-field+str-field)
+// ldr x8,[x0,#0x8c0]; str x8,[x1,#0x98]; ret
+void InitializeEmitter_a4f20(void* param_1, void* param_2) {
+    *reinterpret_cast<u64*>(reinterpret_cast<u8*>(param_2) + 0x98) =
+        *reinterpret_cast<u64*>(reinterpret_cast<u8*>(param_1) + 0x8c0);
+}
+
+// MANUAL: 0x7100079050  nn::font::DispStringBuffer::Finalize  (ldr+cmp-1+b.lt+str-wzr)
+// ldr w8,[x0,#0x98]; cmp w8,#1; b.lt #+8; str wzr,[x0,#0x98]; ret
+void Finalize_79050(void* obj) {
+    if (*reinterpret_cast<s32*>(reinterpret_cast<u8*>(obj) + 0x98) > 0)
+        *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x98) = 0;
+}
+
+// MANUAL: 0x7100079070  nn::font::DispStringBuffer::GetRequiredDrawBufferSize  (ldrsw+mov-57+mul)
+// ldrsw x8,[x0,#0x10]; mov w9,#57; mul x0,x8,x9; ret
+u64 GetRequiredDrawBufferSize_79070(void* obj) {
+    return (u64)((s64)*reinterpret_cast<s32*>(reinterpret_cast<u8*>(obj) + 0x10) * 57);
+}
+
+// MANUAL: 0x7100044d40  nn::ui2d::DrawInfo::SetGpuAccessBufferIndex  (double null-guard store)
+// ldr x8,[x0,#0xc8]; cbz x8,+8; str w1,[x8,#0x30]; ldr x8,[x0,#0xd0]; cbz x8,+8; str w1,[x8,#0x30]; ret
+void SetGpuAccessBufferIndex_44d40(void* obj, u32 val) {
+    u64 p = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0xc8);
+    if (p != 0)
+        *reinterpret_cast<u32*>(p + 0x30) = val;
+    u64 q = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0xd0);
+    if (q != 0)
+        *reinterpret_cast<u32*>(q + 0x30) = val;
+}
+
+// MANUAL: 0x7100054150  nn::ui2d::Material::GetConstantBufferForVertexShader  (double-deref+cbz+add)
+// ldr x8,[x1,#0xc8]; ldr x8,[x8,#0x38]; cbz x8,#+10; ldr w9,[x0,#0x30]; add x0,x8,x9; ret; mov x0,xzr; ret
+u64 GetConstantBufferForVertexShader_54150(void* param_1, void* param_2) {
+    u64 p = *reinterpret_cast<u64*>(
+        reinterpret_cast<u8*>(*reinterpret_cast<void**>(reinterpret_cast<u8*>(param_2) + 0xC8)) + 0x38);
+    if (p == 0) return 0;
+    return p + *reinterpret_cast<u32*>(reinterpret_cast<u8*>(param_1) + 0x30);
+}
+
 } // namespace app::lua_bind
