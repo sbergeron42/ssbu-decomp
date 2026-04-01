@@ -12,6 +12,7 @@ Usage:
     python tools/verify_all.py              # Full report
     python tools/verify_all.py --summary    # Summary only
     python tools/verify_all.py --update     # Update functions.csv with results
+    python tools/verify_all.py --elf build/ssbu-decomp.elf  # Use linked ELF for byte comparison
 """
 
 import csv
@@ -270,14 +271,80 @@ def resolve_addr(csv_lookup, source_addr_map, mangled, short_name, decomp_size):
     return None
 
 
+def get_linked_elf_path():
+    """Parse --elf argument from sys.argv."""
+    for i, arg in enumerate(sys.argv):
+        if arg == '--elf' and i + 1 < len(sys.argv):
+            return Path(sys.argv[i + 1])
+    return None
+
+
+def load_elf_symbols(path):
+    """Read symbol table from ELF, returning dict of name -> vaddr for defined functions."""
+    symbols = {}
+    try:
+        with open(path, 'rb') as f:
+            ident = f.read(16)
+            if ident[:4] != b'\x7fELF':
+                return symbols
+            f.seek(0x28)
+            shoff = struct.unpack('<Q', f.read(8))[0]
+            f.seek(0x3a)
+            shentsize = struct.unpack('<H', f.read(2))[0]
+            shnum = struct.unpack('<H', f.read(2))[0]
+            for i in range(shnum):
+                f.seek(shoff + i * shentsize)
+                sh_name_idx = struct.unpack('<I', f.read(4))[0]
+                sh_type = struct.unpack('<I', f.read(4))[0]
+                if sh_type != 2:  # SHT_SYMTAB
+                    continue
+                f.seek(shoff + i * shentsize + 0x18)
+                sh_offset = struct.unpack('<Q', f.read(8))[0]
+                sh_size = struct.unpack('<Q', f.read(8))[0]
+                f.seek(shoff + i * shentsize + 0x28)
+                sh_link = struct.unpack('<I', f.read(4))[0]
+                f.seek(shoff + sh_link * shentsize + 0x18)
+                str_offset = struct.unpack('<Q', f.read(8))[0]
+                str_size = struct.unpack('<Q', f.read(8))[0]
+                f.seek(str_offset)
+                strtab = f.read(str_size)
+                num_syms = sh_size // 24
+                for j in range(num_syms):
+                    f.seek(sh_offset + j * 24)
+                    st_name = struct.unpack('<I', f.read(4))[0]
+                    st_info = struct.unpack('B', f.read(1))[0]
+                    f.read(1)
+                    st_shndx = struct.unpack('<H', f.read(2))[0]
+                    st_value = struct.unpack('<Q', f.read(8))[0]
+                    st_size_val = struct.unpack('<Q', f.read(8))[0]
+                    if (st_info & 0xf) == 2 and st_shndx != 0 and st_value != 0:
+                        end = strtab.index(b'\0', st_name)
+                        name = strtab[st_name:end].decode('ascii', errors='replace')
+                        symbols[name] = st_value
+                break
+    except (OSError, struct.error):
+        pass
+    return symbols
+
+
 def main():
     summary_only = '--summary' in sys.argv
     update_csv = '--update' in sys.argv
+    linked_elf_path = get_linked_elf_path()
 
     all_funcs = get_all_compiled_functions()
     csv_lookup = build_csv_lookup()
     source_addr_map = build_source_addr_map()
     orig_segments = load_elf_segments(ORIGINAL_ELF)
+
+    # If a linked ELF is provided, load its segments for reading resolved bytes
+    linked_segments = None
+    linked_f = None
+    linked_syms = set()
+    if linked_elf_path and linked_elf_path.exists():
+        linked_segments = load_elf_segments(linked_elf_path)
+        linked_syms = load_elf_symbols(linked_elf_path)
+        linked_f = open(linked_elf_path, 'rb')
 
     perfect = 0
     semantic = 0
@@ -307,6 +374,23 @@ def main():
                     unmatched_names.append(
                         "%s (bad address 0x%x)" % (short_name, orig_addr))
                 continue
+
+            # At relocation offsets, use linked ELF bytes only if they match the original
+            # (avoids replacing with wrong values from unresolved or misplaced targets)
+            if linked_f and linked_segments and linked_syms.get(mangled) == orig_addr and reloc_offsets:
+                linked_bytes = read_bytes_at(linked_f, linked_segments,
+                                             orig_addr, size)
+                if linked_bytes and len(linked_bytes) == size:
+                    merged = bytearray(decomp_bytes)
+                    resolved_offsets = set()
+                    for off in reloc_offsets:
+                        if off + 4 <= size:
+                            if linked_bytes[off:off + 4] == orig_bytes[off:off + 4]:
+                                merged[off:off + 4] = linked_bytes[off:off + 4]
+                                resolved_offsets.add(off)
+                    decomp_bytes = bytes(merged)
+                    reloc_offsets = reloc_offsets - resolved_offsets
+
             num_insns = size // 4
             strict_count = 0
             semantic_count = 0
@@ -407,6 +491,9 @@ def main():
             writer.writeheader()
             writer.writerows(rows)
         print("  Updated %d entries in functions.csv" % len(results))
+
+    if linked_f:
+        linked_f.close()
 
 
 if __name__ == '__main__':
