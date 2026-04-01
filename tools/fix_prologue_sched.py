@@ -56,7 +56,7 @@ STP_MATCH = 0x29007BFD
 
 # Maximum number of instructions between stp and mov x29, sp to consider.
 # If the gap is larger than this, it's not a simple prologue reorder.
-MAX_GAP = 4
+MAX_GAP = 8
 
 
 def is_stp_x29_x30_preindex(insn: int) -> bool:
@@ -133,22 +133,26 @@ def find_text_sections(data: bytearray) -> list[tuple[str, int, int]]:
     return sections
 
 
-def find_reloc_offsets(data: bytearray, text_sections: list[tuple[str, int, int]]) -> set[int]:
-    """Find all file offsets within .text that have relocations applied.
+def find_reloc_info(data: bytearray,
+                    text_sections: list[tuple[str, int, int]]
+                    ) -> tuple[set[int], list[tuple[int, int, int, int]]]:
+    """Find relocation info for .text sections.
 
-    We build a set of file offsets that are targets of relocations.
-    Instructions at these offsets must not be moved, as the linker has
-    recorded fixups relative to their current position.
+    Returns:
+      reloc_offsets: set of file offsets within .text that have RELA entries
+      rela_sections: list of (rela_file_off, entsize, nentries, text_sec_file_off)
+                     for RELA sections targeting our .text sections — used to
+                     update r_offset values when instructions are rotated.
     """
     if data[:4] != b'\x7fELF':
-        return set()
+        return set(), []
 
     e_shoff = struct.unpack_from('<Q', data, 0x28)[0]
     e_shentsize = struct.unpack_from('<H', data, 0x3A)[0]
     e_shnum = struct.unpack_from('<H', data, 0x3C)[0]
 
-    # Map section index -> (file_offset, size) for our text sections
-    text_by_index: dict[int, tuple[int, int]] = {}
+    # Map section index -> file_offset for our executable text sections
+    text_by_index: dict[int, int] = {}
     for i in range(e_shnum):
         sh_off = e_shoff + i * e_shentsize
         sh_flags = struct.unpack_from('<Q', data, sh_off + 0x08)[0]
@@ -157,11 +161,11 @@ def find_reloc_offsets(data: bytearray, text_sections: list[tuple[str, int, int]
         if (sh_flags & 0x4):
             for name, t_off, t_size in text_sections:
                 if t_off == sh_offset and t_size == sh_size:
-                    text_by_index[i] = (t_off, t_size)
+                    text_by_index[i] = t_off
 
     reloc_offsets: set[int] = set()
+    rela_sections: list[tuple[int, int, int, int]] = []
 
-    # Scan for SHT_RELA (type=4) sections that reference our .text sections
     SHT_RELA = 4
     for i in range(e_shnum):
         sh_off = e_shoff + i * e_shentsize
@@ -169,35 +173,59 @@ def find_reloc_offsets(data: bytearray, text_sections: list[tuple[str, int, int]
         if sh_type != SHT_RELA:
             continue
 
-        # sh_info for RELA points to the section being relocated
         sh_info = struct.unpack_from('<I', data, sh_off + 0x2C)[0]
         if sh_info not in text_by_index:
             continue
 
-        text_file_off, _ = text_by_index[sh_info]
-
+        text_file_off = text_by_index[sh_info]
         sh_offset = struct.unpack_from('<Q', data, sh_off + 0x18)[0]
         sh_size = struct.unpack_from('<Q', data, sh_off + 0x20)[0]
         sh_entsize = struct.unpack_from('<Q', data, sh_off + 0x38)[0]
-
         if sh_entsize == 0:
-            sh_entsize = 24  # Standard Elf64_Rela size
+            sh_entsize = 24
 
         num_entries = sh_size // sh_entsize
+        rela_sections.append((sh_offset, sh_entsize, num_entries, text_file_off))
+
         for j in range(num_entries):
             rela_off = sh_offset + j * sh_entsize
-            # Elf64_Rela: r_offset (8 bytes), r_info (8 bytes), r_addend (8 bytes)
             r_offset = struct.unpack_from('<Q', data, rela_off)[0]
-            # r_offset is a section-relative offset; convert to file offset
-            # Align to instruction boundary (4 bytes)
             file_off = text_file_off + (r_offset & ~3)
             reloc_offsets.add(file_off)
 
-    return reloc_offsets
+    return reloc_offsets, rela_sections
+
+
+# Keep old name as alias for callers that pass only reloc_offsets
+def find_reloc_offsets(data: bytearray, text_sections: list[tuple[str, int, int]]) -> set[int]:
+    return find_reloc_info(data, text_sections)[0]
+
+
+def shift_rela_entries(data: bytearray,
+                       rela_sections: list[tuple[int, int, int, int]],
+                       text_sec_file_off: int,
+                       gap_start_file_off: int,
+                       gap_end_file_off: int) -> None:
+    """Increment r_offset by 4 for any RELA entry in [gap_start, gap_end] (file offsets).
+
+    Called after rotating gap instructions forward by one slot so that the
+    linker's recorded fixup positions stay correct.
+    """
+    for (rela_off, entsize, nentries, t_off) in rela_sections:
+        if t_off != text_sec_file_off:
+            continue
+        sec_lo = gap_start_file_off - t_off   # section-relative
+        sec_hi = gap_end_file_off - t_off
+        for j in range(nentries):
+            entry = rela_off + j * entsize
+            r_offset = struct.unpack_from('<Q', data, entry)[0]
+            if sec_lo <= (r_offset & ~3) <= sec_hi:
+                struct.pack_into('<Q', data, entry, r_offset + 4)
 
 
 def patch_prologue_sched(data: bytearray, sec_name: str, sec_offset: int,
                          sec_size: int, reloc_offsets: set[int],
+                         rela_sections: list[tuple[int, int, int, int]] | None = None,
                          verbose: bool = False) -> list[str]:
     """Scan a .text section for the prologue scheduling pattern and patch it.
 
@@ -244,10 +272,10 @@ def patch_prologue_sched(data: bytearray, sec_name: str, sec_offset: int,
                 gap_has_reloc = True
                 break
 
-        if gap_has_reloc:
+        if gap_has_reloc and not rela_sections:
             if verbose:
                 sec_rel = stp_off - sec_offset
-                print(f"  SKIP {sec_name}+0x{sec_rel:x}: gap instructions have relocations")
+                print(f"  SKIP {sec_name}+0x{sec_rel:x}: gap has relocations and no rela_sections provided")
             off += 4
             continue
 
@@ -275,9 +303,18 @@ def patch_prologue_sched(data: bytearray, sec_name: str, sec_offset: int,
         for k, gi in enumerate(gap_insns):
             write_u32_le(data, stp_off + (k + 2) * 4, gi)
 
+        # If gap instructions had relocations, update RELA r_offset values so
+        # the linker still finds the fixup sites at their new positions.
+        if gap_has_reloc and rela_sections:
+            gap_start = stp_off + 4
+            gap_end   = stp_off + gap_count * 4
+            shift_rela_entries(data, rela_sections, sec_offset,
+                               gap_start, gap_end)
+
         sec_rel = stp_off - sec_offset
+        reloc_note = " (with RELA update)" if gap_has_reloc else ""
         desc = (f"{sec_name}+0x{sec_rel:x}: moved mov x29, sp over "
-                f"{gap_count} instruction(s) (stp offset {imm})")
+                f"{gap_count} instruction(s) (stp offset {imm}){reloc_note}")
         patches.append(desc)
 
         # Advance past the patched region
@@ -311,14 +348,15 @@ def process_elf(filepath: str, dry_run: bool = False, verbose: bool = False) -> 
             print(f"  {filepath}: no .text sections found")
         return 0
 
-    reloc_offsets = find_reloc_offsets(data, text_sections)
+    reloc_offsets, rela_sections = find_reloc_info(data, text_sections)
 
     total_patches = 0
     all_descs: list[str] = []
 
     for sec_name, sec_offset, sec_size in text_sections:
         descs = patch_prologue_sched(data, sec_name, sec_offset, sec_size,
-                                     reloc_offsets, verbose=verbose)
+                                     reloc_offsets, rela_sections=rela_sections,
+                                     verbose=verbose)
         all_descs.extend(descs)
         total_patches += len(descs)
 

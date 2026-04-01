@@ -105,7 +105,8 @@ def build_incremental():
                            "FighterInformation", "ItemManager",
                            "FighterMotionModuleImpl", "EffectModule",
                            "FighterBayonettaFinalModule", "ItemKineticModuleImpl",
-                           "FighterKineticEnergyMotion", "KineticEnergyNormal"]
+                           "FighterKineticEnergyMotion", "KineticEnergyNormal",
+                           "gameplay_functions"]
         objs = [str(build_dir / f"{t}.o") for t in prologue_targets if (build_dir / f"{t}.o").exists()]
         if objs:
             subprocess.run(["python", str(fix_script)] + objs, capture_output=True)
