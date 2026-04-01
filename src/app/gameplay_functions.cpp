@@ -10,6 +10,9 @@ extern "C" void* FUN_71003596f0(void*);
 extern "C" void* FUN_7100359180(void*, void*, void*);
 extern "C" void  FUN_710160fb20();
 extern "C" void  FUN_7101652f70(s32, s32, s32, s32, s32);
+extern "C" void  FUN_71004eb6a0(s32);
+extern "C" void  FUN_71015aba90(void*, void*, s32);
+extern "C" void  FUN_71015b4d40(void*, void*);
 
 // ── External data ─────────────────────────────────────────────────────────────
 // singleton for target-player lookup (adrp 0x71052b5000, ldr #0xfd8)
@@ -29,6 +32,22 @@ extern "C" __attribute__((visibility("hidden"))) void* DAT_71052c19f8;
 
 // attack-data table (struct size 0x110, field_0x100 is the clear target)
 extern "C" __attribute__((visibility("hidden"))) u8 DAT_71052c0fd0[];
+
+// FighterManager singleton ptr (adrp 0x71052b8000, ldr #0x4f8)
+extern "C" __attribute__((visibility("hidden"))) void* DAT_71052b84f8;
+
+// FighterManager global for light/dark fighter arrays (adrp 0x7105329000, ldr #0x868)
+extern "C" __attribute__((visibility("hidden"))) void* DAT_7105329868;
+
+// singleton base for hit_spd / DOLL_HIT_DATA / EXPLOSIONBOMB (adrp 0x71052bb000, ldr #0x3b0)
+extern "C" __attribute__((visibility("hidden"))) void* DAT_71052bb3b0;
+
+// final_module singletons in 0x71052c1000 page (single-indirected: *global = object)
+extern "C" __attribute__((visibility("hidden"))) void* DAT_71052c1a48;
+extern "C" __attribute__((visibility("hidden"))) void* DAT_71052c1af8;
+
+// fighter restart-position manager (adrp 0x71052c3000, ldr #0x70)
+extern "C" __attribute__((visibility("hidden"))) void** DAT_71052c3070;
 
 // ── Stat sub-struct readers (pattern: [p-8] → accessor, [accessor+0x168] → stat) ──
 
@@ -408,4 +427,430 @@ bool IsPlayersCountedAsParticipants(void* p) {
 void set_pickelblock_mode_ignoreandattack(void* p) {
     void* obj = *reinterpret_cast<void**>((u8*)p + 0x58);
     reinterpret_cast<void(*)(void*, s32)>(VT(obj)[0x808/8])(obj, 2);
+}
+
+// ── status_kind range checks ──────────────────────────────────────────────────
+
+// 7101227760 — true if kind in [0x47..0x4c] or [0x86..0x88]
+bool is_status_kind_attack_remain_arm(s32 kind) {
+    return (u32)(kind - 0x86) < 3 || (u32)(kind - 0x47) < 6;
+}
+
+// ── final_module_hit_success — vtable[1] on 0x71052c1xxx singletons ──────────
+
+// 71012281a0
+void final_module_hit_success_71012281a0() {
+    void* obj = DAT_71052c1a48;
+    reinterpret_cast<void(*)(void*)>(VT(obj)[0x8/8])(obj);
+}
+
+// 7101289c80
+void final_module_hit_success_7101289c80() {
+    void* obj = DAT_71052c1af8;
+    reinterpret_cast<void(*)(void*)>(VT(obj)[0x8/8])(obj);
+}
+
+// ── Throw attack helpers ──────────────────────────────────────────────────────
+
+// 71015c2720 — accessor[-8]→[+0x1a0]→[+0x190]→[+0x220], call with (obj, x1, 0)
+void throw_attack(void* p, void* other) {
+    void* a = *reinterpret_cast<void**>((u8*)p - 8);
+    void* b = *reinterpret_cast<void**>((u8*)a + 0x1a0);
+    void* c = *reinterpret_cast<void**>((u8*)b + 0x190);
+    void* d = *reinterpret_cast<void**>((u8*)c + 0x220);
+    FUN_71015aba90(d, other, 0);
+}
+
+// 71015cb6e0 — guard on [battle_obj+0x8]>>28==4, then same chain
+void throw_attack_71015cb6e0(void* battle_obj, void* other) {
+    if (!battle_obj) return;
+    if ((*reinterpret_cast<u32*>((u8*)battle_obj + 0x8) >> 28) != 4) return;
+    void* c = *reinterpret_cast<void**>((u8*)battle_obj + 0x190);
+    void* d = *reinterpret_cast<void**>((u8*)c + 0x220);
+    FUN_71015aba90(d, other, 0);
+}
+
+// ── Explosion/hit object readers ─────────────────────────────────────────────
+// Chain: acc[-8]→[+0x1a0]→[+0x190]→[+0x220]→[+0x90]→field
+
+// 71015c5560
+s32 get_pre_explosion_hit_object_id(void* p) {
+    void* a = *reinterpret_cast<void**>((u8*)p - 8);
+    void* b = *reinterpret_cast<void**>((u8*)a + 0x1a0);
+    void* c = *reinterpret_cast<void**>((u8*)b + 0x190);
+    void* d = *reinterpret_cast<void**>((u8*)c + 0x220);
+    void* e = *reinterpret_cast<void**>((u8*)d + 0x90);
+    return *reinterpret_cast<s32*>((u8*)e + 0x58);
+}
+
+// 71015c5580
+s32 get_pre_explosion_attack_object_id(void* p) {
+    void* a = *reinterpret_cast<void**>((u8*)p - 8);
+    void* b = *reinterpret_cast<void**>((u8*)a + 0x1a0);
+    void* c = *reinterpret_cast<void**>((u8*)b + 0x190);
+    void* d = *reinterpret_cast<void**>((u8*)c + 0x220);
+    void* e = *reinterpret_cast<void**>((u8*)d + 0x90);
+    return *reinterpret_cast<s32*>((u8*)e + 0x5c);
+}
+
+// 71015c5b30 — store bool to [+0x62]
+void set_postponed_damage_check_on_process_hit(void* p, bool flag) {
+    void* a = *reinterpret_cast<void**>((u8*)p - 8);
+    void* b = *reinterpret_cast<void**>((u8*)a + 0x1a0);
+    void* c = *reinterpret_cast<void**>((u8*)b + 0x190);
+    void* d = *reinterpret_cast<void**>((u8*)c + 0x220);
+    *reinterpret_cast<u8*>((u8*)d + 0x62) = flag & 1;
+}
+
+// ── apply_fighter_scale ───────────────────────────────────────────────────────
+
+// 71015cb3a0 — guard on other[+0x8]>>28==4, then call scale helper
+void apply_fighter_scale(void* p, void* other) {
+    if (!other) return;
+    if ((*reinterpret_cast<u32*>((u8*)other + 0x8) >> 28) != 4) return;
+    void* a = *reinterpret_cast<void**>((u8*)p - 8);
+    void* b = *reinterpret_cast<void**>((u8*)a + 0x1a0);
+    void* c = *reinterpret_cast<void**>((u8*)b + 0x190);
+    void* e = *reinterpret_cast<void**>((u8*)other + 0x190);
+    void* x0 = *reinterpret_cast<void**>((u8*)e + 0x220);
+    void* x1 = *reinterpret_cast<void**>((u8*)c + 0x220);
+    FUN_71015b4d40(x0, x1);
+}
+
+// ── FighterManager readers ────────────────────────────────────────────────────
+
+// 71015ce4d0 — FighterManager singleton → [+0xa0]
+s32 get_fighter_entry_count() {
+    void* m = *reinterpret_cast<void**>(DAT_71052b84f8);
+    return *reinterpret_cast<s32*>((u8*)m + 0xa0);
+}
+
+// ── Fighter restart position ──────────────────────────────────────────────────
+
+// 710164c130 — store (x, y, 0, 0) as q at [mgr+0x20], set flag [mgr+0x1c]=1
+void set_change_fighter_restart_position(float x, float y) {
+    void* mgr = *DAT_71052c3070;
+    float buf[4] = { x, y, 0.0f, 0.0f };
+    __builtin_memcpy((u8*)mgr + 0x20, buf, 16);
+    *reinterpret_cast<u8*>((u8*)mgr + 0x1c) = 1;
+}
+
+// 710164c160 — clear flag and zero position vector at [mgr+0x20]
+void cancel_change_fighter_restart_position() {
+    void* mgr = *DAT_71052c3070;
+    *reinterpret_cast<u8*>((u8*)mgr + 0x1c) = 0;
+    float zero[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+    __builtin_memcpy((u8*)mgr + 0x20, zero, 16);
+}
+
+// ── Damage attacker ID ────────────────────────────────────────────────────────
+
+// 7101651a20 — [p+0xa8] obj → vtable[0x198/8]() → [result+0xc] or 0x50000000
+s32 get_damage_attacker_id(void* p) {
+    void* obj = *reinterpret_cast<void**>((u8*)p + 0xa8);
+    void* r = reinterpret_cast<void*(*)(void*)>(VT(obj)[0x198/8])(obj);
+    if (!r) return 0x50000000;
+    return *reinterpret_cast<s32*>((u8*)r + 0xc);
+}
+
+// ── Summon fighter helpers ────────────────────────────────────────────────────
+
+// 7101652f40 — call FUN_71004eb6a0 only if fighter_kind in [2..7]
+void entry_summon_fighter(s32 fighter_kind) {
+    if ((u32)(fighter_kind - 2) <= 5)
+        FUN_71004eb6a0(fighter_kind);
+}
+
+// ── Light/dark fighter count ──────────────────────────────────────────────────
+
+// 7101653710 — (ptr_end - ptr_begin) / 8 for light fighter array
+u64 get_light_fighter_kind_num() {
+    void* g = DAT_7105329868;
+    if (!g) return 0;
+    void* p = *reinterpret_cast<void**>(g);
+    u8* end   = *reinterpret_cast<u8**>((u8*)p + 0x238);
+    u8* begin = *reinterpret_cast<u8**>((u8*)p + 0x230);
+    return (u64)(end - begin) >> 3;
+}
+
+// 71016537d0 — same for dark fighter array
+u64 get_dark_fighter_kind_num() {
+    void* g = DAT_7105329868;
+    if (!g) return 0;
+    void* p = *reinterpret_cast<void**>(g);
+    u8* end   = *reinterpret_cast<u8**>((u8*)p + 0x250);
+    u8* begin = *reinterpret_cast<u8**>((u8*)p + 0x248);
+    return (u64)(end - begin) >> 3;
+}
+
+// ── Global singleton float getters ────────────────────────────────────────────
+// All use: DAT_71052bb3b0 → [+offset] → [+offset2] → float at [+field]
+
+// 710165c5d0 — DOLL hit data size
+float DOLL_HIT_DATA_SIZE() {
+    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + 0xc08);
+    void* b = *reinterpret_cast<void**>((u8*)a + 0x1d8);
+    return *reinterpret_cast<float*>((u8*)b + 0x18);
+}
+
+// 710165d2a0 — explosion bomb burst damage
+float EXPLOSIONBOMB_BURST_DAMAGE() {
+    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + 0x3f0);
+    void* b = *reinterpret_cast<void**>((u8*)a + 0x108);
+    return *reinterpret_cast<float*>((u8*)b + 0x34);
+}
+
+// 710165e7c0 — hit speed x
+float hit_spd_x() {
+    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + 0xf88);
+    void* b = *reinterpret_cast<void**>((u8*)a + 0x1c8);
+    return *reinterpret_cast<float*>((u8*)b + 0x14);
+}
+
+// 710165e7e0 — hit speed y
+float hit_spd_y() {
+    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + 0xf88);
+    void* b = *reinterpret_cast<void**>((u8*)a + 0x1c8);
+    return *reinterpret_cast<float*>((u8*)b + 0x18);
+}
+
+// ── LINK linkbomb getters (guarded: return 0.0 unless fighter_kind==0x78) ─────
+// Chain: DAT_71052bb3b0 → [0xe0] → [0x1a8] → float
+
+// 710165ed10
+float LINK_LINKBOMB_LINKBOMB_MIN_DAMAGE(s32 fighter_kind) {
+    if (fighter_kind != 0x78) return 0.0f;
+    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + 0xe0);
+    void* b = *reinterpret_cast<void**>((u8*)a + 0x1a8);
+    return *reinterpret_cast<float*>((u8*)b + 0x18);
+}
+
+// 710165ed40
+float LINK_LINKBOMB_LINKBOMB_MAX_DAMAGE(s32 fighter_kind) {
+    if (fighter_kind != 0x78) return 0.0f;
+    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + 0xe0);
+    void* b = *reinterpret_cast<void**>((u8*)a + 0x1a8);
+    return *reinterpret_cast<float*>((u8*)b + 0x1c);
+}
+
+// 710165ed70
+float LINK_LINKBOMB_LINKBOMB_MIN_DAMAGE_SPEED(s32 fighter_kind) {
+    if (fighter_kind != 0x78) return 0.0f;
+    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + 0xe0);
+    void* b = *reinterpret_cast<void**>((u8*)a + 0x1a8);
+    return *reinterpret_cast<float*>((u8*)b + 0x20);
+}
+
+// 710165eda0
+float LINK_LINKBOMB_LINKBOMB_MAX_DAMAGE_SPEED(s32 fighter_kind) {
+    if (fighter_kind != 0x78) return 0.0f;
+    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + 0xe0);
+    void* b = *reinterpret_cast<void**>((u8*)a + 0x1a8);
+    return *reinterpret_cast<float*>((u8*)b + 0x24);
+}
+
+// ── LOG hit data getters ──────────────────────────────────────────────────────
+
+// 710165f320
+float LOG_HIT_DATA_SIZE() {
+    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + 0xc08);
+    void* b = *reinterpret_cast<void**>((u8*)a + 0x1a8);
+    return *reinterpret_cast<float*>((u8*)b + 0x18);
+}
+
+// ── MECHAKOOPA hit data getters ───────────────────────────────────────────────
+// Chain: DAT_71052bb3b0 → [0xd20] → [0x1b0 or 0x198] → field
+
+// 7101661340
+float MECHAKOOPA_DAMAGE_SPEED_MUL() {
+    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + 0xd20);
+    void* b = *reinterpret_cast<void**>((u8*)a + 0x198);
+    return *reinterpret_cast<float*>((u8*)b + 0xc);
+}
+
+// 71016614a0
+float MECHAKOOPA_HIT_DATA_SIZE() {
+    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + 0xd20);
+    void* b = *reinterpret_cast<void**>((u8*)a + 0x1b0);
+    return *reinterpret_cast<float*>((u8*)b + 0x18);
+}
+
+// 71016614c0
+void* MECHAKOOPA_HIT_DATA_JOINT() {
+    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + 0xd20);
+    void* b = *reinterpret_cast<void**>((u8*)a + 0x1b0);
+    return *reinterpret_cast<void**>((u8*)b + 0x20);
+}
+
+// 71016614e0
+s32 MECHAKOOPA_HIT_DATA_PART() {
+    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + 0xd20);
+    void* b = *reinterpret_cast<void**>((u8*)a + 0x1b0);
+    return *reinterpret_cast<s32*>((u8*)b + 0x28);
+}
+
+// 7101661500
+s32 MECHAKOOPA_HIT_DATA_HEIGHT() {
+    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + 0xd20);
+    void* b = *reinterpret_cast<void**>((u8*)a + 0x1b0);
+    return *reinterpret_cast<s32*>((u8*)b + 0x2c);
+}
+
+// ── PACMAN hit data getters ───────────────────────────────────────────────────
+// Chain: DAT_71052bb3b0 → [0xc78] → [sub_off] → field
+
+// 7101661fe0
+float PACMAN_HIT_DATA_SIZE() {
+    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + 0xc78);
+    void* b = *reinterpret_cast<void**>((u8*)a + 0x1f8);
+    return *reinterpret_cast<float*>((u8*)b + 0x18);
+}
+
+// 7101662cb0
+float PACMAN_HIT_DATA_SIZE_7101662cb0() {
+    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + 0xc78);
+    void* b = *reinterpret_cast<void**>((u8*)a + 0x240);
+    return *reinterpret_cast<float*>((u8*)b + 0x18);
+}
+
+// 7101663a80
+float PACMAN_HIT_DATA_SIZE_7101663a80() {
+    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + 0xc78);
+    void* b = *reinterpret_cast<void**>((u8*)a + 0x228);
+    return *reinterpret_cast<float*>((u8*)b + 0x18);
+}
+
+// 7101664af0
+float PACMAN_HIT_DATA_SIZE_7101664af0() {
+    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + 0xc78);
+    void* b = *reinterpret_cast<void**>((u8*)a + 0x1b0);
+    return *reinterpret_cast<float*>((u8*)b + 0x18);
+}
+
+// 7101665780
+s32 PACMAN_HIT_LIFE() {
+    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + 0xc78);
+    void* b = *reinterpret_cast<void**>((u8*)a + 0xd8);
+    return *reinterpret_cast<s32*>((u8*)b + 0x10);
+}
+
+// 7101665800
+float PACMAN_HIT_DATA_SIZE_7101665800() {
+    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + 0xc78);
+    void* b = *reinterpret_cast<void**>((u8*)a + 0x258);
+    return *reinterpret_cast<float*>((u8*)b + 0x18);
+}
+
+// 7101666500
+float PACMAN_HIT_DATA_SIZE_7101666500() {
+    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + 0xc78);
+    void* b = *reinterpret_cast<void**>((u8*)a + 0x210);
+    return *reinterpret_cast<float*>((u8*)b + 0x18);
+}
+
+// 71016671d0
+float PACMAN_HIT_DATA_SIZE_71016671d0() {
+    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + 0xc78);
+    void* b = *reinterpret_cast<void**>((u8*)a + 0x1e0);
+    return *reinterpret_cast<float*>((u8*)b + 0x18);
+}
+
+// 7101667eb0
+float PACMAN_HIT_DATA_SIZE_7101667eb0() {
+    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + 0xc78);
+    void* b = *reinterpret_cast<void**>((u8*)a + 0x1c8);
+    return *reinterpret_cast<float*>((u8*)b + 0x18);
+}
+
+// ── Damage/fighter field getters (2-hop: DAT_71052bb3b0 → [0x13b0] → field) ──
+
+// 710166e130
+float auto_damage() {
+    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + 0x13b0);
+    return *reinterpret_cast<float*>((u8*)a + 0x520);
+}
+
+// 710166e150
+float fighter_landing_damage_mul() {
+    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + 0x13b0);
+    return *reinterpret_cast<float*>((u8*)a + 0x524);
+}
+
+// 710166e170
+s32 fighter_landing_damage_mul_frame() {
+    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + 0x13b0);
+    return *reinterpret_cast<s32*>((u8*)a + 0x528);
+}
+
+// 710166e230
+s32 damage_attack_stop_frame() {
+    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + 0x13b0);
+    return *reinterpret_cast<s32*>((u8*)a + 0x550);
+}
+
+// ── POWERESA hit getters (DAT_71052bb3b0 → [0xc78] → [sub] → field) ──────────
+
+// 710166f6a0
+float POWERESA_HIT_SPEED_Y() {
+    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + 0xc78);
+    void* b = *reinterpret_cast<void**>((u8*)a + 0x360);
+    return *reinterpret_cast<float*>(b);
+}
+
+// 710166f700
+float POWERESA_HIT_DATA_SIZE() {
+    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + 0xc78);
+    void* b = *reinterpret_cast<void**>((u8*)a + 0x378);
+    return *reinterpret_cast<float*>((u8*)b + 0x18);
+}
+
+// ── HOLYWATER hit getters (fighter_kind selects 0xf18 vs 0xf50) ──────────────
+// Chain: DAT_71052bb3b0 → [0xf18 or 0xf50] → [0x240] → float
+
+// 7101670e90
+float HOLYWATER_HIT_DEC_HP(s32 fighter_kind) {
+    u64 off = (fighter_kind == 0x44) ? 0xf50ull : 0xf18ull;
+    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + off);
+    void* b = *reinterpret_cast<void**>((u8*)a + 0x240);
+    return *reinterpret_cast<float*>((u8*)b + 0x28);
+}
+
+// 7101671070
+float HOLYWATER_HIT_HOP_SPEED_Y(s32 fighter_kind) {
+    u64 off = (fighter_kind == 0x44) ? 0xf50ull : 0xf18ull;
+    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + off);
+    void* b = *reinterpret_cast<void**>((u8*)a + 0x240);
+    return *reinterpret_cast<float*>((u8*)b + 0x2c);
+}
+
+// 71016710a0
+float HOLYWATER_HIT_SPEED_X_MUL(s32 fighter_kind) {
+    u64 off = (fighter_kind == 0x44) ? 0xf50ull : 0xf18ull;
+    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + off);
+    void* b = *reinterpret_cast<void**>((u8*)a + 0x240);
+    return *reinterpret_cast<float*>((u8*)b + 0x30);
+}
+
+// 71016710d0
+float HOLYWATER_HIT_HOP_AFTER_FALL_ACCEL(s32 fighter_kind) {
+    u64 off = (fighter_kind == 0x44) ? 0xf50ull : 0xf18ull;
+    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + off);
+    void* b = *reinterpret_cast<void**>((u8*)a + 0x240);
+    return *reinterpret_cast<float*>((u8*)b + 0x34);
+}
+
+// 7101671100
+float HOLYWATER_HIT_HOP_AFTER_SPEED_Y_MAX(s32 fighter_kind) {
+    u64 off = (fighter_kind == 0x44) ? 0xf50ull : 0xf18ull;
+    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + off);
+    void* b = *reinterpret_cast<void**>((u8*)a + 0x240);
+    return *reinterpret_cast<float*>((u8*)b + 0x38);
+}
+
+// ── Duplicate getter (same impl as get_fighter_entry_count) ───────────────────
+
+// 7101673cc0
+s32 get_fighter_entry_count_7101673cc0() {
+    void* m = *reinterpret_cast<void**>(DAT_71052b84f8);
+    return *reinterpret_cast<s32*>((u8*)m + 0xa0);
 }
