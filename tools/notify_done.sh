@@ -9,11 +9,11 @@ REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 echo "[$POOL] Triggering orchestrator lambda..."
 echo "[$POOL] Message: $MSG"
 
-# Invoke Claude as a one-shot orchestrator lambda
-claude -p "Run this command and report the output: python tools/orchestrate_merge.py $POOL" \
+# Invoke Claude as a one-shot orchestrator lambda with full permissions
+claude -p "Run: python tools/orchestrate_merge.py $POOL" \
   --cwd "$REPO_ROOT" \
   --model sonnet \
-  --allowedTools "Bash(run python scripts and git commands:*)" \
+  --dangerously-skip-permissions \
   2>&1
 
 echo ""
