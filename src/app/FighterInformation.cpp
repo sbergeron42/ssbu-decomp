@@ -60,6 +60,7 @@ f32 FighterInformation__hit_point_max_impl(FighterInformation* fi, bool include_
 }
 
 // Additional simple getters from agent data
+// 71020c9e30
 bool FighterInformation__is_operation_cpu_real_impl(FighterInformation* fi) {
     auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);
     return *reinterpret_cast<bool*>(data + 0x92);

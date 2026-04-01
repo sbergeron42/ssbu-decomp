@@ -104,6 +104,7 @@ void* FighterCloudLinkEventFinal__load_from_l2c_table_impl_21992c0(void* obj, u6
 
 // MANUAL: 0x7100039e10  ViewportScissorState::GetRequiredMemorySize  (ldrh+mul-sub)
 // ldrh w8,[x0,#2]; mov w9,#40; mul x8,x8,x9; sub x0,x8,#40; ret
+// 7100003e10
 u64 GetRequiredMemorySize_3e10(void* obj) {
     u16 n = *reinterpret_cast<u16*>(reinterpret_cast<u8*>(obj) + 2);
     return (u64)n * 0x28 - 0x28;
@@ -111,6 +112,7 @@ u64 GetRequiredMemorySize_3e10(void* obj) {
 
 // MANUAL: 0x7100039de0  TessellationStateImpl::Initialize  (ldrh+str+orr-1+strb)
 // ldrh w8,[x2]; str w8,[x0,#4]; orr w8,wzr,#1; strb w8,[x0]; ret
+// 7100039de0
 void Initialize_39de0(void* param_1, u64 param_2, void* param_3) {
     *reinterpret_cast<u32*>(reinterpret_cast<u8*>(param_1) + 4) = *reinterpret_cast<u16*>(param_3);
     *reinterpret_cast<u8*>(param_1) = 1;
@@ -118,6 +120,7 @@ void Initialize_39de0(void* param_1, u64 param_2, void* param_3) {
 
 // MANUAL: 0x71000b7080  ListBase::Init  (stp x0,x0,[x0]+str-wzr)
 // stp x0,x0,[x0]; str wzr,[x0,#16]; ret
+// 71000b7080
 void Init_b7080(void* obj) {
     *reinterpret_cast<void**>(obj) = obj;
     *reinterpret_cast<void**>(reinterpret_cast<u8*>(obj) + 8) = obj;
@@ -126,12 +129,14 @@ void Init_b7080(void* obj) {
 
 // MANUAL: 0x710003e230  AnimTransform::SetEnabled  (and-w1-#1+strb)
 // and w8,w1,#1; strb w8,[x0,#0x24]; ret
+// 710003e230
 void SetEnabled_3e230(void* obj, u8 val) {
     *reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj) + 0x24) = val & 1;
 }
 
 // MANUAL: 0x71000408d0  AnimResource::GetGroupCount  (ldr+cbz+ldrh-ret+mov-0+ret)
 // ldr x8,[x0,#0x10]; cbz x8,+c; ldrh w0,[x8,#0xA]; ret; mov w0,wzr; ret
+// 71000408d0
 u16 GetGroupCount_408d0(void* obj) {
     void* p = *reinterpret_cast<void**>(reinterpret_cast<u8*>(obj) + 0x10);
     if (p == nullptr) return 0;
@@ -140,6 +145,7 @@ u16 GetGroupCount_408d0(void* obj) {
 
 // MANUAL: 0x710000408f0  AnimResource::GetGroupArray  (ldr+cbz+ldr-add-ret+mov-0+ret)
 // ldr x8,[x0,#0x10]; cbz x8,+10; ldr w9,[x8,#0x10]; add x0,x8,x9; ret; mov x0,xzr; ret
+// 71000408f0
 u64 GetGroupArray_408f0(void* obj) {
     u64 p = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x10);
     if (p == 0) return 0;
@@ -147,6 +153,7 @@ u64 GetGroupArray_408f0(void* obj) {
 }
 
 // MANUAL: 0x7100040960  AnimResource::GetAnimationShareInfoCount  (ldr+cbz+ldrh-ret+mov-0+ret)
+// 7100040960
 u16 GetAnimationShareInfoCount_40960(void* obj) {
     void* p = *reinterpret_cast<void**>(reinterpret_cast<u8*>(obj) + 0x18);
     if (p == nullptr) return 0;
@@ -154,6 +161,7 @@ u16 GetAnimationShareInfoCount_40960(void* obj) {
 }
 
 // MANUAL: 0x7100040980  AnimResource::GetAnimationShareInfoArray  (ldr+cbz+ldr-add-ret+mov-0+ret)
+// 7100040980
 u64 GetAnimationShareInfoArray_40980(void* obj) {
     u64 p = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x18);
     if (p == 0) return 0;
@@ -162,6 +170,7 @@ u64 GetAnimationShareInfoArray_40980(void* obj) {
 
 // MANUAL: 0x71000446c0  detail::GetResShapeInfo  (ldr+add-uxtw+ldr+add)
 // ldr x8,[x0,#0x18]; add x9,x8,w1,uxtw#2; ldr w9,[x9,#0xC]; add x0,x8,x9; ret
+// 71000446c0
 u64 GetResShapeInfo_446c0(void* obj, u32 idx) {
     u64 base = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x18);
     return base + *reinterpret_cast<u32*>(reinterpret_cast<u8*>((void*)base) + (u64)idx*4 + 0xC);
@@ -169,6 +178,7 @@ u64 GetResShapeInfo_446c0(void* obj, u32 idx) {
 
 // MANUAL: 0x71000b4160  CallContext::InitiateCall  (orr-1+str+strb-0+orr-1+ret)
 // orr w8,wzr,#1; str w8,[x0]; strb wzr,[x0,#0x28]; orr w0,wzr,#1; ret
+// 71000b4160
 u64 InitiateCall_b4160(void* obj) {
     *reinterpret_cast<u32*>(obj) = 1;
     *reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj) + 0x28) = 0;
@@ -178,6 +188,7 @@ u64 InitiateCall_b4160(void* obj) {
 
 // MANUAL: 0x71000a4f20  nn::vfx::System::InitializeEmitter  (ldr-field+str-field)
 // ldr x8,[x0,#0x8c0]; str x8,[x1,#0x98]; ret
+// 71000a4f20
 void InitializeEmitter_a4f20(void* param_1, void* param_2) {
     *reinterpret_cast<u64*>(reinterpret_cast<u8*>(param_2) + 0x98) =
         *reinterpret_cast<u64*>(reinterpret_cast<u8*>(param_1) + 0x8c0);
@@ -185,6 +196,7 @@ void InitializeEmitter_a4f20(void* param_1, void* param_2) {
 
 // MANUAL: 0x7100079050  nn::font::DispStringBuffer::Finalize  (ldr+cmp-1+b.lt+str-wzr)
 // ldr w8,[x0,#0x98]; cmp w8,#1; b.lt #+8; str wzr,[x0,#0x98]; ret
+// 7100079050
 void Finalize_79050(void* obj) {
     if (*reinterpret_cast<s32*>(reinterpret_cast<u8*>(obj) + 0x98) > 0)
         *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x98) = 0;
@@ -192,12 +204,14 @@ void Finalize_79050(void* obj) {
 
 // MANUAL: 0x7100079070  nn::font::DispStringBuffer::GetRequiredDrawBufferSize  (ldrsw+mov-57+mul)
 // ldrsw x8,[x0,#0x10]; mov w9,#57; mul x0,x8,x9; ret
+// 7100079070
 u64 GetRequiredDrawBufferSize_79070(void* obj) {
     return (u64)((s64)*reinterpret_cast<s32*>(reinterpret_cast<u8*>(obj) + 0x10) * 57);
 }
 
 // MANUAL: 0x7100044d40  nn::ui2d::DrawInfo::SetGpuAccessBufferIndex  (double null-guard store)
 // ldr x8,[x0,#0xc8]; cbz x8,+8; str w1,[x8,#0x30]; ldr x8,[x0,#0xd0]; cbz x8,+8; str w1,[x8,#0x30]; ret
+// 7100044d40
 void SetGpuAccessBufferIndex_44d40(void* obj, u32 val) {
     u64 p = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0xc8);
     if (p != 0)
@@ -209,6 +223,7 @@ void SetGpuAccessBufferIndex_44d40(void* obj, u32 val) {
 
 // MANUAL: 0x7100054150  nn::ui2d::Material::GetConstantBufferForVertexShader  (double-deref+cbz+add)
 // ldr x8,[x1,#0xc8]; ldr x8,[x8,#0x38]; cbz x8,#+10; ldr w9,[x0,#0x30]; add x0,x8,x9; ret; mov x0,xzr; ret
+// 7100054150
 u64 GetConstantBufferForVertexShader_54150(void* param_1, void* param_2) {
     u64 p = *reinterpret_cast<u64*>(
         reinterpret_cast<u8*>(*reinterpret_cast<void**>(reinterpret_cast<u8*>(param_2) + 0xC8)) + 0x38);
@@ -218,79 +233,93 @@ u64 GetConstantBufferForVertexShader_54150(void* param_1, void* param_2) {
 
 
 // MANUAL: 0x7100112be0  nn::pia::inet::NexSessionInfo::SetUserPasswordEnabled  (and-1+strb)
+// 7100112be0
 void SetUserPasswordEnabled_112be0(void* obj, u8 val) {
     *reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj) + 0x234) = val & 1;
 }
 
 // MANUAL: 0x7100112bf0  nn::pia::inet::NexSessionInfo::SetSystemPasswordEnabled  (and-1+strb)
+// 7100112bf0
 void SetSystemPasswordEnabled_112bf0(void* obj, u8 val) {
     *reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj) + 0x235) = val & 1;
 }
 
 // MANUAL: 0x7100112c00  nn::pia::inet::NexSessionInfo::SetSessionType  (str+and-1+strb)
 // and w8,w2,#1; str w1,[x0,#0x238]; strb w8,[x0,#0x23c]; ret
+// 7100112c00
 void SetSessionType_112c00(void* obj, u32 param2, u8 val) {
     *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x238) = param2;
     *reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj) + 0x23c) = val & 1;
 }
 
 // MANUAL: 0x7100114d90  nn::pia::inet::NexSessionSearchCriteriaParticipant::SetApplicationDataEnabled  (and-1+strb)
+// 7100114d90
 void SetApplicationDataEnabled_114d90(void* obj, u8 val) {
     *reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj) + 0x97f) = val & 1;
 }
 
 // MANUAL: 0x7100255b10  nn::nex::MatchmakeSessionSearchCriteria::SetExcludeLocked  (and-1+strb)
+// 7100255b10
 void SetExcludeLocked_255b10(void* obj, u8 val) {
     *reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj) + 0xc9) = val & 1;
 }
 
 // MANUAL: 0x7100255b20  nn::nex::MatchmakeSessionSearchCriteria::SetVacantOnly  (and-1+strb+orr-1+strh)
 // and w8,w1,#1; strb w8,[x0,#0xc8]; orr w8,wzr,#1; strh w8,[x0,#0xd0]; ret
+// 7100255b20
 void SetVacantOnly_255b20(void* obj, u8 val) {
     *reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj) + 0xc8) = val & 1;
     *reinterpret_cast<u16*>(reinterpret_cast<u8*>(obj) + 0xd0) = 1;
 }
 
 // MANUAL: 0x7100255b40  nn::nex::MatchmakeSessionSearchCriteria::SetExcludeNonHostPid  (and-1+strb)
+// 7100255b40
 void SetExcludeNonHostPid_255b40(void* obj, u8 val) {
     *reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj) + 0xca) = val & 1;
 }
 
 // MANUAL: 0x7100255b50  nn::nex::MatchmakeSessionSearchCriteria::SetExcludeUserPasswordSet  (and-1+strb)
+// 7100255b50
 void SetExcludeUserPasswordSet_255b50(void* obj, u8 val) {
     *reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj) + 0x100) = val & 1;
 }
 
 // MANUAL: 0x71001b08c0  nn::nex::DateTime::GetYear  (ldr+ubfx-14bits-at-26)
 // ldr x8,[x0]; ubfm x0,x8,#26,#39; ret
+// 71001b08c0
 u64 GetYear_1b08c0(void* obj) {
     return *reinterpret_cast<u64*>(obj) >> 26 & 0x3fff;
 }
 
 // MANUAL: 0x71001b08e0  nn::nex::DateTime::GetDay  (ldr-w+ubfx-5bits-at-17)
 // ldr w8,[x0]; ubfm w0,w8,#17,#21; ret
+// 71001b08e0
 u32 GetDay_1b08e0(void* obj) {
     return *reinterpret_cast<u32*>(obj) >> 17 & 0x1f;
 }
 
 // MANUAL: 0x71001b08f0  nn::nex::DateTime::GetHour  (ldr-w+ubfx-5bits-at-12)
+// 71001b08f0
 u32 GetHour_1b08f0(void* obj) {
     return *reinterpret_cast<u32*>(obj) >> 12 & 0x1f;
 }
 
 // MANUAL: 0x71001b0900  nn::nex::DateTime::GetMinute  (ldr-w+ubfx-6bits-at-6)
+// 71001b0900
 u32 GetMinute_1b0900(void* obj) {
     return *reinterpret_cast<u32*>(obj) >> 6 & 0x3f;
 }
 
 // MANUAL: 0x71001b11f0  nn::nex::qResult::GetFacility  (ldrh+and-0x7ff)
 // ldrh w8,[x0,#2]; and w0,w8,#0x7ff; ret
+// 71001b11f0
 u16 GetFacility_1b11f0(void* obj) {
     return *reinterpret_cast<u16*>(reinterpret_cast<u8*>(obj) + 2) & 0x7ff;
 }
 
 // MANUAL: 0x71001b6170  nn::nex::StringStream::GetLength  (ldr-ldr-sub)
 // ldr x8,[x0,#0x18]; ldr x9,[x0,#8]; sub x0,x8,x9; ret
+// 71001b6170
 u64 GetLength_1b6170(void* obj) {
     return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x18) -
            *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 8);
@@ -298,6 +327,7 @@ u64 GetLength_1b6170(void* obj) {
 
 // MANUAL: 0x71001cbc40  nn::nex::Key::GetLength  (ldp+sub)
 // ldp x8,x9,[x0,#0x10]; sub x0,x9,x8; ret
+// 71001cbc40
 u64 GetLength_1cbc40(void* obj) {
     return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x18) -
            *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x10);
@@ -305,6 +335,7 @@ u64 GetLength_1cbc40(void* obj) {
 
 // MANUAL: 0x71001d0c80  nn::nex::CallContext::SetDependentConnection  (str-x1+str-w2)
 // str x1,[x0,#0x70]; str w2,[x0,#0x78] (actually +0xf0? check); ret
+// 71001d0c80
 void SetDependentConnection_1d0c80(void* obj, u64 param2, u32 param3) {
     *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x70) = param2;
     *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x78) = param3;
@@ -312,6 +343,7 @@ void SetDependentConnection_1d0c80(void* obj, u64 param2, u32 param3) {
 
 // MANUAL: 0x71001b3e70  nn::nex::qReservedQueue::clear  (stp-xzr+str-xzr)
 // stp xzr,xzr,[x0,#0x28]; str xzr,[x0,#0x20]; ret
+// 71001b3e70
 void clear_1b3e70(void* obj) {
     *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x28) = 0;
     *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x30) = 0;
@@ -320,6 +352,7 @@ void clear_1b3e70(void* obj) {
 
 // MANUAL: 0x71001aead0  nn::pia::session::SyncClock::SetBaseTime  (ldr-src+str-dst+orr-1+strb)
 // ldr x8,[x1]; str x8,[x0]; orr w8,wzr,#1; strb w8,[x0,#8]; ret
+// 71001aead0
 void SetBaseTime_1aead0(void* obj, void* src) {
     *reinterpret_cast<u64*>(obj) = *reinterpret_cast<u64*>(src);
     *reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj) + 8) = 1;
@@ -327,12 +360,14 @@ void SetBaseTime_1aead0(void* obj, void* src) {
 
 // MANUAL: 0x71001aea30  nn::pia::transport::StationIdTable::SetAvailableEntryNum  (ldr+cmp+blo+str)
 // ldr w8,[x0,#0x38]; cmp w8,w1; b.lo skip; str w1,[x0,#0x48]; ret
+// 71001aea30
 void SetAvailableEntryNum_1aea30(void* obj, u32 val) {
     if (val <= *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x38))
         *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x48) = val;
 }
 
 // MANUAL: 0x71001b20e0  nn::nex::PacketBufferManager::GetMaxUnitSize  (ldr+cbz+ldr-ret+mov0+ret)
+// 71001b20e0
 u64 GetMaxUnitSize_1b20e0(void* obj) {
     u64 p = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x60);
     if (p == 0) return 0;
@@ -341,6 +376,7 @@ u64 GetMaxUnitSize_1b20e0(void* obj) {
 
 // MANUAL: 0x71001d6920  nn::nex::Key::GetContentPtr  (ldp+cmp+csel)
 // ldp x8,x9,[x0,#0x10]; cmp x8,x9; csel x0,xzr,x8,eq; ret
+// 71001d6920
 u64 GetContentPtr_1d6920(void* obj) {
     u64 a = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x10);
     u64 b = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x18);
@@ -349,6 +385,7 @@ u64 GetContentPtr_1d6920(void* obj) {
 
 // MANUAL: 0x71001d6b80  nn::nex::OperationManager::GetCurrentOperation  (ldr-check+cbz+ldr+ldr-ret+mov0+ret)
 // ldr x8,[x0,#0x30]; cbz x8,+20; ldr x8,[x0,#0x20]; ldr x0,[x8,#0x10]; ret; mov x0,xzr; ret
+// 71001d6b80
 u64 GetCurrentOperation_1d6b80(void* obj) {
     if (*reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x30) == 0) return 0;
     return *reinterpret_cast<u64*>(
@@ -357,6 +394,7 @@ u64 GetCurrentOperation_1d6b80(void* obj) {
 
 // MANUAL: 0x71001cfb70  nn::nex::Buffer::SetHeadShiftSize  (ldr-cur+ldr-old+str+sub+add+str)
 // ldr x8,[x0,#0x18]; ldr x9,[x0,#0x28]; str x1,[x0,#0x28]; sub x8,x8,x1; add x8,x8,x9; str x8,[x0,#0x18]
+// 71001cfb70
 void SetHeadShiftSize_1cfb70(void* obj, u64 val) {
     u64 cur = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x18);
     u64 old = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x28);
@@ -366,6 +404,7 @@ void SetHeadShiftSize_1cfb70(void* obj, u64 val) {
 
 // MANUAL: 0x7100146c10  nn::pia::session::Session::GetMatchmakeSessionParticipantNum
 // ldr x0,[x0,#8]; cbz x0,→ret; ldr x8,[x0]; ldr x1,[x8,#0x58]; br x1; ret
+// 7100146c10
 void GetMatchmakeSessionParticipantNum_146c10(void* obj) {
     void* p = *reinterpret_cast<void**>(reinterpret_cast<u8*>(obj) + 8);
     if (p == nullptr) return;
@@ -374,6 +413,7 @@ void GetMatchmakeSessionParticipantNum_146c10(void* obj) {
 
 // MANUAL: 0x7100146e00  nn::pia::session::Session::GetMatchmakeSessionStationNum
 // ldr x0,[x0,#8]; cbz x0,→ret; ldr x8,[x0]; ldr x1,[x8,#0x50]; br x1; ret
+// 7100146e00
 void GetMatchmakeSessionStationNum_146e00(void* obj) {
     void* p = *reinterpret_cast<void**>(reinterpret_cast<u8*>(obj) + 8);
     if (p == nullptr) return;
@@ -383,6 +423,7 @@ void GetMatchmakeSessionStationNum_146e00(void* obj) {
 
 // MANUAL: 0x7100088a00  nn::vfx::Emitter::SetColor0  (ldr+str+ldr+str for z+w then x+y)
 // ldr x8,[x1,#8]; str x8,[x0,#0x428]; ldr x8,[x1]; str x8,[x0,#0x420]; ret
+// 7100088a00
 void SetColor0_88a00(void* obj, void* color0) {
     *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x428) =
         *reinterpret_cast<u64*>(reinterpret_cast<u8*>(color0) + 8);
@@ -391,6 +432,7 @@ void SetColor0_88a00(void* obj, void* color0) {
 }
 
 // MANUAL: 0x710003ab30  nn::gfx::util::PrimitiveShape::GetStride  (bit-check accumulate)
+// 710003ab30
 u64 GetStride_3ab30(void* obj) {
     u32 flags = *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x18);
     u64 result = 0;
@@ -402,6 +444,7 @@ u64 GetStride_3ab30(void* obj) {
 
 // MANUAL: 0x71000ee2c0  nn::pia::inet::NexMatchMeshLayerController::GetSessionIdArraySize
 // ldr x8,[x0,#0x2d8]; cmp x8,#0; orr w8,wzr,#4; csel w0,xzr,w8,eq; ret
+// 71000ee2c0
 u32 GetSessionIdArraySize_ee2c0(void* obj) {
     // NX Clang reuses freed W8 (from LDR) for the constant; force ORR+CSEL not CSET+LSL
 #ifdef MATCHING_HACK_NX_CLANG
@@ -423,12 +466,14 @@ u32 GetSessionIdArraySize_ee2c0(void* obj) {
 
 // MANUAL: 0x71000bf170  nn::pia::common::Packet::PacketData::GetPayload
 // add w8,w1,#0x20; add x8,x0,x8; add x0,x8,#0x28; ret
+// 71000bf170
 u64 GetPayload_bf170(void* obj, u32 idx) {
     return reinterpret_cast<u64>(obj) + (idx + 0x20) + 0x28;
 }
 
 // MANUAL: 0x710014f0b0  nn::pia::session::SessionSearchCriteria::Reset  (movz+str-wzr+str-x8)
 // mov x8,#0x1400000000; str wzr,[x0,#0x10]; str x8,[x0,#8]; ret
+// 710014f0b0
 void Reset_14f0b0(void* obj) {
     *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x10) = 0;
     *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 8) = 0x1400000000ULL;
@@ -436,6 +481,7 @@ void Reset_14f0b0(void* obj) {
 
 // MANUAL: 0x7100149240  nn::pia::session::Session::SetCurrentSessionOpenStatus
 // ldrb w8,[x0,#0x162]; add x8,x0,x8,lsl#2; str w1,[x8,#0x190]; ret
+// 7100149240
 void SetCurrentSessionOpenStatus_149240(void* obj, u32 val) {
     u64 idx = *reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj) + 0x162);
     *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + idx * 4 + 0x190) = val;
@@ -443,6 +489,7 @@ void SetCurrentSessionOpenStatus_149240(void* obj, u32 val) {
 
 // MANUAL: 0x7100149250  nn::pia::session::Session::SetBufferSessionOpenStatus
 // ldrb w8,[x0,#0x162]; cmp w8,#0; cset w8,eq; add x8,x0,x8,lsl#2; str w1,[x8,#0x190]; ret
+// 7100149250
 void SetBufferSessionOpenStatus_149250(void* obj, u32 val) {
     u64 idx = (*reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj) + 0x162) == 0) ? 1 : 0;
     *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + idx * 4 + 0x190) = val;
@@ -450,6 +497,7 @@ void SetBufferSessionOpenStatus_149250(void* obj, u32 val) {
 
 // MANUAL: 0x710015e200  nn::pia::transport::SequenceIdController::GetNextSendSequenceId
 // ldrh w8,[x0,#8]; add w9,w8,#1; add w10,w8,#2; tst w9,#0xffff; csel w8,w10,w9,eq; strh w8,[x0,#8]; mov w0,w8; ret
+// 710015e200
 u32 GetNextSendSequenceId_15e200(void* obj) {
     u16 cur = *reinterpret_cast<u16*>(reinterpret_cast<u8*>(obj) + 8);
     u32 next1 = (u32)cur + 1;
@@ -467,6 +515,7 @@ u32 GetNextSendSequenceId_15e200(void* obj) {
 
 // MANUAL: 0x7100046e30  nn::ui2d::GraphicsResource::GetSamplerDescriptorSlot
 // orr w8,#12; mul w8,w1,w8; add w8,w8,w2,lsl#2; ldr x9,[x0,#0x260]; add w8,w8,w3; add w8,w8,w4,lsl#1; add x0,x9,w8,sxtw#3; ret
+// 7100046e30
 u64 GetSamplerDescriptorSlot_46e30(void* obj, s32 p2, s32 p3, s32 p4, s32 p5) {
     s32 offset = p2 * 0xc + p3 * 4 + p4 + p5 * 2;
     u64 base = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x260);
@@ -475,6 +524,7 @@ u64 GetSamplerDescriptorSlot_46e30(void* obj, s32 p2, s32 p3, s32 p4, s32 p5) {
 
 // MANUAL: 0x710022b500  nn::nex::Protocol::FlagIsSet
 // ldr w8,[x0,#0x60]; bics wzr,w1,w8; cset w0,eq; ret
+// 710022b500
 bool FlagIsSet_22b500(void* obj, u32 flags_to_check) {
     u32 flags = *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x60);
     return (flags_to_check & ~flags) == 0;
@@ -482,6 +532,7 @@ bool FlagIsSet_22b500(void* obj, u32 flags_to_check) {
 
 // MANUAL: 0x7100031170  nn::gfx::MultisampleStateInfo::SetDefault
 // ldrh w9,[x0,#2]; orr w8,wzr,#1; strb w8,[x0,#0]; movn w8,#0; str w8,[x0,#4]; and w9,w9,#0xfffe; strh w9,[x0,#2]; ret
+// 7100031170
 void SetDefault_31170(void* obj) {
 #ifdef MATCHING_HACK_NX_CLANG
     // Exact instruction sequence: LDRH→W9, constants→W8, AND in-place W9
@@ -503,6 +554,7 @@ void SetDefault_31170(void* obj) {
 
 // MANUAL: 0x7100066010  nn::ui2d::IsResShaderContainerInitialized_
 // ldr x8,[x0,#0x28]; cbz x8,...; ldr x8,[x8,#0x20]; cbz x8,...; ldrb w8,[x8,#0x110]; cmp w8,#1; cset w0,eq; ret; x2 movz+ret
+// 7100066010
 bool IsResShaderContainerInitialized_66010(void* obj) {
     void* p1 = *reinterpret_cast<void**>(reinterpret_cast<u8*>(obj) + 0x28);
     if (p1 == nullptr) return false;
@@ -513,6 +565,7 @@ bool IsResShaderContainerInitialized_66010(void* obj) {
 
 // MANUAL: 0x7100254940  nn::nex::MatchmakeSession::GetAttribute (3-instr body)
 // ldr x8,[x0,#0x68]; ldr w0,[x8,w1,uxtw #2]; ret
+// 7100254940
 u32 GetAttribute_254940(void* obj, u32 idx) {
     u32* arr = *reinterpret_cast<u32**>(reinterpret_cast<u8*>(obj) + 0x68);
     return arr[idx];

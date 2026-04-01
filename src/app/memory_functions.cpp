@@ -26,6 +26,7 @@ long GetRequiredMemorySize_39e10(long p) {
 }
 
 // 0x000000710003a610  16B  (other GetRequiredMemorySize stub)
+// 710003a610
 void GetRequiredMemorySize_3a610(void*) { }
 
 // ---------------------------------------------------------------------------
