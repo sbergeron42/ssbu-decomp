@@ -34,3 +34,4 @@ original/
 __pycache__/
 *.pyc
 .venv/
+.claude_bus/
