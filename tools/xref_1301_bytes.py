@@ -158,8 +158,40 @@ def main():
         next(reader)
         for row in reader:
             addr = int(row[0], 16)
-            funcs_1304[addr] = (row[1], row[2], row[3])
+            funcs_1304[addr] = (row[1], int(row[2]), row[3])
             names_1304.add(row[3])
+
+    # Build anchor offset map for disambiguation
+    # (same name in both -> known offset at that address)
+    anchor_offsets = []
+    for addr_1301, (name, _) in sorted(named_1301.items()):
+        if name in names_1304:
+            # Find the 13.0.4 address for this name
+            for a1304, (q, sz, n) in funcs_1304.items():
+                if n == name:
+                    anchor_offsets.append((addr_1301, a1304 - addr_1301))
+                    break
+    anchor_offsets.sort()
+
+    def get_expected_addr(addr_1301):
+        """Get expected 13.0.4 address based on nearest anchor offset."""
+        lo, hi = 0, len(anchor_offsets) - 1
+        while lo < hi:
+            mid = (lo + hi) // 2
+            if anchor_offsets[mid][0] < addr_1301:
+                lo = mid + 1
+            else:
+                hi = mid
+        best_off = None
+        best_dist = float('inf')
+        for idx in range(max(0, lo - 1), min(len(anchor_offsets), lo + 2)):
+            dist = abs(anchor_offsets[idx][0] - addr_1301)
+            if dist < best_dist:
+                best_dist = dist
+                best_off = anchor_offsets[idx][1]
+        return addr_1301 + best_off if best_off is not None else None
+
+    print("  Anchor offsets for disambiguation: %d" % len(anchor_offsets))
 
     # Build search index for 13.0.4
     print("Building 13.0.4 search index...")
@@ -206,19 +238,43 @@ def main():
                 cand_addr = vaddr_1304 + cand_off + ELF_BASE  # convert to Ghidra addr
                 matches.append(cand_addr)
 
-        if len(matches) == 1:
-            target = matches[0]
-            if target in funcs_1304 and target not in claimed:
-                q, s, old_name = funcs_1304[target]
-                if old_name.startswith('FUN_'):
-                    transferred.append((target, name, old_name))
-                    claimed.add(target)
-                else:
-                    already_named += 1
-            else:
-                no_match += 1
-        elif len(matches) == 0:
+        if len(matches) == 0:
             no_match += 1
+            continue
+
+        # Filter to FUN_* entries not yet claimed
+        viable = [a for a in matches
+                  if a in funcs_1304 and a not in claimed
+                  and funcs_1304[a][2].startswith('FUN_')]
+
+        if len(viable) == 0:
+            # All matches are already named or claimed
+            already_named += 1
+            continue
+
+        target = None
+        if len(viable) == 1:
+            target = viable[0]
+        else:
+            # Disambiguate: try CSV size match
+            size_matches = [a for a in viable
+                           if funcs_1304[a][1] == est_size]
+            if len(size_matches) == 1:
+                target = size_matches[0]
+            else:
+                # Disambiguate: pick candidate closest to expected offset
+                expected = get_expected_addr(addr_1301)
+                if expected is not None:
+                    viable_sorted = sorted(viable,
+                                          key=lambda a: abs(a - expected))
+                    best = viable_sorted[0]
+                    # Only accept if within 0x1000 of expected
+                    if abs(best - expected) <= 0x1000:
+                        target = best
+
+        if target is not None:
+            transferred.append((target, name, funcs_1304[target][2]))
+            claimed.add(target)
         else:
             multi_match += 1
 
