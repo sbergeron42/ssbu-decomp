@@ -34,9 +34,12 @@ bool LinkModule__chk_linked_attribute_impl(BattleObjectModuleAccessor* a,u64 p1)
 void* LinkModule__get_node_catprue_pos_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) asm("_ZN3app8lua_bind37LinkModule__get_node_catprue_pos_implEPNS_26BattleObjectModuleAccessorEy");
 void* LinkModule__get_node_catprue_pos_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xd0)); return reinterpret_cast<void*(*)(void*,u64,u64)>(VT(m)[0x4b8/8])(m,p1,p2); }
 // Remaining 87 LinkModule dispatchers
+// 7102048010
 void LinkModule__v0x48(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x48/8])(m,p1); }
+// 7102048020
 void LinkModule__v0x50(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x50/8])(m,p1); }
 void LinkModule__v0x58(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x58/8])(m,p1); }
+// 7102048040
 void LinkModule__v0x60(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x60/8])(m,p1); }
 void LinkModule__v0x68(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x68/8])(m,p1); }
 void LinkModule__v0x70(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x70/8])(m,p1); }
@@ -45,15 +48,23 @@ void LinkModule__v0x80(BattleObjectModuleAccessor* a,u64 p1,bool p2) { auto* m=L
 void LinkModule__v0x88(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x88/8])(m,p1); }
 void LinkModule__v0x90(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x90/8])(m,p1); }
 void LinkModule__v0x98(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x98/8])(m,p1); }
+// 71020480d0
 void LinkModule__v0xa0(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xa0/8])(m,p1); }
+// 71020480e0
 void LinkModule__v0xa8(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xa8/8])(m,p1); }
+// 71020480f0
 void LinkModule__v0xb0(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xb0/8])(m,p1); }
+// 7102048100
 void LinkModule__v0xb8(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xb8/8])(m,p1); }
+// 7102048110
 void LinkModule__v0xc8(BattleObjectModuleAccessor* a,u64 p1,u64 p2,bool p3) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64,u64,bool)>(VT(m)[0xc8/8])(m,p1,p2,p3); }
 void LinkModule__v0xd8(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xd8/8])(m,p1); }
 void LinkModule__v0xe0(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xe0/8])(m,p1); }
+// 7102048170
 void LinkModule__v0xf0(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xf0/8])(m,p1); }
+// 71020481a0
 void LinkModule__v0x130(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x130/8])(m,p1); }
+// 71020481b0
 void LinkModule__v0x138(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x138/8])(m,p1); }
 void LinkModule__v0x148(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x148/8])(m,p1); }
 void LinkModule__v0x160(BattleObjectModuleAccessor* a,u64 p1,u64 p2,bool p3) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64,u64,bool)>(VT(m)[0x160/8])(m,p1,p2,p3); }
@@ -65,6 +76,7 @@ void LinkModule__v0x190(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); r
 void LinkModule__v0x198(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x198/8])(m,p1); }
 void LinkModule__v0x1a0(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x1a0/8])(m,p1); }
 void LinkModule__v0x1a8(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x1a8/8])(m,p1); }
+// 7102048290
 void LinkModule__v0x1b0(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x1b0/8])(m,p1); }
 void LinkModule__v0x1b8(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x1b8/8])(m,p1); }
 void LinkModule__v0x1c0(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x1c0/8])(m,p1); }
@@ -73,32 +85,47 @@ void LinkModule__v0x1e0(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); r
 void LinkModule__v0x1e8(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x1e8/8])(m,p1); }
 void LinkModule__v0x1f0(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x1f0/8])(m,p1); }
 void LinkModule__v0x1f8(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x1f8/8])(m,p1); }
+// 7102048350
 void LinkModule__v0x200(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x200/8])(m,p1); }
 void LinkModule__v0x208(BattleObjectModuleAccessor* a,bool p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x208/8])(m,p1); }
 void LinkModule__v0x210(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x210/8])(m,p1); }
 void LinkModule__v0x218(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x218/8])(m,p1); }
 void LinkModule__v0x220(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x220/8])(m,p1); }
 void LinkModule__v0x230(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x230/8])(m,p1); }
+// 71020483d0
 void LinkModule__v0x238(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x238/8])(m,p1); }
 void LinkModule__v0x270(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x270/8])(m,p1); }
+// 71020483f0
 void LinkModule__v0x278(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x278/8])(m,p1); }
+// 7102048400
 void LinkModule__v0x280(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x280/8])(m,p1); }
+// 7102048410
 void LinkModule__v0x288(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x288/8])(m,p1); }
+// 7102048420
 void LinkModule__v0x290(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x290/8])(m,p1); }
+// 7102048430
 void LinkModule__v0x298(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x298/8])(m,p1); }
+// 7102048440
 void LinkModule__v0x2a0(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x2a0/8])(m,p1); }
+// 7102048450
 void LinkModule__v0x2d8(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x2d8/8])(m,p1); }
+// 7102048460
 void LinkModule__v0x2e0(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x2e0/8])(m,p1); }
 void LinkModule__v0x2e8(BattleObjectModuleAccessor* a,u64 p1,u64 p2,bool p3) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64,u64,bool)>(VT(m)[0x2e8/8])(m,p1,p2,p3); }
+// 7102048490
 void LinkModule__v0x2f0(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x2f0/8])(m,p1); }
+// 71020484a0
 void LinkModule__v0x2f8(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x2f8/8])(m,p1); }
+// 71020484b0
 void LinkModule__v0x300(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x300/8])(m,p1); }
+// 71020484c0
 void LinkModule__v0x308(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x308/8])(m,p1); }
 void LinkModule__v0x310(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x310/8])(m,p1); }
 void LinkModule__v0x318(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x318/8])(m,p1); }
 void LinkModule__v0x320(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x320/8])(m,p1); }
 void LinkModule__v0x338(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x338/8])(m,p1); }
 void LinkModule__v0x348(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x348/8])(m,p1); }
+// 7102048560
 void LinkModule__v0x350(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x350/8])(m,p1); }
 void LinkModule__v0x358(BattleObjectModuleAccessor* a,u64 p1,u64 p2,u64 p3,u64 p4,bool p5) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64,u64,u64,u64,bool)>(VT(m)[0x358/8])(m,p1,p2,p3,p4,p5); }
 void LinkModule__v0x360(BattleObjectModuleAccessor* a,u64 p1,bool p2) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64,bool)>(VT(m)[0x360/8])(m,p1,p2); }
@@ -108,8 +135,11 @@ void LinkModule__v0x390(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); r
 void LinkModule__v0x398(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x398/8])(m,p1); }
 void LinkModule__v0x3a0(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x3a0/8])(m,p1); }
 void LinkModule__v0x3c0(BattleObjectModuleAccessor* a,bool p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x3c0/8])(m,p1); }
+// 7102048670
 void LinkModule__v0x3c8(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x3c8/8])(m,p1); }
+// 7102048680
 void LinkModule__v0x3d0(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x3d0/8])(m,p1); }
+// 7102048700
 void LinkModule__v0x420(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x420/8])(m,p1); }
 void LinkModule__v0x428(BattleObjectModuleAccessor* a,u64 p1,u64 p2,bool p3) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64,u64,bool)>(VT(m)[0x428/8])(m,p1,p2,p3); }
 void LinkModule__v0x460(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x460/8])(m,p1); }
@@ -118,61 +148,97 @@ void LinkModule__v0x488(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); r
 void LinkModule__v0x4a0(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x4a0/8])(m,p1); }
 void LinkModule__v0x4c0(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x4c0/8])(m,p1); }
 void LinkModule__v0x4c8(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x4c8/8])(m,p1); }
+// 71020487c0
 void LinkModule__v0x4d0(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x4d0/8])(m,p1); }
+// 71020487d0
 void LinkModule__v0x4d8(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x4d8/8])(m,p1); }
+// 71020487e0
 void LinkModule__v0x4e0(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x4e0/8])(m,p1); }
 void LinkModule__v0x4e8(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x4e8/8])(m,p1); }
 void LinkModule__v0x4f0(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x4f0/8])(m,p1); }
 // Auto-generated named dispatchers
 void* LinkModule__link_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64,u64)>(VT(m)[0x48/8])(m,p1,p2); }
 void* LinkModule__unlink_all_impl(BattleObjectModuleAccessor* a) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x50/8])(m); }
+// 7102048030
 void* LinkModule__unlink_node_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x58/8])(m,p1); }
 void* LinkModule__unlink_node_all_impl(BattleObjectModuleAccessor* a) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x60/8])(m); }
+// 7102048050
 void* LinkModule__unlink_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x68/8])(m,p1); }
+// 7102048060
 bool LinkModule__is_link_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<bool(*)(void*,u64)>(VT(m)[0x70/8])(m,p1); }
+// 7102048070
 bool LinkModule__is_linked_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<bool(*)(void*,u64)>(VT(m)[0x78/8])(m,p1); }
+// 7102048080
 u32 LinkModule__get_parent_id_impl(BattleObjectModuleAccessor* a,u64 p1,bool p2) { auto* m=LM(a); return reinterpret_cast<u32(*)(void*,u64,bool)>(VT(m)[0x80/8])(m,p1,p2); }
+// 71020480a0
 void* LinkModule__search_parent_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x88/8])(m,p1); }
+// 71020480b0
 void* LinkModule__search_parent_attr_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x90/8])(m,p1); }
+// 71020480c0
 void* LinkModule__search_node_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x98/8])(m,p1); }
 void* LinkModule__send_event_parents_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64,u64)>(VT(m)[0xa0/8])(m,p1,p2); }
 void* LinkModule__send_event_parents_struct_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64,u64)>(VT(m)[0xa8/8])(m,p1,p2); }
 void* LinkModule__send_event_nodes_struct_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,u64 p3) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64,u64,u64)>(VT(m)[0xb0/8])(m,p1,p2,p3); }
 void* LinkModule__send_event_nodes_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,u64 p3) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64,u64,u64)>(VT(m)[0xb8/8])(m,p1,p2,p3); }
 void* LinkModule__send_event_nodes_throw_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,bool p3,u64 p4,u64 p5,u64 p6) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64,u64,bool,u64,u64,u64)>(VT(m)[0xc8/8])(m,p1,p2,p3,p4,p5,p6); }
+// 7102048140
 bool LinkModule__is_node_damage_reaction_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<bool(*)(void*,u64)>(VT(m)[0xd8/8])(m,p1); }
+// 7102048150
 bool LinkModule__is_node_damage_capture_cut_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<bool(*)(void*,u64)>(VT(m)[0xe0/8])(m,p1); }
 bool LinkModule__is_valid_link_stop_impl(BattleObjectModuleAccessor* a) { auto* m=LM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0xf0/8])(m); }
 bool LinkModule__is_link_pos_impl(BattleObjectModuleAccessor* a) { auto* m=LM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x130/8])(m); }
 void LinkModule__update_link_pos_impl(BattleObjectModuleAccessor* a) { auto* m=LM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x138/8])(m); }
+// 71020481d0
 void* LinkModule__get_parent_scale_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x148/8])(m,p1); }
+// 71020481e0
 void* LinkModule__get_parent_model_joint_global_position_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,bool p3) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64,u64,bool)>(VT(m)[0x160/8])(m,p1,p2,p3); }
+// 7102048200
 void* LinkModule__get_parent_model_joint_global_rotation_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,bool p3) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64,u64,bool)>(VT(m)[0x170/8])(m,p1,p2,p3); }
+// 7102048220
 void* LinkModule__get_parent_motion_frame_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x178/8])(m,p1); }
+// 7102048230
 void* LinkModule__get_parent_motion_whole_rate_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x180/8])(m,p1); }
+// 7102048240
 void* LinkModule__get_parent_motion_rate_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x188/8])(m,p1); }
+// 7102048250
 u32 LinkModule__get_parent_motion_kind_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<u32(*)(void*,u64)>(VT(m)[0x190/8])(m,p1); }
+// 7102048260
 u32 LinkModule__get_parent_situation_kind_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<u32(*)(void*,u64)>(VT(m)[0x198/8])(m,p1); }
+// 7102048270
 u32 LinkModule__get_parent_status_kind_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<u32(*)(void*,u64)>(VT(m)[0x1a0/8])(m,p1); }
+// 7102048280
 void* LinkModule__get_parent_lr_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x1a8/8])(m,p1); }
 void* LinkModule__get_parent_sum_speed_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64,u64)>(VT(m)[0x1b0/8])(m,p1,p2); }
+// 71020482a0
 u32 LinkModule__get_parent_object_id_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<u32(*)(void*,u64)>(VT(m)[0x1b8/8])(m,p1); }
+// 71020482b0
 bool LinkModule__is_capture_damage_parent_object_id_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<bool(*)(void*,u64)>(VT(m)[0x1c0/8])(m,p1); }
 void* LinkModule__get_parent_pos_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xd0)); void* ret = reinterpret_cast<void*(*)(void*)>(VT(m)[0x1c8/8])(m); asm(""); return ret; }
 void* LinkModule__get_parent_prev_pos_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xd0)); void* ret = reinterpret_cast<void*(*)(void*)>(VT(m)[0x1d0/8])(m); asm(""); return ret; }
+// 7102048300
 void* LinkModule__get_parent_rot_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x1d8/8])(m,p1); }
+// 7102048310
 void* LinkModule__get_parent_damage_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x1e0/8])(m,p1); }
+// 7102048320
 void* LinkModule__get_parent_damage_reaction_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x1e8/8])(m,p1); }
+// 7102048330
 void* LinkModule__get_parent_damage_power_max_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x1f0/8])(m,p1); }
+// 7102048340
 void* LinkModule__get_parent_top_angle_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x1f8/8])(m,p1); }
 void LinkModule__set_node_scale_power_mul_impl(BattleObjectModuleAccessor* a) { auto* m=LM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x200/8])(m); }
+// 7102048360
 void LinkModule__set_node_link_scale_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x208/8])(m,p1); }
+// 7102048380
 bool LinkModule__is_parent_damage_reaction_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<bool(*)(void*,u64)>(VT(m)[0x210/8])(m,p1); }
+// 7102048390
 bool LinkModule__is_parent_damage_catch_cut_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<bool(*)(void*,u64)>(VT(m)[0x218/8])(m,p1); }
+// 71020483a0
 void* LinkModule__get_parent_total_hit_status_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x220/8])(m,p1); }
 bool LinkModule__is_valid_parent_shape_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<bool(*)(void*,u64)>(VT(m)[0x228/8])(m,p1); }
+// 71020483c0
 void* LinkModule__get_parent_shape_center_pos_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x230/8])(m,p1); }
 void* LinkModule__get_parent_shape_center_pos_object_id_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64,u64)>(VT(m)[0x238/8])(m,p1,p2); }
+// 71020483e0
 bool LinkModule__is_parent_effect_sync_scale_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<bool(*)(void*,u64)>(VT(m)[0x270/8])(m,p1); }
 bool LinkModule__is_link_power_up_impl(BattleObjectModuleAccessor* a) { auto* m=LM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x278/8])(m); }
 void* LinkModule__get_parent_power_up_attack_impl(BattleObjectModuleAccessor* a) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x280/8])(m); }
@@ -182,42 +248,64 @@ f32 LinkModule__get_parent_customize_attack_ratio_impl(BattleObjectModuleAccesso
 bool LinkModule__is_link_node_attack_impl(BattleObjectModuleAccessor* a) { auto* m=LM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x2a0/8])(m); }
 void* LinkModule__get_parent_reaction_mul_4th_impl(BattleObjectModuleAccessor* a) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x2d8/8])(m); }
 bool LinkModule__is_parent_power_up_reaction_impl(BattleObjectModuleAccessor* a) { auto* m=LM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x2e0/8])(m); }
+// 7102048470
 void LinkModule__set_parent_hit_stop_frame_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,bool p3) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64,u64,bool)>(VT(m)[0x2e8/8])(m,p1,p2,p3); }
 void LinkModule__set_parent_attacker_info_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64,u64)>(VT(m)[0x2f0/8])(m,p1,p2); }
 void LinkModule__set_node_attacker_info_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64,u64)>(VT(m)[0x2f8/8])(m,p1,p2); }
 void LinkModule__set_parent_log_damage_player_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,u64 p3,u64 p4) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64,u64,u64,u64)>(VT(m)[0x300/8])(m,p1,p2,p3,p4); }
 void LinkModule__set_node_log_damage_player_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,u64 p3,u64 p4) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64,u64,u64,u64)>(VT(m)[0x308/8])(m,p1,p2,p3,p4); }
+// 71020484d0
 void LinkModule__set_node_depth_offset_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x310/8])(m,p1); }
 void* LinkModule__get_parent_have_item_visibility_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x318/8])(m,p1); }
+// 71020484f0
 void* LinkModule__get_parent_attach_item_visibility_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x320/8])(m,p1); }
 void* LinkModule__get_parent_main_color_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xd0)); void* ret = reinterpret_cast<void*(*)(void*)>(VT(m)[0x330/8])(m); asm(""); return ret; }
+// 7102048520
 bool LinkModule__is_parent_enable_sub_color_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<bool(*)(void*,u64)>(VT(m)[0x338/8])(m,p1); }
 void* LinkModule__get_parent_sub_color_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xd0)); void* ret = reinterpret_cast<void*(*)(void*)>(VT(m)[0x340/8])(m); asm(""); return ret; }
+// 7102048550
 u32 LinkModule__get_parent_battle_object_kind_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<u32(*)(void*,u64)>(VT(m)[0x348/8])(m,p1); }
 u32 LinkModule__get_parent_object_id_motion_transactor_link_impl(BattleObjectModuleAccessor* a) { auto* m=LM(a); return reinterpret_cast<u32(*)(void*)>(VT(m)[0x350/8])(m); }
+// 7102048570
 void LinkModule__set_model_constraint_pos_ort_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,u64 p3,u64 p4,bool p5) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64,u64,u64,u64,bool)>(VT(m)[0x358/8])(m,p1,p2,p3,p4,p5); }
+// 7102048590
 void LinkModule__set_model_constraint_attribute_impl(BattleObjectModuleAccessor* a,u64 p1,bool p2) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64,bool)>(VT(m)[0x360/8])(m,p1,p2); }
+// 71020485c0
 void LinkModule__set_model_constraint_flag_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x370/8])(m,p1); }
+// 71020485d0
 void* LinkModule__off_model_constraint_flag_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x378/8])(m,p1); }
+// 7102048600
 void LinkModule__set_model_constraint_joint_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x390/8])(m,p1); }
+// 7102048610
 void LinkModule__set_model_constraint_joint_immediate_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x398/8])(m,p1); }
+// 7102048620
 void LinkModule__set_model_constraint_target_joint_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x3a0/8])(m,p1); }
+// 7102048650
 void* LinkModule__remove_model_constraint_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,bool)>(VT(m)[0x3c0/8])(m,p1); }
 bool LinkModule__is_model_constraint_impl(BattleObjectModuleAccessor* a) { auto* m=LM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x3c8/8])(m); }
 bool LinkModule__is_model_constraint_mutual_impl(BattleObjectModuleAccessor* a) { auto* m=LM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x3d0/8])(m); }
 void* LinkModule__get_model_constraint_target_node_position_impl(BattleObjectModuleAccessor* a) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x3e0/8])(m); }
 bool LinkModule__is_change_model_constraint_matrix_impl(BattleObjectModuleAccessor* a) { auto* m=LM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x420/8])(m); }
+// 7102048710
 void LinkModule__set_attribute_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,bool p3) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64,u64,bool)>(VT(m)[0x428/8])(m,p1,p2,p3); }
+// 7102048750
 bool LinkModule__is_link_parent_slow_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<bool(*)(void*,u64)>(VT(m)[0x460/8])(m,p1); }
+// 7102048760
 bool LinkModule__is_parent_flip_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<bool(*)(void*,u64)>(VT(m)[0x480/8])(m,p1); }
+// 7102048770
 bool LinkModule__is_parent_hit_stop_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<bool(*)(void*,u64)>(VT(m)[0x488/8])(m,p1); }
+// 7102048780
 void* LinkModule__get_parent_stick_x_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x4a0/8])(m,p1); }
+// 71020487a0
 void* LinkModule__get_node_sum_speed_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x4c0/8])(m,p1); }
+// 71020487b0
 void* LinkModule__get_node_scale_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x4c8/8])(m,p1); }
 void LinkModule__set_constraint_rot_offset_x_impl(BattleObjectModuleAccessor* a) { auto* m=LM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x4d0/8])(m); }
 void LinkModule__set_constraint_rot_offset_y_impl(BattleObjectModuleAccessor* a) { auto* m=LM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x4d8/8])(m); }
 void LinkModule__set_constraint_rot_offset_z_impl(BattleObjectModuleAccessor* a) { auto* m=LM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x4e0/8])(m); }
+// 71020487f0
 void LinkModule__set_constraint_rot_offset_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x4e8/8])(m,p1); }
+// 7102048800
 void LinkModule__set_constraint_scale_offset_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x4f0/8])(m,p1); }
 void LinkModule__set_constraint_translate_offset_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x4f8/8])(m,p1); }
 void LinkModule__set_unreference_parent_scale_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=LM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x508/8])(m,p1); }
