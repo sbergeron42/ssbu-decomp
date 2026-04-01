@@ -6,12 +6,12 @@ namespace app::lua_bind {
 
 // 71020d21f0 — extract camera_module, tail call to 0x7101610890 (init 4 camera subjects)
 void ItemCameraModuleImpl__start_camera_subject_impl(BattleObjectModuleAccessor* a) {
-    (void)a->camera_module;  // tail call to camera module init (non-vtable, can't replicate)
+    (void)reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x60));  // tail call to camera module init (non-vtable, can't replicate)
 }
 
 // 71020d2200 — deregister up to 4 active camera subjects via global CameraSubjectManager
 void ItemCameraModuleImpl__end_camera_subject_impl(BattleObjectModuleAccessor* a) {
-    auto* m = reinterpret_cast<u8*>(a->camera_module);
+    auto* m = reinterpret_cast<u8*>(reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x60)));
     // Accesses global singleton at 0x71052b7000+0xf00, calls vtable[0x18/8] for each active subject
     // Each subject has active flag at m+0x7c, m+0x15c, m+0x23c, m+0x31c
     // manager->vtable[0x18/8](manager, subject_ptr) to deregister
@@ -48,7 +48,7 @@ void ItemCameraModuleImpl__set_camera_subject_pos_4_points_impl(BattleObjectModu
 
 // 71020d2320 — clamp camera subject positions against existing bounds (320 bytes, complex SIMD)
 void ItemCameraModuleImpl__clamp_camera_subject_pos_impl(BattleObjectModuleAccessor* a, void* bounds) {
-    auto* m = reinterpret_cast<u8*>(a->camera_module);
+    auto* m = reinterpret_cast<u8*>(reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x60)));
     // Complex SIMD: compares 4 camera subject positions against min/max bounds
     // uses fcmgt/bsl to select min/max per component for each of 4 subjects
     (void)m; (void)bounds;
