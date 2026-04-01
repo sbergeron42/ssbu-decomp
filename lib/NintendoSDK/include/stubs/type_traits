@@ -1,0 +1,12 @@
+#pragma once
+#include <stddef.h>
+namespace std {
+template<size_t Len, size_t Align> struct aligned_storage { alignas(Align) char data[Len]; typedef decltype(data) type; };
+template<size_t Len, size_t Align> using aligned_storage_t = typename aligned_storage<Len, Align>::type;
+template<bool B, class T = void> struct enable_if {};
+template<class T> struct enable_if<true, T> { typedef T type; };
+template<bool B, class T = void> using enable_if_t = typename enable_if<B, T>::type;
+template<class T, class U> struct is_same { static constexpr bool value = false; };
+template<class T> struct is_same<T, T> { static constexpr bool value = true; };
+template<class T, class U> inline constexpr bool is_same_v = is_same<T, U>::value;
+}
