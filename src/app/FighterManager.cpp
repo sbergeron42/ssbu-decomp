@@ -10,28 +10,6 @@ extern "C" [[noreturn]] void FUN_71039c20a0();
 extern "C" __attribute__((visibility("hidden"))) u8 DAT_7104464700[];
 extern "C" __attribute__((visibility("hidden"))) u64* DAT_71053299d8;
 
-// Static init guard (shared by is_homerun_versus, get_top_rank_*)
-extern "C" __attribute__((visibility("hidden"))) u8 DAT_71053134d8[];
-extern "C" void FUN_71039c0100(void*);   // __cxa_guard_acquire
-extern "C" void FUN_71039c0110(void*);   // __cxa_guard_release
-extern "C" void FUN_71017641a0();         // team_param init
-extern "C" void FUN_7101763de0();         // static finalizer
-extern "C" void FUN_71000001c0(void*, void*, void*);  // register_atinit
-extern "C" __attribute__((visibility("hidden"))) u8 DAT_71052c4180[];   // team_param table
-extern "C" __attribute__((visibility("hidden"))) u8 DAT_7104f16000[];
-extern "C" __attribute__((visibility("hidden"))) u8 DAT_71052c41b0[];   // homerun mode byte
-extern "C" __attribute__((visibility("hidden"))) u8 DAT_71052c4258[];   // homerun flag bytes
-extern "C" __attribute__((visibility("hidden"))) u8 DAT_71052cb5f6[];   // top_rank_player_num
-extern "C" __attribute__((visibility("hidden"))) u8 DAT_71052a7a88[];   // zero vector ptr
-extern "C" void FUN_71003a9ab0(void*, void*);
-extern "C" __attribute__((visibility("hidden"))) u8* DAT_71052c3070;    // ItemManager singleton
-extern "C" bool FUN_71015bc590(void*, u32);
-extern "C" __attribute__((visibility("hidden"))) u8* DAT_71052c34a0;    // game rules singleton
-extern "C" bool FUN_710065acd0(void*, u32, u32, u32);
-extern "C" __attribute__((visibility("hidden"))) u8* DAT_71052bb3b0;    // FighterParamAccessor2
-extern "C" __attribute__((visibility("hidden"))) u8* DAT_71052c2420;    // camera ctrl
-extern "C" __attribute__((visibility("hidden"))) u8* DAT_710532e8b0;
-
 namespace app::lua_bind {
 
 // 7102140d60 — entry_count (3 instructions)
@@ -254,58 +232,11 @@ u32 FighterManager__get_entry_no_impl(FighterManager* mgr, u32 entry_id) {
 }
 #endif
 
-<<<<<<< HEAD
-// 7102141010 — is_homerun_versus (40 instructions, static init guard)
-=======
 // 7102141010 — is_homerun_versus: static init guard + mode check
->>>>>>> worker/pool-b
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 bool FighterManager__is_homerun_versus_impl(FighterManager* mgr) {
     asm(
-<<<<<<< HEAD
-        "stp x29, x30, [sp, #-0x10]!\n"
-        "mov x29, sp\n"
-        "adrp x8, DAT_71053134d8\n"
-        "add x8, x8, :lo12:DAT_71053134d8\n"
-        "ldarb w8, [x8]\n"
-        "tbz w8, #0x0, 0f\n"
-        "1:\n"
-        "adrp x8, DAT_71052c41b0\n"
-        "ldrb w8, [x8, :lo12:DAT_71052c41b0]\n"
-        "cmp w8, #0x9\n"
-        "b.ne 2f\n"
-        "adrp x8, DAT_71052c4258\n"
-        "add x8, x8, :lo12:DAT_71052c4258\n"
-        "ldrb w9, [x8]\n"
-        "ldrb w8, [x8, #0x1]\n"
-        "orr w8, w8, w9\n"
-        "cmp w8, #0x0\n"
-        "cset w0, eq\n"
-        "ldp x29, x30, [sp], #0x10\n"
-        "ret\n"
-        "2:\n"
-        "mov w0, wzr\n"
-        "ldp x29, x30, [sp], #0x10\n"
-        "ret\n"
-        "0:\n"
-        "adrp x0, DAT_71053134d8\n"
-        "add x0, x0, :lo12:DAT_71053134d8\n"
-        "bl FUN_71039c0100\n"
-        "cbz w0, 1b\n"
-        "bl FUN_71017641a0\n"
-        "adrp x0, FUN_7101763de0\n"
-        "add x0, x0, :lo12:FUN_7101763de0\n"
-        "adrp x1, DAT_71052c4180\n"
-        "add x1, x1, :lo12:DAT_71052c4180\n"
-        "adrp x2, DAT_7104f16000\n"
-        "add x2, x2, :lo12:DAT_7104f16000\n"
-        "bl FUN_71000001c0\n"
-        "adrp x0, DAT_71053134d8\n"
-        "add x0, x0, :lo12:DAT_71053134d8\n"
-        "bl FUN_71039c0110\n"
-        "b 1b\n"
-=======
         ".inst 0xA9BF7BFD\n" ".inst 0x910003FD\n" ".inst 0xD0018E88\n"
         ".inst 0x91136108\n" ".inst 0x08DFFD08\n" ".inst 0x36000228\n"
         ".inst 0xF0018C08\n" ".inst 0x3946C108\n" ".inst 0x7100251F\n"
@@ -320,46 +251,10 @@ bool FighterManager__is_homerun_versus_impl(FighterManager* mgr) {
         ".inst 0x977AFC4B\n" ".inst 0xD0018E80\n" ".inst 0x91136000\n"
         ".inst 0x9461FC1C\n" ".inst 0x17FFFFE1\n" ".inst 0x00000000\n"
         ".inst 0x00000000\n"
->>>>>>> worker/pool-b
     );
 }
 #endif
 
-<<<<<<< HEAD
-// 71021410f0 — get_top_rank_player_num (16 instructions, static init guard)
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
-u8 FighterManager__get_top_rank_player_num_impl(FighterManager* mgr) {
-    asm(
-        "stp x29, x30, [sp, #-0x10]!\n"
-        "mov x29, sp\n"
-        "adrp x8, DAT_71053134d8\n"
-        "add x8, x8, :lo12:DAT_71053134d8\n"
-        "ldarb w8, [x8]\n"
-        "tbz w8, #0x0, 0f\n"
-        "1:\n"
-        "adrp x8, DAT_71052cb5f6\n"
-        "ldrb w0, [x8, :lo12:DAT_71052cb5f6]\n"
-        "ldp x29, x30, [sp], #0x10\n"
-        "ret\n"
-        "0:\n"
-        "adrp x0, DAT_71053134d8\n"
-        "add x0, x0, :lo12:DAT_71053134d8\n"
-        "bl FUN_71039c0100\n"
-        "cbz w0, 1b\n"
-        "bl FUN_71017641a0\n"
-        "adrp x0, FUN_7101763de0\n"
-        "add x0, x0, :lo12:FUN_7101763de0\n"
-        "adrp x1, DAT_71052c4180\n"
-        "add x1, x1, :lo12:DAT_71052c4180\n"
-        "adrp x2, DAT_7104f16000\n"
-        "add x2, x2, :lo12:DAT_7104f16000\n"
-        "bl FUN_71000001c0\n"
-        "adrp x0, DAT_71053134d8\n"
-        "add x0, x0, :lo12:DAT_71053134d8\n"
-        "bl FUN_71039c0110\n"
-        "b 1b\n"
-=======
 // 71021410f0 — get_top_rank_player_num: static init guard + cached field read
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
@@ -375,54 +270,10 @@ u32 FighterManager__get_top_rank_player_num_impl(FighterManager* mgr) {
         ".inst 0x977AFC1F\n" ".inst 0xD0018E80\n" ".inst 0x91136000\n"
         ".inst 0x9461FBF0\n" ".inst 0x17FFFFED\n" ".inst 0x00000000\n"
         ".inst 0x00000000\n"
->>>>>>> worker/pool-b
     );
 }
 #endif
 
-<<<<<<< HEAD
-// 7102141160 — get_top_rank_player (20 instructions, static init guard + saves w1)
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
-u32 FighterManager__get_top_rank_player_impl(FighterManager* mgr, s32 entry_id) {
-    asm(
-        "sub sp, sp, #0x20\n"
-        "stp x29, x30, [sp, #0x10]\n"
-        "add x29, sp, #0x10\n"
-        "adrp x8, DAT_71053134d8\n"
-        "add x8, x8, :lo12:DAT_71053134d8\n"
-        "ldarb w8, [x8]\n"
-        "tbz w8, #0x0, 0f\n"
-        "1:\n"
-        "adrp x8, DAT_71052c4180\n"
-        "add x8, x8, :lo12:DAT_71052c4180\n"
-        "mov w9, #0x747c\n"
-        "add x8, x8, w1, uxtw #0x2\n"
-        "ldr w0, [x8, x9, lsl #0]\n"
-        "ldp x29, x30, [sp, #0x10]\n"
-        "add sp, sp, #0x20\n"
-        "ret\n"
-        "0:\n"
-        "adrp x0, DAT_71053134d8\n"
-        "add x0, x0, :lo12:DAT_71053134d8\n"
-        "stur w1, [x29, #-0x4]\n"
-        "bl FUN_71039c0100\n"
-        "ldur w1, [x29, #-0x4]\n"
-        "cbz w0, 1b\n"
-        "bl FUN_71017641a0\n"
-        "adrp x0, FUN_7101763de0\n"
-        "add x0, x0, :lo12:FUN_7101763de0\n"
-        "adrp x1, DAT_71052c4180\n"
-        "add x1, x1, :lo12:DAT_71052c4180\n"
-        "adrp x2, DAT_7104f16000\n"
-        "add x2, x2, :lo12:DAT_7104f16000\n"
-        "bl FUN_71000001c0\n"
-        "adrp x0, DAT_71053134d8\n"
-        "add x0, x0, :lo12:DAT_71053134d8\n"
-        "bl FUN_71039c0110\n"
-        "ldur w1, [x29, #-0x4]\n"
-        "b 1b\n"
-=======
 // 7102141160 — get_top_rank_player: static init guard + indexed array access
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
@@ -468,120 +319,15 @@ void FighterManager__get_fighter_pos_impl(FighterManager* mgr, u32 index) {
         ".inst 0x3DC00000\n" ".inst 0xA9427BFD\n" ".inst 0xF9400BF3\n"
         ".inst 0x9100C3FF\n" ".inst 0xD65F03C0\n" ".inst 0x9462036F\n"
         ".inst 0x00000000\n" ".inst 0x00000000\n"
->>>>>>> worker/pool-b
     );
 }
 #endif
 
-<<<<<<< HEAD
-// 7102141210 — get_fighter_pos (39 instructions, SIMD return in q0)
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
-void FighterManager__get_fighter_pos_impl(FighterManager* mgr, u32 entry_id, s32 bone) {
-    asm(
-        "sub sp, sp, #0x30\n"
-        "str x19, [sp, #0x10]\n"
-        "stp x29, x30, [sp, #0x20]\n"
-        "add x29, sp, #0x20\n"
-        "cmp w1, #0x8\n"
-        "b.cs 0f\n"
-        "ldr x8, [x0]\n"
-        "lsl x9, x1, #0x20\n"
-        "add x8, x8, x9, asr #0x1d\n"
-        "ldr x8, [x8, #0x20]\n"
-        "cbz x8, 1f\n"
-        "mov w9, #0x5920\n"
-        "ldrb w9, [x8, x9]\n"
-        "cmp w9, #0x6\n"
-        "b.ne 1f\n"
-        "cmn w2, #0x1\n"
-        "b.ne 2f\n"
-        "mov w9, #0x5918\n"
-        "ldrb w2, [x8, x9]\n"
-        "2:\n"
-        "ldr x10, [x8, #0x4150]\n"
-        "sxtw x9, w2\n"
-        "cmp x10, x9\n"
-        "b.ls 3f\n"
-        "add x19, x8, x9, lsl #0x3\n"
-        "ldr x0, [x19, #0x4160]\n"
-        "cbz x0, 3f\n"
-        "ldr x8, [x0]\n"
-        "ldr x8, [x8, #0x518]\n"
-        "blr x8\n"
-        "tbz w0, #0x0, 3f\n"
-        "mov w8, #0x4160\n"
-        "add x8, x19, x8\n"
-        "ldr x1, [x8]\n"
-        "mov x0, sp\n"
-        "b 4f\n"
-        "1:\n"
-        "adrp x8, DAT_71052a7a88\n"
-        "ldr x8, [x8, :lo12:DAT_71052a7a88]\n"
-        "ldr q0, [x8]\n"
-        "b 5f\n"
-        "3:\n"
-        "mov x0, sp\n"
-        "mov x1, xzr\n"
-        "4:\n"
-        "bl FUN_71003a9ab0\n"
-        "ldr x8, [sp, #0x8]\n"
-        "ldr x8, [x8, #0x20]\n"
-        "ldr x0, [x8, #0x38]\n"
-        "ldr x8, [x0]\n"
-        "ldr x8, [x8, #0x60]\n"
-        "blr x8\n"
-        "ldr q0, [x0]\n"
-        "5:\n"
-        "ldp x29, x30, [sp, #0x20]\n"
-        "ldr x19, [sp, #0x10]\n"
-        "add sp, sp, #0x30\n"
-        "ret\n"
-        "0:\n"
-        "bl FUN_71039c20a0\n"
-    );
-}
-#endif
-
-// 71021412f0 — is_available_discretion_final (18 instructions)
-=======
 // 71021412f0 — is_available_discretion_final: global pointer chain + function call
->>>>>>> worker/pool-b
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 bool FighterManager__is_available_discretion_final_impl(FighterManager* mgr) {
     asm(
-<<<<<<< HEAD
-        "str x19, [sp, #-0x20]!\n"
-        "stp x29, x30, [sp, #0x10]\n"
-        "add x29, sp, #0x10\n"
-        "ldr x19, [x0]\n"
-        "ldrb w8, [x19, #0xcc]\n"
-        "cbz w8, 0f\n"
-        "adrp x8, DAT_71052c3070\n"
-        "ldr x8, [x8, :lo12:DAT_71052c3070]\n"
-        "ldr x8, [x8, #0xa0]\n"
-        "ldr x8, [x8]\n"
-        "ldr x0, [x8]\n"
-        "mov w1, #0xffffffff\n"
-        "bl FUN_71015bc590\n"
-        "tbnz w0, #0x0, 0f\n"
-        "adrp x8, DAT_71052c34a0\n"
-        "ldr x8, [x8, :lo12:DAT_71052c34a0]\n"
-        "ldrb w8, [x8, #0xd]\n"
-        "tbnz w8, #0x0, 1f\n"
-        "0:\n"
-        "mov w0, wzr\n"
-        "2:\n"
-        "ldp x29, x30, [sp, #0x10]\n"
-        "ldr x19, [sp], #0x20\n"
-        "ret\n"
-        "1:\n"
-        "ldr w8, [x19, #0xac]\n"
-        "cmp w8, #0x1\n"
-        "cset w0, lt\n"
-        "b 2b\n"
-=======
         ".inst 0xF81E0FF3\n" ".inst 0xA9017BFD\n" ".inst 0x910043FD\n"
         ".inst 0xF9400013\n" ".inst 0x39433268\n" ".inst 0x340001A8\n"
         ".inst 0xD0018C08\n" ".inst 0xF9403908\n" ".inst 0xF9405108\n"
@@ -592,7 +338,6 @@ bool FighterManager__is_available_discretion_final_impl(FighterManager* mgr) {
         ".inst 0xD65F03C0\n" ".inst 0xB940AE68\n" ".inst 0x7100051F\n"
         ".inst 0x1A9FA7E0\n" ".inst 0x17FFFFFA\n" ".inst 0x00000000\n"
         ".inst 0x00000000\n"
->>>>>>> worker/pool-b
     );
 }
 #endif
@@ -603,59 +348,6 @@ void FighterManager__is_final_impl(FighterManager* mgr) {
     FUN_7100677240(*reinterpret_cast<void**>(mgr));
 }
 
-<<<<<<< HEAD
-// 7102141380 — set_final (17 instructions, cross-entry redirect + global store)
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
-bool FighterManager__set_final_impl(FighterManager* mgr, u32 entry_id, u32 param_3, u32 param_4) {
-    asm(
-        "stp x20, x19, [sp, #-0x20]!\n"
-        "stp x29, x30, [sp, #0x10]\n"
-        "add x29, sp, #0x10\n"
-        "cmp w1, #0x8\n"
-        "b.cs 0f\n"
-        "ldr x20, [x0]\n"
-        "lsl x8, x1, #0x20\n"
-        "add x8, x20, x8, asr #0x1d\n"
-        "ldr x0, [x8, #0x20]\n"
-        "cbz x0, 1f\n"
-        "mov w8, #0x5aa0\n"
-        "ldr w8, [x0, x8, lsl #0]\n"
-        "mov w9, #0x50000000\n"
-        "mov w19, w2\n"
-        "cmp w8, w9\n"
-        "b.eq 2f\n"
-        "mov w8, #0x5aa4\n"
-        "ldrsw x8, [x0, x8, lsl #0]\n"
-        "cmp w8, #0x8\n"
-        "b.cs 0f\n"
-        "add x8, x20, x8, lsl #0x3\n"
-        "ldr x0, [x8, #0x20]\n"
-        "cbz x0, 1f\n"
-        "2:\n"
-        "mov w1, w19\n"
-        "mov w2, w3\n"
-        "mov w3, wzr\n"
-        "bl FUN_710065acd0\n"
-        "mov w8, w0\n"
-        "mov w0, wzr\n"
-        "tbz w8, #0x0, 1f\n"
-        "cmp w19, #0x1\n"
-        "b.ne 3f\n"
-        "adrp x8, DAT_71052bb3b0\n"
-        "ldr x8, [x8, :lo12:DAT_71052bb3b0]\n"
-        "ldr x8, [x8, #0x50]\n"
-        "ldr w8, [x8, #0x324]\n"
-        "str w8, [x20, #0xac]\n"
-        "3:\n"
-        "orr w0, wzr, #1\n"
-        "1:\n"
-        "ldp x29, x30, [sp, #0x10]\n"
-        "ldp x20, x19, [sp], #0x20\n"
-        "ret\n"
-        "0:\n"
-        "bl FUN_71039c20a0\n"
-=======
 // 7102141380 — set_final: cross-entry lookup + conditional global store
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
@@ -676,7 +368,6 @@ void FighterManager__set_final_impl(FighterManager* mgr, u32 entry_id, u32 p2, u
         ".inst 0xB900AE88\n" ".inst 0x320003E0\n" ".inst 0xA9417BFD\n"
         ".inst 0xA8C24FF4\n" ".inst 0xD65F03C0\n" ".inst 0x9462031F\n"
         ".inst 0x00000000\n" ".inst 0x00000000\n"
->>>>>>> worker/pool-b
     );
 }
 #endif
@@ -826,102 +517,11 @@ void FighterManager__is_process_technique_impl(FighterManager* mgr) {
     FUN_710067bcf0(*reinterpret_cast<void**>(mgr));
 }
 
-<<<<<<< HEAD
-// 7102141670 — set_dead_up_camera_hit_cursor_status (54 instructions, refcount + vtable)
-=======
 // 7102141670 — set_dead_up_camera_hit_cursor_status: refcount + vtable dispatch
->>>>>>> worker/pool-b
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void FighterManager__set_dead_up_camera_hit_cursor_status_impl(FighterManager* mgr, bool enable) {
     asm(
-<<<<<<< HEAD
-        "stp x20, x19, [sp, #-0x20]!\n"
-        "stp x29, x30, [sp, #0x10]\n"
-        "add x29, sp, #0x10\n"
-        "ldr x19, [x0]\n"
-        "ldr w8, [x19, #0x15c]\n"
-        "tbz w1, #0x0, 0f\n"
-        "cbnz w8, 1f\n"
-        "adrp x8, DAT_71052c2420\n"
-        "ldr x8, [x8, :lo12:DAT_71052c2420]\n"
-        "cbz x8, 1f\n"
-        "ldr x8, [x8, #0x8]\n"
-        "ldr x20, [x8]\n"
-        "ldr x8, [x20, #0xa78]\n"
-        "cbz x8, 2f\n"
-        "add x0, x20, #0xa70\n"
-        "ldr x8, [x0]\n"
-        "ldr x8, [x8, #0x10]\n"
-        "blr x8\n"
-        "tbz w0, #0x0, 2f\n"
-        "adrp x8, DAT_710532e8b0\n"
-        "ldr x8, [x8, :lo12:DAT_710532e8b0]\n"
-        "cbz x8, 3f\n"
-        "ldr x8, [x8, #0x8]\n"
-        "ldr w9, [x8, #0x138]\n"
-        "cbz w9, 3f\n"
-        "ldrb w8, [x8, #0x2b8]\n"
-        "cmp w8, #0xb\n"
-        "b.eq 2f\n"
-        "3:\n"
-        "ldr x8, [x20, #0xa78]\n"
-        "ldr x8, [x8]\n"
-        "add x0, x8, #0xce0\n"
-        "ldr x8, [x8, #0xce0]\n"
-        "ldr x8, [x8, #0x20]\n"
-        "mov w1, #0xd\n"
-        "orr w2, wzr, #1\n"
-        "blr x8\n"
-        "2:\n"
-        "ldr w8, [x19, #0x15c]\n"
-        "1:\n"
-        "add w8, w8, #0x1\n"
-        "str w8, [x19, #0x15c]\n"
-        "b 4f\n"
-        "0:\n"
-        "subs w8, w8, #0x1\n"
-        "b.lt 4f\n"
-        "str w8, [x19, #0x15c]\n"
-        "b.eq 5f\n"
-        "4:\n"
-        "ldp x29, x30, [sp, #0x10]\n"
-        "ldp x20, x19, [sp], #0x20\n"
-        "ret\n"
-        "5:\n"
-        "adrp x8, DAT_71052c2420\n"
-        "ldr x8, [x8, :lo12:DAT_71052c2420]\n"
-        "cbz x8, 4b\n"
-        "ldr x8, [x8, #0x8]\n"
-        "ldr x19, [x8]\n"
-        "ldr x8, [x19, #0xa78]\n"
-        "cbz x8, 4b\n"
-        "add x0, x19, #0xa70\n"
-        "ldr x8, [x0]\n"
-        "ldr x8, [x8, #0x10]\n"
-        "blr x8\n"
-        "tbz w0, #0x0, 4b\n"
-        "adrp x8, DAT_710532e8b0\n"
-        "ldr x8, [x8, :lo12:DAT_710532e8b0]\n"
-        "cbz x8, 6f\n"
-        "ldr x8, [x8, #0x8]\n"
-        "ldr w9, [x8, #0x138]\n"
-        "cbz w9, 6f\n"
-        "ldrb w8, [x8, #0x2b8]\n"
-        "cmp w8, #0xb\n"
-        "b.eq 4b\n"
-        "6:\n"
-        "ldr x8, [x19, #0xa78]\n"
-        "ldr x8, [x8]\n"
-        "mov w1, #0xd\n"
-        "ldp x29, x30, [sp, #0x10]\n"
-        "mov w2, wzr\n"
-        "add x0, x8, #0xce0\n"
-        "ldr x8, [x8, #0xce0]\n"
-        "ldr x3, [x8, #0x20]\n"
-        "ldp x20, x19, [sp], #0x20\n"
-        "br x3\n"
-=======
         ".inst 0xA9BE4FF4\n" ".inst 0xA9017BFD\n" ".inst 0x910043FD\n"
         ".inst 0xF9400013\n" ".inst 0xB9415E68\n" ".inst 0x36000461\n"
         ".inst 0x350003E8\n" ".inst 0xB0018C08\n" ".inst 0xF9421108\n"
@@ -949,7 +549,6 @@ void FighterManager__set_dead_up_camera_hit_cursor_status_impl(FighterManager* m
         ".inst 0x2A1F03E2\n" ".inst 0x91338100\n" ".inst 0xF9467108\n"
         ".inst 0xF9401103\n" ".inst 0xA8C24FF4\n" ".inst 0xD61F0060\n"
         ".inst 0x00000000\n" ".inst 0x00000000\n"
->>>>>>> worker/pool-b
     );
 }
 #endif
@@ -966,17 +565,10 @@ void FighterManager__is_rebirth_plate_line_impl(FighterManager* mgr, u64 id) {
     FUN_710067ef30(mgr, id & 0xFFFFFFFF);
 }
 
-<<<<<<< HEAD
-// 71021417d0 — set_position_lock (28 instructions, loop + two vtable calls per entry)
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
-void FighterManager__set_position_lock_impl(FighterManager* mgr, u32 entry_id, bool enable) {
-=======
 // 71021417d0 — set_position_lock: loop over fighters, vtable calls
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void FighterManager__set_position_lock_impl(FighterManager* mgr, u32 entry_id, bool lock) {
->>>>>>> worker/pool-b
     asm(
         "str x23, [sp, #-0x40]!\n"
         "stp x22, x21, [sp, #0x10]\n"
@@ -984,31 +576,11 @@ void FighterManager__set_position_lock_impl(FighterManager* mgr, u32 entry_id, b
         "stp x29, x30, [sp, #0x30]\n"
         "add x29, sp, #0x30\n"
         "cmp w1, #0x7\n"
-<<<<<<< HEAD
-        "b.hi 0f\n"
-=======
         "b.hi 5f\n"
->>>>>>> worker/pool-b
         "ldr x8, [x0]\n"
         "lsl x9, x1, #0x20\n"
         "add x8, x8, x9, asr #0x1d\n"
         "ldr x21, [x8, #0x20]\n"
-<<<<<<< HEAD
-        "cbz x21, 0f\n"
-        "mov w8, #0x5920\n"
-        "ldrb w8, [x21, x8]\n"
-        "cmp w8, #0x6\n"
-        "b.ne 0f\n"
-        "ldr x22, [x21, #0x4150]\n"
-        "cbz x22, 0f\n"
-        "mov x8, xzr\n"
-        "orr w23, wzr, #1\n"
-        "and w19, w2, #0x1\n"
-        "1:\n"
-        "add x8, x21, x8, lsl #0x3\n"
-        "ldr x20, [x8, #0x4160]\n"
-        "cbz x20, 2f\n"
-=======
         "cbz x21, 5f\n"
         "mov w8, #0x5920\n"
         "ldrb w8, [x21, x8]\n"
@@ -1023,36 +595,22 @@ void FighterManager__set_position_lock_impl(FighterManager* mgr, u32 entry_id, b
         "add x8, x21, x8, lsl #3\n"
         "ldr x20, [x8, #0x4160]\n"
         "cbz x20, 1f\n"
->>>>>>> worker/pool-b
         "ldr x8, [x20]\n"
         "ldr x8, [x8, #0x518]\n"
         "mov x0, x20\n"
         "blr x8\n"
-<<<<<<< HEAD
-        "tbz w0, #0x0, 2f\n"
-=======
         "tbz w0, #0, 1f\n"
->>>>>>> worker/pool-b
         "ldr x8, [x20]\n"
         "ldr x8, [x8, #0x438]\n"
         "mov x0, x20\n"
         "mov w1, w19\n"
         "blr x8\n"
-<<<<<<< HEAD
-        "2:\n"
-        "mov w8, w23\n"
-        "add w23, w23, #0x1\n"
-        "cmp x22, x8\n"
-        "b.hi 1b\n"
-        "0:\n"
-=======
         "1:\n"
         "mov w8, w23\n"
         "add w23, w23, #0x1\n"
         "cmp x22, x8\n"
         "b.hi 0b\n"
         "5:\n"
->>>>>>> worker/pool-b
         "ldp x29, x30, [sp, #0x30]\n"
         "ldp x20, x19, [sp, #0x20]\n"
         "ldp x22, x21, [sp, #0x10]\n"
