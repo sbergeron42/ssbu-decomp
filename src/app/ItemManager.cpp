@@ -4,8 +4,11 @@ struct ItemManager;
 
 #define VT(p) (*reinterpret_cast<void***>(p))
 
+extern "C" void FUN_71015dac50(ItemManager*, u32);
+
 namespace app::lua_bind {
 
+<<<<<<< HEAD
 // 7102144620 — pure tail call b to external function
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
@@ -13,6 +16,12 @@ u64 ItemManager__get_num_of_ownered_item_impl(ItemManager* mgr) {
     asm("b FUN_71015dac50\n");
 }
 #endif
+=======
+// 7102144620 — get_num_of_ownered_item: pure tail call
+void ItemManager__get_num_of_ownered_item_impl(ItemManager* mgr, u32 owner_id) {
+    FUN_71015dac50(mgr, owner_id);
+}
+>>>>>>> worker/pool-b
 
 // 7102144630 — (end - begin) / 8: count items in pointer array at +0x28
 u64 ItemManager__get_num_of_active_item_all_impl(ItemManager* mgr) {

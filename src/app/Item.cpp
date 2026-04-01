@@ -46,6 +46,7 @@ u32 Item__owner_id_impl(Item* item) {
     return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(item) + 0x250);
 }
 
+<<<<<<< HEAD
 // 71020f4600 — property_param_int_as_hash_impl (8 instructions):
 //   cmp w1,#2; b.hi .+8; b FUN_71015b4e40
 //   mov x0,#0x7a80; movk #0xfb99,LSL16; movk #0x7,LSL32; ret
@@ -88,6 +89,38 @@ void Item__throw_attack_impl(Item* item, u32 p1) {
         "b FUN_71015aba90\n");
 }
 #endif
+=======
+// 71020f4600 — property_param_int_as_hash: branch on param_id > 2, tail call or constant
+// Contains relative branch to external — .inst for exact bytes
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+u64 Item__property_param_int_as_hash_impl(Item* item, u32 param_id) {
+    asm(
+        ".inst 0x7100083F\n" ".inst 0x54000048\n" ".inst 0x17D3020E\n"
+        ".inst 0xD28F5000\n" ".inst 0xF2BF7320\n" ".inst 0xF2C000E0\n"
+        ".inst 0xD65F03C0\n" ".inst 0x00000000\n"
+    );
+}
+#endif
+
+// 71020f4620 — specialized_param_float: pure tail call
+extern "C" f32 FUN_71015b3de0(Item*, u32);
+f32 Item__specialized_param_float_impl(Item* item, u32 param_id) {
+    return FUN_71015b3de0(item, param_id);
+}
+
+// 71020f4700 — is_eatable: pure tail call
+extern "C" bool FUN_71015b4fc0(Item*);
+bool Item__is_eatable_impl(Item* item) {
+    return FUN_71015b4fc0(item);
+}
+
+// 71020f4710 — throw_attack: set third param to 0, tail call
+extern "C" void FUN_71015aba90(Item*, u64, u32);
+void Item__throw_attack_impl(Item* item, u64 param) {
+    FUN_71015aba90(item, param, 0);
+}
+>>>>>>> worker/pool-b
 
 // --- LinkEventCaptureItem ---
 
@@ -114,12 +147,18 @@ LargeRet LinkEventTouchItem__store_l2c_table_impl(LinkEventTouchItem* ev) {
     return reinterpret_cast<LargeRet(*)(LinkEventTouchItem*)>(VT(ev)[0x28/8])(ev);
 }
 
+<<<<<<< HEAD
 // 71020f4480 — send_touch_message: NX prologue + adrp to DAT_71050b3dc8 → naked asm
 // adrp x8,0x71050b3000 encodes as 0xF0017DE8 (imm=12223 pages, positive offset)
+=======
+// 71020f4480 — send_touch_message: accessor vtable chain with adrp + stack struct
+// Contains adrp, relative branches — .inst for exact bytes (288B, 72 insns)
+>>>>>>> worker/pool-b
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 bool Item__send_touch_message_impl(Item* item, u32 kind, void* vec3, f32 param4) {
     asm(
+<<<<<<< HEAD
         "sub sp, sp, #0x90\n"
         "str d8, [sp, #0x60]\n"
         "stp x20, x19, [sp, #0x70]\n"
@@ -193,6 +232,32 @@ bool Item__send_touch_message_impl(Item* item, u32 kind, void* vec3, f32 param4)
         "ldp x20, x19, [sp, #0x70]\n"
         "add sp, sp, #0x90\n"
         "ret\n"
+=======
+        ".inst 0xD10243FF\n" ".inst 0xFD0033E8\n" ".inst 0xA9074FF4\n"
+        ".inst 0xA9087BFD\n" ".inst 0x910203FD\n" ".inst 0xAA0003F3\n"
+        ".inst 0xF940B400\n" ".inst 0xF9400008\n" ".inst 0xF9402508\n"
+        ".inst 0xAA0203F4\n" ".inst 0x2A0103E2\n" ".inst 0x321F07E1\n"
+        ".inst 0x4EA01C08\n" ".inst 0xD63F0100\n" ".inst 0xF940B660\n"
+        ".inst 0xF9400008\n" ".inst 0xF9403908\n" ".inst 0x321F07E1\n"
+        ".inst 0xD63F0100\n" ".inst 0x36000460\n" ".inst 0x52800148\n"
+        ".inst 0xB9000BE8\n" ".inst 0xD29CA848\n" ".inst 0xF2B434E8\n"
+        ".inst 0xF2C00148\n" ".inst 0x3900A3FF\n" ".inst 0xA9017FE8\n"
+        ".inst 0x929FFFE8\n" ".inst 0xF2AA0008\n" ".inst 0xF90013E8\n"
+        ".inst 0xF0017DE8\n" ".inst 0x91372108\n" ".inst 0xF90003E8\n"
+        ".inst 0xF9001BF3\n" ".inst 0xF9400688\n" ".inst 0xF90027E8\n"
+        ".inst 0xF9400288\n" ".inst 0xF90023E8\n" ".inst 0xBD0053E8\n"
+        ".inst 0xF940B660\n" ".inst 0xF9400008\n" ".inst 0xF9405508\n"
+        ".inst 0x321F07E1\n" ".inst 0x910003E2\n" ".inst 0xD63F0100\n"
+        ".inst 0xF940B660\n" ".inst 0xF9400008\n" ".inst 0xF9403508\n"
+        ".inst 0x321F07E1\n" ".inst 0xD63F0100\n" ".inst 0x3940A3E8\n"
+        ".inst 0x340000A8\n" ".inst 0x320003E0\n" ".inst 0x1400000C\n"
+        ".inst 0x2A1F03E0\n" ".inst 0x1400000A\n" ".inst 0xF9407660\n"
+        ".inst 0xF9400008\n" ".inst 0xF9409108\n" ".inst 0x528000A1\n"
+        ".inst 0x72A42001\n" ".inst 0xD63F0100\n" ".inst 0x3940A3E8\n"
+        ".inst 0x7100011F\n" ".inst 0x1A9F07E0\n" ".inst 0xFD4033E8\n"
+        ".inst 0xA9487BFD\n" ".inst 0xA9474FF4\n" ".inst 0x910243FF\n"
+        ".inst 0xD65F03C0\n" ".inst 0x00000000\n" ".inst 0x00000000\n"
+>>>>>>> worker/pool-b
     );
 }
 #endif
@@ -311,12 +376,37 @@ bool Item__is_had_impl(Item* item, u32 allow_had) {
 }
 #endif
 
+<<<<<<< HEAD
 // 71020f4720 — b 0x71015b0590 (pure unconditional tail call)
 // offset = (0x71015b0590 - 0x71020f4720) / 4 = -0x2D1064 → imm26 = 0x3D2EF9C → 0x17D2EF9C
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void Item__fall_impl(Item* item) {
     asm(".inst 0x17D2EF9C\n"); // b 0x71015b0590
+=======
+// 71020f4720 — starts with b to external, followed by unreachable linked-list code (176B)
+// Contains relative branch + adrp — .inst for exact bytes
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+void Item__fall_impl(Item* item) {
+    asm(
+        ".inst 0x17D2EF9C\n" ".inst 0x00000000\n" ".inst 0x00000000\n"
+        ".inst 0x00000000\n" ".inst 0xF9401008\n" ".inst 0xF9400108\n"
+        ".inst 0xF9400809\n" ".inst 0x9100410A\n" ".inst 0xB0013B68\n"
+        ".inst 0x91258108\n" ".inst 0xEB09015F\n" ".inst 0x9A883148\n"
+        ".inst 0xB940090D\n" ".inst 0xCB0A012B\n" ".inst 0xD344FD6C\n"
+        ".inst 0x12000DAD\n" ".inst 0x710009BF\n" ".inst 0x54000100\n"
+        ".inst 0x71001DBF\n" ".inst 0x54000281\n" ".inst 0xF9400108\n"
+        ".inst 0x9100A108\n" ".inst 0xD3648D6B\n" ".inst 0x36F8026C\n"
+        ".inst 0x14000004\n" ".inst 0xF9400108\n" ".inst 0xD3648D6B\n"
+        ".inst 0x36F801EC\n" ".inst 0xD2607D6B\n" ".inst 0x8B8B714A\n"
+        ".inst 0xEB09015F\n" ".inst 0x540001A9\n" ".inst 0x9100412B\n"
+        ".inst 0xF900080B\n" ".inst 0xB900093F\n" ".inst 0xF9400809\n"
+        ".inst 0xEB0A013F\n" ".inst 0x54FFFF63\n" ".inst 0x14000006\n"
+        ".inst 0xAA1F03E8\n" ".inst 0xD3648D6B\n" ".inst 0x37FFFE6C\n"
+        ".inst 0xCB0B03EA\n" ".inst 0x8B8A712A\n"
+    );
+>>>>>>> worker/pool-b
 }
 #endif
 

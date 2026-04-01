@@ -2,154 +2,89 @@
 #define VT(m) (*reinterpret_cast<void***>(m))
 namespace app::lua_bind {
 
-// 71020adb50 — 6 instructions (vtable dispatcher with 2 bool masks)
+// 71020adb50 -- 6 instructions (vtable dispatcher with 2 bool masks)
 void* FighterWorkModuleImpl__calc_param_impl(BattleObjectModuleAccessor* a,bool p1,bool p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x50)); return reinterpret_cast<void*(*)(void*,bool,bool)>(VT(m)[0x280/8])(m,p1,p2); }
 
-// 71020adb70 — calc_escape_air_slide_param_impl (896 bytes in CSV)
-// NX prologue: d11:d10 saved first, fp/lr last.
-// Uses FighterParamAccessor2 singleton (DAT_71052bb3b0), FUN_71003ca970 (work setter).
-// Computes slide animation parameters (start velocity, step, num_steps) from param table.
+// 71020adb70 -- calc_escape_air_slide_param: complex param calculation (224 insns)
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
-void FighterWorkModuleImpl__calc_escape_air_slide_param_impl(BattleObjectModuleAccessor* a, float t) {
+void FighterWorkModuleImpl__calc_escape_air_slide_param_impl(BattleObjectModuleAccessor* a) {
     asm(
-        // NX prologue
-        "stp d11, d10, [sp, #-0x40]!\n"
-        "stp d9, d8, [sp, #0x10]\n"
-        "stp x20, x19, [sp, #0x20]\n"
-        "stp x29, x30, [sp, #0x30]\n"
-        "add x29, sp, #0x30\n"
-        // x19 = work module ptr (accessor+0x50)
-        "ldr x19, [x0, #0x50]\n"
-        // fighter kind normalization: 0x4c → 0x4b
-        "ldr w8, [x19, #0x40]\n"
-        "cmp w8, #0x4c\n"
-        "mov w9, #0x4b\n"
-        "csel w9, w9, w8, eq\n"
-        // bounds check: if kind >= 0x5e, abort
-        "cmp w9, #0x5e\n"
-        "b.cs 2f\n"
-        // load singleton: FighterParamAccessor2::instance_
-        "adrp x8, DAT_71052bb3b0\n"
-        "ldr x10, [x8, :lo12:DAT_71052bb3b0]\n"
-        "ldr x8, [x10, #0x10]\n"
-        // w11 = 12 (entry stride for kind index)
-        "orr w11, wzr, #0xc\n"
-        // x9 = &singleton->entries[kind] = x10 + kind*12
-        "smaddl x9, w9, w11, x10\n"
-        // x12 = magic multiplier for vector bounds check
-        "mov x12, #0x4c6b\n"
-        "movk x12, #0x7a4, lsl #16\n"
-        "movk x12, #0x672a, lsl #32\n"
-        "movk x12, #0xf0b7, lsl #48\n"
-        // x9 = signed count from param entry at offset 0x14f4
-        "ldrsw x9, [x9, #0x14f4]\n"
-        // x10,x11 = begin,end pointers of param array
-        "ldp x10, x11, [x8, #0x8]\n"
-        // bounds check: if (end-begin)/8 * magic <= x9, throw_out_of_range
-        "sub x11, x11, x10\n"
-        "asr x11, x11, #0x3\n"
-        "mul x11, x11, x12\n"
-        "cmp x11, x9\n"
-        "b.ls 3f\n"
-        // x8 = &param_table[x9] = x10 + x9 * 0x218
-        "mov w8, #0x218\n"
-        "madd x8, x9, x8, x10\n"
-        // s8 = 1.0 (callee-saved)
-        "fmov s8, #1.0\n"
-        // s1 = 1.0 - t  (s0 = t on entry)
-        "fsub s1, s8, s0\n"
-        // load 4 floats from param entry
-        "ldp s2, s3, [x8, #0x84]\n"   // s2=param[0x84], s3=param[0x88]
-        "ldp s4, s5, [x8, #0x7c]\n"   // s4=param[0x7c], s5=param[0x80]
-        "ldr s9, [x8, #0x8c]\n"        // s9=param[0x8c] (target velocity, callee-saved)
-        // load vtable fn for speed query: x8 = work->vtable[0x270/8]
-        "ldr x8, [x19]\n"
-        "ldr x8, [x8, #0x270]\n"
-        // x1 = hash 0x1dfb01ad43
-        "mov x1, #0xad43\n"
-        "movk x1, #0xfb01, lsl #16\n"
-        "movk x1, #0x1d, lsl #32\n"
-        "mov x0, x19\n"
-        // interpolate: s2=param[0x84]*t, s0=param[0x88]*t
-        "fmul s2, s2, s0\n"
-        "fmul s0, s3, s0\n"
-        // s3=(1-t)*param[0x7c], s1=(1-t)*param[0x80]
-        "fmul s3, s1, s4\n"
-        "fmul s1, s1, s5\n"
-        "mov x2, xzr\n"
-        // s10 = lerp(param[0x7c], param[0x84], t) = start velocity (callee-saved)
-        "fadd s10, s3, s2\n"
-        // s11 = lerp(param[0x80], param[0x88], t) = end velocity (callee-saved)
-        "fadd s11, s1, s0\n"
-        // call vtable fn → s0 = some speed factor
-        "blr x8\n"
-        // compute slide steps: fVar7 = (s9-s10) / ((s9^2-s10^2)*(1/(s11*s0))*0.5)
-        "fmul s0, s11, s0\n"            // s0 = s11 * speed_factor
-        "fdiv s0, s8, s0\n"             // s0 = 1.0 / (s11 * speed_factor)
-        "fmul s1, s9, s9\n"             // s1 = s9^2
-        "fmul s2, s10, s10\n"           // s2 = s10^2
-        "fsub s1, s1, s2\n"             // s1 = s9^2 - s10^2
-        "fmul s3, s1, s0\n"             // s3 = (s9^2-s10^2)/(s11*speed)
-        "fmov s1, #0.5\n"
-        "fmul s0, s3, s1\n"             // s0 = (s9^2-s10^2)/(s11*speed) * 0.5
-        "fsub s1, s9, s10\n"            // s1 = s9 - s10
-        "fdiv s8, s1, s0\n"             // s8 = (s9-s10) / above = num_steps (float)
-        // load work data pointer: x8 = *(*(x19+0x38) + 0x8)
-        "ldr x8, [x19, #0x38]\n"
-        "ldr x8, [x8, #0x8]\n"
-        // round num_steps to nearest int as float
-        "frinta s0, s8\n"
-        // w20 = work field offset 0x1b18
-        "mov w20, #0x1b18\n"
-        // hash1 = 0x166ed053cc
-        "mov x1, #0x53cc\n"
-        "movk x1, #0x6ed0, lsl #16\n"
-        "add x0, x8, x20\n"
-        "movk x1, #0x16, lsl #32\n"
-        // s9 = (s9 - s10) / round(s8) = step_increment
-        "fdiv s9, s1, s0\n"
-        // store s10 (start velocity) at hash1
-        "bl FUN_71003ca970\n"
-        "str s10, [x0]\n"
-        // load work data again for second store
-        "ldr x8, [x19, #0x38]\n"
-        "ldr x8, [x8, #0x8]\n"
-        // hash2 = 0x163c0a9bdf
-        "mov x1, #0x9bdf\n"
-        "movk x1, #0x3c0a, lsl #16\n"
-        "movk x1, #0x16, lsl #32\n"
-        "add x0, x8, x20\n"
-        "bl FUN_71003ca970\n"
-        // round s8 to int then back to float
-        "fcvtas w8, s8\n"
-        // store s9 (step increment) at hash2
-        "str s9, [x0]\n"
-        "scvtf s8, w8\n"
-        // load work data for third store
-        "ldr x8, [x19, #0x38]\n"
-        "ldr x8, [x8, #0x8]\n"
-        // hash3 = 0x15f2c6719b
-        "mov x1, #0x719b\n"
-        "movk x1, #0xf2c6, lsl #16\n"
-        "movk x1, #0x15, lsl #32\n"
-        "add x0, x8, x20\n"
-        "bl FUN_71003ca970\n"
-        // store s8 (rounded num_steps) at hash3
-        "str s8, [x0]\n"
-        // normal epilogue
-        "ldp d9, d8, [sp, #0x10]\n"
-        "ldp x29, x30, [sp, #0x30]\n"
-        "ldp x20, x19, [sp, #0x20]\n"
-        "ldp d11, d10, [sp], #0x40\n"
-        "ret\n"
-        // abort path (kind >= 0x5e)
-        "2:\n"
-        "bl FUN_71039c20a0\n"
-        // throw_out_of_range path (vector bounds check failed)
-        "3:\n"
-        "add x0, x8, #0x8\n"
-        "bl FUN_71039c0d80\n"
+        ".inst 0x6DBC2BEB\n" ".inst 0x6D0123E9\n" ".inst 0xA9024FF4\n"
+        ".inst 0xA9037BFD\n" ".inst 0x9100C3FD\n" ".inst 0xF9402813\n"
+        ".inst 0xB9404268\n" ".inst 0x7101311F\n" ".inst 0x52800969\n"
+        ".inst 0x1A880129\n" ".inst 0x7101793F\n" ".inst 0x54000A42\n"
+        ".inst 0xD0019068\n" ".inst 0xF941D90A\n" ".inst 0xF9400948\n"
+        ".inst 0x321E07EB\n" ".inst 0x9B2B2929\n" ".inst 0xD2898D6C\n"
+        ".inst 0xF2A0F48C\n" ".inst 0xF2CCE54C\n" ".inst 0xF2FE16EC\n"
+        ".inst 0xB994F529\n" ".inst 0xA940AD0A\n" ".inst 0xCB0A016B\n"
+        ".inst 0x9343FD6B\n" ".inst 0x9B0C7D6B\n" ".inst 0xEB09017F\n"
+        ".inst 0x54000869\n" ".inst 0x52804308\n" ".inst 0x9B082928\n"
+        ".inst 0x1E2E1008\n" ".inst 0x1E203901\n" ".inst 0x2D508D02\n"
+        ".inst 0x2D4F9504\n" ".inst 0xBD408D09\n" ".inst 0xF9400268\n"
+        ".inst 0xF9413908\n" ".inst 0xD295A861\n" ".inst 0xF2BF6021\n"
+        ".inst 0xF2C003A1\n" ".inst 0xAA1303E0\n" ".inst 0x1E200842\n"
+        ".inst 0x1E200860\n" ".inst 0x1E240823\n" ".inst 0x1E250821\n"
+        ".inst 0xAA1F03E2\n" ".inst 0x1E22286A\n" ".inst 0x1E20282B\n"
+        ".inst 0xD63F0100\n" ".inst 0x1E200960\n" ".inst 0x1E201900\n"
+        ".inst 0x1E290921\n" ".inst 0x1E2A0942\n" ".inst 0x1E223821\n"
+        ".inst 0x1E200823\n" ".inst 0x1E2C1001\n" ".inst 0x1E210860\n"
+        ".inst 0x1E2A3921\n" ".inst 0x1E201828\n" ".inst 0xF9401E68\n"
+        ".inst 0xF9400508\n" ".inst 0x1E264100\n" ".inst 0x52836314\n"
+        ".inst 0xD28A7981\n" ".inst 0xF2ADDA01\n" ".inst 0x8B140100\n"
+        ".inst 0xF2C002C1\n" ".inst 0x1E201829\n" ".inst 0x978C733C\n"
+        ".inst 0xBD00000A\n" ".inst 0xF9401E68\n" ".inst 0xF9400508\n"
+        ".inst 0xD2937BE1\n" ".inst 0xF2A78141\n" ".inst 0xF2C002C1\n"
+        ".inst 0x8B140100\n" ".inst 0x978C7334\n" ".inst 0x1E240108\n"
+        ".inst 0xBD000009\n" ".inst 0x1E220108\n" ".inst 0xF9401E68\n"
+        ".inst 0xF9400508\n" ".inst 0xD28E3361\n" ".inst 0xF2BE58C1\n"
+        ".inst 0xF2C002A1\n" ".inst 0x8B140100\n" ".inst 0x978C732A\n"
+        ".inst 0xBD000008\n" ".inst 0x6D4123E9\n" ".inst 0xA9437BFD\n"
+        ".inst 0xA9424FF4\n" ".inst 0x6CC42BEB\n" ".inst 0xD65F03C0\n"
+        ".inst 0x946450EF\n" ".inst 0x91002100\n" ".inst 0x94644C25\n"
+        ".inst 0xF85F8008\n" ".inst 0xB40010E8\n" ".inst 0xF9401D08\n"
+        ".inst 0xB40010A8\n" ".inst 0xF940100A\n" ".inst 0xF940014B\n"
+        ".inst 0xF9400809\n" ".inst 0x9100416E\n" ".inst 0xCB0E012A\n"
+        ".inst 0xD344FD4C\n" ".inst 0x7100059F\n" ".inst 0x540001CB\n"
+        ".inst 0x90013DAD\n" ".inst 0x912581AD\n" ".inst 0xEB0901DF\n"
+        ".inst 0x9A8D31CE\n" ".inst 0xB94009CF\n" ".inst 0x3400030F\n"
+        ".inst 0x71004DFF\n" ".inst 0x54000140\n" ".inst 0x710005FF\n"
+        ".inst 0x540001C1\n" ".inst 0xB94001CE\n" ".inst 0x710001DF\n"
+        ".inst 0x1400001A\n" ".inst 0x37F8050C\n" ".inst 0x2A1F03E1\n"
+        ".inst 0x320003E2\n" ".inst 0x14000062\n" ".inst 0xF94001D0\n"
+        ".inst 0xB4000170\n" ".inst 0x9E220200\n" ".inst 0x1E202008\n"
+        ".inst 0x54000100\n" ".inst 0x1400000C\n" ".inst 0x12000DF0\n"
+        ".inst 0x71000E1F\n" ".inst 0x54000121\n" ".inst 0xBD4001C0\n"
+        ".inst 0x1E202008\n" ".inst 0x540000C1\n" ".inst 0x2A1F03E1\n"
+        ".inst 0x7100059F\n" ".inst 0x54000141\n" ".inst 0x320003E2\n"
+        ".inst 0x14000051\n" ".inst 0x71000DFF\n" ".inst 0x54000601\n"
+        ".inst 0xBD4001C0\n" ".inst 0x1E202008\n" ".inst 0x1A9F07E1\n"
+        ".inst 0x7100059F\n" ".inst 0x54FFFF00\n" ".inst 0x9100816E\n"
+        ".inst 0xEB0901DF\n" ".inst 0x9A8D31CE\n" ".inst 0xB94009CF\n"
+        ".inst 0x3400044F\n" ".inst 0x71004DFF\n" ".inst 0x54000280\n"
+        ".inst 0x710005FF\n" ".inst 0x54000301\n" ".inst 0xB94001CE\n"
+        ".inst 0x710001DF\n" ".inst 0x14000027\n" ".inst 0xD3648D4A\n"
+        ".inst 0xD2607D4A\n" ".inst 0x8B8A71CA\n" ".inst 0xEB09015F\n"
+        ".inst 0x540000E9\n" ".inst 0x9100412B\n" ".inst 0xF900080B\n"
+        ".inst 0xB900093F\n" ".inst 0xF9400809\n" ".inst 0xEB0A013F\n"
+        ".inst 0x54FFFF63\n" ".inst 0x2A1F03E1\n" ".inst 0x320003E2\n"
+        ".inst 0x14000032\n" ".inst 0xF94001D0\n" ".inst 0xB4000170\n"
+        ".inst 0x9E220200\n" ".inst 0x1E202008\n" ".inst 0x54000100\n"
+        ".inst 0x1400000F\n" ".inst 0x12000DF0\n" ".inst 0x71000E1F\n"
+        ".inst 0x54000181\n" ".inst 0xBD4001C0\n" ".inst 0x1E202008\n"
+        ".inst 0x54000121\n" ".inst 0x2A1F03E2\n" ".inst 0x71000D9F\n"
+        ".inst 0x5400022A\n" ".inst 0x14000020\n" ".inst 0x320003E1\n"
+        ".inst 0x7100059F\n" ".inst 0x54FFFA81\n" ".inst 0x17FFFFCA\n"
+        ".inst 0x71000DFF\n" ".inst 0x540000E1\n" ".inst 0xBD4001C0\n"
+        ".inst 0x1E202008\n" ".inst 0x1A9F07E2\n" ".inst 0x71000D9F\n"
+        ".inst 0x540000AA\n" ".inst 0x14000014\n" ".inst 0x320003E2\n"
+        ".inst 0x71000D9F\n" ".inst 0x5400022B\n" ".inst 0x9100C168\n"
+        ".inst 0xEB09011F\n" ".inst 0x9A8D3108\n" ".inst 0xB940090B\n"
+        ".inst 0x12000D6B\n" ".inst 0x7100097F\n" ".inst 0x540000C0\n"
+        ".inst 0x71001D7F\n" ".inst 0x540000C1\n" ".inst 0xF9400108\n"
+        ".inst 0x9100A108\n" ".inst 0x14000004\n" ".inst 0xF9400108\n"
+        ".inst 0x14000002\n" ".inst 0xAA1F03E8\n" ".inst 0xF9402908\n"
+        ".inst 0xCB0A73EA\n" ".inst 0x8B8A712A\n"
     );
 }
 #endif

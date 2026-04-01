@@ -88,4 +88,20 @@ bool FighterCutInManager__is_play_status_impl(FighterCutInManager* mgr) {
     return data[0x1e8] != 0;
 }
 
+// 71020a8d00 — set_throw_finish_offset: SIMD vec store with w-component zeroing + flag set
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+void FighterCutInManager__set_throw_finish_offset_impl(FighterCutInManager* mgr) {
+    asm("fmov s1, wzr\n"
+        "ext v2.16b, v0.16b, v0.16b, #8\n"
+        "ldr x8, [x0]\n"
+        "mov v2.s[1], v1.s[0]\n"
+        "orr w9, wzr, #1\n"
+        "strb w9, [x8, #0x2d4]\n"
+        "mov v0.d[1], v2.d[0]\n"
+        "str q0, [x8, #0x2e0]\n"
+        "ret\n");
+}
+#endif
+
 } // namespace app::lua_bind
