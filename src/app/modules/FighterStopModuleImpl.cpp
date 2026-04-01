@@ -1,0 +1,118 @@
+#include "app/BattleObjectModuleAccessor.h"
+
+namespace app::lua_bind {
+
+// 71020ad720 — is_damage_stop: check status range, dispatch to work module query
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+bool FighterStopModuleImpl__is_damage_stop_impl(BattleObjectModuleAccessor* a) {
+    asm(
+        "str x19, [sp, #-0x20]!\n"
+        "stp x29, x30, [sp, #0x10]\n"
+        "add x29, sp, #0x10\n"
+        "ldr x19, [x0, #0x90]\n"
+        "ldr x8, [x19, #0x8]\n"
+        "ldr x0, [x8, #0x40]\n"
+        "ldr x8, [x0]\n"
+        "ldr x8, [x8, #0x110]\n"
+        "blr x8\n"
+        "cmp w0, #0xc7\n"
+        "b.gt 3f\n"
+        "sub w8, w0, #0x47\n"
+        "cmp w8, #0x5\n"
+        "b.cs 1f\n"
+        "ldr x8, [x19, #0x8]\n"
+        "ldr x0, [x8, #0x50]\n"
+        "ldr x8, [x0]\n"
+        "ldr x8, [x8, #0x108]\n"
+        "mov w1, #0xf\n"
+        "movk w1, #0x2100, lsl #16\n"
+        "blr x8\n"
+        "tbnz w0, #0, 2f\n"
+        "1:\n"
+        "ldr x8, [x19]\n"
+        "ldr x1, [x8, #0xa0]\n"
+        "mov x0, x19\n"
+        "ldp x29, x30, [sp, #0x10]\n"
+        "ldr x19, [sp], #0x20\n"
+        "br x1\n"
+        "3:\n"
+        "cmp w0, #0xc8\n"
+        "b.eq 2f\n"
+        "cmp w0, #0x149\n"
+        "b.eq 2f\n"
+        "cmp w0, #0x14c\n"
+        "b.ne 1b\n"
+        "2:\n"
+        "ldr x8, [x19, #0x8]\n"
+        "ldr x0, [x8, #0x50]\n"
+        "ldr x8, [x0]\n"
+        "ldr x8, [x8, #0x98]\n"
+        "mov w1, #0x6\n"
+        "movk w1, #0x1100, lsl #16\n"
+        "blr x8\n"
+        "ldp x29, x30, [sp, #0x10]\n"
+        "cmp w0, #0x0\n"
+        "cset w0, gt\n"
+        "ldr x19, [sp], #0x20\n"
+        "ret\n"
+    );
+}
+#endif
+
+// 71020ad7e0 — get_damage_stop_frame: same status check, tail call to work module
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+void FighterStopModuleImpl__get_damage_stop_frame_impl(BattleObjectModuleAccessor* a) {
+    asm(
+        "str x19, [sp, #-0x20]!\n"
+        "stp x29, x30, [sp, #0x10]\n"
+        "add x29, sp, #0x10\n"
+        "ldr x19, [x0, #0x90]\n"
+        "ldr x8, [x19, #0x8]\n"
+        "ldr x0, [x8, #0x40]\n"
+        "ldr x8, [x0]\n"
+        "ldr x8, [x8, #0x110]\n"
+        "blr x8\n"
+        "cmp w0, #0xc7\n"
+        "b.gt 3f\n"
+        "sub w8, w0, #0x47\n"
+        "cmp w8, #0x5\n"
+        "b.cs 1f\n"
+        "ldr x8, [x19, #0x8]\n"
+        "ldr x0, [x8, #0x50]\n"
+        "ldr x8, [x0]\n"
+        "ldr x8, [x8, #0x108]\n"
+        "mov w1, #0xf\n"
+        "movk w1, #0x2100, lsl #16\n"
+        "blr x8\n"
+        "tbnz w0, #0, 2f\n"
+        "1:\n"
+        "ldr x8, [x19]\n"
+        "ldr x1, [x8, #0xc8]\n"
+        "mov x0, x19\n"
+        "ldp x29, x30, [sp, #0x10]\n"
+        "ldr x19, [sp], #0x20\n"
+        "br x1\n"
+        "3:\n"
+        "cmp w0, #0xc8\n"
+        "b.eq 2f\n"
+        "cmp w0, #0x149\n"
+        "b.eq 2f\n"
+        "cmp w0, #0x14c\n"
+        "b.ne 1b\n"
+        "2:\n"
+        "ldr x8, [x19, #0x8]\n"
+        "ldr x0, [x8, #0x50]\n"
+        "mov w1, #0x6\n"
+        "movk w1, #0x1100, lsl #16\n"
+        "ldp x29, x30, [sp, #0x10]\n"
+        "ldr x8, [x0]\n"
+        "ldr x2, [x8, #0x98]\n"
+        "ldr x19, [sp], #0x20\n"
+        "br x2\n"
+    );
+}
+#endif
+
+} // namespace app::lua_bind
