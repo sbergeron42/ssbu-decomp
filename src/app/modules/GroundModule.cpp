@@ -131,6 +131,7 @@ void GroundModule__v0x430(BattleObjectModuleAccessor* a,u64 p1) { auto* m=GM(a);
 void GroundModule__v0x438(BattleObjectModuleAccessor* a,u64 p1) { auto* m=GM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x438/8])(m,p1); }
 // 7102029f20
 void GroundModule__v0x458(BattleObjectModuleAccessor* a,u64 p1) { auto* m=GM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x458/8])(m,p1); }
+// 7102029f30
 void GroundModule__v0x460(BattleObjectModuleAccessor* a,u64 p1,bool p2,bool p3) { auto* m=GM(a); reinterpret_cast<void(*)(void*,u64,bool,bool)>(VT(m)[0x460/8])(m,p1,p2,p3); }
 // 7102029fc0
 void GroundModule__v0x4e0(BattleObjectModuleAccessor* a,u64 p1) { auto* m=GM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x4e0/8])(m,p1); }
