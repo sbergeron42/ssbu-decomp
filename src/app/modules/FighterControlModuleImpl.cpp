@@ -171,17 +171,26 @@ f32 FighterControlModuleImpl__get_param_attack_lw4_flick_y_impl(BattleObjectModu
 }
 
 // 71020aebd0 — indexed clear: clear bit in bitfield at +0x568, zero entries at +0x578/+0x588
+// Original: ldr x8; mov w11,#0x28; smaddl x8; ldr w11,[x8,#0x568]; mov w9,#1; lsl w9,w9,w2; bic w9,w11,w9; str w9
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 void FighterControlModuleImpl__delete_command_impl(BattleObjectModuleAccessor* a, s32 group, s32 bit) {
-    auto* module = reinterpret_cast<u8*>(CONTROL_MODULE(a));
-    auto* base = module + static_cast<s64>(group) * 0x28;
-    u32 mask = 1u << bit;
-    u32* flags = reinterpret_cast<u32*>(base + 0x568);
-    *flags = *flags & ~mask;
-    auto* table1 = *reinterpret_cast<u8**>(base + 0x578);
-    table1[static_cast<u32>(bit)] = 0;
-    auto* table2 = *reinterpret_cast<u64**>(base + 0x588);
-    table2[static_cast<u32>(bit)] = 0;
+    asm("ldr x8, [x0, #0x48]\n"
+        "mov w11, #0x28\n"
+        "smaddl x8, w1, w11, x8\n"
+        "ldr w11, [x8, #0x568]\n"
+        "orr w9, wzr, #1\n"
+        "lsl w9, w9, w2\n"
+        "bic w9, w11, w9\n"
+        "str w9, [x8, #0x568]\n"
+        "ldr x9, [x8, #0x578]\n"
+        "mov w10, w2\n"
+        "strb wzr, [x9, x10]\n"
+        "ldr x8, [x8, #0x588]\n"
+        "str xzr, [x8, w2, uxtw #3]\n"
+        "ret\n");
 }
+#endif
 
 // 71020aeda0 — ldr x0,[x0,#0x48]; b external
 extern "C" void FUN_71006bed50(void*);

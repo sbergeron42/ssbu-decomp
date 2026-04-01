@@ -48,15 +48,11 @@ bool FighterCutInManager__is_owner_impl(FighterCutInManager* mgr, void* entry_id
     auto* data = *reinterpret_cast<u8**>(mgr);
     u32 target = *reinterpret_cast<u32*>(reinterpret_cast<u8*>(entry_id_ptr) + 8);
     u32* arr = reinterpret_cast<u32*>(data);
-    if (arr[0] == target) return true;
-    if (arr[1] == target) return true;
-    if (arr[2] == target) return true;
-    if (arr[3] == target) return true;
-    if (arr[4] == target) return true;
-    if (arr[5] == target) return true;
-    if (arr[6] == target) return true;
-    if (arr[7] == target) return true;
-    return false;
+    if (arr[0] != target && arr[1] != target && arr[2] != target && arr[3] != target &&
+        arr[4] != target && arr[5] != target && arr[6] != target && arr[7] != target) {
+        return false;
+    }
+    return true;
 }
 
 // 71020a8c60 — check 3 conditions: byte +0xb9, byte +0x1e8, s32 at +0x398 > 0

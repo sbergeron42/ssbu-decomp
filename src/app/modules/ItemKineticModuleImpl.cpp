@@ -224,7 +224,7 @@ void ItemKineticModuleImpl__it_ai_move_impl(BattleObjectModuleAccessor* a,
         "str x8,[x23, #0x438]\n"
         "ldr x8,[x19]\n"
         "str x8,[x23, #0x430]\n"
-        "mov w8,#0x1\n"
+        "orr w8, wzr, #1\n"
         "strb w8,[x23, #0x3f0]\n"
         "ldr x23,[sp, #0x20]\n"
         "ldp x29,x30,[sp, #0x50]\n"

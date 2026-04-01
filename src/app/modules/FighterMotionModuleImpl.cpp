@@ -54,23 +54,46 @@ void FighterMotionModuleImpl__get_hit_xlu_frame_impl(BattleObjectModuleAccessor*
 }
 
 // 71020aa050 — Kirby copy hash table lookup (32 instructions)
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 u64 FighterMotionModuleImpl__motion_kind_kirby_copy_original_impl(BattleObjectModuleAccessor* a, u64 hash) {
-    auto* module = MOTION(a);
-    auto* inner = *reinterpret_cast<u8**>(module + 8);
-    auto* fighter_obj = *reinterpret_cast<void**>(inner + 0x50);
-    auto* vt = *reinterpret_cast<void***>(fighter_obj);
-    auto get_kind = reinterpret_cast<s32 (*)(void*, u64)>(vt[0x98 / 8]);
-    s32 kind = get_kind(fighter_obj, 0x100000fcULL);
-
-    u64* begin = reinterpret_cast<u64*>(PTR_DAT_7104fcd388[kind]);
-    u64* end   = reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(&PTR_DAT_7104fcd388[kind]) + 8));
-    while (begin != end) {
-        if (((begin[0] ^ hash) & 0xFFFFFFFFFFULL) == 0)
-            return begin[1];
-        begin += 2;
-    }
-    return hash;
+    asm("str x19, [sp, #-0x20]!\n"
+        "stp x29, x30, [sp, #0x10]\n"
+        "add x29, sp, #0x10\n"
+        "ldr x8, [x0, #0x88]\n"
+        "ldr x8, [x8, #0x8]\n"
+        "ldr x0, [x8, #0x50]\n"
+        "ldr x8, [x0]\n"
+        "ldr x8, [x8, #0x98]\n"
+        "mov x19, x1\n"
+        "mov w1, #0xfc\n"
+        "movk w1, #0x1000, lsl #16\n"
+        "blr x8\n"
+        "adrp x8, PTR_DAT_7104fcd388\n"
+        "add x8, x8, :lo12:PTR_DAT_7104fcd388\n"
+        "ldr x8, [x8, w0, sxtw #3]\n"
+        "ldp x9, x8, [x8]\n"
+        "cmp x9, x8\n"
+        "b.eq 1f\n"
+        "mov x10, x9\n"
+        "0:\n"
+        "ldr x11, [x10], #0x10\n"
+        "eor x11, x11, x19\n"
+        "tst x11, #0xffffffffff\n"
+        "b.eq 2f\n"
+        "cmp x8, x10\n"
+        "mov x9, x10\n"
+        "b.ne 0b\n"
+        "b 1f\n"
+        "2:\n"
+        "ldr x19, [x9, #0x8]\n"
+        "1:\n"
+        "ldp x29, x30, [sp, #0x10]\n"
+        "mov x0, x19\n"
+        "ldr x19, [sp], #0x20\n"
+        "ret\n");
 }
+#endif
 
 // 71020aa0d0 — ldr module; and w2,w3,w4 with #0x1; b change_motion_kirby_copy
 void FighterMotionModuleImpl__change_motion_kirby_copy_impl(BattleObjectModuleAccessor* a, u64 hash, bool p2, bool p3, bool p4) {
@@ -83,46 +106,96 @@ void FighterMotionModuleImpl__change_motion_inherit_frame_kirby_copy_impl(Battle
 }
 
 // 71020aa100 — ldr module; hardcode w3=1,w2=0; b same target as above
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 void FighterMotionModuleImpl__change_motion_inherit_frame_keep_rate_kirby_copy_impl(BattleObjectModuleAccessor* a, u64 hash) {
-    auto* m = a->motion_module;
-    bool t = true;
-    FUN_71006e27f0(m, hash, false, t);
+    asm("ldr x0, [x0, #0x88]\n"
+        "orr w3, wzr, #1\n"
+        "mov w2, wzr\n"
+        "b FUN_71006e27f0\n");
 }
+#endif
 
 // 71020aa110 — reads frame/rate via vtable, adjusts frame param, delegates to change_motion
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 void FighterMotionModuleImpl__change_motion_force_inherit_frame_kirby_copy_impl(BattleObjectModuleAccessor* a, u64 hash, f32 frame, f32 rate, f32 blend) {
-    auto* module = a->motion_module;
-    auto* vt = *reinterpret_cast<void***>(module);
-    auto get_frame = reinterpret_cast<f32 (*)(void*)>(vt[0x138 / 8]);
-    get_frame(module);
-    auto get_rate = reinterpret_cast<f32 (*)(void*)>(vt[0x160 / 8]);
-    f32 cur_rate = get_rate(module);
-    f32 use_frame = (frame < 0.0f) ? frame : cur_rate;
-    FUN_71006e2680(module, hash, false, true, false);
-    (void)use_frame; (void)rate; (void)blend;
+    asm("str d10, [sp, #-0x40]!\n"
+        "stp d9, d8, [sp, #0x10]\n"
+        "stp x20, x19, [sp, #0x20]\n"
+        "stp x29, x30, [sp, #0x30]\n"
+        "add x29, sp, #0x30\n"
+        "ldr x20, [x0, #0x88]\n"
+        "ldr x8, [x20]\n"
+        "ldr x8, [x8, #0x138]\n"
+        "mov x0, x20\n"
+        "mov v8.16b, v2.16b\n"
+        "mov v9.16b, v1.16b\n"
+        "mov v10.16b, v0.16b\n"
+        "mov x19, x1\n"
+        "blr x8\n"
+        "ldr x8, [x20]\n"
+        "ldr x8, [x8, #0x160]\n"
+        "mov x0, x20\n"
+        "blr x8\n"
+        "mov v1.16b, v9.16b\n"
+        "mov v2.16b, v8.16b\n"
+        "fcmp s10, #0.0\n"
+        "ldp d9, d8, [sp, #0x10]\n"
+        "mov x0, x20\n"
+        "mov x1, x19\n"
+        "ldp x29, x30, [sp, #0x30]\n"
+        "ldp x20, x19, [sp, #0x20]\n"
+        "orr w3, wzr, #1\n"
+        "fcsel s0, s0, s10, lt\n"
+        "mov w2, wzr\n"
+        "mov w4, wzr\n"
+        "ldr d10, [sp], #0x40\n"
+        "b FUN_71006e2680\n");
 }
+#endif
 
 // 71020aa190 — Kirby copy hash lookup + tail call to end_frame_from_hash
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 void FighterMotionModuleImpl__end_frame_from_hash_kirby_copy_impl(BattleObjectModuleAccessor* a, u64 hash) {
-    auto* module = MOTION(a);
-    auto* inner = *reinterpret_cast<u8**>(module + 8);
-    auto* fighter_obj = *reinterpret_cast<void**>(inner + 0x50);
-    auto* vt = *reinterpret_cast<void***>(fighter_obj);
-    auto get_kind = reinterpret_cast<s32 (*)(void*, u64)>(vt[0x98 / 8]);
-    s32 kind = get_kind(fighter_obj, 0x100000fcULL);
-
-    u64* begin = reinterpret_cast<u64*>(PTR_DAT_7104fcd388[kind]);
-    u64* end   = reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(&PTR_DAT_7104fcd388[kind]) + 8));
-    u64 translated = hash;
-    while (begin != end) {
-        if (((begin[0] ^ hash) & 0xFFFFFFFFFFULL) == 0) {
-            translated = begin[1];
-            break;
-        }
-        begin += 2;
-    }
-    FUN_710049c190(a->motion_module, translated);
+    asm("stp x20, x19, [sp, #-0x20]!\n"
+        "stp x29, x30, [sp, #0x10]\n"
+        "add x29, sp, #0x10\n"
+        "ldr x20, [x0, #0x88]\n"
+        "ldr x8, [x20, #0x8]\n"
+        "ldr x0, [x8, #0x50]\n"
+        "ldr x8, [x0]\n"
+        "ldr x8, [x8, #0x98]\n"
+        "mov x19, x1\n"
+        "mov w1, #0xfc\n"
+        "movk w1, #0x1000, lsl #16\n"
+        "blr x8\n"
+        "adrp x8, PTR_DAT_7104fcd388\n"
+        "add x8, x8, :lo12:PTR_DAT_7104fcd388\n"
+        "ldr x9, [x8, w0, sxtw #3]\n"
+        "ldp x8, x9, [x9]\n"
+        "cmp x8, x9\n"
+        "b.eq 1f\n"
+        "0:\n"
+        "ldr x10, [x8, #0x8]\n"
+        "eor x10, x10, x19\n"
+        "tst x10, #0xffffffffff\n"
+        "b.eq 2f\n"
+        "add x8, x8, #0x10\n"
+        "cmp x9, x8\n"
+        "b.ne 0b\n"
+        "b 1f\n"
+        "2:\n"
+        "ldr x19, [x8]\n"
+        "1:\n"
+        "ldp x29, x30, [sp, #0x10]\n"
+        "mov x0, x20\n"
+        "mov x1, x19\n"
+        "ldp x20, x19, [sp], #0x20\n"
+        "b FUN_710049c190\n");
 }
+#endif
 
 // 71020aa210 — ldr x0,[x0,#0x88]; and w1,w1,#0x1; b external
 void FighterMotionModuleImpl__set_frame_sync_anim_cmd_kirby_copy_impl(BattleObjectModuleAccessor* a, bool val) {
@@ -130,50 +203,122 @@ void FighterMotionModuleImpl__set_frame_sync_anim_cmd_kirby_copy_impl(BattleObje
 }
 
 // 71020aa220 — Kirby copy hash lookup + tail call to get_cancel_frame
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 void FighterMotionModuleImpl__get_cancel_frame_kirby_copy_impl(BattleObjectModuleAccessor* a, u64 hash, bool p2) {
-    auto* module = MOTION(a);
-    auto* inner = *reinterpret_cast<u8**>(module + 8);
-    auto* fighter_obj = *reinterpret_cast<void**>(inner + 0x50);
-    auto* vt = *reinterpret_cast<void***>(fighter_obj);
-    auto get_kind = reinterpret_cast<s32 (*)(void*, u64)>(vt[0x98 / 8]);
-    s32 kind = get_kind(fighter_obj, 0x100000fcULL);
-
-    u64* begin = reinterpret_cast<u64*>(PTR_DAT_7104fcd388[kind]);
-    u64* end   = reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(&PTR_DAT_7104fcd388[kind]) + 8));
-    u64 translated = hash;
-    while (begin != end) {
-        if (((begin[0] ^ hash) & 0xFFFFFFFFFFULL) == 0) {
-            translated = begin[1];
-            break;
-        }
-        begin += 2;
-    }
-    FUN_71006e1e20(a->motion_module, translated, p2 & 1);
+    asm("str x21, [sp, #-0x30]!\n"
+        "stp x20, x19, [sp, #0x10]\n"
+        "stp x29, x30, [sp, #0x20]\n"
+        "add x29, sp, #0x20\n"
+        "ldr x21, [x0, #0x88]\n"
+        "ldr x8, [x21, #0x8]\n"
+        "ldr x0, [x8, #0x50]\n"
+        "ldr x8, [x0]\n"
+        "ldr x8, [x8, #0x98]\n"
+        "mov x20, x1\n"
+        "mov w1, #0xfc\n"
+        "movk w1, #0x1000, lsl #16\n"
+        "mov w19, w2\n"
+        "blr x8\n"
+        "adrp x8, PTR_DAT_7104fcd388\n"
+        "add x8, x8, :lo12:PTR_DAT_7104fcd388\n"
+        "ldr x9, [x8, w0, sxtw #3]\n"
+        "ldp x8, x9, [x9]\n"
+        "cmp x8, x9\n"
+        "b.eq 1f\n"
+        "0:\n"
+        "ldr x10, [x8, #0x8]\n"
+        "eor x10, x10, x20\n"
+        "tst x10, #0xffffffffff\n"
+        "b.eq 2f\n"
+        "add x8, x8, #0x10\n"
+        "cmp x9, x8\n"
+        "b.ne 0b\n"
+        "b 1f\n"
+        "2:\n"
+        "ldr x20, [x8]\n"
+        "1:\n"
+        "and w2, w19, #1\n"
+        "mov x1, x20\n"
+        "mov x0, x21\n"
+        "ldp x29, x30, [sp, #0x20]\n"
+        "ldp x20, x19, [sp, #0x10]\n"
+        "ldr x21, [sp], #0x30\n"
+        "b FUN_71006e1e20\n");
 }
+#endif
 
 // 71020aa2b0 — Kirby copy hash lookup + many params preserved + tail call
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 void FighterMotionModuleImpl__add_motion_partial_kirby_copy_impl(
         BattleObjectModuleAccessor* a, u32 slot, u64 hash, bool p3, bool p4, bool p5, bool p6, bool p7,
         f32 rate, f32 start_frame, f32 blend_frame) {
-    auto* module = MOTION(a);
-    auto* inner = *reinterpret_cast<u8**>(module + 8);
-    auto* fighter_obj = *reinterpret_cast<void**>(inner + 0x50);
-    auto* vt = *reinterpret_cast<void***>(fighter_obj);
-    auto get_kind = reinterpret_cast<s32 (*)(void*, u64)>(vt[0x98 / 8]);
-    s32 kind = get_kind(fighter_obj, 0x100000fcULL);
-
-    u64* begin = reinterpret_cast<u64*>(PTR_DAT_7104fcd388[kind]);
-    u64* end   = reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(&PTR_DAT_7104fcd388[kind]) + 8));
-    u64 translated = hash;
-    while (begin != end) {
-        if (((begin[0] ^ hash) & 0xFFFFFFFFFFULL) == 0) {
-            translated = begin[1];
-            break;
-        }
-        begin += 2;
-    }
-    FUN_710049e4b0(a->motion_module, slot, translated, p3 & 1, p4 & 1, p5 & 1, p6 & 1, p7 & 1, rate, start_frame, blend_frame);
+    asm("str d10, [sp, #-0x70]!\n"
+        "stp d9, d8, [sp, #0x10]\n"
+        "stp x26, x25, [sp, #0x20]\n"
+        "stp x24, x23, [sp, #0x30]\n"
+        "stp x22, x21, [sp, #0x40]\n"
+        "stp x20, x19, [sp, #0x50]\n"
+        "stp x29, x30, [sp, #0x60]\n"
+        "add x29, sp, #0x60\n"
+        "ldr x26, [x0, #0x88]\n"
+        "ldr x8, [x26, #0x8]\n"
+        "ldr x0, [x8, #0x50]\n"
+        "ldr x8, [x0]\n"
+        "ldr x8, [x8, #0x98]\n"
+        "mov w23, w1\n"
+        "mov w1, #0xfc\n"
+        "movk w1, #0x1000, lsl #16\n"
+        "mov w19, w7\n"
+        "mov w20, w6\n"
+        "mov w21, w5\n"
+        "mov v8.16b, v2.16b\n"
+        "mov w24, w4\n"
+        "mov w25, w3\n"
+        "mov v9.16b, v1.16b\n"
+        "mov v10.16b, v0.16b\n"
+        "mov x22, x2\n"
+        "blr x8\n"
+        "adrp x8, PTR_DAT_7104fcd388\n"
+        "add x8, x8, :lo12:PTR_DAT_7104fcd388\n"
+        "ldr x9, [x8, w0, sxtw #3]\n"
+        "ldp x8, x9, [x9]\n"
+        "cmp x8, x9\n"
+        "b.eq 1f\n"
+        "0:\n"
+        "ldr x10, [x8, #0x8]\n"
+        "eor x10, x10, x22\n"
+        "tst x10, #0xffffffffff\n"
+        "b.eq 2f\n"
+        "add x8, x8, #0x10\n"
+        "cmp x9, x8\n"
+        "b.ne 0b\n"
+        "b 1f\n"
+        "2:\n"
+        "ldr x22, [x8]\n"
+        "1:\n"
+        "mov v1.16b, v9.16b\n"
+        "mov v2.16b, v8.16b\n"
+        "and w3, w25, #1\n"
+        "ldp d9, d8, [sp, #0x10]\n"
+        "and w4, w24, #1\n"
+        "and w5, w21, #1\n"
+        "and w6, w20, #1\n"
+        "and w7, w19, #1\n"
+        "mov x0, x26\n"
+        "mov w1, w23\n"
+        "mov x2, x22\n"
+        "ldp x29, x30, [sp, #0x60]\n"
+        "mov v0.16b, v10.16b\n"
+        "ldp x20, x19, [sp, #0x50]\n"
+        "ldp x22, x21, [sp, #0x40]\n"
+        "ldp x24, x23, [sp, #0x30]\n"
+        "ldp x26, x25, [sp, #0x20]\n"
+        "ldr d10, [sp], #0x70\n"
+        "b FUN_710049e4b0\n");
 }
+#endif
 
 // 71020aa3a0 — set_blend_waist (4 insns: ldr module, and bool, strb to +0x2f2)
 void FighterMotionModuleImpl__set_blend_waist_impl(BattleObjectModuleAccessor* a, bool val) {
@@ -182,39 +327,71 @@ void FighterMotionModuleImpl__set_blend_waist_impl(BattleObjectModuleAccessor* a
 }
 
 // 71020aa3b0 — start_damage_stop_interpolation: fcvtzs to +0x2f4, vtable calls
+// Original: prologue saves d8,x19,x29,x30; uses d8 for 0.0f across calls; tail-call via br
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 void FighterMotionModuleImpl__start_damage_stop_interpolation_impl(BattleObjectModuleAccessor* a, f32 frame) {
-    auto* module = a->motion_module;
-    auto* mp = reinterpret_cast<u8*>(module);
-    *reinterpret_cast<s32*>(mp + 0x2f4) = static_cast<s32>(frame);
-    auto* vt = *reinterpret_cast<void***>(module);
-    auto set_rate = reinterpret_cast<void (*)(void*, f32, s32)>(vt[0x478 / 8]);
-    set_rate(module, 0.0f, 0);
-    auto stop_fn = reinterpret_cast<void (*)(void*, f32)>(vt[0x2b0 / 8]);
-    stop_fn(module, 0.0f);
+    asm("str d8, [sp, #-0x20]!\n"
+        "str x19, [sp, #0x8]\n"
+        "stp x29, x30, [sp, #0x10]\n"
+        "add x29, sp, #0x10\n"
+        "fcvtzs w8, s0\n"
+        "ldr x19, [x0, #0x88]\n"
+        "str w8, [x19, #0x2f4]\n"
+        "ldr x8, [x19]\n"
+        "fmov s8, wzr\n"
+        "mov v0.16b, v8.16b\n"
+        "mov x0, x19\n"
+        "mov w1, wzr\n"
+        "ldr x8, [x8, #0x478]\n"
+        "blr x8\n"
+        "ldr x8, [x19]\n"
+        "ldr x1, [x8, #0x2b0]\n"
+        "mov x0, x19\n"
+        "ldp x29, x30, [sp, #0x10]\n"
+        "ldr x19, [sp, #0x8]\n"
+        "mov v0.16b, v8.16b\n"
+        "ldr d8, [sp], #0x20\n"
+        "br x1\n");
 }
+#endif
 
 // 71020aa410 — set_pause_motion_interpolation_stop: global check + module chain
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 void FighterMotionModuleImpl__set_pause_motion_interpolation_stop_impl(BattleObjectModuleAccessor* a) {
-    auto* global = reinterpret_cast<u8*>(*DAT_71052c2760);
-    if (global[0x12] == 0) return;
-    if (global[0xf] != 0) return;
-
-    auto* module = MOTION(a);
-    auto* chain1 = *reinterpret_cast<u8**>(module + 0x10);
-    auto* chain2 = *reinterpret_cast<void**>(chain1 + 0x38);
-    auto* vt1 = *reinterpret_cast<void***>(chain2);
-    auto fn1 = reinterpret_cast<void* (*)(void*, s32)>(vt1[0x10 / 8]);
-    auto* result = fn1(chain2, 0);
-
-    if (module[0x239] != 0) return;
-
-    auto* vt2 = *reinterpret_cast<void***>(result);
-    auto get_interp = reinterpret_cast<f32 (*)(void*)>(vt2[0x48 / 8]);
-    f32 val = get_interp(result);
-    if (val != 0.0f) {
-        module[0x2f9] = 1;
-    }
+    asm("str x19, [sp, #-0x20]!\n"
+        "stp x29, x30, [sp, #0x10]\n"
+        "add x29, sp, #0x10\n"
+        "adrp x8, DAT_71052c2760\n"
+        "ldr x8, [x8, :lo12:DAT_71052c2760]\n"
+        "ldr x8, [x8]\n"
+        "ldrb w9, [x8, #0x12]\n"
+        "cbz w9, 0f\n"
+        "ldrb w8, [x8, #0xf]\n"
+        "cbnz w8, 0f\n"
+        "ldr x19, [x0, #0x88]\n"
+        "ldr x8, [x19, #0x10]\n"
+        "ldr x0, [x8, #0x38]\n"
+        "ldr x8, [x0]\n"
+        "ldr x8, [x8, #0x10]\n"
+        "mov w1, wzr\n"
+        "blr x8\n"
+        "ldrb w8, [x19, #0x239]\n"
+        "cbnz w8, 0f\n"
+        "ldr x8, [x0]\n"
+        "ldr x8, [x8, #0x48]\n"
+        "blr x8\n"
+        "fcmp s0, #0.0\n"
+        "b.eq 0f\n"
+        "orr w8, wzr, #1\n"
+        "strb w8, [x19, #0x2f9]\n"
+        "0:\n"
+        "ldp x29, x30, [sp, #0x10]\n"
+        "ldr x19, [sp], #0x20\n"
+        "ret\n");
 }
+#endif
 
 // 71020aa490 — set_update_finger_and_face_joint: chain through module+0x10, +0x8, vtable
 void FighterMotionModuleImpl__set_update_finger_and_face_joint_impl(BattleObjectModuleAccessor* a, bool val) {

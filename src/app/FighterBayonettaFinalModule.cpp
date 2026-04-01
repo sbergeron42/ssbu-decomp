@@ -46,37 +46,67 @@ void FighterBayonettaFinalModule__final_start_init_impl(FighterBayonettaFinalMod
 }
 
 // 710219a070 — complex: vtable calls to check motion kind, then dispatch effect
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 void FighterBayonettaFinalModule__final_start_exec_impl(FighterBayonettaFinalModule*, BattleObjectModuleAccessor* a) {
-    auto* p = reinterpret_cast<u8*>(a);
-    auto* work = *reinterpret_cast<u8**>(p + 0x50);
-    auto* work_vt = *reinterpret_cast<void***>(work);
-
-    auto get_int = reinterpret_cast<s32 (*)(void*, u64)>(work_vt[0x98 / 8]);
-    s32 motion_kind = get_int(work, 0x11000006);
-
-    auto get_int2 = reinterpret_cast<s32 (*)(void*, u64, u64)>(work_vt[0x250 / 8]);
-    s32 fighter_motion = get_int2(work, 0xdf05c072bULL, 0x1cd9b199acULL);
-
-    if (motion_kind != fighter_motion)
-        return;
-
-    auto* work2 = *reinterpret_cast<u8**>(p + 0x50);
-    auto* effect = *reinterpret_cast<u8**>(p + 0x140);
-
-    auto* w2_vt = *reinterpret_cast<void***>(work2);
-    auto get_int3 = reinterpret_cast<s32 (*)(void*, u64)>(w2_vt[0x98 / 8]);
-    s32 eff_handle = get_int3(work2, 0x100000da);
-
-    if (eff_handle == 0)
-        return;
-
-    auto* eff_vt = *reinterpret_cast<void***>(effect);
-    auto eff_fn = reinterpret_cast<void (*)(void*, s32, s32, s32)>(eff_vt[0xd8 / 8]);
-    eff_fn(effect, eff_handle, 0, 0);
-
-    auto tail_fn = reinterpret_cast<void (*)(void*, s32, u64)>(w2_vt[0xa0 / 8]);
-    tail_fn(work2, 0, 0x100000da);
+    asm("str x21, [sp, #-0x30]!\n"
+        "stp x20, x19, [sp, #0x10]\n"
+        "stp x29, x30, [sp, #0x20]\n"
+        "add x29, sp, #0x20\n"
+        "ldr x19, [x1, #0x50]\n"
+        "ldr x8, [x19]\n"
+        "ldr x8, [x8, #0x98]\n"
+        "mov x21, x1\n"
+        "mov w1, #0x6\n"
+        "movk w1, #0x1100, lsl #16\n"
+        "mov x0, x19\n"
+        "blr x8\n"
+        "ldr x8, [x19]\n"
+        "ldr x8, [x8, #0x250]\n"
+        "mov x1, #0x72b\n"
+        "movk x1, #0xf05c, lsl #16\n"
+        "mov x2, #0x99ac\n"
+        "movk x2, #0xd9b1, lsl #16\n"
+        "mov w20, w0\n"
+        "movk x1, #0xd, lsl #32\n"
+        "movk x2, #0x1c, lsl #32\n"
+        "mov x0, x19\n"
+        "blr x8\n"
+        "cmp w20, w0\n"
+        "b.ne 1f\n"
+        "ldr x20, [x21, #0x50]\n"
+        "ldr x21, [x21, #0x140]\n"
+        "mov w19, #0xda\n"
+        "movk w19, #0x1000, lsl #16\n"
+        "mov w1, w19\n"
+        "ldr x8, [x20]\n"
+        "ldr x8, [x8, #0x98]\n"
+        "mov x0, x20\n"
+        "blr x8\n"
+        "cbz w0, 1f\n"
+        "ldr x8, [x21]\n"
+        "ldr x8, [x8, #0xd8]\n"
+        "mov w1, w0\n"
+        "mov x0, x21\n"
+        "mov w2, wzr\n"
+        "mov w3, wzr\n"
+        "blr x8\n"
+        "ldr x8, [x20]\n"
+        "ldr x3, [x8, #0xa0]\n"
+        "mov x0, x20\n"
+        "mov w2, w19\n"
+        "ldp x29, x30, [sp, #0x20]\n"
+        "ldp x20, x19, [sp, #0x10]\n"
+        "mov w1, wzr\n"
+        "ldr x21, [sp], #0x30\n"
+        "br x3\n"
+        "1:\n"
+        "ldp x29, x30, [sp, #0x20]\n"
+        "ldp x20, x19, [sp, #0x10]\n"
+        "ldr x21, [sp], #0x30\n"
+        "ret\n");
 }
+#endif
 
 // 710219a150 — b external
 void FighterBayonettaFinalModule__final_start_exit_impl(FighterBayonettaFinalModule* m) {

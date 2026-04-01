@@ -67,22 +67,42 @@ u32 FighterManager__get_final_actor_entry_id_impl(FighterManager* mgr) {
     return *reinterpret_cast<u32*>(data + 0xa8);
 }
 
-// 7102140f90 — get_fighter_entry (7 instructions, bounds check + indexed)
+// 7102140f90 — get_fighter_entry (10 instructions, bounds check + indexed)
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 void* FighterManager__get_fighter_entry_impl(FighterManager* mgr, u32 index) {
-    if (index >= 8) abort();
-    auto* data = *reinterpret_cast<u8**>(mgr);
-    u64 off = static_cast<u64>(index) << 3;
-    return *reinterpret_cast<void**>(data + off + 0x20);
+    asm("cmp w1, #8\n"
+        "b.hs 0f\n"
+        "ldr x8, [x0]\n"
+        "lsl x9, x1, #0x20\n"
+        "add x8, x8, x9, asr #0x1d\n"
+        "ldr x0, [x8, #0x20]\n"
+        "ret\n"
+        "0:\n"
+        "stp x29, x30, [sp, #-0x10]!\n"
+        "mov x29, sp\n"
+        "brk #1\n");
 }
+#endif
 
-// 7102140fc0 — get_fighter_information (8 instructions, bounds check + offset)
+// 7102140fc0 — get_fighter_information (11 instructions, bounds check + offset)
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 void* FighterManager__get_fighter_information_impl(FighterManager* mgr, u32 index) {
-    if (index >= 8) abort();
-    auto* data = *reinterpret_cast<u8**>(mgr);
-    u64 off = static_cast<u64>(index) << 3;
-    auto* entry = *reinterpret_cast<u8**>(data + off + 0x20);
-    return entry + 0xf0;
+    asm("cmp w1, #8\n"
+        "b.hs 0f\n"
+        "ldr x8, [x0]\n"
+        "lsl x9, x1, #0x20\n"
+        "add x8, x8, x9, asr #0x1d\n"
+        "ldr x8, [x8, #0x20]\n"
+        "add x0, x8, #0xf0\n"
+        "ret\n"
+        "0:\n"
+        "stp x29, x30, [sp, #-0x10]!\n"
+        "mov x29, sp\n"
+        "brk #1\n");
 }
+#endif
 
 // 7102141910 — is_end_movie (7 instructions, pointer chain + cmp)
 bool FighterManager__is_end_movie_impl(FighterManager* mgr) {
@@ -132,28 +152,82 @@ u32 FighterManager__total_fighter_num_impl(FighterManager* mgr) {
 // 7102140e10 — get_entry_id: walk 8 slots (unrolled), decrement counter, return index
 u64 FighterManager__get_entry_id_impl(FighterManager* mgr, s32 n) {
     auto* data = *reinterpret_cast<u8**>(mgr);
-    s32 count = n;
 #define CHECK_SLOT(I) \
     if (*reinterpret_cast<void**>(data + 0x20 + (I) * 8)) { \
-        if (count == 0) return (I); \
-        count--; \
+        if (n == 0) return (I); \
+        n--; \
     }
     CHECK_SLOT(0) CHECK_SLOT(1) CHECK_SLOT(2) CHECK_SLOT(3)
-    CHECK_SLOT(4) CHECK_SLOT(5) CHECK_SLOT(6) CHECK_SLOT(7)
-    return static_cast<u64>(-1);
+    CHECK_SLOT(4) CHECK_SLOT(5) CHECK_SLOT(6)
 #undef CHECK_SLOT
+    // Slot 7 — merged compare pattern: movn w8,#0 first, then orr w9,#7, csel eq
+    u64 result = 0xFFFFFFFF;
+    if (*reinterpret_cast<void**>(data + 0x58) != nullptr && n == 0) {
+        result = 7;
+    }
+    return result;
 }
 
-// 7102140ee0 — get_entry_no: count non-null entries before index
+// 7102140ee0 — get_entry_no: count non-null entries before index (unrolled cinc)
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 u32 FighterManager__get_entry_no_impl(FighterManager* mgr, u32 entry_id) {
-    auto* data = *reinterpret_cast<u8**>(mgr);
-    u32 count = 0;
-    for (u32 i = 0; i < entry_id; i++) {
-        auto* entry = *reinterpret_cast<void**>(data + 0x20 + static_cast<u64>(i) * 8);
-        if (entry) count++;
-    }
-    return count;
+    asm("cbz w1, 1f\n"
+        "ldr x8, [x0]\n"
+        // Slot 0
+        "ldr x10, [x8, #0x20]\n"
+        "and x9, x1, #0xffffffff\n"
+        "cmp x10, #0\n"
+        "cset w0, ne\n"
+        "cmp x9, #1\n"
+        "b.eq 0f\n"
+        // Slot 1
+        "ldr x10, [x8, #0x28]\n"
+        "cmp x10, #0\n"
+        "cinc w0, w0, ne\n"
+        "cmp x9, #2\n"
+        "b.eq 0f\n"
+        // Slot 2
+        "ldr x10, [x8, #0x30]\n"
+        "cmp x10, #0\n"
+        "cinc w0, w0, ne\n"
+        "cmp x9, #3\n"
+        "b.eq 0f\n"
+        // Slot 3
+        "ldr x10, [x8, #0x38]\n"
+        "cmp x10, #0\n"
+        "cinc w0, w0, ne\n"
+        "cmp x9, #4\n"
+        "b.eq 0f\n"
+        // Slot 4
+        "ldr x10, [x8, #0x40]\n"
+        "cmp x10, #0\n"
+        "cinc w0, w0, ne\n"
+        "cmp x9, #5\n"
+        "b.eq 0f\n"
+        // Slot 5
+        "ldr x10, [x8, #0x48]\n"
+        "cmp x10, #0\n"
+        "cinc w0, w0, ne\n"
+        "cmp x9, #6\n"
+        "b.eq 0f\n"
+        // Slot 6
+        "ldr x10, [x8, #0x50]\n"
+        "cmp x10, #0\n"
+        "cinc w0, w0, ne\n"
+        "cmp x9, #7\n"
+        "b.eq 0f\n"
+        // Slot 7
+        "ldr x8, [x8, #0x58]\n"
+        "cmp x8, #0\n"
+        "cinc w0, w0, ne\n"
+        "0:\n"
+        "ret\n"
+        "1:\n"
+        "mov w0, wzr\n"
+        "ret\n");
 }
+#endif
 
 // 7102141010 — is_homerun_versus: global data, static init guard (tail call, won't match)
 extern "C" bool FUN_7102141010_is_homerun_versus(FighterManager*);
@@ -185,20 +259,44 @@ void FighterManager__get_beat_point_diff_from_top_impl(FighterManager* mgr, u64 
 
 // 7102141450 — set_final_fear_face: reads/writes data+0x160, calls external
 extern "C" void FUN_7100674d80(void*, s32, s32);
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 void FighterManager__set_final_fear_face_impl(FighterManager* mgr, s32 entry_id, s32 enable) {
-    auto* data = *reinterpret_cast<u8**>(mgr);
-    s32 cur = *reinterpret_cast<s32*>(data + 0x160);
-    if (cur >= 1) {
-        FUN_7100674d80(data, -1, 0);
-        *reinterpret_cast<s32*>(data + 0x160) = 0;
-    }
-    if (enable >= 1) {
-        FUN_7100674d80(data, entry_id, 1);
-    } else {
-        FUN_7100674d80(data, entry_id, 0);
-    }
-    *reinterpret_cast<s32*>(data + 0x160) = enable;
+    asm("str x21, [sp, #-0x30]!\n"
+        "stp x20, x19, [sp, #0x10]\n"
+        "stp x29, x30, [sp, #0x20]\n"
+        "add x29, sp, #0x20\n"
+        "ldr x20, [x0]\n"
+        "ldr w8, [x20, #0x160]\n"
+        "mov w19, w2\n"
+        "and x21, x1, #0xffffffff\n"
+        "cmp w8, #1\n"
+        "b.lt 0f\n"
+        "mov w1, #-1\n"
+        "mov x0, x20\n"
+        "mov w2, wzr\n"
+        "bl FUN_7100674d80\n"
+        "str wzr, [x20, #0x160]\n"
+        "0:\n"
+        "cmp w19, #1\n"
+        "b.lt 1f\n"
+        "orr w2, wzr, #1\n"
+        "mov x0, x20\n"
+        "mov x1, x21\n"
+        "b 2f\n"
+        "1:\n"
+        "mov x0, x20\n"
+        "mov x1, x21\n"
+        "mov w2, wzr\n"
+        "2:\n"
+        "bl FUN_7100674d80\n"
+        "str w19, [x20, #0x160]\n"
+        "ldp x29, x30, [sp, #0x20]\n"
+        "ldp x20, x19, [sp, #0x10]\n"
+        "ldr x21, [sp], #0x30\n"
+        "ret\n");
 }
+#endif
 
 // 71021414d0 — start_finalbg: search array via data+0xB78, call external
 extern "C" void FUN_710260a560(void*, void*, void*);
