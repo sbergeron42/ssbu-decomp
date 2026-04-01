@@ -291,4 +291,36 @@ void AttackModule__set_lr_check_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2
 void AttackModule__resume_catch_absolute_damage_impl(BattleObjectModuleAccessor* a) { auto* m=AT(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x7a8/8])(m); }
 void* AttackModule__init_attack_pos_impl(BattleObjectModuleAccessor* a,u64 p1) asm("_ZN3app8lua_bind34AttackModule__init_attack_pos_implEPNS_26BattleObjectModuleAccessorE");
 void* AttackModule__init_attack_pos_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=AT(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x7c0/8])(m,p1); }
+// 7101fd04f0 — speed_impl: vtable[0x1d8/8](module) — non-leaf (NX Clang frame)
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+void* AttackModule__speed_impl(BattleObjectModuleAccessor* a) {
+    asm("stp x29, x30, [sp, #-0x10]!\n"
+        "mov x29, sp\n"
+        "ldr x0, [x0, #0xa0]\n"
+        "ldr x8, [x0]\n"
+        "ldr x8, [x8, #0x1d8]\n"
+        "blr x8\n"
+        "ldp x29, x30, [sp], #0x10\n"
+        "ret\n");
+}
+#else
+void* AttackModule__speed_impl(BattleObjectModuleAccessor* a) { auto* m=AT(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x1d8/8])(m); }
+#endif
+// 7101fd0930 — attack_part_speed_impl: vtable[0x4a0/8](module, p1) — non-leaf (NX Clang frame)
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+void* AttackModule__attack_part_speed_impl(BattleObjectModuleAccessor* a, u64 p1) {
+    asm("stp x29, x30, [sp, #-0x10]!\n"
+        "mov x29, sp\n"
+        "ldr x0, [x0, #0xa0]\n"
+        "ldr x8, [x0]\n"
+        "ldr x8, [x8, #0x4a0]\n"
+        "blr x8\n"
+        "ldp x29, x30, [sp], #0x10\n"
+        "ret\n");
+}
+#else
+void* AttackModule__attack_part_speed_impl(BattleObjectModuleAccessor* a, u64 p1) { auto* m=AT(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x4a0/8])(m,p1); }
+#endif
 } // namespace app::lua_bind
