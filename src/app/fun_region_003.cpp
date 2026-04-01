@@ -13,4 +13,5 @@ void draw_line_green_376c20(void* obj) { }
 void draw_circle_red_376c30(void* obj) { }
 // 0x7100376c40
 void draw_circle_green_376c40(void* obj) { }
+// Auto-generated EASY functions
 } // namespace app::lua_bind

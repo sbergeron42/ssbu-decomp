@@ -5,10 +5,6 @@ namespace app::lua_bind {
 // Auto-generated EASY functions
 // 0x7100004780
 void FUN_7100004780_4780(void* obj) { }
-// 0x71000047a0
-void Curl_resolver_cleanup_47a0(void* obj) { }
-// 0x71000069a0
-u64 Curl_llist_count_69a0(void* obj) { return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x18); }
 // 0x710000bc20
 void* FUN_710000bc20_bc20(void* obj) { return reinterpret_cast<u8*>(obj) + 0x180; }
 // 0x71000141c0
@@ -29,24 +25,16 @@ void FUN_71000270f0_270f0(void* obj) { }
 void FUN_7100027100_27100(void* obj) { }
 // 0x71000281a0
 void FUN_71000281a0_281a0(void* obj) { }
-// 0x7100031870
-void dtor_TextureImpl_31870(void* obj) { }
 // 0x71000319d0
 void FUN_71000319d0_319d0(void* obj) { }
 // 0x7100031b20
 void FUN_7100031b20_31b20(void* obj) { }
 // 0x7100031d00
 void FUN_7100031d00_31d00(void* obj) { }
-// 0x7100033910
-void dtor_MemoryPoolImpl_33910(void* obj) { }
 // 0x7100033a10
 void FUN_7100033a10_33a10(void* obj) { }
-// 0x71000374c0
-void GetBufferAddress_374c0(void* obj) { }
 // 0x7100037d40
 void FUN_7100037d40_37d40(void* obj) { }
-// 0x7100038150
-void dtor_SamplerImpl_38150(void* obj) { }
 // 0x7100038290
 void FUN_7100038290_38290(void* obj) { }
 // 0x71000393a0
@@ -63,8 +51,6 @@ void FUN_71000397f0_397f0(void* obj) { *reinterpret_cast<u8*>(reinterpret_cast<u
 void FUN_7100039810_39810(void* obj) { }
 // 0x71000399d0
 void FUN_71000399d0_399d0(void* obj) { *reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj) + 0x18) = 0; }
-// 0x7100039a60
-void dtor_VertexStateImpl_39a60(void* obj) { }
 // 0x7100039a80
 u64 FUN_7100039a80_39a80(void* obj) { return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x10); }
 // 0x7100039dd0
@@ -87,8 +73,6 @@ void FUN_710003a3e0_3a3e0(void* obj) { }
 void FUN_710003a500_3a500(void* obj) { }
 // 0x710003a5e0
 void FUN_710003a5e0_3a5e0(void* obj) { }
-// 0x710003a610
-void GetRequiredMemorySize_3a610(void* obj) { }
 // 0x710003aaf0
 void FUN_710003aaf0_3aaf0(void* obj) { }
 // 0x710003ab10
@@ -151,10 +135,6 @@ void FUN_710007db70_7db70(void* obj) { }
 void FUN_710007db80_7db80(void* obj) { }
 // 0x710008d090
 void FUN_710008d090_8d090(void* obj) { }
-// 0x7100093650
-void Warning_93650(void* obj) { }
-// 0x710009c310
-void Invalidate_9c310(void* obj) { *reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj) + 0x0) = 0; }
 // 0x71000af310
 void FUN_71000af310_af310(void* obj) { }
 // 0x71000afc90
@@ -165,18 +145,12 @@ void FUN_71000b18f0_b18f0(void* obj) { }
 void FUN_71000b1cf0_b1cf0(void* obj) { }
 // 0x71000b3860
 u8 FUN_71000b3860_b3860(void* obj) { return *reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj) + 0x568); }
-// 0x71000b4140
-void dtor_CallContext_b4140(void* obj) { }
 // 0x71000b6600
 void FUN_71000b6600_b6600(void* obj) { }
-// 0x71000b9f50
-void dtor_Socket_b9f50(void* obj) { }
 // 0x71000baa00
 void FUN_71000baa00_baa00(void* obj) { }
 // 0x71000baa10
 void FUN_71000baa10_baa10(void* obj) { }
-// 0x71000bae40
-u64 GetBuffer_bae40(void* obj) { return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x8); }
 // 0x71000bae50
 u32 FUN_71000bae50_bae50(void* obj) { return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x14); }
 // 0x71000bae60
@@ -205,4 +179,38 @@ void* FUN_71000cb3b0_cb3b0(void* obj) { return reinterpret_cast<u8*>(obj) + 0x6f
 void* FUN_71000cb3c0_cb3c0(void* obj) { return reinterpret_cast<u8*>(obj) + 0x778; }
 // 0x71000eb6b0
 u8 FUN_71000eb6b0_eb6b0(void* obj) { return *reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj) + 0x554); }
+// Auto-generated EASY functions
+// 0x7100078f70
+void EndTurn_78f70(void* obj) { }
+// 0x7100079140
+void dtor_dtor_CancelModule_79140(void* obj, u64 val) { *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0xb0) = val; }
+// 0x7100088970
+void SetDrawPath_88970(void* obj, u32 val) { *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x400) = val; }
+// Auto-generated EASY functions
+// 0x71000047a0
+void Curl_resolver_cleanup_47a0(void* obj) { }
+// 0x71000069a0
+u64 Curl_llist_count_69a0(void* obj) { return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x18); }
+// 0x7100031870
+void dtor_TextureImpl_31870(void* obj) { }
+// 0x7100033910
+void dtor_MemoryPoolImpl_33910(void* obj) { }
+// 0x71000374c0
+void GetBufferAddress_374c0(void* obj) { }
+// 0x7100038150
+void dtor_SamplerImpl_38150(void* obj) { }
+// 0x7100039a60
+void dtor_VertexStateImpl_39a60(void* obj) { }
+// 0x710003a610
+void GetRequiredMemorySize_3a610(void* obj) { }
+// 0x7100093650
+void Warning_93650(void* obj) { }
+// 0x710009c310
+void Invalidate_9c310(void* obj) { *reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj) + 0x0) = 0; }
+// 0x71000b4140
+void dtor_CallContext_b4140(void* obj) { }
+// 0x71000b9f50
+void dtor_Socket_b9f50(void* obj) { }
+// 0x71000bae40
+u64 GetBuffer_bae40(void* obj) { return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x8); }
 } // namespace app::lua_bind

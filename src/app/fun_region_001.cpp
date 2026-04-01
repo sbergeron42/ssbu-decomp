@@ -33,8 +33,6 @@ void FUN_710012fba0_12fba0(void* obj) { }
 u64 FUN_710012fd60_12fd60(void* obj) { return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x60); }
 // 0x710013bb90
 void FUN_710013bb90_13bb90(void* obj) { }
-// 0x7100146be0
-u32 GetStationNum_146be0(void* obj) { return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x1a8); }
 // 0x7100146bf0
 u32 FUN_7100146bf0_146bf0(void* obj) { return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x1a8); }
 // 0x710014f070
@@ -87,12 +85,8 @@ void* FUN_7100160380_160380(void* obj) { return reinterpret_cast<u8*>(obj) + 0x4
 void* FUN_7100160390_160390(void* obj) { return reinterpret_cast<u8*>(obj) + 0x48; }
 // 0x7100160990
 void FUN_7100160990_160990(void* obj) { }
-// 0x7100161fa0
-u64 GetStation_161fa0(void* obj) { return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x90); }
 // 0x7100161fb0
 u64 FUN_7100161fb0_161fb0(void* obj) { return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x98); }
-// 0x7100162480
-u64 GetNetworkFactory_162480(void* obj) { return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x8); }
 // 0x7100162490
 u64 FUN_7100162490_162490(void* obj) { return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0xa0); }
 // 0x71001672d0
@@ -107,8 +101,6 @@ void FUN_7100179bc0_179bc0(void* obj) { }
 u8 FUN_7100186370_186370(void* obj) { return *reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj) + 0xa); }
 // 0x7100186520
 void FUN_7100186520_186520(void* obj) { }
-// 0x710018da80
-u32 FUN_710018da80_18da80(void* obj) { return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x98); }
 // 0x7100190ca0
 u64 FUN_7100190ca0_190ca0(void* obj) { return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x378); }
 // 0x7100192f60
@@ -141,8 +133,6 @@ u8 FUN_7100193a00_193a00(void* obj) { return *reinterpret_cast<u8*>(reinterpret_
 u64 FUN_7100193a30_193a30(void* obj) { return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x360); }
 // 0x7100193a40
 u64 FUN_7100193a40_193a40(void* obj) { return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x368); }
-// 0x71001a1220
-void Cleanup_1a1220(void* obj) { *reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj) + 0x64) = 0; }
 // 0x71001aa410
 void FUN_71001aa410_1aa410(void* obj) { }
 // 0x71001ac5b0
@@ -155,30 +145,20 @@ void FUN_71001aea50_1aea50(void* obj) { }
 void FUN_71001aea70_1aea70(void* obj) { }
 // 0x71001b0590
 u64 FUN_71001b0590_1b0590(void* obj) { return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x0); }
-// 0x71001b05a0
-u64 operator_cast_to_unsigned_long_1b05a0(void* obj) { return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x0); }
 // 0x71001b17c0
 u64 FUN_71001b17c0_1b17c0(void* obj) { return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x10); }
 // 0x71001b32f0
 void FUN_71001b32f0_1b32f0(void* obj) { *reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj) + 0x121) = 0; }
 // 0x71001b3ef0
 void FUN_71001b3ef0_1b3ef0(void* obj) { }
-// 0x71001b6060
-u64 GetBuffer_1b6060(void* obj) { return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x0); }
-// 0x71001b6070
-u64 GetBufferSize_1b6070(void* obj) { return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x8); }
 // 0x71001b7b40
 u32 FUN_71001b7b40_1b7b40(void* obj) { return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x8); }
-// 0x71001bef00
-void dtor_InetAddress_1bef00(void* obj) { }
 // 0x71001bf250
 u32 FUN_71001bf250_1bf250(void* obj) { return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x0); }
 // 0x71001bf260
 u32 FUN_71001bf260_1bf260(void* obj) { return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x4); }
 // 0x71001c38c0
 void* FUN_71001c38c0_1c38c0(void* obj) { return reinterpret_cast<u8*>(obj) + 0x8; }
-// 0x71001cb860
-void dtor_ChecksumAlgorithm_1cb860(void* obj) { }
 // 0x71001d72c0
 void FUN_71001d72c0_1d72c0(void* obj) { }
 // 0x71001dec00
@@ -191,4 +171,30 @@ u32 FUN_71001dec20_1dec20(void* obj) { return *reinterpret_cast<u32*>(reinterpre
 void FUN_71001e6bc0_1e6bc0(void* obj) { }
 // 0x71001ef600
 void* FUN_71001ef600_1ef600(void* obj) { return reinterpret_cast<u8*>(obj) + 0x80; }
+// Auto-generated EASY functions
+// 0x7100112c30
+void ChkLinkedAttribute_112c30(void* obj, u8 val) { *reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj) + 0x250) = val; }
+// 0x71001b17c0
+u64 GetGroupNum_1b17c0(void* obj) { return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x10); }
+// Auto-generated EASY functions
+// 0x7100146be0
+u32 GetStationNum_146be0(void* obj) { return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x1a8); }
+// 0x7100161fa0
+u64 GetStation_161fa0(void* obj) { return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x90); }
+// 0x7100162480
+u64 GetNetworkFactory_162480(void* obj) { return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x8); }
+// 0x710018da80
+u32 FUN_710018da80_18da80(void* obj) { return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x98); }
+// 0x71001a1220
+void Cleanup_1a1220(void* obj) { *reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj) + 0x64) = 0; }
+// 0x71001b05a0
+u64 operator_cast_to_unsigned_long_1b05a0(void* obj) { return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x0); }
+// 0x71001b6060
+u64 GetBuffer_1b6060(void* obj) { return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x0); }
+// 0x71001b6070
+u64 GetBufferSize_1b6070(void* obj) { return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x8); }
+// 0x71001bef00
+void dtor_InetAddress_1bef00(void* obj) { }
+// 0x71001cb860
+void dtor_ChecksumAlgorithm_1cb860(void* obj) { }
 } // namespace app::lua_bind

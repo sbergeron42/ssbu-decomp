@@ -198,7 +198,8 @@ def main():
         if addr not in addr_to_func:
             addr_to_func[addr] = (mangled, size, csv_size)
 
-    # Sort by address and remove overlaps (use CSV size for gap calculation)
+    # Sort by address and remove overlaps
+    # Skip functions whose decomp size exceeds CSV size (they'd overflow into neighbors)
     sorted_by_addr = sorted(addr_to_func.items())
     func_sections = {}
     prev_end = 0
@@ -207,8 +208,11 @@ def main():
         if addr < prev_end:
             skipped += 1
             continue
+        if csv_size > 0 and size > csv_size:
+            skipped += 1
+            continue
         func_sections[mangled] = addr
-        prev_end = addr + max(size, csv_size)
+        prev_end = addr + (csv_size if csv_size > 0 else size)
 
     # Get undefined symbols from all .o files
     undefined = set()
@@ -242,6 +246,17 @@ def main():
 
     lines.append("")
     lines.append("SECTIONS {")
+    lines.append("  /* ELF metadata at a high address to avoid collisions with .text */")
+    lines.append("  . = 0x7200000000;")
+    lines.append("  .dynsym : { *(.dynsym) }")
+    lines.append("  .gnu.hash : { *(.gnu.hash) }")
+    lines.append("  .dynstr : { *(.dynstr) }")
+    lines.append("  .hash : { *(.hash) }")
+    lines.append("  .dynamic : { *(.dynamic) }")
+    lines.append("  .rela.dyn : { *(.rela.dyn) }")
+    lines.append("  .got : { *(.got) }")
+    lines.append("  .got.plt : { *(.got.plt) }")
+    lines.append("")
 
     # Sort functions by original address
     sorted_funcs = sorted(func_sections.items(), key=lambda x: x[1])

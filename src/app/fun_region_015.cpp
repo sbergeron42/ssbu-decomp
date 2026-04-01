@@ -23,4 +23,5 @@ void set_draw_color_15cffb0(void* obj) { }
 void draw_line_15cffc0(void* obj) { }
 // 0x71015cffd0
 void add_debug_command_15cffd0(void* obj) { }
+// Auto-generated EASY functions
 } // namespace app::lua_bind

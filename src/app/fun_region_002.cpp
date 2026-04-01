@@ -91,4 +91,5 @@ void* FUN_71002c31d0_2c31d0(void* obj) { return reinterpret_cast<u8*>(obj) + 0xd
 void* FUN_71002c3200_2c3200(void* obj) { return reinterpret_cast<u8*>(obj) + 0x120; }
 // 0x71002c3280
 void FUN_71002c3280_2c3280(void* obj) { }
+// Auto-generated EASY functions
 } // namespace app::lua_bind

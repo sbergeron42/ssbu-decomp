@@ -60,7 +60,15 @@ def extract_func_name(m):
 
 def make_safe_ident(name):
     """Convert a function name to a safe C identifier."""
-    return name.replace('.', '_').replace('::', '_').replace('<', '_').replace('>', '_').replace(',', '_').replace(' ', '_').replace('?', '_').replace('~', 'dtor_').replace('*', 'ptr')
+    name = name.replace('.', '_').replace('::', '_').replace('<', '_').replace('>', '_')
+    name = name.replace(',', '_').replace(' ', '_').replace('?', '_').replace('~', 'dtor_')
+    name = name.replace('*', 'ptr').replace('+', 'plus').replace('-', 'minus')
+    name = name.replace('=', 'eq').replace('(', '_').replace(')', '_')
+    name = name.replace('[', '_').replace(']', '_')
+    # Ensure it starts with a letter or underscore
+    if name and name[0].isdigit():
+        name = '_' + name
+    return name
 
 
 def generate_function(name, addr, insns, size):
@@ -340,12 +348,26 @@ def main():
             else:
                 content = '#include "types.h"\n\nnamespace app::lua_bind {\n\n} // namespace app::lua_bind\n'
 
-            block = '// Auto-generated EASY functions\n'
+            # Split extern declarations from function bodies
+            externs = set()
+            func_block = '// Auto-generated EASY functions\n'
             for name, faddr, code in funcs:
-                block += '// 0x%x\n%s\n' % (faddr, code)
+                lines = code.split('\n')
+                func_lines = []
+                for line in lines:
+                    if line.startswith('extern "C"'):
+                        externs.add(line)
+                    else:
+                        func_lines.append(line)
+                func_block += '// 0x%x\n%s\n' % (faddr, '\n'.join(func_lines))
 
+            # Insert externs before namespace, functions inside namespace
+            if externs:
+                extern_block = '\n'.join(sorted(externs)) + '\n\n'
+                content = content.replace('namespace app::lua_bind {',
+                                         extern_block + 'namespace app::lua_bind {')
             content = content.replace('} // namespace app::lua_bind',
-                                     block + '} // namespace app::lua_bind')
+                                     func_block + '} // namespace app::lua_bind')
             filepath.write_text(content)
             print("  %s: %d functions" % (filepath.name, len(funcs)))
         else:
