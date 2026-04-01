@@ -24,4 +24,9 @@ f32 WeaponKineticEnergyGravity__get_limit_speed_impl(WeaponKineticEnergyGravity*
     return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(self) + 0x38);
 }
 
+// 7102136320 — str s0,[x0,#0x38]; ret
+void WeaponKineticEnergyGravity__set_limit_speed_impl(WeaponKineticEnergyGravity* self, f32 val) {
+    *reinterpret_cast<f32*>(reinterpret_cast<u8*>(self) + 0x38) = val;
+}
+
 } // namespace app::lua_bind

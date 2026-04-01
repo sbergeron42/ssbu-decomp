@@ -41,4 +41,22 @@ bool BattleObjectWorld__is_gravity_normal_impl(BattleObjectWorld* world) {
     return p[0x59] != 0;
 }
 
+// 7101fca220 — gravity_pos_impl: return own gravity vec (+0x10) if normal, else global zero vec
+// DCL-initialized global zero vec — external branches, won't byte-match
+void* BattleObjectWorld__gravity_pos_impl(BattleObjectWorld* world) {
+    auto* p = reinterpret_cast<u8*>(world);
+    if (!p[0x5c]) return p + 0x10;
+    // modified gravity — return global zero vec (DCL singleton at 0x71052b7610)
+    static __attribute__((aligned(16))) u8 s_zero_gravity[16];
+    static u64 s_guard;
+    if (!(s_guard & 1)) {
+        extern int __cxa_guard_acquire(void*);
+        extern void __cxa_guard_release(void*);
+        if (__cxa_guard_acquire(&s_guard)) {
+            __cxa_guard_release(&s_guard);
+        }
+    }
+    return s_zero_gravity;
+}
+
 } // namespace app::lua_bind
