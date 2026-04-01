@@ -139,8 +139,7 @@ u64 FighterManager__get_entry_id_impl(FighterManager* mgr, s32 n) {
         count--; \
     }
     CHECK_SLOT(0) CHECK_SLOT(1) CHECK_SLOT(2) CHECK_SLOT(3)
-    CHECK_SLOT(4) CHECK_SLOT(5) CHECK_SLOT(6)
-    if (*reinterpret_cast<void**>(data + 0x58) && count == 0) return 7;
+    CHECK_SLOT(4) CHECK_SLOT(5) CHECK_SLOT(6) CHECK_SLOT(7)
     return static_cast<u64>(-1);
 #undef CHECK_SLOT
 }

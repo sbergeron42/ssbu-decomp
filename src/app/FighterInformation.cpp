@@ -120,9 +120,13 @@ f32 FighterInformation__hit_point_impl(FighterInformation* fi) {
     auto fn = reinterpret_cast<f32 (*)(FighterInformation*)>(vtable[0x20 / 8]);
     f32 damage = fn(fi);
     f32 result = total - damage;
-    if (result <= 0.0f) {
-        result = 0.0f;
-    }
+#ifdef MATCHING_HACK_NX_CLANG
+    // Original uses fmov s1,wzr + fmax s0,s0,s1 instead of fcmp+fcsel
+    f32 zero = 0.0f;
+    asm("fmax %s0, %s1, %s2" : "=w"(result) : "w"(result), "w"(zero));
+#else
+    if (result <= 0.0f) result = 0.0f;
+#endif
     return result;
 }
 
