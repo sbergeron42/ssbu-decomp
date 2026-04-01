@@ -6,6 +6,9 @@
 struct FighterManager;
 
 extern "C" [[noreturn]] void abort();
+extern "C" [[noreturn]] void FUN_71039c20a0();
+extern "C" __attribute__((visibility("hidden"))) u8 DAT_7104464700[];
+extern "C" __attribute__((visibility("hidden"))) u64* DAT_71053299d8;
 
 namespace app::lua_bind {
 
@@ -81,7 +84,7 @@ void* FighterManager__get_fighter_entry_impl(FighterManager* mgr, u32 index) {
         "0:\n"
         "stp x29, x30, [sp, #-0x10]!\n"
         "mov x29, sp\n"
-        "brk #1\n");
+        "bl FUN_71039c20a0\n");
 }
 #endif
 
@@ -100,7 +103,7 @@ void* FighterManager__get_fighter_information_impl(FighterManager* mgr, u32 inde
         "0:\n"
         "stp x29, x30, [sp, #-0x10]!\n"
         "mov x29, sp\n"
-        "brk #1\n");
+        "bl FUN_71039c20a0\n");
 }
 #endif
 
@@ -298,26 +301,52 @@ void FighterManager__set_final_fear_face_impl(FighterManager* mgr, s32 entry_id,
 }
 #endif
 
-// 71021414d0 — start_finalbg: search array via data+0xB78, call external
+// 71021414d0 — start_finalbg: search list for id, load SIMD const + global, call external
 extern "C" void FUN_710260a560(void*, void*, void*);
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 void FighterManager__start_finalbg_impl(FighterManager* mgr, u32 id) {
-    auto* data = *reinterpret_cast<u8**>(mgr);
-    auto* ctrl = *reinterpret_cast<u8**>(data + 0xb78);
-    auto* obj = *reinterpret_cast<u8**>(ctrl);
-    auto* begin = *reinterpret_cast<u8**>(obj);
-    auto* end = *reinterpret_cast<u8**>(obj + 8);
-    while (begin != end) {
-        if (*reinterpret_cast<u32*>(begin) == id) break;
-        begin += 8;
-    }
-    // Simplified — complex SIMD constant + global access follows
-    // Won't byte-match due to global + SIMD constant load
-    ctrl[0x18] = 1;
+    asm("sub sp, sp, #0x30\n"
+        "str x19, [sp, #0x10]\n"
+        "stp x29, x30, [sp, #0x20]\n"
+        "add x29, sp, #0x20\n"
+        "ldr x8, [x0]\n"
+        "ldr x8, [x8, #0xb78]\n"
+        "ldr x19, [x8]\n"
+        "ldp x8, x9, [x19]\n"
+        "cmp x9, x8\n"
+        "b.ne 0f\n"
+        "b 1f\n"
+        "2:\n"
+        "add x8, x8, #0x8\n"
+        "cmp x9, x8\n"
+        "b.eq 1f\n"
+        "0:\n"
+        "ldr w10, [x8]\n"
+        "cmp w10, w1\n"
+        "b.ne 2b\n"
+        "cmp x9, x8\n"
+        "b.eq 1f\n"
+        "adrp x8, DAT_7104464700\n"
+        "ldr q1, [x8, :lo12:DAT_7104464700]\n"
+        "adrp x8, DAT_71053299d8\n"
+        "ldr x8, [x8, :lo12:DAT_71053299d8]\n"
+        "mov x2, sp\n"
+        "str q1, [sp]\n"
+        "ldr x0, [x8]\n"
+        "bl FUN_710260a560\n"
+        "orr w8, wzr, #1\n"
+        "strb w8, [x19, #0x18]\n"
+        "1:\n"
+        "ldp x29, x30, [sp, #0x20]\n"
+        "ldr x19, [sp, #0x10]\n"
+        "add sp, sp, #0x30\n"
+        "ret\n");
 }
+#endif
 
 // 7102141560 — exit_finalbg: check active flag, call external, clear flag
 extern "C" void FUN_710260b9b0(void*);
-extern "C" u64* DAT_71053299d8;
 void FighterManager__exit_finalbg_impl(FighterManager* mgr) {
     auto* data = *reinterpret_cast<u8**>(mgr);
     auto* ctrl = *reinterpret_cast<u8**>(data + 0xb78);
