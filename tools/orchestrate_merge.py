@@ -315,7 +315,14 @@ def main():
     # 2. Rebuild + verify
     verify_output = rebuild_and_verify()
 
-    # 3. Push
+    # 3. Update README with current progress
+    run('python tools/update_readme.py')
+    run('git add README.md')
+    r = run('git diff --cached --quiet README.md')
+    if r.returncode != 0:
+        run('git commit -m "Auto-update README progress"')
+
+    # 4. Push
     git_push()
 
     # 4. Get claimed modules from other active pools
