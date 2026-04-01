@@ -78,8 +78,21 @@ def generate_function(name, addr, insns, size):
     if n == 1 and has_ret:
         return 'void %s(void* obj) { }' % func_name
 
-    # Pattern: b external (trampoline) — can't generate, skip
-    if any((i & 0xFC000000) == 0x14000000 for i in insns):
+    # Pattern: single b (trampoline to external function)
+    if n == 1 and (insns[0] & 0xFC000000) == 0x14000000:
+        vaddr = addr - ELF_BASE if addr >= ELF_BASE else addr
+        offset = insns[0] & 0x03FFFFFF
+        if offset & (1 << 25):
+            offset -= (1 << 26)
+        target = vaddr + (offset << 2) + ELF_BASE
+        target_name = 'FUN_%x' % target
+        return ('extern "C" void %s(void*, u64, u64, u64, u64, u64, u64, u64);\n'
+                'void %s(void* obj, u64 a1, u64 a2, u64 a3, u64 a4, u64 a5, u64 a6, u64 a7) '
+                '{ %s(obj, a1, a2, a3, a4, a5, a6, a7); }' % (
+                target_name, func_name, target_name))
+
+    # Pattern: b external in multi-insn function — skip (complex)
+    if n > 1 and any((i & 0xFC000000) == 0x14000000 for i in insns):
         return None
 
     # Pattern: add x0, x0, #imm; ret (return pointer to field)
@@ -100,6 +113,39 @@ def generate_function(name, addr, insns, size):
         if (insns[0] & 0xFFC00000) == 0x39400000:  # ldrb w0, [x0, #imm]
             imm = (insns[0] >> 10) & 0xFFF
             return 'u8 %s(void* obj) { return *reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj) + %s); }' % (func_name, hex(imm))
+
+    # Pattern: movz w0, #imm; ret (return constant)
+    if n == 2 and has_ret and (insns[0] & 0xFF800000) == 0x52800000:
+        rd = insns[0] & 0x1F
+        if rd == 0:
+            val = (insns[0] >> 5) & 0xFFFF
+            return 'u32 %s(void* obj) { return %s; }' % (func_name, hex(val))
+
+    # Pattern: str x1, [x0, #imm]; ret (store 64-bit field)
+    if n == 2 and has_ret and (insns[0] & 0xFFC00000) == 0xF9000000:
+        rt = insns[0] & 0x1F; rn = (insns[0] >> 5) & 0x1F
+        if rn == 0 and rt == 1:
+            imm = ((insns[0] >> 10) & 0xFFF) * 8
+            return 'void %s(void* obj, u64 val) { *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + %s) = val; }' % (func_name, hex(imm))
+
+    # Pattern: str w1, [x0, #imm]; ret (store 32-bit field)
+    if n == 2 and has_ret and (insns[0] & 0xFFC00000) == 0xB9000000:
+        rt = insns[0] & 0x1F; rn = (insns[0] >> 5) & 0x1F
+        if rn == 0 and rt == 1:
+            imm = ((insns[0] >> 10) & 0xFFF) * 4
+            return 'void %s(void* obj, u32 val) { *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + %s) = val; }' % (func_name, hex(imm))
+
+    # Pattern: strb w1, [x0, #imm]; ret (store byte field)
+    if n == 2 and has_ret and (insns[0] & 0xFFC00000) == 0x39000000:
+        rt = insns[0] & 0x1F; rn = (insns[0] >> 5) & 0x1F
+        if rn == 0 and rt == 1:
+            imm = (insns[0] >> 10) & 0xFFF
+            return 'void %s(void* obj, u8 val) { *reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj) + %s) = val; }' % (func_name, hex(imm))
+
+    # Pattern: ldrh w0, [x0, #imm]; ret (load 16-bit field)
+    if n == 2 and has_ret and (insns[0] & 0xFFC00000) == 0x79400000:
+        imm = ((insns[0] >> 10) & 0xFFF) * 2
+        return 'u16 %s(void* obj) { return *reinterpret_cast<u16*>(reinterpret_cast<u8*>(obj) + %s); }' % (func_name, hex(imm))
 
     # Pattern: mov+strb+ret (set flag)
     if n == 3 and has_ret and (insns[0] & 0xFF800000) == 0x52800000 and (insns[1] & 0xFFC00000) == 0x39000000:
@@ -127,6 +173,43 @@ def generate_function(name, addr, insns, size):
                     cast_params = ['void*'] + ['u64'] * nparams
                     return 'void* %s(%s) { return reinterpret_cast<void*(*)(%s)>((*reinterpret_cast<void***>(obj))[%s/8])(%s); }' % (
                         func_name, ','.join(params), ','.join(cast_params), hex(vt_off), ','.join(args))
+
+    # Pattern: 4-insn ADRP dispatch (adrp+ldr+add+br) — global function pointer jump
+    if n == 4 and has_br and (insns[0] & 0x9F000000) == 0x90000000:
+        if (insns[1] & 0xFFC00000) == 0xF9400000 and (insns[2] & 0x7F800000) == 0x11000000:
+            # Decode ADRP target
+            vaddr = addr - ELF_BASE if addr >= ELF_BASE else addr
+            immlo = (insns[0] >> 29) & 0x3
+            immhi = (insns[0] >> 5) & 0x7FFFF
+            imm = (immhi << 2) | immlo
+            if imm & (1 << 20):
+                imm -= (1 << 21)
+            page = (vaddr & ~0xFFF) + (imm << 12)
+            ldr_off = ((insns[1] >> 10) & 0xFFF) * 8
+            add_off_raw = (insns[2] >> 10) & 0xFFF
+            add_shift = (insns[2] >> 22) & 0x3
+            add_off = add_off_raw << (12 if add_shift == 1 else 0)
+            global_addr = page + ldr_off + ELF_BASE
+            br_reg = (last >> 5) & 0x1F
+            # Number of forwarded params: br register index - 1
+            # (x0-x4 are params, dispatch uses higher regs)
+            nparams = max(0, br_reg - 1)
+            params = ['void* obj'] + ['u64 p%d' % (i + 1) for i in range(nparams)]
+            args = ['obj'] + ['p%d' % (i + 1) for i in range(nparams)]
+            cast_params = ['void*'] + ['u64'] * nparams
+            dat_name = 'DAT_%x' % global_addr
+            if add_off == 0:
+                return ('extern "C" void* %s;\n'
+                        'void %s(%s) { reinterpret_cast<void(*)(%s)>(%s)(%s); }' % (
+                        dat_name, func_name, ','.join(params),
+                        ','.join(cast_params), dat_name, ','.join(args)))
+            else:
+                return ('extern "C" void* %s;\n'
+                        'void %s(%s) { reinterpret_cast<void(*)(%s)>('
+                        'reinterpret_cast<u8*>(%s) + %s)(%s); }' % (
+                        dat_name, func_name, ','.join(params),
+                        ','.join(cast_params), dat_name, hex(add_off),
+                        ','.join(args)))
 
     # Pattern: 3-insn field read through pointer (ldr x8,[x0,#off1]; ldr/ldrb result,[x8,#off2]; ret)
     if n == 3 and has_ret:
@@ -162,16 +245,21 @@ def main():
 
     segments = load_elf_segments(ORIGINAL_ELF)
 
-    # Get already compiled
-    result = subprocess.run([OBJDUMP, '-t', str(PROJECT_ROOT / 'build' / 'ssbu-decomp.elf')],
-                          capture_output=True, text=True)
+    # Get already compiled (scan .o files)
+    import os
     compiled = set()
-    for line in result.stdout.split('\n'):
-        if 'F .text' in line:
-            name = line.split()[-1]
-            compiled.add(name)
-            short = extract_func_name(name)
-            if short: compiled.add(short)
+    for fn in os.listdir(PROJECT_ROOT / 'build'):
+        if not fn.endswith('.o'):
+            continue
+        result = subprocess.run([OBJDUMP, '-t', str(PROJECT_ROOT / 'build' / fn)],
+                              capture_output=True, text=True)
+        for line in result.stdout.split('\n'):
+            if 'F .text' in line:
+                name = line.split()[-1]
+                compiled.add(name)
+                short = extract_func_name(name)
+                if short:
+                    compiled.add(short)
 
     # Load undecompiled functions
     targets = []
