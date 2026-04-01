@@ -4,7 +4,7 @@ REM Uses upstream Clang 8.0.0 targeting AArch64
 
 set CLANG=C:\llvm-8.0.0\bin\clang++.exe
 set OBJDUMP=C:\llvm-8.0.0\bin\llvm-objdump.exe
-set CFLAGS=-target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude
+set CFLAGS=-target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -Ilib/NintendoSDK/include -Ilib/NintendoSDK/include/stubs
 
 if not exist build mkdir build
 
