@@ -17,8 +17,8 @@ echo ""
 
 # --- Step 1: Orchestrator lambda (merge + reassign) ---
 echo "[$POOL] Step 1: Running orchestrator lambda..."
+cd "$REPO_ROOT"
 claude -p "Run this exact command and show its output: python tools/orchestrate_merge.py $POOL" \
-  --cwd "$REPO_ROOT" \
   --model sonnet \
   --dangerously-skip-permissions \
   2>&1
@@ -42,8 +42,8 @@ echo "[$POOL] Step 2: New work assigned. Starting next round..."
 echo ""
 
 # --- Step 3: Spawn worker lambda for next round ---
+cd "$WORKTREE"
 claude -p "You are a decomp worker. Read WORKER.md for your assignment. Decompile ALL assigned functions using Ghidra MCP to disassemble originals, write matching C++, compile with 'cmd /c build.bat', and verify with 'python tools/verify_local.py --build'. Commit all changes to your branch with 'git add src/ && git commit -m \"description\"'. When ALL assigned work is done, run: bash tools/notify_done.sh $POOL \"description of what you did\"" \
-  --cwd "$WORKTREE" \
   --model sonnet \
   --dangerously-skip-permissions \
   2>&1
