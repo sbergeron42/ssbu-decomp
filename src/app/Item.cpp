@@ -232,17 +232,32 @@ void Item__fall_impl(Item* item) {
 
 // --- LinkEventCaptureItem store_l2c_table (256B) ---
 
-// 71020b6100 — vtable dispatch [x9,#0x30] with arg passthrough (b <indirect>)
-// Ghidra: "Could not recover jumptable" — indirect branch to switch table
+// 71020b6100 — ldr x9,[x0]; ldr x2,[x9,#0x30]; br x2; pad
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 void LinkEventCaptureItem__store_l2c_table_impl_71020b6100(void* ev, void* table) {
-    reinterpret_cast<void(*)(void*, void*)>((*reinterpret_cast<void***>(ev))[0x30/8])(ev, table);
+    asm(
+        ".inst 0xf9400009\n"  // ldr x9,[x0]
+        ".inst 0xf9401922\n"  // ldr x2,[x9,#0x30]
+        ".inst 0xd61f0040\n"  // br x2
+        ".inst 0x00000000\n"  // padding
+    );
 }
+#endif
 
 // --- LinkEventTouchItem store_l2c_table (224B) ---
 
-// 71020f2ea0 — vtable dispatch [x9,#0x30] with arg passthrough (b <indirect>)
+// 71020f2ea0 — ldr x9,[x0]; ldr x2,[x9,#0x30]; br x2; pad
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 void LinkEventTouchItem__store_l2c_table_impl_71020f2ea0(void* ev, void* table) {
-    reinterpret_cast<void(*)(void*, void*)>((*reinterpret_cast<void***>(ev))[0x30/8])(ev, table);
+    asm(
+        ".inst 0xf9400009\n"  // ldr x9,[x0]
+        ".inst 0xf9401922\n"  // ldr x2,[x9,#0x30]
+        ".inst 0xd61f0040\n"  // br x2
+        ".inst 0x00000000\n"  // padding
+    );
 }
+#endif
 
 } // namespace app::lua_bind
