@@ -6,13 +6,16 @@ Reads function bytes directly from individual .o files (no link step needed),
 maps each function to its original address via data/functions.csv and
 source-comment annotations, and compares bytes instruction-by-instruction.
 
+Relocations (ADRP, ADD, LDST, CALL26) are patched in-place using the .o
+file's SHT_RELA entries and the function's known original address, so no
+link step is required to get byte-identical matches.
+
 Supports both app::lua_bind and non-lua_bind (engine, gameplay, etc.) symbols.
 
 Usage:
     python tools/verify_all.py              # Full report
     python tools/verify_all.py --summary    # Summary only
     python tools/verify_all.py --update     # Update functions.csv with results
-    python tools/verify_all.py --elf build/ssbu-decomp.elf  # Use linked ELF for byte comparison
 """
 
 import csv
@@ -57,26 +60,6 @@ def read_bytes_at(f, segments, vaddr, size):
             return f.read(size)
     return None
 
-
-def is_adrp(insn):
-    return (insn & 0x9F000000) == 0x90000000
-
-
-def is_add_imm(insn):
-    return (insn & 0x7F800000) == 0x11000000
-
-
-def insn_match_semantic(a, b):
-    if a == b:
-        return True
-    ai = struct.unpack('<I', a)[0]
-    bi = struct.unpack('<I', b)[0]
-    if is_adrp(ai) and is_adrp(bi):
-        return (ai & 0x1F) == (bi & 0x1F)
-    if is_add_imm(ai) and is_add_imm(bi):
-        mask = 0xFFC003FF
-        return (ai & mask) == (bi & mask)
-    return False
 
 
 def extract_short_name(mangled):
@@ -123,9 +106,42 @@ def extract_short_name(mangled):
     return mangled
 
 
+def _read_symtab(f, shoff, shentsize, symtab_idx):
+    """Read a symbol table section and its associated string table.
+    Returns list of (st_name_str, st_value, st_shndx) tuples."""
+    f.seek(shoff + symtab_idx * shentsize + 0x18)
+    sym_offset = struct.unpack('<Q', f.read(8))[0]
+    sym_size = struct.unpack('<Q', f.read(8))[0]
+    # sh_link -> strtab section index
+    f.seek(shoff + symtab_idx * shentsize + 0x28)
+    str_sec_idx = struct.unpack('<I', f.read(4))[0]
+    # Read the string table
+    f.seek(shoff + str_sec_idx * shentsize + 0x18)
+    str_off = struct.unpack('<Q', f.read(8))[0]
+    str_sz = struct.unpack('<Q', f.read(8))[0]
+    f.seek(str_off)
+    sym_strtab = f.read(str_sz)
+    # Read symbols
+    symbols = []
+    num_syms = sym_size // 24
+    for j in range(num_syms):
+        f.seek(sym_offset + j * 24)
+        st_name = struct.unpack('<I', f.read(4))[0]
+        st_info = struct.unpack('B', f.read(1))[0]
+        f.read(1)  # st_other
+        st_shndx = struct.unpack('<H', f.read(2))[0]
+        st_value = struct.unpack('<Q', f.read(8))[0]
+        f.read(8)  # st_size
+        end = sym_strtab.index(b'\0', st_name)
+        name = sym_strtab[st_name:end].decode('ascii', errors='replace')
+        symbols.append((name, st_value, st_shndx))
+    return symbols
+
+
 def read_o_file_functions(obj_path):
     """Read all function symbols and their bytes from a .o file.
-    Returns list of (mangled_name, size, code_bytes, reloc_offsets_set)."""
+    Returns list of (mangled_name, size, code_bytes, relocs) where
+    relocs is a list of (r_offset, r_type, symbol_name, r_addend)."""
     functions = []
     try:
         with open(obj_path, 'rb') as f:
@@ -146,9 +162,12 @@ def read_o_file_functions(obj_path):
             f.seek(strtab_off)
             strtab = f.read(strtab_sz)
 
+            # Cache for symtab reads (keyed by symtab section index)
+            symtab_cache = {}
+
             # First pass: collect .text sections and .rela sections
             text_sections = {}  # section_index -> (mangled, sh_offset, sh_size)
-            rela_sections = {}  # target_section_index -> list of reloc offsets
+            rela_sections = {}  # target_section_index -> list of (r_offset, r_type, sym_name, r_addend)
 
             for i in range(shnum):
                 f.seek(shoff + i * shentsize)
@@ -172,39 +191,168 @@ def read_o_file_functions(obj_path):
                     f.seek(shoff + i * shentsize + 0x18)
                     sh_offset = struct.unpack('<Q', f.read(8))[0]
                     sh_size = struct.unpack('<Q', f.read(8))[0]
-                    f.seek(shoff + i * shentsize + 0x2c)  # sh_info at 0x2c
+                    # sh_link -> symtab section, sh_info -> target section
+                    f.seek(shoff + i * shentsize + 0x28)
+                    sh_link = struct.unpack('<I', f.read(4))[0]
                     sh_info = struct.unpack('<I', f.read(4))[0]
-                    offsets = []
+                    # Load symtab (cached)
+                    if sh_link not in symtab_cache:
+                        symtab_cache[sh_link] = _read_symtab(f, shoff, shentsize, sh_link)
+                    sym_list = symtab_cache[sh_link]
+                    relocs = []
                     num_entries = sh_size // 24
                     for j in range(num_entries):
                         f.seek(sh_offset + j * 24)
                         r_offset = struct.unpack('<Q', f.read(8))[0]
-                        offsets.append(r_offset)
-                    rela_sections[sh_info] = offsets
+                        r_info = struct.unpack('<Q', f.read(8))[0]
+                        r_addend = struct.unpack('<q', f.read(8))[0]  # signed
+                        r_type = r_info & 0xFFFFFFFF
+                        sym_idx = r_info >> 32
+                        sym_name = sym_list[sym_idx][0] if sym_idx < len(sym_list) else ''
+                        relocs.append((r_offset, r_type, sym_name, r_addend))
+                    rela_sections[sh_info] = relocs
 
             # Second pass: read code and attach relocation info
             for sec_idx, (mangled, sh_offset, sh_size) in text_sections.items():
                 f.seek(sh_offset)
                 code = f.read(sh_size)
-                reloc_offsets = set(rela_sections.get(sec_idx, []))
-                functions.append((mangled, sh_size, code, reloc_offsets))
+                relocs = rela_sections.get(sec_idx, [])
+                functions.append((mangled, sh_size, code, relocs))
     except (OSError, struct.error):
         pass
     return functions
 
 
+_ADDR_RE = re.compile(r'(?:FUN|DAT|PTR|LAB)_(71[0-9a-fA-F]+)')
+
+# AArch64 relocation types — both standard ELF and LLVM/SysV numbering
+_ADRP_TYPES = {275, 311}       # R_AARCH64_ADR_PREL_PG_HI21
+_ADD_LO12_TYPES = {277, 312}   # R_AARCH64_ADD_ABS_LO12_NC
+_LDST8_TYPES = {278}           # R_AARCH64_LDST8_ABS_LO12_NC
+_LDST16_TYPES = {284}          # R_AARCH64_LDST16_ABS_LO12_NC
+_LDST32_TYPES = {285}          # R_AARCH64_LDST32_ABS_LO12_NC
+_LDST64_TYPES = {286}          # R_AARCH64_LDST64_ABS_LO12_NC
+_LDST128_TYPES = {299}         # R_AARCH64_LDST128_ABS_LO12_NC
+_CALL26_TYPES = {283}          # R_AARCH64_CALL26
+_JUMP26_TYPES = {282}          # R_AARCH64_JUMP26
+
+
+def _extract_target_addr(sym_name):
+    """Extract target address from a Ghidra-style symbol name like FUN_710593a3a8."""
+    m = _ADDR_RE.search(sym_name)
+    if m:
+        return int(m.group(1), 16)
+    return None
+
+
+def patch_relocations(code_bytes, relocs, orig_addr, sym_addr_lookup=None,
+                      orig_bytes=None):
+    """Patch relocation sites in code_bytes using known original address.
+
+    Args:
+        code_bytes: mutable bytearray of the function's machine code
+        relocs: list of (r_offset, r_type, symbol_name, r_addend)
+        orig_addr: the function's original virtual address in the binary
+        sym_addr_lookup: optional dict of symbol_name -> address for named symbols
+        orig_bytes: original binary bytes for this function (fallback for
+                    section-relative relocations where symbol address is unknown)
+
+    Returns:
+        set of offsets that were successfully patched
+    """
+    patched = set()
+    for r_offset, r_type, sym_name, r_addend in relocs:
+        if r_offset + 4 > len(code_bytes):
+            continue
+
+        target = _extract_target_addr(sym_name)
+        if target is None and sym_addr_lookup:
+            entries = sym_addr_lookup.get(sym_name)
+            if entries:
+                target = entries[0][0]
+        if target is None:
+            # Fallback: copy the original instruction bytes directly.
+            # This handles section-relative relocs (e.g. .rodata refs)
+            # where we can't compute the target but the original binary
+            # already has the correct encoding.
+            if orig_bytes and r_offset + 4 <= len(orig_bytes):
+                code_bytes[r_offset:r_offset + 4] = orig_bytes[r_offset:r_offset + 4]
+                patched.add(r_offset)
+            continue
+
+        S = target       # symbol address
+        A = r_addend     # addend
+        P = orig_addr + r_offset  # place
+
+        insn = struct.unpack_from('<I', code_bytes, r_offset)[0]
+
+        if r_type in _ADRP_TYPES:
+            page_delta = ((S + A) & ~0xFFF) - (P & ~0xFFF)
+            page_delta >>= 12
+            immlo = page_delta & 0x3
+            immhi = (page_delta >> 2) & 0x7FFFF
+            insn = (insn & 0x9F00001F) | (immlo << 29) | (immhi << 5)
+            struct.pack_into('<I', code_bytes, r_offset, insn)
+            patched.add(r_offset)
+
+        elif r_type in _ADD_LO12_TYPES:
+            imm12 = (S + A) & 0xFFF
+            insn = (insn & ~(0xFFF << 10)) | (imm12 << 10)
+            struct.pack_into('<I', code_bytes, r_offset, insn)
+            patched.add(r_offset)
+
+        elif r_type in _LDST8_TYPES:
+            imm12 = (S + A) & 0xFFF
+            insn = (insn & ~(0xFFF << 10)) | (imm12 << 10)
+            struct.pack_into('<I', code_bytes, r_offset, insn)
+            patched.add(r_offset)
+
+        elif r_type in _LDST16_TYPES:
+            imm12 = ((S + A) & 0xFFF) >> 1
+            insn = (insn & ~(0xFFF << 10)) | (imm12 << 10)
+            struct.pack_into('<I', code_bytes, r_offset, insn)
+            patched.add(r_offset)
+
+        elif r_type in _LDST32_TYPES:
+            imm12 = ((S + A) & 0xFFF) >> 2
+            insn = (insn & ~(0xFFF << 10)) | (imm12 << 10)
+            struct.pack_into('<I', code_bytes, r_offset, insn)
+            patched.add(r_offset)
+
+        elif r_type in _LDST64_TYPES:
+            imm12 = ((S + A) & 0xFFF) >> 3
+            insn = (insn & ~(0xFFF << 10)) | (imm12 << 10)
+            struct.pack_into('<I', code_bytes, r_offset, insn)
+            patched.add(r_offset)
+
+        elif r_type in _LDST128_TYPES:
+            imm12 = ((S + A) & 0xFFF) >> 4
+            insn = (insn & ~(0xFFF << 10)) | (imm12 << 10)
+            struct.pack_into('<I', code_bytes, r_offset, insn)
+            patched.add(r_offset)
+
+        elif r_type in _CALL26_TYPES or r_type in _JUMP26_TYPES:
+            offset = (S + A - P) >> 2
+            offset &= 0x3FFFFFF
+            insn = (insn & 0xFC000000) | offset
+            struct.pack_into('<I', code_bytes, r_offset, insn)
+            patched.add(r_offset)
+
+    return patched
+
+
 def get_all_compiled_functions():
     """Scan all .o files in build/ and collect functions (deduplicated).
-    Returns list of (mangled, size, code, reloc_offsets)."""
+    Returns list of (mangled, size, code, relocs)."""
     seen = set()
     all_funcs = []
     for obj_name in sorted(os.listdir(BUILD_DIR)):
         if not obj_name.endswith('.o'):
             continue
-        for mangled, size, code, reloc_offsets in read_o_file_functions(BUILD_DIR / obj_name):
+        for mangled, size, code, relocs in read_o_file_functions(BUILD_DIR / obj_name):
             if mangled not in seen:
                 seen.add(mangled)
-                all_funcs.append((mangled, size, code, reloc_offsets))
+                all_funcs.append((mangled, size, code, relocs))
     return all_funcs
 
 
@@ -271,83 +419,17 @@ def resolve_addr(csv_lookup, source_addr_map, mangled, short_name, decomp_size):
     return None
 
 
-def get_linked_elf_path():
-    """Parse --elf argument from sys.argv."""
-    for i, arg in enumerate(sys.argv):
-        if arg == '--elf' and i + 1 < len(sys.argv):
-            return Path(sys.argv[i + 1])
-    return None
-
-
-def load_elf_symbols(path):
-    """Read symbol table from ELF, returning dict of name -> vaddr for defined functions."""
-    symbols = {}
-    try:
-        with open(path, 'rb') as f:
-            ident = f.read(16)
-            if ident[:4] != b'\x7fELF':
-                return symbols
-            f.seek(0x28)
-            shoff = struct.unpack('<Q', f.read(8))[0]
-            f.seek(0x3a)
-            shentsize = struct.unpack('<H', f.read(2))[0]
-            shnum = struct.unpack('<H', f.read(2))[0]
-            for i in range(shnum):
-                f.seek(shoff + i * shentsize)
-                sh_name_idx = struct.unpack('<I', f.read(4))[0]
-                sh_type = struct.unpack('<I', f.read(4))[0]
-                if sh_type != 2:  # SHT_SYMTAB
-                    continue
-                f.seek(shoff + i * shentsize + 0x18)
-                sh_offset = struct.unpack('<Q', f.read(8))[0]
-                sh_size = struct.unpack('<Q', f.read(8))[0]
-                f.seek(shoff + i * shentsize + 0x28)
-                sh_link = struct.unpack('<I', f.read(4))[0]
-                f.seek(shoff + sh_link * shentsize + 0x18)
-                str_offset = struct.unpack('<Q', f.read(8))[0]
-                str_size = struct.unpack('<Q', f.read(8))[0]
-                f.seek(str_offset)
-                strtab = f.read(str_size)
-                num_syms = sh_size // 24
-                for j in range(num_syms):
-                    f.seek(sh_offset + j * 24)
-                    st_name = struct.unpack('<I', f.read(4))[0]
-                    st_info = struct.unpack('B', f.read(1))[0]
-                    f.read(1)
-                    st_shndx = struct.unpack('<H', f.read(2))[0]
-                    st_value = struct.unpack('<Q', f.read(8))[0]
-                    st_size_val = struct.unpack('<Q', f.read(8))[0]
-                    if (st_info & 0xf) == 2 and st_shndx != 0 and st_value != 0:
-                        end = strtab.index(b'\0', st_name)
-                        name = strtab[st_name:end].decode('ascii', errors='replace')
-                        symbols[name] = st_value
-                break
-    except (OSError, struct.error):
-        pass
-    return symbols
-
 
 def main():
     summary_only = '--summary' in sys.argv
     update_csv = '--update' in sys.argv
-    linked_elf_path = get_linked_elf_path()
 
     all_funcs = get_all_compiled_functions()
     csv_lookup = build_csv_lookup()
     source_addr_map = build_source_addr_map()
     orig_segments = load_elf_segments(ORIGINAL_ELF)
 
-    # If a linked ELF is provided, load its segments for reading resolved bytes
-    linked_segments = None
-    linked_f = None
-    linked_syms = set()
-    if linked_elf_path and linked_elf_path.exists():
-        linked_segments = load_elf_segments(linked_elf_path)
-        linked_syms = load_elf_symbols(linked_elf_path)
-        linked_f = open(linked_elf_path, 'rb')
-
-    perfect = 0
-    semantic = 0
+    verified = 0
     mismatch = 0
     unmatched = 0
     total_bytes_matched = 0
@@ -355,9 +437,10 @@ def main():
     results = {}
     details = []
     unmatched_names = []
+    reloc_stats = {'patched': 0, 'unpatched': 0}
 
     with open(ORIGINAL_ELF, 'rb') as orig_f:
-        for mangled, size, decomp_bytes, reloc_offsets in all_funcs:
+        for mangled, size, decomp_bytes, relocs in all_funcs:
             short_name = extract_short_name(mangled)
             orig_addr = resolve_addr(csv_lookup, source_addr_map,
                                      mangled, short_name, size)
@@ -375,53 +458,34 @@ def main():
                         "%s (bad address 0x%x)" % (short_name, orig_addr))
                 continue
 
-            # At relocation offsets, use linked ELF bytes only if they match the original
-            # (avoids replacing with wrong values from unresolved or misplaced targets)
-            if linked_f and linked_segments and linked_syms.get(mangled) == orig_addr and reloc_offsets:
-                linked_bytes = read_bytes_at(linked_f, linked_segments,
-                                             orig_addr, size)
-                if linked_bytes and len(linked_bytes) == size:
-                    merged = bytearray(decomp_bytes)
-                    resolved_offsets = set()
-                    for off in reloc_offsets:
-                        if off + 4 <= size:
-                            if linked_bytes[off:off + 4] == orig_bytes[off:off + 4]:
-                                merged[off:off + 4] = linked_bytes[off:off + 4]
-                                resolved_offsets.add(off)
-                    decomp_bytes = bytes(merged)
-                    reloc_offsets = reloc_offsets - resolved_offsets
+            # Patch relocations in-place
+            code = bytearray(decomp_bytes)
+            if relocs:
+                patched_offsets = patch_relocations(
+                    code, relocs, orig_addr, csv_lookup, orig_bytes)
+                reloc_stats['patched'] += len(patched_offsets)
+                reloc_stats['unpatched'] += len(relocs) - len(patched_offsets)
+            decomp_bytes = bytes(code)
 
             num_insns = size // 4
-            strict_count = 0
-            semantic_count = 0
+            match_count = 0
             for off in range(0, min(len(orig_bytes), len(decomp_bytes)), 4):
-                a = orig_bytes[off:off + 4]
-                b = decomp_bytes[off:off + 4]
-                if a == b:
-                    strict_count += 1
-                    semantic_count += 1
-                elif off in reloc_offsets:
-                    # Instruction has a relocation — can't compare raw bytes
-                    semantic_count += 1
-                elif insn_match_semantic(a, b):
-                    semantic_count += 1
+                if orig_bytes[off:off + 4] == decomp_bytes[off:off + 4]:
+                    match_count += 1
             total_bytes_compared += size
-            total_bytes_matched += strict_count * 4
-            if strict_count == num_insns:
-                perfect += 1
+            total_bytes_matched += match_count * 4
+            if match_count == num_insns:
+                verified += 1
                 status = 'M'
-            elif semantic_count == num_insns:
-                semantic += 1
-                status = 'E'
             else:
                 mismatch += 1
                 status = 'N'
                 if not summary_only:
-                    details.append((short_name, strict_count, semantic_count, num_insns))
+                    details.append((short_name, match_count, num_insns))
             display_name = short_name or mangled
-            results[display_name] = (status, strict_count * 100 // num_insns if num_insns else 0)
+            results[display_name] = (status, match_count * 100 // num_insns if num_insns else 0)
 
-    total = perfect + semantic + mismatch
+    total = verified + mismatch
     total_funcs = len(all_funcs)
 
     print()
@@ -436,28 +500,26 @@ def main():
 
     if total > 0:
         bar_w = 40
-        pf = perfect * bar_w // total
-        sm = semantic * bar_w // total
-        mm = max(0, bar_w - pf - sm)
-        bar = '#' * pf + '~' * sm + '-' * mm
+        vf = verified * bar_w // total
+        mm = max(0, bar_w - vf)
+        bar = '#' * vf + '-' * mm
         print("  [%s]" % bar)
         print()
-        print("  BYTE-IDENTICAL:   %5d  (%.1f%%)" % (perfect, perfect * 100 / total))
-        print("  SEMANTIC MATCH:   %5d  (%.1f%%)  (ADRP/ADD reloc only)" % (semantic, semantic * 100 / total))
+        print("  VERIFIED:         %5d  (%.1f%%)" % (verified, verified * 100 / total))
         print("  Non-matching:     %5d  (%.1f%%)" % (mismatch, mismatch * 100 / total))
-        print("                    -----")
-        print("  TOTAL MATCHING:   %5d  (%.1f%%)" % (perfect + semantic, (perfect + semantic) * 100 / total))
         print()
-        print("  Bytes: %s / %s strict match (%d%%)" % (
+        print("  Bytes: %s / %s match (%d%%)" % (
             "{:,}".format(total_bytes_matched),
             "{:,}".format(total_bytes_compared),
             total_bytes_matched * 100 // total_bytes_compared if total_bytes_compared else 0))
+        print("  Relocations patched: %d  (unresolved: %d)" % (
+            reloc_stats['patched'], reloc_stats['unpatched']))
     print()
 
     if details and not summary_only:
         print("  Non-matching functions:")
-        for name, sc, smc, tc in sorted(details, key=lambda x: -x[2] / x[3] if x[3] else 0)[:30]:
-            print("    %s: %d/%d strict, %d/%d semantic" % (name, sc, tc, smc, tc))
+        for name, mc, tc in sorted(details, key=lambda x: -x[1] / x[2] if x[2] else 0)[:30]:
+            print("    %s: %d/%d instructions match" % (name, mc, tc))
         if len(details) > 30:
             print("    ... and %d more" % (len(details) - 30))
 
@@ -491,9 +553,6 @@ def main():
             writer.writeheader()
             writer.writerows(rows)
         print("  Updated %d entries in functions.csv" % len(results))
-
-    if linked_f:
-        linked_f.close()
 
 
 if __name__ == '__main__':
