@@ -12,7 +12,7 @@ extern "C" bool FUN_71004e5780(void*);
 extern "C" void FUN_71039c20c0(void*);  // std::__1::__shared_weak_count::__release_weak
 
 // Global default entity reference (adrp pattern, won't byte-match but needed for logic)
-extern u8 g_BossDefaultEntity[];
+extern "C" u8 g_BossDefaultEntity[];
 
 namespace app::lua_bind {
 
