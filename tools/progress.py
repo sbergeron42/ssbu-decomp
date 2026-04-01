@@ -51,7 +51,7 @@ def main():
         sys.exit(1)
 
     # Count by status
-    status_counts = Counter(f["Status"] for f in functions)
+    status_counts = Counter(f.get("Quality", "U") for f in functions)
     matching = status_counts.get("M", 0)
     equivalent = status_counts.get("E", 0)
     non_matching = status_counts.get("N", 0)

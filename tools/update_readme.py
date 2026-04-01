@@ -9,6 +9,7 @@ Usage:
 """
 
 import csv
+import os
 import subprocess
 import sys
 import re
@@ -17,24 +18,30 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent.parent
 README = PROJECT_ROOT / "README.md"
 FUNCTIONS_CSV = PROJECT_ROOT / "data" / "functions.csv"
-DECOMP_ELF = PROJECT_ROOT / "build" / "ssbu-decomp.elf"
+BUILD_DIR = PROJECT_ROOT / "build"
 OBJDUMP = r"C:\llvm-8.0.0\bin\llvm-objdump.exe"
 TOTAL_FUNCTIONS = 39635
 
 
 def get_compiled_count():
-    """Count function symbols in decomp ELF."""
-    if not DECOMP_ELF.exists():
-        return 0
-    result = subprocess.run([OBJDUMP, "-t", str(DECOMP_ELF)],
-                          capture_output=True, text=True)
-    return sum(1 for line in result.stdout.split('\n') if 'F .text' in line)
+    """Count unique function symbols across all .o files in build/."""
+    seen = set()
+    for obj_name in os.listdir(BUILD_DIR):
+        if not obj_name.endswith('.o'):
+            continue
+        result = subprocess.run([OBJDUMP, "-t", str(BUILD_DIR / obj_name)],
+                              capture_output=True, text=True)
+        for line in result.stdout.split('\n'):
+            if 'F .text' in line:
+                name = line.split()[-1]
+                seen.add(name)
+    return len(seen)
 
 
 def get_verify_stats():
     """Run verify_all.py --summary and parse the output."""
     result = subprocess.run(['python', str(PROJECT_ROOT / 'tools' / 'verify_all.py'), '--summary'],
-                          capture_output=True, text=True, timeout=120)
+                          capture_output=True, text=True, timeout=300)
     verified = 0
     non_matching = 0
     for line in result.stdout.split('\n'):
@@ -98,7 +105,7 @@ Compiled  [{:<40s}]  {:,} / 39,635  ({:.2f}%)
 
     # Replace sections using regex
     content = re.sub(
-        r'\| \*\*Total functions\*\*.*?\| Undecompiled \|.*?\|',
+        r'\| \*\*Total functions\*\*.*?\| Undecompiled \|[^\n]*',
         new_table, content, flags=re.DOTALL)
     content = re.sub(
         r'```\nVerified.*?Compiled.*?```',

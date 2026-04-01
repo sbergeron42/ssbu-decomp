@@ -24,14 +24,12 @@ void SetDefault_312a0(void* obj) { *reinterpret_cast<u32*>(reinterpret_cast<u8*>
 // 0x71000338e0  [orr-imm-ret]  GetPoolMemorySizeGranularity
 u32 GetPoolMemorySizeGranularity_338e0(void* obj) { return 0x1000; }
 
-// 0x71000374c0  [noop]  GetBufferAddress
-void GetBufferAddress_374c0(void* obj) { }
+// 0x71000374c0 — in fun_region_000.cpp
 
 // 0x7100039590  [ldrb-lsl-ret]  GetRequiredMemorySize
 u64 GetRequiredMemorySize_39590(void* obj) { u8 t = *reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj)); return (u64)t << 3; }
 
-// 0x710003a610  [noop]  GetRequiredMemorySize
-void GetRequiredMemorySize_3a610(void* obj) { }
+// 0x710003a610 — in fun_region_000.cpp
 
 // 0x710003e210  [deref-field]  GetFrameSize
 u16 GetFrameSize_3e210(void* obj) { auto* p = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(obj) + 0x18); return *reinterpret_cast<u16*>(p + 0x8); }
@@ -51,8 +49,7 @@ u32 GetSerializedSize_b8870(void* obj) { return 0x10; }
 // 0x71000b8bc0  [orr-imm-ret]  GetSerializedSize
 u32 GetSerializedSize_b8bc0(void* obj) { return 0x10; }
 
-// 0x71000bae40  [ldr-x0-ret]  GetBuffer
-u64 GetBuffer_bae40(void* obj) { return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x8); }
+// 0x71000bae40 — in fun_region_000.cpp
 
 // 0x71000c03c0  [multi-zero]  Finalize
 void Finalize_c03c0(void* obj) { *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x70) = 0; *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x78) = 0; }
@@ -63,23 +60,15 @@ void Reset_13dcc0(void* obj) { *reinterpret_cast<u16*>(reinterpret_cast<u8*>(obj
 // 0x710013f9b0  [multi-zero]  Reset
 void Reset_13f9b0(void* obj) { *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x10) = 0; *reinterpret_cast<u16*>(reinterpret_cast<u8*>(obj) + 0x14) = 0; *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x8) = 0; }
 
-// 0x7100146be0  [ldr-w0-ret]  GetStationNum
-u32 GetStationNum_146be0(void* obj) { return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x1a8); }
-
-// 0x7100161fa0  [ldr-x0-ret]  GetStation
-u64 GetStation_161fa0(void* obj) { return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x90); }
-
-// 0x7100162480  [ldr-x0-ret]  GetNetworkFactory
-u64 GetNetworkFactory_162480(void* obj) { return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x8); }
+// 0x7100146be0 — in fun_region_001.cpp
+// 0x7100161fa0 — in fun_region_001.cpp
+// 0x7100162480 — in fun_region_001.cpp
 
 // 0x71001aeaf0  [multi-zero]  ClearBaseTime
 void ClearBaseTime_1aeaf0(void* obj) { *reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj) + 0x8) = 0; *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x0) = 0; }
 
-// 0x71001b6060  [ldr-x0-ret]  GetBuffer
-u64 GetBuffer_1b6060(void* obj) { return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x0); }
-
-// 0x71001b6070  [ldr-x0-ret]  GetBufferSize
-u64 GetBufferSize_1b6070(void* obj) { return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x8); }
+// 0x71001b6060 — in fun_region_001.cpp
+// 0x71001b6070 — in fun_region_001.cpp
 
 // 0x71001ce080  [orr-imm-ret]  GetChecksumLength
 u32 GetChecksumLength_1ce080(void* obj) { return 0x10; }
@@ -87,8 +76,7 @@ u32 GetChecksumLength_1ce080(void* obj) { return 0x10; }
 // 0x710022b380  [strh-w1-ret]  SetProtocolID
 void SetProtocolID_22b380(void* obj, u16 val) { *reinterpret_cast<u16*>(reinterpret_cast<u8*>(obj) + 0x48) = val; }
 
-// 0x71002b4760  [noop]  thunk_FUN_71002b62f0
-void thunk_FUN_71002b62f0_2b4760(void* obj) { }
+// 0x71002b4760 — in fun_region_002.cpp
 
 // 0x71020b1920  [vtable-dispatch]  LinkEventFinal__load_from_l2c_table_impl
 void* LinkEventFinal__load_from_l2c_table_impl_20b1920(void* obj, u64 p1) { return reinterpret_cast<void*(*)(void*, u64)>((*reinterpret_cast<void***>(obj))[0x38/8])(obj, p1); }
