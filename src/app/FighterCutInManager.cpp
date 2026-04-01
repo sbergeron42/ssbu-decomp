@@ -18,6 +18,24 @@ void FighterCutInManager__add_task_impl(FighterCutInManager* mgr, u32 task_id) {
     *reinterpret_cast<u64*>(data + 0x88) = *reinterpret_cast<u64*>(data + 0x88) + 1;
 }
 
+// 71020a8d00 — set_throw_finish_offset (9 instructions, SIMD vector store)
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+void FighterCutInManager__set_throw_finish_offset_impl(FighterCutInManager* mgr, f32, f32, f32) {
+    asm(
+        "fmov s1, wzr\n"
+        "ext v2.16B, v0.16B, v0.16B, #0x8\n"
+        "ldr x8, [x0]\n"
+        "mov v2.S[1], v1.S[0]\n"
+        "orr w9, wzr, #1\n"
+        "strb w9, [x8, #0x2d4]\n"
+        "mov v0.D[1], v2.D[0]\n"
+        "str q0, [x8, #0x2e0]\n"
+        "ret\n"
+    );
+}
+#endif
+
 // 71020a8cf0 — ldr x8,[x0]; str s0,[x8,#0x2d0]; ret
 void FighterCutInManager__set_throw_finish_zoom_rate_impl(FighterCutInManager* mgr, f32 rate) {
     auto* data = *reinterpret_cast<u8**>(mgr);
