@@ -21,10 +21,10 @@ extern "C" void FUN_710049c190(void*, u64);
 extern "C" void FUN_710049e4b0(void*, u32, u64, bool, bool, bool, bool, bool, f32, f32, f32);
 
 // Global Kirby copy hash lookup table
-extern "C" __attribute__((visibility("hidden"))) u64 PTR_DAT_7104fcd388[];
+extern "C" u64 PTR_DAT_7104fcd388[];
 
 // Global pause state
-extern "C" __attribute__((visibility("hidden"))) u64* DAT_71052c2760;
+extern "C" u64* DAT_71052c2760;
 
 namespace app::lua_bind {
 

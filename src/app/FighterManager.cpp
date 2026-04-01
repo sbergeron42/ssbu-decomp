@@ -219,7 +219,7 @@ void FighterManager__start_finalbg_impl(FighterManager* mgr, u32 id) {
 
 // 7102141560 — exit_finalbg: check active flag, call external, clear flag
 extern "C" void FUN_710260b9b0(void*);
-extern "C" __attribute__((visibility("hidden"))) u64* DAT_71053299d8;
+extern "C" u64* DAT_71053299d8;
 void FighterManager__exit_finalbg_impl(FighterManager* mgr) {
     auto* data = *reinterpret_cast<u8**>(mgr);
     auto* ctrl = *reinterpret_cast<u8**>(data + 0xb78);
