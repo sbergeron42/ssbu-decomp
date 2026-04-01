@@ -26,31 +26,53 @@ bool BattleObjectSlow__is_adjust_impl(BattleObjectSlow* slow) {
     return *reinterpret_cast<s32*>(p) == 2;
 }
 
-// 7101fca5c0 — rate_request_impl: 1.0f / (float)global_team_count_byte
-// Reads global team param via once-flag DCL — external branches, won't byte-match
+// 7101fca5c0 — rate_request_impl (36 instructions): DCL, reads global byte, returns 1.0f/byte
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 f32 BattleObjectSlow__rate_request_impl(BattleObjectSlow* slow) {
-    (void)slow;
-    // original: checks DAT_71052c2610[0x40], reads global byte at DAT_71052c4189
-    // (initialized via __cxa_guard and FUN_71017641a0 team param init)
-    // returns 1.0f / (float)team_count_byte
-    extern u8 DAT_71052c4189;
-    extern void* DAT_71052c2610;
-    extern int __cxa_guard_acquire(void*);
-    extern void __cxa_guard_release(void*);
-    extern u64 g_team_param_init_guard;
-    u8 bVar;
-    if (*reinterpret_cast<char*>(reinterpret_cast<u8*>(DAT_71052c2610) + 0x40) == '\0') {
-        bVar = DAT_71052c4189;
-        if (!(g_team_param_init_guard & 1)) {
-            int r = __cxa_guard_acquire(&g_team_param_init_guard);
-            bVar = DAT_71052c4189;
-            if (r) __cxa_guard_release(&g_team_param_init_guard);
-        }
-    } else {
-        extern u8 FUN_71014a2cd0();
-        bVar = FUN_71014a2cd0();
-    }
-    return 1.0f / (float)(unsigned)bVar;
+    asm(
+        "stp x29, x30, [sp, #-0x10]!\n"
+        "mov x29, sp\n"
+        "adrp x8, DAT_71052c2610\n"
+        "ldr x0, [x8, :lo12:DAT_71052c2610]\n"
+        "ldrb w8, [x0, #0x40]\n"
+        "cbz w8, 0f\n"
+        "bl FUN_71014a2cd0\n"
+        "b 1f\n"
+        "0:\n"
+        "adrp x8, DAT_71053134d8\n"
+        "add x8, x8, :lo12:DAT_71053134d8\n"
+        "ldarb w8, [x8]\n"
+        "tbz w8, #0, 2f\n"
+        "3:\n"
+        "adrp x8, DAT_71052c4189\n"
+        "ldrb w0, [x8, :lo12:DAT_71052c4189]\n"
+        "1:\n"
+        "and w8, w0, #0xff\n"
+        "ucvtf s0, w8\n"
+        "fmov s1, #1.0\n"
+        "fdiv s0, s1, s0\n"
+        "ldp x29, x30, [sp], #0x10\n"
+        "ret\n"
+        "2:\n"
+        "adrp x0, DAT_71053134d8\n"
+        "add x0, x0, :lo12:DAT_71053134d8\n"
+        "bl FUN_71039c0100\n"
+        "cbz w0, 3b\n"
+        "bl FUN_71017641a0\n"
+        "adrp x0, DAT_7101763de0\n"
+        "add x0, x0, :lo12:DAT_7101763de0\n"
+        "adrp x1, DAT_71052c4180\n"
+        "add x1, x1, :lo12:DAT_71052c4180\n"
+        "adrp x2, DAT_7104f16000\n"
+        "add x2, x2, :lo12:DAT_7104f16000\n"
+        "bl FUN_71000001c0\n"
+        "adrp x0, DAT_71053134d8\n"
+        "add x0, x0, :lo12:DAT_71053134d8\n"
+        "bl FUN_71039c0110\n"
+        "b 3b\n"
+    );
 }
+#endif
 
 } // namespace app::lua_bind

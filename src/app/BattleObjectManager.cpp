@@ -3,8 +3,6 @@
 // Forward declarations
 struct BattleObjectManager;
 
-extern "C" void* get_battle_object_from_id(u32 id);
-
 namespace app::lua_bind {
 
 // 7101fca0b0 — 19 instructions (calls, branches, tbz, cset)
@@ -15,7 +13,7 @@ bool BattleObjectManager__is_active_find_battle_object_impl(BattleObjectManager*
         "stp x29, x30, [sp, #0x10]\n"
         "add x29, sp, #0x10\n"
         "mov w0, w1\n"
-        "bl get_battle_object_from_id\n"
+        "bl FUN_71003ac560\n"
         "cbz x0, 0f\n"
         "ldr x8, [x0]\n"
         "ldr x8, [x8]\n"

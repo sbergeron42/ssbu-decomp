@@ -41,22 +41,51 @@ bool BattleObjectWorld__is_gravity_normal_impl(BattleObjectWorld* world) {
     return p[0x59] != 0;
 }
 
-// 7101fca220 — gravity_pos_impl: return own gravity vec (+0x10) if normal, else global zero vec
-// DCL-initialized global zero vec — external branches, won't byte-match
+// 7101fca220 — gravity_pos_impl (34 instructions): DCL zero-vec singleton
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 void* BattleObjectWorld__gravity_pos_impl(BattleObjectWorld* world) {
-    auto* p = reinterpret_cast<u8*>(world);
-    if (!p[0x5c]) return p + 0x10;
-    // modified gravity — return global zero vec (DCL singleton at 0x71052b7610)
-    static __attribute__((aligned(16))) u8 s_zero_gravity[16];
-    static u64 s_guard;
-    if (!(s_guard & 1)) {
-        extern int __cxa_guard_acquire(void*);
-        extern void __cxa_guard_release(void*);
-        if (__cxa_guard_acquire(&s_guard)) {
-            __cxa_guard_release(&s_guard);
-        }
-    }
-    return s_zero_gravity;
+    asm(
+        "str x19, [sp, #-0x20]!\n"
+        "stp x29, x30, [sp, #0x10]\n"
+        "add x29, sp, #0x10\n"
+        "ldrb w8, [x0, #0x5c]\n"
+        "cbz w8, 0f\n"
+        "adrp x8, DAT_71052b7608\n"
+        "add x8, x8, :lo12:DAT_71052b7608\n"
+        "ldarb w8, [x8]\n"
+        "tbz w8, #0, 1f\n"
+        "adrp x0, DAT_71052b7610\n"
+        "add x0, x0, :lo12:DAT_71052b7610\n"
+        "b 2f\n"
+        "0:\n"
+        "add x0, x0, #0x10\n"
+        "2:\n"
+        "ldp x29, x30, [sp, #0x10]\n"
+        "ldr x19, [sp], #0x20\n"
+        "ret\n"
+        "1:\n"
+        "adrp x0, DAT_71052b7608\n"
+        "add x0, x0, :lo12:DAT_71052b7608\n"
+        "bl FUN_71039c0100\n"
+        "adrp x8, DAT_71052b7610\n"
+        "add x8, x8, :lo12:DAT_71052b7610\n"
+        "cbz w0, 3f\n"
+        "adrp x9, DAT_71052a7a80\n"
+        "ldr x9, [x9, :lo12:DAT_71052a7a80]\n"
+        "ldr q0, [x9]\n"
+        "adrp x0, DAT_71052b7608\n"
+        "add x0, x0, :lo12:DAT_71052b7608\n"
+        "mov x19, x8\n"
+        "str q0, [x8]\n"
+        "bl FUN_71039c0110\n"
+        "mov x0, x19\n"
+        "b 2b\n"
+        "3:\n"
+        "mov x0, x8\n"
+        "b 2b\n"
+    );
 }
+#endif
 
 } // namespace app::lua_bind

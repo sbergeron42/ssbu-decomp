@@ -78,15 +78,77 @@ void AttackAbsoluteData__load_from_l2c_table_impl(AttackAbsoluteData* obj, void*
     { int t=*e; u8 r=0; if(t==1) r=(0<(int)e[2])?1:0; else if(t==7||t==2) r=(*(long long*)(e+2)!=0)?1:0; else if(t==3) r=((float)e[2]!=0.0f)?1:0; else if(t!=0) r=1; reinterpret_cast<u8*>(obj)[0x2f]=r; }
 }
 
-// 7101fec200 (208 bytes): allocate L2CValue table, fill via store impl, return as LargeRet
+// 7101fec200: allocate L2CValue table, fill via FUN_7101fec2d0, return as LargeRet
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 LargeRet AttackAbsoluteData__store_l2c_table_impl(AttackAbsoluteData* obj) {
-    (void)obj;
-    return LargeRet{};
+    asm(
+        "sub sp, sp, #0x40\n"
+        "stp x20, x19, [sp, #0x20]\n"
+        "stp x29, x30, [sp, #0x30]\n"
+        "add x29, sp, #0x30\n"
+        "mov x19, x0\n"
+        "mov w1, #0x48\n"
+        "mov w0, #0x10\n"
+        "mov x20, x8\n"
+        "bl FUN_710392dce0\n"
+        "cbnz x0, 0f\n"
+        "adrp x8, DAT_7105331f00\n"
+        "ldr x0, [x8, :lo12:DAT_7105331f00]\n"
+        "cbz x0, 1f\n"
+        "mov w8, #0x48\n"
+        "stur wzr, [x29, #-0x14]\n"
+        "sub x1, x29, #0x14\n"
+        "str x8, [sp, #0x8]\n"
+        "ldr x8, [x0]\n"
+        "ldr x8, [x8, #0x30]\n"
+        "add x2, sp, #0x8\n"
+        "blr x8\n"
+        "tbz w0, #0, 1f\n"
+        "mov w1, #0x48\n"
+        "mov w0, #0x10\n"
+        "bl FUN_710392dce0\n"
+        "cbnz x0, 0f\n"
+        "1:\n"
+        "mov x0, xzr\n"
+        "0:\n"
+        "mov x8, x0\n"
+        "stp xzr, xzr, [x0, #0x10]\n"
+        "str xzr, [x0, #0x8]\n"
+        "add x2, sp, #0x8\n"
+        "mov x1, x19\n"
+        "str xzr, [x8, #0x28]!\n"
+        "str x8, [x0, #0x20]\n"
+        "mov w8, #0x5\n"
+        "str xzr, [x0, #0x40]\n"
+        "stp xzr, xzr, [x0, #0x30]\n"
+        "str w8, [sp, #0x8]\n"
+        "mov w8, #0x1\n"
+        "str x0, [sp, #0x10]\n"
+        "str w8, [x0]\n"
+        "mov x0, x20\n"
+        "bl FUN_7101fec2d0\n"
+        "add x0, sp, #0x8\n"
+        "bl FUN_7103733f20\n"
+        "ldp x29, x30, [sp, #0x30]\n"
+        "ldp x20, x19, [sp, #0x20]\n"
+        "add sp, sp, #0x40\n"
+        "ret\n"
+    );
 }
+#endif
 
-// 7101fec920 (192 bytes): fill existing L2CValue table with AttackAbsoluteData fields
+// 7101fec920: fill trampoline — mov x2,x1; mov x1,x0; mov x0,x8; b FUN_7101fec2d0
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 void AttackAbsoluteData__store_l2c_table_impl_7101fec920(AttackAbsoluteData* obj, void* lv) {
-    (void)obj; (void)lv;
+    asm(
+        "mov x2, x1\n"
+        "mov x1, x0\n"
+        "mov x0, x8\n"
+        "b FUN_7101fec2d0\n"
+    );
 }
+#endif
 
 } // namespace app::lua_bind
