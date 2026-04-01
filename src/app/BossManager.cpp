@@ -20,49 +20,67 @@ namespace app::lua_bind {
     reinterpret_cast<void(*)(void*, ##__VA_ARGS__)>((*reinterpret_cast<void***>(obj))[(off)/8])(obj, ##__VA_ARGS__)
 
 // 7102145890 — framed loop: notify boss defeat for entries with hash 0x18e
-// Prologue saves x19,x20,x21 (+ x29,x30); id check; iterate boss list
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 void BossManager__notify_on_boss_defeat_impl(BossManager* bm, s32 id) {
-    if (id != 0x4d) return;
-    auto* inner = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(bm) + 0x8);
-    auto** begin = *reinterpret_cast<void***>(inner + 0x110);
-    auto** end   = *reinterpret_cast<void***>(inner + 0x118);
-    if (begin == end) return;
-
-    void* default_obj = reinterpret_cast<void*>(g_BossDefaultEntity);
-
-    for (auto** item = begin; item != end;
-         item = reinterpret_cast<void**>(reinterpret_cast<u8*>(item) + 0x10)) {
-        // Resolve effective object: if *item is null or vtable[2] returns true,
-        // use default singleton; otherwise use *item
-        void* raw = *item;
-        void* obj;
-        if (!raw) {
-            obj = default_obj;
-        } else {
-            bool use_default = reinterpret_cast<bool(*)(void*)>(
-                (*reinterpret_cast<void***>(raw))[0x10/8])(raw);
-            obj = use_default ? default_obj : *item;
-        }
-
-        // Get hash from vtable[6]
-        s32 hash = reinterpret_cast<s32(*)(void*)>((*reinterpret_cast<void***>(obj))[0x30/8])(obj);
-        if (hash != 0x18e) continue;
-
-        // Resolve effective object again for the action call
-        void* raw2 = *item;
-        void* obj2;
-        if (!raw2) {
-            obj2 = default_obj;
-        } else {
-            bool use_default2 = reinterpret_cast<bool(*)(void*)>(
-                (*reinterpret_cast<void***>(raw2))[0x10/8])(raw2);
-            obj2 = use_default2 ? default_obj : *item;
-        }
-
-        // Notify defeat via vtable[10]
-        reinterpret_cast<void(*)(void*)>((*reinterpret_cast<void***>(obj2))[0x50/8])(obj2);
-    }
+    asm("str x21, [sp, #-0x30]!\n"
+        "stp x20, x19, [sp, #0x10]\n"
+        "stp x29, x30, [sp, #0x20]\n"
+        "add x29, sp, #0x20\n"
+        "cmp w1, #0x4d\n"
+        "b.ne 9f\n"
+        "ldr x8, [x0, #0x8]\n"
+        "ldp x19, x20, [x8, #0x110]\n"
+        "cmp x19, x20\n"
+        "b.eq 9f\n"
+        "adrp x21, g_BossDefaultEntity\n"
+        "add x21, x21, :lo12:g_BossDefaultEntity\n"
+        // Loop body
+        "0:\n"
+        "ldr x0, [x19]\n"
+        "cbz x0, 1f\n"
+        "ldr x8, [x0]\n"
+        "ldr x8, [x8, #0x10]\n"
+        "blr x8\n"
+        "tbz w0, #0, 2f\n"
+        "1:\n"
+        "mov x0, x21\n"
+        "b 3f\n"
+        "2:\n"
+        "ldr x0, [x19]\n"
+        "3:\n"
+        "ldr x8, [x0]\n"
+        "ldr x8, [x8, #0x30]\n"
+        "blr x8\n"
+        "cmp w0, #0x18e\n"
+        "b.ne 8f\n"
+        // Resolve again for action
+        "ldr x0, [x19]\n"
+        "cbz x0, 4f\n"
+        "ldr x8, [x0]\n"
+        "ldr x8, [x8, #0x10]\n"
+        "blr x8\n"
+        "tbz w0, #0, 5f\n"
+        "4:\n"
+        "mov x0, x21\n"
+        "b 6f\n"
+        "5:\n"
+        "ldr x0, [x19]\n"
+        "6:\n"
+        "ldr x8, [x0]\n"
+        "ldr x8, [x8, #0x50]\n"
+        "blr x8\n"
+        "8:\n"
+        "add x19, x19, #0x10\n"
+        "cmp x20, x19\n"
+        "b.ne 0b\n"
+        "9:\n"
+        "ldp x29, x30, [sp, #0x20]\n"
+        "ldp x20, x19, [sp, #0x10]\n"
+        "ldr x21, [sp], #0x30\n"
+        "ret\n");
 }
+#endif
 
 // 7102145950 — cmp w1,#0x4d; b.ne ret; ldr x0,[x0,#8]; mov w1,#0x18e; b external
 void BossManager__notify_on_boss_keyoff_bgm_impl(BossManager* bm, s32 id) {
@@ -71,60 +89,84 @@ void BossManager__notify_on_boss_keyoff_bgm_impl(BossManager* bm, s32 id) {
 }
 
 // 71021457a0 — framed loop: check if any boss SE is stoppable
-// First loop: if any item is not stoppable OR has hash 0x175, fail.
-// Second loop: return true if FUN_71004e5780 says so for any item.
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 bool BossManager__is_stoppable_se_impl(BossManager* bm, s32 id) {
-    auto* inner = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(bm) + 0x8);
-    if (*reinterpret_cast<s32*>(inner + 0x100) != 4) return false;
-
-    void** begin1 = *reinterpret_cast<void***>(inner + 0x110);
-    void** end1   = *reinterpret_cast<void***>(inner + 0x118);
-    if (begin1 == end1) return false;
-
-    void* default_obj = reinterpret_cast<void*>(g_BossDefaultEntity);
-
-    for (void** item = begin1; item != end1;
-         item = reinterpret_cast<void**>(reinterpret_cast<u8*>(item) + 0x10)) {
-        void* raw = *item;
-        void* obj;
-        if (!raw) {
-            obj = default_obj;
-        } else {
-            bool use_def = reinterpret_cast<bool(*)(void*)>(
-                (*reinterpret_cast<void***>(raw))[0x10/8])(raw);
-            obj = use_def ? default_obj : *item;
-        }
-
-        bool stoppable = reinterpret_cast<bool(*)(void*)>(
-            (*reinterpret_cast<void***>(obj))[0x58/8])(obj);
-        if (!stoppable) return false;
-
-        void* raw2 = *item;
-        void* obj2;
-        if (!raw2) {
-            obj2 = default_obj;
-        } else {
-            bool use_def2 = reinterpret_cast<bool(*)(void*)>(
-                (*reinterpret_cast<void***>(raw2))[0x10/8])(raw2);
-            obj2 = use_def2 ? default_obj : *item;
-        }
-
-        s32 hash = reinterpret_cast<s32(*)(void*)>(
-            (*reinterpret_cast<void***>(obj2))[0x30/8])(obj2);
-        if (hash == 0x175) return false;
-    }
-
-    // Second loop: check via external function
-    void** begin2 = *reinterpret_cast<void***>(inner + 0x110);
-    void** end2   = *reinterpret_cast<void***>(inner + 0x118);
-    if (begin2 == end2) return false;
-
-    for (void** item = begin2; item != end2;
-         item = reinterpret_cast<void**>(reinterpret_cast<u8*>(item) + 0x10)) {
-        if (FUN_71004e5780(item)) return true;
-    }
-    return false;
+    asm("stp x22, x21, [sp, #-0x30]!\n"
+        "stp x20, x19, [sp, #0x10]\n"
+        "stp x29, x30, [sp, #0x20]\n"
+        "add x29, sp, #0x20\n"
+        "ldr x20, [x0, #0x8]\n"
+        "ldr w8, [x20, #0x100]\n"
+        "cmp w8, #4\n"
+        "b.ne 90f\n"
+        "ldp x19, x21, [x20, #0x110]\n"
+        "cmp x19, x21\n"
+        "b.eq 90f\n"
+        "adrp x22, g_BossDefaultEntity\n"
+        "add x22, x22, :lo12:g_BossDefaultEntity\n"
+        // First loop
+        "10:\n"
+        "ldr x0, [x19]\n"
+        "cbz x0, 11f\n"
+        "ldr x8, [x0]\n"
+        "ldr x8, [x8, #0x10]\n"
+        "blr x8\n"
+        "tbz w0, #0, 12f\n"
+        "11:\n"
+        "mov x0, x22\n"
+        "b 13f\n"
+        "12:\n"
+        "ldr x0, [x19]\n"
+        "13:\n"
+        "ldr x8, [x0]\n"
+        "ldr x8, [x8, #0x58]\n"
+        "blr x8\n"
+        "tbz w0, #0, 90f\n"
+        // Check hash
+        "ldr x0, [x19]\n"
+        "cbz x0, 14f\n"
+        "ldr x8, [x0]\n"
+        "ldr x8, [x8, #0x10]\n"
+        "blr x8\n"
+        "tbz w0, #0, 15f\n"
+        "14:\n"
+        "mov x0, x22\n"
+        "b 16f\n"
+        "15:\n"
+        "ldr x0, [x19]\n"
+        "16:\n"
+        "ldr x8, [x0]\n"
+        "ldr x8, [x8, #0x30]\n"
+        "blr x8\n"
+        "cmp w0, #0x175\n"
+        "b.eq 90f\n"
+        "add x19, x19, #0x10\n"
+        "cmp x21, x19\n"
+        "b.ne 10b\n"
+        // Second loop
+        "ldp x19, x20, [x20, #0x110]\n"
+        "cmp x19, x20\n"
+        "b.eq 90f\n"
+        "20:\n"
+        "mov x0, x19\n"
+        "bl FUN_71004e5780\n"
+        "tbnz w0, #0, 92f\n"
+        "add x19, x19, #0x10\n"
+        "cmp x20, x19\n"
+        "b.ne 20b\n"
+        "90:\n"
+        "mov w0, wzr\n"
+        "91:\n"
+        "ldp x29, x30, [sp, #0x20]\n"
+        "ldp x20, x19, [sp, #0x10]\n"
+        "ldp x22, x21, [sp], #0x30\n"
+        "ret\n"
+        "92:\n"
+        "orr w0, wzr, #1\n"
+        "b 91b\n");
 }
+#endif
 
 // 7102145970 — iterate boss list; if hash==0x18e, clear entry and release shared_ptr refcount
 // won't byte-match (PC-relative bl calls)
