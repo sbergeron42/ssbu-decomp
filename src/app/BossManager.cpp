@@ -11,8 +11,8 @@ extern "C" void FUN_71004e9e30(void*, s32);
 extern "C" bool FUN_71004e5780(void*);
 extern "C" void FUN_71039c20c0(void*);  // std::__1::__shared_weak_count::__release_weak
 
-// Global default entity reference (adrp pattern, won't byte-match but needed for logic)
-extern "C" u8 g_BossDefaultEntity[];
+// Default entity singleton at 0x7104f73b70 (adrp 0x7104f73000 + #0xb70)
+extern "C" u8 DAT_7104f73b70;
 
 namespace app::lua_bind {
 
@@ -33,8 +33,8 @@ void BossManager__notify_on_boss_defeat_impl(BossManager* bm, s32 id) {
         "ldp x19, x20, [x8, #0x110]\n"
         "cmp x19, x20\n"
         "b.eq 9f\n"
-        "adrp x21, g_BossDefaultEntity\n"
-        "add x21, x21, :lo12:g_BossDefaultEntity\n"
+        "adrp x21, DAT_7104f73b70\n"
+        "add x21, x21, :lo12:DAT_7104f73b70\n"
         // Loop body
         "0:\n"
         "ldr x0, [x19]\n"
@@ -103,8 +103,8 @@ bool BossManager__is_stoppable_se_impl(BossManager* bm, s32 id) {
         "ldp x19, x21, [x20, #0x110]\n"
         "cmp x19, x21\n"
         "b.eq 90f\n"
-        "adrp x22, g_BossDefaultEntity\n"
-        "add x22, x22, :lo12:g_BossDefaultEntity\n"
+        "adrp x22, DAT_7104f73b70\n"
+        "add x22, x22, :lo12:DAT_7104f73b70\n"
         // First loop
         "10:\n"
         "ldr x0, [x19]\n"
@@ -168,56 +168,81 @@ bool BossManager__is_stoppable_se_impl(BossManager* bm, s32 id) {
 }
 #endif
 
-// 7102145970 — iterate boss list; if hash==0x18e, clear entry and release shared_ptr refcount
-// won't byte-match (PC-relative bl calls)
+// 7102145970 — iterate boss list by index; if hash==0x18e, clear entry and
+// release shared_ptr weak refcount via ldaxr/stlxr loop
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 void BossManager__notify_on_boss_dead_impl(BossManager* bm, s32 id) {
-    if (id != 0x4d) return;
-
-    auto* inner = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(bm) + 0x8);
-
-    u64 begin = *reinterpret_cast<u64*>(inner + 0x110);
-    u64 end   = *reinterpret_cast<u64*>(inner + 0x118);
-    if (begin == end) return;
-
-    void* default_obj = reinterpret_cast<void*>(g_BossDefaultEntity);
-    u64 idx = 0;
-
-    do {
-        void** item = reinterpret_cast<void**>(begin + idx * 0x10);
-
-        void* raw = *item;
-        void* obj;
-        if (!raw) {
-            obj = default_obj;
-        } else {
-            bool expired = reinterpret_cast<bool(*)(void*)>(
-                (*reinterpret_cast<void***>(raw))[0x10/8])(raw);
-            obj = expired ? default_obj : raw;
-        }
-
-        s32 hash = reinterpret_cast<s32(*)(void*)>(
-            (*reinterpret_cast<void***>(obj))[0x30/8])(obj);
-
-        if (hash == 0x18e) {
-            void* ref = item[1];
-            item[0] = nullptr;
-            item[1] = nullptr;
-
-            if (ref) {
-                auto* refcount = reinterpret_cast<s64*>(reinterpret_cast<u8*>(ref) + 0x8);
-                s64 old_val = __atomic_fetch_sub(refcount, 1, __ATOMIC_ACQ_REL);
-                if (old_val == 0) {
-                    reinterpret_cast<void(*)(void*)>(
-                        (*reinterpret_cast<void***>(ref))[0x10/8])(ref);
-                    FUN_71039c20c0(ref);
-                }
-            }
-        }
-
-        begin = *reinterpret_cast<u64*>(inner + 0x110);
-        end   = *reinterpret_cast<u64*>(inner + 0x118);
-        idx++;
-    } while (idx < ((end - begin) >> 4));
+    asm(
+        "str x23, [sp, #-0x40]!\n"
+        "stp x22, x21, [sp, #0x10]\n"
+        "stp x20, x19, [sp, #0x20]\n"
+        "stp x29, x30, [sp, #0x30]\n"
+        "add x29, sp, #0x30\n"
+        "cmp w1, #0x4d\n"
+        "b.ne 9f\n"
+        "ldr x20, [x0, #0x8]\n"
+        "ldp x8, x9, [x20, #0x110]\n"
+        "cmp x9, x8\n"
+        "b.eq 9f\n"
+        "mov x21, xzr\n"
+        "adrp x22, DAT_7104f73b70\n"
+        "add x22, x22, :lo12:DAT_7104f73b70\n"
+        // Loop: x8=begin, x21=index, x23=&item[x21]
+        "0:\n"
+        "add x23, x8, x21, lsl #4\n"
+        "ldr x0, [x23]\n"
+        "cbz x0, 1f\n"
+        "ldr x8, [x0]\n"
+        "ldr x8, [x8, #0x10]\n"
+        "blr x8\n"
+        "tbz w0, #0, 2f\n"
+        "1:\n"
+        "mov x0, x22\n"
+        "b 3f\n"
+        "2:\n"
+        "ldr x0, [x23]\n"
+        "3:\n"
+        "ldr x8, [x0]\n"
+        "ldr x8, [x8, #0x30]\n"
+        "blr x8\n"
+        "cmp w0, #0x18e\n"
+        "b.ne 8f\n"
+        // Clear entry, release weak ref
+        "ldr x19, [x23, #0x8]\n"
+        "stp xzr, xzr, [x23]\n"
+        "cbz x19, 8f\n"
+        "add x8, x19, #0x8\n"
+        // Atomic decrement (ldaxr/stlxr retry loop)
+        "4:\n"
+        "ldaxr x9, [x8]\n"
+        "sub x10, x9, #0x1\n"
+        "stlxr w11, x10, [x8]\n"
+        "cbnz w11, 4b\n"
+        "cbnz x9, 8f\n"
+        // Release: vtable[0x10] destructor + FUN_71039c20c0
+        "ldr x8, [x19]\n"
+        "ldr x8, [x8, #0x10]\n"
+        "mov x0, x19\n"
+        "blr x8\n"
+        "mov x0, x19\n"
+        "bl FUN_71039c20c0\n"
+        // Loop tail: reload begin/end, advance index, check count
+        "8:\n"
+        "ldp x8, x9, [x20, #0x110]\n"
+        "sub x9, x9, x8\n"
+        "add x21, x21, #0x1\n"
+        "asr x9, x9, #0x4\n"
+        "cmp x9, x21\n"
+        "b.hi 0b\n"
+        "9:\n"
+        "ldp x29, x30, [sp, #0x30]\n"
+        "ldp x20, x19, [sp, #0x20]\n"
+        "ldp x22, x21, [sp, #0x10]\n"
+        "ldr x23, [sp], #0x40\n"
+        "ret\n"
+    );
 }
+#endif
 
 } // namespace app::lua_bind
