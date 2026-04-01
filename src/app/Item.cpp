@@ -46,10 +46,49 @@ u32 Item__owner_id_impl(Item* item) {
     return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(item) + 0x250);
 }
 
-// Skip: property_param_int_as_hash_impl (branch + tail call to unknown target)
-// Skip: specialized_param_float_impl (tail call b to unknown target)
-// Skip: is_eatable_impl (tail call b to unknown target)
-// Skip: throw_attack_impl (sets param + tail call b to unknown target)
+// 71020f4600 — if param_id > 2, return error hash; else tail-call FUN_71015b4e40
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+u64 Item__property_param_int_as_hash_impl(Item* item, u32 param_id) {
+    asm(
+        "cmp w1, #0x2\n"
+        "b.hi 1f\n"
+        "b FUN_71015b4e40\n"
+        "1:\n"
+        "mov x0, #0x7a80\n"
+        "movk x0, #0xfb99, lsl #16\n"
+        "movk x0, #0x7, lsl #32\n"
+        "ret\n"
+    );
+}
+#endif
+
+// 71020f4620 — pure tail call
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+f32 Item__specialized_param_float_impl(Item* item, u32 param_id) {
+    asm("b FUN_71015b3de0\n");
+}
+#endif
+
+// 71020f4700 — pure tail call
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+bool Item__is_eatable_impl(Item* item) {
+    asm("b FUN_71015b4fc0\n");
+}
+#endif
+
+// 71020f4710 — zero w2 then tail call
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+void Item__throw_attack_impl(Item* item, u32 p1) {
+    asm(
+        "mov w2, wzr\n"
+        "b FUN_71015aba90\n"
+    );
+}
+#endif
 
 // --- LinkEventCaptureItem ---
 
