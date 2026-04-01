@@ -62,6 +62,7 @@ void* CameraModule__get_camera_view_volume_z0_rect_impl(BattleObjectModuleAccess
 // Remaining CameraModule dispatchers
 // 7101ff0820
 void CameraModule__v0x70(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x70/8])(m,p1); }
+// 7101ff0830
 void CameraModule__v0x80(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x80/8])(m,p1); }
 // 7101ff0840
 void CameraModule__v0x88(BattleObjectModuleAccessor* a,bool p1) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x88/8])(m,p1); }
