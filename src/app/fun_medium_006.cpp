@@ -98,7 +98,7 @@ void FUN_710022b090(u64* param_1)
 // 710022bcf0
 void FUN_710022bcf0(u64 param_1, u64 param_2, u64 param_3, u64 param_4)
 {
-    u64* obj = *PTR_PTR_DAT_71052a6570;
+    u64* obj = reinterpret_cast<u64*>(*PTR_PTR_DAT_71052a6570);
     (*(void(**)(u64*, u64, u64, u64, u64))((*obj) + 0x28))(obj, param_1, param_2, param_3, param_4);
 }
 
