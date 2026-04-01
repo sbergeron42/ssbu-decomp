@@ -392,4 +392,97 @@ void GetMatchmakeSessionStationNum_146e00(void* obj) {
     reinterpret_cast<void(*)(void*)>((*reinterpret_cast<void***>(p))[0x50/8])(p);
 }
 
+
+// MANUAL: 0x7100088a00  nn::vfx::Emitter::SetColor0  (ldr+str+ldr+str for z+w then x+y)
+// ldr x8,[x1,#8]; str x8,[x0,#0x428]; ldr x8,[x1]; str x8,[x0,#0x420]; ret
+void SetColor0_88a00(void* obj, void* color0) {
+    *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x428) =
+        *reinterpret_cast<u64*>(reinterpret_cast<u8*>(color0) + 8);
+    *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x420) =
+        *reinterpret_cast<u64*>(color0);
+}
+
+// MANUAL: 0x710003ab30  nn::gfx::util::PrimitiveShape::GetStride  (bit-check accumulate)
+u64 GetStride_3ab30(void* obj) {
+    u32 flags = *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x18);
+    u64 result = 0;
+    if (flags & 1) result = 0xc;
+    if (flags & 2) result += 0xc;
+    if (flags & 4) result += 8;
+    return result;
+}
+
+// MANUAL: 0x71000ee2c0  nn::pia::inet::NexMatchMeshLayerController::GetSessionIdArraySize
+// ldr x8,[x0,#0x2d8]; cmp x8,#0; orr w8,wzr,#4; csel w0,xzr,w8,eq; ret
+u32 GetSessionIdArraySize_ee2c0(void* obj) {
+    // NX Clang reuses freed W8 (from LDR) for the constant; force ORR+CSEL not CSET+LSL
+#ifdef MATCHING_HACK_NX_CLANG
+    u64 p;
+    register u32 r asm("w0");
+    asm("ldr %x[p], [%x[obj], #0x2d8]\n\t"
+        "cmp %x[p], #0\n\t"
+        "orr %w[p], wzr, #4\n\t"
+        "csel %w[r], wzr, %w[p], eq"
+        : [p] "=&r"(p), [r] "=r"(r)
+        : [obj] "r"(obj)
+        : "cc");
+    return r;
+#else
+    u64 p = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x2d8);
+    return (p == 0) ? 0u : 4u;
+#endif
+}
+
+// MANUAL: 0x71000bf170  nn::pia::common::Packet::PacketData::GetPayload
+// add w8,w1,#0x20; add x8,x0,x8; add x0,x8,#0x28; ret
+u64 GetPayload_bf170(void* obj, u32 idx) {
+    return reinterpret_cast<u64>(obj) + (idx + 0x20) + 0x28;
+}
+
+// MANUAL: 0x710014f0b0  nn::pia::session::SessionSearchCriteria::Reset  (movz+str-wzr+str-x8)
+// mov x8,#0x1400000000; str wzr,[x0,#0x10]; str x8,[x0,#8]; ret
+void Reset_14f0b0(void* obj) {
+    *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x10) = 0;
+    *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 8) = 0x1400000000ULL;
+}
+
+// MANUAL: 0x7100149240  nn::pia::session::Session::SetCurrentSessionOpenStatus
+// ldrb w8,[x0,#0x162]; add x8,x0,x8,lsl#2; str w1,[x8,#0x190]; ret
+void SetCurrentSessionOpenStatus_149240(void* obj, u32 val) {
+    u64 idx = *reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj) + 0x162);
+    *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + idx * 4 + 0x190) = val;
+}
+
+// MANUAL: 0x7100149250  nn::pia::session::Session::SetBufferSessionOpenStatus
+// ldrb w8,[x0,#0x162]; cmp w8,#0; cset w8,eq; add x8,x0,x8,lsl#2; str w1,[x8,#0x190]; ret
+void SetBufferSessionOpenStatus_149250(void* obj, u32 val) {
+    u64 idx = (*reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj) + 0x162) == 0) ? 1 : 0;
+    *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + idx * 4 + 0x190) = val;
+}
+
+// MANUAL: 0x710015e200  nn::pia::transport::SequenceIdController::GetNextSendSequenceId
+// ldrh w8,[x0,#8]; add w9,w8,#1; add w10,w8,#2; tst w9,#0xffff; csel w8,w10,w9,eq; strh w8,[x0,#8]; mov w0,w8; ret
+u32 GetNextSendSequenceId_15e200(void* obj) {
+    u16 cur = *reinterpret_cast<u16*>(reinterpret_cast<u8*>(obj) + 8);
+    u32 next1 = (u32)cur + 1;
+    u32 next2 = (u32)cur + 2;
+#ifdef MATCHING_HACK_NX_CLANG
+    // Keep next1(W9), next2(W10) opaque; cur stays in W8 → TST W9 + CSINC W8,W10,W8,EQ
+    asm("" : "+r"(next1), "+r"(next2));
+    u32 result = (next1 & 0xffff) ? (cur + 1) : next2;
+#else
+    u32 result = (next1 & 0xffff) ? next1 : next2;
+#endif
+    *reinterpret_cast<u16*>(reinterpret_cast<u8*>(obj) + 8) = (u16)result;
+    return result;
+}
+
+// MANUAL: 0x7100046e30  nn::ui2d::GraphicsResource::GetSamplerDescriptorSlot
+// orr w8,#12; mul w8,w1,w8; add w8,w8,w2,lsl#2; ldr x9,[x0,#0x260]; add w8,w8,w3; add w8,w8,w4,lsl#1; add x0,x9,w8,sxtw#3; ret
+u64 GetSamplerDescriptorSlot_46e30(void* obj, s32 p2, s32 p3, s32 p4, s32 p5) {
+    s32 offset = p2 * 0xc + p3 * 4 + p4 + p5 * 2;
+    u64 base = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x260);
+    return base + (u64)(s64)offset * 8;
+}
+
 } // namespace app::lua_bind
