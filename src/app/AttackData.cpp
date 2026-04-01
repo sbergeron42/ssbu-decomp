@@ -17,12 +17,12 @@ void AttackData__load_from_l2c_table_impl(AttackData* obj, void* lv_in) {
     sub = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
     h = 0x18cdc1683ULL;
     e = (*sub==5)?(int*)FUN_7103733d50(*(void**)(sub+2),&h):DAT_710593a3a8;
-    { int t=*e; if(t==7||t==2) v=(float)*(long long*)(e+2); else if(t==3) v=(float)e[2]; else v=0.0f; *reinterpret_cast<float*>(reinterpret_cast<u8*>(obj)+0)=v; }
+    { int t=*e; if(t==7||t==2) v=(float)*(long long*)(e+2); else if(t==3) v=*reinterpret_cast<float*>(e+2); else v=0.0f; *reinterpret_cast<float*>(reinterpret_cast<u8*>(obj)+0)=v; }
     h = 0x7af5c7bf6ULL;
     sub = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
     h = 0x1fbdb2615ULL;
     e = (*sub==5)?(int*)FUN_7103733d50(*(void**)(sub+2),&h):DAT_710593a3a8;
-    { int t=*e; if(t==7||t==2) v=(float)*(long long*)(e+2); else if(t==3) v=(float)e[2]; else v=0.0f; *reinterpret_cast<float*>(reinterpret_cast<u8*>(obj)+4)=v; }
+    { int t=*e; if(t==7||t==2) v=(float)*(long long*)(e+2); else if(t==3) v=*reinterpret_cast<float*>(e+2); else v=0.0f; *reinterpret_cast<float*>(reinterpret_cast<u8*>(obj)+4)=v; }
     h = 0x7af5c7bf6ULL;
     sub = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
     h = 0x162d277afULL;
@@ -33,12 +33,12 @@ void AttackData__load_from_l2c_table_impl(AttackData* obj, void* lv_in) {
     sub = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
     h = 0x18cdc1683ULL;
     e = (*sub==5)?(int*)FUN_7103733d50(*(void**)(sub+2),&h):DAT_710593a3a8;
-    { int t=*e; if(t==7||t==2) v=(float)*(long long*)(e+2); else if(t==3) v=(float)e[2]; else v=0.0f; *reinterpret_cast<float*>(reinterpret_cast<u8*>(obj)+0x10)=v; }
+    { int t=*e; if(t==7||t==2) v=(float)*(long long*)(e+2); else if(t==3) v=*reinterpret_cast<float*>(e+2); else v=0.0f; *reinterpret_cast<float*>(reinterpret_cast<u8*>(obj)+0x10)=v; }
     h = 0x8adf4bd50ULL;
     sub = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
     h = 0x1fbdb2615ULL;
     e = (*sub==5)?(int*)FUN_7103733d50(*(void**)(sub+2),&h):DAT_710593a3a8;
-    { int t=*e; if(t==7||t==2) v=(float)*(long long*)(e+2); else if(t==3) v=(float)e[2]; else v=0.0f; *reinterpret_cast<float*>(reinterpret_cast<u8*>(obj)+0x14)=v; }
+    { int t=*e; if(t==7||t==2) v=(float)*(long long*)(e+2); else if(t==3) v=*reinterpret_cast<float*>(e+2); else v=0.0f; *reinterpret_cast<float*>(reinterpret_cast<u8*>(obj)+0x14)=v; }
     h = 0x8adf4bd50ULL;
     sub = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
     h = 0x162d277afULL;
@@ -47,51 +47,51 @@ void AttackData__load_from_l2c_table_impl(AttackData* obj, void* lv_in) {
     // f32 at +0x20, hash 0x6ffab8a01
     h = 0x6ffab8a01ULL;
     e = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
-    { int t=*e; if(t==7||t==2) v=(float)*(long long*)(e+2); else if(t==3) v=(float)e[2]; else v=0.0f; *reinterpret_cast<float*>(reinterpret_cast<u8*>(obj)+0x20)=v; }
+    { int t=*e; if(t==7||t==2) v=(float)*(long long*)(e+2); else if(t==3) v=*reinterpret_cast<float*>(e+2); else v=0.0f; *reinterpret_cast<float*>(reinterpret_cast<u8*>(obj)+0x20)=v; }
     // f32 at +0x24, hash 0x58446eb8a
     h = 0x58446eb8aULL;
     e = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
-    { int t=*e; if(t==7||t==2) v=(float)*(long long*)(e+2); else if(t==3) v=(float)e[2]; else v=0.0f; *reinterpret_cast<float*>(reinterpret_cast<u8*>(obj)+0x24)=v; }
+    { int t=*e; if(t==7||t==2) v=(float)*(long long*)(e+2); else if(t==3) v=*reinterpret_cast<float*>(e+2); else v=0.0f; *reinterpret_cast<float*>(reinterpret_cast<u8*>(obj)+0x24)=v; }
     // s32 at +0x28, hash 0x7d57445dc
     h = 0x7d57445dcULL;
     e = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
-    { int t=*e; u32 r; if(t==7||t==2) r=(u32)*(long long*)(e+2); else if(t==3) r=(u32)(long long)(float)e[2]; else r=0; *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj)+0x28)=r; }
+    { int t=*e; u32 r; if(t==7||t==2) r=(u32)*(long long*)(e+2); else if(t==3) r=(u32)(long long)*reinterpret_cast<float*>(e+2); else r=0; *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj)+0x28)=r; }
     // s32 at +0x2c, hash 0x6c5ba6594
     h = 0x6c5ba6594ULL;
     e = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
-    { int t=*e; u32 r; if(t==7||t==2) r=(u32)*(long long*)(e+2); else if(t==3) r=(u32)(long long)(float)e[2]; else r=0; *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj)+0x2c)=r; }
+    { int t=*e; u32 r; if(t==7||t==2) r=(u32)*(long long*)(e+2); else if(t==3) r=(u32)(long long)*reinterpret_cast<float*>(e+2); else r=0; *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj)+0x2c)=r; }
     // s32 at +0x30, hash 0x60812b298
     h = 0x60812b298ULL;
     e = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
-    { int t=*e; u32 r; if(t==7||t==2) r=(u32)*(long long*)(e+2); else if(t==3) r=(u32)(long long)(float)e[2]; else r=0; *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj)+0x30)=r; }
+    { int t=*e; u32 r; if(t==7||t==2) r=(u32)*(long long*)(e+2); else if(t==3) r=(u32)(long long)*reinterpret_cast<float*>(e+2); else r=0; *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj)+0x30)=r; }
     // s32 at +0x34, hash 0x67b6a442f
     h = 0x67b6a442fULL;
     e = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
-    { int t=*e; u32 r; if(t==7||t==2) r=(u32)*(long long*)(e+2); else if(t==3) r=(u32)(long long)(float)e[2]; else r=0; *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj)+0x34)=r; }
+    { int t=*e; u32 r; if(t==7||t==2) r=(u32)*(long long*)(e+2); else if(t==3) r=(u32)(long long)*reinterpret_cast<float*>(e+2); else r=0; *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj)+0x34)=r; }
     // f32 at +0x38, hash 0x59a4de085
     h = 0x59a4de085ULL;
     e = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
-    { int t=*e; if(t==7||t==2) v=(float)*(long long*)(e+2); else if(t==3) v=(float)e[2]; else v=0.0f; *reinterpret_cast<float*>(reinterpret_cast<u8*>(obj)+0x38)=v; }
+    { int t=*e; if(t==7||t==2) v=(float)*(long long*)(e+2); else if(t==3) v=*reinterpret_cast<float*>(e+2); else v=0.0f; *reinterpret_cast<float*>(reinterpret_cast<u8*>(obj)+0x38)=v; }
     // f32 at +0x3c, hash 0xb7486a23d
     h = 0xb7486a23dULL;
     e = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
-    { int t=*e; if(t==7||t==2) v=(float)*(long long*)(e+2); else if(t==3) v=(float)e[2]; else v=0.0f; *reinterpret_cast<float*>(reinterpret_cast<u8*>(obj)+0x3c)=v; }
+    { int t=*e; if(t==7||t==2) v=(float)*(long long*)(e+2); else if(t==3) v=*reinterpret_cast<float*>(e+2); else v=0.0f; *reinterpret_cast<float*>(reinterpret_cast<u8*>(obj)+0x3c)=v; }
     // f32 at +0x40, hash 0xbf6893440
     h = 0xbf6893440ULL;
     e = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
-    { int t=*e; if(t==7||t==2) v=(float)*(long long*)(e+2); else if(t==3) v=(float)e[2]; else v=0.0f; *reinterpret_cast<float*>(reinterpret_cast<u8*>(obj)+0x40)=v; }
+    { int t=*e; if(t==7||t==2) v=(float)*(long long*)(e+2); else if(t==3) v=*reinterpret_cast<float*>(e+2); else v=0.0f; *reinterpret_cast<float*>(reinterpret_cast<u8*>(obj)+0x40)=v; }
     // u64 at +0x48, hash 0x52fe5691f
     h = 0x52fe5691fULL;
     e = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
-    { int t=*e; long long r; if(t==7||t==2) r=*(long long*)(e+2); else if(t==3) r=(long long)(float)e[2]; else r=0; *reinterpret_cast<long long*>(reinterpret_cast<u8*>(obj)+0x48)=r; }
+    { int t=*e; long long r; if(t==7||t==2) r=*(long long*)(e+2); else if(t==3) r=(long long)*reinterpret_cast<float*>(e+2); else r=0; *reinterpret_cast<long long*>(reinterpret_cast<u8*>(obj)+0x48)=r; }
     // u16 at +0x50, hash 0x10f1076ffb
     h = 0x10f1076ffbULL;
     e = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
-    { int t=*e; u16 r; if(t==7||t==2) r=(u16)*(long long*)(e+2); else if(t==3) r=(u16)(long long)(float)e[2]; else r=0; *reinterpret_cast<u16*>(reinterpret_cast<u8*>(obj)+0x50)=r; }
+    { int t=*e; u16 r; if(t==7||t==2) r=(u16)*(long long*)(e+2); else if(t==3) r=(u16)(long long)*reinterpret_cast<float*>(e+2); else r=0; *reinterpret_cast<u16*>(reinterpret_cast<u8*>(obj)+0x50)=r; }
     // u8 at +0x52, hash 0x1160677d4d
     h = 0x1160677d4dULL;
     e = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
-    { int t=*e; u8 r; if(t==7||t==2) r=(u8)*(long long*)(e+2); else if(t==3) r=(u8)(long long)(float)e[2]; else r=0; reinterpret_cast<u8*>(obj)[0x52]=r; }
+    { int t=*e; u8 r; if(t==7||t==2) r=(u8)*(long long*)(e+2); else if(t==3) r=(u8)(long long)*reinterpret_cast<float*>(e+2); else r=0; reinterpret_cast<u8*>(obj)[0x52]=r; }
     // bool at +0x53, hash 0xa97419eb2
     h = 0xa97419eb2ULL;
     e = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
@@ -99,23 +99,23 @@ void AttackData__load_from_l2c_table_impl(AttackData* obj, void* lv_in) {
     // u8 at +0x54, hash 0xce7335011
     h = 0xce7335011ULL;
     e = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
-    { int t=*e; u8 r; if(t==7||t==2) r=(u8)*(long long*)(e+2); else if(t==3) r=(u8)(long long)(float)e[2]; else r=0; reinterpret_cast<u8*>(obj)[0x54]=r; }
+    { int t=*e; u8 r; if(t==7||t==2) r=(u8)*(long long*)(e+2); else if(t==3) r=(u8)(long long)*reinterpret_cast<float*>(e+2); else r=0; reinterpret_cast<u8*>(obj)[0x54]=r; }
     // u64 at +0x58, hash 0x5330809b6
     h = 0x5330809b6ULL;
     e = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
-    { int t=*e; long long r; if(t==7||t==2) r=*(long long*)(e+2); else if(t==3) r=(long long)(float)e[2]; else r=0; *reinterpret_cast<long long*>(reinterpret_cast<u8*>(obj)+0x58)=r; }
+    { int t=*e; long long r; if(t==7||t==2) r=*(long long*)(e+2); else if(t==3) r=(long long)*reinterpret_cast<float*>(e+2); else r=0; *reinterpret_cast<long long*>(reinterpret_cast<u8*>(obj)+0x58)=r; }
     // u8 at +0x60, hash 0xcf2e07d39
     h = 0xcf2e07d39ULL;
     e = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
-    { int t=*e; u8 r; if(t==7||t==2) r=(u8)*(long long*)(e+2); else if(t==3) r=(u8)(long long)(float)e[2]; else r=0; reinterpret_cast<u8*>(obj)[0x60]=r; }
+    { int t=*e; u8 r; if(t==7||t==2) r=(u8)*(long long*)(e+2); else if(t==3) r=(u8)(long long)*reinterpret_cast<float*>(e+2); else r=0; reinterpret_cast<u8*>(obj)[0x60]=r; }
     // u8 at +0x61, hash 0xb24f5c28f
     h = 0xb24f5c28fULL;
     e = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
-    { int t=*e; u8 r; if(t==7||t==2) r=(u8)*(long long*)(e+2); else if(t==3) r=(u8)(long long)(float)e[2]; else r=0; reinterpret_cast<u8*>(obj)[0x61]=r; }
+    { int t=*e; u8 r; if(t==7||t==2) r=(u8)*(long long*)(e+2); else if(t==3) r=(u8)(long long)*reinterpret_cast<float*>(e+2); else r=0; reinterpret_cast<u8*>(obj)[0x61]=r; }
     // u8 at +0x62, hash 0x853efed16
     h = 0x853efed16ULL;
     e = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
-    { int t=*e; u8 r; if(t==7||t==2) r=(u8)*(long long*)(e+2); else if(t==3) r=(u8)(long long)(float)e[2]; else r=0; reinterpret_cast<u8*>(obj)[0x62]=r; }
+    { int t=*e; u8 r; if(t==7||t==2) r=(u8)*(long long*)(e+2); else if(t==3) r=(u8)(long long)*reinterpret_cast<float*>(e+2); else r=0; reinterpret_cast<u8*>(obj)[0x62]=r; }
     // bool at +0x63, hash 0x9dcd36686
     h = 0x9dcd36686ULL;
     e = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
@@ -147,7 +147,7 @@ void AttackData__load_from_l2c_table_impl(AttackData* obj, void* lv_in) {
     // u8 at +0x6a, hash 0x97b20a494
     h = 0x97b20a494ULL;
     e = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
-    { int t=*e; u8 r; if(t==7||t==2) r=(u8)*(long long*)(e+2); else if(t==3) r=(u8)(long long)(float)e[2]; else r=0; reinterpret_cast<u8*>(obj)[0x6a]=r; }
+    { int t=*e; u8 r; if(t==7||t==2) r=(u8)*(long long*)(e+2); else if(t==3) r=(u8)(long long)*reinterpret_cast<float*>(e+2); else r=0; reinterpret_cast<u8*>(obj)[0x6a]=r; }
     // bool at +0x6b, hash 0x663cc6dd2
     h = 0x663cc6dd2ULL;
     e = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
@@ -171,7 +171,7 @@ void AttackData__load_from_l2c_table_impl(AttackData* obj, void* lv_in) {
     // u8 at +0x71, hash 0x790bf1510
     h = 0x790bf1510ULL;
     e = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
-    { int t=*e; u8 r; if(t==7||t==2) r=(u8)*(long long*)(e+2); else if(t==3) r=(u8)(long long)(float)e[2]; else r=0; reinterpret_cast<u8*>(obj)[0x71]=r; }
+    { int t=*e; u8 r; if(t==7||t==2) r=(u8)*(long long*)(e+2); else if(t==3) r=(u8)(long long)*reinterpret_cast<float*>(e+2); else r=0; reinterpret_cast<u8*>(obj)[0x71]=r; }
     // bool at +0x72, hash 0xc6ff56437
     h = 0xc6ff56437ULL;
     e = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
@@ -179,19 +179,19 @@ void AttackData__load_from_l2c_table_impl(AttackData* obj, void* lv_in) {
     // u8 at +0x73, hash 0xbf1b2d611
     h = 0xbf1b2d611ULL;
     e = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
-    { int t=*e; u8 r; if(t==7||t==2) r=(u8)*(long long*)(e+2); else if(t==3) r=(u8)(long long)(float)e[2]; else r=0; reinterpret_cast<u8*>(obj)[0x73]=r; }
+    { int t=*e; u8 r; if(t==7||t==2) r=(u8)*(long long*)(e+2); else if(t==3) r=(u8)(long long)*reinterpret_cast<float*>(e+2); else r=0; reinterpret_cast<u8*>(obj)[0x73]=r; }
     // u16 at +0x74, hash 0xbf8c10684
     h = 0xbf8c10684ULL;
     e = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
-    { int t=*e; u16 r; if(t==7||t==2) r=(u16)*(long long*)(e+2); else if(t==3) r=(u16)(long long)(float)e[2]; else r=0; *reinterpret_cast<u16*>(reinterpret_cast<u8*>(obj)+0x74)=r; }
+    { int t=*e; u16 r; if(t==7||t==2) r=(u16)*(long long*)(e+2); else if(t==3) r=(u16)(long long)*reinterpret_cast<float*>(e+2); else r=0; *reinterpret_cast<u16*>(reinterpret_cast<u8*>(obj)+0x74)=r; }
     // u8 at +0x76, hash 0xd61b7c0ad
     h = 0xd61b7c0adULL;
     e = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
-    { int t=*e; u8 r; if(t==7||t==2) r=(u8)*(long long*)(e+2); else if(t==3) r=(u8)(long long)(float)e[2]; else r=0; reinterpret_cast<u8*>(obj)[0x76]=r; }
+    { int t=*e; u8 r; if(t==7||t==2) r=(u8)*(long long*)(e+2); else if(t==3) r=(u8)(long long)*reinterpret_cast<float*>(e+2); else r=0; reinterpret_cast<u8*>(obj)[0x76]=r; }
     // s32 at +0x78, hash 0x1196f0150a
     h = 0x1196f0150aULL;
     e = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
-    { int t=*e; u32 r; if(t==7||t==2) r=(u32)*(long long*)(e+2); else if(t==3) r=(u32)(long long)(float)e[2]; else r=0; *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj)+0x78)=r; }
+    { int t=*e; u32 r; if(t==7||t==2) r=(u32)*(long long*)(e+2); else if(t==3) r=(u32)(long long)*reinterpret_cast<float*>(e+2); else r=0; *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj)+0x78)=r; }
     // bool at +0x7c, hash 0xf6d043e5f
     h = 0xf6d043e5fULL;
     e = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
@@ -203,11 +203,11 @@ void AttackData__load_from_l2c_table_impl(AttackData* obj, void* lv_in) {
     // u8 at +0x7e, hash 0x137eed1b76
     h = 0x137eed1b76ULL;
     e = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
-    { int t=*e; u8 r; if(t==7||t==2) r=(u8)*(long long*)(e+2); else if(t==3) r=(u8)(long long)(float)e[2]; else r=0; reinterpret_cast<u8*>(obj)[0x7e]=r; }
+    { int t=*e; u8 r; if(t==7||t==2) r=(u8)*(long long*)(e+2); else if(t==3) r=(u8)(long long)*reinterpret_cast<float*>(e+2); else r=0; reinterpret_cast<u8*>(obj)[0x7e]=r; }
     // u8 at +0x7f, hash 0x13fb6e1fed
     h = 0x13fb6e1fedULL;
     e = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
-    { int t=*e; u8 r; if(t==7||t==2) r=(u8)*(long long*)(e+2); else if(t==3) r=(u8)(long long)(float)e[2]; else r=0; reinterpret_cast<u8*>(obj)[0x7f]=r; }
+    { int t=*e; u8 r; if(t==7||t==2) r=(u8)*(long long*)(e+2); else if(t==3) r=(u8)(long long)*reinterpret_cast<float*>(e+2); else r=0; reinterpret_cast<u8*>(obj)[0x7f]=r; }
     // bool at +0x80, hash 0xc3afbe95f
     h = 0xc3afbe95fULL;
     e = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
@@ -219,22 +219,22 @@ void AttackData__load_from_l2c_table_impl(AttackData* obj, void* lv_in) {
     // u64 at +0x88, hash 0x10e24af9d6
     h = 0x10e24af9d6ULL;
     e = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
-    { int t=*e; long long r; if(t==7||t==2) r=*(long long*)(e+2); else if(t==3) r=(long long)(float)e[2]; else r=0; *reinterpret_cast<long long*>(reinterpret_cast<u8*>(obj)+0x88)=r; }
+    { int t=*e; long long r; if(t==7||t==2) r=*(long long*)(e+2); else if(t==3) r=(long long)*reinterpret_cast<float*>(e+2); else r=0; *reinterpret_cast<long long*>(reinterpret_cast<u8*>(obj)+0x88)=r; }
     // sub-table 0x12456b491a → f32 x at +0x90, f32 y at +0x94
     h = 0x12456b491aULL;
     sub = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
     h = 0x18cdc1683ULL;
     e = (*sub==5)?(int*)FUN_7103733d50(*(void**)(sub+2),&h):DAT_710593a3a8;
-    { int t=*e; if(t==7||t==2) v=(float)*(long long*)(e+2); else if(t==3) v=(float)e[2]; else v=0.0f; *reinterpret_cast<float*>(reinterpret_cast<u8*>(obj)+0x90)=v; }
+    { int t=*e; if(t==7||t==2) v=(float)*(long long*)(e+2); else if(t==3) v=*reinterpret_cast<float*>(e+2); else v=0.0f; *reinterpret_cast<float*>(reinterpret_cast<u8*>(obj)+0x90)=v; }
     h = 0x12456b491aULL;
     sub = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
     h = 0x1fbdb2615ULL;
     e = (*sub==5)?(int*)FUN_7103733d50(*(void**)(sub+2),&h):DAT_710593a3a8;
-    { int t=*e; if(t==7||t==2) v=(float)*(long long*)(e+2); else if(t==3) v=(float)e[2]; else v=0.0f; *reinterpret_cast<float*>(reinterpret_cast<u8*>(obj)+0x94)=v; }
+    { int t=*e; if(t==7||t==2) v=(float)*(long long*)(e+2); else if(t==3) v=*reinterpret_cast<float*>(e+2); else v=0.0f; *reinterpret_cast<float*>(reinterpret_cast<u8*>(obj)+0x94)=v; }
     // s32 at +0xa0, hash 0x112ec3305d
     h = 0x112ec3305dULL;
     e = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;
-    { int t=*e; u32 r; if(t==7||t==2) r=(u32)*(long long*)(e+2); else if(t==3) r=(u32)(long long)(float)e[2]; else r=0; *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj)+0xa0)=r; }
+    { int t=*e; u32 r; if(t==7||t==2) r=(u32)*(long long*)(e+2); else if(t==3) r=(u32)(long long)*reinterpret_cast<float*>(e+2); else r=0; *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj)+0xa0)=r; }
     // bool at +0xa4, hash 0x16846ecfc7
     h = 0x16846ecfc7ULL;
     e = (*plv==5)?(int*)FUN_7103733d50(*(void**)(plv+2),&h):DAT_710593a3a8;

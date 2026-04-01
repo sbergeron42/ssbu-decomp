@@ -45,7 +45,7 @@ u32 GetShaderStageBits(u64 /*flags*/) {
 
 // 7100038100 (32B) — get shader code pointer at type-indexed offset
 u8* GetShaderCodePtr(u8* p0, u32 p1) {
-    return p0 + DAT_7104470aa8[p1];
+    return *reinterpret_cast<u8**>(p0 + DAT_7104470aa8[p1]);
 }
 
 // 7100054150 (32B) — get constant buffer pointer for vertex shader

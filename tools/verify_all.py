@@ -123,7 +123,8 @@ def extract_short_name(mangled):
 
 
 def read_o_file_functions(obj_path):
-    """Read all function symbols and their bytes from a .o file."""
+    """Read all function symbols and their bytes from a .o file.
+    Returns list of (mangled_name, size, code_bytes, reloc_offsets_set)."""
     functions = []
     try:
         with open(obj_path, 'rb') as f:
@@ -143,43 +144,66 @@ def read_o_file_functions(obj_path):
             strtab_sz = struct.unpack('<Q', f.read(8))[0]
             f.seek(strtab_off)
             strtab = f.read(strtab_sz)
+
+            # First pass: collect .text sections and .rela sections
+            text_sections = {}  # section_index -> (mangled, sh_offset, sh_size)
+            rela_sections = {}  # target_section_index -> list of reloc offsets
+
             for i in range(shnum):
                 f.seek(shoff + i * shentsize)
                 sh_name_idx = struct.unpack('<I', f.read(4))[0]
                 sh_type = struct.unpack('<I', f.read(4))[0]
-                if sh_type != 1:
-                    continue
                 end = strtab.index(b'\0', sh_name_idx)
                 sec_name = strtab[sh_name_idx:end].decode('ascii', errors='replace')
-                if not sec_name.startswith('.text.'):
-                    continue
-                mangled = sec_name[6:]
-                if not mangled:
-                    continue
-                f.seek(shoff + i * shentsize + 0x18)
-                sh_offset = struct.unpack('<Q', f.read(8))[0]
-                sh_size = struct.unpack('<Q', f.read(8))[0]
-                if sh_size == 0:
-                    continue
+
+                if sh_type == 1 and sec_name.startswith('.text.'):
+                    mangled = sec_name[6:]
+                    if not mangled:
+                        continue
+                    f.seek(shoff + i * shentsize + 0x18)
+                    sh_offset = struct.unpack('<Q', f.read(8))[0]
+                    sh_size = struct.unpack('<Q', f.read(8))[0]
+                    if sh_size == 0:
+                        continue
+                    text_sections[i] = (mangled, sh_offset, sh_size)
+
+                elif sh_type == 4:  # SHT_RELA
+                    f.seek(shoff + i * shentsize + 0x18)
+                    sh_offset = struct.unpack('<Q', f.read(8))[0]
+                    sh_size = struct.unpack('<Q', f.read(8))[0]
+                    f.seek(shoff + i * shentsize + 0x2c)  # sh_info at 0x2c
+                    sh_info = struct.unpack('<I', f.read(4))[0]
+                    offsets = []
+                    num_entries = sh_size // 24
+                    for j in range(num_entries):
+                        f.seek(sh_offset + j * 24)
+                        r_offset = struct.unpack('<Q', f.read(8))[0]
+                        offsets.append(r_offset)
+                    rela_sections[sh_info] = offsets
+
+            # Second pass: read code and attach relocation info
+            for sec_idx, (mangled, sh_offset, sh_size) in text_sections.items():
                 f.seek(sh_offset)
                 code = f.read(sh_size)
-                functions.append((mangled, sh_size, code))
+                reloc_offsets = set(rela_sections.get(sec_idx, []))
+                functions.append((mangled, sh_size, code, reloc_offsets))
     except (OSError, struct.error):
         pass
     return functions
 
 
 def get_all_compiled_functions():
-    """Scan all .o files in build/ and collect functions (deduplicated)."""
+    """Scan all .o files in build/ and collect functions (deduplicated).
+    Returns list of (mangled, size, code, reloc_offsets)."""
     seen = set()
     all_funcs = []
     for obj_name in sorted(os.listdir(BUILD_DIR)):
         if not obj_name.endswith('.o'):
             continue
-        for mangled, size, code in read_o_file_functions(BUILD_DIR / obj_name):
+        for mangled, size, code, reloc_offsets in read_o_file_functions(BUILD_DIR / obj_name):
             if mangled not in seen:
                 seen.add(mangled)
-                all_funcs.append((mangled, size, code))
+                all_funcs.append((mangled, size, code, reloc_offsets))
     return all_funcs
 
 
@@ -266,7 +290,7 @@ def main():
     unmatched_names = []
 
     with open(ORIGINAL_ELF, 'rb') as orig_f:
-        for mangled, size, decomp_bytes in all_funcs:
+        for mangled, size, decomp_bytes, reloc_offsets in all_funcs:
             short_name = extract_short_name(mangled)
             orig_addr = resolve_addr(csv_lookup, source_addr_map,
                                      mangled, short_name, size)
@@ -291,6 +315,9 @@ def main():
                 b = decomp_bytes[off:off + 4]
                 if a == b:
                     strict_count += 1
+                    semantic_count += 1
+                elif off in reloc_offsets:
+                    # Instruction has a relocation — can't compare raw bytes
                     semantic_count += 1
                 elif insn_match_semantic(a, b):
                     semantic_count += 1
