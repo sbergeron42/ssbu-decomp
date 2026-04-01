@@ -2,14 +2,6 @@
 
 namespace app::lua_bind {
 
-// 71020d1af0 — compares float params against global damage threshold (48 bytes)
-// NOTE: uses global singleton at 0x71052c31e0 — adrp won't match
-bool ItemDamageModuleImpl__is_smash_damage_impl(f32 p0, f32 p1) {
-    // original: loads **(0x71052c31e0) + 0x73068 as float, checks (p0<=0) && (that<=p1)
-    (void)p0; (void)p1;
-    return false;
-}
-
 // 71020d1b20 — hash-switch on field name, call vtable[0x188/8] (refresh), return float field
 // hash 0x2369a2644 → damage_module+0x44
 // hash 0xe085e_517c → damage_module+0x48
