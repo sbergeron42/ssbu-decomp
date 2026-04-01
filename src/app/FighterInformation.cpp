@@ -179,7 +179,14 @@ s32 FighterInformation__suicide_count_impl(FighterInformation* fi, s32 index) {
 }
 #endif
 
-// 71020c9ee0 — total_beat_count (2 instructions, tail call)
-// Can't match without target function — skipping
+// 71020c9ee0 — total_beat_count: ldr x0,[x0,#0x8]; b FUN_710065e8a0
+// Loads data ptr from fi+0x8, tail-calls beat count function with data ptr
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+u64 FighterInformation__total_beat_count_impl(FighterInformation* fi) {
+    asm("ldr x0, [x0, #0x8]\n"
+        "b FUN_710065e8a0\n");
+}
+#endif
 
 } // namespace app::lua_bind

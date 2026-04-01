@@ -6,6 +6,14 @@ struct ItemManager;
 
 namespace app::lua_bind {
 
+// 7102144620 — pure tail call b to external function
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+u64 ItemManager__get_num_of_ownered_item_impl(ItemManager* mgr) {
+    asm("b FUN_71015dac50\n");
+}
+#endif
+
 // 7102144630 — (end - begin) / 8: count items in pointer array at +0x28
 u64 ItemManager__get_num_of_active_item_all_impl(ItemManager* mgr) {
     u8* p = reinterpret_cast<u8*>(mgr);
