@@ -220,7 +220,7 @@ def main():
                 region = (addr >> 20) & 0xFFF
                 filename = 'fun_region_%03x' % region
 
-            generated[filename].append((name, code))
+            generated[filename].append((name, addr, code))
             count += 1
 
     total = sum(len(v) for v in generated.values())
@@ -232,7 +232,7 @@ def main():
         print("Sample generated code:")
         shown = 0
         for filename, funcs in sorted(generated.items()):
-            for name, code in funcs[:3]:
+            for name, faddr, code in funcs[:3]:
                 print("  [%s] %s" % (filename, code[:100]))
                 shown += 1
                 if shown >= 15: break
@@ -253,8 +253,8 @@ def main():
                 content = '#include "types.h"\n\nnamespace app::lua_bind {\n\n} // namespace app::lua_bind\n'
 
             block = '// Auto-generated EASY functions\n'
-            for name, code in funcs:
-                block += code + '\n'
+            for name, faddr, code in funcs:
+                block += '// 0x%x\n%s\n' % (faddr, code)
 
             content = content.replace('} // namespace app::lua_bind',
                                      block + '} // namespace app::lua_bind')
@@ -268,9 +268,9 @@ def main():
                 content = filepath.read_text()
                 if '} // namespace app::lua_bind' in content:
                     block = ''
-                    for name, code in funcs:
+                    for name, faddr, code in funcs:
                         if name + '(' not in content:
-                            block += code + '\n'
+                            block += '// 0x%x\n%s\n' % (faddr, code)
                     if block:
                         content = content.replace('} // namespace app::lua_bind',
                                                  block + '} // namespace app::lua_bind')
@@ -279,8 +279,8 @@ def main():
             else:
                 filepath = src_dir / ('%s.cpp' % filename)
                 content = '#include "types.h"\n\nnamespace app::lua_bind {\n\n'
-                for name, code in funcs:
-                    content += code + '\n'
+                for name, faddr, code in funcs:
+                    content += '// 0x%x\n%s\n' % (faddr, code)
                 content += '\n} // namespace app::lua_bind\n'
                 filepath.write_text(content)
                 print("  Created %s: %d functions" % (filepath.name, len(funcs)))
