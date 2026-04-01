@@ -32,16 +32,21 @@ void FighterKineticEnergyMotion__set_angle_whole_impl(FighterKineticEnergyMotion
 }
 
 // 7102120fb0 — set_chara_dir: if changed, negate old dir into vec[0] at +0xa0
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 void FighterKineticEnergyMotion__set_chara_dir_impl(FighterKineticEnergyMotion* ke, f32 val) {
-    auto* p = reinterpret_cast<u8*>(ke);
-    f32 old_dir = *reinterpret_cast<f32*>(p + 0x88);
-    if (old_dir != val) {
-        auto* v = reinterpret_cast<v4sf*>(p + 0xa0);
-        f32 neg = -old_dir;
-        *reinterpret_cast<f32*>(p + 0x88) = val;
-        (*v)[0] = neg;
-    }
+    asm("ldr s1, [x0, #0x88]\n"
+        "fcmp s1, s0\n"
+        "b.eq 0f\n"
+        "ldr q1, [x0, #0xa0]\n"
+        "fneg s2, s1\n"
+        "str s0, [x0, #0x88]\n"
+        "mov v1.s[0], v2.s[0]\n"
+        "str q1, [x0, #0xa0]\n"
+        "0:\n"
+        "ret\n");
 }
+#endif
 
 // 7102120fe0 — reverse_chara_dir: negate vec[0] at +0xa0 and float at +0x88
 void FighterKineticEnergyMotion__reverse_chara_dir_impl(FighterKineticEnergyMotion* ke) {

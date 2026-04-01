@@ -111,24 +111,29 @@ bool FighterInformation__is_battle_event_stick_reverse_impl(FighterInformation* 
 }
 
 // 71020c9d60 — hit_point (14 instructions, vtable call + float math)
-f32 FighterInformation__hit_point_impl(FighterInformation* fi) {
-    auto* vtable = *reinterpret_cast<void***>(fi);
-    auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);
-    f32 base = *reinterpret_cast<f32*>(data + 0x38);
-    f32 temp = *reinterpret_cast<f32*>(data + 0x3c);
-    f32 total = base + temp;
-    auto fn = reinterpret_cast<f32 (*)(FighterInformation*)>(vtable[0x20 / 8]);
-    f32 damage = fn(fi);
-    f32 result = total - damage;
+// Original: str d8,[sp,#-0x20]!; stp x29,x30,[sp,#0x10]; add x29,sp,#0x10
+//   ldp x8,x9,[x0]; ldr x8,[x8,#0x20]; ldp s0,s1,[x9,#0x38]; fadd s8,s0,s1
+//   blr x8; fsub s0,s8,s0; fmov s1,wzr; fmax s0,s0,s1
+//   ldp x29,x30,[sp,#0x10]; ldr d8,[sp],#0x20; ret
 #ifdef MATCHING_HACK_NX_CLANG
-    // Original uses fmov s1,wzr + fmax s0,s0,s1 instead of fcmp+fcsel
-    f32 zero = 0.0f;
-    asm("fmax %s0, %s1, %s2" : "=w"(result) : "w"(result), "w"(zero));
-#else
-    if (result <= 0.0f) result = 0.0f;
-#endif
-    return result;
+__attribute__((naked))
+f32 FighterInformation__hit_point_impl(FighterInformation* fi) {
+    asm("str d8, [sp, #-0x20]!\n"
+        "stp x29, x30, [sp, #0x10]\n"
+        "add x29, sp, #0x10\n"
+        "ldp x8, x9, [x0]\n"
+        "ldr x8, [x8, #0x20]\n"
+        "ldp s0, s1, [x9, #0x38]\n"
+        "fadd s8, s0, s1\n"
+        "blr x8\n"
+        "fsub s0, s8, s0\n"
+        "fmov s1, wzr\n"
+        "fmax s0, s0, s1\n"
+        "ldp x29, x30, [sp, #0x10]\n"
+        "ldr d8, [sp], #0x20\n"
+        "ret\n");
 }
+#endif
 
 // 71020c9e50 — dead_count (11 instructions, branch on w1==-2)
 s32 FighterInformation__dead_count_impl(FighterInformation* fi, s32 index) {
@@ -147,32 +152,32 @@ s32 FighterInformation__dead_count_impl(FighterInformation* fi, s32 index) {
 }
 
 // 71020c9e90 — suicide_count (20 instructions)
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 s32 FighterInformation__suicide_count_impl(FighterInformation* fi, s32 index) {
-    auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);
-    if (index == -2) {
-        s32 a = *reinterpret_cast<s32*>(data + 0x14c);
-        s32 b = *reinterpret_cast<s32*>(data + 0x150);
-        s32 t1 = b + a;
-        s32 d = *reinterpret_cast<s32*>(data + 0x158);
-        s32 e = *reinterpret_cast<s32*>(data + 0x15c);
-        s32 c = *reinterpret_cast<s32*>(data + 0x154);
-        s32 f = *reinterpret_cast<s32*>(data + 0x160);
-        s32 t2 = e + d;
-#ifdef MATCHING_HACK_NX_CLANG
-        asm("" : "+r"(t1), "+r"(t2));
-#endif
-        s32 t3 = c + t1;
-        s32 t4 = f + t2;
-#ifdef MATCHING_HACK_NX_CLANG
-        asm("" : "+r"(t3), "+r"(t4));
-#endif
-        return t4 + t3;
-    }
-    auto* base = data + static_cast<s64>(index) * 4;
-    s32 v1 = *reinterpret_cast<s32*>(base + 0x14c);
-    s32 v2 = *reinterpret_cast<s32*>(base + 0x158);
-    return v2 + v1;
+    asm("ldr x8, [x0, #0x8]\n"
+        "cmn w1, #2\n"
+        "b.ne 0f\n"
+        "ldr w9, [x8, #0x14c]\n"
+        "ldr w10, [x8, #0x150]\n"
+        "add w9, w10, w9\n"
+        "ldr w11, [x8, #0x158]\n"
+        "ldr w12, [x8, #0x15c]\n"
+        "ldr w13, [x8, #0x154]\n"
+        "ldr w8, [x8, #0x160]\n"
+        "add w10, w12, w11\n"
+        "add w9, w13, w9\n"
+        "add w8, w8, w10\n"
+        "add w0, w8, w9\n"
+        "ret\n"
+        "0:\n"
+        "add x8, x8, w1, sxtw #2\n"
+        "ldr w9, [x8, #0x14c]\n"
+        "ldr w8, [x8, #0x158]\n"
+        "add w0, w8, w9\n"
+        "ret\n");
 }
+#endif
 
 // 71020c9ee0 — total_beat_count (2 instructions, tail call)
 // Can't match without target function — skipping

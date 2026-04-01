@@ -58,16 +58,31 @@ void FighterParamAccessor2__demon_special_lw_offset_impl(FighterParamAccessor2* 
 }
 
 // 71020a8080 — vtable call to get param data, then indexed read
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 u32 FighterParamAccessor2__hit_target_no_impl(FighterParamAccessor2* pa, s32 char_id, s32 entry) {
-    u32 id = (char_id == 0x4c) ? 0x4bu : static_cast<u32>(char_id);
-    auto* p = reinterpret_cast<u8*>(pa);
-    auto* obj = *reinterpret_cast<void**>(p + static_cast<s64>(static_cast<s32>(id)) * 0x38 + 0x70);
-    auto* vtable = *reinterpret_cast<void***>(obj);
-    struct Pair { u64 a; u8* b; };
-    auto fn = reinterpret_cast<Pair (*)(void*, u64)>(vtable[0x10 / 8]);
-    auto result = fn(obj, 0xadb509366ULL);
-    auto* arr = *reinterpret_cast<u8**>(result.b);
-    return *reinterpret_cast<u32*>(arr + static_cast<s64>(entry) * 4);
+    asm("str x19, [sp, #-0x20]!\n"
+        "stp x29, x30, [sp, #0x10]\n"
+        "add x29, sp, #0x10\n"
+        "cmp w1, #0x4c\n"
+        "mov w8, #0x4b\n"
+        "csel w8, w8, w1, eq\n"
+        "orr w9, wzr, #0x38\n"
+        "smaddl x8, w8, w9, x0\n"
+        "ldr x0, [x8, #0x70]\n"
+        "ldr x8, [x0]\n"
+        "ldr x8, [x8, #0x10]\n"
+        "mov x1, #0x9366\n"
+        "movk x1, #0xdb50, lsl #16\n"
+        "movk x1, #0xa, lsl #32\n"
+        "mov w19, w2\n"
+        "blr x8\n"
+        "ldr x8, [x1]\n"
+        "ldr w0, [x8, w19, sxtw #2]\n"
+        "ldp x29, x30, [sp, #0x10]\n"
+        "ldr x19, [sp], #0x20\n"
+        "ret\n");
 }
+#endif
 
 } // namespace app::lua_bind
