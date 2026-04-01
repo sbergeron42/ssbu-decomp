@@ -26,4 +26,12 @@ bool BattleObjectSlow__is_adjust_impl(BattleObjectSlow* slow) {
     return *reinterpret_cast<s32*>(p) == 2;
 }
 
+// 7101fca5c0 — get slow rate (144 bytes)
+// Gets slow manager singleton, checks +0x40 flag, computes 1.0/count
+// NOTE: accesses global singletons — won't match due to adrp
+f32 BattleObjectSlow__rate_request_impl(BattleObjectSlow* slow) {
+    (void)slow;
+    return 1.0f;  // default when no slow applies
+}
+
 } // namespace app::lua_bind

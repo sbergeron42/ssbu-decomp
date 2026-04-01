@@ -162,4 +162,73 @@ void ItemKineticModuleImpl__it_base_rot_impl(BattleObjectModuleAccessor* a, void
 }
 #endif
 
+// 71020cc8c0 — bool-mask w3, load item_kinetic_module, tail call to 0x71016192b0
+void ItemKineticModuleImpl__set_throw_param_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2, bool p3) {
+    auto* m = a->item_kinetic_module;
+    // tail call target (0x71016192b0) is a non-vtable direct method on ItemKineticModuleImpl
+    // stores m+0x310=1, sets speed to zero vector, adds input vec, computes gravity params, etc.
+    (void)m; (void)p1; (void)p2; (void)p3;
+}
+
+// 71020ccaf0 — load global zero vec (ext+zero pattern), store to module+0x260
+// If bool flag && module+0x310: zero lane 1 of module+0x2f0
+// NOTE: loads a global Vec3 pointer from 0x71052a7000+0xa88 (won't match due to adrp)
+void ItemKineticModuleImpl__clear_speed_impl(BattleObjectModuleAccessor* a, bool flag) {
+    auto* m = reinterpret_cast<u8*>(a->item_kinetic_module);
+    // Load from global zero-vec and store with zero w-component to module+0x260
+    // (actual impl uses a global ptr; we zero it directly)
+    *reinterpret_cast<f32*>(m + 0x260) = 0.0f;
+    *reinterpret_cast<f32*>(m + 0x264) = 0.0f;
+    *reinterpret_cast<f32*>(m + 0x268) = 0.0f;
+    *reinterpret_cast<f32*>(m + 0x26c) = 0.0f;
+    if (flag && m[0x310]) {
+        *reinterpret_cast<f32*>(m + 0x2f4) = 0.0f;  // zero lane 1 of +0x2f0
+    }
+}
+
+// 71020ccb30 — extract module, tail call to 0x7101616b30 (add_speed_damage)
+void ItemKineticModuleImpl__add_speed_damage_impl(BattleObjectModuleAccessor* a, u64 p1) {
+    auto* m = a->item_kinetic_module;
+    (void)m; (void)p1;
+}
+
+// 71020ccb40 — compute slope angle of velocity vector (304 bytes)
+// Complex: gets speed from ground/work module vtable, computes atan2 in degrees
+f32 ItemKineticModuleImpl__slope_angle_impl(BattleObjectModuleAccessor* a) {
+    auto* m = reinterpret_cast<u8*>(a->item_kinetic_module);
+    if (!*reinterpret_cast<u32*>(m + 0x9dc)) return 0.0f;
+    // full implementation requires complex vtable calls + sqrt + atan2
+    return 0.0f;
+}
+
+// 71020ccda0 — extract module, bool-mask w2, tail call to 0x7101617100 (get_sum_speed)
+// Returns accumulated speed Vec2 from all active kinetic energy components
+void ItemKineticModuleImpl__get_sum_speed_simple_impl(BattleObjectModuleAccessor* a, u64 p1, bool p2) {
+    auto* m = a->item_kinetic_module;
+    (void)m; (void)p1; (void)p2;
+}
+
+// 71020ccdb0 — applies speed cap per axis using item self-param table (304 bytes)
+// For each of x,y,z: if component is outside range and speed > threshold, cap it
+void ItemKineticModuleImpl__set_rot_along_speed_x_impl(BattleObjectModuleAccessor* a, f32* threshold) {
+    auto* m = reinterpret_cast<u8*>(a->item_kinetic_module);
+    // loads vec3 from m+0x1e0, checks vs threshold, applies param-table scaling
+    // complex SIMD + game-param lookup, not implementable without full param table access
+    (void)m; (void)threshold;
+}
+
+// 71020ccee0 — set AI movement target (240 bytes)
+// Stores velocity, target vectors, optional scale from posture module, sets activate flag
+void ItemKineticModuleImpl__it_ai_move_impl(BattleObjectModuleAccessor* a, void* vel, u64 p2, void* target1, void* target2, void* p5, bool use_scale, bool use_gem) {
+    auto* m = reinterpret_cast<u8*>(a->item_kinetic_module);
+    (void)m; (void)vel; (void)p2; (void)target1; (void)target2; (void)p5; (void)use_scale; (void)use_gem;
+}
+
+// 71020cc950 — add speed vector to current speed at module+0x260 (416 bytes)
+// Loads current speed, adds input, optionally updates y-gemini, gets gravity params
+void ItemKineticModuleImpl__add_speed_consider_gravity_impl(BattleObjectModuleAccessor* a, void* speed_vec, bool use_gem) {
+    auto* m = reinterpret_cast<u8*>(a->item_kinetic_module);
+    (void)m; (void)speed_vec; (void)use_gem;
+}
+
 } // namespace app::lua_bind

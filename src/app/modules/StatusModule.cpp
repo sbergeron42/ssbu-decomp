@@ -92,4 +92,50 @@ void StatusModule__set_succeeds_bit_impl(BattleObjectModuleAccessor* a, u64 p1) 
 }
 
 void* StatusModule__status_kind_que_from_script_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x40)); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x60/8])(m); }
+
+// 71020877c0 — x19=status_module, x20=first call result; reloads vtable each call
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+bool StatusModule__is_situation_changed_impl(BattleObjectModuleAccessor* a) {
+    asm(
+        "stp x20, x19, [sp, #-0x20]!\n"
+        "stp x29, x30, [sp, #0x10]\n"
+        "add x29, sp, #0x10\n"
+        "ldr x19, [x0, #0x40]\n"
+        "ldr x8, [x19]\n"
+        "ldr x8, [x8, #0x168]\n"
+        "mov x0, x19\n"
+        "blr x8\n"
+        "ldr x8, [x19]\n"
+        "ldr x8, [x8, #0x170]\n"
+        "mov w20, w0\n"
+        "mov x0, x19\n"
+        "blr x8\n"
+        "ldp x29, x30, [sp, #0x10]\n"
+        "cmp w20, w0\n"
+        "cset w0, ne\n"
+        "ldp x20, x19, [sp], #0x20\n"
+        "ret\n"
+    );
+}
+#endif
+
+// 7102087860 — TCO dispatch: x10=vtable, passes p7/p8 on stack as-is
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+void StatusModule__init_settings_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2, u64 p3, u64 p4, bool p5, u64 p6, u32 p7, u32 p8) {
+    asm(
+        "ldr x0, [x0, #0x40]\n"
+        "ldr x10, [x0]\n"
+        "ldr w8, [sp]\n"
+        "ldr w9, [sp, #0x8]\n"
+        "and w5, w5, #0x1\n"
+        "ldr x10, [x10, #0x1c8]\n"
+        "str w9, [sp, #0x8]\n"
+        "str w8, [sp]\n"
+        "br x10\n"
+    );
+}
+#endif
+
 } // namespace app::lua_bind

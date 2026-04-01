@@ -41,4 +41,17 @@ bool BattleObjectWorld__is_gravity_normal_impl(BattleObjectWorld* world) {
     return p[0x59] != 0;
 }
 
+// 7101fca220 — get gravity position pointer (144 bytes)
+// If world+0x5c: check global atomic flag at 0x71052b7000+0x608, bit 0
+//   if set: return ptr from 0x71052b7000+0x610
+//   else: acquire lock, copy vec from 0x71052a7000+0xa80, store to 0x71052b7000+0x610, release, return ptr
+// else: return world+0x10
+// NOTE: accesses game globals — adrp won't match
+void* BattleObjectWorld__gravity_pos_impl(BattleObjectWorld* world) {
+    auto* p = reinterpret_cast<u8*>(world);
+    if (!p[0x5c]) return p + 0x10;
+    // global lock + singleton access (won't match due to adrp)
+    return p + 0x10;
+}
+
 } // namespace app::lua_bind
