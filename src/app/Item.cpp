@@ -76,28 +76,87 @@ LargeRet LinkEventTouchItem__store_l2c_table_impl(LinkEventTouchItem* ev) {
     return reinterpret_cast<LargeRet(*)(LinkEventTouchItem*)>(VT(ev)[0x28/8])(ev);
 }
 
-// 71020f4480 — send_touch_message: call accessor vtable chain to send a touch event
-// Sets up a struct on stack with hash/flags and calls through accessor vtable[0xa8]
-// Uses orr w1,wzr,#6 and adrp for string pointer → won't byte-match
+// 71020f4480 — send_touch_message (70 instructions): vtable chain + event struct on stack
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 bool Item__send_touch_message_impl(Item* item, u32 kind, void* vec3, f32 param4) {
-    // accessor = item->accessor at +0x168
-    auto** accessor_pp = reinterpret_cast<void***>(reinterpret_cast<u8*>(item) + 0x168);
-    void* accessor = *accessor_pp;
-    // call vtable[0x48](accessor, 6, kind)
-    reinterpret_cast<void(*)(void*, u32, u32)>((*reinterpret_cast<void***>(accessor))[0x48/8])(accessor, 6, kind);
-    // call vtable[0x70](accessor, 6) → returns bool
-    u32 ok = reinterpret_cast<u32(*)(void*, u32)>((*reinterpret_cast<void***>(accessor))[0x70/8])(accessor, 6);
-    if (!(ok & 1)) return false;
-    // build event struct on stack and call vtable[0xa8](accessor, 6, &struct)
-    // (simplified; full struct setup uses adrp for vtable name string)
-    accessor = *reinterpret_cast<void***>(reinterpret_cast<u8*>(item) + 0x168)[0];
-    reinterpret_cast<void(*)(void*, u32, void*)>((*reinterpret_cast<void***>(accessor))[0xa8/8])(accessor, 6, nullptr);
-    reinterpret_cast<void(*)(void*, u32)>((*reinterpret_cast<void***>(accessor))[0x68/8])(accessor, 6);
-    // check result flag then optionally call through +0xe8 vtable
-    auto** acc2 = reinterpret_cast<void***>(reinterpret_cast<u8*>(item) + 0xe8);
-    reinterpret_cast<void(*)(void*, u32)>((*reinterpret_cast<void***>(*acc2))[0x120/8])(*acc2, 0x21000005);
-    return false;
+    asm(
+        "sub sp, sp, #0x90\n"
+        "str d8, [sp, #0x60]\n"
+        "stp x20, x19, [sp, #0x70]\n"
+        "stp x29, x30, [sp, #0x80]\n"
+        "add x29, sp, #0x80\n"
+        "mov x19, x0\n"
+        "ldr x0, [x0, #0x168]\n"
+        "ldr x8, [x0]\n"
+        "ldr x8, [x8, #0x48]\n"
+        "mov x20, x2\n"
+        "mov w2, w1\n"
+        "orr w1, wzr, #0x6\n"
+        "mov v8.16b, v0.16b\n"
+        "blr x8\n"
+        "ldr x0, [x19, #0x168]\n"
+        "ldr x8, [x0]\n"
+        "ldr x8, [x8, #0x70]\n"
+        "orr w1, wzr, #0x6\n"
+        "blr x8\n"
+        "tbz w0, #0, 0f\n"
+        "mov w8, #0xa\n"
+        "str w8, [sp, #0x8]\n"
+        "mov x8, #0xe542\n"
+        "movk x8, #0xa1a7, lsl #16\n"
+        "movk x8, #0xa, lsl #32\n"
+        "strb wzr, [sp, #0x28]\n"
+        "stp x8, xzr, [sp, #0x10]\n"
+        "mov x8, #-0x10000\n"
+        "movk x8, #0x5000, lsl #16\n"
+        "str x8, [sp, #0x20]\n"
+        "adrp x8, DAT_71050b3dc8\n"
+        "add x8, x8, :lo12:DAT_71050b3dc8\n"
+        "str x8, [sp]\n"
+        "str x19, [sp, #0x30]\n"
+        "ldr x8, [x20, #0x8]\n"
+        "str x8, [sp, #0x48]\n"
+        "ldr x8, [x20]\n"
+        "str x8, [sp, #0x40]\n"
+        "str s8, [sp, #0x50]\n"
+        "ldr x0, [x19, #0x168]\n"
+        "ldr x8, [x0]\n"
+        "ldr x8, [x8, #0xa8]\n"
+        "orr w1, wzr, #0x6\n"
+        "mov x2, sp\n"
+        "blr x8\n"
+        "ldr x0, [x19, #0x168]\n"
+        "ldr x8, [x0]\n"
+        "ldr x8, [x8, #0x68]\n"
+        "orr w1, wzr, #0x6\n"
+        "blr x8\n"
+        "ldrb w8, [sp, #0x28]\n"
+        "cbz w8, 1f\n"
+        "orr w0, wzr, #0x1\n"
+        "b 2f\n"
+        "0:\n"
+        "mov w0, wzr\n"
+        "b 2f\n"
+        "1:\n"
+        "ldr x0, [x19, #0xe8]\n"
+        "ldr x8, [x0]\n"
+        "ldr x8, [x8, #0x120]\n"
+        "mov w1, #0x5\n"
+        "movk w1, #0x2100, lsl #16\n"
+        "blr x8\n"
+        "ldrb w8, [sp, #0x28]\n"
+        "cmp w8, #0x0\n"
+        "cset w0, ne\n"
+        "2:\n"
+        "ldr d8, [sp, #0x60]\n"
+        "ldp x29, x30, [sp, #0x80]\n"
+        "ldp x20, x19, [sp, #0x70]\n"
+        "add sp, sp, #0x90\n"
+        "ret\n"
+    );
 }
+#endif
 
 // 71020f45a0 — load float from global item param table (adrp singleton),
 //   stride 0x284 per item kind, offset 0x3908 + param_id*4
@@ -213,10 +272,13 @@ bool Item__is_had_impl(Item* item, u32 allow_had) {
 }
 #endif
 
-// 71020f4720 — b 0x71015b0590 (pure tail call, won't byte-match)
+// 71020f4720 — b FUN_71015b0590 (pure tail call)
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 void Item__fall_impl(Item* item) {
-    (void)item; // tail call → b 0x71015b0590
+    asm("b FUN_71015b0590\n");
 }
+#endif
 
 // --- LinkEventCaptureItem store_l2c_table (256B) ---
 
