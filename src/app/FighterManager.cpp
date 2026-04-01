@@ -129,18 +129,19 @@ u32 FighterManager__total_fighter_num_impl(FighterManager* mgr) {
     return total;
 }
 
-// 7102140e10 — get_entry_id: walk 8 slots, decrement counter, return index
+// 7102140e10 — get_entry_id: walk 8 slots (unrolled), decrement counter, return index
 u64 FighterManager__get_entry_id_impl(FighterManager* mgr, s32 n) {
     auto* data = *reinterpret_cast<u8**>(mgr);
     s32 count = n;
-    for (s32 i = 0; i < 8; i++) {
-        auto* entry = *reinterpret_cast<void**>(data + 0x20 + static_cast<u64>(i) * 8);
-        if (entry) {
-            if (count == 0) return static_cast<u64>(i);
-            count--;
-        }
+#define CHECK_SLOT(I) \
+    if (*reinterpret_cast<void**>(data + 0x20 + (I) * 8)) { \
+        if (count == 0) return (I); \
+        count--; \
     }
+    CHECK_SLOT(0) CHECK_SLOT(1) CHECK_SLOT(2) CHECK_SLOT(3)
+    CHECK_SLOT(4) CHECK_SLOT(5) CHECK_SLOT(6) CHECK_SLOT(7)
     return static_cast<u64>(-1);
+#undef CHECK_SLOT
 }
 
 // 7102140ee0 — get_entry_no: count non-null entries before index
@@ -178,8 +179,8 @@ void FighterManager__is_final_impl(FighterManager* mgr) {
 
 // 7102141440 — get_beat_point_diff_from_top: ldr x0,[x0]; and x1; b external
 extern "C" void FUN_7100679ed0(void*, u64);
-void FighterManager__get_beat_point_diff_from_top_impl(FighterManager* mgr, u32 id) {
-    FUN_7100679ed0(*reinterpret_cast<void**>(mgr), static_cast<u64>(id));
+void FighterManager__get_beat_point_diff_from_top_impl(FighterManager* mgr, u64 id) {
+    FUN_7100679ed0(*reinterpret_cast<void**>(mgr), id & 0xFFFFFFFF);
 }
 
 // 7102141450 — set_final_fear_face: reads/writes data+0x160, calls external
@@ -217,15 +218,14 @@ void FighterManager__start_finalbg_impl(FighterManager* mgr, u32 id) {
 }
 
 // 7102141560 — exit_finalbg: check active flag, call external, clear flag
-extern "C" void FUN_710260b9b0(void*, void*);
-extern "C" u64* DAT_71053299d8;
+extern "C" void FUN_710260b9b0(void*);
+extern "C" __attribute__((visibility("hidden"))) u64* DAT_71053299d8;
 void FighterManager__exit_finalbg_impl(FighterManager* mgr) {
     auto* data = *reinterpret_cast<u8**>(mgr);
     auto* ctrl = *reinterpret_cast<u8**>(data + 0xb78);
     auto* obj = *reinterpret_cast<u8**>(ctrl);
     if (obj[0x18] != 0) {
-        auto* renderer = *reinterpret_cast<void**>(DAT_71053299d8);
-        FUN_710260b9b0(renderer, obj);
+        FUN_710260b9b0(*reinterpret_cast<void**>(DAT_71053299d8));
         obj[0x18] = 0;
     }
 }
@@ -283,8 +283,8 @@ void FighterManager__set_controller_rumble_all_impl(FighterManager* mgr, u64 p1,
 
 // 71021417c0 — is_rebirth_plate_line: NOTE: does NOT deref x0
 extern "C" void FUN_710067ef30(void*, u64);
-void FighterManager__is_rebirth_plate_line_impl(FighterManager* mgr, u32 id) {
-    FUN_710067ef30(mgr, static_cast<u64>(id));
+void FighterManager__is_rebirth_plate_line_impl(FighterManager* mgr, u64 id) {
+    FUN_710067ef30(mgr, id & 0xFFFFFFFF);
 }
 
 // 71021417d0 — set_position_lock: loop over fighters, vtable calls (43 insns)
