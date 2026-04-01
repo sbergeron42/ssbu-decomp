@@ -206,18 +206,16 @@ def generate_function(name, addr, insns, size):
             args = ['obj'] + ['p%d' % (i + 1) for i in range(nparams)]
             cast_params = ['void*'] + ['u64'] * nparams
             dat_name = 'DAT_%x' % global_addr
-            if add_off == 0:
-                return ('extern "C" void* %s;\n'
-                        'void %s(%s) { reinterpret_cast<void(*)(%s)>(%s)(%s); }' % (
-                        dat_name, func_name, ','.join(params),
-                        ','.join(cast_params), dat_name, ','.join(args)))
-            else:
-                return ('extern "C" void* %s;\n'
-                        'void %s(%s) { reinterpret_cast<void(*)(%s)>('
-                        'reinterpret_cast<u8*>(%s) + %s)(%s); }' % (
-                        dat_name, func_name, ','.join(params),
-                        ','.join(cast_params), dat_name, hex(add_off),
-                        ','.join(args)))
+            return ('extern "C" void* %s;\n'
+                    '__attribute__((naked))\n'
+                    'void %s() {\n'
+                    '    asm volatile(\n'
+                    '        "adrp x16, %s\\n"\n'
+                    '        "ldr x17, [x16, :lo12:%s]\\n"\n'
+                    '        "add x16, x16, :lo12:%s\\n"\n'
+                    '        "br x17\\n"\n'
+                    '    );\n'
+                    '}' % (dat_name, func_name, dat_name, dat_name, dat_name))
 
     # Pattern: 3-insn field read through pointer (ldr x8,[x0,#off1]; ldr/ldrb result,[x8,#off2]; ret)
     if n == 3 and has_ret:
