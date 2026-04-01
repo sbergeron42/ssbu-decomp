@@ -473,4 +473,49 @@ u64 GetSamplerDescriptorSlot_46e30(void* obj, s32 p2, s32 p3, s32 p4, s32 p5) {
     return base + (u64)(s64)offset * 8;
 }
 
+// MANUAL: 0x710022b500  nn::nex::Protocol::FlagIsSet
+// ldr w8,[x0,#0x60]; bics wzr,w1,w8; cset w0,eq; ret
+bool FlagIsSet_22b500(void* obj, u32 flags_to_check) {
+    u32 flags = *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x60);
+    return (flags_to_check & ~flags) == 0;
+}
+
+// MANUAL: 0x7100031170  nn::gfx::MultisampleStateInfo::SetDefault
+// ldrh w9,[x0,#2]; orr w8,wzr,#1; strb w8,[x0,#0]; movn w8,#0; str w8,[x0,#4]; and w9,w9,#0xfffe; strh w9,[x0,#2]; ret
+void SetDefault_31170(void* obj) {
+#ifdef MATCHING_HACK_NX_CLANG
+    // Exact instruction sequence: LDRH→W9, constants→W8, AND in-place W9
+    asm("ldrh w9, [%x[p], #2]\n\t"
+        "orr w8, wzr, #1\n\t"
+        "strb w8, [%x[p]]\n\t"
+        "movn w8, #0\n\t"
+        "str w8, [%x[p], #4]\n\t"
+        "and w9, w9, #0xfffe\n\t"
+        "strh w9, [%x[p], #2]"
+        : : [p] "r"(obj) : "w8", "w9", "memory");
+#else
+    u16 v = *reinterpret_cast<u16*>(reinterpret_cast<u8*>(obj) + 2);
+    *reinterpret_cast<u8*>(obj) = 1;
+    *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 4) = 0xffffffff;
+    *reinterpret_cast<u16*>(reinterpret_cast<u8*>(obj) + 2) = v & 0xfffe;
+#endif
+}
+
+// MANUAL: 0x7100066010  nn::ui2d::IsResShaderContainerInitialized_
+// ldr x8,[x0,#0x28]; cbz x8,...; ldr x8,[x8,#0x20]; cbz x8,...; ldrb w8,[x8,#0x110]; cmp w8,#1; cset w0,eq; ret; x2 movz+ret
+bool IsResShaderContainerInitialized_66010(void* obj) {
+    void* p1 = *reinterpret_cast<void**>(reinterpret_cast<u8*>(obj) + 0x28);
+    if (p1 == nullptr) return false;
+    void* p2 = *reinterpret_cast<void**>(reinterpret_cast<u8*>(p1) + 0x20);
+    if (p2 == nullptr) return false;
+    return *reinterpret_cast<u8*>(reinterpret_cast<u8*>(p2) + 0x110) == 1;
+}
+
+// MANUAL: 0x7100254940  nn::nex::MatchmakeSession::GetAttribute (3-instr body)
+// ldr x8,[x0,#0x68]; ldr w0,[x8,w1,uxtw #2]; ret
+u32 GetAttribute_254940(void* obj, u32 idx) {
+    u32* arr = *reinterpret_cast<u32**>(reinterpret_cast<u8*>(obj) + 0x68);
+    return arr[idx];
+}
+
 } // namespace app::lua_bind
