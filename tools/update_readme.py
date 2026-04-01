@@ -45,7 +45,7 @@ def get_verify_stats():
     verified = 0
     non_matching = 0
     for line in result.stdout.split('\n'):
-        if 'BYTE-IDENTICAL' in line:
+        if 'BYTE-IDENTICAL' in line or 'VERIFIED' in line:
             verified = int(line.split(':')[1].split('(')[0].strip())
         if 'Non-matching' in line and ':' in line:
             try:
