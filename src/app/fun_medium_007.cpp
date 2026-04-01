@@ -253,8 +253,8 @@ void FUN_71002b8140(s64 param_1)
     FUN_71002bb540(param_1 + 0x47a0);
 }
 
-// 71002c28d0 — forward call via field at +0x10
-void FUN_71002c28d0(s64 param_1)
+// 71002c28d0 — forward call via field at +0x10 (x1 passes through to FUN_71002c2e40)
+void FUN_71002c28d0(s64 param_1, s32 /*param_2 passed through*/)
 {
     FUN_71002c2e40(*(u64*)(param_1 + 0x10));
 }
