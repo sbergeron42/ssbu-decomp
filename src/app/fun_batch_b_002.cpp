@@ -1,7 +1,7 @@
 #include "types.h"
 
-// Batch decompiled via Ghidra MCP — pool-b, batch 002
-// Range: 0x7101000000 — 0x7101FFFFFF
+// Batch decompiled via Ghidra MCP -- pool-b, batch 002
+// Range: 0x7101000000 -- 0x7101FFFFFF
 
 // Forward declarations
 extern "C" void FUN_71016ec6a0(s32*, s32*, s32*, s32*, s32*);

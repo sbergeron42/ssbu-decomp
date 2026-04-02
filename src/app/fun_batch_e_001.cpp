@@ -1,7 +1,7 @@
 #include "types.h"
 
-// Batch decompiled via Ghidra MCP — pool-e, batch 001
-// Range: 0x7100000000 — 0x7100FFFFFF
+// Batch decompiled via Ghidra MCP -- pool-e, batch 001
+// Range: 0x7100000000 -- 0x7100FFFFFF
 
 // ---- External declarations --------------------------------------------------
 
@@ -45,43 +45,23 @@ bool FUN_710003b460(s64 param_1, float *param_2)
   return param_2[1] <= *(float *)(param_1 + 0x7c);
 }
 
-// FUN_710003cf90 — compiled in fun_medium_012.cpp
+// 0x710003cf90 -- defined in fun_medium_012.cpp (duplicate removed)
+// 0x710003d160 -- defined in fun_medium_012.cpp (duplicate removed)
 
+// 0x710003d480 -- moved to fun_medium_016.cpp (duplicate)
+// 0x710003d650 -- moved to fun_medium_013.cpp (duplicate)
+// 0x710003d730 -- moved to fun_medium_016.cpp (duplicate)
+// 0x710003d9c0 -- moved to fun_medium_016.cpp (duplicate)
+// 0x710003dce0 -- moved to fun_medium_016.cpp (duplicate)
+// 0x710003df20 -- moved to fun_medium_016.cpp (duplicate)
+// 0x710003e120 -- moved to fun_medium_016.cpp (duplicate)
 
+// 0x7100041420 -- moved to fun_medium_012.cpp (duplicate)
+// 0x71000414c0 -- moved to fun_medium_012.cpp (duplicate)
 
-
-
-
-
-
-
-
-
-// 0x7100041570
-u8 *FUN_7100041570(void)
-{
-  s32 iVar1;
-
-  if (((*PTR_DAT_71052a34f0 & 1) == 0) &&
-      (iVar1 = __cxa_guard_acquire(PTR_DAT_71052a34f0), iVar1 != 0)) {
-    if (((*PTR_DAT_71052a34a8 & 1) == 0) &&
-        (iVar1 = __cxa_guard_acquire(PTR_DAT_71052a34a8), iVar1 != 0)) {
-      if (((*PTR_DAT_71052a34b8 & 1) == 0) &&
-          (iVar1 = __cxa_guard_acquire(PTR_DAT_71052a34b8), iVar1 != 0)) {
-        *(u64 *)PTR_DAT_71052a34c0 = 0;
-        __cxa_guard_release(PTR_DAT_71052a34b8);
-      }
-      *(u8 **)PTR_DAT_71052a34b0 = PTR_DAT_71052a34c0;
-      __cxa_guard_release(PTR_DAT_71052a34a8);
-    }
-    *(u8 **)PTR_DAT_71052a34f8 = PTR_DAT_71052a34b0;
-    __cxa_guard_release(PTR_DAT_71052a34f0);
-    return PTR_DAT_71052a34f8;
-  }
-  return PTR_DAT_71052a34f8;
-}
-
-
-
-
-
+// 0x7100041570 -- moved to fun_medium_012.cpp (duplicate)
+// 0x7100043260 -- moved to fun_medium_012.cpp (duplicate)
+// 0x7100044060 -- moved to fun_medium_012.cpp (duplicate)
+// 0x7100044110 -- moved to fun_medium_012.cpp (duplicate)
+// 0x7100044990 -- moved to fun_medium_012.cpp (duplicate)
+// 0x7100044f10 -- moved to fun_medium_012.cpp (duplicate)

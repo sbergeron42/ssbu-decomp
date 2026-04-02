@@ -4,7 +4,7 @@
 inline void* operator new(unsigned long, void* p) noexcept { return p; }
 inline void  operator delete(void*, void*) noexcept {}
 
-// MEDIUM-tier FUN_* functions — mixed address range, batch 18
+// MEDIUM-tier FUN_* functions -- mixed address range, batch 18
 // Pool-d worker: auto-generated from Ghidra decompilation
 
 // ---- External declarations -----------------------------------------------
@@ -74,7 +74,7 @@ extern u8  PTR_sInstancePtr_71052a3bb0[];
 
 // ---- cxa_guard singleton -------------------------------------------------
 
-// 710004fd30 — nested: outer 2360/2368, inner 2370/2378
+// 710004fd30 -- nested: outer 2360/2368, inner 2370/2378
 u8* FUN_710004fd30()
 {
     s32 iVar1;
@@ -97,7 +97,7 @@ u8* FUN_710004fd30()
 
 // ---- Constructor helpers -------------------------------------------------
 
-// 71000cf8b0 — set vtable, construct StationConnectionInfo sub-object, zero fields
+// 71000cf8b0 -- set vtable, construct StationConnectionInfo sub-object, zero fields
 void FUN_71000cf8b0(s64* param_1)
 {
     *param_1 = (s64)(PTR_DAT_71052a2ed0 + 0x10);
@@ -107,7 +107,7 @@ void FUN_71000cf8b0(s64* param_1)
     param_1[0x13] = 0;
 }
 
-// 710014c9f0 — construct Protocol base, set vtable, zero fields
+// 710014c9f0 -- construct Protocol base, set vtable, zero fields
 void FUN_710014c9f0(s64* param_1)
 {
     new (param_1) nn::pia::transport::Protocol();
@@ -118,14 +118,14 @@ void FUN_710014c9f0(s64* param_1)
     param_1[6]             = 0;
 }
 
-// 710014f1c0 — construct StepSequenceJob base, override vtable
+// 710014f1c0 -- construct StepSequenceJob base, override vtable
 void FUN_710014f1c0(s64* param_1)
 {
     new (param_1) nn::pia::common::StepSequenceJob();
     *param_1 = (s64)(PTR_DAT_71052a4f40 + 0x10);
 }
 
-// 7100154130 — set vtable, zero fields, construct CryptoSetting sub-object
+// 7100154130 -- set vtable, zero fields, construct CryptoSetting sub-object
 void FUN_7100154130(s64* param_1)
 {
     param_1[2] = 0;
@@ -135,7 +135,7 @@ void FUN_7100154130(s64* param_1)
     *(u16*)((s64)param_1 + 0x2c) = 0;
 }
 
-// 7100162930 — call FUN_7100164800, zero fields, set vtable 4048
+// 7100162930 -- call FUN_7100164800, zero fields, set vtable 4048
 void FUN_7100162930(s64* param_1)
 {
     FUN_7100164800();
@@ -145,7 +145,7 @@ void FUN_7100162930(s64* param_1)
     *param_1 = (s64)(PTR_DAT_71052a4048 + 0x10);
 }
 
-// 7100163940 — same as 7100162930 but vtable 4050
+// 7100163940 -- same as 7100162930 but vtable 4050
 void FUN_7100163940(s64* param_1)
 {
     FUN_7100164800();
@@ -155,14 +155,14 @@ void FUN_7100163940(s64* param_1)
     *param_1 = (s64)(PTR_DAT_71052a4050 + 0x10);
 }
 
-// 7100163b10 — call FUN_7100165090, zero field at +0x4d0
+// 7100163b10 -- call FUN_7100165090, zero field at +0x4d0
 void FUN_7100163b10(s64 param_1)
 {
     FUN_7100165090();
     *(u64*)(param_1 + 0x4d0) = 0;
 }
 
-// 7100164190 — set vtable 4060, zero fields, call FUN_71001641d0
+// 7100164190 -- set vtable 4060, zero fields, call FUN_71001641d0
 void FUN_7100164190(s64* param_1)
 {
     param_1[2] = 0;
@@ -173,7 +173,7 @@ void FUN_7100164190(s64* param_1)
     param_1[0x225] = 0;
 }
 
-// 7100165640 — pead alloc 0x20 bytes, set vtable + fields
+// 7100165640 -- pead alloc 0x20 bytes, set vtable + fields
 void FUN_7100165640(s64 param_1)
 {
     s64 lVar1 = *(s64*)(param_1 + 8);
@@ -188,14 +188,14 @@ void FUN_7100165640(s64 param_1)
     }
 }
 
-// 7100170cd0 — call FUN_7100173e80 then override vtable 4188
+// 7100170cd0 -- call FUN_7100173e80 then override vtable 4188
 void FUN_7100170cd0(s64* param_1, s64 param_2)
 {
     FUN_7100173e80(param_1, param_2);
     *param_1 = (s64)(PTR_DAT_71052a4188 + 0x10);
 }
 
-// 7100172660 — set vtable 4100, construct InetAddress, zero u16 field
+// 7100172660 -- set vtable 4100, construct InetAddress, zero u16 field
 void FUN_7100172660(s64* param_1)
 {
     *param_1 = (s64)(PTR_DAT_71052a4100 + 0x10);
@@ -203,7 +203,7 @@ void FUN_7100172660(s64* param_1)
     *(u16*)(param_1 + 5) = 0;
 }
 
-// 7100173e80 — construct StepSequenceJob, zero/store fields, set vtable 41e0
+// 7100173e80 -- construct StepSequenceJob, zero/store fields, set vtable 41e0
 void FUN_7100173e80(s64* param_1, s64 param_2)
 {
     new (param_1) nn::pia::common::StepSequenceJob();
@@ -212,7 +212,7 @@ void FUN_7100173e80(s64* param_1, s64 param_2)
     *param_1     = (s64)(PTR_DAT_71052a51e0 + 0x10);
 }
 
-// 71001758d0 — same as 7100173e80 but vtable 4210
+// 71001758d0 -- same as 7100173e80 but vtable 4210
 void FUN_71001758d0(s64* param_1, s64 param_2)
 {
     new (param_1) nn::pia::common::StepSequenceJob();
@@ -223,7 +223,7 @@ void FUN_71001758d0(s64* param_1, s64 param_2)
 
 // ---- Comparison / copy helpers -------------------------------------------
 
-// 71001728a0 — compare InetAddress sub-fields + u16
+// 71001728a0 -- compare InetAddress sub-fields + u16
 u64 FUN_71001728a0(s64 param_1, s64 param_2)
 {
     u64 uVar1 = FUN_71000b2b10(param_1 + 8, param_2 + 8);
@@ -232,7 +232,7 @@ u64 FUN_71001728a0(s64 param_1, s64 param_2)
     return 0;
 }
 
-// 7100172900 — InetAddress assignment: copy InetAddress sub-object + u16 field
+// 7100172900 -- InetAddress assignment: copy InetAddress sub-object + u16 field
 s64 FUN_7100172900(s64 param_1, s64 param_2)
 {
     if (param_1 != param_2) {
@@ -243,7 +243,7 @@ s64 FUN_7100172900(s64 param_1, s64 param_2)
     return param_1;
 }
 
-// 7100177cd0 — FUN_71000bae70 + copy 3 fields
+// 7100177cd0 -- FUN_71000bae70 + copy 3 fields
 void FUN_7100177cd0(s64 param_1, s64 param_2)
 {
     u8 auStack_30[16];
@@ -256,7 +256,7 @@ void FUN_7100177cd0(s64 param_1, s64 param_2)
 
 // ---- Misc ----------------------------------------------------------------
 
-// 7100146fe0 — vtable dispatch at [+0x20][+0x38], return 9 or uVar1+4 or uVar2
+// 7100146fe0 -- vtable dispatch at [+0x20][+0x38], return 9 or uVar1+4 or uVar2
 u64 FUN_7100146fe0(s64 param_1)
 {
     u64 uVar2 = (*(u64(**)(void))(*(s64*)*(s64**)(param_1 + 0x20) + 0x38))();
@@ -269,7 +269,7 @@ u64 FUN_7100146fe0(s64 param_1)
     return uVar2;
 }
 
-// 710015fb50 — clear struct fields if first byte non-zero
+// 710015fb50 -- clear struct fields if first byte non-zero
 void FUN_710015fb50(char* param_1)
 {
     if (*param_1 == '\0')
@@ -291,7 +291,7 @@ void FUN_710015fb50(char* param_1)
     param_1[0x53] = '\0';
 }
 
-// 7100160ae0 — call two helpers, write global monitoring content field
+// 7100160ae0 -- call two helpers, write global monitoring content field
 void FUN_7100160ae0(s64 param_1, u64 param_2)
 {
     FUN_710015ffc0(param_1 + 8);
@@ -299,7 +299,7 @@ void FUN_7100160ae0(s64 param_1, u64 param_2)
     *(u32*)(PTR_g_SessionBeginMonitoringContent_71052a2bd0 + 0xd4) = uVar1;
 }
 
-// 7100167260 — pInstance check + call FUN_7100161fc0, return result or 0xfd
+// 7100167260 -- pInstance check + call FUN_7100161fc0, return result or 0xfd
 u32 FUN_7100167260(u64 param_1)
 {
     if (*(s64*)PTR_s_pInstance_71052a2dc8 != 0) {
@@ -314,7 +314,7 @@ u32 FUN_7100167260(u64 param_1)
     return 0xfd;
 }
 
-// 710016bb30 — GetHeap + alloc 0xa8 bytes + call init
+// 710016bb30 -- GetHeap + alloc 0xa8 bytes + call init
 s64 FUN_710016bb30(u64 param_1)
 {
     u64 uVar1 = nn::pia::common::HeapManager::GetHeap();

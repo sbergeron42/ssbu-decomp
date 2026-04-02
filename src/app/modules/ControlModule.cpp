@@ -1,5 +1,5 @@
 #include "app/BattleObjectModuleAccessor.h"
-// ControlModule — accessor+0x48 (same field as FighterControlModule)
+// ControlModule -- accessor+0x48 (same field as FighterControlModule)
 #define CM(a) (a->fighter_control_module)
 #define CONTROL_MODULE(a) CM(a)
 #define VT(m) (*reinterpret_cast<void***>(m))

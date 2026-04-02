@@ -1,6 +1,6 @@
 #include "types.h"
 
-// MEDIUM-tier FUN_* functions — mixed address range, batch 15
+// MEDIUM-tier FUN_* functions -- mixed address range, batch 15
 // Pool-d worker: auto-generated from Ghidra decompilation
 
 // ---- External declarations -----------------------------------------------
@@ -88,7 +88,7 @@ extern s64 DAT_71052aacd8;
 
 // ---- nn::os tick frequency singletons -------------------------------------
 
-// 71000bb600 — guard 71052aacc0, store freq/1M to 71052aacb8
+// 71000bb600 -- guard 71052aacc0, store freq/1M to 71052aacb8
 s64* FUN_71000bb600()
 {
     s32 iVar1;
@@ -104,7 +104,7 @@ s64* FUN_71000bb600()
     return &DAT_71052aacb8;
 }
 
-// 71000bb700 — nested: 71052aace0 outer, 71052aacd0 inner; freq/1K then *1K
+// 71000bb700 -- nested: 71052aace0 outer, 71052aacd0 inner; freq/1K then *1K
 s64* FUN_71000bb700()
 {
     s32 iVar1;
@@ -129,7 +129,7 @@ s64* FUN_71000bb700()
 
 // ---- cxa_guard pointer-init variant ----------------------------------------
 
-// 7100134ba0 — guard 3c18, sets *3c20 = 3c30+0x10 (no data zeroing)
+// 7100134ba0 -- guard 3c18, sets *3c20 = 3c30+0x10 (no data zeroing)
 u8* FUN_7100134ba0()
 {
     s32 iVar1;
@@ -146,7 +146,7 @@ u8* FUN_7100134ba0()
 
 // ---- Comparison helpers ---------------------------------------------------
 
-// 71000b2b10 — memcmp 0x10 bytes + u16 compare, return 1 if both equal
+// 71000b2b10 -- memcmp 0x10 bytes + u16 compare, return 1 if both equal
 u64 FUN_71000b2b10(s64 param_1, s64 param_2)
 {
     s32 iVar1 = memcmp((void*)(param_1 + 8), (void*)(param_2 + 8), 0x10);
@@ -157,7 +157,7 @@ u64 FUN_71000b2b10(s64 param_1, s64 param_2)
 
 // ---- pead allocation helpers -----------------------------------------------
 
-// 71000b7020 — allocate 0x20 bytes, init as a linked-list / cache node
+// 71000b7020 -- allocate 0x20 bytes, init as a linked-list / cache node
 void FUN_71000b7020(s64 param_1)
 {
     s64 lVar1 = *(s64*)(param_1 + 8);
@@ -172,7 +172,7 @@ void FUN_71000b7020(s64 param_1)
     }
 }
 
-// 710013b7a0 — vtable delete sub-object at +0x80, free, zero ptr
+// 710013b7a0 -- vtable delete sub-object at +0x80, free, zero ptr
 void FUN_710013b7a0(s64 param_1)
 {
     u64* puVar1 = *(u64**)(param_1 + 0x80);
@@ -183,7 +183,7 @@ void FUN_710013b7a0(s64 param_1)
     }
 }
 
-// 71000ecf00 — overwrite vtable, vtable-delete field[0x5b], free, zero
+// 71000ecf00 -- overwrite vtable, vtable-delete field[0x5b], free, zero
 void FUN_71000ecf00(s64* param_1)
 {
     u64* puVar1 = (u64*)param_1[0x5b];
@@ -197,7 +197,7 @@ void FUN_71000ecf00(s64* param_1)
 
 // ---- Loop / check helpers --------------------------------------------------
 
-// 71000c7428 — call FUN_71000c9b60(+0x178), check field +0x9c != -1
+// 71000c7428 -- call FUN_71000c9b60(+0x178), check field +0x9c != -1
 u64 FUN_71000c7428(s64 param_1)
 {
     s64 lVar1 = FUN_71000c9b60(param_1 + 0x178);
@@ -206,7 +206,7 @@ u64 FUN_71000c7428(s64 param_1)
     return 0;
 }
 
-// 71000c8490 — do-while: loop while FUN_71000c84e0 returns odd, exit on 0 at +0x90
+// 71000c8490 -- do-while: loop while FUN_71000c84e0 returns odd, exit on 0 at +0x90
 u64 FUN_71000c8490(s64 param_1)
 {
     u64 uVar1;
@@ -220,7 +220,7 @@ u64 FUN_71000c8490(s64 param_1)
 
 // ---- Time span computation -------------------------------------------------
 
-// 71000cabc0 — compute elapsed ms: (end - start) / ticksPerMSec
+// 71000cabc0 -- compute elapsed ms: (end - start) / ticksPerMSec
 void FUN_71000cabc0(s64 param_1, u64* param_2, u64* param_3)
 {
     u64 uVar3 = *param_3;
@@ -236,7 +236,7 @@ void FUN_71000cabc0(s64 param_1, u64* param_2, u64* param_3)
 
 // ---- nn::pia vtable init helpers -------------------------------------------
 
-// 71000cf800 — vtable init + field stores
+// 71000cf800 -- vtable init + field stores
 void FUN_71000cf800(s64* param_1, u64 param_2, u8 param_3, u8 param_4, s64 param_5)
 {
     *param_1 = (s64)(PTR_DAT_71052a2ed0 + 0x10);
@@ -247,7 +247,7 @@ void FUN_71000cf800(s64* param_1, u64 param_2, u8 param_3, u8 param_4, s64 param
     param_1[0x13] = param_5;
 }
 
-// 7100116780 — conditional HeapManager::Cleanup + FUN_71000bcda0
+// 7100116780 -- conditional HeapManager::Cleanup + FUN_71000bcda0
 void FUN_7100116780()
 {
     u8 auStack_30[16];
@@ -260,7 +260,7 @@ void FUN_7100116780()
 
 // ---- Callback / wrapper patterns ------------------------------------------
 
-// 7100116fd0 — store param_2, call two setup functions with stack buffers
+// 7100116fd0 -- store param_2, call two setup functions with stack buffers
 void FUN_7100116fd0(u64* param_1, u64 param_2)
 {
     u8 auStack_40[16];
@@ -270,13 +270,13 @@ void FUN_7100116fd0(u64* param_1, u64 param_2)
     FUN_7100126a70(auStack_40, *param_1, param_1 + 1);
 }
 
-// 71001170d0 — single wrapper: call FUN_7100127530 with *param_1
+// 71001170d0 -- single wrapper: call FUN_7100127530 with *param_1
 void FUN_71001170d0(u64* param_1)
 {
     FUN_7100127530(*param_1);
 }
 
-// 710011efd0 — call FUN_7100140e60(param_1), overwrite vtable
+// 710011efd0 -- call FUN_7100140e60(param_1), overwrite vtable
 void FUN_710011efd0(s64* param_1)
 {
     FUN_7100140e60(param_1);
@@ -285,7 +285,7 @@ void FUN_710011efd0(s64* param_1)
 
 // ---- nn::pia::common::CallContext helpers ----------------------------------
 
-// 710012b440 — conditional SignalCancel, then conditional sub call
+// 710012b440 -- conditional SignalCancel, then conditional sub call
 void FUN_710012b440(s64 param_1)
 {
     u8 auStack_30[16];
@@ -295,7 +295,7 @@ void FUN_710012b440(s64 param_1)
         FUN_71000ba010(auStack_30, param_1 + 0x60);
 }
 
-// 710012b490 — guard: skip if param_2 out of range [1,2] or already running
+// 710012b490 -- guard: skip if param_2 out of range [1,2] or already running
 u64 FUN_710012b490(s64 param_1, s8 param_2)
 {
     if ((u8)(param_2 - 1) > 1)
@@ -311,7 +311,7 @@ u64 FUN_710012b490(s64 param_1, s8 param_2)
 
 // ---- nn::os MessageQueue / Thread helpers ---------------------------------
 
-// 710013bcb0 — conditional ReceiveMessageQueue (blocking or try)
+// 710013bcb0 -- conditional ReceiveMessageQueue (blocking or try)
 u64 FUN_710013bcb0(nn::os::MessageQueueType* param_1, s32 param_2)
 {
     u64 local_18;
@@ -325,7 +325,7 @@ u64 FUN_710013bcb0(nn::os::MessageQueueType* param_1, s32 param_2)
     return local_18;
 }
 
-// 710013c200 — start thread if not already running
+// 710013c200 -- start thread if not already running
 u64 FUN_710013c200(s64 param_1)
 {
     if (*(s32*)(param_1 + 0xcc) != 0)
@@ -340,7 +340,7 @@ u64 FUN_710013c200(s64 param_1)
 
 // ---- Misc helpers ----------------------------------------------------------
 
-// 7100142430 — store fields + call FUN_71001617f0
+// 7100142430 -- store fields + call FUN_71001617f0
 void FUN_7100142430(s64 param_1, u32* param_2)
 {
     u8 auStack_30[16];
@@ -349,7 +349,7 @@ void FUN_7100142430(s64 param_1, u32* param_2)
     FUN_71001617f0(auStack_30, *(u64*)PTR_s_pInstance_71052a3bb0, param_1 + 0x24c);
 }
 
-// 7100146a30 — computed-offset dispatch, then conditional store 0x13
+// 7100146a30 -- computed-offset dispatch, then conditional store 0x13
 void FUN_7100146a30(s32* param_1, s64 param_2, u64 param_3)
 {
     FUN_71001464b0(param_1, param_2,
@@ -361,7 +361,7 @@ void FUN_7100146a30(s32* param_1, s64 param_2, u64 param_3)
     *(u32*)(param_2 + 0x140) = 0x13;
 }
 
-// 7100146f80 — vtable dispatch at +0x58, conditional sub-lookup, return
+// 7100146f80 -- vtable dispatch at +0x58, conditional sub-lookup, return
 u64 FUN_7100146f80(s64 param_1)
 {
     u64 uVar2 = (*(u64(**)(void))(*(s64*)*(s64**)(param_1 + 0x30) + 0x58))();

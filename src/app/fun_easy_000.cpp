@@ -1,6 +1,6 @@
 #include "types.h"
 
-// EASY-tier FUN_* functions — address range 0x7100xxxxxx
+// EASY-tier FUN_* functions -- address range 0x7100xxxxxx
 // Pool-b worker: manually decompiled from Ghidra
 
 // External globals
@@ -2805,7 +2805,7 @@ void FUN_710007f4e0(u64 param_1, void (*param_2)(u64, u64))
 }
 
 // =========================================================================
-// BATCH 8 — remaining 0x7100 range functions
+// BATCH 8 -- remaining 0x7100 range functions
 // =========================================================================
 
 // SDK forward declarations

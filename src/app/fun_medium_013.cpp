@@ -1,6 +1,6 @@
 #include "types.h"
 
-// MEDIUM-tier FUN_* functions — mixed address range, batch 14
+// MEDIUM-tier FUN_* functions -- mixed address range, batch 14
 // Pool-d worker: auto-generated from Ghidra decompilation
 
 // ---- External declarations -----------------------------------------------
@@ -94,7 +94,7 @@ extern u8  PTR_DAT_71052a26f8[];
 
 // ---- __cxa_guard_acquire singleton init patterns --------------------------
 
-// 710003d650 — nested: outer 2418/2420, inner 2380/2388
+// 710003d650 -- nested: outer 2418/2420, inner 2380/2388
 u8* FUN_710003d650()
 {
     s32 iVar1;
@@ -116,7 +116,7 @@ u8* FUN_710003d650()
     return PTR_DAT_71052a2420;
 }
 
-// 710005e010 — nested: outer 2488/2490, inner 2498/24a0
+// 710005e010 -- nested: outer 2488/2490, inner 2498/24a0
 u8* FUN_710005e010()
 {
     s32 iVar1;
@@ -138,7 +138,7 @@ u8* FUN_710005e010()
     return PTR_DAT_71052a2490;
 }
 
-// 7100060700 — nested: outer 25b8/25c0, inner 2498/24a0
+// 7100060700 -- nested: outer 25b8/25c0, inner 2498/24a0
 u8* FUN_7100060700()
 {
     s32 iVar1;
@@ -160,7 +160,7 @@ u8* FUN_7100060700()
     return PTR_DAT_71052a25c0;
 }
 
-// 71000646f0 — nested: outer 25c8/25d0, inner 2498/24a0
+// 71000646f0 -- nested: outer 25c8/25d0, inner 2498/24a0
 u8* FUN_71000646f0()
 {
     s32 iVar1;
@@ -182,7 +182,7 @@ u8* FUN_71000646f0()
     return PTR_DAT_71052a25d0;
 }
 
-// 710006b690 — nested: outer 25d8/25e0, inner 2498/24a0
+// 710006b690 -- nested: outer 25d8/25e0, inner 2498/24a0
 u8* FUN_710006b690()
 {
     s32 iVar1;
@@ -204,7 +204,7 @@ u8* FUN_710006b690()
     return PTR_DAT_71052a25e0;
 }
 
-// 710006e920 — nested: outer 25e8/25f0, inner 2498/24a0
+// 710006e920 -- nested: outer 25e8/25f0, inner 2498/24a0
 u8* FUN_710006e920()
 {
     s32 iVar1;
@@ -226,7 +226,7 @@ u8* FUN_710006e920()
     return PTR_DAT_71052a25f0;
 }
 
-// 710006d210 — nested: outer 25f8/2600, inner 2498/24a0
+// 710006d210 -- nested: outer 25f8/2600, inner 2498/24a0
 u8* FUN_710006d210()
 {
     s32 iVar1;
@@ -248,7 +248,7 @@ u8* FUN_710006d210()
     return PTR_DAT_71052a2600;
 }
 
-// 7100060ac0 — simple: guard 2770, data 2778
+// 7100060ac0 -- simple: guard 2770, data 2778
 u8* FUN_7100060ac0()
 {
     s32 iVar1;
@@ -263,7 +263,7 @@ u8* FUN_7100060ac0()
     return PTR_DAT_71052a2778;
 }
 
-// 7100078a50 — nested: outer 26f8/26f0, inner 2568/2570
+// 7100078a50 -- nested: outer 26f8/26f0, inner 2568/2570
 u8* FUN_7100078a50()
 {
     s32 iVar1;
@@ -285,7 +285,7 @@ u8* FUN_7100078a50()
     return PTR_DAT_71052a26f0;
 }
 
-// 7100065380 — triple-nested: 27b8 > 27c8 > 2718/2720, links 27c0->27d0->2720
+// 7100065380 -- triple-nested: 27b8 > 27c8 > 2718/2720, links 27c0->27d0->2720
 u8* FUN_7100065380()
 {
     s32 iVar1;
@@ -316,7 +316,7 @@ u8* FUN_7100065380()
 
 // ---- nn::ui2d helpers -----------------------------------------------------
 
-// 71000666b0 — string dup: allocate sVar1+1 bytes, strncpy, return ptr
+// 71000666b0 -- string dup: allocate sVar1+1 bytes, strncpy, return ptr
 char* FUN_71000666b0(char* param_1)
 {
     u64 sVar1 = strlen(param_1);
@@ -325,7 +325,7 @@ char* FUN_71000666b0(char* param_1)
     return dest;
 }
 
-// 7100065310 — init struct: zero field[2], set vtable ptr, set field[1]=-1, string-dup field[2]
+// 7100065310 -- init struct: zero field[2], set vtable ptr, set field[1]=-1, string-dup field[2]
 void FUN_7100065310(s64* param_1, u64 param_2)
 {
     param_1[2] = 0;
@@ -335,7 +335,7 @@ void FUN_7100065310(s64* param_1, u64 param_2)
     param_1[2] = lVar2;
 }
 
-// 7100064450 — conditional store u32 at +0x150 or +0x154, set flag bits
+// 7100064450 -- conditional store u32 at +0x150 or +0x154, set flag bits
 void FUN_7100064450(u32 param_1, s64 param_2, s32 param_3)
 {
     if (param_3 != 1) {
@@ -348,7 +348,7 @@ void FUN_7100064450(u32 param_1, s64 param_2, s32 param_3)
     *(u16*)(param_2 + 0x114) |= 4;
 }
 
-// 7100078970 — write float if changed, set dirty bit
+// 7100078970 -- write float if changed, set dirty bit
 void FUN_7100078970(f32 param_1, s64 param_2)
 {
     if (*(f32*)(param_2 + 0x150) != param_1) {
@@ -357,7 +357,7 @@ void FUN_7100078970(f32 param_1, s64 param_2)
     }
 }
 
-// 71000716dc — compute (pi / acosf(-2/x + 1)) * 4 + 8
+// 71000716dc -- compute (pi / acosf(-2/x + 1)) * 4 + 8
 s32 FUN_71000716dc(f32 param_1)
 {
     f32 fVar1 = acosf(-2.0f / param_1 + 1.0f);
@@ -369,28 +369,28 @@ s32 FUN_71000716dc(f32 param_1)
 
 // ---- vtable dispatch helpers -----------------------------------------------
 
-// 71000789e0 — vtable call at +0x30 with 0, return result + 1
+// 71000789e0 -- vtable call at +0x30 with 0, return result + 1
 s32 FUN_71000789e0(s64* param_1)
 {
     s32 iVar1 = (*(s32(**)(s64*, s32))(*(s64*)param_1 + 0x30))(param_1, 0);
     return iVar1 + 1;
 }
 
-// 7100078bc0 — double-deref vtable at +0x20, return field*result
+// 7100078bc0 -- double-deref vtable at +0x20, return field*result
 f32 FUN_7100078bc0(s64 param_1)
 {
     s32 iVar1 = (*(s32(**)(void))(*(s64*)*(s64**)(param_1 + 0x28) + 0x20))();
     return *(f32*)(param_1 + 0xc) * (f32)iVar1;
 }
 
-// 7100078c00 — double-deref vtable at +0x28, return field*result
+// 7100078c00 -- double-deref vtable at +0x28, return field*result
 f32 FUN_7100078c00(s64 param_1)
 {
     s32 iVar1 = (*(s32(**)(void))(*(s64*)*(s64**)(param_1 + 0x28) + 0x28))();
     return *(f32*)(param_1 + 0x10) * (f32)iVar1;
 }
 
-// 7100078c40 — double-deref vtable at +0x30, return field*result
+// 7100078c40 -- double-deref vtable at +0x30, return field*result
 f32 FUN_7100078c40(s64 param_1)
 {
     s32 iVar1 = (*(s32(**)(void))(*(s64*)*(s64**)(param_1 + 0x28) + 0x30))();
@@ -399,7 +399,7 @@ f32 FUN_7100078c40(s64 param_1)
 
 // ---- Struct init helpers ---------------------------------------------------
 
-// 710005a5e0 — zero first field, call sub x3, memset middle region
+// 710005a5e0 -- zero first field, call sub x3, memset middle region
 void FUN_710005a5e0(u64* param_1)
 {
     *param_1 = 0;
@@ -409,7 +409,7 @@ void FUN_710005a5e0(u64* param_1)
     memset(param_1 + 1, 0, 0x1a1);
 }
 
-// 71000b1d50 — copy two 8-byte params to struct via stack locals
+// 71000b1d50 -- copy two 8-byte params to struct via stack locals
 void FUN_71000b1d50(s64 param_1, u64 param_2, u64 param_3)
 {
     u64 local_30 = param_2;
@@ -418,7 +418,7 @@ void FUN_71000b1d50(s64 param_1, u64 param_2, u64 param_3)
     memcpy((void*)(param_1 + 8), &local_30, 0x10);
 }
 
-// 71000b1f50 — two memcmp checks against constant data, return nonzero if either differs
+// 71000b1f50 -- two memcmp checks against constant data, return nonzero if either differs
 u32 FUN_71000b1f50(s64 param_1)
 {
     u32 uVar1 = (u32)memcmp((void*)(param_1 + 8), &DAT_71044919c4, 0x10);
@@ -431,7 +431,7 @@ u32 FUN_71000b1f50(s64 param_1)
 
 // ---- nn::pia / pead helpers ------------------------------------------------
 
-// 71000b4000 — conditional SignalCancel, then Reset, zero field
+// 71000b4000 -- conditional SignalCancel, then Reset, zero field
 void FUN_71000b4000(s64 param_1)
 {
     s32* piVar1 = (s32*)(param_1 + 0x58);
@@ -441,7 +441,7 @@ void FUN_71000b4000(s64 param_1)
     *(u64*)(param_1 + 0x88) = 0;
 }
 
-// 71000b6510 — zero global ptr, then conditionally freeToSeadHeap
+// 71000b6510 -- zero global ptr, then conditionally freeToSeadHeap
 void FUN_71000b6510()
 {
     if (*(s64*)PTR_DAT_71052a2c80 != 0)
@@ -455,7 +455,7 @@ void FUN_71000b6510()
     }
 }
 
-// 71000bb8e0 — same pattern, different globals (2ce0/2ce8)
+// 71000bb8e0 -- same pattern, different globals (2ce0/2ce8)
 void FUN_71000bb8e0()
 {
     if (*(s64*)PTR_DAT_71052a2ce0 != 0)
@@ -469,7 +469,7 @@ void FUN_71000bb8e0()
     }
 }
 
-// 71000ba9b0 — byte-swap u32 and u16, then call FUN_71000b1d10
+// 71000ba9b0 -- byte-swap u32 and u16, then call FUN_71000b1d10
 void FUN_71000ba9b0(s64 param_1, s64 param_2)
 {
     if (param_2 != 0) {
@@ -481,7 +481,7 @@ void FUN_71000ba9b0(s64 param_1, s64 param_2)
     }
 }
 
-// 71000bf770 — FUN_71001354c0 result, floor to min 1
+// 71000bf770 -- FUN_71001354c0 result, floor to min 1
 s32 FUN_71000bf770(s64 param_1)
 {
     s32 iVar1 = FUN_71001354c0(*(u32*)(param_1 + 0x5f0));
@@ -490,7 +490,7 @@ s32 FUN_71000bf770(s64 param_1)
     return iVar1;
 }
 
-// 71000c2a90 — extract local address, set InetAddress fields
+// 71000c2a90 -- extract local address, set InetAddress fields
 void FUN_71000c2a90(s64 param_1, u64 param_2)
 {
     u8  auStack_38[16];

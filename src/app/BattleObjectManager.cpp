@@ -5,8 +5,9 @@ struct BattleObjectManager;
 
 namespace app::lua_bind {
 
-// 7101fca0b0 — 19 instructions (calls, branches, tbz, cset)
-extern "C" void* FUN_71003ac560(u32);
+// 7101fca0b0 -- 19 instructions (calls, branches, tbz, cset)
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 bool BattleObjectManager__is_active_find_battle_object_impl(BattleObjectManager* mgr, u32 id) {
     auto* obj = reinterpret_cast<u8*>(FUN_71003ac560(id));
     if (!obj) return false;

@@ -1,6 +1,6 @@
 #include "types.h"
 
-// MEDIUM-tier FUN_* functions — 0x7103 address range, batch d-001
+// MEDIUM-tier FUN_* functions -- 0x7103 address range, batch d-001
 // Pool-d worker: auto-generated from Ghidra decompilation
 
 // ---- External declarations -----------------------------------------------
@@ -32,14 +32,14 @@ extern u8 DAT_710532e8b0[];
 
 // ---- Functions ---------------------------------------------------------------
 
-// 0x71031758c0 — vtable + field copy, 2 fields (32 bytes)
+// 0x71031758c0 -- vtable + field copy, 2 fields (32 bytes)
 void FUN_71031758c0(s64 param_1, u64 *param_2)
 {
     *param_2 = (u64)PTR_LAB_710517b8e0;
     param_2[1] = *(u64 *)(param_1 + 8);
 }
 
-// 0x71032ca720 — vtable + field copy, 3 fields (80 bytes)
+// 0x71032ca720 -- vtable + field copy, 3 fields (80 bytes)
 void FUN_71032ca720(s64 param_1, u64 *param_2)
 {
     u64 uVar1;
@@ -49,7 +49,7 @@ void FUN_71032ca720(s64 param_1, u64 *param_2)
     param_2[2] = uVar1;
 }
 
-// 0x71032db1c0 — vtable + field copy, 4 fields (96 bytes)
+// 0x71032db1c0 -- vtable + field copy, 4 fields (96 bytes)
 void FUN_71032db1c0(s64 param_1, u64 *param_2)
 {
     u64 uVar1;
@@ -62,7 +62,7 @@ void FUN_71032db1c0(s64 param_1, u64 *param_2)
     param_2[1] = uVar1;
 }
 
-// 0x71032e5c20 — vtable + field copy, 4 fields variant (96 bytes)
+// 0x71032e5c20 -- vtable + field copy, 4 fields variant (96 bytes)
 void FUN_71032e5c20(s64 param_1, u64 *param_2)
 {
     u64 uVar1;
@@ -75,7 +75,7 @@ void FUN_71032e5c20(s64 param_1, u64 *param_2)
     param_2[1] = uVar1;
 }
 
-// 0x7103378c00 — vtable + field copy, 4 fields variant 2 (96 bytes)
+// 0x7103378c00 -- vtable + field copy, 4 fields variant 2 (96 bytes)
 void FUN_7103378c00(s64 param_1, u64 *param_2)
 {
     u64 uVar1;
@@ -88,7 +88,7 @@ void FUN_7103378c00(s64 param_1, u64 *param_2)
     param_2[1] = uVar1;
 }
 
-// 0x7103351390 — struct zero/init with sentinel values (1728 bytes)
+// 0x7103351390 -- struct zero/init with sentinel values (1728 bytes)
 void FUN_7103351390(u64 *param_1)
 {
     *(u8 *)((s64)param_1 + 0x7c) = 0;
@@ -106,7 +106,7 @@ void FUN_7103351390(u64 *param_1)
     param_1[0x19] = 1;
 }
 
-// 0x710313ed70 — battle object lookup with static singleton fallback (240 bytes)
+// 0x710313ed70 -- battle object lookup with static singleton fallback (240 bytes)
 u64 FUN_710313ed70(u64 param_1, s64 param_2)
 {
     s32 iVar1;
@@ -138,7 +138,7 @@ u64 FUN_710313ed70(u64 param_1, s64 param_2)
     return 1;
 }
 
-// 0x710316a140 — tree walk then nested flag set (960 bytes)
+// 0x710316a140 -- tree walk then nested flag set (960 bytes)
 void FUN_710316a140(s64 param_1, u64 param_2)
 {
     s64 *plVar1;
@@ -164,7 +164,7 @@ LAB_710316a198:
     }
 }
 
-// 0x71032f5a00 — insertion sort on ulong array by low 40 bits (172 bytes)
+// 0x71032f5a00 -- insertion sort on ulong array by low 40 bits (172 bytes)
 u8 FUN_71032f5a00(u64 *param_1, u64 *param_2)
 {
     u8 bVar1;
@@ -341,7 +341,7 @@ LAB_71032f5c08:
     return 1;
 }
 
-// 0x7103341230 — insertion sort on ulong array by 0xff0000ffffffffff mask (1308 bytes)
+// 0x7103341230 -- insertion sort on ulong array by 0xff0000ffffffffff mask (1308 bytes)
 u8 FUN_7103341230(u64 *param_1, u64 *param_2)
 {
     u8 bVar1;
@@ -518,7 +518,7 @@ LAB_7103341438:
     return 1;
 }
 
-// 0x71033949b0 — build FNV-1a hash for unmapped_head_* names (768 bytes)
+// 0x71033949b0 -- build FNV-1a hash for unmapped_head_* names (768 bytes)
 void FUN_71033949b0(u32 *param_1, u32 param_2)
 {
     u32 uVar1;

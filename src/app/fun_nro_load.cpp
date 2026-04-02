@@ -15,7 +15,7 @@ extern u8* PTR_s_mario_7104f80e20[];
 extern u8 DAT_71042b1e2e;
 extern u32 DAT_7104753084[];
 
-// load_fighter's_nro___ — insert NRO entry into fighter manager's load tree
+// load_fighter's_nro___ -- insert NRO entry into fighter manager's load tree
 // Size: 1616 bytes (0x650)
 // 0x71017e4940
 __attribute__((naked))

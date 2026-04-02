@@ -4,7 +4,7 @@
 inline void* operator new(unsigned long, void* p) noexcept { return p; }
 inline void  operator delete(void*, void*) noexcept {}
 
-// MEDIUM-tier FUN_* functions — mixed address range, batch 20
+// MEDIUM-tier FUN_* functions -- mixed address range, batch 20
 // Pool-d worker: auto-generated from Ghidra decompilation
 
 // ---- External declarations -----------------------------------------------
@@ -38,7 +38,7 @@ extern u8  PTR_DAT_71052a2e50[];   // vtable (FUN_71000c8830)
 
 // ---- Struct index + call helper ------------------------------------------
 
-// 7100088090 — index by param_2*0x20, store fields, call FUN_7100088c50
+// 7100088090 -- index by param_2*0x20, store fields, call FUN_7100088c50
 u64 FUN_7100088090(s64 param_1, s32 param_2, u64 param_3)
 {
     s64 lVar1 = param_1 + (s64)param_2 * 0x20;
@@ -52,7 +52,7 @@ u64 FUN_7100088090(s64 param_1, s32 param_2, u64 param_3)
 
 // ---- Float scale with NaN passthrough ------------------------------------
 
-// 710009e100 — scale float at +0x14 by field +0x4c, pass through if <=1 or NaN
+// 710009e100 -- scale float at +0x14 by field +0x4c, pass through if <=1 or NaN
 s32 FUN_710009e100(s64 param_1)
 {
     f32 fVar1 = *(f32*)(*(s64*)(*(s64*)(param_1 + 0x238) + 0x338) + 0x14);
@@ -64,7 +64,7 @@ s32 FUN_710009e100(s64 param_1)
     return (s32)fVar2;
 }
 
-// 71000a38f0 — same as FUN_710009e100 but reads offset +0x18
+// 71000a38f0 -- same as FUN_710009e100 but reads offset +0x18
 s32 FUN_71000a38f0(s64 param_1)
 {
     f32 fVar1 = *(f32*)(*(s64*)(*(s64*)(param_1 + 0x238) + 0x338) + 0x18);
@@ -78,7 +78,7 @@ s32 FUN_71000a38f0(s64 param_1)
 
 // ---- Variable-length struct linear search --------------------------------
 
-// 710007c310 — do-while search through variable-stride entries
+// 710007c310 -- do-while search through variable-stride entries
 s32* FUN_710007c310(s64 param_1, s32 param_2)
 {
     u32 uVar1;
@@ -100,7 +100,7 @@ s32* FUN_710007c310(s64 param_1, s32 param_2)
 
 // ---- cxa_guard singleton -------------------------------------------------
 
-// 71000854a0 — nested cxa_guard: outer 29b8/29c0, inner 2900/2908
+// 71000854a0 -- nested cxa_guard: outer 29b8/29c0, inner 2900/2908
 u8* FUN_71000854a0()
 {
     s32 iVar1;
@@ -123,7 +123,7 @@ u8* FUN_71000854a0()
 
 // ---- Conditional memcpy block --------------------------------------------
 
-// 710008d670 — copy up to 11 buffer slots when flag byte is zero
+// 710008d670 -- copy up to 11 buffer slots when flag byte is zero
 void FUN_710008d670(u64 param_1, s64 param_2)
 {
     if (*(s8*)(*(s64*)(param_2 + 0xa0) + 0x752) == '\0') {
@@ -149,7 +149,7 @@ void FUN_710008d670(u64 param_1, s64 param_2)
 
 // ---- Sampler pattern callback loop ---------------------------------------
 
-// 71000a6c30 — iterate sampler buffer, invoke callback on each entry
+// 71000a6c30 -- iterate sampler buffer, invoke callback on each entry
 void FUN_71000a6c30(u64 param_1, void (*param_2)(s64, s64, u64), u64 param_3)
 {
     u8* puVar2 = PTR_g_SamplerPatternCount_71052a2bc8;
@@ -167,7 +167,7 @@ void FUN_71000a6c30(u64 param_1, void (*param_2)(s64, s64, u64), u64 param_3)
 
 // ---- memset+memcpy struct init -------------------------------------------
 
-// 71000b1d10 — zero 0x10 bytes at +8, then memcpy 4 bytes of param_2 into it
+// 71000b1d10 -- zero 0x10 bytes at +8, then memcpy 4 bytes of param_2 into it
 void FUN_71000b1d10(s64 param_1, u32 param_2)
 {
     u32 local_18[2];
@@ -178,7 +178,7 @@ void FUN_71000b1d10(s64 param_1, u32 param_2)
 
 // ---- Vtable chain null checks --------------------------------------------
 
-// 71000c5330 — guard-null + vtable chain + field check
+// 71000c5330 -- guard-null + vtable chain + field check
 u64 FUN_71000c5330(s64 param_1)
 {
     if (*(s64*)(param_1 + 0x90) == 0)
@@ -195,7 +195,7 @@ u64 FUN_71000c5330(s64 param_1)
 
 // ---- StepSequenceJob constructor with extended zero fields ---------------
 
-// 71000c8830 — StepSequenceJob base + zero 5 fields + vtable 2e50
+// 71000c8830 -- StepSequenceJob base + zero 5 fields + vtable 2e50
 void FUN_71000c8830(s64* param_1)
 {
     new (param_1) nn::pia::common::StepSequenceJob();

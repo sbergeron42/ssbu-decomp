@@ -1,11 +1,11 @@
 #include "types.h"
 
-// MEDIUM-tier FUN_* functions — 0x7103 address range, batch d2-002
+// MEDIUM-tier FUN_* functions -- 0x7103 address range, batch d2-002
 // Pool-d worker: auto-generated from Ghidra decompilation
 
 // ---- Functions ---------------------------------------------------------------
 
-// 0x71032dbcf0 — slot lookup by int key, returns pointer into struct at +0xc44..+0x10844 (1776 bytes)
+// 0x71032dbcf0 -- slot lookup by int key, returns pointer into struct at +0xc44..+0x10844 (1776 bytes)
 u8 *FUN_71032dbcf0(s64 param_1, s32 param_2)
 {
     if (param_2 != -1) {
@@ -77,7 +77,7 @@ u8 *FUN_71032dbcf0(s64 param_1, s32 param_2)
     return (u8 *)(param_1 + 0x834);
 }
 
-// 0x71032de4e0 — slot lookup by int key, returns int* pointer into struct (1472 bytes)
+// 0x71032de4e0 -- slot lookup by int key, returns int* pointer into struct (1472 bytes)
 s32 *FUN_71032de4e0(s64 param_1, s32 param_2)
 {
     s32 *piVar1;

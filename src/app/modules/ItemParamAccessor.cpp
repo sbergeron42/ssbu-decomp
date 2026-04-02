@@ -4,7 +4,7 @@ struct ItemParamAccessor;
 
 namespace app::lua_bind {
 
-// 7102144d00 — array index into param data with null-guard (64 bytes)
+// 7102144d00 -- array index into param data with null-guard (64 bytes)
 // base = *a; if base[idx*8+0xef8] == 0: return 0; else: return base[idx*32 + subidx*4 + 0x7da48]
 u32 ItemParamAccessor__boss_common_param_int_impl(ItemParamAccessor* a, s32 idx, u32 subidx) {
     auto* base = *reinterpret_cast<u8**>(a);
@@ -12,7 +12,7 @@ u32 ItemParamAccessor__boss_common_param_int_impl(ItemParamAccessor* a, s32 idx,
     return *reinterpret_cast<u32*>(base + (s64)idx * 32 + (u64)subidx * 4 + 0x7da48);
 }
 
-// 7102144d40 — binary search in item param table (88 instructions)
+// 7102144d40 -- binary search in item param table (88 instructions)
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 bool ItemParamAccessor__is_valid_self_param_impl(ItemParamAccessor* self, s32 param_kind, u64 hash) {
@@ -43,7 +43,7 @@ bool ItemParamAccessor__is_valid_self_param_impl(ItemParamAccessor* self, s32 pa
 }
 #endif
 
-// 7102144ea0 — b <ext>; pad; pad; pad
+// 7102144ea0 -- b <ext>; pad; pad; pad
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void ItemParamAccessor__get_self_param_float_impl(ItemParamAccessor* self, s32 kind, u32 id) {
@@ -56,7 +56,7 @@ void ItemParamAccessor__get_self_param_float_impl(ItemParamAccessor* self, s32 k
 }
 #endif
 
-// 7102144eb0 — b <ext>; pad; pad; pad
+// 7102144eb0 -- b <ext>; pad; pad; pad
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void ItemParamAccessor__get_self_param_int_impl(ItemParamAccessor* self, s32 kind, u32 id) {

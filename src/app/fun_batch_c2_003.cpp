@@ -1,7 +1,7 @@
 #include "types.h"
 
-// Batch decompiled via Ghidra MCP — pool-c, batch 003
-// Range: 0x7102000000 — 0x7102FFFFFF
+// Batch decompiled via Ghidra MCP -- pool-c, batch 003
+// Range: 0x7102000000 -- 0x7102FFFFFF
 
 // Forward declarations
 [[noreturn]] extern "C" void abort();

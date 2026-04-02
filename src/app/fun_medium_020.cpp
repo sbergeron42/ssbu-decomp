@@ -4,7 +4,7 @@
 inline void* operator new(unsigned long, void* p) noexcept { return p; }
 inline void  operator delete(void*, void*) noexcept {}
 
-// MEDIUM-tier FUN_* functions — mixed address range, batch 21
+// MEDIUM-tier FUN_* functions -- mixed address range, batch 21
 // Pool-d worker: auto-generated from Ghidra decompilation
 
 // ---- External declarations -----------------------------------------------
@@ -41,7 +41,7 @@ extern u8  PTR_s_CurrentHeapId_71052a2c10[];
 
 // ---- nn::err dispatch helpers (switch → ErrorResultVariant) ---------------
 
-// 71000b9d40 — map curl/socket error code → nn::err result variant
+// 71000b9d40 -- map curl/socket error code → nn::err result variant
 void FUN_71000b9d40(u64 param_1, u32 param_2)
 {
     u32 local_38[4];
@@ -86,7 +86,7 @@ void FUN_71000b9d40(u64 param_1, u32 param_2)
     FUN_71000bce50((u32*)&param_1, local_38);
 }
 
-// 71000b9de0 — smaller case set variant of FUN_71000b9d40
+// 71000b9de0 -- smaller case set variant of FUN_71000b9d40
 void FUN_71000b9de0(u64 param_1, u32 param_2)
 {
     u32 local_38[4];
@@ -122,7 +122,7 @@ void FUN_71000b9de0(u64 param_1, u32 param_2)
     FUN_71000bce50((u32*)&param_1, local_38);
 }
 
-// 71000b9e80 — alternate case set variant (adds 0x62/0x5c/0x5d)
+// 71000b9e80 -- alternate case set variant (adds 0x62/0x5c/0x5d)
 void FUN_71000b9e80(u64 param_1, u32 param_2)
 {
     u32 local_38[4];
@@ -163,7 +163,7 @@ void FUN_71000b9e80(u64 param_1, u32 param_2)
 
 // ---- ErrorResultVariant constructor + comparison helper ------------------
 
-// 71000bce50 — construct variant, compare against two known codes, copy or clear
+// 71000bce50 -- construct variant, compare against two known codes, copy or clear
 void FUN_71000bce50(u32* param_1, u32* param_2)
 {
     nn::err::Result local_58[4];
@@ -195,7 +195,7 @@ void FUN_71000bce50(u32* param_1, u32* param_2)
 
 // ---- pead system init ----------------------------------------------------
 
-// 71000b1960 — one-shot init: store params, init heap chain, set flags
+// 71000b1960 -- one-shot init: store params, init heap chain, set flags
 u64 FUN_71000b1960(u64 param_1, u64 param_2)
 {
     u8* puVar2 = PTR_DAT_71052a2bf8;
@@ -221,7 +221,7 @@ u64 FUN_71000b1960(u64 param_1, u64 param_2)
 
 // ---- UTF-8/16 character counter ------------------------------------------
 
-// 71000bb050 — count Unicode characters in a string object (UTF-8 or UTF-16)
+// 71000bb050 -- count Unicode characters in a string object (UTF-8 or UTF-16)
 u32 FUN_71000bb050(s64 param_1)
 {
     u8* pbVar5 = *(u8**)(param_1 + 8);

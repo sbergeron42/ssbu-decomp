@@ -1,18 +1,18 @@
 #include "app/BattleObjectModuleAccessor.h"
 
-// ItemCameraModuleImpl — accesses CameraModule at accessor+0x60
+// ItemCameraModuleImpl -- accesses CameraModule at accessor+0x60
 // Camera slots are 0xe0 bytes apart. Slot enable at slot+0x70; pos at slot+0x90.
 
 namespace app::lua_bind {
 
-// 71020d3c60 — set_fix_rate (4 instructions: ldr ptr chain, str float)
+// 71020d3c60 -- set_fix_rate (4 instructions: ldr ptr chain, str float)
 void ItemMotionAnimcmdModuleImpl__set_fix_rate_impl(BattleObjectModuleAccessor* a, f32 rate) {
     auto* mac = *reinterpret_cast<void**>(reinterpret_cast<u8*>(a) + 0x188);
     auto* inner = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(mac) + 0x8);
     *reinterpret_cast<f32*>(inner + 0x48) = rate;
 }
 
-// 71020d21f0 — ldr x0,[x0,#0x60]; b <ext>; pad; pad
+// 71020d21f0 -- ldr x0,[x0,#0x60]; b <ext>; pad; pad
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void ItemCameraModuleImpl__start_camera_subject_impl(BattleObjectModuleAccessor* a) {
@@ -25,7 +25,7 @@ void ItemCameraModuleImpl__start_camera_subject_impl(BattleObjectModuleAccessor*
 }
 #endif
 
-// 71020d2200 — for each of 4 camera slots: if enable byte set,
+// 71020d2200 -- for each of 4 camera slots: if enable byte set,
 //   call global vtable[0x18](mgr+0xa30, cam+slot_offset) and clear byte
 // Unrolled 4x with adrp for global camera manager singleton per call
 // NOTE: adrp (4x) won't byte-match; all other instructions match
@@ -99,7 +99,7 @@ void ItemCameraModuleImpl__end_camera_subject_impl(BattleObjectModuleAccessor* a
 }
 #endif
 
-// 71020d2320 — clamp 4 camera subject positions against bounds from x1 (Vector4f min/max pairs)
+// 71020d2320 -- clamp 4 camera subject positions against bounds from x1 (Vector4f min/max pairs)
 // Pure SIMD: fcmgt+bsl+dup for per-lane clamp across 4 subject slots
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
@@ -188,7 +188,7 @@ void ItemCameraModuleImpl__clamp_camera_subject_pos_impl(BattleObjectModuleAcces
 }
 #endif
 
-// 71020d22d0 — load vec4 [x,y,z,w] from x1, build 4 pos pairs and store to 4 camera slots
+// 71020d22d0 -- load vec4 [x,y,z,w] from x1, build 4 pos pairs and store to 4 camera slots
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void ItemCameraModuleImpl__set_camera_subject_pos_4_points_impl(BattleObjectModuleAccessor* accessor, void* vec4) {
@@ -217,8 +217,8 @@ void ItemCameraModuleImpl__set_camera_subject_pos_4_points_impl(BattleObjectModu
 }
 #endif
 
-// 71020d2460 — bounds check slot [0..3], store ~enable&1 to slot+0x70
-// orr w9,wzr,#0xe0 + smaddl for slot*0xe0 stride — naked asm to match exactly
+// 71020d2460 -- bounds check slot [0..3], store ~enable&1 to slot+0x70
+// orr w9,wzr,#0xe0 + smaddl for slot*0xe0 stride -- naked asm to match exactly
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void ItemCameraModuleImpl__set_camera_subject_enable_impl(BattleObjectModuleAccessor* a, u32 slot, u32 enable) {
@@ -245,8 +245,8 @@ void ItemCameraModuleImpl__set_camera_subject_enable_impl(BattleObjectModuleAcce
 }
 #endif
 
-// 71020d24a0 — bounds check slot [0..3], SIMD zero-W vec store to slot+0x90
-// orr w9,wzr,#0xe0 + smaddl — naked asm to match exactly
+// 71020d24a0 -- bounds check slot [0..3], SIMD zero-W vec store to slot+0x90
+// orr w9,wzr,#0xe0 + smaddl -- naked asm to match exactly
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void ItemCameraModuleImpl__set_camera_subject_pos_impl(BattleObjectModuleAccessor* a, u32 slot, void* vec3) {
@@ -277,7 +277,7 @@ void ItemCameraModuleImpl__set_camera_subject_pos_impl(BattleObjectModuleAccesso
 }
 #endif
 
-// 71020d24f0 — bounds check slot [0..3], load vec from slot+0x90;
+// 71020d24f0 -- bounds check slot [0..3], load vec from slot+0x90;
 //   if signed > 3 → return global zero vec (adrp); if unsigned >= 4 → panic
 // orr w9,wzr,#0xe0 + smaddl; adrp for zero vec → partial match
 #ifdef MATCHING_HACK_NX_CLANG
@@ -306,13 +306,13 @@ void ItemCameraModuleImpl__get_camera_subject_pos_impl(BattleObjectModuleAccesso
 }
 #endif
 
-// 71020d2530 — bounds check slot [0..3], store 4 floats from vec4 to 12 fields in slot;
+// 71020d2530 -- bounds check slot [0..3], store 4 floats from vec4 to 12 fields in slot;
 //   if unsigned >= 4 → panic. 240B total: 22 main insns + 3 abort + 3 pad + 32 second region.
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void ItemCameraModuleImpl__set_camera_subject_range_impl(BattleObjectModuleAccessor* a, u32 slot, void* vec4) {
     asm(
-        // Main body (22 instructions, offsets 0x00–0x57)
+        // Main body (22 instructions, offsets 0x00-0x57)
         "cmp w1,#0x4\n"
         "b.cs 1f\n"
         "ldr q0,[x2]\n"
@@ -335,16 +335,16 @@ void ItemCameraModuleImpl__set_camera_subject_range_impl(BattleObjectModuleAcces
         "str w9,[x8, #0x134]\n"
         "str w11,[x8, #0x138]\n"
         "ret\n"
-        // Abort path (3 instructions, offsets 0x58–0x63)
+        // Abort path (3 instructions, offsets 0x58-0x63)
         "1:\n"
         "stp x29,x30,[sp, #-0x10]!\n"
         "add x29,sp,#0x0\n"
         ".inst 0x9463BEC4\n"  // bl 0x71039c20a0 (from PC=0x71020d2590)
-        // Padding (3 words, offsets 0x64–0x6f)
+        // Padding (3 words, offsets 0x64-0x6f)
         ".inst 0x00000000\n"
         ".inst 0x00000000\n"
         ".inst 0x00000000\n"
-        // Second region (32 instructions, offsets 0x70–0xef)
+        // Second region (32 instructions, offsets 0x70-0xef)
         ".inst 0xF85F8008\n"
         ".inst 0xB4000488\n"
         ".inst 0xF9402508\n"

@@ -1,19 +1,19 @@
 #include "types.h"
 
-// Particle/emitter functions — pool-c assignment
+// Particle/emitter functions -- pool-c assignment
 
 extern "C" void FUN_7100088060(void*);
 extern "C" void FUN_71000a4f60(void*,void*,void*,void*,void*,u64,u64,u32);
 extern "C" bool FUN_71000ac200(void*,void*,u32,void*,void*);
 extern "C" void FUN_710395a570(s32*);
 
-// 71000a4f20 (16B) — copy emitter handle field from src to dst
+// 71000a4f20 (16B) -- copy emitter handle field from src to dst
 // Leaf function; matches directly.
 void InitializeEmitter(u8* p0, u8* p1) {
     *reinterpret_cast<u64*>(p1 + 0x98) = *reinterpret_cast<u64*>(p0 + 0x8c0);
 }
 
-// 71000a4f30 (48B) — call finalizer helper, then increment ref count at +0x80
+// 71000a4f30 (48B) -- call finalizer helper, then increment ref count at +0x80
 // Non-leaf; NX Clang schedules stp/add-x29 before mov x19,x0 (prologue scheduling divergence)
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
@@ -35,7 +35,7 @@ void FinalizeEmitter(u8* /*p0*/, void* /*p1*/) {
 }
 #endif
 
-// 71000a51a0 (32B) — swap args 6/7, zero new arg 6, mask bool arg 7, tail-call inner
+// 71000a51a0 (32B) -- swap args 6/7, zero new arg 6, mask bool arg 7, tail-call inner
 // arg reorder: x5→x6, x6→w7(masked &1), x5=0
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
@@ -50,27 +50,14 @@ void CreateEmitterSetId(void*,void*,void*,void*,void*,u64,u32) {
 }
 #endif
 
-// 71000ac1c0 (64B) — unpack emitter callback struct fields, call inner, return 1
-// Non-leaf; NX Clang places mov x29,sp early (after stp), upstream places it late.
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
-bool EmitterDrawCallback(u64* /*p*/) {
-    asm(
-        "stp x29, x30, [sp, #-0x10]!\n"
-        "mov x29, sp\n"
-        "ldp x8, x1, [x0]\n"
-        "ldr w2, [x0, #0x10]\n"
-        "ldp x3, x4, [x0, #0x18]\n"
-        "mov x0, x8\n"
-        "bl FUN_71000ac200\n"
-        "mov w0, #0x1\n"
-        "ldp x29, x30, [sp], #0x10\n"
-        "ret\n"
-    );
+// 71000ac1c0 (64B) -- unpack emitter callback struct fields, call inner, return 1
+// Prologue mov-x29-sp scheduling fixed by fix_prologue.py; movz→orr by fix_movz_to_orr.py
+bool EmitterDrawCallback(u64* p) {
+    FUN_71000ac200((void*)p[0], (void*)p[1], *(u32*)((u8*)p + 0x10), (void*)p[3], (void*)p[4]);
+    return true;
 }
-#endif
 
-// 710395a3e0 (64B) — if *p == 0, call object-end helper
+// 710395a3e0 (64B) -- if *p == 0, call object-end helper
 // Compiler stores/reloads param from stack slot before conditional; cannot match without asm.
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))

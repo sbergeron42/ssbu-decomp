@@ -1,6 +1,6 @@
 #include "types.h"
 
-// MEDIUM-tier FUN_* functions — mixed address range, batch 17
+// MEDIUM-tier FUN_* functions -- mixed address range, batch 17
 // Pool-d worker: auto-generated from Ghidra decompilation
 
 // ---- External declarations -----------------------------------------------
@@ -11,7 +11,7 @@ extern "C" void  __cxa_guard_release(u64*);
 // curlx_tvnow returns a 16-byte timeval struct
 struct CurlTimeval { u64 tv_sec; u64 tv_usec; };
 
-// External C functions — Curl
+// External C functions -- Curl
 extern "C" u64         Curl_nnssl_data_pending();
 extern "C" u64         FUN_7100015dd0(s64, s32);
 extern "C" u32         FUN_7100015800(u32, u32, u32, u32);
@@ -44,7 +44,7 @@ extern u8  PTR_DAT_71052a2478[];   // outer data  (FUN_710003e120)
 
 // ---- Curl SSL / hash helpers ---------------------------------------------
 
-// 7100004270 — SSL pending check, fall through to FUN_7100015800
+// 7100004270 -- SSL pending check, fall through to FUN_7100015800
 u32 FUN_7100004270(s64 param_1, s32 param_2)
 {
     u64 uVar2 = Curl_nnssl_data_pending();
@@ -58,7 +58,7 @@ u32 FUN_7100004270(s64 param_1, s32 param_2)
     return (u32)(0 < (s32)uVar1) & uVar1;
 }
 
-// 7100004720 — iterate curl hash, return first non-null element data
+// 7100004720 -- iterate curl hash, return first non-null element data
 u64 FUN_7100004720(u64 param_1)
 {
     u64* puVar2;
@@ -73,7 +73,7 @@ u64 FUN_7100004720(u64 param_1)
     return *puVar2;
 }
 
-// 7100005a10 — conditional pointer move, call disconnect
+// 7100005a10 -- conditional pointer move, call disconnect
 s32 FUN_7100005a10(s64 param_1)
 {
     if (*(s64*)(param_1 + 0xa48) != 0) {
@@ -87,7 +87,7 @@ s32 FUN_7100005a10(s64 param_1)
     return iVar1;
 }
 
-// 7100015110 — reset timer fields using curlx_tvnow
+// 7100015110 -- reset timer fields using curlx_tvnow
 void FUN_7100015110(s64 param_1)
 {
     *(u32*)(param_1 + 0xb58) = 0;
@@ -99,7 +99,7 @@ void FUN_7100015110(s64 param_1)
     *(u32*)(param_1 + 0xa08) = *(u32*)(param_1 + 0xa08) & 0x90;
 }
 
-// 7100024310 — Curl base64/siglo decode helper
+// 7100024310 -- Curl base64/siglo decode helper
 u64 FUN_7100024310(u64 param_1, u64 param_2, s32 param_3, u32* param_4)
 {
     u64 local_28;
@@ -125,7 +125,7 @@ u64 FUN_7100024310(u64 param_1, u64 param_2, s32 param_3, u32* param_4)
 
 // ---- cxa_guard singleton chains (all share base inner 2380/2388) ---------
 
-// 710003d480 — nested: outer 23f8/2400, inner 2380/2388
+// 710003d480 -- nested: outer 23f8/2400, inner 2380/2388
 u8* FUN_710003d480()
 {
     s32 iVar1;
@@ -146,7 +146,7 @@ u8* FUN_710003d480()
     return PTR_DAT_71052a2400;
 }
 
-// 710003d730 — nested: outer 2428/2430, inner 2380/2388
+// 710003d730 -- nested: outer 2428/2430, inner 2380/2388
 u8* FUN_710003d730()
 {
     s32 iVar1;
@@ -167,7 +167,7 @@ u8* FUN_710003d730()
     return PTR_DAT_71052a2430;
 }
 
-// 710003d9c0 — nested: outer 2438/2440, inner 2380/2388
+// 710003d9c0 -- nested: outer 2438/2440, inner 2380/2388
 u8* FUN_710003d9c0()
 {
     s32 iVar1;
@@ -188,7 +188,7 @@ u8* FUN_710003d9c0()
     return PTR_DAT_71052a2440;
 }
 
-// 710003dce0 — triple: outer 2450/2458 → middle 23f8/2400 → inner 2380/2388
+// 710003dce0 -- triple: outer 2450/2458 → middle 23f8/2400 → inner 2380/2388
 u8* FUN_710003dce0()
 {
     s32 iVar1;
@@ -216,7 +216,7 @@ u8* FUN_710003dce0()
     return PTR_DAT_71052a2458;
 }
 
-// 710003df20 — nested: outer 2460/2468, inner 2380/2388
+// 710003df20 -- nested: outer 2460/2468, inner 2380/2388
 u8* FUN_710003df20()
 {
     s32 iVar1;
@@ -237,7 +237,7 @@ u8* FUN_710003df20()
     return PTR_DAT_71052a2468;
 }
 
-// 710003e120 — triple: outer 2470/2478 → middle 23d0/23d8 → inner 2380/2388
+// 710003e120 -- triple: outer 2470/2478 → middle 23d0/23d8 → inner 2380/2388
 u8* FUN_710003e120()
 {
     s32 iVar1;

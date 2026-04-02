@@ -1,6 +1,6 @@
 #include "types.h"
 
-// MEDIUM-tier FUN_* functions — mixed address range, batch 13
+// MEDIUM-tier FUN_* functions -- mixed address range, batch 13
 // Pool-d worker: auto-generated from Ghidra decompilation
 
 // ---- External declarations -----------------------------------------------
@@ -64,7 +64,7 @@ extern void* PTR_LAB_71052a1240;
 
 // ---- Simple wrappers / comparisons ----------------------------------------
 
-// 7100005878 — memcmp: return 1 if equal, 0 if not
+// 7100005878 -- memcmp: return 1 if equal, 0 if not
 u64 FUN_7100005878(void* param_1, u64 param_2, void* param_3)
 {
     s32 iVar1 = memcmp(param_1, param_3, param_2);
@@ -73,7 +73,7 @@ u64 FUN_7100005878(void* param_1, u64 param_2, void* param_3)
     return 1;
 }
 
-// 710004f50c — strcmp at +0x10 vs +0x18, return 1 if equal
+// 710004f50c -- strcmp at +0x10 vs +0x18, return 1 if equal
 u64 FUN_710004f50c(s64 param_1, s64 param_2)
 {
     s32 iVar1 = strcmp(*(const char**)(param_1 + 0x10), *(const char**)(param_2 + 0x18));
@@ -82,7 +82,7 @@ u64 FUN_710004f50c(s64 param_1, s64 param_2)
     return 1;
 }
 
-// 710004f57c — identical to FUN_710004f50c
+// 710004f57c -- identical to FUN_710004f50c
 u64 FUN_710004f57c(s64 param_1, s64 param_2)
 {
     s32 iVar1 = strcmp(*(const char**)(param_1 + 0x10), *(const char**)(param_2 + 0x18));
@@ -93,7 +93,7 @@ u64 FUN_710004f57c(s64 param_1, s64 param_2)
 
 // ---- libcurl helpers -------------------------------------------------------
 
-// 7100005b40 — conditional Curl_hash_destroy + clear flag
+// 7100005b40 -- conditional Curl_hash_destroy + clear flag
 void FUN_7100005b40()
 {
     if (DAT_71052a80f8 == '\x01') {
@@ -102,7 +102,7 @@ void FUN_7100005b40()
     }
 }
 
-// 710000e730 — FUN_7100026170 dispatch with conditional FUN_7100004200
+// 710000e730 -- FUN_7100026170 dispatch with conditional FUN_7100004200
 s32 FUN_710000e730(u64 param_1, u64 param_2)
 {
     s32 iVar1 = FUN_7100026170(param_1, 0, param_2);
@@ -111,7 +111,7 @@ s32 FUN_710000e730(u64 param_1, u64 param_2)
     return iVar1;
 }
 
-// 7100017580 — FUN_71000272b0 result check; conditionally free param_1
+// 7100017580 -- FUN_71000272b0 result check; conditionally free param_1
 s64 FUN_7100017580(u64 param_1, s64 param_2)
 {
     s64 lVar1 = FUN_71000272b0();
@@ -142,7 +142,7 @@ s64 FUN_7100017580(u64 param_1, s64 param_2)
 
 // ---- Misc helpers ---------------------------------------------------------
 
-// 7100027110 — init sub-object then set first field to 1
+// 7100027110 -- init sub-object then set first field to 1
 u64 FUN_7100027110(u32* param_1)
 {
     FUN_71000067e0(param_1 + 6, PTR_LAB_71052a1240);
@@ -150,7 +150,7 @@ u64 FUN_7100027110(u32* param_1)
     return 0;
 }
 
-// 710004ad50 — conditional: init local buffer, call two subs
+// 710004ad50 -- conditional: init local buffer, call two subs
 void FUN_710004ad50(s64 param_1, u64 param_2, u32 param_3)
 {
     u8 auStack_48[40];
@@ -162,14 +162,14 @@ void FUN_710004ad50(s64 param_1, u64 param_2, u32 param_3)
 
 // ---- nn::ui2d Pane vtable init helpers ------------------------------------
 
-// 7100043160 — call FUN_7100057350, set vtable to PTR+0x10
+// 7100043160 -- call FUN_7100057350, set vtable to PTR+0x10
 void FUN_7100043160(s64* param_1, u64 param_2, u64 param_3, u64 param_4)
 {
     FUN_7100057350(param_1, 0, 0, param_2, param_4);
     *param_1 = (s64)(PTR_DAT_71052a2510 + 0x10);
 }
 
-// 7100043310 — call FUN_7100057350, set vtable to PTR+0x10 (different vtable)
+// 7100043310 -- call FUN_7100057350, set vtable to PTR+0x10 (different vtable)
 void FUN_7100043310(s64* param_1, u64 param_2, u64 param_3, u64 param_4)
 {
     FUN_7100057350(param_1, 0, 0, param_2, param_4);
@@ -256,7 +256,7 @@ u8* FUN_710005a160()
 
 // ---- Nested __cxa_guard_acquire patterns ----------------------------------
 
-// 7100043260 — acquire outer guard, init inner (PTR_DAT_71052a2498), link pointers
+// 7100043260 -- acquire outer guard, init inner (PTR_DAT_71052a2498), link pointers
 u8* FUN_7100043260()
 {
     s32 iVar1;
@@ -322,7 +322,7 @@ u8* FUN_7100044110()
     return PTR_DAT_71052a2560;
 }
 
-// 710003cf90 — nested: outer guard 23d0, inner uses 2380/2388
+// 710003cf90 -- nested: outer guard 23d0, inner uses 2380/2388
 u8* FUN_710003cf90()
 {
     s32 iVar1;
@@ -366,7 +366,7 @@ u8* FUN_710003d160()
     return PTR_DAT_71052a23e8;
 }
 
-// 7100041570 — triple-nested: 24f0 > 24a8 > 24b8/24c0, links 24f8->24b0->24c0
+// 7100041570 -- triple-nested: 24f0 > 24a8 > 24b8/24c0, links 24f8->24b0->24c0
 u8* FUN_7100041570()
 {
     s32 iVar1;
@@ -395,7 +395,7 @@ u8* FUN_7100041570()
     return PTR_DAT_71052a24f8;
 }
 
-// 7100041420 — acquire 24d0, call FUN_7100041570, store result at 24d8
+// 7100041420 -- acquire 24d0, call FUN_7100041570, store result at 24d8
 u8* FUN_7100041420()
 {
     s32 iVar1;
@@ -411,7 +411,7 @@ u8* FUN_7100041420()
     return PTR_DAT_71052a24d8;
 }
 
-// 71000414c0 — same as FUN_7100041420 but guard at 24e0, data at 24e8
+// 71000414c0 -- same as FUN_7100041420 but guard at 24e0, data at 24e8
 u8* FUN_71000414c0()
 {
     s32 iVar1;

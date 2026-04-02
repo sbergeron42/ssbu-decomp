@@ -86,21 +86,21 @@ s32 attack_phase(void* p) {
     return *reinterpret_cast<s32*>((u8*)s + 0x130);
 }
 
-// 7100361450 — bit 1 of stat[0x56]
+// 7100361450 -- bit 1 of stat[0x56]
 bool check_stat_damage_elec(void* p) {
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
     void* s = *reinterpret_cast<void**>((u8*)a + 0x168);
     return (*reinterpret_cast<u8*>((u8*)s + 0x56) >> 1) & 1;
 }
 
-// 7100361590 — stat[0x74] == 5
+// 7100361590 -- stat[0x74] == 5
 bool check_stat_damage(void* p) {
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
     void* s = *reinterpret_cast<void**>((u8*)a + 0x168);
     return *reinterpret_cast<s32*>((u8*)s + 0x74) == 5;
 }
 
-// 71003615d0 — stat[0x74] in [0x17, 0x18]
+// 71003615d0 -- stat[0x74] in [0x17, 0x18]
 bool check_stat_attack_hold(void* p) {
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
     void* s = *reinterpret_cast<void**>((u8*)a + 0x168);
@@ -116,7 +116,7 @@ bool check_stat_floor_damage(void* p) {
     return (*reinterpret_cast<u8*>((u8*)ptr + 0x5e) & 1) != 0;
 }
 
-// 7100361880 — bit 3 of stat[0x59]
+// 7100361880 -- bit 3 of stat[0x59]
 bool check_stat_unable_attack(void* p) {
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
     void* s = *reinterpret_cast<void**>((u8*)a + 0x168);
@@ -195,7 +195,7 @@ s32 target_current_attack_cancel_frame(void* p) {
     return *reinterpret_cast<s32*>((u8*)r + 0x12c);
 }
 
-// 7100366880 — bit 6 of r[0x55]
+// 7100366880 -- bit 6 of r[0x55]
 bool check_target_stat_attack_catch(void* p) {
 #ifdef MATCHING_HACK_NX_CLANG
     asm("");
@@ -205,7 +205,7 @@ bool check_target_stat_attack_catch(void* p) {
     return (*reinterpret_cast<u8*>((u8*)r + 0x55) >> 6) & 1;
 }
 
-// 7100366b30 — r[0x74] == 5
+// 7100366b30 -- r[0x74] == 5
 bool check_target_stat_damage(void* p) {
 #ifdef MATCHING_HACK_NX_CLANG
     asm("");
@@ -215,7 +215,7 @@ bool check_target_stat_damage(void* p) {
     return *reinterpret_cast<s32*>((u8*)r + 0x74) == 5;
 }
 
-// 7100366bf0 — r[0x74] in [0x15, 0x16]
+// 7100366bf0 -- r[0x74] in [0x15, 0x16]
 bool check_target_stat_attack(void* p) {
 #ifdef MATCHING_HACK_NX_CLANG
     asm("");
@@ -225,7 +225,7 @@ bool check_target_stat_attack(void* p) {
     return (u32)(*reinterpret_cast<s32*>((u8*)r + 0x74) - 0x15) < 2;
 }
 
-// 7100366c30 — r[0x74] in [0x17, 0x18]
+// 7100366c30 -- r[0x74] in [0x17, 0x18]
 bool check_target_stat_attack_hold(void* p) {
 #ifdef MATCHING_HACK_NX_CLANG
     asm("");
@@ -235,7 +235,7 @@ bool check_target_stat_attack_hold(void* p) {
     return (u32)(*reinterpret_cast<s32*>((u8*)r + 0x74) - 0x17) < 2;
 }
 
-// 7100366ca0 — bit 3 of r[0x59]
+// 7100366ca0 -- bit 3 of r[0x59]
 bool check_target_stat_unable_attack(void* p) {
 #ifdef MATCHING_HACK_NX_CLANG
     asm("");
@@ -245,7 +245,7 @@ bool check_target_stat_unable_attack(void* p) {
     return (*reinterpret_cast<u8*>((u8*)r + 0x59) >> 3) & 1;
 }
 
-// 7100366f90 — float r[0xe0]
+// 7100366f90 -- float r[0xe0]
 float target_damage(void* p) {
 #ifdef MATCHING_HACK_NX_CLANG
     asm("");
@@ -257,35 +257,35 @@ float target_damage(void* p) {
 
 // ── Standalone kind checks (integer param, no pointer deref) ─────────────────
 
-// 710068f790 — kind in [0x4e, 0x50]
+// 710068f790 -- kind in [0x4e, 0x50]
 bool is_miienemy_fighter_kind(s32 kind) {
     return (u32)(kind - 0x4e) < 3;
 }
 
-// 7100f0a970 — kind in [0x1e1, 0x1ea]
+// 7100f0a970 -- kind in [0x1e1, 0x1ea]
 bool is_status_kind_attack(s32 kind) {
     return (u32)(kind - 0x1e1) < 0xa;
 }
 
-// 7101227750 — kind in [0x1e1, 0x1f0]
+// 7101227750 -- kind in [0x1e1, 0x1f0]
 bool is_status_kind_attack_7101227750(s32 kind) {
     return (u32)(kind - 0x1e1) < 0x10;
 }
 
 // ── Stubs ─────────────────────────────────────────────────────────────────────
 
-// 7101670080 — empty stub
+// 7101670080 -- empty stub
 void set_info_sandbag_damage() {}
 
 // ── Tail-call dispatchers ─────────────────────────────────────────────────────
 
-// 7100368d30 — adjust accessor+0x180, tail call
+// 7100368d30 -- adjust accessor+0x180, tail call
 void disable_command_attack_button_all(void* p) {
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
     FUN_71002f4830((u8*)a + 0x180);
 }
 
-// 7100369720 — forward with [accessor+0x168] and accessor+0xc50
+// 7100369720 -- forward with [accessor+0x168] and accessor+0xc50
 void* predict_target_hit_in_attack(void* p, void* p2) {
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
     return FUN_7100359180(
@@ -294,17 +294,17 @@ void* predict_target_hit_in_attack(void* p, void* p2) {
         (u8*)a + 0xc50);
 }
 
-// 71015c9fd0 — direct tail call
+// 71015c9fd0 -- direct tail call
 void get_damage_mul_71015c9fd0() {
     FUN_710160fb20();
 }
 
-// 7101652f60 — set type=2
+// 7101652f60 -- set type=2
 void load_summon_fighter_light(s32 fighter_kind_arg, s32 player_no, s32 p2, s32 p3) {
     FUN_7101652f70(fighter_kind_arg, player_no, p2, p3, 2);
 }
 
-// 7101653150 — set type=5
+// 7101653150 -- set type=5
 void load_summon_fighter_dark(s32 fighter_kind_arg, s32 player_no, s32 p2, s32 p3) {
     FUN_7101652f70(fighter_kind_arg, player_no, p2, p3, 5);
 }
@@ -381,7 +381,7 @@ float attack_data_y1(void* p) {
     return 0.0f;
 }
 
-// 710036b060 — return -1 on null
+// 710036b060 -- return -1 on null
 s32 most_earliest_hit_frame(void* p) {
 #ifdef MATCHING_HACK_NX_CLANG
     asm("");
@@ -393,7 +393,7 @@ s32 most_earliest_hit_frame(void* p) {
     return *reinterpret_cast<s32*>((u8*)r + 0x10);
 }
 
-// ── final_module_hit_success — vtable[1] dispatch on global singleton ─────────
+// ── final_module_hit_success -- vtable[1] dispatch on global singleton ─────────
 
 // 7100936fa0
 void final_module_hit_success_7100936fa0() {
@@ -471,7 +471,7 @@ void special_n_clear_copy_attack_data(void* p) {
 
 // ── Misc vtable-chain functions ───────────────────────────────────────────────
 
-// 7100fc0110 — shrink-wrapped prologue (early return -1 before frame save)
+// 7100fc0110 -- shrink-wrapped prologue (early return -1 before frame save)
 // asm("") prevents tail-call optimisation; original uses blr+ldp+ret, not br
 s32 get_main_fighter_status_kind(void* p) {
     if (!*reinterpret_cast<u8*>((u8*)p + 0x80)) return -1;
@@ -498,12 +498,12 @@ void set_pickelblock_mode_ignoreandattack(void* p) {
 
 // ── status_kind range checks ──────────────────────────────────────────────────
 
-// 7101227760 — true if kind in [0x47..0x4c] or [0x86..0x88]
+// 7101227760 -- true if kind in [0x47..0x4c] or [0x86..0x88]
 bool is_status_kind_attack_remain_arm(s32 kind) {
     return (u32)(kind - 0x86) < 3 || (u32)(kind - 0x47) < 6;
 }
 
-// ── final_module_hit_success — vtable[1] on 0x71052c1xxx singletons ──────────
+// ── final_module_hit_success -- vtable[1] on 0x71052c1xxx singletons ──────────
 
 // 71012281a0
 void final_module_hit_success_71012281a0() {
@@ -519,7 +519,7 @@ void final_module_hit_success_7101289c80() {
 
 // ── Throw attack helpers ──────────────────────────────────────────────────────
 
-// 71015c2720 — accessor[-8]→[+0x1a0]→[+0x190]→[+0x220], call with (obj, x1, 0)
+// 71015c2720 -- accessor[-8]→[+0x1a0]→[+0x190]→[+0x220], call with (obj, x1, 0)
 void throw_attack(void* p, void* other) {
 #ifdef MATCHING_HACK_NX_CLANG
     asm("");
@@ -531,7 +531,7 @@ void throw_attack(void* p, void* other) {
     FUN_71015aba90(d, other, 0);
 }
 
-// 71015cb6e0 — guard on [battle_obj+0x8]>>28==4, then same chain
+// 71015cb6e0 -- guard on [battle_obj+0x8]>>28==4, then same chain
 void throw_attack_71015cb6e0(void* battle_obj, void* other) {
     if (!battle_obj) return;
     if ((*reinterpret_cast<u32*>((u8*)battle_obj + 0x8) >> 28) != 4) return;
@@ -563,7 +563,7 @@ s32 get_pre_explosion_attack_object_id(void* p) {
     return *reinterpret_cast<s32*>((u8*)e + 0x5c);
 }
 
-// 71015c5b30 — store bool to [+0x62]
+// 71015c5b30 -- store bool to [+0x62]
 void set_postponed_damage_check_on_process_hit(void* p, bool flag) {
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
     void* b = *reinterpret_cast<void**>((u8*)a + 0x1a0);
@@ -574,7 +574,7 @@ void set_postponed_damage_check_on_process_hit(void* p, bool flag) {
 
 // ── apply_fighter_scale ───────────────────────────────────────────────────────
 
-// 71015cb3a0 — guard on other[+0x8]>>28==4, then call scale helper
+// 71015cb3a0 -- guard on other[+0x8]>>28==4, then call scale helper
 void apply_fighter_scale(void* p, void* other) {
     if (!other) return;
     if ((*reinterpret_cast<u32*>((u8*)other + 0x8) >> 28) != 4) return;
@@ -589,7 +589,7 @@ void apply_fighter_scale(void* p, void* other) {
 
 // ── FighterManager readers ────────────────────────────────────────────────────
 
-// 71015ce4d0 — FighterManager singleton → [+0xa0]
+// 71015ce4d0 -- FighterManager singleton → [+0xa0]
 s32 get_fighter_entry_count() {
     void* m = *reinterpret_cast<void**>(DAT_71052b84f8);
     return *reinterpret_cast<s32*>((u8*)m + 0xa0);
@@ -597,7 +597,7 @@ s32 get_fighter_entry_count() {
 
 // ── Fighter restart position ──────────────────────────────────────────────────
 
-// 710164c130 — store (x, y, 0, 0) as q at [mgr+0x20], set flag [mgr+0x1c]=1
+// 710164c130 -- store (x, y, 0, 0) as q at [mgr+0x20], set flag [mgr+0x1c]=1
 void set_change_fighter_restart_position(float x, float y) {
     void* mgr = *DAT_71052c3070;
     float buf[4] = { x, y, 0.0f, 0.0f };
@@ -605,7 +605,7 @@ void set_change_fighter_restart_position(float x, float y) {
     *reinterpret_cast<u8*>((u8*)mgr + 0x1c) = 1;
 }
 
-// 710164c160 — clear flag and zero position vector at [mgr+0x20]
+// 710164c160 -- clear flag and zero position vector at [mgr+0x20]
 void cancel_change_fighter_restart_position() {
     void* mgr = *DAT_71052c3070;
     *reinterpret_cast<u8*>((u8*)mgr + 0x1c) = 0;
@@ -615,7 +615,7 @@ void cancel_change_fighter_restart_position() {
 
 // ── Damage attacker ID ────────────────────────────────────────────────────────
 
-// 7101651a20 — [p+0xa8] obj → vtable[0x198/8]() → [result+0xc] or 0x50000000
+// 7101651a20 -- [p+0xa8] obj → vtable[0x198/8]() → [result+0xc] or 0x50000000
 s32 get_damage_attacker_id(void* p) {
 #ifdef MATCHING_HACK_NX_CLANG
     asm("");
@@ -628,7 +628,7 @@ s32 get_damage_attacker_id(void* p) {
 
 // ── Summon fighter helpers ────────────────────────────────────────────────────
 
-// 7101652f40 — call FUN_71004eb6a0 only if fighter_kind in [2..7]
+// 7101652f40 -- call FUN_71004eb6a0 only if fighter_kind in [2..7]
 void entry_summon_fighter(s32 fighter_kind) {
     if ((u32)(fighter_kind - 2) <= 5)
         FUN_71004eb6a0(fighter_kind);
@@ -636,7 +636,7 @@ void entry_summon_fighter(s32 fighter_kind) {
 
 // ── Light/dark fighter count ──────────────────────────────────────────────────
 
-// 7101653710 — (ptr_end - ptr_begin) / 8 for light fighter array
+// 7101653710 -- (ptr_end - ptr_begin) / 8 for light fighter array
 int get_light_fighter_kind_num() {
     void* g = DAT_7105329868;
     if (!g) return 0;
@@ -646,7 +646,7 @@ int get_light_fighter_kind_num() {
     return (int)((u64)(end - begin) >> 3);
 }
 
-// 71016537d0 — same for dark fighter array
+// 71016537d0 -- same for dark fighter array
 int get_dark_fighter_kind_num() {
     void* g = DAT_7105329868;
     if (!g) return 0;
@@ -659,28 +659,28 @@ int get_dark_fighter_kind_num() {
 // ── Global singleton float getters ────────────────────────────────────────────
 // All use: DAT_71052bb3b0 → [+offset] → [+offset2] → float at [+field]
 
-// 710165c5d0 — DOLL hit data size
+// 710165c5d0 -- DOLL hit data size
 float DOLL_HIT_DATA_SIZE() {
     void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + 0xc08);
     void* b = *reinterpret_cast<void**>((u8*)a + 0x1d8);
     return *reinterpret_cast<float*>((u8*)b + 0x18);
 }
 
-// 710165d2a0 — explosion bomb burst damage
+// 710165d2a0 -- explosion bomb burst damage
 float EXPLOSIONBOMB_BURST_DAMAGE() {
     void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + 0x3f0);
     void* b = *reinterpret_cast<void**>((u8*)a + 0x108);
     return *reinterpret_cast<float*>((u8*)b + 0x34);
 }
 
-// 710165e7c0 — hit speed x
+// 710165e7c0 -- hit speed x
 float hit_spd_x() {
     void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + 0xf88);
     void* b = *reinterpret_cast<void**>((u8*)a + 0x1c8);
     return *reinterpret_cast<float*>((u8*)b + 0x14);
 }
 
-// 710165e7e0 — hit speed y
+// 710165e7e0 -- hit speed y
 float hit_spd_y() {
     void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + 0xf88);
     void* b = *reinterpret_cast<void**>((u8*)a + 0x1c8);
@@ -960,18 +960,18 @@ float WIIFITBALL_HIT_STOP_FRAME_MUL() {
 
 // ── Misc getters (other pages / patterns) ────────────────────────────────────
 
-// 710227ec80 — tail-call to dead-camera hit-count getter
+// 710227ec80 -- tail-call to dead-camera hit-count getter
 void dead_up_camera_hit_count() {
     FUN_7100697570();
 }
 
-// 7102282350 — DAT_71052bb3b0 → [0x50] → s0[0x48]
+// 7102282350 -- DAT_71052bb3b0 → [0x50] → s0[0x48]
 float get_default_fighter_param_ground_speed_limit() {
     void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + 0x50);
     return *reinterpret_cast<float*>((u8*)a + 0x48);
 }
 
-// 7102281a90 — request camera rumble via FighterManager
+// 7102281a90 -- request camera rumble via FighterManager
 void set_dead_camera_hit_rumble() {
 #ifdef MATCHING_HACK_NX_CLANG
     asm("");
@@ -980,14 +980,14 @@ void set_dead_camera_hit_rumble() {
     FUN_710067de90(mgr, 0x001013dbb854ull, 0, 0, 0x50000000);
 }
 
-// 7102281bc0 — hash selector based on status_kind & ~1 == 0x3c
+// 7102281bc0 -- hash selector based on status_kind & ~1 == 0x3c
 u64 get_attack_s3_s_motion(void* p) {
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
     u32 sk = *reinterpret_cast<u32*>((u8*)a + 0x198) & ~1u;
     return (sk == 0x3c) ? 0x000decb03ce6ull : 0x000b7dd72b57ull;
 }
 
-// 7102281c70 — same pattern, different hashes (lw3 motion)
+// 7102281c70 -- same pattern, different hashes (lw3 motion)
 u64 get_attack_lw3_motion(void* p) {
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
     u32 sk = *reinterpret_cast<u32*>((u8*)a + 0x198) & ~1u;
@@ -996,13 +996,13 @@ u64 get_attack_lw3_motion(void* p) {
 
 // ── AttackModule _impl dispatchers ───────────────────────────────────────────
 
-// 7101fd04f0 — acc[+0xa0] → vtable[0x1d8/8]
+// 7101fd04f0 -- acc[+0xa0] → vtable[0x1d8/8]
 float AttackModule__speed_impl(void* acc) {
     void* mod = *reinterpret_cast<void**>((u8*)acc + 0xa0);
     return reinterpret_cast<float(*)(void*)>(VT(mod)[0x1d8 / 8])(mod);
 }
 
-// 7101fd0930 — acc[+0xa0] → vtable[0x4a0/8], forward part index
+// 7101fd0930 -- acc[+0xa0] → vtable[0x4a0/8], forward part index
 float AttackModule__attack_part_speed_impl(void* acc, s32 part) {
     void* mod = *reinterpret_cast<void**>((u8*)acc + 0xa0);
     return reinterpret_cast<float(*)(void*, s32)>(VT(mod)[0x4a0 / 8])(mod, part);
@@ -1010,7 +1010,7 @@ float AttackModule__attack_part_speed_impl(void* acc, s32 part) {
 
 // ── CameraModule _impl dispatchers ───────────────────────────────────────────
 
-// 7101ff0960 — acc[+0x60] → vtable[0x140/8], tail call (no frame)
+// 7101ff0960 -- acc[+0x60] → vtable[0x140/8], tail call (no frame)
 void CameraModule__set_player_no_impl(void* acc, s32 player_no) {
 #ifdef MATCHING_HACK_NX_CLANG
     asm("");
@@ -1021,7 +1021,7 @@ void CameraModule__set_player_no_impl(void* acc, s32 player_no) {
 
 // ── ControlModule _impl dispatchers ──────────────────────────────────────────
 
-// 7102001500 — acc[+0x48] → vtable[0x2c0/8], no-arg tail call
+// 7102001500 -- acc[+0x48] → vtable[0x2c0/8], no-arg tail call
 void ControlModule__request_rumble_hit_impl(void* acc) {
     void* mod = *reinterpret_cast<void**>((u8*)acc + 0x48);
     reinterpret_cast<void(*)(void*)>(VT(mod)[0x2c0 / 8])(mod);
@@ -1029,7 +1029,7 @@ void ControlModule__request_rumble_hit_impl(void* acc) {
 
 // ── DamageModule _impl dispatchers ───────────────────────────────────────────
 
-// 710200b690 — acc[+0xa8] → vtable[0x50/8], bool param (and w1,w1,#1)
+// 710200b690 -- acc[+0xa8] → vtable[0x50/8], bool param (and w1,w1,#1)
 void DamageModule__sleep_impl(void* acc, s32 enable) {
 #ifdef MATCHING_HACK_NX_CLANG
     asm("");
@@ -1038,7 +1038,7 @@ void DamageModule__sleep_impl(void* acc, s32 enable) {
     reinterpret_cast<void(*)(void*, bool)>(VT(mod)[0x50 / 8])(mod, (bool)enable);
 }
 
-// 710200b8c0 — acc[+0xa8] → vtable[0x290/8], no-arg tail call
+// 710200b8c0 -- acc[+0xa8] → vtable[0x290/8], no-arg tail call
 void DamageModule__start_damage_info_log_impl(void* acc) {
     void* mod = *reinterpret_cast<void**>((u8*)acc + 0xa8);
     reinterpret_cast<void(*)(void*)>(VT(mod)[0x290 / 8])(mod);
@@ -1046,24 +1046,24 @@ void DamageModule__start_damage_info_log_impl(void* acc) {
 
 // ── FighterCutInManager _impl functions ──────────────────────────────────────
 
-// 71020a8b90 — deref first field, tail call
+// 71020a8b90 -- deref first field, tail call
 void FighterCutInManager__request_start_impl(void* p) {
     FUN_71006a7100(*reinterpret_cast<void**>(p));
 }
 
-// 71020a8ba0 — deref first field, tail call
+// 71020a8ba0 -- deref first field, tail call
 void FighterCutInManager__request_end_impl(void* p) {
     FUN_71006ab9d0(*reinterpret_cast<void**>(p));
 }
 
-// 71020a8bb0 — [*p+0xb9] && [*p+0xbc]==6
+// 71020a8bb0 -- [*p+0xb9] && [*p+0xbc]==6
 bool FighterCutInManager__is_play_motion_camera_impl(void* p) {
     void* s = *reinterpret_cast<void**>(p);
     if (!*reinterpret_cast<u8*>((u8*)s + 0xb9)) return false;
     return *reinterpret_cast<s32*>((u8*)s + 0xbc) == 6;
 }
 
-// 71020a8c60 — [*p+0xb9] || [*p+0x1e8] || [*p+0x398]>0
+// 71020a8c60 -- [*p+0xb9] || [*p+0x1e8] || [*p+0x398]>0
 bool FighterCutInManager__is_play_impl(void* p) {
     void* s = *reinterpret_cast<void**>(p);
     if (*reinterpret_cast<u8*>((u8*)s + 0xb9)) return true;
@@ -1071,14 +1071,14 @@ bool FighterCutInManager__is_play_impl(void* p) {
     return *reinterpret_cast<s32*>((u8*)s + 0x398) > 0;
 }
 
-// 71020a8ca0 — [*p+0xb9] || [*p+0x1e8]!=0
+// 71020a8ca0 -- [*p+0xb9] || [*p+0x1e8]!=0
 bool FighterCutInManager__is_play_status_impl(void* p) {
     void* s = *reinterpret_cast<void**>(p);
     if (*reinterpret_cast<u8*>((u8*)s + 0xb9)) return true;
     return *reinterpret_cast<u8*>((u8*)s + 0x1e8) != 0;
 }
 
-// 71020a8cd0 — append s32 to counted array: count=[*p+0x88], arr=[*p+0x90]
+// 71020a8cd0 -- append s32 to counted array: count=[*p+0x88], arr=[*p+0x90]
 void FighterCutInManager__add_task_impl(void* p, s32 task) {
     void* s = *reinterpret_cast<void**>(p);
     u64 idx = *reinterpret_cast<u64*>((u8*)s + 0x88);
@@ -1087,7 +1087,7 @@ void FighterCutInManager__add_task_impl(void* p, s32 task) {
     (*reinterpret_cast<u64*>((u8*)s + 0x88))++;
 }
 
-// 71020a8cf0 — store float to [*p+0x2d0]
+// 71020a8cf0 -- store float to [*p+0x2d0]
 void FighterCutInManager__set_throw_finish_zoom_rate_impl(void* p, float rate) {
     void* s = *reinterpret_cast<void**>(p);
     *reinterpret_cast<float*>((u8*)s + 0x2d0) = rate;
@@ -1095,21 +1095,21 @@ void FighterCutInManager__set_throw_finish_zoom_rate_impl(void* p, float rate) {
 
 // ── FighterStatusModuleImpl _impl functions ───────────────────────────────────
 
-// 71020a99f0 — acc[+0x40], bool params masked with &1, tail call
+// 71020a99f0 -- acc[+0x40], bool params masked with &1, tail call
 void FighterStatusModuleImpl__set_fighter_status_data_impl(
         void* acc, u32 a1, u32 a2, u32 a3, u32 a4, u32 a5, u32 a6) {
     void* mod = *reinterpret_cast<void**>((u8*)acc + 0x40);
     FUN_71006eb6c0(mod, a1 & 1, a2, a3 & 1, a4 & 1, a5 & 1, a6);
 }
 
-// 71020a9a10 — acc[+0x40] → tail call FUN_71006eb8c0
+// 71020a9a10 -- acc[+0x40] → tail call FUN_71006eb8c0
 void FighterStatusModuleImpl__reset_log_action_info_impl(void* acc) {
     FUN_71006eb8c0(*reinterpret_cast<void**>((u8*)acc + 0x40));
 }
 
 // ── FighterMotionModuleImpl _impl functions ───────────────────────────────────
 
-// 71020aa000 — drop x0, forward (x1→x0, x2→x1) to FUN_71006e1b90
+// 71020aa000 -- drop x0, forward (x1→x0, x2→x1) to FUN_71006e1b90
 void FighterMotionModuleImpl__add_body_type_hash_impl(void*, void* obj, u32 hash) {
     FUN_71006e1b90(obj, hash);
 }

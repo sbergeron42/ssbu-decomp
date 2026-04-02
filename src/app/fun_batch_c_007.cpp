@@ -1,5 +1,5 @@
 // Batch C - 007: MEDIUM FUN_* batch decompilation (0x7102 range)
-// Functions: 40 — FighterSpecializer wrappers
+// Functions: 40 -- FighterSpecializer wrappers
 
 #include "types.h"
 #include "app/BattleObjectModuleAccessor.h"

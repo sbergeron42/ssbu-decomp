@@ -1,27 +1,31 @@
-# Worker: pool-a
+# Worker: pool-c
 
 ## Model: Opus
 
-## Task: Build PLT post-processor tool and replace 2,073 naked asm PLT stubs with real C++
+## Task: Convert non-PLT naked asm functions to C++ with asm barriers (files M-Z)
 
-The 2,073 functions in fun_region_039.cpp are currently naked asm because the compiler emits GOT-relative indirect calls instead of the NX ADRP+LDR+ADD+BR pattern. Build a post-processing tool that patches the compiler output to match.
+~93 non-PLT naked asm functions are scattered across module files. Convert them to readable C++ using asm("") barriers.
 
-### Phase 1: Build tools/fix_plt_stubs.py
-A post-processing script (like fix_movz_to_orr.py) that:
-1. Scans .o files for GOT-relative call sequences (adrp+ldr via GOT, then br)
-2. Rewrites them to the NX pattern: ADRP+LDR+ADD+BR using x16/x17
-3. The target address is known from the relocation entries in the .o file
+### How to convert
+For each naked asm function:
+1. Read the assembly and understand the logic
+2. Write equivalent C++ with the same struct field accesses and control flow
+3. Insert asm("") barriers between independent operations to force correct scheduling
+4. Wrap barriers in #ifdef MATCHING_HACK_NX_CLANG
+5. Verify the C++ version produces identical bytes
 
-Reference existing tools: fix_movz_to_orr.py, fix_prologue.py for the pattern.
-
-### Phase 2: Replace naked asm in fun_region_039.cpp
-Once the post-processor works:
-1. Replace the 2,073 naked asm functions with real C++ (extern global + function pointer call)
-2. Add fix_plt_stubs.py to build.bat post-processing pipeline
-3. Verify the post-processed .o bytes match the original
+### Your files (M through Z alphabetically, plus fun_batch_c/d/e, fun_medium, fun_nro)
+Check these for __attribute__((naked)):
+- OnCalcParamEvent, Rhombus2
+- particle_functions, audio_functions, graphics_functions
+- stWaterAreaInfo, StatusModule
+- WeaponKineticEnergyGravity, WeaponSnakeMissileKineticEnergyNormal
+- GimmickEventPresenter
+- fun_batch_c_*, fun_batch_c2_*, fun_batch_d_*, fun_batch_d2_*, fun_batch_e_*
+- fun_medium_*, fun_nro_load.cpp
 
 ### Rules
-- ONLY edit: tools/fix_plt_stubs.py (new), src/app/fun_region_039.cpp, build.bat
-- Do NOT edit any other source files
-- Do NOT modify data/functions.csv
-- Test with cmd /c build.bat && python tools/verify_all.py --summary
+- ONLY edit files listed above
+- Do NOT edit fun_region_039.cpp (pool-a territory)
+- Do NOT edit files starting with A-L or fun_batch_a/b (pool-b territory)
+- Do NOT modify tools/ or data/functions.csv

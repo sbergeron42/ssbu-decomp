@@ -1,6 +1,6 @@
 #include "app/BattleObjectModuleAccessor.h"
 
-// SlowModule — accessor+0x170
+// SlowModule -- accessor+0x170
 #define SLOW_MODULE(acc) (*reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x170))
 #define VT(mod) (*reinterpret_cast<void***>(mod))
 

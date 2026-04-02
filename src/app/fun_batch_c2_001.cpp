@@ -1,7 +1,7 @@
 #include "types.h"
 
-// Batch decompiled via Ghidra MCP — pool-c, batch 001
-// Range: 0x7102000000 — 0x7102FFFFFF
+// Batch decompiled via Ghidra MCP -- pool-c, batch 001
+// Range: 0x7102000000 -- 0x7102FFFFFF
 
 // Forward declarations
 [[noreturn]] extern "C" void abort();
@@ -135,7 +135,7 @@
   abort();
 }
 
-// 0x7102a2b28c — defined in fun_medium_throw.cpp (Group C: naked asm)
+// 0x7102a2b28c -- defined in fun_medium_throw.cpp (Group C: naked asm)
 
 // 0x7102a30e9c
 [[noreturn]] void FUN_7102a30e9c()
@@ -233,8 +233,8 @@
   abort();
 }
 
-// 0x7102b398a0 — defined in fun_medium_throw.cpp (Group C: naked asm)
-// 0x7102baccd0 — defined in fun_medium_throw.cpp (Group C: naked asm)
+// 0x7102b398a0 -- defined in fun_medium_throw.cpp (Group C: naked asm)
+// 0x7102baccd0 -- defined in fun_medium_throw.cpp (Group C: naked asm)
 
 // 0x7102c9349c
 [[noreturn]] void FUN_7102c9349c()
@@ -242,5 +242,5 @@
   abort();
 }
 
-// 0x7102e2a9fc — defined in fun_medium_throw.cpp (Group A: pass x0)
-// 0x7102f53a60 — defined in fun_medium_throw.cpp (Group C: naked asm)
+// 0x7102e2a9fc -- defined in fun_medium_throw.cpp (Group A: pass x0)
+// 0x7102f53a60 -- defined in fun_medium_throw.cpp (Group C: naked asm)

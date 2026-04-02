@@ -1,6 +1,6 @@
 #include "app/BattleObjectModuleAccessor.h"
 
-// CameraModule — accessor+0x60
+// CameraModule -- accessor+0x60
 #define CAMERA_MODULE(acc) (*reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x60))
 #define VT(mod) (*reinterpret_cast<void***>(mod))
 

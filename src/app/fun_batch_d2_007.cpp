@@ -1,11 +1,11 @@
 #include "types.h"
 
-// MEDIUM-tier FUN_* functions — 0x7103 address range, batch d2-007
+// MEDIUM-tier FUN_* functions -- 0x7103 address range, batch d2-007
 // Pool-d worker: auto-generated from Ghidra decompilation
 
 // ---- Functions ---------------------------------------------------------------
 
-// 0x71032deaa0 — slot lookup by int key, returns s32* (3072 bytes)
+// 0x71032deaa0 -- slot lookup by int key, returns s32* (3072 bytes)
 s32 *FUN_71032deaa0(s64 param_1, s32 param_2)
 {
     s32 *piVar1;
@@ -90,7 +90,7 @@ LAB_71032df050:
     return (s32 *)(param_1 + 0x8d8);
 }
 
-// 0x71032e0ef0 — check if s32 key is present in slot array (1920 bytes)
+// 0x71032e0ef0 -- check if s32 key is present in slot array (1920 bytes)
 bool FUN_71032e0ef0(s64 param_1, s32 param_2)
 {
     if (param_2 == -1) { return false; }

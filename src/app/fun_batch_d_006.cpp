@@ -1,6 +1,6 @@
 #include "types.h"
 
-// MEDIUM-tier FUN_* functions — 0x7103 address range, batch d-006
+// MEDIUM-tier FUN_* functions -- 0x7103 address range, batch d-006
 // Pool-d worker: auto-generated from Ghidra decompilation
 
 // ---- External declarations -----------------------------------------------
@@ -10,7 +10,7 @@ extern "C" {
     void __cxa_guard_release(u64*);
 }
 
-// External data — guard symbols shared across multiple functions
+// External data -- guard symbols shared across multiple functions
 extern u8 DAT_710593aa98[];
 extern u8 DAT_710593aaa0[];
 extern u8 DAT_710593aaa8[];
@@ -36,7 +36,7 @@ extern u8 DAT_710593ac48[];
 
 // ---- Functions ---------------------------------------------------------------
 
-// 0x7103789780 — two-level guard init, returns &DAT_710593aab0 (336 bytes)
+// 0x7103789780 -- two-level guard init, returns &DAT_710593aab0 (336 bytes)
 u64 *FUN_7103789780(void)
 {
     s32 iVar1;
@@ -54,7 +54,7 @@ u64 *FUN_7103789780(void)
     return (u64*)DAT_710593aab0;
 }
 
-// 0x71037a2e00 — two-level guard init (cross-segment inner guard), returns &DAT_710593ac58 (272 bytes)
+// 0x71037a2e00 -- two-level guard init (cross-segment inner guard), returns &DAT_710593ac58 (272 bytes)
 u64 *FUN_71037a2e00(void)
 {
     s32 iVar1;
@@ -72,7 +72,7 @@ u64 *FUN_71037a2e00(void)
     return (u64*)DAT_710593ac58;
 }
 
-// 0x7103791420 — triple-nested guard init, returns &DAT_710593ab20 (288 bytes)
+// 0x7103791420 -- triple-nested guard init, returns &DAT_710593ab20 (288 bytes)
 u64 *FUN_7103791420(void)
 {
     s32 iVar1;
@@ -95,7 +95,7 @@ u64 *FUN_7103791420(void)
     return (u64*)DAT_710593ab20;
 }
 
-// 0x710379b910 — triple-nested guard init, returns &DAT_710593abd0 (288 bytes)
+// 0x710379b910 -- triple-nested guard init, returns &DAT_710593abd0 (288 bytes)
 u64 *FUN_710379b910(void)
 {
     s32 iVar1;
@@ -118,7 +118,7 @@ u64 *FUN_710379b910(void)
     return (u64*)DAT_710593abd0;
 }
 
-// 0x71037a02a0 — triple-nested guard init, returns &DAT_710593ac48 (352 bytes)
+// 0x71037a02a0 -- triple-nested guard init, returns &DAT_710593ac48 (352 bytes)
 u64 *FUN_71037a02a0(void)
 {
     s32 iVar1;
@@ -141,35 +141,35 @@ u64 *FUN_71037a02a0(void)
     return (u64*)DAT_710593ac48;
 }
 
-// 0x710335c478 — vtable call at 0x268 (no args), return 0 (300 bytes)
-u32 FUN_710335c478(s64 *param_1)
+// 0x710335c478 -- vtable call at 0x268 (no args), return 0 (300 bytes)
+u64 FUN_710335c478(s64 *param_1)
 {
     (*(void(*)())(*(s64 *)(*param_1 + 0x268)))();
     return 0;
 }
 
-// 0x71031d04b0 — vtable call at 0x20 (no args), return 1 (320 bytes)
+// 0x71031d04b0 -- vtable call at 0x20 (no args), return 1 (320 bytes)
 u64 FUN_71031d04b0(s64 *param_1)
 {
     (*(void(*)())(*(s64 *)(*param_1 + 0x20)))();
     return 1;
 }
 
-// 0x7103360268 — vtable call at 8 (no args), return 0 (352 bytes)
-u32 FUN_7103360268(s64 *param_1)
+// 0x7103360268 -- vtable call at 8 (no args), return 0 (352 bytes)
+u64 FUN_7103360268(s64 *param_1)
 {
     (*(void(*)())(*(s64 *)(*param_1 + 8)))();
     return 0;
 }
 
-// 0x7103365d08 — vtable call at 8 (no args), return 0 (352 bytes)
-u32 FUN_7103365d08(s64 *param_1)
+// 0x7103365d08 -- vtable call at 8 (no args), return 0 (352 bytes)
+u64 FUN_7103365d08(s64 *param_1)
 {
     (*(void(*)())(*(s64 *)(*param_1 + 8)))();
     return 0;
 }
 
-// 0x71033f1cc0 — vtable call at 0x2d0 with flag=1, set byte field (336 bytes)
+// 0x71033f1cc0 -- vtable call at 0x2d0 with flag=1, set byte field (336 bytes)
 void FUN_71033f1cc0(u64 param_1, s64 param_2)
 {
     s64 *plVar1 = *(s64**)(*(s64*)(param_2 + 0x20) + 0x58);
@@ -177,7 +177,7 @@ void FUN_71033f1cc0(u64 param_1, s64 param_2)
     *(u8*)(param_2 + 0x90) = 1;
 }
 
-// 0x71037f1d50 — switch on param_2: bool tests on param_1 vs param_3 (320 bytes)
+// 0x71037f1d50 -- switch on param_2: bool tests on param_1 vs param_3 (320 bytes)
 u8 FUN_71037f1d50(u32 param_1, u32 param_2, s32 param_3)
 {
     switch (param_2) {
@@ -220,7 +220,7 @@ u8 FUN_71037f1d50(u32 param_1, u32 param_2, s32 param_3)
     return (u8)(param_1 == 0 || param_1 == 3);
 }
 
-// 0x71037ccf40 — large switch: return component count for param type (288 bytes)
+// 0x71037ccf40 -- large switch: return component count for param type (288 bytes)
 u64 FUN_71037ccf40(s32 param_1)
 {
     u64 uVar1 = 0;

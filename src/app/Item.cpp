@@ -1,6 +1,6 @@
 #include "types.h"
 
-// Item — operates on Item* directly
+// Item -- operates on Item* directly
 // Vtable tail calls: ldr x8,[x0]; ldr xN,[x8,#off]; br xN
 // Direct field reads: ldr wN,[x0,#off]; ret
 // add-return-pointer: add x0,x0,#off; ret
@@ -22,65 +22,73 @@ struct LargeRet { u64 a, b, c; };
 
 namespace app::lua_bind {
 
-// 71020f4430 — ldr x8,[x0]; ldr x1,[x8,#0x70]; br x1
+// 71020f4430 -- ldr x8,[x0]; ldr x1,[x8,#0x70]; br x1
 void Item__start_inhaled_impl(Item* item) {
     reinterpret_cast<void(*)(Item*)>(VT(item)[0x70/8])(item);
 }
 
-// 71020f4440 — ldr x8,[x0]; ldr x1,[x8,#0x108]; br x1
+// 71020f4440 -- ldr x8,[x0]; ldr x1,[x8,#0x108]; br x1
 void Item__end_hooked_impl(Item* item) {
     reinterpret_cast<void(*)(Item*)>(VT(item)[0x108/8])(item);
 }
 
-// 71020f4450 — ldr x8,[x0]; ldr x1,[x8,#0x528]; br x1
+// 71020f4450 -- ldr x8,[x0]; ldr x1,[x8,#0x528]; br x1
 u32 Item__get_battle_object_id_impl(Item* item) {
     return reinterpret_cast<u32(*)(Item*)>(VT(item)[0x528/8])(item);
 }
 
-// 71020f4460 — ldr x8,[x0]; ldr x2,[x8,#0x548]; br x2 (1 extra param)
+// 71020f4460 -- ldr x8,[x0]; ldr x2,[x8,#0x548]; br x2 (1 extra param)
 void Item__action_impl(Item* item, u64 p1) {
     reinterpret_cast<void(*)(Item*, u64)>(VT(item)[0x548/8])(item, p1);
 }
 
-// 71020f4470 — add x0,x0,#0x98; ret
+// 71020f4470 -- add x0,x0,#0x98; ret
 void* Item__item_module_accessor_impl(Item* item) {
     return reinterpret_cast<u8*>(item) + 0x98;
 }
 
-// 71020f4670 — ldr w0,[x0,#0x250]; ret
+// 71020f4670 -- ldr w0,[x0,#0x250]; ret
 u32 Item__owner_id_impl(Item* item) {
     return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(item) + 0x250);
 }
 
-// 71020f4600 — if param_id > 2, return error hash; else tail-call FUN_71015b4e40
+// 71020f4600 -- if param_id > 2, return error hash; else tail-call FUN_71015b4e40
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 u64 Item__property_param_int_as_hash_impl(Item* item, u32 param_id) {
     if (param_id > 2) return 0x7fb997a80ULL;
     return FUN_71015b4e40(item, param_id);
 }
 
-// 71020f4620 — pure tail call
+// 71020f4620 -- pure tail call
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 f32 Item__specialized_param_float_impl(Item* item, u32 param_id) {
     return FUN_71015b3de0(item, param_id);
 }
 
-// 71020f4700 — pure tail call
+// 71020f4700 -- pure tail call
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 bool Item__is_eatable_impl(Item* item) {
     return FUN_71015b4fc0(item);
 }
 
-// 71020f4710 — zero w2 then tail call
+// 71020f4710 -- zero w2 then tail call
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 void Item__throw_attack_impl(Item* item, u32 p1) {
     FUN_71015aba90(item, p1, 0);
 }
 
 // --- LinkEventCaptureItem ---
 
-// 71020b60e0 — ldr x8,[x0]; ldr x2,[x8,#0x38]; br x2
+// 71020b60e0 -- ldr x8,[x0]; ldr x2,[x8,#0x38]; br x2
 void LinkEventCaptureItem__load_from_l2c_table_impl(LinkEventCaptureItem* ev, u64 p1) {
     reinterpret_cast<void(*)(LinkEventCaptureItem*, u64)>(VT(ev)[0x38/8])(ev, p1);
 }
 
-// 71020b60f0 — ldr x9,[x0]; ldr x1,[x9,#0x28]; br x1
+// 71020b60f0 -- ldr x9,[x0]; ldr x1,[x9,#0x28]; br x1
 // LargeRet reserves x8 for indirect return → compiler uses x9 for vtable temp
 LargeRet LinkEventCaptureItem__store_l2c_table_impl(LinkEventCaptureItem* ev) {
     return reinterpret_cast<LargeRet(*)(LinkEventCaptureItem*)>(VT(ev)[0x28/8])(ev);
@@ -88,17 +96,17 @@ LargeRet LinkEventCaptureItem__store_l2c_table_impl(LinkEventCaptureItem* ev) {
 
 // --- LinkEventTouchItem ---
 
-// 71020f2e80 — ldr x8,[x0]; ldr x2,[x8,#0x38]; br x2
+// 71020f2e80 -- ldr x8,[x0]; ldr x2,[x8,#0x38]; br x2
 void LinkEventTouchItem__load_from_l2c_table_impl(LinkEventTouchItem* ev, u64 p1) {
     reinterpret_cast<void(*)(LinkEventTouchItem*, u64)>(VT(ev)[0x38/8])(ev, p1);
 }
 
-// 71020f2e90 — ldr x9,[x0]; ldr x1,[x9,#0x28]; br x1
+// 71020f2e90 -- ldr x9,[x0]; ldr x1,[x9,#0x28]; br x1
 LargeRet LinkEventTouchItem__store_l2c_table_impl(LinkEventTouchItem* ev) {
     return reinterpret_cast<LargeRet(*)(LinkEventTouchItem*)>(VT(ev)[0x28/8])(ev);
 }
 
-// 71020f4480 — send_touch_message (70 instructions): vtable chain + event struct on stack
+// 71020f4480 -- send_touch_message (70 instructions): vtable chain + event struct on stack
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 bool Item__send_touch_message_impl(Item* item, u32 kind, void* vec3, f32 param4) {
@@ -180,7 +188,7 @@ bool Item__send_touch_message_impl(Item* item, u32 kind, void* vec3, f32 param4)
 }
 #endif
 
-// 71020f45a0 — load float from global item param table (adrp singleton),
+// 71020f45a0 -- load float from global item param table (adrp singleton),
 //   stride 0x284 per item kind, offset 0x3908 + param_id*4
 // NOTE: uses adrp → .inst for exact bytes
 #ifdef MATCHING_HACK_NX_CLANG
@@ -203,7 +211,7 @@ f32 Item__common_param_float_impl(Item* item, u32 param_id) {
 }
 #endif
 
-// 71020f45d0 — load u32 from global item param table (adrp singleton),
+// 71020f45d0 -- load u32 from global item param table (adrp singleton),
 //   stride 0xac per item kind, large offset 0x477c8 + param_id*4
 // NOTE: uses adrp → .inst for exact bytes
 #ifdef MATCHING_HACK_NX_CLANG
@@ -226,7 +234,9 @@ u32 Item__common_param_int_impl(Item* item, u32 param_id) {
 }
 #endif
 
-// 71020f4630 — call vtable[0x18](item[0x248], item, param_id, &out); return out if ok else 0
+// 71020f4630 -- call vtable[0x18](item[0x248], item, param_id, &out); return out if ok else 0
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 u32 Item__specialized_param_int_impl(Item* item, u32 param_id) {
     u32 out;
     void* obj = *reinterpret_cast<void**>(reinterpret_cast<u8*>(item) + 0x248);
@@ -234,8 +244,8 @@ u32 Item__specialized_param_int_impl(Item* item, u32 param_id) {
     return ok ? out : 0;
 }
 
-// 71020f4680 — check item state via vtable[0x110] on +0xd8;
-//   if state==2 or (allow_had && state==8) -> return 1
+// 71020f4680 -- check item state via vtable[0x110] on +0xd8;
+//   if state==2 or (allow_had && state==8) → return 1
 //   else tail-call vtable[0x70](accessor+0x168, 4) as u32
 bool Item__is_had_impl(Item* item, u32 allow_had) {
     void* obj = *reinterpret_cast<void**>(reinterpret_cast<u8*>(item) + 0xd8);
@@ -250,7 +260,9 @@ bool Item__is_had_impl(Item* item, u32 allow_had) {
     return reinterpret_cast<bool(*)(void*, u32)>(VT(m)[0x70/8])(m, 4);
 }
 
-// 71020f4720 — b FUN_71015b0590 (pure tail call)
+// 71020f4720 -- b FUN_71015b0590 (pure tail call)
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 void Item__fall_impl(Item* item) {
     FUN_71015b0590(item);
 }

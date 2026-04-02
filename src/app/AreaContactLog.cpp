@@ -3,13 +3,13 @@
 struct AreaContactLog;
 struct LargeRet { u64 a, b, c; };
 
-// External helpers for L2CValue serialization (external b branches — won't byte-match)
+// External helpers for L2CValue serialization (external b branches -- won't byte-match)
 extern "C" void* FUN_7103733d50(void*, void*);
 extern int DAT_710593a3a8[4];
 
 namespace app::lua_bind {
 
-// 7101fca860 (1120 bytes): load fields from L2CValue table — external branches, won't byte-match
+// 7101fca860 (1120 bytes): load fields from L2CValue table -- external branches, won't byte-match
 void AreaContactLog__load_from_l2c_table_impl(AreaContactLog* obj, void* lv_in) {
     int* plv = reinterpret_cast<int*>(lv_in);
     int* e; float v;
@@ -116,7 +116,7 @@ LargeRet AreaContactLog__store_l2c_table_impl(AreaContactLog* obj) {
 }
 #endif
 
-// 7101fcb280: fill trampoline — mov x2,x1; mov x1,x0; mov x0,x8; b FUN_7101fcad90
+// 7101fcb280: fill trampoline -- mov x2,x1; mov x1,x0; mov x0,x8; b FUN_7101fcad90
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void AreaContactLog__store_l2c_table_impl_7101fcb280(AreaContactLog* obj, void* lv) {

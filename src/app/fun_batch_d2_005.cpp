@@ -1,6 +1,6 @@
 #include "types.h"
 
-// MEDIUM-tier FUN_* functions — 0x7103 address range, batch d2-005
+// MEDIUM-tier FUN_* functions -- 0x7103 address range, batch d2-005
 // Pool-d worker: auto-generated from Ghidra decompilation
 
 // ---- External declarations -----------------------------------------------
@@ -18,7 +18,7 @@ extern u8 PTR_FUN_710522ee80[];
 
 // ---- Functions ---------------------------------------------------------------
 
-// 0x7103398410 — src_appeal_* type index → FNV-1a hash40 writer (1664 bytes)
+// 0x7103398410 -- src_appeal_* type index → FNV-1a hash40 writer (1664 bytes)
 void FUN_7103398410(u32 *param_1, u32 param_2)
 {
     u32 uVar1;
@@ -134,7 +134,7 @@ void FUN_7103398410(u32 *param_1, u32 param_2)
     return;
 }
 
-// 0x71035212e0 — check flag via vtable +0x88, conditional vtable call at +0x10 (80 bytes)
+// 0x71035212e0 -- check flag via vtable +0x88, conditional vtable call at +0x10 (80 bytes)
 void FUN_71035212e0(s64 *param_1, s64 param_2)
 {
     u64 uVar1;
@@ -146,7 +146,7 @@ void FUN_71035212e0(s64 *param_1, s64 param_2)
     return;
 }
 
-// 0x710354d0d0 — vtable call at +0x418 test, then +0x450, then +0x28 (96 bytes)
+// 0x710354d0d0 -- vtable call at +0x418 test, then +0x450, then +0x28 (96 bytes)
 void FUN_710354d0d0(s64 param_1)
 {
     s64 lVar1;
@@ -164,7 +164,7 @@ void FUN_710354d0d0(s64 param_1)
     return;
 }
 
-// 0x71035517b0 — set vtable ptr, conditionally call slot +8 (160 bytes)
+// 0x71035517b0 -- set vtable ptr, conditionally call slot +8 (160 bytes)
 void FUN_71035517b0(u64 *param_1)
 {
     *param_1 = (u64)PTR_FUN_710522ee80;
@@ -177,7 +177,7 @@ void FUN_71035517b0(u64 *param_1)
     return;
 }
 
-// 0x7103566d40 — collision slot struct initialization (928 bytes)
+// 0x7103566d40 -- collision slot struct initialization (928 bytes)
 void FUN_7103566d40(u32 param_1, u32 param_2, u32 param_3, u32 param_4,
                     u32 param_5, u32 param_6, s64 param_7, u32 param_8,
                     u32 *param_9, u32 *param_10, u32 param_11)
@@ -245,7 +245,7 @@ void FUN_7103566d40(u32 param_1, u32 param_2, u32 param_3, u32 param_4,
     return;
 }
 
-// 0x710356ba40 — type-dispatch: free/destroy typed value object (224 bytes)
+// 0x710356ba40 -- type-dispatch: free/destroy typed value object (224 bytes)
 void FUN_710356ba40(u32 param_1, u64 *param_2)
 {
     u64 *puVar1;
@@ -293,7 +293,7 @@ LAB_710356baec:
     return;
 }
 
-// 0x7103598a60 — type-dispatch: free/destroy vector typed value (208 bytes)
+// 0x7103598a60 -- type-dispatch: free/destroy vector typed value (208 bytes)
 void FUN_7103598a60(u32 param_1, u64 *param_2)
 {
     u64 *puVar1;

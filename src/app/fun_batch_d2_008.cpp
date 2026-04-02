@@ -1,11 +1,11 @@
 #include "types.h"
 
-// MEDIUM-tier FUN_* functions — 0x7103 address range, batch d2-008
+// MEDIUM-tier FUN_* functions -- 0x7103 address range, batch d2-008
 // Pool-d worker: auto-generated from Ghidra decompilation
 
 // ---- Functions ---------------------------------------------------------------
 
-// 0x7103392a80 — button fill name → FNV-1a hash40 writer; param_2=controller type, param_3=button bitmask (5376 bytes)
+// 0x7103392a80 -- button fill name → FNV-1a hash40 writer; param_2=controller type, param_3=button bitmask (5376 bytes)
 // Note: fun_triage.csv lists entry at 0x71033934b0 (FUN_71033934b0) which falls inside this function
 void FUN_7103392a80(u32 *param_1, u32 param_2, s32 param_3)
 {

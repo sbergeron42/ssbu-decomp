@@ -1,7 +1,7 @@
 #include "types.h"
 #include "app/BattleObjectModuleAccessor.h"
 
-// Batch decompiled — pool-c, batch 019
+// Batch decompiled -- pool-c, batch 019
 // Non-accessor vtable dispatch thunks (16B)
 
 #define VT(m) (*reinterpret_cast<void***>(m))

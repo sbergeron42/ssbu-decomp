@@ -1,6 +1,6 @@
 #include "types.h"
 
-// FUN_* MEDIUM tier — abort wrapper functions (pool-e)
+// FUN_* MEDIUM tier -- abort wrapper functions (pool-e)
 //
 // The real abort() lives at 0x71039c20a0 (symbol: FUN_71039c20a0).
 // Using the FUN_ name ensures gen_linker_script.py gives it the right address.

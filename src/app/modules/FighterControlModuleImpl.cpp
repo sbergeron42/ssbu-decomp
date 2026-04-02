@@ -4,12 +4,12 @@
 
 namespace app::lua_bind {
 
-// 71020aec30 — 3 instructions (trivial getter)
+// 71020aec30 -- 3 instructions (trivial getter)
 u32 FighterControlModuleImpl__get_attack_s3_turn_impl(BattleObjectModuleAccessor* accessor) {
     return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(accessor->fighter_control_module) + 0x614);
 }
 
-// 71020aed80 — 6 instructions (indexed store with smaddl)
+// 71020aed80 -- 6 instructions (indexed store with smaddl)
 void FighterControlModuleImpl__set_command_life_count_impl(
     BattleObjectModuleAccessor* accessor, s32 index, s32 offset, u8 value)
 {
@@ -18,7 +18,7 @@ void FighterControlModuleImpl__set_command_life_count_impl(
     table[static_cast<u32>(offset)] = value;
 }
 
-// 71020aeb10 — 22 instructions (vtable call + conditional selects + frame)
+// 71020aeb10 -- 22 instructions (vtable call + conditional selects + frame)
 f32 FighterControlModuleImpl__get_param_attack_hi4_flick_y_impl(BattleObjectModuleAccessor* accessor) {
     auto* module = reinterpret_cast<u8*>(accessor->fighter_control_module);
 
@@ -41,7 +41,7 @@ f32 FighterControlModuleImpl__get_param_attack_hi4_flick_y_impl(BattleObjectModu
     return static_cast<f32>(*reinterpret_cast<s32*>(param_data + param_offset));
 }
 
-// Field reads — 3 instructions (ldr module, ldr/ldrb field, ret)
+// Field reads -- 3 instructions (ldr module, ldr/ldrb field, ret)
 u32 FighterControlModuleImpl__get_attack_s4_turn_impl(BattleObjectModuleAccessor* a) {
     return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(a->fighter_control_module) + 0x610);
 }
@@ -64,7 +64,7 @@ u8 FighterControlModuleImpl__special_command_23634_step_impl(BattleObjectModuleA
     return reinterpret_cast<u8*>(a->fighter_control_module)[0x991];
 }
 
-// Field writes — 3-4 instructions
+// Field writes -- 3-4 instructions
 void FighterControlModuleImpl__set_overwrite_pad_lr_impl(BattleObjectModuleAccessor* a, f32 val) {
     *reinterpret_cast<f32*>(reinterpret_cast<u8*>(a->fighter_control_module) + 0x650) = val;
 }
@@ -122,13 +122,13 @@ bool FighterControlModuleImpl__get_stick_button_repeat_impl(BattleObjectModuleAc
 void* FighterControlModuleImpl__delete_reserve_turn_lr_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=CONTROL_MODULE(a); return reinterpret_cast<void*(*)(void*,u64,u64)>(VT(m)[0x450/8])(m,p1,p2); }
 void FighterControlModuleImpl__reset_special_command_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=CONTROL_MODULE(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x460/8])(m,p1); }
 void* FighterControlModuleImpl__get_special_command_lr_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CONTROL_MODULE(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x470/8])(m,p1); }
-// 71020aea90 — load control module, mask bool, tail call
+// 71020aea90 -- load control module, mask bool, tail call
 extern "C" void FUN_71006be630(void*, bool);
 void FighterControlModuleImpl__update_attack_air_kind_impl(BattleObjectModuleAccessor* a, bool val) {
     FUN_71006be630(CONTROL_MODULE(a), val & 1);
 }
 
-// 71020aeab0 — vtable call on +0x118, then conditional offset into +0x140 param data
+// 71020aeab0 -- vtable call on +0x118, then conditional offset into +0x140 param data
 f32 FighterControlModuleImpl__get_param_dash_s4_frame_impl(BattleObjectModuleAccessor* a) {
     auto* module = reinterpret_cast<u8*>(CONTROL_MODULE(a));
     auto* obj = *reinterpret_cast<void**>(module + 0x118);
@@ -149,7 +149,7 @@ f32 FighterControlModuleImpl__get_param_dash_s4_frame_impl(BattleObjectModuleAcc
     return *reinterpret_cast<f32*>(param_data + param_offset);
 }
 
-// 71020aeb70 — same pattern, returns scvtf (int→float), different offsets
+// 71020aeb70 -- same pattern, returns scvtf (int→float), different offsets
 f32 FighterControlModuleImpl__get_param_attack_lw4_flick_y_impl(BattleObjectModuleAccessor* a) {
     auto* module = reinterpret_cast<u8*>(CONTROL_MODULE(a));
     auto* obj = *reinterpret_cast<void**>(module + 0x118);
@@ -170,7 +170,10 @@ f32 FighterControlModuleImpl__get_param_attack_lw4_flick_y_impl(BattleObjectModu
     return static_cast<f32>(*reinterpret_cast<s32*>(param_data + param_offset));
 }
 
-// 71020aebd0 — indexed clear: clear bit in bitfield at +0x568, zero entries at +0x578/+0x588
+// 71020aebd0 -- indexed clear: clear bit in bitfield at +0x568, zero entries at +0x578/+0x588
+// Original: ldr x8; mov w11,#0x28; smaddl x8; ldr w11,[x8,#0x568]; mov w9,#1; lsl w9,w9,w2; bic w9,w11,w9; str w9
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 void FighterControlModuleImpl__delete_command_impl(BattleObjectModuleAccessor* a, s32 group, s32 bit) {
     auto* module = reinterpret_cast<u8*>(CONTROL_MODULE(a));
     auto* base = module + static_cast<s64>(group) * 0x28;
@@ -182,13 +185,13 @@ void FighterControlModuleImpl__delete_command_impl(BattleObjectModuleAccessor* a
     arr2[static_cast<u32>(bit)] = 0;
 }
 
-// 71020aeda0 — ldr x0,[x0,#0x48]; b external
+// 71020aeda0 -- ldr x0,[x0,#0x48]; b external
 extern "C" void FUN_71006bed50(void*);
 void FighterControlModuleImpl__check_hit_stop_delay_command_impl(BattleObjectModuleAccessor* a) {
     FUN_71006bed50(CONTROL_MODULE(a));
 }
 
-// 71020aedb0 — comparison chain on module fields +0x7e0, +0x7dc, +0x7d4, +0x140→+0x228
+// 71020aedb0 -- comparison chain on module fields +0x7e0, +0x7dc, +0x7d4, +0x140→+0x228
 bool FighterControlModuleImpl__is_enable_hit_stop_delay_impl(BattleObjectModuleAccessor* a) {
     auto* module = reinterpret_cast<u8*>(CONTROL_MODULE(a));
     s32 val_e0 = *reinterpret_cast<s32*>(module + 0x7e0);
@@ -202,7 +205,7 @@ bool FighterControlModuleImpl__is_enable_hit_stop_delay_impl(BattleObjectModuleA
     return val_d4 < threshold;
 }
 
-// 71020aedf0 — simpler comparison on +0x7e0 and +0x7dc
+// 71020aedf0 -- simpler comparison on +0x7e0 and +0x7dc
 bool FighterControlModuleImpl__is_enable_hit_stop_delay_life_impl(BattleObjectModuleAccessor* a) {
     auto* module = reinterpret_cast<u8*>(CONTROL_MODULE(a));
     s32 val_e0 = *reinterpret_cast<s32*>(module + 0x7e0);

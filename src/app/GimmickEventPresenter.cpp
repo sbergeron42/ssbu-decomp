@@ -13,7 +13,7 @@ namespace app::lua_bind {
 
 // 71021453e0: adrp x8; ldr x8,[x8,#0x9d8] (load ptr P from 0x71053299d8);
 //             ldr x8,[x8] (load mgr M=*P); ldr x0,[x8,#0x1e0]; b FUN_710315f230
-// Must use naked asm — fPIC would otherwise emit GOT indirection (6 insns vs 5)
+// Must use naked asm -- fPIC would otherwise emit GOT indirection (6 insns vs 5)
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void GimmickEventPresenter__dispatch_event_from_fighter_impl(GimmickEventPresenter*, GimmickEvent*) {

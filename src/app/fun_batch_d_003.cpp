@@ -1,6 +1,6 @@
 #include "types.h"
 
-// MEDIUM-tier FUN_* functions — 0x7103 address range, batch d-003
+// MEDIUM-tier FUN_* functions -- 0x7103 address range, batch d-003
 // Pool-d worker: auto-generated from Ghidra decompilation
 
 // ---- External declarations -----------------------------------------------
@@ -41,14 +41,14 @@ extern s64 *DAT_7105331f00;
 
 // ---- Functions ---------------------------------------------------------------
 
-// 0x71033dc420 — vtable call returning bool: iVar != 1 (160 bytes)
+// 0x71033dc420 -- vtable call returning bool: iVar != 1 (160 bytes)
 u8 FUN_71033dc420(u64 param_1, s64 param_2)
 {
     s32 iVar1 = (*(s32(*)())(*(s64*)(*(s64*)(*(s64*)(*(s64*)(param_2 + 0x20) + 0x40)) + 0x110)))();
     return (u8)(iVar1 != 1);
 }
 
-// 0x7103796c20 — nested guard init with FUN_7103799b10, returns &DAT_710593ab70 (160 bytes)
+// 0x7103796c20 -- nested guard init with FUN_7103799b10, returns &DAT_710593ab70 (160 bytes)
 u64 *FUN_7103796c20(void)
 {
     s32 iVar1;
@@ -66,7 +66,7 @@ u64 *FUN_7103796c20(void)
     return (u64*)DAT_710593ab70;
 }
 
-// 0x71037b0b30 — call FUN_71037aeec0 on three consecutive fields (160 bytes)
+// 0x71037b0b30 -- call FUN_71037aeec0 on three consecutive fields (160 bytes)
 void FUN_71037b0b30(s64 param_1)
 {
     FUN_71037aeec0(param_1);
@@ -74,7 +74,7 @@ void FUN_71037b0b30(s64 param_1)
     FUN_71037aeec0(param_1 + 0x10);
 }
 
-// 0x71033640c0 — vtable dispatch at offset 0x18 (168 bytes)
+// 0x71033640c0 -- vtable dispatch at offset 0x18 (168 bytes)
 u32 FUN_71033640c0(s64 *param_1)
 {
     register s64 *in_x8 asm("x8");
@@ -83,7 +83,7 @@ u32 FUN_71033640c0(s64 *param_1)
     return 0;
 }
 
-// 0x7103364460 — vtable dispatch at offset 8 (168 bytes)
+// 0x7103364460 -- vtable dispatch at offset 8 (168 bytes)
 u32 FUN_7103364460(s64 *param_1)
 {
     register s64 *in_x8 asm("x8");
@@ -92,7 +92,7 @@ u32 FUN_7103364460(s64 *param_1)
     return 0;
 }
 
-// 0x710341aac0 — vtable call at 0x98 returning bool: 3 < iVar (176 bytes)
+// 0x710341aac0 -- vtable call at 0x98 returning bool: 3 < iVar (176 bytes)
 u8 FUN_710341aac0(u64 param_1, s64 param_2)
 {
     s64 *plVar2 = *(s64**)(*(s64*)(param_2 + 0x20) + 0x50);
@@ -100,7 +100,7 @@ u8 FUN_710341aac0(u64 param_1, s64 param_2)
     return (u8)(3 < iVar1);
 }
 
-// 0x7103541c00 — je_aligned_alloc with OOM handler fallback (176 bytes)
+// 0x7103541c00 -- je_aligned_alloc with OOM handler fallback (176 bytes)
 s64 *FUN_7103541c00(u64 param_1, s64 param_2)
 {
     s64 *plVar1;
@@ -125,14 +125,14 @@ s64 *FUN_7103541c00(u64 param_1, s64 param_2)
     return plVar1;
 }
 
-// 0x710335a5fc — wrapper: FUN_71037a1cc0(p1, p2, 0xffffffff, 1) (180 bytes)
-u32 FUN_710335a5fc(u64 param_1, u64 param_2)
+// 0x710335a5fc -- wrapper: FUN_71037a1cc0(p1, p2, 0xffffffff, 1) (180 bytes)
+u64 FUN_710335a5fc(u64 param_1, u64 param_2)
 {
     FUN_71037a1cc0(param_1, param_2, 0xffffffff, 1);
     return 0;
 }
 
-// 0x71037b0360 — switch on *(param3+0x6c): compute local_18 from sub-calls (192 bytes)
+// 0x71037b0360 -- switch on *(param3+0x6c): compute local_18 from sub-calls (192 bytes)
 u64 FUN_71037b0360(u8 param_1[16], u32 param_2, s64 param_3)
 {
     u32 local_38;
@@ -166,7 +166,7 @@ u64 FUN_71037b0360(u8 param_1[16], u32 param_2, s64 param_3)
     return local_18;
 }
 
-// 0x71037b09d0 — switch on *(param3+0x6c): compute local_24 from sub-calls variant (192 bytes)
+// 0x71037b09d0 -- switch on *(param3+0x6c): compute local_24 from sub-calls variant (192 bytes)
 u64 FUN_71037b09d0(u8 param_1[16], u32 param_2, s64 param_3)
 {
     u32 local_40;
@@ -200,27 +200,27 @@ u64 FUN_71037b09d0(u8 param_1[16], u32 param_2, s64 param_3)
     return local_24;
 }
 
-// 0x71039505b0 — wrapper: call nn::os::sched_getcpu() (192 bytes)
+// 0x71039505b0 -- wrapper: call nn::os::sched_getcpu() (192 bytes)
 void FUN_71039505b0(void)
 {
     nn::os::sched_getcpu();
 }
 
-// 0x71031cfbe0 — call FUN_71031f4740, return 1 (192 bytes)
+// 0x71031cfbe0 -- call FUN_71031f4740, return 1 (192 bytes)
 u64 FUN_71031cfbe0(s64 param_1)
 {
     FUN_71031f4740(*(u64*)(param_1 + 8));
     return 1;
 }
 
-// 0x71031cfd10 — vtable call at 0x20, return 1 (192 bytes)
+// 0x71031cfd10 -- vtable call at 0x20, return 1 (192 bytes)
 u64 FUN_71031cfd10(s64 *param_1)
 {
     (*(void(*)(s64*))(*(s64 *)(*param_1 + 0x20)))(param_1);
     return 1;
 }
 
-// 0x71036e5780 — vtable call + guard init, return struct ptr (160 bytes)
+// 0x71036e5780 -- vtable call + guard init, return struct ptr (160 bytes)
 u64 *FUN_71036e5780(s64 *param_1)
 {
     s32 iVar1;

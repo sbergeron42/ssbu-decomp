@@ -8,7 +8,7 @@
 struct LargeRet { u64 a, b, c; };
 
 // ---------------------------------------------------------------------------
-// app::lua_bind — GimmickEvent l2c table dispatchers
+// app::lua_bind -- GimmickEvent l2c table dispatchers
 // ---------------------------------------------------------------------------
 // These were already decompiled in their own files; included here only if
 // the standalone files are absent from the build.  Compilation is guarded by
@@ -16,7 +16,7 @@ struct LargeRet { u64 a, b, c; };
 
 // ---------------------------------------------------------------------------
 // nn::pia::common::Crypto::GetBlockSize
-// 0x71000b5090  48B  — return 16 if param==1 (AES block), else 0
+// 0x71000b5090  48B  -- return 16 if param==1 (AES block), else 0
 // ---------------------------------------------------------------------------
 long GetBlockSize_b5090(int p) {
     return (u64)(p == 1) << 4;
@@ -24,7 +24,7 @@ long GetBlockSize_b5090(int p) {
 
 // ---------------------------------------------------------------------------
 // nn::nex::MatchmakeSessionSearchCriteria::SetExcludeLocked
-// 0x7100255b10  16B  — store low bit of param_2 at +0xc9
+// 0x7100255b10  16B  -- store low bit of param_2 at +0xc9
 // ---------------------------------------------------------------------------
 void SetExcludeLocked_255b10(long obj, u8 val) {
     *reinterpret_cast<u8*>(obj + 0xc9) = val & 1u;

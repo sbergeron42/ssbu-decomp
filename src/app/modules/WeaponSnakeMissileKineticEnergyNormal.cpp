@@ -4,7 +4,7 @@ struct WeaponSnakeMissileKineticEnergyNormal;
 
 namespace app::lua_bind {
 
-// 71021643f0 — load vec3 from x1, zero w-lane via ext+mov+mov, store to self+0xa0
+// 71021643f0 -- load vec3 from x1, zero w-lane via ext+mov+mov, store to self+0xa0
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void WeaponSnakeMissileKineticEnergyNormal__set_direction_impl(WeaponSnakeMissileKineticEnergyNormal* self, void* dir) {

@@ -8,7 +8,7 @@ extern int DAT_710593a3a8[4];
 
 namespace app::lua_bind {
 
-// 7101febaa0 (1888 bytes): load fields from L2CValue table — external branches, won't byte-match
+// 7101febaa0 (1888 bytes): load fields from L2CValue table -- external branches, won't byte-match
 void AttackAbsoluteData__load_from_l2c_table_impl(AttackAbsoluteData* obj, void* lv_in) {
     int* plv = reinterpret_cast<int*>(lv_in);
     int* e; float v;
@@ -138,7 +138,7 @@ LargeRet AttackAbsoluteData__store_l2c_table_impl(AttackAbsoluteData* obj) {
 }
 #endif
 
-// 7101fec920: fill trampoline — mov x2,x1; mov x1,x0; mov x0,x8; b FUN_7101fec2d0
+// 7101fec920: fill trampoline -- mov x2,x1; mov x1,x0; mov x0,x8; b FUN_7101fec2d0
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void AttackAbsoluteData__store_l2c_table_impl_7101fec920(AttackAbsoluteData* obj, void* lv) {

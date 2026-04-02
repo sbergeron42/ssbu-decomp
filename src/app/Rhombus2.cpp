@@ -8,7 +8,7 @@ extern int DAT_710593a3a8[4];
 
 namespace app::lua_bind {
 
-// 71020f0250 (1280 bytes): load fields from L2CValue table — external branches, won't byte-match
+// 71020f0250 (1280 bytes): load fields from L2CValue table -- external branches, won't byte-match
 // Rhombus2 has 4 Vec2 sub-tables (each with x,y sub-fields 0x18cdc1683, 0x1fbdb2615)
 void Rhombus2__load_from_l2c_table_impl(Rhombus2* obj, void* lv_in) {
     int* plv = reinterpret_cast<int*>(lv_in);
@@ -119,7 +119,7 @@ LargeRet Rhombus2__store_l2c_table_impl(Rhombus2* obj) {
 }
 #endif
 
-// 71020f0eb0: fill trampoline — mov x2,x1; mov x1,x0; mov x0,x8; b FUN_71020f0820
+// 71020f0eb0: fill trampoline -- mov x2,x1; mov x1,x0; mov x0,x8; b FUN_71020f0820
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void Rhombus2__store_l2c_table_impl_71020f0eb0(Rhombus2* obj, void* lv) {

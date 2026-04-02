@@ -1,6 +1,6 @@
 #include "types.h"
 
-// EASY-tier FUN_* functions — address range 0x7103xxxxxx (and nearby)
+// EASY-tier FUN_* functions -- address range 0x7103xxxxxx (and nearby)
 // Pool-b worker: manually decompiled from Ghidra
 
 // External globals
@@ -51,7 +51,7 @@ void FUN_710337e780(void) {}
 // 71035516e0
 void FUN_71035516e0(void) {}
 
-// 71036e8dc0 — (complex: skipped — misclassified triage entry)
+// 71036e8dc0 -- (complex: skipped -- misclassified triage entry)
 
 // 7103715030
 void FUN_7103715030(void) {}

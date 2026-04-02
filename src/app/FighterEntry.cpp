@@ -1,17 +1,19 @@
 #include "types.h"
 
-// FighterEntry — operates on FighterEntry* directly
+// FighterEntry -- operates on FighterEntry* directly
 
 struct FighterEntry;
 
 namespace app::lua_bind {
 
-// 71020cbc40 — fighter_num (2 instructions)
+// 71020cbc40 -- fighter_num (2 instructions)
 u32 FighterEntry__fighter_num_impl(FighterEntry* entry) {
     return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(entry) + 0x14);
 }
 
-// 71020cbc50 — get_fighter_id: bounds check + optional active check via vtable
+// 71020cbc50 -- get_fighter_id: bounds check + optional active check via vtable
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 u32 FighterEntry__get_fighter_id_impl(FighterEntry* entry, s32 index, bool check_active) {
     u32 result = 0x50000000u;
     auto* p = reinterpret_cast<u8*>(entry);
@@ -28,7 +30,9 @@ u32 FighterEntry__get_fighter_id_impl(FighterEntry* entry, s32 index, bool check
     return *reinterpret_cast<u32*>(slot + 0x8);
 }
 
-// 71020cbcb0 — current_fighter_id: use current index at +0x5918
+// 71020cbcb0 -- current_fighter_id: use current index at +0x5918
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 u32 FighterEntry__current_fighter_id_impl(FighterEntry* entry) {
     u32 result = 0x50000000u;
     auto* p = reinterpret_cast<u8*>(entry);
@@ -43,8 +47,10 @@ u32 FighterEntry__current_fighter_id_impl(FighterEntry* entry) {
     return *reinterpret_cast<u32*>(slot2 + 0x8);
 }
 
-// 71020cbd10 — heal: applies damage to one or all fighters via external function
-extern "C" void FUN_71006645d0(void*, bool, s32, u64);
+// 71020cbd10 -- heal: applies damage to one or all fighters via external function
+extern "C" void FUN_71006645d0(f32, u64, bool, s32, u64);
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
 void FighterEntry__heal_impl(FighterEntry* entry, f32 damage, bool param3, s32 target, u64 hash) {
     auto* p = reinterpret_cast<u8*>(entry);
     u64 count = *reinterpret_cast<u64*>(p + 0x4150);
@@ -74,7 +80,7 @@ void FighterEntry__heal_impl(FighterEntry* entry, f32 damage, bool param3, s32 t
     }
 }
 
-// 71020cbe30 — eat_item: tail call to external function
+// 71020cbe30 -- eat_item: tail call to external function
 extern "C" void FUN_710065d530(void*, void*, bool);
 void FighterEntry__eat_item_impl(FighterEntry* entry, void* touch_event, bool param3) {
     FUN_710065d530(entry, touch_event, param3);
