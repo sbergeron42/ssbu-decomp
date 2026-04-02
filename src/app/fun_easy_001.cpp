@@ -8,8 +8,8 @@ extern "C" void FUN_71015b8290(u32, u64, u64);
 extern "C" void FUN_71015b8600(u32, u64, u64);
 
 // External labels (vtable pointers)
-extern u64 PTR_LAB_71050aff48;
-extern u64 PTR_LAB_71050bf4d0;
+extern u64 PTR_LAB_71050aff48 __attribute__((visibility("hidden")));
+extern u64 PTR_LAB_71050bf4d0 __attribute__((visibility("hidden")));
 
 // 710138a720
 u64 FUN_710138a720(void) { return 1; }

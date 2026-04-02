@@ -200,7 +200,7 @@ void FUN_7100117020(s64* param_1)
 }
 
 // 710014c900 — call FUN_71001941b0(param_1), then set vtable ptr at *param_1
-void FUN_710014c900(s64* param_1)
+__attribute__((noinline)) void FUN_710014c900(s64* param_1)
 {
     FUN_71001941b0(param_1);
     *param_1 = (s64)(PTR_DAT_71052a4f20 + 0x10);

@@ -282,7 +282,7 @@ u64 FUN_71021f6514(s64 *param_1)
 }
 
 // 0x71021f72f0
-u64 FUN_71021f72f0(void)
+u32 FUN_71021f72f0(void)
 {
     FUN_71015c0410();
     return 0;
@@ -313,21 +313,21 @@ u64 FUN_71021fc278(s64 param_1, s64 *param_2)
 }
 
 // 0x71021ff030
-u64 FUN_71021ff030(lua_State *param_1)
+u32 FUN_71021ff030(lua_State *param_1)
 {
     app::item::apply_powerup_throw(param_1);
     return 0;
 }
 
 // 0x71021ff1c0
-u64 FUN_71021ff1c0(lua_State *param_1)
+u32 FUN_71021ff1c0(lua_State *param_1)
 {
     app::item::apply_powerup_etc(param_1);
     return 0;
 }
 
 // 0x71021ff230
-u64 FUN_71021ff230(lua_State *param_1)
+u32 FUN_71021ff230(lua_State *param_1)
 {
     app::item::apply_powerup_attr(param_1);
     return 0;
@@ -358,7 +358,7 @@ u64 FUN_7102208ccc(s64 param_1, s64 param_2)
 }
 
 // 0x7102208d00
-u64 FUN_7102208d00(lua_State *param_1)
+u32 FUN_7102208d00(lua_State *param_1)
 {
     app::boss_private::send_event_on_boss_dead(param_1);
     return 0;
@@ -374,7 +374,7 @@ u64 FUN_7102208df0(s64 param_1)
 }
 
 // 0x710220bf50
-u64 FUN_710220bf50(lua_State *param_1)
+u32 FUN_710220bf50(lua_State *param_1)
 {
     app::item_collision_manager::disable_ground_collision(param_1);
     return 0;

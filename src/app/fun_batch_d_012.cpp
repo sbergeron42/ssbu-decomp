@@ -11,7 +11,7 @@ extern void FUN_71037af510(u64);
 
 // External data (vtable/label pointers)
 extern u8 PTR_FUN_71052406a8[];
-extern u8 PTR_LAB_710517b8e0[];
+extern u8 PTR_LAB_710517b8e0[] __attribute__((visibility("hidden")));
 
 // ---- Functions ---------------------------------------------------------------
 

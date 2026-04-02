@@ -58,13 +58,13 @@ extern "C" void FUN_71001738e0(s64, u64);
 
 // External data
 extern u8  PTR_s_pInstance_71052a2dc8[];
-extern u8  PTR_DAT_71052a42a0[];   // StepSequenceJob vtable (FUN_7100179d50)
+extern u8  PTR_DAT_71052a52a0[];   // StepSequenceJob vtable (FUN_7100179d50)
 extern u8  PTR_DAT_71052a4500[];   // outer vtable (FUN_71001857c0)
 extern u8  PTR_DAT_71052a4538[];   // vtable (FUN_7100186580)
-extern u8  PTR_DAT_71052a4560[];   // vtable (FUN_71001875f0)
+extern u8  PTR_DAT_71052a5560[];   // vtable (FUN_71001875f0)
 extern u8  PTR_DAT_71052a46d8[];   // vtable (FUN_7100195180)
-extern u8  PTR_DAT_71052a46f0[];   // vtable (FUN_710019b910)
-extern u8  PTR_DAT_71052a4708[];   // vtable (FUN_710019f980)
+extern u8  PTR_DAT_71052a56f0[];   // vtable (FUN_710019b910)
+extern u8  PTR_DAT_71052a5708[];   // vtable (FUN_710019f980)
 
 // ---- Condition + passthrough call ----------------------------------------
 
@@ -156,7 +156,7 @@ void FUN_71001875f0(s64* param_1)
 {
     new (param_1) nn::pia::common::StepSequenceJob();
     param_1[0xb] = 0;
-    *param_1     = (s64)(PTR_DAT_71052a4560 + 0x10);
+    *param_1     = (s64)(PTR_DAT_71052a5560 + 0x10);
 }
 
 // 7100179d50 — StepSequenceJob base + vtable 42a0 + store param_2
@@ -165,7 +165,7 @@ void FUN_7100179d50(s64* param_1, s64 param_2)
     FUN_710013e590();
     param_1[0x27] = 0;
     param_1[0x28] = param_2;
-    *param_1      = (s64)(PTR_DAT_71052a42a0 + 0x10);
+    *param_1      = (s64)(PTR_DAT_71052a52a0 + 0x10);
 }
 
 // 7100185a90 — return FUN_71001726a0(param_1+8) + 1
@@ -196,14 +196,14 @@ void FUN_710019b910(s64* param_1)
 {
     FUN_71001609a0();
     param_1[0x2b] = 0;
-    *param_1      = (s64)(PTR_DAT_71052a46f0 + 0x10);
+    *param_1      = (s64)(PTR_DAT_71052a56f0 + 0x10);
 }
 
 // 710019f980 — FUN_7100164190(x0 passthrough) + override vtable 4708
 void FUN_710019f980(s64* param_1)
 {
     FUN_7100164190(param_1);
-    *param_1 = (s64)(PTR_DAT_71052a4708 + 0x10);
+    *param_1 = (s64)(PTR_DAT_71052a5708 + 0x10);
 }
 
 // 7100180210 — GetHeap + alloc 0x70 + init

@@ -9,7 +9,7 @@ extern "C" void FUN_7101429330(s32*, s32*, s32*, s32*, s32*);
 // Data symbol declarations (absolute addresses in the original binary)
 extern u8 DAT_71044a7cd0;
 extern u8 DAT_71044a7d50;
-extern u8 PTR_LAB_7105065888;
+extern u8 PTR_LAB_7105065888 __attribute__((visibility("hidden")));
 
 // 0x710022b510
 u32 FUN_710022b510(s64 param_1)

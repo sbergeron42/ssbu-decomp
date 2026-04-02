@@ -12,9 +12,9 @@ extern u64 DAT_7106dd45f8;
 extern u64 DAT_7106dd4600;
 
 // External labels (vtable/function pointers)
-extern u64 PTR_LAB_710517b7c0;
-extern u64 PTR_LAB_71051852c8;
-extern u64 PTR_LAB_710523e688;
+extern u64 PTR_LAB_710517b7c0 __attribute__((visibility("hidden")));
+extern u64 PTR_LAB_71051852c8 __attribute__((visibility("hidden")));
+extern u64 PTR_LAB_710523e688 __attribute__((visibility("hidden")));
 
 // External functions
 extern "C" void FUN_710392e590(void*);
@@ -96,7 +96,7 @@ void FUN_7103717230(u64 param_1) { if (param_1 != 0) FUN_710392e590((void*)param
 void FUN_7103717550(u64 param_1) { if (param_1 != 0) FUN_710392e590((void*)param_1); }
 
 // 710373e050
-u64 FUN_710373e050(u64 param_1) { if (param_1 != 0) FUN_710392e590((void*)param_1); return 0; }
+u32 FUN_710373e050(u64 param_1) { if (param_1 != 0) FUN_710392e590((void*)param_1); return 0; }
 
 // 7103793ad0
 void FUN_7103793ad0(u64 param_1, u64 *param_2) {

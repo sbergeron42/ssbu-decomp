@@ -6,16 +6,16 @@
 // Forward declarations
 extern "C" void FUN_71016ec6a0(s32*, s32*, s32*, s32*, s32*);
 
-// PTR_LAB vtable tables
-extern u8 PTR_LAB_7105065310;
-extern u8 PTR_LAB_71050652c8;
-extern u8 PTR_LAB_7105065280;
-extern u8 PTR_LAB_7105065238;
-extern u8 PTR_LAB_71050651f0;
-extern u8 PTR_LAB_71050651a8;
-extern u8 PTR_LAB_7105065160;
-extern u8 PTR_LAB_7105065118;
-extern u8 PTR_LAB_7105078920;
+// PTR_LAB vtable tables (hidden: original uses adrp+add, not GOT)
+extern u8 PTR_LAB_7105065310 __attribute__((visibility("hidden")));
+extern u8 PTR_LAB_71050652c8 __attribute__((visibility("hidden")));
+extern u8 PTR_LAB_7105065280 __attribute__((visibility("hidden")));
+extern u8 PTR_LAB_7105065238 __attribute__((visibility("hidden")));
+extern u8 PTR_LAB_71050651f0 __attribute__((visibility("hidden")));
+extern u8 PTR_LAB_71050651a8 __attribute__((visibility("hidden")));
+extern u8 PTR_LAB_7105065160 __attribute__((visibility("hidden")));
+extern u8 PTR_LAB_7105065118 __attribute__((visibility("hidden")));
+extern u8 PTR_LAB_7105078920 __attribute__((visibility("hidden")));
 
 // 0x710140f9b0
 void FUN_710140f9b0(s64 param_1, u64 *param_2)

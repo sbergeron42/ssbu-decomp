@@ -6,13 +6,13 @@
 // External globals
 extern u64  DAT_71052a90d8;
 extern u64  DAT_71052a90e0;
-extern u32  DAT_710446f378[];
-extern u32  DAT_7104470000[];
-extern u32  DAT_710446f3a0[];
-extern u32  DAT_710446f3b4[];
-extern u32  DAT_710446f400[];
-extern u32  DAT_710446f528[];
-extern u32  DAT_7104470580[];
+extern u32  DAT_710446f378[] __attribute__((visibility("hidden")));
+extern u32  DAT_7104470000[] __attribute__((visibility("hidden")));
+extern u32  DAT_710446f3a0[] __attribute__((visibility("hidden")));
+extern u32  DAT_710446f3b4[] __attribute__((visibility("hidden")));
+extern u32  DAT_710446f400[] __attribute__((visibility("hidden")));
+extern u32  DAT_710446f528[] __attribute__((visibility("hidden")));
+extern u32  DAT_7104470580[] __attribute__((visibility("hidden")));
 extern u64  PTR_DAT_71052a22f8;
 extern u8   PTR_glslcCompilePreSpecialized_71052a32e8[];
 extern u8   PTR_glslcCompileSpecialized_71052a32f0[];

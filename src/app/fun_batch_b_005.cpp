@@ -13,8 +13,8 @@ extern "C" void ui2d_apply_named_animation(u32, u64, const char *);
 // Data symbols
 extern u64 DAT_710532e730;
 extern u8 DAT_7104866c2e;
-extern u8 DAT_710446fbe0;
-extern u8 PTR_LAB_71050b0530;
+extern u8 DAT_710446fbe0 __attribute__((visibility("hidden")));
+extern u8 PTR_LAB_71050b0530 __attribute__((visibility("hidden")));
 
 // 0x7101cc4bc0
 u64 FUN_7101cc4bc0(u32 param_1)

@@ -41,7 +41,7 @@ extern "C" void FUN_71000bcf30(s32*, u32*);
 
 // External data
 extern u8  PTR_DAT_71052a2f18[];   // vtable (FUN_71000d0910)
-extern u8  PTR_DAT_71052a2f78[];   // vtable (FUN_71000d38f0)
+extern u8  PTR_DAT_71052a3f78[];   // vtable (FUN_71000d38f0)
 extern u8  PTR_DAT_71052a29c8[];   // outer guard (FUN_71000855a0)
 extern u8  PTR_DAT_71052a29d0[];   // outer data  (FUN_71000855a0)
 extern u8  PTR_DAT_71052a2918[];   // inner guard  (FUN_71000855a0) — shared
@@ -72,7 +72,7 @@ void FUN_71000d38f0(s64* param_1)
 {
     new (param_1) nn::pia::common::StepSequenceJob();
     param_1[0xb] = 0;
-    *param_1 = (s64)(PTR_DAT_71052a2f78 + 0x10);
+    *param_1 = (s64)(PTR_DAT_71052a3f78 + 0x10);
 }
 
 // ---- Float clamp with NaN guard ------------------------------------------
