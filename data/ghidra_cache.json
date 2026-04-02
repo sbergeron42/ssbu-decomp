@@ -1,0 +1,408 @@
+{
+  "0x7100000250": {
+    "ghidra_raw": "\nundefined8 FUN_7100000250(long param_1,long param_2,int param_3)\n\n{\n  long lVar1;\n  \n  if (param_3 < 1) {\n    return 1;\n  }\n  lVar1 = 0;\n  do {\n    if (*(char *)(param_1 + lVar1) != *(char *)(param_2 + lVar1)) {\n      return 0;\n    }\n    lVar1 = lVar1 + 1;\n  } while (lVar1 < param_3);\n  return 1;\n}\n",
+    "skipped": false
+  },
+  "0x71000007c0": {
+    "ghidra_raw": "\nint FUN_71000007c0(byte *param_1,uint param_2)\n\n{\n  byte bVar1;\n  uint uVar2;\n  uint uVar3;\n  \n  uVar2 = 0;\n  do {\n    uVar3 = uVar2;\n    bVar1 = *param_1;\n    param_1 = param_1 + 1;\n    uVar2 = (uint)bVar1 + uVar3 * 0x492;\n  } while (bVar1 != 0);\n  uVar2 = 0;\n  if (param_2 != 0) {\n    uVar2 = uVar3 / param_2;\n  }\n  return uVar3 - uVar2 * param_2;\n}\n",
+    "skipped": false
+  },
+  "0x7100000900": {
+    "ghidra_raw": "\nvoid FUN_7100000900(void)\n\n{\n  if ((DAT_71052a90e8 != 0) && (DAT_71052a90e8 = DAT_71052a90e8 + -1, DAT_71052a90e8 == 0)) {\n    FUN_7100027f90();\n    FUN_7100005b40();\n    if ((DAT_71052a90f0 & 1) != 0) {\n      FUN_7100026140();\n    }\n    FUN_7100004780();\n    DAT_71052a90f0 = 0;\n    return;\n  }\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x7100002ac0": {
+    "ghidra_raw": "\nchar * FUN_7100002ac0(char *param_1,char param_2,long param_3)\n\n{\n  char *pcVar1;\n  \n  if (-1 < param_3 + -1) {\n    pcVar1 = param_1 + param_3 + -1;\n    do {\n      if (*pcVar1 == param_2) {\n        return pcVar1;\n      }\n      pcVar1 = pcVar1 + -1;\n    } while (param_1 <= pcVar1);\n  }\n  return (char *)0x0;\n}\n",
+    "skipped": false
+  },
+  "0x7100005a70": {
+    "ghidra_raw": "\nundefined * FUN_7100005a70(void)\n\n{\n  int iVar1;\n  \n  if ((DAT_71052a90f8 & 1) != 0) {\n    return &DAT_71052a9100;\n  }\n  iVar1 = FUN_71000052d0(&DAT_71052a9100,7,PTR_LAB_71052a21e0,PTR_DAT_71052a21e8,&LAB_7100005b00);\n  if (iVar1 != 0) {\n    return (undefined *)0x0;\n  }\n  DAT_71052a90f8 = 1;\n  return &DAT_71052a9100;\n}\n",
+    "skipped": false
+  },
+  "0x71000093f0": {
+    "ghidra_raw": "\nulong FUN_71000093f0(ulong param_1,int param_2)\n\n{\n  if (param_1 != 0) {\n    param_1 = (ulong)((*(ulong *)(param_1 + 0xe8) & (long)param_2) != 0);\n  }\n  return param_1;\n}\n",
+    "skipped": false
+  },
+  "0x710000bba0": {
+    "ghidra_raw": "\nvoid FUN_710000bba0(long param_1,int param_2)\n\n{\n  long *plVar1;\n  \n  plVar1 = *(long **)(&DAT_00004d58 + param_1);\n  if (plVar1 != (long *)0x0) {\n    do {\n      if (*(int *)(*plVar1 + 0x28) == param_2) {\n        FUN_7100006870(&DAT_00004d58 + param_1,plVar1,0);\n        return;\n      }\n      plVar1 = (long *)plVar1[2];\n    } while (plVar1 != (long *)0x0);\n  }\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x710000c8f0": {
+    "ghidra_raw": "\nbool FUN_710000c8f0(long param_1)\n\n{\n  if (*(long *)(param_1 + 0xb70) != 0) {\n    return *(int *)(*(long *)(param_1 + 0xb70) + 0x4024) == 2;\n  }\n  return false;\n}\n",
+    "skipped": false
+  },
+  "0x710000c920": {
+    "ghidra_raw": "\nbool FUN_710000c920(long param_1)\n\n{\n  if (*(long *)(param_1 + 0xb70) != 0) {\n    return *(int *)(*(long *)(param_1 + 0xb70) + 0x4024) != 2;\n  }\n  return false;\n}\n",
+    "skipped": false
+  },
+  "0x710000e940": {
+    "ghidra_raw": "\nulong FUN_710000e940(long *param_1)\n\n{\n  int iVar1;\n  long lVar2;\n  ulong uVar3;\n  uint uVar4;\n  undefined8 uVar5;\n  char cVar6;\n  long lVar7;\n  long lVar8;\n  long lVar9;\n  \n  lVar7 = *param_1;\n  iVar1 = *(int *)(lVar7 + 0x170);\n  if (iVar1 - 100U < 100) {\n    return 0;\n  }\n  if ((&DAT_00004d00)[lVar7] != '\\0') {\n    uVar4 = 0;\n    if (*(char *)(lVar7 + 0x6b8) != '\\0') {\n      uVar4 = 0x16;\n    }\n    return (ulong)uVar4;\n  }\n  cVar6 = (char)param_1[0x103];\n  if ((cVar6 == '\\0') ||\n     ((iVar1 != 0x191 && ((cVar6 = '\\0', 299 < iVar1 || (*(char *)((long)param_1 + 0x822) == '\\0')))\n      ))) {\nLAB_710000ea44:\n    if (*(char *)((long)param_1 + 0x819) == '\\0') goto LAB_710000ea98;\nLAB_710000ea4c:\n    if ((iVar1 != 0x197) && ((299 < iVar1 || (*(char *)((long)param_1 + 0x822) == '\\0'))))\n    goto LAB_710000ea98;\n    uVar4 = (uint)(*(ulong *)(&DAT_00004ce0 + lVar7) & *(ulong *)(&DAT_00004cf0 + lVar7));\n    if ((uVar4 >> 2 & 1) == 0) {\n      if ((uVar4 >> 1 & 1) == 0) {\n        if ((uVar4 >> 3 & 1) == 0) {\n          if ((uVar4 >> 5 & 1) == 0) {\n            if ((*(ulong *)(&DAT_00004ce0 + lVar7) & *(ulong *)(&DAT_00004cf0 + lVar7) & 1) == 0) {\n              *(undefined8 *)(&DAT_00004ce8 + lVar7) = 0x40000000;\n              *(undefined8 *)(&DAT_00004cf0 + lVar7) = 0;\n              (&DAT_00004d00)[lVar7] = 1;\n              goto LAB_710000ea98;\n            }\n            uVar5 = 1;\n          }\n          else {\n            uVar5 = 0x20;\n          }\n        }\n        else {\n          uVar5 = 8;\n        }\n      }\n      else {\n        uVar5 = 2;\n      }\n    }\n    else {\n      uVar5 = 4;\n    }\n    *(undefined8 *)(&DAT_00004ce8 + lVar7) = uVar5;\n    *(undefined8 *)(&DAT_00004cf0 + lVar7) = 0;\nLAB_710000eb0c:\n    FUN_71000272a0(*(undefined8 *)(lVar7 + 0x238));\n    *(undefined8 *)(lVar7 + 0x238) = 0;\n    lVar2 = FUN_71000272c0(*(undefined8 *)(lVar7 + 0x998));\n    *(long *)(lVar7 + 0x238) = lVar2;\n    if (lVar2 == 0) {\n      return 0x1b;\n    }\n    if (((*(uint *)(lVar7 + 0x480) | 4) != 5) && (*(char *)((long)param_1 + 0x823) == '\\0')) {\n      lVar8 = *param_1;\n      lVar2 = *(long *)(lVar8 + 600);\n      if ((lVar2 != 0) && (uVar4 = *(uint *)(lVar8 + 0x480), (uVar4 | 4) != 5)) {\n        lVar9 = *(long *)(lVar2 + 0x30);\n        if ((*(char *)((long)param_1 + 0x822) == '\\0') && (*(char *)((long)param_1 + 0x81f) != '\\0')\n           ) {\n          if (uVar4 == 2) {\nLAB_710000ec2c:\n            lVar2 = *(long *)(&DAT_00004fb8 + lVar8);\n            *(undefined1 *)((long)param_1 + 0x823) = 0;\njoined_r0x00710000ec60:\n            if (lVar2 != -1) goto LAB_710000ec00;\n          }\n          else {\n            if (uVar4 == 3) {\n              lVar2 = *(long *)(lVar2 + 8);\n              *(undefined1 *)((long)param_1 + 0x823) = 0;\n              goto joined_r0x00710000ec60;\n            }\n            if (uVar4 == 4) goto LAB_710000ec2c;\n            *(undefined1 *)((long)param_1 + 0x823) = 0;\n          }\nLAB_710000ec6c:\n          FUN_7100004200(param_1,2);\n          *(undefined8 *)(lVar8 + 0xc0) = 0;\n        }\n        else {\n          lVar2 = 0;\n          *(undefined1 *)((long)param_1 + 0x823) = 0;\nLAB_710000ec00:\n          if (lVar9 < lVar2) goto LAB_710000ec6c;\n        }\n        if ((lVar9 != 0) && (uVar3 = FUN_71000179b0(param_1), (int)uVar3 != 0)) {\n          return uVar3;\n        }\n      }\n    }\n  }\n  else {\n    uVar4 = (uint)(*(ulong *)(&DAT_00004cc0 + lVar7) & *(ulong *)(&DAT_00004cd0 + lVar7));\n    if ((uVar4 >> 2 & 1) != 0) {\n      uVar5 = 4;\nLAB_710000ea38:\n      *(undefined8 *)(&DAT_00004cc8 + lVar7) = uVar5;\n      *(undefined8 *)(&DAT_00004cd0 + lVar7) = 0;\n      cVar6 = '\\x01';\n      goto LAB_710000ea44;\n    }\n    if ((uVar4 >> 1 & 1) != 0) {\n      uVar5 = 2;\n      goto LAB_710000ea38;\n    }\n    if ((uVar4 >> 3 & 1) != 0) {\n      uVar5 = 8;\n      goto LAB_710000ea38;\n    }\n    if ((uVar4 >> 5 & 1) != 0) {\n      uVar5 = 0x20;\n      goto LAB_710000ea38;\n    }\n    if ((*(ulong *)(&DAT_00004cc0 + lVar7) & *(ulong *)(&DAT_00004cd0 + lVar7) & 1) != 0) {\n      uVar5 = 1;\n      goto LAB_710000ea38;\n    }\n    cVar6 = '\\0';\n    *(undefined8 *)(&DAT_00004cd0 + lVar7) = 0;\n    *(undefined8 *)(&DAT_00004cc8 + lVar7) = 0x40000000;\n    (&DAT_00004d00)[lVar7] = 1;\n    if (*(char *)((long)param_1 + 0x819) != '\\0') goto LAB_710000ea4c;\nLAB_710000ea98:\n    if (cVar6 != '\\0') goto LAB_710000eb0c;\n    if ((((iVar1 < 300) && ((&DAT_00004cd8)[lVar7] == '\\0')) &&\n        (*(char *)((long)param_1 + 0x822) != '\\0')) && ((*(uint *)(lVar7 + 0x480) | 4) != 5)) {\n      lVar2 = FUN_71000272c0(*(undefined8 *)(lVar7 + 0x998));\n      *(long *)(lVar7 + 0x238) = lVar2;\n      if (lVar2 == 0) {\n        return 0x1b;\n      }\n      (&DAT_00004cd8)[lVar7] = '\\x01';\n    }\n  }\n  lVar2 = *param_1;\n  iVar1 = *(int *)(lVar2 + 0x170);\n  if ((iVar1 < 400) || (*(char *)(lVar2 + 0x6b8) == '\\0')) {\n    return 0;\n  }\n  if (iVar1 == 0x197) {\n    cVar6 = *(char *)((long)param_1 + 0x819);\n  }\n  else {\n    if (iVar1 != 0x191) goto LAB_710000eba0;\n    cVar6 = (char)param_1[0x103];\n  }\n  if ((cVar6 != '\\0') && ((&DAT_00004d00)[lVar2] == '\\0')) {\n    return 0;\n  }\nLAB_710000eba0:\n  FUN_7100016040(lVar7,\"The requested URL returned error: %d\",*(undefined4 *)(lVar7 + 0x170));\n  return 0x16;\n}\n",
+    "skipped": false
+  },
+  "0x7100012dc0": {
+    "ghidra_raw": "\nundefined * FUN_7100012dc0(int param_1)\n\n{\n  if (param_1 - 1U < 6) {\n    return (&PTR_s_Too_long_hexadecimal_number_7104f16260)[(int)(param_1 - 1U)];\n  }\n  return &DAT_710437a4bc;\n}\n",
+    "skipped": false
+  },
+  "0x71000145a0": {
+    "ghidra_raw": "\nbool FUN_71000145a0(long param_1,long param_2)\n\n{\n  if (*(long **)(param_2 + 0x8f0) != (long *)0x0) {\n    return **(long **)(param_2 + 0x8f0) == param_1;\n  }\n  return false;\n}\n",
+    "skipped": false
+  },
+  "0x71000145c0": {
+    "ghidra_raw": "\nbool FUN_71000145c0(long param_1,long param_2)\n\n{\n  if (*(long **)(param_2 + 0x8d0) != (long *)0x0) {\n    return **(long **)(param_2 + 0x8d0) == param_1;\n  }\n  return false;\n}\n",
+    "skipped": false
+  },
+  "0x7100014fc0": {
+    "ghidra_raw": "\nvoid FUN_7100014fc0(long param_1,long param_2)\n\n{\n  if (-1 < param_2) {\n    *(long *)(param_1 + 0x9d8) = param_2;\n    *(uint *)(param_1 + 0xa08) = *(uint *)(param_1 + 0xa08) | 0x40;\n    return;\n  }\n  *(undefined8 *)(param_1 + 0x9d8) = 0;\n  *(uint *)(param_1 + 0xa08) = *(uint *)(param_1 + 0xa08) & 0xffffffbf;\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x7100017450": {
+    "ghidra_raw": "\nvoid FUN_7100017450(byte *param_1,byte *param_2,long param_3)\n\n{\n  byte bVar1;\n  byte bVar2;\n  \n  if (param_3 != 0) {\n    do {\n      bVar2 = *param_2;\n      bVar1 = bVar2 - 0x20;\n      if (0x19 < bVar2 - 0x61) {\n        bVar1 = bVar2;\n      }\n      *param_1 = bVar1;\n      if (*param_2 == 0) {\n        return;\n      }\n      param_2 = param_2 + 1;\n      param_1 = param_1 + 1;\n      param_3 = param_3 + -1;\n    } while (param_3 != 0);\n  }\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x710001ebb0": {
+    "ghidra_raw": "\nundefined8 FUN_710001ebb0(long param_1,long *param_2)\n\n{\n  long *plVar1;\n  \n  if (param_2 != (long *)0x0) {\n    for (plVar1 = (long *)*param_2; plVar1 != (long *)0x0; plVar1 = (long *)plVar1[2]) {\n      if (*plVar1 == param_1) {\n        FUN_7100006870(param_2,plVar1,0);\n        return 1;\n      }\n    }\n  }\n  return 0;\n}\n",
+    "skipped": false
+  },
+  "0x710001ef80": {
+    "ghidra_raw": null,
+    "skipped": true,
+    "skip_reason": "WARNING: Could not recover jumptable at 0x00710001ef9c. Too many branches; WARNING: Treating indirect jump as call"
+  },
+  "0x710001efb0": {
+    "ghidra_raw": null,
+    "skipped": true,
+    "skip_reason": "WARNING: Could not recover jumptable at 0x00710001efcc. Too many branches; WARNING: Treating indirect jump as call"
+  },
+  "0x7100022bf0": {
+    "ghidra_raw": "\nulong FUN_7100022bf0(ulong param_1)\n\n{\n  int iVar1;\n  \n  iVar1 = (int)param_1;\n  if (iVar1 < 0x4000) {\n    if (iVar1 < 0x80) {\n      switch(iVar1) {\n      case 1:\n      case 2:\n        return 1;\n      case 4:\n      case 8:\n        return 4;\n      case 0x10:\n      case 0x20:\n      case 0x40:\n        return param_1;\n      }\n    }\n    else if (iVar1 < 0x400) {\n      if ((iVar1 == 0x80) || (iVar1 == 0x100)) {\n        return 0x80;\n      }\n      if (iVar1 == 0x200) {\n        return param_1 & 0xffffffff;\n      }\n    }\n    else if (iVar1 < 0x1000) {\n      if (iVar1 == 0x400) {\n        return param_1;\n      }\n      if (iVar1 == 0x800) {\n        return param_1 & 0xffffffff;\n      }\n    }\n    else if ((iVar1 == 0x1000) || (iVar1 == 0x2000)) {\n      return 0x1000;\n    }\n  }\n  else if (iVar1 < 0x200000) {\n    if (iVar1 < 0x20000) {\n      if ((iVar1 == 0x4000) || (iVar1 == 0x8000)) {\n        return 0x4000;\n      }\n      if (iVar1 == 0x10000) {\n        return 0x10000;\n      }\n    }\n    else if (iVar1 < 0x80000) {\n      if (iVar1 == 0x20000) {\n        return 0x10000;\n      }\n      if (iVar1 == 0x40000) {\n        return param_1 & 0xffffffff;\n      }\n    }\n    else {\n      if (iVar1 == 0x80000) {\n        return 0x80000;\n      }\n      if (iVar1 == 0x100000) {\n        return 0x100000;\n      }\n    }\n  }\n  else if (iVar1 < 0x1000000) {\n    if (iVar1 == 0x200000) {\n      return param_1;\n    }\n    if (iVar1 == 0x400000) {\n      return param_1;\n    }\n    if (iVar1 == 0x800000) {\n      return 0x80000;\n    }\n  }\n  else if (iVar1 < 0x4000000) {\n    if (iVar1 == 0x1000000) {\n      return 0x100000;\n    }\n    if (iVar1 == 0x2000000) {\n      return param_1 & 0xffffffff;\n    }\n  }\n  else if ((iVar1 == 0x4000000) || (iVar1 == 0x8000000)) {\n    return 0x4000000;\n  }\n  return 0;\n}\n",
+    "skipped": false
+  },
+  "0x7100025dc0": {
+    "ghidra_raw": null,
+    "skipped": true,
+    "skip_reason": "WARNING: Globals starting with '_' overlap smaller symbols at the same address"
+  },
+  "0x71000263c0": {
+    "ghidra_raw": "\nundefined8 FUN_71000263c0(long param_1,undefined8 param_2)\n\n{\n  long lVar1;\n  \n  if (*(long *)(&DAT_00004bc8 + param_1) != 0) {\n    return 0;\n  }\n  lVar1 = FUN_71000272d0(param_2,0xb8);\n  if (lVar1 != 0) {\n    *(long *)(&DAT_00004bc8 + param_1) = lVar1;\n    *(undefined8 *)(param_1 + 0x658) = param_2;\n    *(undefined8 *)(&DAT_00004bd0 + param_1) = 1;\n    return 0;\n  }\n  return 0x1b;\n}\n",
+    "skipped": false
+  },
+  "0x7100027900": {
+    "ghidra_raw": null,
+    "skipped": true,
+    "skip_reason": "WARNING: Does not return; UndefinedInstructionException(0,0x7100027974)"
+  },
+  "0x7100031140": {
+    "ghidra_raw": "\nvoid FUN_7100031140(undefined4 *param_1)\n\n{\n  *param_1 = 0x20202;\n  *(undefined8 *)(param_1 + 1) = 0xc47a0000002a0100;\n  *(undefined8 *)(param_1 + 3) = 0x447a0000;\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x71000311e0": {
+    "ghidra_raw": "\nvoid FUN_71000311e0(byte *param_1)\n\n{\n  param_1[1] = 1;\n  param_1[2] = 0;\n  param_1[3] = 0;\n  param_1[4] = 1;\n  *param_1 = *param_1 & 0xfe;\n  param_1[5] = 0;\n  param_1[6] = 0;\n  param_1[7] = 0xf;\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x7100031210": {
+    "ghidra_raw": "\nvoid FUN_7100031210(undefined2 *param_1)\n\n{\n  *(undefined8 *)(param_1 + 6) = 0x3f80000000000000;\n  param_1[1] = param_1[1] & 0xfff0;\n  *(undefined8 *)(param_1 + 2) = 0;\n  *(undefined8 *)(param_1 + 0xc) = 0;\n  *param_1 = 0x500;\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x7100031250": {
+    "ghidra_raw": "\nvoid FUN_7100031250(undefined2 *param_1)\n\n{\n  *param_1 = 0xff01;\n  *(undefined1 *)(param_1 + 1) = 0xff;\n  *(undefined4 *)(param_1 + 4) = 0x7000000;\n  *(undefined1 *)(param_1 + 6) = 0;\n  param_1[2] = param_1[2] & 0xfff0;\n  *(undefined4 *)(param_1 + 0xc) = 0x7000000;\n  *(undefined1 *)(param_1 + 0xe) = 0;\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x7100031330": {
+    "ghidra_raw": "\nvoid FUN_7100031330(long param_1)\n\n{\n  *(undefined1 *)(param_1 + 1) = 2;\n  *(undefined8 *)(param_1 + 2) = 0x1000100000000;\n  *(undefined1 **)(param_1 + 0x14) = &DAT_100000001;\n  *(undefined8 *)(param_1 + 0xc) = 0;\n  *(undefined8 *)(param_1 + 0x1c) = 1;\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x7100031360": {
+    "ghidra_raw": "\nvoid FUN_7100031360(undefined2 *param_1)\n\n{\n  *param_1 = 1;\n  *(undefined8 *)(param_1 + 2) = 0x504030200000000;\n  *(undefined4 *)(param_1 + 8) = 0x10000;\n  *(undefined8 *)(param_1 + 0x10) = 0x100000000;\n  *(undefined8 *)(param_1 + 0x18) = 0;\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x7100031390": {
+    "ghidra_raw": "\nvoid FUN_7100031390(undefined1 *param_1)\n\n{\n  *param_1 = 1;\n  *(undefined8 *)(param_1 + 4) = 0;\n  *(undefined2 *)(param_1 + 2) = 0;\n  *(undefined4 *)(param_1 + 0xc) = 1;\n  *(undefined8 *)(param_1 + 0x18) = 0;\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x71000313b0": {
+    "ghidra_raw": "\nvoid FUN_71000313b0(undefined1 *param_1)\n\n{\n  *param_1 = 1;\n  *(undefined2 *)(param_1 + 2) = 0;\n  *(undefined8 *)(param_1 + 8) = 0x100000000;\n  *(undefined8 *)(param_1 + 0x18) = 0;\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x71000313f0": {
+    "ghidra_raw": "\nvoid FUN_71000313f0(undefined8 *param_1)\n\n{\n  param_1[2] = &DAT_100000001;\n  *param_1 = 0;\n  param_1[1] = 0x100000000;\n  *(undefined2 *)(param_1 + 3) = 0;\n  *(undefined8 *)((long)param_1 + 0x1c) = 0x100000000;\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x7100031410": {
+    "ghidra_raw": "\nvoid FUN_7100031410(undefined8 *param_1)\n\n{\n  param_1[2] = 0;\n  param_1[3] = &DAT_100000001;\n  *(undefined4 *)(param_1 + 4) = 1;\n  *param_1 = 0;\n  param_1[1] = 0;\n  *(undefined2 *)((long)param_1 + 0x24) = 0;\n  param_1[5] = 0x100000000;\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x71000314e0": {
+    "ghidra_raw": "\nvoid FUN_71000314e0(undefined1 *param_1,undefined8 param_2)\n\n{\n  *param_1 = 1;\n  param_1[1] = param_1[1] | 1;\n  *(undefined8 *)(param_1 + 8) = param_2;\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x7100031510": {
+    "ghidra_raw": "\nundefined4 FUN_7100031510(int param_1)\n\n{\n  if (param_1 - 0x27U < 0x14) {\n    return *(undefined4 *)(&DAT_710446f0e0 + (long)(int)(param_1 - 0x27U) * 4);\n  }\n  return 4;\n}\n",
+    "skipped": false
+  },
+  "0x7100031540": {
+    "ghidra_raw": "\nundefined4 FUN_7100031540(int param_1)\n\n{\n  if (param_1 - 0x27U < 0x14) {\n    return *(undefined4 *)(&DAT_710446f090 + (long)(int)(param_1 - 0x27U) * 4);\n  }\n  return 4;\n}\n",
+    "skipped": false
+  },
+  "0x71000316b0": {
+    "ghidra_raw": null,
+    "skipped": true,
+    "skip_reason": "WARNING: Subroutine does not return"
+  },
+  "0x7100031850": {
+    "ghidra_raw": "\nvoid FUN_7100031850(undefined8 *param_1)\n\n{\n  param_1[7] = 0;\n  param_1[8] = 0;\n  *param_1 = 0;\n  param_1[5] = 0;\n  param_1[6] = 0;\n  param_1[3] = 0;\n  param_1[4] = 0;\n  param_1[1] = 0;\n  param_1[2] = 0;\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x7100031a60": {
+    "ghidra_raw": "\nlong FUN_7100031a60(undefined8 *param_1)\n\n{\n  int local_14;\n  \n  (**(code **)PTR_DAT_71052a22b8)(*param_1,0x13,&local_14);\n  return (long)local_14;\n}\n",
+    "skipped": false
+  },
+  "0x7100031aa0": {
+    "ghidra_raw": "\nlong FUN_7100031aa0(undefined8 *param_1)\n\n{\n  int local_14;\n  \n  (**(code **)PTR_DAT_71052a22b8)(*param_1,0x14,&local_14);\n  return (long)local_14;\n}\n",
+    "skipped": false
+  },
+  "0x7100031d70": {
+    "ghidra_raw": "\nvoid FUN_7100031d70(undefined1 *param_1)\n\n{\n  undefined8 uVar1;\n  \n  uVar1 = (**(code **)PTR_DAT_71052a2350)(*(undefined8 *)(param_1 + 0xb8));\n  *(undefined8 *)(param_1 + 0xc0) = uVar1;\n  *param_1 = 1;\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x7100033190": {
+    "ghidra_raw": null,
+    "skipped": true,
+    "skip_reason": "WARNING: Could not recover jumptable at 0x0071000331b0. Too many branches; WARNING: Treating indirect jump as call"
+  },
+  "0x7100037790": {
+    "ghidra_raw": "\nundefined4 FUN_7100037790(ulong param_1)\n\n{\n  return *(undefined4 *)(&DAT_71044705bc + (param_1 & 0xffffffff) * 8);\n}\n",
+    "skipped": false
+  },
+  "0x7100037cb0": {
+    "ghidra_raw": "\nundefined8 * FUN_7100037cb0(void)\n\n{\n  int iVar1;\n  \n  if (((DAT_71052aa330 & 1) == 0) && (iVar1 = __cxa_guard_acquire(&DAT_71052aa330), iVar1 != 0)) {\n    DAT_71052aa370 = 0;\n    DAT_71052aa378 = 0;\n    DAT_71052aa360 = 0;\n    DAT_71052aa368 = 0;\n    DAT_71052aa338 = 0;\n    DAT_71052aa350 = 0;\n    DAT_71052aa358 = 0;\n    DAT_71052aa340 = 0;\n    DAT_71052aa348 = 0;\n    __cxa_guard_release(&DAT_71052aa330);\n  }\n  return &DAT_71052aa338;\n}\n",
+    "skipped": false
+  },
+  "0x71000380b0": {
+    "ghidra_raw": "\nvoid FUN_71000380b0(long param_1)\n\n{\n  long lVar1;\n  \n  lVar1 = *(long *)(param_1 + 0x28);\n  if (*(long *)(lVar1 + 0x30) != *(long *)(lVar1 + 0x20)) {\n    *(undefined8 *)(lVar1 + 0x30) = 0;\n    return;\n  }\n  FUN_71000339b0();\n  *(undefined8 *)(lVar1 + 0x30) = 0;\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x7100038120": {
+    "ghidra_raw": "\nvoid FUN_7100038120(undefined8 *param_1)\n\n{\n  param_1[0xd] = 0;\n  param_1[0xe] = 0;\n  *param_1 = 0;\n  param_1[0xb] = 0;\n  param_1[0xc] = 0;\n  param_1[9] = 0;\n  param_1[10] = 0;\n  param_1[7] = 0;\n  param_1[8] = 0;\n  param_1[5] = 0;\n  param_1[6] = 0;\n  param_1[3] = 0;\n  param_1[4] = 0;\n  param_1[1] = 0;\n  param_1[2] = 0;\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x7100038210": {
+    "ghidra_raw": "\nvoid FUN_7100038210(undefined1 *param_1)\n\n{\n  (**(code **)PTR_DAT_71052a2c78)(*(undefined8 *)(param_1 + 8));\n  *(undefined8 *)(param_1 + 8) = 0;\n  *param_1 = 0;\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x7100039e30": {
+    "ghidra_raw": "\nvoid FUN_7100039e30(undefined8 *param_1)\n\n{\n  param_1[7] = 0;\n  param_1[8] = 0;\n  *param_1 = 0;\n  param_1[5] = 0;\n  param_1[6] = 0;\n  param_1[3] = 0;\n  param_1[4] = 0;\n  param_1[1] = 0;\n  param_1[2] = 0;\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x710003a0e0": {
+    "ghidra_raw": "\nvoid FUN_710003a0e0(undefined8 *param_1)\n\n{\n  param_1[0x19] = 0;\n  param_1[0x1a] = 0;\n  *param_1 = 0;\n  param_1[0x17] = 0;\n  param_1[0x18] = 0;\n  param_1[0x15] = 0;\n  param_1[0x16] = 0;\n  param_1[0x13] = 0;\n  param_1[0x14] = 0;\n  param_1[0x11] = 0;\n  param_1[0x12] = 0;\n  param_1[0xf] = 0;\n  param_1[0x10] = 0;\n  param_1[0xd] = 0;\n  param_1[0xe] = 0;\n  param_1[0xb] = 0;\n  param_1[0xc] = 0;\n  param_1[9] = 0;\n  param_1[10] = 0;\n  param_1[7] = 0;\n  param_1[8] = 0;\n  param_1[5] = 0;\n  param_1[6] = 0;\n  param_1[3] = 0;\n  param_1[4] = 0;\n  param_1[1] = 0;\n  param_1[2] = 0;\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x710003a200": {
+    "ghidra_raw": "\nvoid FUN_710003a200(undefined1 *param_1)\n\n{\n  (**(code **)PTR_DAT_71052a2ae8)(*(undefined8 *)(param_1 + 8));\n  *(undefined8 *)(param_1 + 8) = 0;\n  *param_1 = 0;\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x710003a240": {
+    "ghidra_raw": "\nvoid FUN_710003a240(undefined8 *param_1)\n\n{\n  param_1[7] = 0;\n  param_1[8] = 0;\n  *param_1 = 0;\n  param_1[5] = 0;\n  param_1[6] = 0;\n  param_1[3] = 0;\n  param_1[4] = 0;\n  param_1[1] = 0;\n  param_1[2] = 0;\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x710007bdc0": {
+    "ghidra_raw": "\nuint FUN_710007bdc0(long param_1,uint param_2)\n\n{\n  long lVar1;\n  uint *puVar2;\n  short sVar3;\n  int iVar4;\n  uint uVar5;\n  uint *puVar6;\n  uint *puVar7;\n  long lVar8;\n  \n  uVar5 = *(uint *)(*(long *)(param_1 + 0x20) + 0x14);\n  if (uVar5 == 0) {\n    return 0xffff;\n  }\n  while( true ) {\n    puVar6 = (uint *)(*(long *)(param_1 + 0x18) + (ulong)uVar5);\n    uVar5 = *puVar6;\n    if ((uVar5 <= param_2) && (param_2 <= puVar6[1])) break;\n    uVar5 = puVar6[3];\n    if (uVar5 == 0) {\n      return 0xffff;\n    }\n  }\n  iVar4 = *(int *)(param_1 + 0x80);\n  if (iVar4 != 0) {\n    if (iVar4 < 1) {\n      return 0xffff;\n    }\n    lVar8 = 0;\n    while ((lVar1 = param_1 + lVar8 * 4, param_2 < *(uint *)(lVar1 + 0x84) ||\n           (*(uint *)(lVar1 + 0xc4) < param_2))) {\n      lVar8 = lVar8 + 1;\n      if (iVar4 <= lVar8) {\n        return 0xffff;\n      }\n    }\n  }\n  sVar3 = (short)puVar6[2];\n  if (sVar3 == 2) {\n    puVar7 = puVar6 + 5;\n    puVar6 = puVar7 + (ulong)(ushort)puVar6[4] * 2 + -2;\n    if (puVar7 <= puVar6) {\n      do {\n        while( true ) {\n          lVar8 = (long)puVar6 - (long)puVar7 >> 3;\n          if (lVar8 < 0) {\n            lVar8 = lVar8 + 1;\n          }\n          puVar2 = puVar7 + (lVar8 >> 1) * 2;\n          uVar5 = *puVar2;\n          if (param_2 <= uVar5) break;\n          puVar7 = puVar2 + 2;\n          if (puVar6 < puVar7) {\n            return 0xffff;\n          }\n        }\n        if (param_2 > uVar5 || uVar5 == param_2) {\n          return (uint)(ushort)puVar2[1];\n        }\n        puVar6 = puVar2 + -2;\n      } while (puVar7 <= puVar6);\n    }\n  }\n  else {\n    if (sVar3 == 1) {\n      return (uint)*(ushort *)((long)puVar6 + (long)(int)(param_2 - uVar5) * 2 + 0x10);\n    }\n    if (sVar3 == 0) {\n      return (uint)(ushort)puVar6[4] + (param_2 - uVar5);\n    }\n  }\n  return 0xffff;\n}\n",
+    "skipped": false
+  },
+  "0x710008a130": {
+    "ghidra_raw": "\nvoid FUN_710008a130(long param_1,char *param_2)\n\n{\n  long lVar1;\n  long lVar2;\n  \n  if (*param_2 == '\\0') {\n    lVar2 = *(long *)(param_2 + 0x88);\n    if ((lVar2 != 0) && (*(long *)(param_2 + 0x80) != 0)) {\n      *(long *)(lVar2 + 0x80) = *(long *)(param_2 + 0x80);\n      *(undefined8 *)(*(long *)(param_2 + 0x80) + 0x88) = *(undefined8 *)(param_2 + 0x88);\n      return;\n    }\n    if (*(char **)(param_1 + 0x150) == param_2) {\n      *(undefined8 *)(param_1 + 0x150) = *(undefined8 *)(param_2 + 0x80);\n      lVar2 = *(long *)(param_2 + 0x80);\n      if (lVar2 == 0) {\n        *(undefined8 *)(param_1 + 0x158) = 0;\n        return;\n      }\n      goto LAB_710008a204;\n    }\n    if (*(char **)(param_1 + 0x158) != param_2) {\n      return;\n    }\n    *(long *)(param_1 + 0x158) = lVar2;\n    lVar2 = *(long *)(param_2 + 0x88);\n    if (lVar2 == 0) {\n      *(undefined8 *)(param_1 + 0x150) = 0;\n      return;\n    }\n  }\n  else {\n    lVar2 = *(long *)(param_2 + 0x88);\n    if ((lVar2 != 0) && (*(long *)(param_2 + 0x80) != 0)) {\n      *(long *)(lVar2 + 0x80) = *(long *)(param_2 + 0x80);\n      *(undefined8 *)(*(long *)(param_2 + 0x80) + 0x88) = *(undefined8 *)(param_2 + 0x88);\n      return;\n    }\n    lVar1 = *(long *)(param_2 + 0x548) + (long)*(int *)(param_2 + 0x20) * 8;\n    if (*(char **)(lVar1 + 0x440) == param_2) {\n      *(undefined8 *)(lVar1 + 0x440) = *(undefined8 *)(param_2 + 0x80);\n      lVar2 = *(long *)(param_2 + 0x80);\n      if (lVar2 == 0) {\n        *(undefined8 *)(lVar1 + 0x4c0) = 0;\n        return;\n      }\nLAB_710008a204:\n      *(undefined8 *)(lVar2 + 0x88) = *(undefined8 *)(param_2 + 0x88);\n      return;\n    }\n    if (*(char **)(lVar1 + 0x4c0) != param_2) {\n      return;\n    }\n    *(long *)(lVar1 + 0x4c0) = lVar2;\n    lVar2 = *(long *)(param_2 + 0x88);\n    if (lVar2 == 0) {\n      *(undefined8 *)(lVar1 + 0x440) = 0;\n      return;\n    }\n  }\n  *(undefined8 *)(lVar2 + 0x80) = *(undefined8 *)(param_2 + 0x80);\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x71000a6610": {
+    "ghidra_raw": "\nundefined8 FUN_71000a6610(long param_1,ulong param_2)\n\n{\n  if (param_2 == 0) {\n    return 0;\n  }\n  if ((*(uint *)(&DAT_00001188 + param_1) & param_2) != 0) {\n    return *(undefined8 *)(&DAT_000011a8 + param_1);\n  }\n  if ((*(uint *)(&DAT_0000118c + param_1) & param_2) != 0) {\n    return *(undefined8 *)(&DAT_000011b0 + param_1);\n  }\n  if ((*(uint *)(&DAT_00001190 + param_1) & param_2) != 0) {\n    return *(undefined8 *)(&DAT_000011b8 + param_1);\n  }\n  if ((*(uint *)(param_1 + 0x1194) & param_2) != 0) {\n    return *(undefined8 *)(&DAT_000011c0 + param_1);\n  }\n  if ((*(uint *)(&DAT_00001198 + param_1) & param_2) != 0) {\n    return *(undefined8 *)(&DAT_000011c8 + param_1);\n  }\n  if ((*(uint *)(&DAT_0000119c + param_1) & param_2) != 0) {\n    return *(undefined8 *)(&DAT_000011d0 + param_1);\n  }\n  if ((*(uint *)(&DAT_000011a0 + param_1) & param_2) != 0) {\n    return *(undefined8 *)(&DAT_000011d8 + param_1);\n  }\n  if ((*(uint *)(param_1 + 0x11a4) & param_2) != 0) {\n    return *(undefined8 *)(&DAT_000011e0 + param_1);\n  }\n  return 0;\n}\n",
+    "skipped": false
+  },
+  "0x71000ee650": {
+    "ghidra_raw": "\nint FUN_71000ee650(long param_1,int param_2)\n\n{\n  int iVar1;\n  long lVar2;\n  int *piVar3;\n  int *piVar4;\n  \n  lVar2 = *(long *)(param_1 + 0x2d8);\n  if (lVar2 == 0 || *(long *)PTR_DAT_71052a4080 == 0) {\n    return 0;\n  }\n  piVar4 = (int *)(lVar2 + 0x10);\n  if (*piVar4 != param_2) {\n    if (*(int *)(lVar2 + 0x658) != param_2) {\n      if (*(int *)(lVar2 + 0xca0) == param_2) {\n        piVar3 = (int *)(lVar2 + 0xca8);\n        piVar4 = *(int **)(lVar2 + 0xcb0);\n        if (piVar4 == piVar3) {\n          return 0;\n        }\n      }\n      else {\n        if (*(int *)(&DAT_000012e8 + lVar2) != param_2) {\n          return 0;\n        }\n        piVar3 = (int *)(&DAT_000012f0 + lVar2);\n        piVar4 = *(int **)(&DAT_000012f8 + lVar2);\n        if (piVar4 == piVar3) {\n          return 0;\n        }\n      }\n      goto LAB_71000ee6a4;\n    }\n    piVar4 = (int *)(lVar2 + 0x658);\n  }\n  piVar3 = piVar4 + 2;\n  piVar4 = *(int **)(piVar4 + 4);\n  if (piVar4 == piVar3) {\n    return 0;\n  }\nLAB_71000ee6a4:\n  iVar1 = 0;\n  do {\n    if (((*(long *)(piVar4 + 4) != 0) && (*(long *)(piVar4 + 4) == *(long *)(piVar4 + 6))) &&\n       (0 < *(short *)((long)piVar4 + 0x22))) {\n      iVar1 = iVar1 + 1;\n    }\n    piVar4 = *(int **)(piVar4 + 2);\n  } while (piVar4 != piVar3);\n  return iVar1;\n}\n",
+    "skipped": false
+  },
+  "0x710011be80": {
+    "ghidra_raw": "\nundefined1 * FUN_710011be80(long param_1,byte param_2)\n\n{\n  undefined1 *puVar1;\n  \n  puVar1 = &DAT_000011e8 + param_1 + (ulong)param_2 * 0x268;\n  if (1 < param_2) {\n    puVar1 = (undefined1 *)0x0;\n  }\n  return puVar1;\n}\n",
+    "skipped": false
+  },
+  "0x7100130f30": {
+    "ghidra_raw": "\nlong * FUN_7100130f30(long *param_1,ulong param_2,undefined8 param_3,uint param_4)\n\n{\n  int iVar1;\n  long *plVar2;\n  long *plVar3;\n  \n  if (0x128 < (param_2 & 0xfffffffffffffff8)) {\n    FUN_7100133850(param_1,param_3,0,param_1,param_2 & 0xfffffffffffffff8,1,param_4 & 1);\n    *(undefined4 *)((long)param_1 + 0xd4) = 0;\n    *param_1 = (long)(PTR_DAT_71052a4bd8 + 0x10);\n    param_1[0x1b] = (long)(param_1 + 0x1b);\n    param_1[0x1c] = (long)(param_1 + 0x1b);\n    param_1[0x1f] = (long)(param_1 + 0x1e);\n    param_1[0x20] = -0x100000000;\n    param_1[0x1d] = -0x100000000;\n    param_1[0x1e] = (long)(param_1 + 0x1e);\n    if ((*(byte *)(param_1 + 0x1a) & 1) == 0) {\n      plVar3 = (long *)0x0;\n      *(undefined4 *)((long)param_1 + 0xec) = 0;\n      *(undefined4 *)((long)param_1 + 0x104) = 0;\n      iVar1 = (int)param_1[0x11];\n    }\n    else {\n      plVar3 = param_1 + 0x12;\n      FUN_710013ba30(plVar3);\n      *(undefined4 *)((long)param_1 + 0xec) = 0;\n      *(undefined4 *)((long)param_1 + 0x104) = 0;\n      FUN_710013ba40(plVar3);\n      if ((*(byte *)(param_1 + 0x1a) & 1) == 0) {\n        plVar3 = (long *)0x0;\n        iVar1 = (int)param_1[0x11];\n      }\n      else {\n        FUN_710013ba30(plVar3);\n        iVar1 = (int)param_1[0x11];\n      }\n    }\n    if (iVar1 == 1) {\n      plVar2 = param_1 + 0x21;\n    }\n    else {\n      plVar2 = (long *)param_1[6];\n    }\n    *plVar2 = 0;\n    plVar2[1] = 0;\n    *(undefined4 *)(plVar2 + 2) = 0;\n    plVar2[3] = 0;\n    plVar2[3] = param_1[7] + -0x128;\n    FUN_7100131060(param_1);\n    if (plVar3 != (long *)0x0) {\n      FUN_710013ba40(plVar3);\n    }\n    return param_1;\n  }\n  return (long *)0x0;\n}\n",
+    "skipped": false
+  },
+  "0x7100148fb0": {
+    "ghidra_raw": null,
+    "skipped": true
+  },
+  "0x710014fde0": {
+    "ghidra_raw": null,
+    "skipped": true
+  },
+  "0x7100181270": {
+    "ghidra_raw": "\nundefined4 FUN_7100181270(long param_1)\n\n{\n  long lVar1;\n  ulong uVar2;\n  \n  if (*(int *)(param_1 + 0x418) == 0) {\n    lVar1 = param_1 + 0x2c0;\n    uVar2 = FUN_71000b2850(lVar1);\n    if ((uVar2 & 1) != 0) {\n      uVar2 = FUN_71000b2850(param_1 + 0x2a0);\n      if (((uVar2 & 1) != 0) && (uVar2 = FUN_71000b2b10(param_1 + 0x2a0,lVar1), (uVar2 & 1) != 0))\n      goto LAB_710018128c;\n    }\n    uVar2 = FUN_71000b2850(lVar1);\n    if ((uVar2 & 1) == 0) {\n      return 0;\n    }\n    uVar2 = FUN_71000b2850(param_1 + 0x2a0);\n    if ((uVar2 & 1) == 0) {\n      return 0;\n    }\n    uVar2 = FUN_71000b2b10(param_1 + 0x2a0,lVar1);\n    if ((uVar2 & 1) != 0) {\n      return 0;\n    }\n  }\nLAB_710018128c:\n  return *(undefined4 *)(param_1 + 0x46c);\n}\n",
+    "skipped": false
+  },
+  "0x71001b0960": {
+    "ghidra_raw": "\nlong FUN_71001b0960(ulong *param_1)\n\n{\n  uint uVar1;\n  int iVar2;\n  int iVar3;\n  int iVar4;\n  uint uVar5;\n  ulong uVar6;\n  uint uVar7;\n  int iVar8;\n  \n  uVar6 = *param_1;\n  if (uVar6 == **(ulong **)PTR_DAT_71052a3f30) {\n    return 0;\n  }\n  uVar5 = (uint)uVar6 >> 0x16 & 0xf;\n  iVar8 = -0x7d1;\n  if (2 < uVar5) {\n    iVar8 = -2000;\n  }\n  uVar1 = iVar8 + ((uint)(uVar6 >> 0x1a) & 0x3fff);\n  iVar8 = 9;\n  if (2 < uVar5) {\n    iVar8 = -3;\n  }\n  uVar7 = 1;\n  if (((int)uVar1 < 0) && ((int)uVar1 % 400 != 0)) {\n    if ((int)uVar1 % 100 == 0) {\n      uVar7 = 0;\n    }\n    else {\n      uVar7 = (uint)((uVar1 & 3) == 0);\n    }\n  }\n  iVar3 = ((int)uVar1 / 100) * 0x23ab1;\n  iVar2 = iVar3 + 3;\n  if (-1 < iVar3) {\n    iVar2 = iVar3;\n  }\n  iVar4 = ((int)uVar1 % 100) * 0x5b5;\n  iVar3 = iVar4 + 3;\n  if (-1 < iVar4) {\n    iVar3 = iVar4;\n  }\n  return (uVar6 >> 6 & 0x3f) * 0x3c + (uVar6 & 0x3f | 0x386d4380) + (uVar6 >> 0xc & 0x1f) * 0xe10 +\n         (long)(int)(((uint)uVar6 >> 0x11 & 0x1f) + (iVar3 >> 2) + (iVar2 >> 2) +\n                     (int)((iVar8 + uVar5) * 0x99 + 2) / 5 + uVar7 + 0x3a) * 0x15180;\n}\n",
+    "skipped": false
+  },
+  "0x71001b1400": {
+    "ghidra_raw": "\nundefined8 * FUN_71001b1400(void)\n\n{\n  int iVar1;\n  \n  if (((DAT_71052adc58 & 1) == 0) && (iVar1 = __cxa_guard_acquire(&DAT_71052adc58), iVar1 != 0)) {\n    DAT_71052adcb0 = &DAT_71052adc70;\n    DAT_71052adcb8 = &DAT_71052adcd0;\n    DAT_71052adcc0 = 0;\n    DAT_71052adca8 = PTR_DAT_71052a5888 + 0x10;\n    DAT_71052adcc8 = 1;\n    FUN_71000001c0(PTR_LAB_71052a5890,&DAT_71052adca8,&PTR_LOOP_7104f16000);\n    __cxa_guard_release(&DAT_71052adc58);\n  }\n  return &DAT_71052adca8;\n}\n",
+    "skipped": false
+  },
+  "0x71001c0400": {
+    "ghidra_raw": null,
+    "skipped": true
+  },
+  "0x71001e1770": {
+    "ghidra_raw": "\nvoid FUN_71001e1770(undefined8 *param_1,undefined4 param_2,undefined8 *param_3)\n\n{\n  undefined8 uVar1;\n  undefined8 uVar2;\n  undefined4 local_14;\n  \n  switch(param_2) {\n  case 8:\n    local_14 = 0x8068000b;\n    break;\n  default:\n    uVar1 = *param_3;\n    uVar2 = param_3[2];\n    param_1[1] = param_3[1];\n    param_1[2] = uVar2;\n    *param_1 = uVar1;\n    return;\n  case 10:\n    local_14 = 0x80680011;\n    break;\n  case 0xb:\n    local_14 = 0x80680013;\n    break;\n  case 0xc:\n    local_14 = 0x80680014;\n    break;\n  case 0xd:\n    local_14 = 0x800300e2;\n    break;\n  case 0xe:\n    local_14 = 0x8003006c;\n  }\n  FUN_71001b4200(param_1,&local_14);\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x71002b82c0": {
+    "ghidra_raw": null,
+    "skipped": true
+  },
+  "0x71002c2810": {
+    "ghidra_raw": null,
+    "skipped": true
+  },
+  "0x71002c2c30": {
+    "ghidra_raw": null,
+    "skipped": true
+  },
+  "0x71002c2e50": {
+    "ghidra_raw": null,
+    "skipped": true
+  },
+  "0x71002f2820": {
+    "ghidra_raw": "\nint FUN_71002f2820(int param_1,undefined4 param_2)\n\n{\n  int iVar1;\n  undefined *puVar2;\n  uint uVar3;\n  \n  uVar3 = param_1 - 0x6091;\n  if (uVar3 < 4) {\n    puVar2 = &DAT_7104467f70;\nLAB_71002f2838:\n    iVar1 = *(int *)(puVar2 + (long)(int)uVar3 * 4);\n  }\n  else {\n    iVar1 = param_1;\n    switch(param_2) {\n    case 0x3c:\n    case 0x3d:\n      iVar1 = param_1 + -0x20;\n      if (3 < param_1 - 0x6071U) {\n        iVar1 = param_1;\n      }\n      return iVar1;\n    case 0x53:\n      iVar1 = 0x6051;\n      switch(param_1) {\n      case 0x6101:\n        break;\n      case 0x6102:\n        return 0x6052;\n      case 0x6111:\n        return 0x6053;\n      case 0x6112:\n        return 0x6054;\n      default:\n        return param_1;\n      }\n    case 0x55:\n      uVar3 = param_1 - 0x6121;\n      if (0x15 < uVar3) {\n        return param_1;\n      }\n      if ((0x3f00ffU >> (ulong)(uVar3 & 0x1f) & 1) == 0) {\n        return param_1;\n      }\n      puVar2 = &DAT_71045378d0;\n      goto LAB_71002f2838;\n    case 0x56:\n      if (param_1 == 0x6141) {\n        return 0x6052;\n      }\n      if (param_1 == 0x6151) {\n        return 0x6056;\n      }\n      break;\n    case 0x57:\n      iVar1 = 0x6051;\n      switch(param_1) {\n      case 0x6161:\n        return 0x6053;\n      case 0x6162:\n        return 0x6054;\n      case 0x6171:\n        break;\n      case 0x6172:\n        return 0x6052;\n      case 0x6173:\n        return 0x6055;\n      case 0x6174:\n        return 0x6056;\n      case 0x6175:\n        return 0x6057;\n      case 0x6176:\n        return 0x6058;\n      case 0x6177:\n        return 0x6059;\n      default:\n        return param_1;\n      }\n    case 0x58:\n      if (param_1 == 0x6181) {\n        return 0x6052;\n      }\n      if (param_1 == 0x6191) {\n        return 0x6056;\n      }\n      break;\n    case 0x5c:\n      iVar1 = param_1 + -0x1b0;\n      if (0xf < param_1 - 0x6201U) {\n        iVar1 = param_1;\n      }\n      return iVar1;\n    default:\n      return param_1;\n    }\n  }\n  return iVar1;\n}\n",
+    "skipped": false
+  },
+  "0x71002f46a0": {
+    "ghidra_raw": "\nvoid FUN_71002f46a0(long param_1,int param_2)\n\n{\n  bool bVar1;\n  int iVar2;\n  uint uVar3;\n  int iVar5;\n  ulong uVar4;\n  \n  iVar5 = param_2;\n  switch(*(undefined4 *)(*(long *)(param_1 + 8) + 0x28)) {\n  case 0x3c:\n  case 0x3d:\n    iVar5 = param_2 + -0x20;\n    bVar1 = 3 < param_2 - 0x6071U;\n    goto LAB_71002f4794;\n  case 0x53:\n    iVar2 = 0x6051;\n    switch(param_2) {\n    case 0x6101:\n      break;\n    case 0x6102:\n      iVar2 = 0x6052;\n      break;\n    default:\n      goto switchD_71002f46c4_caseD_3e;\n    case 0x6111:\n      iVar2 = 0x6053;\n      break;\n    case 0x6112:\n      iVar2 = 0x6054;\n    }\n    goto switchD_71002f4700_caseD_6101;\n  case 0x55:\n    uVar3 = param_2 - 0x6121;\n    if ((uVar3 < 0x16) && ((0x3f00ffU >> (ulong)(uVar3 & 0x1f) & 1) != 0)) {\n      iVar5 = *(int *)(&DAT_71045378d0 + (long)(int)uVar3 * 4);\n    }\n    break;\n  case 0x57:\n    iVar2 = 0x6051;\n    switch(param_2) {\n    case 0x6161:\n      iVar2 = 0x6053;\n      break;\n    case 0x6162:\n      iVar2 = 0x6054;\n      break;\n    default:\n      goto switchD_71002f46c4_caseD_3e;\n    case 0x6171:\n      break;\n    case 0x6172:\n      iVar2 = 0x6052;\n      break;\n    case 0x6173:\n      iVar2 = 0x6055;\n      break;\n    case 0x6174:\n      iVar2 = 0x6056;\n      break;\n    case 0x6175:\n      iVar2 = 0x6057;\n      break;\n    case 0x6176:\n      iVar2 = 0x6058;\n      break;\n    case 0x6177:\n      iVar2 = 0x6059;\n    }\n    goto switchD_71002f4700_caseD_6101;\n  case 0x58:\n    if (param_2 == 0x6181) { iVar2 = 0x6052; goto switchD_71002f4700_caseD_6101; }\n    if (param_2 == 0x6191) { iVar2 = 0x6056; goto switchD_71002f4700_caseD_6101; }\n    break;\n  case 0x5c:\n    iVar5 = param_2 + -0x1b0;\n    bVar1 = 0xf < param_2 - 0x6201U;\nLAB_71002f4794:\n    if (bVar1) {\n      iVar5 = param_2;\n    }\n  }\nswitchD_71002f46c4_caseD_3e:\n  uVar3 = iVar5 - 0x6031;\n  if (0xe < uVar3) {\n    if (iVar5 - 0x6041U < 0xf) {\n      uVar3 = iVar5 - 0x6034;\n    }\n    else {\n      iVar2 = iVar5;\n      if (0x17 < iVar5 - 0x6051U) {\n        uVar4 = 0;\n        goto LAB_71002f4818;\n      }\nswitchD_71002f4700_caseD_6101:\n      uVar3 = iVar2 - 0x603b;\n    }\n  }\n  uVar4 = (ulong)(int)uVar3;\nLAB_71002f4818:\n  *(ulong *)(param_1 + 0x180) = *(ulong *)(param_1 + 0x180) | 1L << (uVar4 & 0x3f);\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x71002f5770": {
+    "ghidra_raw": "\nvoid FUN_71002f5770(long param_1,int param_2)\n\n{\n  bool bVar1;\n  int iVar2;\n  uint uVar3;\n  int iVar5;\n  ulong uVar4;\n  \n  iVar5 = param_2;\n  switch(*(undefined4 *)(*(long *)(param_1 + 8) + 0x28)) {\n  case 0x3c:\n  case 0x3d:\n    iVar5 = param_2 + -0x20;\n    bVar1 = 3 < param_2 - 0x6071U;\n    goto LAB_71002f5864;\n  case 0x53:\n    iVar2 = 0x6051;\n    switch(param_2) {\n    case 0x6101:\n      break;\n    case 0x6102:\n      iVar2 = 0x6052;\n      break;\n    default:\n      goto switchD_71002f5794_caseD_3e;\n    case 0x6111:\n      iVar2 = 0x6053;\n      break;\n    case 0x6112:\n      iVar2 = 0x6054;\n    }\n    goto switchD_71002f57d0_caseD_6101;\n  case 0x55:\n    uVar3 = param_2 - 0x6121;\n    if ((uVar3 < 0x16) && ((0x3f00ffU >> (ulong)(uVar3 & 0x1f) & 1) != 0)) {\n      iVar5 = *(int *)(&DAT_71045378d0 + (long)(int)uVar3 * 4);\n    }\n    break;\n  case 0x57:\n    iVar2 = 0x6051;\n    switch(param_2) {\n    case 0x6161:\n      iVar2 = 0x6053;\n      break;\n    case 0x6162:\n      iVar2 = 0x6054;\n      break;\n    default:\n      goto switchD_71002f5794_caseD_3e;\n    case 0x6171:\n      break;\n    case 0x6172:\n      iVar2 = 0x6052;\n      break;\n    case 0x6173:\n      iVar2 = 0x6055;\n      break;\n    case 0x6174:\n      iVar2 = 0x6056;\n      break;\n    case 0x6175:\n      iVar2 = 0x6057;\n      break;\n    case 0x6176:\n      iVar2 = 0x6058;\n      break;\n    case 0x6177:\n      iVar2 = 0x6059;\n    }\n    goto switchD_71002f57d0_caseD_6101;\n  case 0x58:\n    if (param_2 == 0x6181) { iVar2 = 0x6052; goto switchD_71002f57d0_caseD_6101; }\n    if (param_2 == 0x6191) { iVar2 = 0x6056; goto switchD_71002f57d0_caseD_6101; }\n    break;\n  case 0x5c:\n    iVar5 = param_2 + -0x1b0;\n    bVar1 = 0xf < param_2 - 0x6201U;\nLAB_71002f5864:\n    if (bVar1) {\n      iVar5 = param_2;\n    }\n  }\nswitchD_71002f5794_caseD_3e:\n  uVar3 = iVar5 - 0x6031;\n  if (0xe < uVar3) {\n    if (iVar5 - 0x6041U < 0xf) {\n      uVar3 = iVar5 - 0x6034;\n    }\n    else {\n      iVar2 = iVar5;\n      if (0x17 < iVar5 - 0x6051U) {\n        uVar4 = 0;\n        goto LAB_71002f58e8;\n      }\nswitchD_71002f57d0_caseD_6101:\n      uVar3 = iVar2 - 0x603b;\n    }\n  }\n  uVar4 = (ulong)(int)uVar3;\nLAB_71002f58e8:\n  *(ulong *)(param_1 + 0x180) =\n       *(ulong *)(param_1 + 0x180) & (1L << (uVar4 & 0x3f) ^ 0xffffffffffffffffU);\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x7100314d50": {
+    "ghidra_raw": "\nbool FUN_7100314d50(uint param_1)\n\n{\n  switch(param_1) {\n  case 0:\n  case 3:\n  case 0x11:\n  case 0x23:\n  case 0x32:\n  case 0x3e:\n  case 0x53:\n  case 0x56:\n  case 0x59:\n  case 0x5f:\n  case 0x62:\n  case 0x65:\n  case 0x68:\n  case 0x6b:\n  case 0x6e:\n  case 0x71:\n  case 0x7d:\n  case 0x89:\n  case 0x8c:\n  case 0x9e:\n  case 0xad:\n  case 0xb0:\n  case 0xb6:\n  case 0xce:\n  case 0xd1:\n  case 0x101:\n  case 0x12e:\n  case 0x14c:\n  case 0x14f:\n  case 0x155:\n  case 0x158:\n  case 0x15b:\n  case 0x15c:\n  case 0x15f:\n  case 0x163:\n  case 0x166:\n  case 0x169:\n    return true;\n  }\n  if (param_1 < 0x16c) {\n    return (&DAT_71045497f0)[(long)(int)param_1 * 0x12] - 1 < 2;\n  }\n  return false;\n}\n",
+    "skipped": false
+  },
+  "0x7100358c20": {
+    "ghidra_raw": null,
+    "skipped": true
+  },
+  "0x71003aee20": {
+    "ghidra_raw": "\nvoid FUN_71003aee20(ulong param_1)\n\n{\n  uint uVar1;\n  long lVar2;\n  \n  switch(param_1 >> 0x1c & 0xf) {\n  case 0:\n    lVar2 = *DAT_71052b7548;\n    break;\n  case 1:\n    lVar2 = DAT_71052b7548[1];\n    break;\n  case 2:\n    lVar2 = DAT_71052b7548[2];\n    break;\n  case 3:\n    lVar2 = DAT_71052b7548[3];\n    break;\n  case 4:\n    lVar2 = DAT_71052b7548[4];\n    break;\n  default:\n    return;\n  }\n  uVar1 = (uint)param_1 >> 0x10 & 0xfff;\n  std::__1::recursive_mutex::lock();\n  *(undefined2 *)(*(long *)(lVar2 + 0x10) + (ulong)uVar1 * 2) = *(undefined2 *)(lVar2 + 0x1c);\n  *(short *)(lVar2 + 0x1c) = (short)uVar1;\n  *(short *)(lVar2 + 0x1e) = *(short *)(lVar2 + 0x1e) + -1;\n  std::__1::recursive_mutex::unlock();\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x7100460760": {
+    "ghidra_raw": "\nvoid FUN_7100460760(long param_1,undefined4 param_2)\n\n{\n  long lVar1;\n  long lVar2;\n  undefined4 uVar3;\n  \n  *(undefined4 *)(param_1 + 0x40) = param_2;\n  switch(param_2) {\n  case 0:\n    *(undefined4 *)(*(long *)(param_1 + 0x28) + 0x510) = 4;\n    break;\n  case 1:\n    *(undefined4 *)(*(long *)(param_1 + 0x28) + 0x510) = 0;\n    goto LAB_7100460830;\n  case 2:\n    lVar2 = *(long *)(param_1 + 0x28);\n    uVar3 = 2;\n    goto LAB_710046082c;\n  case 3:\n    lVar2 = (**(code **)(**(long **)(*(long *)(param_1 + 0x20) + 0x38) + 0x60))();\n    lVar1 = (**(code **)(**(long **)(*(long *)(param_1 + 0x20) + 0x38) + 0x90))();\n    if (*(float *)(lVar2 + 4) < *(float *)(lVar1 + 4)) {\n      *(undefined4 *)(*(long *)(param_1 + 0x28) + 0x510) = 0;\n    }\n    break;\n  case 4:\n    *(undefined4 *)(*(long *)(param_1 + 0x28) + 0x510) = 2;\n    break;\n  case 5:\n    *(undefined4 *)(*(long *)(param_1 + 0x28) + 0x510) = 1;\n    break;\n  case 6:\n    lVar2 = *(long *)(param_1 + 0x28);\n    uVar3 = 3;\nLAB_710046082c:\n    *(undefined4 *)(lVar2 + 0x510) = uVar3;\nLAB_7100460830:\n    *(uint *)(*(long *)(param_1 + 0x28) + 0x5d8) = *(uint *)(*(long *)(param_1 + 0x28) + 0x5d8) | 2;\n  }\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x7100479f70": {
+    "ghidra_raw": "\nvoid FUN_7100479f70(long param_1,uint param_2)\n\n{\n  int iVar1;\n  long *plVar2;\n  long lVar3;\n  long *plVar4;\n  \n  if (*(char *)(param_1 + 0x1bc) == '\\0') {\n    iVar1 = *(int *)(param_1 + 0x20);\n    if (param_2 == 0xffffffff) {\n      if (0 < iVar1) {\n        lVar3 = (long)iVar1 + 1;\n        plVar4 = (long *)(param_1 + (long)iVar1 * 0x18 + 0x18);\n        do {\n          plVar2 = (long *)*plVar4;\n          if (((char)plVar2[6] != '\\0') && (*(char *)((long)plVar2 + 0x31) == '\\0')) {\n            (**(code **)(*plVar2 + 0x10))(plVar2,*(undefined8 *)(param_1 + 8));\n          }\n          lVar3 = lVar3 + -1;\n          plVar4 = plVar4 + -3;\n        } while (1 < lVar3);\n      }\n    }\n    else if (0 < iVar1) {\n      lVar3 = (long)iVar1 + 1;\n      plVar4 = (long *)(param_1 + (long)iVar1 * 0x18 + 0x18);\n      do {\n        if ((((*(uint *)((long)plVar4 + 0xc) & param_2) != 0) &&\n            (plVar2 = (long *)*plVar4, (char)plVar2[6] != '\\0')) &&\n           (*(char *)((long)plVar2 + 0x31) == '\\0')) {\n          (**(code **)(*plVar2 + 0x10))(plVar2,*(undefined8 *)(param_1 + 8));\n        }\n        lVar3 = lVar3 + -1;\n        plVar4 = plVar4 + -3;\n      } while (1 < lVar3);\n    }\n  }\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x710047a060": {
+    "ghidra_raw": "\nvoid FUN_710047a060(long param_1,uint param_2)\n\n{\n  int iVar1;\n  long *plVar2;\n  long lVar3;\n  long *plVar4;\n  \n  if (*(char *)(param_1 + 0x1bc) == '\\0') {\n    iVar1 = *(int *)(param_1 + 0x20);\n    if (param_2 == 0xffffffff) {\n      if (0 < iVar1) {\n        lVar3 = (long)iVar1 + 1;\n        plVar4 = (long *)(param_1 + (long)iVar1 * 0x18 + 0x18);\n        do {\n          plVar2 = (long *)*plVar4;\n          if (((char)plVar2[6] != '\\0') && (*(char *)((long)plVar2 + 0x31) == '\\0')) {\n            (**(code **)(*plVar2 + 0x18))(plVar2,*(undefined8 *)(param_1 + 8));\n          }\n          lVar3 = lVar3 + -1;\n          plVar4 = plVar4 + -3;\n        } while (1 < lVar3);\n      }\n    }\n    else if (0 < iVar1) {\n      lVar3 = (long)iVar1 + 1;\n      plVar4 = (long *)(param_1 + (long)iVar1 * 0x18 + 0x18);\n      do {\n        if ((((*(uint *)((long)plVar4 + 0xc) & param_2) != 0) &&\n            (plVar2 = (long *)*plVar4, (char)plVar2[6] != '\\0')) &&\n           (*(char *)((long)plVar2 + 0x31) == '\\0')) {\n          (**(code **)(*plVar2 + 0x18))(plVar2,*(undefined8 *)(param_1 + 8));\n        }\n        lVar3 = lVar3 + -1;\n        plVar4 = plVar4 + -3;\n      } while (1 < lVar3);\n    }\n  }\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x710047a760": {
+    "ghidra_raw": "\nundefined1  [16] FUN_710047a760(long param_1,uint param_2)\n\n{\n  bool bVar1;\n  long *plVar2;\n  undefined8 *puVar3;\n  ulong uVar4;\n  long lVar5;\n  int iVar6;\n  ulong uVar7;\n  ulong uVar8;\n  undefined8 uVar9;\n  undefined8 uVar11;\n  undefined1 auVar10 [16];\n  \n  uVar9 = 0;\n  uVar11 = 0;\n  if (*(char *)(param_1 + 0x1bc) == '\\0') {\n    uVar7 = *(ulong *)(param_1 + 0x20);\n    if (param_2 == 0xffffffff) {\n      iVar6 = (int)uVar7;\n      if (0 < iVar6) {\n        uVar9 = 0;\n        uVar11 = 0;\n        lVar5 = (long)iVar6 + 1;\n        plVar2 = (long *)(param_1 + (long)iVar6 * 0x18 + 0x18);\n        do {\n          if ((char)((long *)*plVar2)[6] != '\\0') {\n            puVar3 = (undefined8 *)(**(code **)(*(long *)*plVar2 + 0x20))();\n            uVar9 = CONCAT44((float)((ulong)uVar9 >> 0x20) + (float)((ulong)*puVar3 >> 0x20),\n                             (float)uVar9 + (float)*puVar3);\n            uVar11 = CONCAT44((float)((ulong)uVar11 >> 0x20) + 0.0,(float)uVar11 + 0.0);\n          }\n          lVar5 = lVar5 + -1;\n          plVar2 = plVar2 + -3;\n        } while (1 < lVar5);\n      }\n    }\n    else if (uVar7 != 0) {\n      uVar9 = 0;\n      uVar11 = 0;\n      uVar4 = 0;\n      uVar8 = 1;\n      do {\n        if (((*(uint *)(param_1 + uVar4 * 0x18 + 0x3c) & param_2) != 0) &&\n           (plVar2 = *(long **)(param_1 + uVar4 * 0x18 + 0x30), (char)plVar2[6] != '\\0')) {\n          puVar3 = (undefined8 *)(**(code **)(*plVar2 + 0x20))();\n          uVar9 = CONCAT44((float)((ulong)uVar9 >> 0x20) + (float)((ulong)*puVar3 >> 0x20),\n                           (float)uVar9 + (float)*puVar3);\n          uVar11 = CONCAT44((float)((ulong)uVar11 >> 0x20) + 0.0,(float)uVar11 + 0.0);\n        }\n        bVar1 = uVar8 < uVar7;\n        uVar4 = uVar8;\n        uVar8 = (ulong)((int)uVar8 + 1);\n      } while (bVar1);\n    }\n  }\n  auVar10._8_8_ = uVar11;\n  auVar10._0_8_ = uVar9;\n  return auVar10;\n}\n",
+    "skipped": false
+  },
+  "0x710047cda0": {
+    "ghidra_raw": "\nlong FUN_710047cda0(long param_1,long param_2,int param_3,long param_4)\n\n{\n  undefined8 *puVar1;\n  undefined4 uVar2;\n  long lVar3;\n  long *plVar4;\n  undefined8 uVar5;\n  undefined *local_40;\n  undefined4 local_38;\n  undefined8 local_30;\n  undefined8 uStack_28;\n  undefined8 local_20;\n  undefined1 local_18;\n  \n  if (*(int *)(param_1 + 0x18) == 0) {\n    return 0;\n  }\n  plVar4 = *(long **)(param_1 + 8);\n  if (plVar4 != (long *)0x0) {\n    do {\n      lVar3 = plVar4[2];\n      if (*(int *)(*(long *)(lVar3 + 8) + 8) == param_3) {\n        if (lVar3 != 0) {\n          uVar2 = *(undefined4 *)(*(long *)(param_2 + 8) + 8);\n          *(long *)(param_4 + 0x30) = param_2;\n          *(int *)(param_4 + 0x48) = param_3;\n          *(long *)(param_4 + 0x58) = lVar3;\n          *(undefined1 *)(param_4 + 0x65) = 1;\n          *(undefined4 *)(param_4 + 0x20) = uVar2;\n          puVar1 = (undefined8 *)(param_4 + 0x38);\n          if (*(int *)(param_2 + 0x48) == 0) {\n            if (*(long *)(param_2 + 0x38) != 0) {\n              *(undefined8 **)(*(long *)(param_2 + 0x38) + 8) = puVar1;\n              *puVar1 = *(undefined8 *)(param_2 + 0x38);\n            }\n            *(undefined8 **)(param_2 + 0x38) = puVar1;\n          }\n          else {\n            uVar5 = *(undefined8 *)(param_2 + 0x40);\n            *(undefined8 *)(param_4 + 0x38) = 0;\n            *(undefined8 *)(param_4 + 0x40) = uVar5;\n            **(long **)(param_2 + 0x40) = (long)puVar1;\n          }\n          *(undefined8 **)(param_2 + 0x40) = puVar1;\n          *(int *)(param_2 + 0x48) = *(int *)(param_2 + 0x48) + 1;\n          puVar1 = (undefined8 *)(param_4 + 0x10);\n          if (*(int *)(lVar3 + 0x30) == 0) {\n            if (*(long *)(lVar3 + 0x20) != 0) {\n              *(undefined8 **)(*(long *)(lVar3 + 0x20) + 8) = puVar1;\n              *puVar1 = *(undefined8 *)(lVar3 + 0x20);\n            }\n            *(undefined8 **)(lVar3 + 0x20) = puVar1;\n          }\n          else {\n            uVar5 = *(undefined8 *)(lVar3 + 0x28);\n            *(undefined8 *)(param_4 + 0x10) = 0;\n            *(undefined8 *)(param_4 + 0x18) = uVar5;\n            **(long **)(lVar3 + 0x28) = (long)puVar1;\n          }\n          *(undefined8 **)(lVar3 + 0x28) = puVar1;\n          *(int *)(lVar3 + 0x30) = *(int *)(lVar3 + 0x30) + 1;\n          local_38 = 10;\n          local_30 = 0xbcd988648;\n          uStack_28 = 0;\n          local_40 = &DAT_71050b33c8;\n          local_18 = 0;\n          local_20 = 0xffffffff50000000;\n          FUN_7100489b00(lVar3,param_2,&local_40,*(undefined1 *)(param_4 + 100));\n          lVar3 = 1;\n        }\n        return lVar3;\n      }\n      plVar4 = (long *)*plVar4;\n    } while (plVar4 != (long *)0x0);\n    return 0;\n  }\n  return 0;\n}\n",
+    "skipped": false
+  },
+  "0x71004a6c00": {
+    "ghidra_raw": null,
+    "skipped": true
+  },
+  "0x71004ea750": {
+    "ghidra_raw": "\nundefined1 * FUN_71004ea750(int param_1)\n\n{\n  undefined1 *puVar1;\n  undefined8 uVar2;\n  long lVar3;\n  \n  if (param_1 - 0x160U < 0x3b) {\n    uVar2 = 0xd65accd76;\n    lVar3 = *(long *)(DAT_710532e730 + 8);\n    switch(param_1) {\n    case 0x160:\n      puVar1 = (undefined1 *)FUN_7103262bf0(*(undefined8 *)(lVar3 + 0x168),0x1389102cbf);\n      return puVar1;\n    case 0x169:\n      puVar1 = (undefined1 *)FUN_7103262bf0(*(undefined8 *)(lVar3 + 0x168),0x12cef82d30);\n      return puVar1;\n    case 0x16f:\n      puVar1 = (undefined1 *)FUN_7103262bf0(*(undefined8 *)(lVar3 + 0x168),0x100a39d32e);\n      return puVar1;\n    case 0x172:\n      puVar1 = (undefined1 *)FUN_7103262bf0(*(undefined8 *)(lVar3 + 0x168),0x120f2fc612);\n      return puVar1;\n    case 0x175:\n    case 0x17b:\n      uVar2 = 0x1020ddd1f9;\n    case 0x19a:\n      puVar1 = (undefined1 *)FUN_7103262bf0(*(undefined8 *)(lVar3 + 0x168),uVar2);\n      return puVar1;\n    case 0x180:\n      puVar1 = (undefined1 *)FUN_7103262bf0(*(undefined8 *)(lVar3 + 0x168),0xdf6aae3d0);\n      return puVar1;\n    case 0x188:\n      puVar1 = (undefined1 *)FUN_7103262bf0(*(undefined8 *)(lVar3 + 0x168),0x10e9efb8d1);\n      return puVar1;\n    case 0x18e:\n      puVar1 = (undefined1 *)FUN_7103262bf0(*(undefined8 *)(lVar3 + 0x168),0xf93dbbf13);\n      return puVar1;\n    case 399:\n      puVar1 = (undefined1 *)FUN_7103262bf0(*(undefined8 *)(lVar3 + 0x168),0xe1abb80ff);\n      return puVar1;\n    }\n  }\n  return &DAT_c1ffff0000000000;\n}\n",
+    "skipped": false
+  },
+  "0x710065dcc0": {
+    "ghidra_raw": "\nundefined4 FUN_710065dcc0(undefined4 *param_1)\n\n{\n  switch(*param_1) {\n  case 0x24:\n    if (param_1[1] == -1) {\n      return 0x6f;\n    }\n    break;\n  case 0x25:\n    if (param_1[1] == -1) {\n      return 0x70;\n    }\n    break;\n  case 0x26:\n    if (param_1[1] == -1) {\n      return 0x71;\n    }\n    break;\n  case 0x4b:\n    if (param_1[1] == 0x4c) {\n      return 0x6e;\n    }\n    break;\n  case 0x5a:\n    if (param_1[1] == -1) {\n      return 0x73;\n    }\n    break;\n  case 0x5b:\n    if (param_1[1] == -1) {\n      return 0x74;\n    }\n  }\n  return *param_1;\n}\n",
+    "skipped": false
+  },
+  "0x710065dd70": {
+    "ghidra_raw": "\nundefined8 FUN_710065dd70(undefined4 param_1)\n\n{\n  switch(param_1) {\n  case 5:\n  case 7:\n  case 0xb:\n  case 0x14:\n  case 0x21:\n  case 0x2a:\n  case 0x2f:\n  case 0x31:\n  case 0x39:\n  case 0x3b:\n  case 0x3f:\n  case 0x40:\n  case 0x42:\n  case 0x43:\n  case 0x44:\n  case 0x45:\n  case 0x47:\n  case 0x52:\n  case 0x53:\n  case 0x54:\n  case 0x55:\n  case 0x56:\n  case 0x57:\n  case 0x58:\n  case 0x59:\n  case 0x5a:\n  case 0x5b:\n  case 0x5c:\n  case 0x5d:\n  case 0x75:\n    return 1;\n  default:\n    return 0;\n  }\n}\n",
+    "skipped": false
+  },
+  "0x710067a5c0": {
+    "ghidra_raw": "\nundefined8 FUN_710067a5c0(long param_1)\n\n{\n  long lVar1;\n  \n  lVar1 = *(long *)(param_1 + 0x20);\n  if ((lVar1 != 0) &&\n     ((((&DAT_00005920)[lVar1] != '\\x03' || (*(char *)(lVar1 + 0x44d2) == '\\0')) &&\n      (1 < *(byte *)(lVar1 + 0x5921))))) {\n    return 1;\n  }\n  lVar1 = *(long *)(param_1 + 0x28);\n  if ((lVar1 != 0) &&\n     ((((&DAT_00005920)[lVar1] != '\\x03' || (*(char *)(lVar1 + 0x44d2) == '\\0')) &&\n      (1 < *(byte *)(lVar1 + 0x5921))))) {\n    return 1;\n  }\n  lVar1 = *(long *)(param_1 + 0x30);\n  if (((lVar1 != 0) && (((&DAT_00005920)[lVar1] != '\\x03' || (*(char *)(lVar1 + 0x44d2) == '\\0'))))\n     && (1 < *(byte *)(lVar1 + 0x5921))) {\n    return 1;\n  }\n  lVar1 = *(long *)(param_1 + 0x38);\n  if ((lVar1 != 0) &&\n     ((((&DAT_00005920)[lVar1] != '\\x03' || (*(char *)(lVar1 + 0x44d2) == '\\0')) &&\n      (1 < *(byte *)(lVar1 + 0x5921))))) {\n    return 1;\n  }\n  lVar1 = *(long *)(param_1 + 0x40);\n  if ((lVar1 != 0) &&\n     ((((&DAT_00005920)[lVar1] != '\\x03' || (*(char *)(lVar1 + 0x44d2) == '\\0')) &&\n      (1 < *(byte *)(lVar1 + 0x5921))))) {\n    return 1;\n  }\n  lVar1 = *(long *)(param_1 + 0x48);\n  if (((lVar1 != 0) && (((&DAT_00005920)[lVar1] != '\\x03' || (*(char *)(lVar1 + 0x44d2) == '\\0'))))\n     && (1 < *(byte *)(lVar1 + 0x5921))) {\n    return 1;\n  }\n  lVar1 = *(long *)(param_1 + 0x50);\n  if ((lVar1 != 0) &&\n     ((((&DAT_00005920)[lVar1] != '\\x03' || (*(char *)(lVar1 + 0x44d2) == '\\0')) &&\n      (1 < *(byte *)(lVar1 + 0x5921))))) {\n    return 1;\n  }\n  lVar1 = *(long *)(param_1 + 0x58);\n  if (((lVar1 != 0) && (((&DAT_00005920)[lVar1] != '\\x03' || (*(char *)(lVar1 + 0x44d2) == '\\0'))))\n     && (1 < *(byte *)(lVar1 + 0x5921))) {\n    return 1;\n  }\n  return 0;\n}\n",
+    "skipped": false
+  },
+  "0x710067e670": {
+    "ghidra_raw": "\nvoid FUN_710067e670(long param_1,int param_2,int param_3)\n\n{\n  long lVar1;\n  \n  if (((param_3 != 6) && (3 < param_3 - 0x4dU)) && (-1 < param_3)) {\n    lVar1 = *(long *)(param_1 + 0x20);\n    if ((lVar1 != 0) && (*(int *)(lVar1 + 0xe0) != param_2)) {\n      FUN_710065d450(lVar1,param_3,param_2);\n    }\n    lVar1 = *(long *)(param_1 + 0x28);\n    if ((lVar1 != 0) && (*(int *)(lVar1 + 0xe0) != param_2)) {\n      FUN_710065d450(lVar1,param_3,param_2);\n    }\n    lVar1 = *(long *)(param_1 + 0x30);\n    if ((lVar1 != 0) && (*(int *)(lVar1 + 0xe0) != param_2)) {\n      FUN_710065d450(lVar1,param_3,param_2);\n    }\n    lVar1 = *(long *)(param_1 + 0x38);\n    if ((lVar1 != 0) && (*(int *)(lVar1 + 0xe0) != param_2)) {\n      FUN_710065d450(lVar1,param_3,param_2);\n    }\n    lVar1 = *(long *)(param_1 + 0x40);\n    if ((lVar1 != 0) && (*(int *)(lVar1 + 0xe0) != param_2)) {\n      FUN_710065d450(lVar1,param_3,param_2);\n    }\n    lVar1 = *(long *)(param_1 + 0x48);\n    if ((lVar1 != 0) && (*(int *)(lVar1 + 0xe0) != param_2)) {\n      FUN_710065d450(lVar1,param_3,param_2);\n    }\n    lVar1 = *(long *)(param_1 + 0x50);\n    if ((lVar1 != 0) && (*(int *)(lVar1 + 0xe0) != param_2)) {\n      FUN_710065d450(lVar1,param_3,param_2);\n    }\n    lVar1 = *(long *)(param_1 + 0x58);\n    if ((lVar1 != 0) && (*(int *)(lVar1 + 0xe0) != param_2)) {\n      FUN_710065d450(lVar1,param_3,param_2);\n      return;\n    }\n  }\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x710067f640": {
+    "ghidra_raw": "\nvoid FUN_710067f640(undefined8 *param_1)\n\n{\n  undefined2 uVar1;\n  long lVar2;\n  \n  switch(*(undefined4 *)(param_1 + 4)) {\n  case 1:\n  case 2:\n    *(undefined4 *)(param_1 + 4) = 3;\n  case 3:\n    *(undefined1 *)((long)param_1 + 0x26) = 1;\n    break;\n  case 6:\n  case 7:\n  case 8:\n    lVar2 = param_1[2];\n    FUN_71037759f0(**(undefined8 **)(lVar2 + 0x80));\n    *(undefined1 *)(lVar2 + 0x70) = 1;\n    *(undefined1 *)\n     (*(long *)(*(long *)(&DAT_00001190 + *(long *)(DAT_7105334e90 + 8)) + 0x28) + 0x2f) = 0;\n  case 4:\n  case 5:\n    (**(code **)(*(long *)*param_1 + 0x20))();\n    (**(code **)(*(long *)*param_1 + 0x30))();\n    uVar1 = FUN_7101756710(DAT_71052c40f8);\n    *(undefined2 *)((long)param_1 + 0x24) = uVar1;\n    *(undefined4 *)(param_1 + 4) = 9;\n    *(undefined1 *)(*lib::Singleton<lib::LuaManager>::instance_ + 0x99) = 0;\n    if (*(char *)((long)param_1 + 0x27) != '\\0') {\n      FUN_710359feb0(1);\n      return;\n    }\n  }\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x71006dc4c0": {
+    "ghidra_raw": "\nvoid FUN_71006dc4c0(long param_1,int *param_2,byte param_3)\n\n{\n  ulong uVar1;\n  int iVar2;\n  ulong uVar3;\n  int iVar4;\n  ulong uVar5;\n  ulong uVar6;\n  int *piVar7;\n  ulong uVar8;\n  long lVar9;\n  undefined2 local_c;\n  undefined1 local_a;\n  undefined2 local_8;\n  undefined1 local_6;\n  undefined2 local_4;\n  undefined1 local_2;\n  \n  iVar4 = 0x1e;\n  switch(param_2[1]) {\n  case 0x1f:\n  case 0x20:\n    uVar5 = *(ulong *)(param_1 + 0x10);\n    break;\n  default:\n    uVar5 = *(ulong *)(param_1 + 0x10);\n    iVar4 = param_2[1];\n    break;\n  case 0x22:\n    iVar4 = 0x21;\n    uVar5 = *(ulong *)(param_1 + 0x10);\n    break;\n  case 0x24:\n    iVar4 = 0x23;\n    uVar5 = *(ulong *)(param_1 + 0x10);\n    break;\n  case 0x36:\n    goto switchD_71006dc4e4_caseD_36;\n  }\n  if (uVar5 == 0) {\n    uVar8 = *(ulong *)(param_1 + 8);\n  }\n  else {\n    uVar6 = 0;\n    uVar8 = *(ulong *)(param_1 + 8);\n    do {\n      uVar1 = *(long *)(param_1 + 0x18) + uVar6;\n      uVar3 = 0;\n      if (uVar8 != 0) {\n        uVar3 = uVar1 / uVar8;\n      }\n      lVar9 = uVar1 - uVar3 * uVar8;\n      if ((*(int *)(*(long *)(param_1 + 0x28) + lVar9 * 0x1c + 4) == iVar4) &&\n         (*(int *)(*(long *)(param_1 + 0x28) + lVar9 * 0x1c) == *param_2)) {\n        return;\n      }\n      uVar6 = uVar6 + 1;\n    } while (uVar6 < uVar5);\n  }\n  uVar6 = uVar5;\n  if (uVar5 == uVar8) {\n    uVar6 = uVar5 - 1;\n    if (uVar5 != 0 && uVar6 != 0) {\n      uVar1 = uVar6 + *(long *)(param_1 + 0x20);\n      uVar3 = 0;\n      if (uVar5 != 0) {\n        uVar3 = uVar1 / uVar5;\n      }\n      *(ulong *)(param_1 + 0x20) = uVar1 - uVar3 * uVar5;\n    }\n    *(ulong *)(param_1 + 0x10) = uVar6;\n  }\n  iVar2 = *param_2;\n  lVar9 = *(long *)(param_1 + 0x18);\n  if (uVar6 != 0) {\n    uVar6 = (uVar8 + lVar9) - 1;\n    uVar5 = 0;\n    if (uVar8 != 0) {\n      uVar5 = uVar6 / uVar8;\n    }\n    lVar9 = uVar6 - uVar5 * uVar8;\n    *(long *)(param_1 + 0x18) = lVar9;\n  }\n  piVar7 = (int *)(*(long *)(param_1 + 0x28) + lVar9 * 0x1c);\n  *piVar7 = iVar2;\n  piVar7[1] = iVar4;\n  *(undefined1 *)(piVar7 + 2) = 0;\n  *(undefined1 *)((long)piVar7 + 0xb) = local_2;\n  *(undefined2 *)((long)piVar7 + 9) = local_4;\n  piVar7[3] = 0;\n  *(undefined1 *)(piVar7 + 4) = 0;\n  *(undefined1 *)((long)piVar7 + 0x13) = local_6;\n  *(undefined2 *)((long)piVar7 + 0x11) = local_8;\n  *(byte *)(piVar7 + 5) = param_3 & 1;\n  *(undefined1 *)((long)piVar7 + 0x17) = local_a;\n  *(undefined2 *)((long)piVar7 + 0x15) = local_c;\n  piVar7[6] = 0;\n  *(long *)(param_1 + 0x10) = *(long *)(param_1 + 0x10) + 1;\nswitchD_71006dc4e4_caseD_36:\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x7100d12b10": {
+    "ghidra_raw": "\nvoid FUN_7100d12b10(undefined8 param_1,long param_2)\n\n{\n  int iVar1;\n  \n  if ((DAT_71052c0df8 & 1) == 0) {\n    iVar1 = __cxa_guard_acquire(&DAT_71052c0df8);\n    if (iVar1 != 0) {\n      DAT_71052c0e00 = &PTR_LAB_7104febb20;\n      __cxa_guard_release(&DAT_71052c0df8);\n    }\n  }\n  *(undefined ****)(param_2 + 0x318) = &DAT_71052c0e00;\n  *(undefined1 *)(param_2 + 0xe8) = 6;\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x7100f51310": {
+    "ghidra_raw": "\nvoid FUN_7100f51310(undefined8 param_1,long param_2)\n\n{\n  int iVar1;\n  \n  if ((DAT_71052c0f68 & 1) == 0) {\n    iVar1 = __cxa_guard_acquire(&DAT_71052c0f68);\n    if (iVar1 != 0) {\n      DAT_71052c0f70 = &PTR_LAB_71050152c0;\n      __cxa_guard_release(&DAT_71052c0f68);\n    }\n  }\n  *(undefined ****)(param_2 + 0x318) = &DAT_71052c0f70;\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x7100fb6710": {
+    "ghidra_raw": "\nundefined8 FUN_7100fb6710(int param_1)\n\n{\n  switch(param_1) {\n  case 0xc0:\n  case 0xc1:\n  case 0xc4:\n  case 0xc5:\n  case 0xc6:\n  case 0xe6:\n  case 0xe9:\n  case 0xea:\n  case 0xed:\n  case 0xee:\n  case 0xef:\n  case 0xf0:\n  case 0xf1:\n  case 0xf3:\n  case 0xf4:\n  case 0xf5:\n  case 0xf6:\n  case 0xf7:\n  case 0xfe:\n  case 0x146:\n  case 0x176:\n  case 0x178:\n  case 0x179:\n  case 0x17a:\n  case 0x17b:\n  case 0x17c:\n  case 0x1be:\n    goto switchD_7100fb6734_caseD_c2;\n  default:\n    if (3 < param_1 - 0x41U) {\n      return 0;\n    }\nswitchD_7100fb6734_caseD_c2:\n    return 1;\n  }\n}\n",
+    "skipped": false
+  },
+  "0x710150af00": {
+    "ghidra_raw": "\nbool FUN_710150af00(char param_1)\n\n{\n  long *plVar1;\n  char cVar2;\n  bool bVar3;\n  bool bVar4;\n  int iVar5;\n  ulong uVar6;\n  long lVar7;\n  long *local_38;\n  long *local_30;\n  undefined1 *local_28;\n  \n  if (param_1 != '\\0') {\n    return false;\n  }\n  FUN_71015435c0(&local_38,*DAT_71052c2910,&DAT_1308abad79);\n  if (local_38 != (long *)0x0) {\n    local_28 = &DAT_1308abad79;\n    uVar6 = (**(code **)(*local_38 + 0x18))(local_38,&local_28);\n    if (((uVar6 & 1) != 0) && (uVar6 = (**(code **)(*local_38 + 0x158))(local_38), (uVar6 & 1) != 0)\n       ) {\n      bVar4 = true;\n      goto joined_r0x00710150afc4;\n    }\n  }\n  if (((g_team_param_init_guard & 1) == 0) &&\n     (iVar5 = __cxa_guard_acquire(&g_team_param_init_guard), iVar5 != 0)) {\n    global_param_init_sets_team_flag();\n    FUN_71000001c0(FUN_7101763de0,&DAT_71052c4180,&PTR_LOOP_7104f16000);\n    __cxa_guard_release(&g_team_param_init_guard);\n  }\n  bVar4 = (DAT_71052cb5d8 & 0xfe) == 4;\njoined_r0x00710150afc4:\n  if (local_30 != (long *)0x0) {\n    plVar1 = local_30 + 1;\n    do {\n      lVar7 = *plVar1;\n      cVar2 = '\\x01';\n      bVar3 = (bool)ExclusiveMonitorPass(plVar1,0x10);\n      if (bVar3) {\n        *plVar1 = lVar7 + -1;\n        cVar2 = ExclusiveMonitorsStatus();\n      }\n    } while (cVar2 != '\\0');\n    if (lVar7 == 0) {\n      (**(code **)(*local_30 + 0x10))(local_30);\n      std::__1::__shared_weak_count::__release_weak();\n    }\n  }\n  return bVar4;\n}\n",
+    "skipped": false
+  },
+  "0x71015b4e40": {
+    "ghidra_raw": null,
+    "skipped": true
+  },
+  "0x71015bf2f0": {
+    "ghidra_raw": "\nvoid FUN_71015bf2f0(void)\n\n{\n  int iVar1;\n  undefined8 *puVar2;\n  ulong uVar3;\n  undefined8 local_20;\n  undefined4 local_14;\n  \n  if ((DAT_71052c3028 & 1) != 0) {\n    return;\n  }\n  iVar1 = __cxa_guard_acquire(&DAT_71052c3028);\n  if (iVar1 == 0) {\n    return;\n  }\n  puVar2 = (undefined8 *)je_aligned_alloc(0x10,0x40);\n  if (puVar2 == (undefined8 *)0x0) {\n    if (DAT_7105331f00 != (long *)0x0) {\n      local_14 = 0;\n      local_20 = 0x40;\n      uVar3 = (**(code **)(*DAT_7105331f00 + 0x30))(DAT_7105331f00,&local_14,&local_20);\n      if (((uVar3 & 1) != 0) &&\n         (puVar2 = (undefined8 *)je_aligned_alloc(0x10,0x40), puVar2 != (undefined8 *)0x0))\n      goto LAB_71015bf37c;\n    }\n    puVar2 = (undefined8 *)0x0;\n  }\nLAB_71015bf37c:\n  DAT_71052c2fb0 = puVar2 + 8;\n  DAT_71052c2fa8 = puVar2;\n  DAT_71052c2fb8 = DAT_71052c2fb0;\n  *puVar2 = 0xab000000a6;\n  puVar2[1] = 0xb8000000d8;\n  puVar2[2] = 0x146000000ca;\n  puVar2[3] = 0x14800000120;\n  puVar2[4] = 0x10d00000137;\n  puVar2[5] = 0xfe000000fd;\n  puVar2[6] = 0x112000000e4;\n  puVar2[7] = 0x10f000000e1;\n  FUN_71000001c0(&LAB_710068df00,&DAT_71052c2fa8,&PTR_LOOP_7104f16000);\n  __cxa_guard_release(&DAT_71052c3028);\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x71015bf410": {
+    "ghidra_raw": "\nvoid FUN_71015bf410(void)\n\n{\n  int iVar1;\n  undefined8 *puVar2;\n  ulong uVar3;\n  undefined8 local_20;\n  undefined4 local_14;\n  \n  if ((DAT_71052c3030 & 1) != 0) {\n    return;\n  }\n  iVar1 = __cxa_guard_acquire(&DAT_71052c3030);\n  if (iVar1 == 0) {\n    return;\n  }\n  puVar2 = (undefined8 *)je_aligned_alloc(0x10,0x44);\n  if (puVar2 == (undefined8 *)0x0) {\n    if (DAT_7105331f00 != (long *)0x0) {\n      local_14 = 0;\n      local_20 = 0x44;\n      uVar3 = (**(code **)(*DAT_7105331f00 + 0x30))(DAT_7105331f00,&local_14,&local_20);\n      if (((uVar3 & 1) != 0) &&\n         (puVar2 = (undefined8 *)je_aligned_alloc(0x10,0x44), puVar2 != (undefined8 *)0x0))\n      goto LAB_71015bf49c;\n    }\n    puVar2 = (undefined8 *)0x0;\n  }\nLAB_71015bf49c:\n  DAT_71052c2fc8 = (long)puVar2 + 0x44;\n  DAT_71052c2fc0 = puVar2;\n  DAT_71052c2fd0 = DAT_71052c2fc8;\n  *puVar2 = 0xcb00000057;\n  puVar2[1] = 0xd0000000ab;\n  puVar2[2] = 0xca000000d8;\n  puVar2[3] = 0x146000000d3;\n  puVar2[4] = 0x13700000120;\n  puVar2[5] = 0x10600000102;\n  puVar2[6] = 0xfd0000010d;\n  puVar2[7] = 0xe4000000fe;\n  *(undefined4 *)(puVar2 + 8) = 0xe1;\n  FUN_71000001c0(&LAB_710068df00,&DAT_71052c2fc0,&PTR_LOOP_7104f16000);\n  __cxa_guard_release(&DAT_71052c3030);\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x71015bf530": {
+    "ghidra_raw": "\nvoid FUN_71015bf530(void)\n\n{\n  int iVar1;\n  undefined8 *puVar2;\n  ulong uVar3;\n  undefined8 local_20;\n  undefined4 local_14;\n  \n  if ((DAT_71052c3038 & 1) != 0) {\n    return;\n  }\n  iVar1 = __cxa_guard_acquire(&DAT_71052c3038);\n  if (iVar1 == 0) {\n    return;\n  }\n  puVar2 = (undefined8 *)je_aligned_alloc(0x10,0x48);\n  if (puVar2 == (undefined8 *)0x0) {\n    if (DAT_7105331f00 != (long *)0x0) {\n      local_14 = 0;\n      local_20 = 0x48;\n      uVar3 = (**(code **)(*DAT_7105331f00 + 0x30))(DAT_7105331f00,&local_14,&local_20);\n      if (((uVar3 & 1) != 0) &&\n         (puVar2 = (undefined8 *)je_aligned_alloc(0x10,0x48), puVar2 != (undefined8 *)0x0))\n      goto LAB_71015bf5bc;\n    }\n    puVar2 = (undefined8 *)0x0;\n  }\nLAB_71015bf5bc:\n  DAT_71052c2fe0 = puVar2 + 9;\n  DAT_71052c2fd8 = puVar2;\n  DAT_71052c2fe8 = DAT_71052c2fe0;\n  *puVar2 = 0xab000000a6;\n  puVar2[1] = 0xb8000000d8;\n  puVar2[2] = 0x128000000ca;\n  puVar2[3] = 0x13700000148;\n  puVar2[4] = 0x10300000102;\n  puVar2[5] = 0x10d00000106;\n  puVar2[6] = 0xf2000000fd;\n  puVar2[7] = 0xe1000000e4;\n  puVar2[8] = 0x15400000153;\n  FUN_71000001c0(&LAB_710068df00,&DAT_71052c2fd8,&PTR_LOOP_7104f16000);\n  __cxa_guard_release(&DAT_71052c3038);\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x71016a5890": {
+    "ghidra_raw": null,
+    "skipped": true
+  },
+  "0x710177a760": {
+    "ghidra_raw": "\nvoid FUN_710177a760(undefined4 param_1)\n\n{\n  long *plVar1;\n  uint uVar2;\n  int iVar3;\n  undefined8 uVar4;\n  long lVar5;\n  undefined8 uVar6;\n  undefined8 *puVar7;\n  \n  lVar5 = DAT_710532e730;\n  switch(param_1) {\n  case 0:\n  case 1:\n  case 2:\n  case 3:\n  case 4:\n  case 5:\n  case 6:\n  case 7:\n  case 8:\n  case 9:\n  case 10:\n  case 0xb:\n  case 0xc:\n  case 0xd:\n  case 0xe:\n  case 0xf:\n  case 0x10:\n  case 0x11:\n  case 0x12:\n  case 0x13:\n  case 0x14:\n  case 0x15:\n  case 0x16:\n  case 0x17:\n  case 0x18:\n  case 0x19:\n  case 0x1a:\n  case 0x1b:\n  case 0x1d:\n  case 0x1e:\n  case 0x1f:\n  case 0x20:\n  case 0x21:\n  case 0x22:\n  case 0x23:\n  case 0x24:\n  case 0x25:\n  case 0x26:\n  case 0x28:\n  case 0x2c:\n  case 0x2d:\n  case 0x2e:\n  case 0x2f:\n  case 0x30:\n  case 0x31:\n  case 0x32:\n  case 0x33:\n  case 0x34:\n  case 0x35:\n  case 0x36:\n  case 0x37:\n  case 0x38:\n  case 0x39:\n  case 0x3b:\n  case 0x3d:\n  case 0x3e:\n  case 0x3f:\n  case 0x40:\n  case 0x43:\n  case 0x44:\n  case 0x45:\n  case 0x46:\n  case 0x47:\n  case 0x4d:\n  case 0x4e:\n  case 0x4f:\n  case 0x50:\n  case 0x51:\n  case 0x52:\n  case 0x53:\n  case 0x54:\n  case 0x55:\n  case 0x56:\n  case 0x57:\n  case 0x58:\n  case 0x59:\n  case 0x5a:\n  case 0x5b:\n  case 0x5c:\n  case 0x5d:\n  case 0x5e:\n  case 0x60:\n  case 0x61:\n  case 99:\n  case 100:\n  case 0x68:\n  case 0x6b:\n  case 0x6f:\n  case 0x73:\n  case 0x74:\n  case 0x75:\n  case 0x76:\n  case 0x77:\n    uVar6 = *(undefined8 *)(*(long *)(DAT_710532e730 + 8) + 0x348);\n    uVar4 = FUN_71032694c0(uVar6,param_1);\n    plVar1 = g_profile_chain_root;\n    puVar7 = *(undefined8 **)(*g_profile_chain_root + 0x248);\n    uVar2 = FUN_7103267730(uVar6,uVar4);\n    if (0x94 < uVar2) {\n      uVar2 = 0x95;\n    }\n    uVar2 = uVar2 * 3;\n    if ((0x1df < uVar2) ||\n       ((*(uint *)(*(long *)*puVar7 + (ulong)(uVar2 >> 5) * 4) & 1 << (ulong)(uVar2 & 0x1f)) == 0))\n    {\n      uVar6 = *(undefined8 *)(*(long *)(lVar5 + 8) + 0x348);\n      uVar4 = FUN_71032694c0(uVar6,param_1);\n      puVar7 = *(undefined8 **)(*plVar1 + 0x248);\n      iVar3 = FUN_7103267730(uVar6,uVar4);\n      uVar2 = iVar3 * 3;\n      if (uVar2 < 0x1e0) {\n        lVar5 = (ulong)(uVar2 >> 5) * 4;\n        *(uint *)(*(long *)*puVar7 + lVar5) =\n             *(uint *)(*(long *)*puVar7 + lVar5) | 1 << (ulong)(uVar2 & 0x1f);\n      }\n    }\n  }\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x7101780010": {
+    "ghidra_raw": "\nvoid FUN_7101780010(long param_1)\n\n{\n  char *pcVar1;\n  uint uVar2;\n  char cVar3;\n  undefined8 *puVar4;\n  char *pcVar5;\n  \n  if (param_1 == 0) {\n    return;\n  }\n  if (*(char *)(param_1 + 10) == '\\0') {\n    cVar3 = *(char *)(param_1 + 0xa4);\n    if (cVar3 == '\\0') goto LAB_7101780020;\n    if (-1 < *(int *)(param_1 + 0xa0)) {\n      uVar2 = *(uint *)(param_1 + 0x40);\n      puVar4 = *(undefined8 **)((char *)*g_profile_chain_root + 0x58);\n      cVar3 = *(char *)*g_profile_chain_root;\n      if (uVar2 == 0xffffffff) {\n        pcVar5 = &DAT_7105313518;\n        if (cVar3 == '\\0') {\n          pcVar5 = *(char **)*puVar4;\n        }\n        pcVar1 = &DAT_7105313518;\n        if (*pcVar5 != '\\0') {\n          pcVar1 = pcVar5;\n        }\n        uVar2 = *(uint *)(param_1 + 0x1c);\n      }\n      else {\n        pcVar5 = &DAT_7105313518;\n        if ((uVar2 < 0x3d) && (cVar3 == '\\0')) {\n          pcVar5 = (char *)(*(long *)*puVar4 + (ulong)uVar2 * 0xf7d8);\n        }\n        pcVar1 = &DAT_7105313518;\n        if (*pcVar5 != '\\0') {\n          pcVar1 = pcVar5;\n        }\n        uVar2 = *(uint *)(param_1 + 0x1c);\n      }\n      puVar4 = &DAT_7105338830;\n      if (uVar2 < 10) {\n        puVar4 = &DAT_7105338830;\n        if ((*(char *)(DAT_71053388b0 + 8) != '\\0') &&\n           (puVar4 = (undefined8 *)(&DAT_7105338860)[(int)uVar2], puVar4 == (undefined8 *)0x0))\n        goto LAB_710178001c;\n      }\n      uVar2 = *(uint *)(puVar4[2] + 0x9c);\n      if ((uVar2 < 7) && ((1 << (ulong)(uVar2 & 0x1f) & 0x66U) != 0)) {\n        cVar3 = pcVar1[0x3f];\n      }\n      else if (uVar2 - 3 < 2) {\n        cVar3 = pcVar1[0x4b];\n      }\n      else {\n        if (uVar2 != 7) goto LAB_710178001c;\n        cVar3 = pcVar1[0x2f];\n      }\n      cVar3 = cVar3 != '\\0';\n      goto LAB_7101780020;\n    }\n  }\nLAB_710178001c:\n  cVar3 = '\\0';\nLAB_7101780020:\n  *(char *)(param_1 + 0x48) = cVar3;\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x7101af63c0": {
+    "ghidra_raw": "\nvoid FUN_7101af63c0(long param_1,int param_2)\n\n{\n  int iVar1;\n  int iVar2;\n  ulong uVar3;\n  undefined4 uVar4;\n  \n  if (*(int *)(&DAT_00001200 + param_1) != param_2) {\n    *(int *)(&DAT_00001200 + param_1) = param_2;\n    iVar1 = -1;\n    if (*(int *)(&DAT_000011b0 + param_1) - 1U < 5) {\n      iVar1 = 1;\n    }\n    iVar2 = 2;\n    if (*(int *)(&DAT_000011b0 + param_1) < 6) {\n      iVar2 = iVar1;\n    }\n    if (*(int *)((long)*(long **)(&DAT_00002268 + param_1) + 0x254) != iVar2) {\n      FUN_7101af64a0(param_1);\n      FUN_710376b3b0(*(undefined8 *)(&DAT_00002268 + param_1));\n      return;\n    }\n    uVar3 = (**(code **)(**(long **)(&DAT_00002268 + param_1) + 0x78))();\n    FUN_7101af64a0(param_1);\n    FUN_710376b3b0(*(undefined8 *)(&DAT_00002268 + param_1));\n    if ((uVar3 & 1) != 0) {\n      if (*(int *)(&DAT_000011b0 + param_1) < 6) {\n        uVar4 = 0xffffffff;\n        if (*(int *)(&DAT_000011b0 + param_1) - 1U < 5) {\n          uVar4 = 1;\n        }\n      }\n      else {\n        uVar4 = 2;\n      }\n      FUN_71037714d0(&DAT_00002268 + param_1,uVar4,0);\n      return;\n    }\n  }\n  return;\n}\n",
+    "skipped": false
+  },
+  "0x7101c272b0": {
+    "ghidra_raw": null,
+    "skipped": true
+  },
+  "0x7101d70230": {
+    "ghidra_raw": null,
+    "skipped": true
+  }
+}
