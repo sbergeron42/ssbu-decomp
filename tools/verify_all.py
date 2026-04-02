@@ -382,7 +382,7 @@ def build_source_addr_map():
             if not fn.endswith('.cpp'):
                 continue
             path = os.path.join(root, fn)
-            with open(path) as f:
+            with open(path, encoding='utf-8', errors='replace') as f:
                 lines = f.readlines()
             for i, line in enumerate(lines):
                 m = re.search(r'//\s*(?:0x)?(71[0-9a-fA-F]{6,10})\b', line)

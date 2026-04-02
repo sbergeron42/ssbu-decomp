@@ -172,8 +172,6 @@ f32 FighterControlModuleImpl__get_param_attack_lw4_flick_y_impl(BattleObjectModu
 
 // 71020aebd0 -- indexed clear: clear bit in bitfield at +0x568, zero entries at +0x578/+0x588
 // Original: ldr x8; mov w11,#0x28; smaddl x8; ldr w11,[x8,#0x568]; mov w9,#1; lsl w9,w9,w2; bic w9,w11,w9; str w9
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
 void FighterControlModuleImpl__delete_command_impl(BattleObjectModuleAccessor* a, s32 group, s32 bit) {
     auto* module = reinterpret_cast<u8*>(CONTROL_MODULE(a));
     auto* base = module + static_cast<s64>(group) * 0x28;

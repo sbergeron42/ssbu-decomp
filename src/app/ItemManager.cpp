@@ -44,8 +44,6 @@ void* ItemManager__find_active_item_from_id_impl(ItemManager* mgr, u32 id) {
 
 // 71021446a0 -- search array, call vtable method to check area id
 // x22=iterator, x8=end (caller-saved, reloaded after blr), x21=item, x20=mgr, w19=area_id
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
 void* ItemManager__find_active_item_from_area_id_impl(ItemManager* mgr, u32 area_id) {
     u8* p = reinterpret_cast<u8*>(mgr);
     void** it = *reinterpret_cast<void***>(p + 0x28);

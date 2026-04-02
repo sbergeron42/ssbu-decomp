@@ -20,8 +20,6 @@ namespace app::lua_bind {
     reinterpret_cast<void(*)(void*, ##__VA_ARGS__)>((*reinterpret_cast<void***>(obj))[(off)/8])(obj, ##__VA_ARGS__)
 
 // 7102145890 -- framed loop: notify boss defeat for entries with hash 0x18e
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
 void BossManager__notify_on_boss_defeat_impl(BossManager* bm, s32 id) {
     if (id != 0x4d) return;
     auto* inner = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(bm) + 0x8);

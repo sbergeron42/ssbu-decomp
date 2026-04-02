@@ -116,8 +116,6 @@ bool FighterInformation__is_battle_event_stick_reverse_impl(FighterInformation* 
 //   ldp x8,x9,[x0]; ldr x8,[x8,#0x20]; ldp s0,s1,[x9,#0x38]; fadd s8,s0,s1
 //   blr x8; fsub s0,s8,s0; fmov s1,wzr; fmax s0,s0,s1
 //   ldp x29,x30,[sp,#0x10]; ldr d8,[sp],#0x20; ret
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
 f32 FighterInformation__hit_point_impl(FighterInformation* fi) {
     auto* p = reinterpret_cast<u8*>(fi);
     auto fn = reinterpret_cast<f32(*)(FighterInformation*)>((*reinterpret_cast<void***>(p))[0x20/8]);
@@ -151,8 +149,6 @@ s32 FighterInformation__dead_count_impl(FighterInformation* fi, s32 index) {
 }
 
 // 71020c9e90 -- suicide_count (20 instructions)
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
 s32 FighterInformation__suicide_count_impl(FighterInformation* fi, s32 index) {
     auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);
     if (index != -2) {

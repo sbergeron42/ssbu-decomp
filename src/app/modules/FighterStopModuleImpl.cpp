@@ -3,8 +3,6 @@
 namespace app::lua_bind {
 
 // 71020ad720 -- is_damage_stop: check status range, dispatch to work module query
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
 bool FighterStopModuleImpl__is_damage_stop_impl(BattleObjectModuleAccessor* a) {
     auto* stop = reinterpret_cast<u8*>(*reinterpret_cast<void**>(reinterpret_cast<u8*>(a) + 0x90));
     auto* chain = *reinterpret_cast<u8**>(stop + 0x8);
@@ -35,8 +33,6 @@ bool FighterStopModuleImpl__is_damage_stop_impl(BattleObjectModuleAccessor* a) {
 }
 
 // 71020ad7e0 -- get_damage_stop_frame: same status check, tail call to work module
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
 void FighterStopModuleImpl__get_damage_stop_frame_impl(BattleObjectModuleAccessor* a) {
     auto* stop = reinterpret_cast<u8*>(*reinterpret_cast<void**>(reinterpret_cast<u8*>(a) + 0x90));
     auto* chain = *reinterpret_cast<u8**>(stop + 0x8);

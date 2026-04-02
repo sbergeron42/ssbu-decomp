@@ -53,30 +53,22 @@ u32 Item__owner_id_impl(Item* item) {
 }
 
 // 71020f4600 -- if param_id > 2, return error hash; else tail-call FUN_71015b4e40
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
 u64 Item__property_param_int_as_hash_impl(Item* item, u32 param_id) {
     if (param_id > 2) return 0x7fb997a80ULL;
     return FUN_71015b4e40(item, param_id);
 }
 
 // 71020f4620 -- pure tail call
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
 f32 Item__specialized_param_float_impl(Item* item, u32 param_id) {
     return FUN_71015b3de0(item, param_id);
 }
 
 // 71020f4700 -- pure tail call
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
 bool Item__is_eatable_impl(Item* item) {
     return FUN_71015b4fc0(item);
 }
 
 // 71020f4710 -- zero w2 then tail call
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
 void Item__throw_attack_impl(Item* item, u32 p1) {
     FUN_71015aba90(item, p1, 0);
 }
@@ -235,8 +227,6 @@ u32 Item__common_param_int_impl(Item* item, u32 param_id) {
 #endif
 
 // 71020f4630 -- call vtable[0x18](item[0x248], item, param_id, &out); return out if ok else 0
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
 u32 Item__specialized_param_int_impl(Item* item, u32 param_id) {
     u32 out;
     void* obj = *reinterpret_cast<void**>(reinterpret_cast<u8*>(item) + 0x248);
@@ -261,8 +251,6 @@ bool Item__is_had_impl(Item* item, u32 allow_had) {
 }
 
 // 71020f4720 -- b FUN_71015b0590 (pure tail call)
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
 void Item__fall_impl(Item* item) {
     FUN_71015b0590(item);
 }

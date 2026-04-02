@@ -71,8 +71,6 @@ u32 FighterManager__get_final_actor_entry_id_impl(FighterManager* mgr) {
 }
 
 // 7102140f90 -- get_fighter_entry (10 instructions, bounds check + indexed)
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
 void* FighterManager__get_fighter_entry_impl(FighterManager* mgr, u32 index) {
     if (index >= 8) { FUN_71039c20a0(); }
     auto* data = *reinterpret_cast<u8**>(mgr);
@@ -80,8 +78,6 @@ void* FighterManager__get_fighter_entry_impl(FighterManager* mgr, u32 index) {
 }
 
 // 7102140fc0 -- get_fighter_information (11 instructions, bounds check + offset)
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
 void* FighterManager__get_fighter_information_impl(FighterManager* mgr, u32 index) {
     if (index >= 8) { FUN_71039c20a0(); }
     auto* data = *reinterpret_cast<u8**>(mgr);

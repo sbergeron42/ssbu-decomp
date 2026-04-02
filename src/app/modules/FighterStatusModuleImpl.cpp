@@ -6,8 +6,6 @@ extern "C" void FUN_71006eb8c0(void*);
 namespace app::lua_bind {
 
 // 71020a99f0 -- set_fighter_status_data: forward to status module with bool masks + stack param
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
 void FighterStatusModuleImpl__set_fighter_status_data_impl(
     BattleObjectModuleAccessor* a, bool p1, u64 p2, bool p3, bool p4, bool p5, u64 p6, u64 p7, u32 p8) {
     FUN_71006eb6c0(a->status_module, p1 & 1, p2, p3 & 1, p4 & 1, p5 & 1, p6, p7, p8);

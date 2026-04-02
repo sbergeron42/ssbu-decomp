@@ -163,16 +163,12 @@ void EffectModule__req_follow_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2
 
 // 7102017900 -- req_after_image: vtable+0x118, stack param reload/rewrite + br
 // Original loads stack params, replaces x0 with EffectModule, re-stores stack, branches via vtable
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
 void EffectModule__req_after_image_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2, u64 p3, u64 p4, u32 p5, u64 p6, u64 p7, u32 p8, u64 p9, u64 p10, u64 p11, u64 p12, bool p13, bool p14, s32 p15, s32 p16, s32 p17) {
     auto* m = EFFECT_MODULE(a);
     reinterpret_cast<void(*)(void*, u64, u64, u64, u64, u32, u64, u64, u32, u64, u64, u64, u64, bool, bool, s32, s32, s32)>(VTABLE(m)[0x118/8])(m, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17);
 }
 
 // 7102017950 -- req_after_image_no_parent: vtable+0x128, stack param reload/rewrite + br
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
 void EffectModule__req_after_image_no_parent_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2, u32 p3, u64 p4, u64 p5, u32 p6, u64 p7, u64 p8, u64 p9, u64 p10, bool p11, bool p12, s32 p13, s32 p14, s32 p15) {
     auto* m = EFFECT_MODULE(a);
     reinterpret_cast<void(*)(void*, u64, u64, u32, u64, u64, u32, u64, u64, u64, u64, bool, bool, s32, s32, s32)>(VTABLE(m)[0x128/8])(m, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15);
