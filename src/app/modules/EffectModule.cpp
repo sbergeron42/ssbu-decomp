@@ -162,73 +162,18 @@ void EffectModule__req_follow_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2
 }
 
 // 7102017900 — req_after_image: vtable+0x118, stack param reload/rewrite + br
-// Original loads stack params, replaces x0 with EffectModule, re-stores stack, branches via vtable
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
 void EffectModule__req_after_image_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2, u64 p3, u64 p4, u32 p5, u64 p6, u64 p7, u32 p8, u64 p9, u64 p10, u64 p11, u64 p12, bool p13, bool p14, s32 p15, s32 p16, s32 p17) {
-    asm("ldr x0, [x0, #0x140]\n"
-        "ldr x18, [x0]\n"
-        "ldr w8, [sp]\n"
-        "ldp x9, x10, [sp, #0x8]\n"
-        "ldrb w13, [sp, #0x28]\n"
-        "ldp x11, x12, [sp, #0x18]\n"
-        "ldrb w14, [sp, #0x30]\n"
-        "ldr w15, [sp, #0x38]\n"
-        "ldr w16, [sp, #0x40]\n"
-        "ldr w17, [sp, #0x48]\n"
-        "ldr x18, [x18, #0x118]\n"
-        "str w17, [sp, #0x48]\n"
-        "str w16, [sp, #0x40]\n"
-        "str w15, [sp, #0x38]\n"
-        "strb w14, [sp, #0x30]\n"
-        "strb w13, [sp, #0x28]\n"
-        "stp x11, x12, [sp, #0x18]\n"
-        "str w8, [sp]\n"
-        "stp x9, x10, [sp, #0x8]\n"
-        "br x18\n");
+    auto* m = EFFECT_MODULE(a);
+    reinterpret_cast<void(*)(void*, u64, u64, u64, u64, u32, u64, u64, u32, u64, u64, u64, u64, bool, bool, s32, s32, s32)>(VTABLE(m)[0x118/8])(m, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17);
 }
-#endif
 
 // 7102017950 — req_after_image_no_parent: vtable+0x128, stack param reload/rewrite + br
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
 void EffectModule__req_after_image_no_parent_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2, u32 p3, u64 p4, u64 p5, u32 p6, u64 p7, u64 p8, u64 p9, u64 p10, bool p11, bool p12, s32 p13, s32 p14, s32 p15) {
-    asm("ldr x0, [x0, #0x140]\n"
-        "ldr x16, [x0]\n"
-        "ldr w9, [sp, #0x38]\n"
-        "ldp x8, x15, [sp]\n"
-        "ldr w10, [sp, #0x30]\n"
-        "ldr w11, [sp, #0x28]\n"
-        "ldrb w12, [sp, #0x20]\n"
-        "ldrb w13, [sp, #0x18]\n"
-        "ldr x14, [sp, #0x10]\n"
-        "ldr x16, [x16, #0x128]\n"
-        "strb w13, [sp, #0x18]\n"
-        "stp x15, x14, [sp, #0x8]\n"
-        "strb w12, [sp, #0x20]\n"
-        "str w11, [sp, #0x28]\n"
-        "str w10, [sp, #0x30]\n"
-        "str w9, [sp, #0x38]\n"
-        "str x8, [sp]\n"
-        "br x16\n");
+    auto* m = EFFECT_MODULE(a);
+    reinterpret_cast<void(*)(void*, u64, u64, u32, u64, u64, u32, u64, u64, u64, u64, bool, bool, s32, s32, s32)>(VTABLE(m)[0x128/8])(m, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15);
 }
-#endif
 
-// 71020179d0 — get_local_matrix: prologue/epilogue, vtable+0x148
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
-void* EffectModule__get_local_matrix_impl(BattleObjectModuleAccessor* /*a*/, u64 /*p1*/) {
-    asm(
-        "stp x29, x30, [sp, #-0x10]!\n"
-        "mov x29, sp\n"
-        "ldr x0, [x0, #0x140]\n"
-        "ldr x8, [x0]\n"
-        "ldr x8, [x8, #0x148]\n"
-        "blr x8\n"
-        "ldp x29, x30, [sp], #0x10\n"
-        "ret\n"
-    );
-}
-#endif
+// 71020179d0 — get_local_matrix: vtable+0x148
+void* EffectModule__get_local_matrix_impl(BattleObjectModuleAccessor* a, u64 p1) { auto* m = EFFECT_MODULE(a); void* ret = reinterpret_cast<void*(*)(void*, u64)>(VTABLE(m)[0x148/8])(m, p1); asm(""); return ret; }
 
 } // namespace app::lua_bind
