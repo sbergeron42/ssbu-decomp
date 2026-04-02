@@ -11,7 +11,7 @@ extern "C" {
 }
 
 extern void FUN_710392e590(void*);
-extern void FUN_71033137f0(u64, u64);
+extern void FUN_71033137f0(u64, u32);
 
 // External data
 extern u8 DAT_710532e8d0[];
@@ -56,7 +56,7 @@ u64 FUN_71038f9be4(u64 param_1, u64 param_2)
 // 0x71031d0660 — vtable call at 0x20 (no args), return 1 (208 bytes)
 u64 FUN_71031d0660(s64 *param_1)
 {
-    (*(void(*)())(*param_1 + 0x20))();
+    (*(void(*)())(*(s64 *)(*param_1 + 0x20)))();
     return 1;
 }
 
@@ -70,14 +70,14 @@ u32 FUN_710336e170(void)
 // 0x71034d3d70 — vtable call at 0x110 returning bool: iVar == 0 (208 bytes)
 u8 FUN_71034d3d70(u64 param_1, s64 param_2)
 {
-    s32 iVar1 = (*(s32(*)())(*(s64*)(*(s64*)(*(s64*)(param_2 + 0x20) + 0x40)) + 0x110))();
+    s32 iVar1 = (*(s32(*)())(*(s64*)(*(s64*)(*(s64*)(*(s64*)(param_2 + 0x20) + 0x40)) + 0x110)))();
     return (u8)(iVar1 == 0);
 }
 
 // 0x7103791bb0 — vtable call at 0x230 (no args), return 1 (208 bytes)
 u64 FUN_7103791bb0(s64 *param_1)
 {
-    (*(void(*)())(*param_1 + 0x230))();
+    (*(void(*)())(*(s64 *)(*param_1 + 0x230)))();
     return 1;
 }
 
@@ -130,7 +130,7 @@ u64 *FUN_710379dc50(void)
 // 0x71037a0060 — vtable call at 0x230 (no args), return 1 (208 bytes)
 u64 FUN_71037a0060(s64 *param_1)
 {
-    (*(void(*)())(*param_1 + 0x230))();
+    (*(void(*)())(*(s64 *)(*param_1 + 0x230)))();
     return 1;
 }
 
@@ -161,13 +161,13 @@ u64 *FUN_71037a1170(void)
 u64 FUN_71033c86a0(u64 param_1, s64 param_2)
 {
     s64 *plVar2 = *(s64**)(*(s64*)(param_2 + 0x20) + 0x50);
-    u32 uVar1 = (*(u32(*)(s64*, u32))(*plVar2 + 0x108))(plVar2, 0x20000006);
+    u32 uVar1 = (*(u32(*)(s64*, u32))(*(s64 *)(*plVar2 + 0x108)))(plVar2, 0x20000006);
     return ~uVar1 & 1;
 }
 
 // 0x71031cfe40 — vtable call at 0x20 (no args), return 1 (224 bytes)
 u64 FUN_71031cfe40(s64 *param_1)
 {
-    (*(void(*)())(*param_1 + 0x20))();
+    (*(void(*)())(*(s64 *)(*param_1 + 0x20)))();
     return 1;
 }

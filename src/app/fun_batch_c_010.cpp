@@ -275,7 +275,7 @@ u64 FUN_71021e2520(app::BattleObjectModuleAccessor *param_1, s64 param_2)
 }
 
 // 0x71021f6514
-u64 FUN_71021f6514(s64 *param_1)
+u32 FUN_71021f6514(s64 *param_1)
 {
     (**(void (**)(s64 *, s32))(*param_1 + 0x520))(param_1, 0);
     return 0;

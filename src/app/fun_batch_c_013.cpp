@@ -11,7 +11,7 @@ u32 FUN_710221c660(s64 param_1)
     s64 *plVar1;
     s64 lVar2;
     plVar1 = *(s64 **)(*(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0) + 0x68);
-    lVar2 = (**(s64 (**)(s64 *, s64))(*plVar1 + 0x60))(plVar1, 0);
+    lVar2 = (**(s64 (**)(s64 *, s32))(*plVar1 + 0x60))(plVar1, 0);
     *(u8 *)(lVar2 + 0x30) = 0;
     return 0;
 }
@@ -22,7 +22,7 @@ u32 FUN_710221c740(s64 param_1)
     s64 *plVar1;
     s64 lVar2;
     plVar1 = *(s64 **)(*(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0) + 0x68);
-    lVar2 = (**(s64 (**)(s64 *, s64))(*plVar1 + 0x60))(plVar1, 0);
+    lVar2 = (**(s64 (**)(s64 *, s32))(*plVar1 + 0x60))(plVar1, 0);
     *(u8 *)(lVar2 + 0x31) = 0;
     return 0;
 }
@@ -32,7 +32,7 @@ u32 FUN_710221c930(s64 param_1)
 {
     s64 *plVar1;
     plVar1 = *(s64 **)(*(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0) + 0x68);
-    plVar1 = (s64 *)(**(s64 (**)(s64 *, s64))(*plVar1 + 0x60))(plVar1, 0);
+    plVar1 = (s64 *)(**(s64 (**)(s64 *, s32))(*plVar1 + 0x60))(plVar1, 0);
     (**(void (**)(void))(*plVar1 + 0x50))();
     return 0;
 }
