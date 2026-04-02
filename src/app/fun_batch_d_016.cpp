@@ -108,7 +108,7 @@ u8 FUN_710346c7f0(u64 param_1, s64 param_2)
 }
 
 // 0x710347d410 — wrapper: FUN_710347cff0(param_2), return 0 (32 bytes)
-u64 FUN_710347d410(u64 param_1, u64 param_2) { FUN_710347cff0(param_2); return 0; }
+u32 FUN_710347d410(u64 param_1, u64 param_2) { FUN_710347cff0(param_2); return 0; }
 
 // 0x710348c480 — double-deref vtable[0x110], return result != 1 (48 bytes)
 u8 FUN_710348c480(u64 param_1, s64 param_2)
@@ -122,7 +122,7 @@ u8 FUN_710348c480(u64 param_1, s64 param_2)
 u64 FUN_710348cc50(u64 param_1, u64 param_2) { FUN_710348cc70(param_2); return 1; }
 
 // 0x710349d810 — get inner ptr at +0xd0, vtable[0x78](ptr, 10), return ~result & 1 (48 bytes)
-u32 FUN_710349d810(u64 param_1, s64 param_2)
+u64 FUN_710349d810(u64 param_1, s64 param_2)
 {
     s64 *plVar2 = *(s64**)(*(s64*)(param_2 + 0x20) + 0xd0);
     u32 uVar1 = (*(u32(*)(s64*, s32))(*(s64*)(*plVar2 + 0x78)))(plVar2, 10);

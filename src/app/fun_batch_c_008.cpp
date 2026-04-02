@@ -397,7 +397,7 @@ u64 FUN_7102192724(app::BattleObjectModuleAccessor *param_1, s64 param_2, bool p
 }
 
 // 0x71021958a8
-u64 FUN_71021958a8(app::BattleObjectModuleAccessor *param_1, s64 param_2, bool param_3, bool param_4)
+u32 FUN_71021958a8(app::BattleObjectModuleAccessor *param_1, s64 param_2, bool param_3, bool param_4)
 {
     u64 in_x10;
     *(u64 *)(param_2 + 0x10) = in_x10;

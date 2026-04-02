@@ -8,7 +8,7 @@ extern "C" void FUN_7102a63350(u32 *, u32 *, u32 *, u32 *);
 extern "C" void FUN_7102a63500(u32 *, u32 *, u32 *, u32 *, u32 *);
 
 // 0x7102ff82b0
-u32 FUN_7102ff82b0(u64 *param_1)
+u64 FUN_7102ff82b0(u64 *param_1)
 {
     u32 uVar1;
     uVar1 = (**(u32 (**)(void))(*param_1))();

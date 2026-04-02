@@ -75,16 +75,20 @@ void FUN_71037b0b30(s64 param_1)
 }
 
 // 0x71033640c0 — vtable dispatch at offset 0x18 (168 bytes)
-u64 FUN_71033640c0(s64 *param_1)
+u32 FUN_71033640c0(s64 *param_1)
 {
-    (*(void(*)(s64*))(*param_1 + 0x18))(param_1);
+    register s64 *in_x8 asm("x8");
+    asm volatile("" : "+r"(in_x8));
+    (*(void(*)(s64*))(*in_x8 + 0x18))(in_x8);
     return 0;
 }
 
 // 0x7103364460 — vtable dispatch at offset 8 (168 bytes)
-u64 FUN_7103364460(s64 *param_1)
+u32 FUN_7103364460(s64 *param_1)
 {
-    (*(void(*)(s64*))(*param_1 + 8))(param_1);
+    register s64 *in_x8 asm("x8");
+    asm volatile("" : "+r"(in_x8));
+    (*(void(*)(s64*))(*in_x8 + 8))(in_x8);
     return 0;
 }
 
@@ -129,7 +133,7 @@ u64 FUN_710335a5fc(u64 param_1, u64 param_2)
 }
 
 // 0x71037b0360 — switch on *(param3+0x6c): compute local_18 from sub-calls (192 bytes)
-u32 FUN_71037b0360(u8 param_1[16], u32 param_2, s64 param_3)
+u64 FUN_71037b0360(u8 param_1[16], u32 param_2, s64 param_3)
 {
     u32 local_38;
     u32 local_34;
@@ -163,7 +167,7 @@ u32 FUN_71037b0360(u8 param_1[16], u32 param_2, s64 param_3)
 }
 
 // 0x71037b09d0 — switch on *(param3+0x6c): compute local_24 from sub-calls variant (192 bytes)
-u32 FUN_71037b09d0(u8 param_1[16], u32 param_2, s64 param_3)
+u64 FUN_71037b09d0(u8 param_1[16], u32 param_2, s64 param_3)
 {
     u32 local_40;
     u32 local_3c;

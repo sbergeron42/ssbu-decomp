@@ -52,7 +52,7 @@ bool FUN_7102c561a8(s64 *param_1)
 }
 
 // 0x7102a65c84
-u64 FUN_7102a65c84(s64 *param_1, s64 param_2)
+u32 FUN_7102a65c84(s64 *param_1, s64 param_2)
 {
     (**(void (**)(s64 *, u32, u32))(*param_1 + 0x58))(param_1, *(u32 *)(param_2 + 0x20), *(u32 *)(param_2 + 0x10));
     return 0;

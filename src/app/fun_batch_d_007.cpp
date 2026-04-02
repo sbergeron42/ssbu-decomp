@@ -19,7 +19,7 @@ void FUN_7103928290(u32 *param_1) { *param_1 = param_1[1]; }
 s64 FUN_7103929100(s64 param_1) { return param_1 + 0x1b0; }
 
 // 0x7103929140 — deref u32 (32 bytes)
-u32 FUN_7103929140(u32 *param_1) { return *param_1; }
+u64 FUN_7103929140(u32 *param_1) { return *param_1; }
 
 // 0x7103929190 — return param_1 + 0x1c0 (32 bytes)
 s64 FUN_7103929190(s64 param_1) { return param_1 + 0x1c0; }
@@ -37,7 +37,7 @@ s64 FUN_71039297c0(s64 param_1) { return param_1 + 0x1800; }
 s64 FUN_7103929810(s64 param_1) { return param_1 + 3; }
 
 // 0x710392c110 — return param_1 & 1 (32 bytes)
-u32 FUN_710392c110(u32 param_1) { return param_1 & 1; }
+u64 FUN_710392c110(u32 param_1) { return param_1 & 1; }
 
 // 0x710392c160 — return param_1 + 0x28 (32 bytes)
 s64 FUN_710392c160(s64 param_1) { return param_1 + 0x28; }
@@ -58,7 +58,7 @@ s64 FUN_710392c6b0(s64 param_1) { return param_1 + 0x1b8; }
 void FUN_710392ef20(void) { return; }
 
 // 0x710392f170 — deref u32 (32 bytes)
-u32 FUN_710392f170(u32 *param_1) { return *param_1; }
+u64 FUN_710392f170(u32 *param_1) { return *param_1; }
 
 // 0x7103930140 — deref u64 (32 bytes)
 u64 FUN_7103930140(u64 *param_1) { return *param_1; }
@@ -73,7 +73,7 @@ u8 FUN_71039302c0(s64 param_1) { return (u8)(param_1 == 0); }
 s64 FUN_7103930330(s64 param_1) { return param_1 + 0x1800; }
 
 // 0x71039316b0 — return param_1 & 1 (32 bytes)
-u32 FUN_71039316b0(u32 param_1) { return param_1 & 1; }
+u64 FUN_71039316b0(u32 param_1) { return param_1 & 1; }
 
 // 0x7103931ba0 — return param_1 + 0x28 (32 bytes)
 s64 FUN_7103931ba0(s64 param_1) { return param_1 + 0x28; }
@@ -127,7 +127,7 @@ u8 FUN_7103938b10(s64 *param_1) { return (u8)(*param_1 == 0); }
 u64 FUN_71039395a0(u64 *param_1) { return *param_1 >> 0x28; }
 
 // 0x710393c1e0 — return *(u32*)(p+0x690) (32 bytes)
-u32 FUN_710393c1e0(s64 param_1) { return *(u32*)(param_1 + 0x690); }
+u64 FUN_710393c1e0(s64 param_1) { return *(u32*)(param_1 + 0x690); }
 
 // 0x710393c360 — no-op (32 bytes)
 void FUN_710393c360(void) { return; }
@@ -151,13 +151,13 @@ u64 FUN_710393de40(u64 *param_1) { return *param_1 >> 0xc & 1; }
 s64 FUN_710393fb30(s64 param_1) { return param_1 + 3; }
 
 // 0x710393fe00 — deref u32 (32 bytes)
-u32 FUN_710393fe00(u32 *param_1) { return *param_1; }
+u64 FUN_710393fe00(u32 *param_1) { return *param_1; }
 
 // 0x7103940800 — return *param_1 >> 0x10 & 3 (32 bytes)
 u64 FUN_7103940800(u64 *param_1) { return *param_1 >> 0x10 & 3; }
 
 // 0x7103941a10 — return param_1 & 1 (32 bytes)
-u32 FUN_7103941a10(u32 param_1) { return param_1 & 1; }
+u64 FUN_7103941a10(u32 param_1) { return param_1 & 1; }
 
 // 0x7103941a50 — return *param_1 >> 0xe & 1 (32 bytes)
 u64 FUN_7103941a50(u64 *param_1) { return *param_1 >> 0xe & 1; }

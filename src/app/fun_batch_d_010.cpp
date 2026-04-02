@@ -158,13 +158,13 @@ u64 FUN_71039533b0(s64 param_1) { return *(u64*)(param_1 + 8) & 0xffffffffffff00
 void FUN_7103957d60(void) { return; }
 
 // 0x710392f020 — call FUN_710392f0d0 and return bit 0 (48 bytes)
-u32 FUN_710392f020(void)
+u64 FUN_710392f020(void)
 {
     return FUN_710392f0d0(DAT_7106dd3f1e, 0) & 1;
 }
 
 // 0x71039737f0 — vtable call at 0x70 on nested field, return 0 (48 bytes)
-u64 FUN_71039737f0(s64 param_1)
+u32 FUN_71039737f0(s64 param_1)
 {
     s64 lVar1 = *(s64*)(*(s64*)(param_1 + 8) + 0x18);
     (*(void(*)(s64))(*(s64*)(lVar1 + 0x70)))(lVar1 + 0x90);
@@ -179,7 +179,7 @@ u64 FUN_7103978f20(s64 param_1, s64 param_2, u64 param_3)
 }
 
 // 0x710397c090 — store u32 at +0x84, vtable call at +0x40, return 0 (48 bytes)
-u64 FUN_710397c090(u32 param_1, s64 *param_2)
+u32 FUN_710397c090(u32 param_1, s64 *param_2)
 {
     *(u32*)((s64)param_2 + 0x84) = param_1;
     (*(void(*)(u32))(*(s64*)(*(s64*)param_2 + 0x40)))(*(u32*)((s64)param_2 + 0x7c));

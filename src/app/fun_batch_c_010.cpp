@@ -126,7 +126,7 @@ u64 FUN_71021c4000(app::BattleObjectModuleAccessor *param_1, s64 param_2)
 }
 
 // 0x71021c7c1c
-u64 FUN_71021c7c1c(app::BattleObjectModuleAccessor *param_1, s64 param_2, bool param_3, bool param_4)
+u32 FUN_71021c7c1c(app::BattleObjectModuleAccessor *param_1, s64 param_2, bool param_3, bool param_4)
 {
     u64 in_x10;
     *(u64 *)(param_2 + 0x10) = in_x10;
@@ -252,7 +252,7 @@ u64 FUN_71021e1290(app::Fighter *param_1, s64 param_2, bool param_3)
 }
 
 // 0x71021e1690
-u64 FUN_71021e1690(s64 param_1, s64 param_2)
+u32 FUN_71021e1690(s64 param_1, s64 param_2)
 {
     s64 lVar1;
     u64 in_x10;
@@ -289,7 +289,7 @@ u32 FUN_71021f72f0(void)
 }
 
 // 0x71021fabc4
-u64 FUN_71021fabc4(s64 param_1)
+u32 FUN_71021fabc4(s64 param_1)
 {
     s64 *plVar1 = *(s64 **)(param_1 + 0x208);
     (**(void (**)())(*plVar1 + 0xc8))();
@@ -297,14 +297,14 @@ u64 FUN_71021fabc4(s64 param_1)
 }
 
 // 0x71021fbaa0
-u64 FUN_71021fbaa0(s64 param_1)
+u32 FUN_71021fbaa0(s64 param_1)
 {
     FUN_71015b08c0(*(u64 *)(*(s64 *)(*(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0) + 0x190) + 0x220));
     return 0;
 }
 
 // 0x71021fc278
-u64 FUN_71021fc278(s64 param_1, s64 *param_2)
+u32 FUN_71021fc278(s64 param_1, s64 *param_2)
 {
     *(u16 *)(param_1 + 0x150) = 1;
     *(u8 *)(param_1 + 0x152) = 0;
@@ -334,7 +334,7 @@ u32 FUN_71021ff230(lua_State *param_1)
 }
 
 // 0x71022004e0
-u64 FUN_71022004e0(s64 param_1)
+u32 FUN_71022004e0(s64 param_1)
 {
     s64 *plVar1;
     plVar1 = *(s64 **)(*(s64 *)(*(s64 *)(*(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0) + 0x190) + 0x220) + 0x100);
@@ -343,7 +343,7 @@ u64 FUN_71022004e0(s64 param_1)
 }
 
 // 0x7102203b00
-u64 FUN_7102203b00(s64 param_1)
+u32 FUN_7102203b00(s64 param_1)
 {
     FUN_71015b3a40(*(u64 *)(*(s64 *)(*(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0) + 0x190) + 0x220));
     return 0;
@@ -365,7 +365,7 @@ u32 FUN_7102208d00(lua_State *param_1)
 }
 
 // 0x7102208df0
-u64 FUN_7102208df0(s64 param_1)
+u32 FUN_7102208df0(s64 param_1)
 {
     s64 *plVar1;
     plVar1 = *(s64 **)(*(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0) + 0x78);

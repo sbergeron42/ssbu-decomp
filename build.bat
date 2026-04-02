@@ -22,6 +22,21 @@ for %%f in (build\*.o) do (
     python tools\fix_movz_to_orr.py "%%f"
 )
 
+REM Post-process: NX Clang places mov x29,sp immediately after stp in prologue,
+REM but upstream Clang 8.0.0 may schedule it later. Patch to match.
+echo Fixing prologue scheduling...
+for %%f in (build\*.o) do (
+    python tools\fix_prologue.py "%%f"
+)
+
+REM Post-process: Fix epilogue scheduling in batch files (whitelist-based).
+REM Generate whitelist first, then apply.
+python tools\gen_epilogue_list.py
+echo Fixing epilogue scheduling...
+for %%f in (build\fun_batch_c_*.o build\fun_batch_d_*.o) do (
+    python tools\fix_epilogue.py "%%f"
+)
+
 echo.
 echo Disassembly:
 for %%f in (build\*.o) do (

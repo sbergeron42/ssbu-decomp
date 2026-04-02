@@ -56,7 +56,7 @@ u64 FUN_7103366688(s64 *param_1)
 }
 
 // 0x7103715068 — indirect call through code pointer (104 bytes)
-u32 FUN_7103715068(void (*param_1)())
+u64 FUN_7103715068(void (*param_1)())
 {
     u32 uVar1 = ((u32 (*)())param_1)();
     return uVar1;
@@ -81,7 +81,7 @@ void FUN_7103579b10(s64 param_1, u8 param_2)
 }
 
 // 0x7103444090 — vtable call at 0x108 with flag, return negated (112 bytes)
-u32 FUN_7103444090(u64 param_1, s64 param_2)
+u64 FUN_7103444090(u64 param_1, s64 param_2)
 {
     s64 *plVar2 = *(s64 **)(*(s64 *)(param_2 + 0x20) + 0x50);
     u32 uVar1 = (*(u32 (*)(s64 *, u32))(*plVar2 + 0x108))(plVar2, 0x20000006);
@@ -121,7 +121,7 @@ u8 FUN_71034d9c70(u64 param_1, s64 param_2)
 }
 
 // 0x7103999620 — memcpy 0x1b4 bytes from *param_4 to param_2 (128 bytes)
-u64 FUN_7103999620(u64 param_1, void *param_2, u64 param_3, u64 *param_4)
+u32 FUN_7103999620(u64 param_1, void *param_2, u64 param_3, u64 *param_4)
 {
     memcpy(param_2, (void *)*param_4, 0x1b4);
     return 0;

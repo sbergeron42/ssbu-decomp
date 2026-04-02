@@ -19,10 +19,10 @@ extern void  FUN_71037b5780(u64, u64);
 // ---- Functions ---------------------------------------------------------------
 
 // 0x7103716afc — call function pointer param_1, return result (36 bytes)
-u32 FUN_7103716afc(u32 (*param_1)()) { return param_1(); }
+u64 FUN_7103716afc(u32 (*param_1)()) { return param_1(); }
 
 // 0x7103721588 — call function pointer param_1, return result (24 bytes)
-u32 FUN_7103721588(u32 (*param_1)()) { return param_1(); }
+u64 FUN_7103721588(u32 (*param_1)()) { return param_1(); }
 
 // 0x71037af250 — init four sub-objects at fixed offsets (64 bytes)
 void FUN_71037af250(s64 param_1)

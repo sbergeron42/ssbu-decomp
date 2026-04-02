@@ -48,7 +48,7 @@ extern s64 DAT_7105293560;
 void FUN_71039280c0(u64 param_1, u64 param_2) { FUN_7103928650(param_1, param_2); }
 
 // 0x71039281f0 — return FUN_7103928220(p1) & 1 (48 bytes)
-u32 FUN_71039281f0(u64 param_1) { return FUN_7103928220(param_1) & 1; }
+u64 FUN_71039281f0(u64 param_1) { return FUN_7103928220(param_1) & 1; }
 
 // 0x7103928450 — wrapper: FUN_7103928590(p1) (48 bytes)
 void FUN_7103928450(u64 param_1) { FUN_7103928590(param_1); }
@@ -81,7 +81,7 @@ void FUN_710392b720(u64 param_1) { FUN_710392c130(param_1); }
 u64 FUN_710392c480(u64 param_1) { return *(u64*)(s64)FUN_710392c680(param_1); }
 
 // 0x710392c4b0 — deref u32 from FUN_710392c630(param_1) (48 bytes)
-u32 FUN_710392c4b0(u64 param_1) { return *(u32*)(s64)FUN_710392c630(param_1); }
+u64 FUN_710392c4b0(u64 param_1) { return *(u32*)(s64)FUN_710392c630(param_1); }
 
 // 0x710392d900 — update DAT_7105293560 via FUN_710392da60 (48 bytes)
 void FUN_710392d900(void) { DAT_7105293560 = FUN_710392da60(DAT_7105293560); }
@@ -99,7 +99,7 @@ void FUN_710392ecf0(u64 param_1) { FUN_710392ed20(param_1); }
 void FUN_710392ed20(s64 param_1) { FUN_710392ed50((void*)(param_1 + 0xa0)); }
 
 // 0x710392f0a0 — return FUN_710392f0d0(p+0x9c, 2) & 1 (48 bytes)
-u32 FUN_710392f0a0(s64 param_1) { return FUN_710392f0d0((void*)(param_1 + 0x9c), 2) & 1; }
+u64 FUN_710392f0a0(s64 param_1) { return FUN_710392f0d0((void*)(param_1 + 0x9c), 2) & 1; }
 
 // 0x710392fcd0 — wrapper: FUN_710392fdb0(param_1) (48 bytes)
 void FUN_710392fcd0(u64 param_1) { FUN_710392fdb0(param_1); }
@@ -139,7 +139,7 @@ void FUN_7103931350(u64 param_1) { FUN_7103931b70(param_1); }
 u64 FUN_71039323c0(u64 param_1) { return *(u64*)(s64)FUN_7103932470(param_1); }
 
 // 0x71039323f0 — deref u32 from FUN_7103932420(param_1) (48 bytes)
-u32 FUN_71039323f0(u64 param_1) { return *(u32*)(s64)FUN_7103932420(param_1); }
+u64 FUN_71039323f0(u64 param_1) { return *(u32*)(s64)FUN_7103932420(param_1); }
 
 // 0x7103932ee0 — wrapper: FUN_7103933050(p1, p2) (48 bytes)
 void FUN_7103932ee0(u64 param_1, u64 param_2) { FUN_7103933050(param_1, param_2); }
