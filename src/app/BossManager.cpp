@@ -20,67 +20,34 @@ namespace app::lua_bind {
     reinterpret_cast<void(*)(void*, ##__VA_ARGS__)>((*reinterpret_cast<void***>(obj))[(off)/8])(obj, ##__VA_ARGS__)
 
 // 7102145890 — framed loop: notify boss defeat for entries with hash 0x18e
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
 void BossManager__notify_on_boss_defeat_impl(BossManager* bm, s32 id) {
-    asm("str x21, [sp, #-0x30]!\n"
-        "stp x20, x19, [sp, #0x10]\n"
-        "stp x29, x30, [sp, #0x20]\n"
-        "add x29, sp, #0x20\n"
-        "cmp w1, #0x4d\n"
-        "b.ne 9f\n"
-        "ldr x8, [x0, #0x8]\n"
-        "ldp x19, x20, [x8, #0x110]\n"
-        "cmp x19, x20\n"
-        "b.eq 9f\n"
-        "adrp x21, DAT_7104f73b70\n"
-        "add x21, x21, :lo12:DAT_7104f73b70\n"
-        // Loop body
-        "0:\n"
-        "ldr x0, [x19]\n"
-        "cbz x0, 1f\n"
-        "ldr x8, [x0]\n"
-        "ldr x8, [x8, #0x10]\n"
-        "blr x8\n"
-        "tbz w0, #0, 2f\n"
-        "1:\n"
-        "mov x0, x21\n"
-        "b 3f\n"
-        "2:\n"
-        "ldr x0, [x19]\n"
-        "3:\n"
-        "ldr x8, [x0]\n"
-        "ldr x8, [x8, #0x30]\n"
-        "blr x8\n"
-        "cmp w0, #0x18e\n"
-        "b.ne 8f\n"
+    if (id != 0x4d) return;
+    auto* inner = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(bm) + 0x8);
+    u8** begin = *reinterpret_cast<u8***>(inner + 0x110);
+    u8** end = *reinterpret_cast<u8***>(inner + 0x118);
+    for (u8** it = begin; it != end; it = reinterpret_cast<u8**>(reinterpret_cast<u8*>(it) + 0x10)) {
+        // Resolve entity: if null or expired, use default singleton
+        void* entity;
+        void* handle = *reinterpret_cast<void**>(it);
+        if (handle && !reinterpret_cast<bool(*)(void*)>((*reinterpret_cast<void***>(handle))[0x10/8])(handle)) {
+            entity = *reinterpret_cast<void**>(it);
+        } else {
+            entity = &DAT_7104f73b70;
+        }
+        // Check hash == 0x18e
+        u32 hash = reinterpret_cast<u32(*)(void*)>((*reinterpret_cast<void***>(entity))[0x30/8])(entity);
+        if (hash != 0x18e) continue;
         // Resolve again for action
-        "ldr x0, [x19]\n"
-        "cbz x0, 4f\n"
-        "ldr x8, [x0]\n"
-        "ldr x8, [x8, #0x10]\n"
-        "blr x8\n"
-        "tbz w0, #0, 5f\n"
-        "4:\n"
-        "mov x0, x21\n"
-        "b 6f\n"
-        "5:\n"
-        "ldr x0, [x19]\n"
-        "6:\n"
-        "ldr x8, [x0]\n"
-        "ldr x8, [x8, #0x50]\n"
-        "blr x8\n"
-        "8:\n"
-        "add x19, x19, #0x10\n"
-        "cmp x20, x19\n"
-        "b.ne 0b\n"
-        "9:\n"
-        "ldp x29, x30, [sp, #0x20]\n"
-        "ldp x20, x19, [sp, #0x10]\n"
-        "ldr x21, [sp], #0x30\n"
-        "ret\n");
+        void* entity2;
+        void* handle2 = *reinterpret_cast<void**>(it);
+        if (handle2 && !reinterpret_cast<bool(*)(void*)>((*reinterpret_cast<void***>(handle2))[0x10/8])(handle2)) {
+            entity2 = *reinterpret_cast<void**>(it);
+        } else {
+            entity2 = &DAT_7104f73b70;
+        }
+        reinterpret_cast<void(*)(void*)>((*reinterpret_cast<void***>(entity2))[0x50/8])(entity2);
+    }
 }
-#endif
 
 // 7102145950 — cmp w1,#0x4d; b.ne ret; ldr x0,[x0,#8]; mov w1,#0x18e; b external
 void BossManager__notify_on_boss_keyoff_bgm_impl(BossManager* bm, s32 id) {

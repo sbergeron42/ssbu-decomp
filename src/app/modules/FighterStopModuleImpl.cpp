@@ -3,116 +3,62 @@
 namespace app::lua_bind {
 
 // 71020ad720 — is_damage_stop: check status range, dispatch to work module query
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
 bool FighterStopModuleImpl__is_damage_stop_impl(BattleObjectModuleAccessor* a) {
-    asm(
-        "str x19, [sp, #-0x20]!\n"
-        "stp x29, x30, [sp, #0x10]\n"
-        "add x29, sp, #0x10\n"
-        "ldr x19, [x0, #0x90]\n"
-        "ldr x8, [x19, #0x8]\n"
-        "ldr x0, [x8, #0x40]\n"
-        "ldr x8, [x0]\n"
-        "ldr x8, [x8, #0x110]\n"
-        "blr x8\n"
-        "cmp w0, #0xc7\n"
-        "b.gt 3f\n"
-        "sub w8, w0, #0x47\n"
-        "cmp w8, #0x5\n"
-        "b.cs 1f\n"
-        "ldr x8, [x19, #0x8]\n"
-        "ldr x0, [x8, #0x50]\n"
-        "ldr x8, [x0]\n"
-        "ldr x8, [x8, #0x108]\n"
-        "mov w1, #0xf\n"
-        "movk w1, #0x2100, lsl #16\n"
-        "blr x8\n"
-        "tbnz w0, #0, 2f\n"
-        "1:\n"
-        "ldr x8, [x19]\n"
-        "ldr x1, [x8, #0xa0]\n"
-        "mov x0, x19\n"
-        "ldp x29, x30, [sp, #0x10]\n"
-        "ldr x19, [sp], #0x20\n"
-        "br x1\n"
-        "3:\n"
-        "cmp w0, #0xc8\n"
-        "b.eq 2f\n"
-        "cmp w0, #0x149\n"
-        "b.eq 2f\n"
-        "cmp w0, #0x14c\n"
-        "b.ne 1b\n"
-        "2:\n"
-        "ldr x8, [x19, #0x8]\n"
-        "ldr x0, [x8, #0x50]\n"
-        "ldr x8, [x0]\n"
-        "ldr x8, [x8, #0x98]\n"
-        "mov w1, #0x6\n"
-        "movk w1, #0x1100, lsl #16\n"
-        "blr x8\n"
-        "ldp x29, x30, [sp, #0x10]\n"
-        "cmp w0, #0x0\n"
-        "cset w0, gt\n"
-        "ldr x19, [sp], #0x20\n"
-        "ret\n"
-    );
+    auto* stop = reinterpret_cast<u8*>(*reinterpret_cast<void**>(reinterpret_cast<u8*>(a) + 0x90));
+    auto* chain = *reinterpret_cast<u8**>(stop + 0x8);
+    // Get current status
+    auto* status_mod = *reinterpret_cast<void**>(chain + 0x40);
+    s32 status = reinterpret_cast<s32(*)(void*)>((*reinterpret_cast<void***>(status_mod))[0x110/8])(status_mod);
+    bool is_damage_range = false;
+    if (status > 0xc7) {
+        is_damage_range = (status == 0xc8 || status == 0x149 || status == 0x14c);
+    } else {
+        u32 sub = static_cast<u32>(status - 0x47);
+        if (sub < 5) {
+            // Check work module flag
+            auto* work = *reinterpret_cast<void**>(chain + 0x50);
+            bool flag = reinterpret_cast<bool(*)(void*, u32)>((*reinterpret_cast<void***>(work))[0x108/8])(work, 0x2100000fu);
+            if (flag) is_damage_range = true;
+        }
+    }
+    if (!is_damage_range) {
+        // Fall through to base class is_damage_stop
+        auto fn = reinterpret_cast<bool(*)(void*)>((*reinterpret_cast<void***>(stop))[0xa0/8]);
+        return fn(stop);
+    }
+    // Get work module value
+    auto* work2 = *reinterpret_cast<void**>(chain + 0x50);
+    s32 val = reinterpret_cast<s32(*)(void*, u32)>((*reinterpret_cast<void***>(work2))[0x98/8])(work2, 0x11000006u);
+    return val > 0;
 }
-#endif
 
 // 71020ad7e0 — get_damage_stop_frame: same status check, tail call to work module
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
 void FighterStopModuleImpl__get_damage_stop_frame_impl(BattleObjectModuleAccessor* a) {
-    asm(
-        "str x19, [sp, #-0x20]!\n"
-        "stp x29, x30, [sp, #0x10]\n"
-        "add x29, sp, #0x10\n"
-        "ldr x19, [x0, #0x90]\n"
-        "ldr x8, [x19, #0x8]\n"
-        "ldr x0, [x8, #0x40]\n"
-        "ldr x8, [x0]\n"
-        "ldr x8, [x8, #0x110]\n"
-        "blr x8\n"
-        "cmp w0, #0xc7\n"
-        "b.gt 3f\n"
-        "sub w8, w0, #0x47\n"
-        "cmp w8, #0x5\n"
-        "b.cs 1f\n"
-        "ldr x8, [x19, #0x8]\n"
-        "ldr x0, [x8, #0x50]\n"
-        "ldr x8, [x0]\n"
-        "ldr x8, [x8, #0x108]\n"
-        "mov w1, #0xf\n"
-        "movk w1, #0x2100, lsl #16\n"
-        "blr x8\n"
-        "tbnz w0, #0, 2f\n"
-        "1:\n"
-        "ldr x8, [x19]\n"
-        "ldr x1, [x8, #0xc8]\n"
-        "mov x0, x19\n"
-        "ldp x29, x30, [sp, #0x10]\n"
-        "ldr x19, [sp], #0x20\n"
-        "br x1\n"
-        "3:\n"
-        "cmp w0, #0xc8\n"
-        "b.eq 2f\n"
-        "cmp w0, #0x149\n"
-        "b.eq 2f\n"
-        "cmp w0, #0x14c\n"
-        "b.ne 1b\n"
-        "2:\n"
-        "ldr x8, [x19, #0x8]\n"
-        "ldr x0, [x8, #0x50]\n"
-        "mov w1, #0x6\n"
-        "movk w1, #0x1100, lsl #16\n"
-        "ldp x29, x30, [sp, #0x10]\n"
-        "ldr x8, [x0]\n"
-        "ldr x2, [x8, #0x98]\n"
-        "ldr x19, [sp], #0x20\n"
-        "br x2\n"
-    );
+    auto* stop = reinterpret_cast<u8*>(*reinterpret_cast<void**>(reinterpret_cast<u8*>(a) + 0x90));
+    auto* chain = *reinterpret_cast<u8**>(stop + 0x8);
+    // Get current status
+    auto* status_mod = *reinterpret_cast<void**>(chain + 0x40);
+    s32 status = reinterpret_cast<s32(*)(void*)>((*reinterpret_cast<void***>(status_mod))[0x110/8])(status_mod);
+    bool is_damage_range = false;
+    if (status > 0xc7) {
+        is_damage_range = (status == 0xc8 || status == 0x149 || status == 0x14c);
+    } else {
+        u32 sub = static_cast<u32>(status - 0x47);
+        if (sub < 5) {
+            auto* work = *reinterpret_cast<void**>(chain + 0x50);
+            bool flag = reinterpret_cast<bool(*)(void*, u32)>((*reinterpret_cast<void***>(work))[0x108/8])(work, 0x2100000fu);
+            if (flag) is_damage_range = true;
+        }
+    }
+    if (!is_damage_range) {
+        // Fall through to base class get_damage_stop_frame
+        auto fn = reinterpret_cast<void(*)(void*)>((*reinterpret_cast<void***>(stop))[0xc8/8]);
+        fn(stop);
+        return;
+    }
+    // Tail call to work module get value
+    auto* work2 = *reinterpret_cast<void**>(chain + 0x50);
+    reinterpret_cast<void(*)(void*, u32)>((*reinterpret_cast<void***>(work2))[0x98/8])(work2, 0x11000006u);
 }
-#endif
 
 } // namespace app::lua_bind

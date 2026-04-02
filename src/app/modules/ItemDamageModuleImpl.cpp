@@ -1,103 +1,50 @@
 #include "app/BattleObjectModuleAccessor.h"
 
+#define DMG(acc) (acc->damage_module)
+#define VT(mod) (*reinterpret_cast<void***>(mod))
+
 namespace app::lua_bind {
 
 // 71020d1b20 — hash-switch on field name, call vtable[0x188/8] (refresh), return float field
 // hash 0x2369a2644 → damage_module+0x44
 // hash 0xe085e_517c → damage_module+0x48
 // hash 0xa_c3a7_d97e → damage_module+0x58
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
 f32 ItemDamageModuleImpl__damage_log_value_float_impl(BattleObjectModuleAccessor* a, u64 hash) {
-    asm(
-        "stp x29, x30, [sp, #-0x10]!\n"
-        "mov x29, sp\n"
-        "ldr x0, [x0, #0xa8]\n"
-        "mov x9, #0x2644\n"
-        "movk x9, #0x369a, lsl #16\n"
-        "and x8, x1, #0xffffffffff\n"
-        "movk x9, #0x2, lsl #32\n"
-        "cmp x8, x9\n"
-        "b.eq 1f\n"
-        "mov x9, #0x517c\n"
-        "movk x9, #0xe085, lsl #16\n"
-        "movk x9, #0xe, lsl #32\n"
-        "cmp x8, x9\n"
-        "b.eq 2f\n"
-        "mov x9, #0xd97e\n"
-        "movk x9, #0xc3a7, lsl #16\n"
-        "movk x9, #0xa, lsl #32\n"
-        "cmp x8, x9\n"
-        "b.ne 3f\n"
-        "ldr x8, [x0]\n"
-        "ldr x8, [x8, #0x188]\n"
-        "blr x8\n"
-        "ldr s0, [x0, #0x58]\n"
-        "ldp x29, x30, [sp], #0x10\n"
-        "ret\n"
-        "1:\n"
-        "ldr x8, [x0]\n"
-        "ldr x8, [x8, #0x188]\n"
-        "blr x8\n"
-        "ldr s0, [x0, #0x44]\n"
-        "ldp x29, x30, [sp], #0x10\n"
-        "ret\n"
-        "2:\n"
-        "ldr x8, [x0]\n"
-        "ldr x8, [x8, #0x188]\n"
-        "blr x8\n"
-        "ldr s0, [x0, #0x48]\n"
-        "ldp x29, x30, [sp], #0x10\n"
-        "ret\n"
-        "3:\n"
-        "fmov s0, wzr\n"
-        "ldp x29, x30, [sp], #0x10\n"
-        "ret\n"
-    );
+    auto* m = DMG(a);
+    u64 h = hash & 0xffffffffffULL;
+    if (h == 0xac3a7d97eULL) {
+        void* log = reinterpret_cast<void*(*)(void*)>(VT(m)[0x188/8])(m);
+        asm("");
+        return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(log) + 0x58);
+    } else if (h == 0xe085e517cULL) {
+        void* log = reinterpret_cast<void*(*)(void*)>(VT(m)[0x188/8])(m);
+        asm("");
+        return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(log) + 0x48);
+    } else if (h == 0x2369a2644ULL) {
+        void* log = reinterpret_cast<void*(*)(void*)>(VT(m)[0x188/8])(m);
+        asm("");
+        return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(log) + 0x44);
+    }
+    return 0.0f;
 }
-#endif
 
 // 71020d1bc0 — hash-switch on field name, return int field
 // hash 0xf_2156_2598 → damage_module+0x84
 // hash 0x9_232d_562b → damage_module+0x80
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
 u32 ItemDamageModuleImpl__damage_log_value_int_impl(BattleObjectModuleAccessor* a, u64 hash) {
-    asm(
-        "stp x29, x30, [sp, #-0x10]!\n"
-        "mov x29, sp\n"
-        "ldr x0, [x0, #0xa8]\n"
-        "mov x9, #0x2598\n"
-        "movk x9, #0x2156, lsl #16\n"
-        "and x8, x1, #0xffffffffff\n"
-        "movk x9, #0xf, lsl #32\n"
-        "cmp x8, x9\n"
-        "b.eq 1f\n"
-        "mov x9, #0x562b\n"
-        "movk x9, #0x232d, lsl #16\n"
-        "movk x9, #0x9, lsl #32\n"
-        "cmp x8, x9\n"
-        "b.ne 2f\n"
-        "ldr x8, [x0]\n"
-        "ldr x8, [x8, #0x188]\n"
-        "blr x8\n"
-        "ldr w0, [x0, #0x80]\n"
-        "ldp x29, x30, [sp], #0x10\n"
-        "ret\n"
-        "1:\n"
-        "ldr x8, [x0]\n"
-        "ldr x8, [x8, #0x188]\n"
-        "blr x8\n"
-        "ldr w0, [x0, #0x84]\n"
-        "ldp x29, x30, [sp], #0x10\n"
-        "ret\n"
-        "2:\n"
-        "mov w0, wzr\n"
-        "ldp x29, x30, [sp], #0x10\n"
-        "ret\n"
-    );
+    auto* m = DMG(a);
+    u64 h = hash & 0xffffffffffULL;
+    if (h == 0x9232d562bULL) {
+        void* log = reinterpret_cast<void*(*)(void*)>(VT(m)[0x188/8])(m);
+        asm("");
+        return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(log) + 0x80);
+    } else if (h == 0xf21562598ULL) {
+        void* log = reinterpret_cast<void*(*)(void*)>(VT(m)[0x188/8])(m);
+        asm("");
+        return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(log) + 0x84);
+    }
+    return 0;
 }
-#endif
 
 // 71020d1af0 — x0 (accessor) unused; loads global item param singleton (adrp),
 //   reads float s2 at +0x73068, returns (val1 <= 0.0f) & (s2 <= val2)

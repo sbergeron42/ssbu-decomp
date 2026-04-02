@@ -9,6 +9,12 @@ struct Item;
 struct LinkEventCaptureItem;
 struct LinkEventTouchItem;
 
+extern "C" u64 FUN_71015b4e40(Item*, u32);
+extern "C" f32 FUN_71015b3de0(Item*, u32);
+extern "C" bool FUN_71015b4fc0(Item*);
+extern "C" void FUN_71015aba90(Item*, u32, u32);
+extern "C" void FUN_71015b0590(Item*);
+
 // LargeRet forces x8 reservation (indirect return), making vtable temp use x9
 struct LargeRet { u64 a, b, c; };
 
@@ -47,48 +53,25 @@ u32 Item__owner_id_impl(Item* item) {
 }
 
 // 71020f4600 — if param_id > 2, return error hash; else tail-call FUN_71015b4e40
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
 u64 Item__property_param_int_as_hash_impl(Item* item, u32 param_id) {
-    asm(
-        "cmp w1, #0x2\n"
-        "b.hi 1f\n"
-        "b FUN_71015b4e40\n"
-        "1:\n"
-        "mov x0, #0x7a80\n"
-        "movk x0, #0xfb99, lsl #16\n"
-        "movk x0, #0x7, lsl #32\n"
-        "ret\n"
-    );
+    if (param_id > 2) return 0x7fb997a80ULL;
+    return FUN_71015b4e40(item, param_id);
 }
-#endif
 
 // 71020f4620 — pure tail call
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
 f32 Item__specialized_param_float_impl(Item* item, u32 param_id) {
-    asm("b FUN_71015b3de0\n");
+    return FUN_71015b3de0(item, param_id);
 }
-#endif
 
 // 71020f4700 — pure tail call
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
 bool Item__is_eatable_impl(Item* item) {
-    asm("b FUN_71015b4fc0\n");
+    return FUN_71015b4fc0(item);
 }
-#endif
 
 // 71020f4710 — zero w2 then tail call
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
 void Item__throw_attack_impl(Item* item, u32 p1) {
-    asm(
-        "mov w2, wzr\n"
-        "b FUN_71015aba90\n"
-    );
+    FUN_71015aba90(item, p1, 0);
 }
-#endif
 
 // --- LinkEventCaptureItem ---
 
@@ -244,99 +227,46 @@ u32 Item__common_param_int_impl(Item* item, u32 param_id) {
 #endif
 
 // 71020f4630 — call vtable[0x18](item[0x248], item, param_id, &out); return out if ok else 0
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
 u32 Item__specialized_param_int_impl(Item* item, u32 param_id) {
-    asm(
-        "sub sp,sp,#0x20\n"
-        "stp x29,x30,[sp, #0x10]\n"
-        "add x29,sp,#0x10\n"
-        "mov w2,w1\n"
-        "mov x1,x0\n"
-        "ldr x0,[x0, #0x248]\n"
-        "ldr x8,[x0]\n"
-        "ldr x8,[x8, #0x18]\n"
-        "sub x3,x29,#0x4\n"
-        "blr x8\n"
-        "ldur w8,[x29, #-0x4]\n"
-        "ldp x29,x30,[sp, #0x10]\n"
-        "tst w0,#0x1\n"
-        "csel w0,w8,wzr,ne\n"
-        "add sp,sp,#0x20\n"
-        "ret\n"
-    );
+    u32 out;
+    void* obj = *reinterpret_cast<void**>(reinterpret_cast<u8*>(item) + 0x248);
+    bool ok = reinterpret_cast<bool(*)(void*, Item*, u32, u32*)>(VT(obj)[0x18/8])(obj, item, param_id, &out);
+    return ok ? out : 0;
 }
-#endif
 
 // 71020f4680 — check item state via vtable[0x110] on +0xd8;
-//   if state==2 or (allow_had && state==8) → return 1
+//   if state==2 or (allow_had && state==8) -> return 1
 //   else tail-call vtable[0x70](accessor+0x168, 4) as u32
-// NX: callee-saved {x20,x19} with NX prologue ordering; tail br x2
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
 bool Item__is_had_impl(Item* item, u32 allow_had) {
-    asm(
-        "stp x20,x19,[sp, #-0x20]!\n"
-        "stp x29,x30,[sp, #0x10]\n"
-        "add x29,sp,#0x10\n"
-        "mov x19,x0\n"
-        "ldr x0,[x0, #0xd8]\n"
-        "ldr x8,[x0]\n"
-        "ldr x8,[x8, #0x110]\n"
-        "mov w20,w1\n"
-        "blr x8\n"
-        "cmp w0,#0x2\n"
-        "b.eq 1f\n"
-        "tbz w20,#0x0,2f\n"
-        "ldr x0,[x19, #0xd8]\n"
-        "ldr x8,[x0]\n"
-        "ldr x8,[x8, #0x110]\n"
-        "blr x8\n"
-        "cmp w0,#0x8\n"
-        "b.ne 2f\n"
-        "1:\n"
-        "ldp x29,x30,[sp, #0x10]\n"
-        "orr w0,wzr,#1\n"
-        "ldp x20,x19,[sp], #0x20\n"
-        "ret\n"
-        "2:\n"
-        "ldr x0,[x19, #0x168]\n"
-        "ldr x8,[x0]\n"
-        "orr w1,wzr,#4\n"
-        "ldp x29,x30,[sp, #0x10]\n"
-        "ldr x2,[x8, #0x70]\n"
-        "ldp x20,x19,[sp], #0x20\n"
-        "br x2\n"
-    );
+    void* obj = *reinterpret_cast<void**>(reinterpret_cast<u8*>(item) + 0xd8);
+    u32 state = reinterpret_cast<u32(*)(void*)>(VT(obj)[0x110/8])(obj);
+    if (state == 2) return true;
+    if (allow_had & 1) {
+        void* obj2 = *reinterpret_cast<void**>(reinterpret_cast<u8*>(item) + 0xd8);
+        state = reinterpret_cast<u32(*)(void*)>(VT(obj2)[0x110/8])(obj2);
+        if (state == 8) return true;
+    }
+    void* m = *reinterpret_cast<void**>(reinterpret_cast<u8*>(item) + 0x168);
+    return reinterpret_cast<bool(*)(void*, u32)>(VT(m)[0x70/8])(m, 4);
 }
-#endif
 
 // 71020f4720 — b FUN_71015b0590 (pure tail call)
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
 void Item__fall_impl(Item* item) {
-    asm("b FUN_71015b0590\n");
+    FUN_71015b0590(item);
 }
-#endif
 
 // --- LinkEventCaptureItem store_l2c_table (256B) ---
 
-// 71020b6100: ldr x9,[x0]; ldr x2,[x9,#0x30]; br x2  (indirect tail call via x9)
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
+// 71020b6100: vtable[0x30/8] tail call (original uses x9 for vtable temp)
 void LinkEventCaptureItem__store_l2c_table_impl_71020b6100(void* ev, void* table) {
-    asm("ldr x9, [x0]\nldr x2, [x9, #0x30]\nbr x2\n");
+    reinterpret_cast<void(*)(void*, void*)>(VT(ev)[0x30/8])(ev, table);
 }
-#endif
 
 // --- LinkEventTouchItem store_l2c_table (224B) ---
 
-// 71020f2ea0: ldr x9,[x0]; ldr x2,[x9,#0x30]; br x2  (indirect tail call via x9)
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
+// 71020f2ea0: vtable[0x30/8] tail call (original uses x9 for vtable temp)
 void LinkEventTouchItem__store_l2c_table_impl_71020f2ea0(void* ev, void* table) {
-    asm("ldr x9, [x0]\nldr x2, [x9, #0x30]\nbr x2\n");
+    reinterpret_cast<void(*)(void*, void*)>(VT(ev)[0x30/8])(ev, table);
 }
-#endif
 
 } // namespace app::lua_bind

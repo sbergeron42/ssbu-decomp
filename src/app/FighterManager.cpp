@@ -71,41 +71,19 @@ u32 FighterManager__get_final_actor_entry_id_impl(FighterManager* mgr) {
 }
 
 // 7102140f90 — get_fighter_entry (10 instructions, bounds check + indexed)
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
 void* FighterManager__get_fighter_entry_impl(FighterManager* mgr, u32 index) {
-    asm("cmp w1, #8\n"
-        "b.hs 0f\n"
-        "ldr x8, [x0]\n"
-        "lsl x9, x1, #0x20\n"
-        "add x8, x8, x9, asr #0x1d\n"
-        "ldr x0, [x8, #0x20]\n"
-        "ret\n"
-        "0:\n"
-        "stp x29, x30, [sp, #-0x10]!\n"
-        "mov x29, sp\n"
-        "bl FUN_71039c20a0\n");
+    if (index >= 8) { FUN_71039c20a0(); }
+    auto* data = *reinterpret_cast<u8**>(mgr);
+    return *reinterpret_cast<void**>(data + static_cast<u64>(index) * 8 + 0x20);
 }
-#endif
 
 // 7102140fc0 — get_fighter_information (11 instructions, bounds check + offset)
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
 void* FighterManager__get_fighter_information_impl(FighterManager* mgr, u32 index) {
-    asm("cmp w1, #8\n"
-        "b.hs 0f\n"
-        "ldr x8, [x0]\n"
-        "lsl x9, x1, #0x20\n"
-        "add x8, x8, x9, asr #0x1d\n"
-        "ldr x8, [x8, #0x20]\n"
-        "add x0, x8, #0xf0\n"
-        "ret\n"
-        "0:\n"
-        "stp x29, x30, [sp, #-0x10]!\n"
-        "mov x29, sp\n"
-        "bl FUN_71039c20a0\n");
+    if (index >= 8) { FUN_71039c20a0(); }
+    auto* data = *reinterpret_cast<u8**>(mgr);
+    auto* entry = *reinterpret_cast<u8**>(data + static_cast<u64>(index) * 8 + 0x20);
+    return entry + 0xf0;
 }
-#endif
 
 // 7102141910 — is_end_movie (7 instructions, pointer chain + cmp)
 bool FighterManager__is_end_movie_impl(FighterManager* mgr) {
@@ -380,115 +358,49 @@ void FighterManager__get_beat_point_diff_from_top_impl(FighterManager* mgr, u64 
 
 // 7102141450 — set_final_fear_face: reads/writes data+0x160, calls external
 extern "C" void FUN_7100674d80(void*, s32, s32);
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
 void FighterManager__set_final_fear_face_impl(FighterManager* mgr, s32 entry_id, s32 enable) {
-    asm("str x21, [sp, #-0x30]!\n"
-        "stp x20, x19, [sp, #0x10]\n"
-        "stp x29, x30, [sp, #0x20]\n"
-        "add x29, sp, #0x20\n"
-        "ldr x20, [x0]\n"
-        "ldr w8, [x20, #0x160]\n"
-        "mov w19, w2\n"
-        "and x21, x1, #0xffffffff\n"
-        "cmp w8, #1\n"
-        "b.lt 0f\n"
-        "mov w1, #-1\n"
-        "mov x0, x20\n"
-        "mov w2, wzr\n"
-        "bl FUN_7100674d80\n"
-        "str wzr, [x20, #0x160]\n"
-        "0:\n"
-        "cmp w19, #1\n"
-        "b.lt 1f\n"
-        "orr w2, wzr, #1\n"
-        "mov x0, x20\n"
-        "mov x1, x21\n"
-        "b 2f\n"
-        "1:\n"
-        "mov x0, x20\n"
-        "mov x1, x21\n"
-        "mov w2, wzr\n"
-        "2:\n"
-        "bl FUN_7100674d80\n"
-        "str w19, [x20, #0x160]\n"
-        "ldp x29, x30, [sp, #0x20]\n"
-        "ldp x20, x19, [sp, #0x10]\n"
-        "ldr x21, [sp], #0x30\n"
-        "ret\n");
+    auto* data = *reinterpret_cast<u8**>(mgr);
+    s32 field = *reinterpret_cast<s32*>(data + 0x160);
+    if (field >= 1) {
+        FUN_7100674d80(data, -1, 0);
+        *reinterpret_cast<s32*>(data + 0x160) = 0;
+    }
+    s32 flag = (enable >= 1) ? 1 : 0;
+    FUN_7100674d80(data, entry_id, flag);
+    *reinterpret_cast<s32*>(data + 0x160) = enable;
 }
-#endif
 
 // 71021414d0 — start_finalbg: search list for id, load SIMD const + global, call external
 extern "C" void FUN_710260a560(void*, void*, void*);
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
 void FighterManager__start_finalbg_impl(FighterManager* mgr, u32 id) {
-    asm("sub sp, sp, #0x30\n"
-        "str x19, [sp, #0x10]\n"
-        "stp x29, x30, [sp, #0x20]\n"
-        "add x29, sp, #0x20\n"
-        "ldr x8, [x0]\n"
-        "ldr x8, [x8, #0xb78]\n"
-        "ldr x19, [x8]\n"
-        "ldp x8, x9, [x19]\n"
-        "cmp x9, x8\n"
-        "b.ne 0f\n"
-        "b 1f\n"
-        "2:\n"
-        "add x8, x8, #0x8\n"
-        "cmp x9, x8\n"
-        "b.eq 1f\n"
-        "0:\n"
-        "ldr w10, [x8]\n"
-        "cmp w10, w1\n"
-        "b.ne 2b\n"
-        "cmp x9, x8\n"
-        "b.eq 1f\n"
-        "adrp x8, DAT_7104464700\n"
-        "ldr q1, [x8, :lo12:DAT_7104464700]\n"
-        "adrp x8, DAT_71053299d8\n"
-        "ldr x8, [x8, :lo12:DAT_71053299d8]\n"
-        "mov x2, sp\n"
-        "str q1, [sp]\n"
-        "ldr x0, [x8]\n"
-        "bl FUN_710260a560\n"
-        "orr w8, wzr, #1\n"
-        "strb w8, [x19, #0x18]\n"
-        "1:\n"
-        "ldp x29, x30, [sp, #0x20]\n"
-        "ldr x19, [sp, #0x10]\n"
-        "add sp, sp, #0x30\n"
-        "ret\n");
+    auto* data = *reinterpret_cast<u8**>(mgr);
+    auto* ptr1 = *reinterpret_cast<u8**>(data + 0xb78);
+    auto* ptr2 = *reinterpret_cast<u8**>(ptr1);
+    u32* begin = *reinterpret_cast<u32**>(ptr2);
+    u32* end = *reinterpret_cast<u32**>(reinterpret_cast<u8*>(ptr2) + 0x8);
+    for (u32* it = begin; it != end; it += 2) {
+        if (*it == id) {
+            // Found — load constant, call external, set flag
+            u8 buf[16];
+            *reinterpret_cast<__uint128_t*>(buf) = *reinterpret_cast<__uint128_t*>(DAT_7104464700);
+            FUN_710260a560(*reinterpret_cast<void**>(DAT_71053299d8), nullptr, buf);
+            ptr2[0x18] = 1;
+            return;
+        }
+    }
 }
-#endif
 
 // 7102141560 — exit_finalbg: check active flag, call external, clear flag
 extern "C" void FUN_710260b9b0(void*);
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
-void FighterManager__exit_finalbg_impl(FighterManager* /*mgr*/) {
-    asm(
-        "str x19, [sp, #-0x20]!\n"
-        "stp x29, x30, [sp, #0x10]\n"
-        "add x29, sp, #0x10\n"
-        "ldr x8, [x0]\n"
-        "ldr x8, [x8, #0xb78]\n"
-        "ldr x19, [x8]\n"
-        "ldrb w8, [x19, #0x18]\n"
-        "cbz w8, 0f\n"
-        "adrp x8, DAT_71053299d8\n"
-        "ldr x8, [x8, :lo12:DAT_71053299d8]\n"
-        "ldr x0, [x8]\n"
-        "bl FUN_710260b9b0\n"
-        "strb wzr, [x19, #0x18]\n"
-        "0:\n"
-        "ldp x29, x30, [sp, #0x10]\n"
-        "ldr x19, [sp], #0x20\n"
-        "ret\n"
-    );
+void FighterManager__exit_finalbg_impl(FighterManager* mgr) {
+    auto* data = *reinterpret_cast<u8**>(mgr);
+    auto* ptr1 = *reinterpret_cast<u8**>(data + 0xb78);
+    auto* ptr2 = *reinterpret_cast<u8**>(ptr1);
+    if (ptr2[0x18] != 0) {
+        FUN_710260b9b0(*reinterpret_cast<void**>(DAT_71053299d8));
+        ptr2[0x18] = 0;
+    }
 }
-#endif
 
 // 71021415a0 — show_finalbg: global->deref, tail call
 extern "C" void FUN_710260c900(void*);
