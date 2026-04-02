@@ -110,43 +110,8 @@ bool FUN_710003b460(s64 param_1, float *param_2)
   return param_2[1] <= *(float *)(param_1 + 0x7c);
 }
 
-// 0x710003cf90
-u8 *FUN_710003cf90(void)
-{
-  s32 iVar1;
-
-  if (((*PTR_DAT_71052a33d0 & 1) == 0) &&
-      (iVar1 = __cxa_guard_acquire(PTR_DAT_71052a33d0), iVar1 != 0)) {
-    if (((*PTR_DAT_71052a3380 & 1) == 0) &&
-        (iVar1 = __cxa_guard_acquire(PTR_DAT_71052a3380), iVar1 != 0)) {
-      *(u64 *)PTR_DAT_71052a3388 = 0;
-      __cxa_guard_release(PTR_DAT_71052a3380);
-    }
-    *(u8 **)PTR_DAT_71052a33d8 = PTR_DAT_71052a3388;
-    __cxa_guard_release(PTR_DAT_71052a33d0);
-    return PTR_DAT_71052a33d8;
-  }
-  return PTR_DAT_71052a33d8;
-}
-
-// 0x710003d160
-u8 *FUN_710003d160(void)
-{
-  s32 iVar1;
-
-  if (((*PTR_DAT_71052a33e0 & 1) == 0) &&
-      (iVar1 = __cxa_guard_acquire(PTR_DAT_71052a33e0), iVar1 != 0)) {
-    if (((*PTR_DAT_71052a3380 & 1) == 0) &&
-        (iVar1 = __cxa_guard_acquire(PTR_DAT_71052a3380), iVar1 != 0)) {
-      *(u64 *)PTR_DAT_71052a3388 = 0;
-      __cxa_guard_release(PTR_DAT_71052a3380);
-    }
-    *(u8 **)PTR_DAT_71052a33e8 = PTR_DAT_71052a3388;
-    __cxa_guard_release(PTR_DAT_71052a33e0);
-    return PTR_DAT_71052a33e8;
-  }
-  return PTR_DAT_71052a33e8;
-}
+// 0x710003cf90 — defined in fun_medium_012.cpp (duplicate removed)
+// 0x710003d160 — defined in fun_medium_012.cpp (duplicate removed)
 
 // 0x710003d480
 u8 *FUN_710003d480(void)

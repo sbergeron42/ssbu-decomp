@@ -135,11 +135,7 @@
   abort();
 }
 
-// 0x7102a2b28c
-[[noreturn]] void FUN_7102a2b28c()
-{
-  abort();
-}
+// 0x7102a2b28c — defined in fun_medium_throw.cpp (Group C: naked asm)
 
 // 0x7102a30e9c
 [[noreturn]] void FUN_7102a30e9c()
@@ -237,17 +233,8 @@
   abort();
 }
 
-// 0x7102b398a0
-[[noreturn]] void FUN_7102b398a0()
-{
-  abort();
-}
-
-// 0x7102baccd0
-[[noreturn]] void FUN_7102baccd0()
-{
-  abort();
-}
+// 0x7102b398a0 — defined in fun_medium_throw.cpp (Group C: naked asm)
+// 0x7102baccd0 — defined in fun_medium_throw.cpp (Group C: naked asm)
 
 // 0x7102c9349c
 [[noreturn]] void FUN_7102c9349c()
@@ -255,14 +242,5 @@
   abort();
 }
 
-// 0x7102e2a9fc
-[[noreturn]] void FUN_7102e2a9fc()
-{
-  abort();
-}
-
-// 0x7102f53a60
-[[noreturn]] void FUN_7102f53a60()
-{
-  abort();
-}
+// 0x7102e2a9fc — defined in fun_medium_throw.cpp (Group A: pass x0)
+// 0x7102f53a60 — defined in fun_medium_throw.cpp (Group C: naked asm)
