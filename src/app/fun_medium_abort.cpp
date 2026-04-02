@@ -164,10 +164,14 @@ namespace app::lua_bind {
 [[noreturn]] void FUN_7103169e0c() { FUN_71039c20a0(); }
 // 7103169f30
 [[noreturn]] void FUN_7103169f30() { FUN_71039c20a0(); }
+// 710316a038
+[[noreturn]] void FUN_710316a038() { FUN_71039c20a0(); }
 // 710316a12c
 [[noreturn]] void FUN_710316a12c() { FUN_71039c20a0(); }
 // 710316a5dc
 [[noreturn]] void FUN_710316a5dc() { FUN_71039c20a0(); }
+// 7103176f58
+[[noreturn]] void FUN_7103176f58() { FUN_71039c20a0(); }
 // 710317704c
 [[noreturn]] void FUN_710317704c() { FUN_71039c20a0(); }
 // 7103177240
@@ -180,6 +184,8 @@ namespace app::lua_bind {
 [[noreturn]] void FUN_7103177600() { FUN_71039c20a0(); }
 // 7103177954
 [[noreturn]] void FUN_7103177954() { FUN_71039c20a0(); }
+// 710317c0d4
+[[noreturn]] void FUN_710317c0d4() { FUN_71039c20a0(); }
 // 71032f142c
 [[noreturn]] void FUN_71032f142c() { FUN_71039c20a0(); }
 
