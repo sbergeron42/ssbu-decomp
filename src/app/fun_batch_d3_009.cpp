@@ -75,6 +75,9 @@ s32 FUN_71000007c0(u8 *param_1, u32 param_2)
 // 0x7100002690 — cleanup: null-guard, free *param_1, clear two fields (48 bytes)
 void FUN_7100002690(u64 *param_1)
 {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
     if (param_1 != (u64 *)0x0) {
         FUN_7100002540(*param_1);
         *param_1 = 0;
@@ -210,6 +213,9 @@ s32 FUN_710000e730(u64 param_1, u64 param_2)
 // 0x7100013480 — cleanup: deref, check +0x194, call fn on +0x198 then clear (48 bytes)
 void FUN_7100013480(s64 *param_1)
 {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
     s64 lVar1;
 
     lVar1 = *param_1;

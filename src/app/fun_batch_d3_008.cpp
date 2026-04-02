@@ -1,12 +1,14 @@
 #include "types.h"
 
+#define HIDDEN __attribute__((visibility("hidden")))
+
 // MEDIUM-tier FUN_* functions — 0x7100 address range, batch d3-008
 // Pool-d worker: auto-generated from Ghidra decompilation
 
 // ---- External declarations -----------------------------------------------
 
 // External data
-extern u8  PTR_DAT_71052a4180[];
+extern u8  PTR_DAT_71052a4180[] HIDDEN;
 
 // External FUN_* forward declarations
 extern void FUN_710013e590();

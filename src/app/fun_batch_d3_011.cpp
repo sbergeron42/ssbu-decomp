@@ -29,6 +29,9 @@ extern void FUN_7100078b00(u64, s64);
 // 0x7100043160 — ctor: parent init + set vtable ptr (PTR_DAT_71052a3510) (48 bytes)
 void FUN_7100043160(s64 *param_1, u64 param_2, u64 param_3, u64 param_4)
 {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
     FUN_7100057350(param_1, 0, 0, param_2, param_4);
     *param_1 = (s64)(PTR_DAT_71052a3510 + 0x10);
 }
@@ -36,6 +39,9 @@ void FUN_7100043160(s64 *param_1, u64 param_2, u64 param_3, u64 param_4)
 // 0x7100043310 — ctor: parent init + set vtable ptr (PTR_DAT_71052a3530) (48 bytes)
 void FUN_7100043310(s64 *param_1, u64 param_2, u64 param_3, u64 param_4)
 {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
     FUN_7100057350(param_1, 0, 0, param_2, param_4);
     *param_1 = (s64)(PTR_DAT_71052a3530 + 0x10);
 }
@@ -43,6 +49,9 @@ void FUN_7100043310(s64 *param_1, u64 param_2, u64 param_3, u64 param_4)
 // 0x7100044480 — cleanup: if ptr-field non-null, call dtor and clear two fields (32 bytes)
 void FUN_7100044480(u16 *param_1)
 {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
     if (*(s64 *)(param_1 + 4) != 0) {
         FUN_7100048dd0();
         *(u64 *)(param_1 + 4) = 0;

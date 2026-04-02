@@ -1,5 +1,7 @@
 #include "types.h"
 
+#define HIDDEN __attribute__((visibility("hidden")))
+
 // MEDIUM-tier FUN_* functions — 0x7103 address range, batch e2-005
 // Pool-e worker: auto-generated from Ghidra decompilation
 
@@ -7,7 +9,7 @@
 
 extern "C" void FUN_71032e5640(u64);
 extern "C" void FUN_71035231c0(u64);
-extern "C" u64  DAT_710532e7c8;
+extern "C" u64  DAT_710532e7c8 HIDDEN;
 
 // ---- struct getters/setters (stack-spill pattern) -----------------------------------------------
 // Note: original uses sub/str/ldr stack spill — compiles correctly, may not verify

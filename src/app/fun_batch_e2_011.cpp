@@ -1,5 +1,7 @@
 #include "types.h"
 
+#define HIDDEN __attribute__((visibility("hidden")))
+
 // MEDIUM-tier FUN_* functions — 0x7102-0x7103 address range, batch e2-011
 // Pool-e worker: auto-generated from Ghidra decompilation
 
@@ -7,7 +9,7 @@
 
 [[noreturn]] extern "C" void abort();
 extern "C" void FUN_71032e47c0(u64, s32, s32, s32, s32, s32);
-extern "C" u64  DAT_710532e7c8;
+extern "C" u64  DAT_710532e7c8 HIDDEN;
 extern "C" u32  FUN_7103300dd0();
 
 // ---- WorkModule flag setters (continuation from e2-010) -----------------------------------------------

@@ -5,20 +5,21 @@
 
 // ---- External declarations -----------------------------------------------
 
-// External data
-extern u64 PTR_DAT_71052a50b0;   // allocator factory context ptr
-extern u8  PTR_DAT_71052a4610[];
-extern u8  PTR_DAT_71052a4630[];
-extern u8  PTR_DAT_71052a46c8[];
-extern u8  PTR_DAT_71052a4718[];
-extern u8  PTR_DAT_71052a4880[];
-extern u8  PTR_DAT_71052a4a00[];
-extern u8  PTR_DAT_71052a4a88[];
-extern u8  PTR_DAT_71052a4a90[];
-extern u8  PTR_DAT_71052a4a98[];
-extern u8  PTR_DAT_71052a4c08[];
-extern u8 *PTR_DAT_71052a4c10;
-extern u8  PTR_DAT_71052a4c28[];
+// External data — hidden visibility for direct ADRP access (no GOT indirection)
+#define HIDDEN __attribute__((visibility("hidden")))
+extern u64 PTR_DAT_71052a50b0 HIDDEN;   // allocator factory context ptr
+extern u8  PTR_DAT_71052a4610[] HIDDEN;
+extern u8  PTR_DAT_71052a4630[] HIDDEN;
+extern u8  PTR_DAT_71052a46c8[] HIDDEN;
+extern u8  PTR_DAT_71052a4718[] HIDDEN;
+extern u8  PTR_DAT_71052a4880[] HIDDEN;
+extern u8  PTR_DAT_71052a4a00[] HIDDEN;
+extern u8  PTR_DAT_71052a4a88[] HIDDEN;
+extern u8  PTR_DAT_71052a4a90[] HIDDEN;
+extern u8  PTR_DAT_71052a4a98[] HIDDEN;
+extern u8  PTR_DAT_71052a4c08[] HIDDEN;
+extern u8 *PTR_DAT_71052a4c10 HIDDEN;
+extern u8  PTR_DAT_71052a4c28[] HIDDEN;
 
 // External FUN_* forward declarations
 extern u64  FUN_71000b1b90();
