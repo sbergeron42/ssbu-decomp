@@ -2,23 +2,26 @@
 
 ## Model: Opus
 
-## Task: Fix non-matching functions in fun_batch_a/b files
+## Task: Build PLT post-processor tool and replace 2,073 naked asm PLT stubs with real C++
 
-77 non-matching functions out of 98 compiled. Fix codegen to byte-match original.
+The 2,073 functions in fun_region_039.cpp are currently naked asm because the compiler emits GOT-relative indirect calls instead of the NX ADRP+LDR+ADD+BR pattern. Build a post-processing tool that patches the compiler output to match.
 
-### Common fixes
-- Wrong types: swap u32/s32, u8/bool, void*/u64
-- Wrong return type: void vs u64 vs void*
-- Instruction scheduling: reorder independent stores/loads
-- Prologue mismatch: use asm("") barrier with MATCHING_HACK_NX_CLANG
+### Phase 1: Build tools/fix_plt_stubs.py
+A post-processing script (like fix_movz_to_orr.py) that:
+1. Scans .o files for GOT-relative call sequences (adrp+ldr via GOT, then br)
+2. Rewrites them to the NX pattern: ADRP+LDR+ADD+BR using x16/x17
+3. The target address is known from the relocation entries in the .o file
 
-### Workflow
-1. Run python tools/verify_all.py to get the non-matching list
-2. Filter to functions in YOUR files only
-3. Use python tools/show_diff.py func_name for instruction-level diff
-4. Fix, rebuild (cmd /c build.bat), re-verify, commit in batches
+Reference existing tools: fix_movz_to_orr.py, fix_prologue.py for the pattern.
+
+### Phase 2: Replace naked asm in fun_region_039.cpp
+Once the post-processor works:
+1. Replace the 2,073 naked asm functions with real C++ (extern global + function pointer call)
+2. Add fix_plt_stubs.py to build.bat post-processing pipeline
+3. Verify the post-processed .o bytes match the original
 
 ### Rules
-- ONLY edit: src/app/fun_batch_a_*.cpp, src/app/fun_batch_b_*.cpp
-- Do NOT edit any other files
-- Do NOT modify data/functions.csv or tools/
+- ONLY edit: tools/fix_plt_stubs.py (new), src/app/fun_region_039.cpp, build.bat
+- Do NOT edit any other source files
+- Do NOT modify data/functions.csv
+- Test with cmd /c build.bat && python tools/verify_all.py --summary
