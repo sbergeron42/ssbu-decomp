@@ -44,7 +44,7 @@ extern s64 *DAT_7105331f00;
 // 0x71033dc420 — vtable call returning bool: iVar != 1 (160 bytes)
 u8 FUN_71033dc420(u64 param_1, s64 param_2)
 {
-    s32 iVar1 = (*(s32(*)())(*(s64*)(*(s64*)(*(s64*)(param_2 + 0x20) + 0x40)) + 0x110))();
+    s32 iVar1 = (*(s32(*)())(*(s64*)(*(s64*)(*(s64*)(*(s64*)(param_2 + 0x20) + 0x40)) + 0x110)))();
     return (u8)(iVar1 != 1);
 }
 

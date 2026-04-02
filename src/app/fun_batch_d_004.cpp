@@ -70,7 +70,7 @@ u32 FUN_710336e170(void)
 // 0x71034d3d70 — vtable call at 0x110 returning bool: iVar == 0 (208 bytes)
 u8 FUN_71034d3d70(u64 param_1, s64 param_2)
 {
-    s32 iVar1 = (*(s32(*)())(*(s64*)(*(s64*)(*(s64*)(param_2 + 0x20) + 0x40)) + 0x110))();
+    s32 iVar1 = (*(s32(*)())(*(s64*)(*(s64*)(*(s64*)(*(s64*)(param_2 + 0x20) + 0x40)) + 0x110)))();
     return (u8)(iVar1 == 0);
 }
 

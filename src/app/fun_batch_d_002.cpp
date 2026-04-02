@@ -116,7 +116,7 @@ u64 FUN_7103979cbc(s64 param_1)
 // 0x71034d9c70 — vtable call returning bool: iVar != 2 (128 bytes)
 u8 FUN_71034d9c70(u64 param_1, s64 param_2)
 {
-    s32 iVar1 = (*(s32 (*)())(*(s64 *)(*(s64 *)(*(s64 *)(param_2 + 0x20) + 0x40)) + 0x110))();
+    s32 iVar1 = (*(s32 (*)())(*(s64 *)(*(s64 *)(*(s64 *)(*(s64 *)(param_2 + 0x20) + 0x40)) + 0x110)))();
     return (u8)(iVar1 != 2);
 }
 
@@ -227,21 +227,21 @@ s32 FUN_71037f1cc0(u32 param_1, s32 param_2)
 // 0x710340fbf0 — vtable call returning bool: iVar != 2 (144 bytes)
 u8 FUN_710340fbf0(u64 param_1, s64 param_2)
 {
-    s32 iVar1 = (*(s32 (*)())(*(s64 *)(*(s64 *)(*(s64 *)(param_2 + 0x20) + 0x40)) + 0x110))();
+    s32 iVar1 = (*(s32 (*)())(*(s64 *)(*(s64 *)(*(s64 *)(*(s64 *)(param_2 + 0x20) + 0x40)) + 0x110)))();
     return (u8)(iVar1 != 2);
 }
 
 // 0x71034f2790 — vtable call returning bool: iVar == 1 (144 bytes)
 u8 FUN_71034f2790(u64 param_1, s64 param_2)
 {
-    s32 iVar1 = (*(s32 (*)())(*(s64 *)(*(s64 *)(*(s64 *)(param_2 + 0x20) + 0x40)) + 0x110))();
+    s32 iVar1 = (*(s32 (*)())(*(s64 *)(*(s64 *)(*(s64 *)(*(s64 *)(param_2 + 0x20) + 0x40)) + 0x110)))();
     return (u8)(iVar1 == 1);
 }
 
 // 0x71035033a0 — vtable call returning bool: iVar != 2 variant (144 bytes)
 u8 FUN_71035033a0(u64 param_1, s64 param_2)
 {
-    s32 iVar1 = (*(s32 (*)())(*(s64 *)(*(s64 *)(*(s64 *)(param_2 + 0x20) + 0x40)) + 0x110))();
+    s32 iVar1 = (*(s32 (*)())(*(s64 *)(*(s64 *)(*(s64 *)(*(s64 *)(param_2 + 0x20) + 0x40)) + 0x110)))();
     return (u8)(iVar1 != 2);
 }
 
