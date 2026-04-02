@@ -184,10 +184,10 @@ void FUN_7101e57dc0(s64 param_1, u32 param_2)
 }
 
 // 0x710116a3d0
-u64 FUN_710116a3d0(s64 param_1)
+u32 FUN_710116a3d0(s64 param_1)
 {
   u32 uVar1;
-  u64 uVar2;
+  u32 uVar2;
 
   uVar1 = (*(u32(*)(void))(*(s64*)(*(s64*)(*(s64*)(param_1 + 0x20) + 0x40)) + 0x110))();
   uVar2 = 0;

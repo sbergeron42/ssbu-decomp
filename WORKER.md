@@ -1,10 +1,10 @@
-# Worker: pool-b
+# Worker: pool-a
 
 ## Model: Opus
 
-## Task: Fix non-matching functions in fun_batch_b, fun_batch_c, and fun_batch_d files
+## Task: Fix non-matching functions in fun_batch_a/b files
 
-~1,992 functions compile but do not byte-match. Fix codegen in your assigned files.
+77 non-matching functions out of 98 compiled. Fix codegen to byte-match original.
 
 ### Common fixes
 - Wrong types: swap u32/s32, u8/bool, void*/u64
@@ -19,6 +19,6 @@
 4. Fix, rebuild (cmd /c build.bat), re-verify, commit in batches
 
 ### Rules
-- ONLY edit: src/app/fun_batch_c_*.cpp, src/app/fun_batch_d_*.cpp
+- ONLY edit: src/app/fun_batch_a_*.cpp, src/app/fun_batch_b_*.cpp
 - Do NOT edit any other files
 - Do NOT modify data/functions.csv or tools/
