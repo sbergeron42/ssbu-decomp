@@ -163,9 +163,4 @@ s64 FUN_71037b9c10(s64 param_1) { return param_1 + 0xc; }
 // 0x71037bc690 — sqrtf(p1*p2), result discarded (48 bytes)
 void FUN_71037bc690(float param_1, float param_2) { sqrtf(param_1 * param_2); }
 
-// 0x71031758c0 — write vtable pointer + copy field (48 bytes)
-void FUN_71031758c0(s64 param_1, u64 *param_2)
-{
-    *param_2 = (u64)PTR_LAB_710517b8e0;
-    param_2[1] = *(u64*)(param_1 + 8);
-}
+// FUN_71031758c0 is defined in fun_batch_d_001.cpp

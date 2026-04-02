@@ -657,8 +657,7 @@ u32 FUN_71002b3fa0(u64 p1) { return *(u32*)(p1 + 0x60); }
 // 71002b3fc0
 u32 FUN_71002b3fc0(u64 p1) { return *(u32*)(p1 + 0x88); }
 
-// 71002b4e30
-u64 FUN_71002b4e30(u64 *p1) { return *p1; }
+// FUN_71002b4e30 defined in fun_medium_007.cpp
 
 // 71002b4eb0
 u8 FUN_71002b4eb0(u64 p1) { return *(u8*)(p1 + 8); }
