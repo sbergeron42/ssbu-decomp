@@ -54,10 +54,10 @@ u64 FUN_71037b52d0(s64 param_1) { return *(u64*)(param_1 + 0x10); }
 u8 FUN_71037b52f0(s64 param_1) { return *(u8*)(param_1 + 8) >> 1 & 1; }
 
 // 0x71037b5570 — return *(u32*)(p+0x70) (32 bytes)
-u32 FUN_71037b5570(s64 param_1) { return *(u32*)(param_1 + 0x70); }
+u64 FUN_71037b5570(s64 param_1) { return *(u32*)(param_1 + 0x70); }
 
 // 0x71037b5590 — return *(u32*)(p+0x74) (32 bytes)
-u32 FUN_71037b5590(s64 param_1) { return *(u32*)(param_1 + 0x74); }
+u64 FUN_71037b5590(s64 param_1) { return *(u32*)(param_1 + 0x74); }
 
 // 0x71037b55b0 — return *(u64*)(p+0x18) (32 bytes)
 u64 FUN_71037b55b0(s64 param_1) { return *(u64*)(param_1 + 0x18); }
@@ -89,10 +89,10 @@ void FUN_71037b72b0(s64 *param_1)
 }
 
 // 0x71037b73a0 — return *(u32*)(p+0x408) (32 bytes)
-u32 FUN_71037b73a0(s64 param_1) { return *(u32*)(param_1 + 0x408); }
+u64 FUN_71037b73a0(s64 param_1) { return *(u32*)(param_1 + 0x408); }
 
 // 0x71037b73c0 — stack pop: decrement counter, return indexed element (48 bytes)
-u32 FUN_71037b73c0(s64 *param_1)
+u64 FUN_71037b73c0(s64 *param_1)
 {
     *(s32*)(param_1 + 0x81) = (s32)param_1[0x81] + -1;
     return *(u32*)(*param_1 + (s64)(s32)param_1[0x81] * 4);
@@ -108,7 +108,7 @@ void FUN_71037b7c60(s64 param_1, u64 param_2) { *(u64*)(param_1 + 0x19308) = par
 void FUN_71037b7c90(s64 param_1, u64 param_2) { *(u64*)(param_1 + 0x19310) = param_2; }
 
 // 0x71037b8940 — deref u32 (32 bytes)
-u32 FUN_71037b8940(u32 *param_1) { return *param_1; }
+u64 FUN_71037b8940(u32 *param_1) { return *param_1; }
 
 // 0x71037b8960 — clear three u32 fields at +0x38/0x3c/0x40 (48 bytes)
 void FUN_71037b8960(s64 param_1)

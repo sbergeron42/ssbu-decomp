@@ -48,18 +48,23 @@ namespace app {
 }
 
 // 0x71020a7160
-u64 FUN_71020a7160(s64 *param_1, s64 param_2)
+u32 FUN_71020a7160(s64 *param_1, s64 param_2)
 {
-    u64 in_x10;
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    (**(void (**)(s64 *))(*param_1 + 0x3b8))(param_1);
+    register s64 *in_x8 asm("x8");
+    register u64 in_x10 asm("x10");
+    asm volatile("" : "+r"(in_x8));
+    asm volatile("" : "+r"(in_x10));
+    *(u64 *)((char *)param_1 + 0x10) = in_x10;
+    (**(void (**)(s64 *))(*in_x8 + 0x3b8))(in_x8);
     return 0;
 }
 
 // 0x71020a79e0
-u64 FUN_71020a79e0(s64 *param_1)
+u32 FUN_71020a79e0(s64 *param_1)
 {
-    (**(void (**)(s64 *))(*param_1 + 0x70))(param_1);
+    register s64 *in_x8 asm("x8");
+    asm volatile("" : "+r"(in_x8));
+    (**(void (**)(s64 *))(*in_x8 + 0x70))(in_x8);
     return 0;
 }
 
@@ -71,11 +76,14 @@ u64 FUN_71020a8f1c(u64 *param_1)
 }
 
 // 0x71020adef0
-u64 FUN_71020adef0(s64 *param_1, s64 param_2)
+u32 FUN_71020adef0(s64 *param_1, s64 param_2)
 {
-    u64 in_x10;
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    (**(void (**)(s64 *))(*param_1 + 0x280))(param_1);
+    register s64 *in_x8 asm("x8");
+    register u64 in_x10 asm("x10");
+    asm volatile("" : "+r"(in_x8));
+    asm volatile("" : "+r"(in_x10));
+    *(u64 *)((char *)param_1 + 0x10) = in_x10;
+    (**(void (**)(s64 *))(*in_x8 + 0x280))(in_x8);
     return 0;
 }
 
@@ -89,11 +97,14 @@ u64 FUN_71020af048(u64 param_1, s64 param_2)
 }
 
 // 0x71020afd68
-u64 FUN_71020afd68(s64 *param_1, s64 param_2)
+u32 FUN_71020afd68(s64 *param_1, s64 param_2)
 {
-    u64 in_x10;
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    (**(void (**)(s64 *))(*param_1 + 0x460))(param_1);
+    register s64 *in_x8 asm("x8");
+    register u64 in_x10 asm("x10");
+    asm volatile("" : "+r"(in_x8));
+    asm volatile("" : "+r"(in_x10));
+    *(u64 *)((char *)param_1 + 0x10) = in_x10;
+    (**(void (**)(s64 *))(*in_x8 + 0x460))(in_x8);
     return 0;
 }
 
@@ -223,47 +234,62 @@ u64 FUN_71020d2620(u64 param_1)
 }
 
 // 0x71020f47d0
-u64 FUN_71020f47d0(s64 *param_1, s64 param_2)
+u32 FUN_71020f47d0(s64 *param_1, s64 param_2)
 {
-    u64 in_x10;
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    (**(void (**)(s64 *))(*param_1 + 0x70))(param_1);
+    register s64 *in_x8 asm("x8");
+    register u64 in_x10 asm("x10");
+    asm volatile("" : "+r"(in_x8));
+    asm volatile("" : "+r"(in_x10));
+    *(u64 *)((char *)param_1 + 0x10) = in_x10;
+    (**(void (**)(s64 *))(*in_x8 + 0x70))(in_x8);
     return 0;
 }
 
 // 0x71020f7020
-u64 FUN_71020f7020(s64 *param_1, s64 param_2)
+u32 FUN_71020f7020(s64 *param_1, s64 param_2)
 {
-    u64 in_x10;
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    (**(void (**)(s64 *))(*param_1 + 0x48))(param_1);
+    register s64 *in_x8 asm("x8");
+    register u64 in_x10 asm("x10");
+    asm volatile("" : "+r"(in_x8));
+    asm volatile("" : "+r"(in_x10));
+    *(u64 *)((char *)param_1 + 0x10) = in_x10;
+    (**(void (**)(s64 *))(*in_x8 + 0x48))(in_x8);
     return 0;
 }
 
 // 0x71020f70f0
-u64 FUN_71020f70f0(s64 *param_1, s64 param_2)
+u32 FUN_71020f70f0(s64 *param_1, s64 param_2)
 {
-    u64 in_x10;
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    (**(void (**)(s64 *))(*param_1 + 0x50))(param_1);
+    register s64 *in_x8 asm("x8");
+    register u64 in_x10 asm("x10");
+    asm volatile("" : "+r"(in_x8));
+    asm volatile("" : "+r"(in_x10));
+    *(u64 *)((char *)param_1 + 0x10) = in_x10;
+    (**(void (**)(s64 *))(*in_x8 + 0x50))(in_x8);
     return 0;
 }
 
 // 0x71020f7dc0
-u64 FUN_71020f7dc0(s64 *param_1, s64 param_2)
+u32 FUN_71020f7dc0(s64 *param_1, s64 param_2)
 {
-    u64 in_x10;
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    (**(void (**)(s64 *))(*param_1 + 0x78))(param_1);
+    register s64 *in_x8 asm("x8");
+    register u64 in_x10 asm("x10");
+    asm volatile("" : "+r"(in_x8));
+    asm volatile("" : "+r"(in_x10));
+    *(u64 *)((char *)param_1 + 0x10) = in_x10;
+    (**(void (**)(s64 *))(*in_x8 + 0x78))(in_x8);
     return 0;
 }
 
 // 0x71020f7e90
-u64 FUN_71020f7e90(s64 *param_1, s64 param_2)
+u32 FUN_71020f7e90(s64 *param_1, s64 param_2)
 {
-    u64 in_x10;
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    (**(void (**)(s64 *))(*param_1 + 0x80))(param_1);
+    register s64 *in_x8 asm("x8");
+    register u64 in_x10 asm("x10");
+    asm volatile("" : "+r"(in_x8));
+    asm volatile("" : "+r"(in_x10));
+    *(u64 *)((char *)param_1 + 0x10) = in_x10;
+    (**(void (**)(s64 *))(*in_x8 + 0x80))(in_x8);
     return 0;
 }
 

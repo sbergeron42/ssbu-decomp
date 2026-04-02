@@ -142,14 +142,14 @@ namespace app {
 }
 
 // 0x710220c280
-u64 FUN_710220c280(lua_State *param_1)
+u32 FUN_710220c280(lua_State *param_1)
 {
     app::item_hud::del_cursor(param_1);
     return 0;
 }
 
 // 0x710220c2a0
-u64 FUN_710220c2a0(lua_State *param_1)
+u32 FUN_710220c2a0(lua_State *param_1)
 {
     app::item_hud::clear_owner_color(param_1);
     return 0;
@@ -201,28 +201,28 @@ u64 FUN_710223ad10(app::ItemModuleAccessor *param_1, s64 param_2)
 }
 
 // 0x710223fc70
-u64 FUN_710223fc70()
+u32 FUN_710223fc70()
 {
     app::sandbag::homerun_contest_change_fly_camera();
     return 0;
 }
 
 // 0x710223fc90
-u64 FUN_710223fc90()
+u32 FUN_710223fc90()
 {
     app::sandbag::homerun_contest_change_landing_camera();
     return 0;
 }
 
 // 0x710223fcb0
-u64 FUN_710223fcb0()
+u32 FUN_710223fcb0()
 {
     app::sandbag::homerun_contest_change_timeup_fly_camera();
     return 0;
 }
 
 // 0x710223fcd0
-u64 FUN_710223fcd0()
+u32 FUN_710223fcd0()
 {
     app::sandbag::homerun_contest_change_normal_camera();
     return 0;
@@ -486,7 +486,7 @@ u64 FUN_7102249b30(app::BattleObjectModuleAccessor *param_1, s64 param_2)
 }
 
 // 0x710224b5e0
-u64 FUN_710224b5e0()
+u32 FUN_710224b5e0()
 {
     FUN_710160dea0();
     return 0;
@@ -529,7 +529,7 @@ u64 FUN_710224e230(app::ItemModuleAccessor *param_1, s64 param_2)
 }
 
 // 0x7102251380
-u64 FUN_7102251380()
+u32 FUN_7102251380()
 {
     FUN_710160dea0();
     return 0;
@@ -581,7 +581,7 @@ u64 FUN_7102256790(app::BattleObjectModuleAccessor *param_1, s64 param_2)
 }
 
 // 0x7102256b00
-u64 FUN_7102256b00()
+u32 FUN_7102256b00()
 {
     app::dracula2::notify_melee_start_to_hud_manager();
     return 0;
@@ -598,7 +598,7 @@ u64 FUN_7102256d58(s64 param_1)
 }
 
 // 0x7102258b60
-u64 FUN_7102258b60()
+u32 FUN_7102258b60()
 {
     FUN_710160dea0();
     return 0;

@@ -61,7 +61,7 @@ u64 FUN_71031d0660(s64 *param_1)
 }
 
 // 0x710336e170 — call FUN_71033137f0 via DAT_710532e8d0+8, return 0 (208 bytes)
-u64 FUN_710336e170(void)
+u32 FUN_710336e170(void)
 {
     FUN_71033137f0(*(u64*)(DAT_710532e8d0 + 8), 0);
     return 0;
@@ -158,7 +158,7 @@ u64 *FUN_71037a1170(void)
 }
 
 // 0x71033c86a0 — vtable call at 0x108 with flag, return ~uVar1 & 1 (224 bytes)
-u32 FUN_71033c86a0(u64 param_1, s64 param_2)
+u64 FUN_71033c86a0(u64 param_1, s64 param_2)
 {
     s64 *plVar2 = *(s64**)(*(s64*)(param_2 + 0x20) + 0x50);
     u32 uVar1 = (*(u32(*)(s64*, u32))(*plVar2 + 0x108))(plVar2, 0x20000006);

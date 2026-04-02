@@ -34,7 +34,7 @@ void FUN_7103944e20(s64 param_1, u64 param_2) { *(u64*)(param_1 + 8) = param_2; 
 void FUN_7103944e40(s64 param_1, u64 param_2) { *(u64*)(param_1 + 0x10) = param_2; }
 
 // 0x7103944ff0 — deref u32 (32 bytes)
-u32 FUN_7103944ff0(u32 *param_1) { return *param_1; }
+u64 FUN_7103944ff0(u32 *param_1) { return *param_1; }
 
 // 0x71039455c0 — return param_1 + 0x1800 (32 bytes)
 s64 FUN_71039455c0(s64 param_1) { return param_1 + 0x1800; }
@@ -49,7 +49,7 @@ u8 FUN_7103945fe0(s32 param_1) { return (u8)(param_1 != 0); }
 u8 FUN_7103947040(s64 param_1) { return (u8)(param_1 == 0); }
 
 // 0x710394ad60 — deref u32 (32 bytes)
-u32 FUN_710394ad60(u32 *param_1) { return *param_1; }
+u64 FUN_710394ad60(u32 *param_1) { return *param_1; }
 
 // 0x71039506a0 — return param_1 + 3 (32 bytes)
 s64 FUN_71039506a0(s64 param_1) { return param_1 + 3; }
@@ -67,7 +67,7 @@ s64 FUN_71039513e0(s64 param_1) { return param_1 + 4; }
 s64 FUN_7103951430(s64 param_1) { return param_1 + 0x1b8; }
 
 // 0x7103951450 — deref u32 (32 bytes)
-u32 FUN_7103951450(u32 *param_1) { return *param_1; }
+u64 FUN_7103951450(u32 *param_1) { return *param_1; }
 
 // 0x7103951520 — return param_1 + 0x1800 (32 bytes)
 s64 FUN_7103951520(s64 param_1) { return param_1 + 0x1800; }
@@ -91,7 +91,7 @@ s64 FUN_7103951de0(s64 param_1) { return param_1 + 3; }
 u64 FUN_7103952870(s64 param_1) { return *(u64*)(param_1 + 0x10) & 0xffffffffffff0000; }
 
 // 0x7103952e50 — return param_1 & 1 (32 bytes)
-u32 FUN_7103952e50(u32 param_1) { return param_1 & 1; }
+u64 FUN_7103952e50(u32 param_1) { return param_1 & 1; }
 
 // 0x7103953390 — return param_1 + 0x28 (32 bytes)
 s64 FUN_7103953390(s64 param_1) { return param_1 + 0x28; }
@@ -130,7 +130,7 @@ s64 FUN_710395bb10(s64 param_1) { return param_1 + 4; }
 s64 FUN_710395bb60(s64 param_1) { return param_1 + 0x1b8; }
 
 // 0x710395bb80 — deref u32 (32 bytes)
-u32 FUN_710395bb80(u32 *param_1) { return *param_1; }
+u64 FUN_710395bb80(u32 *param_1) { return *param_1; }
 
 // 0x710395bc50 — return param_1 + 0x1800 (32 bytes)
 s64 FUN_710395bc50(s64 param_1) { return param_1 + 0x1800; }

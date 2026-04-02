@@ -66,7 +66,7 @@ s64 FUN_710395f4b0(s64 param_1) { return param_1 + 0x1800; }
 u8 FUN_710395fab0(s32 *param_1) { return (u8)(*param_1 == 0); }
 
 // 0x710395fad0 — deref u32 (32 bytes)
-u32 FUN_710395fad0(u32 *param_1) { return *param_1; }
+u64 FUN_710395fad0(u32 *param_1) { return *param_1; }
 
 // 0x710395fcf0 — no-op (32 bytes)
 void FUN_710395fcf0(void) { return; }

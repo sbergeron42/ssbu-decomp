@@ -17,7 +17,7 @@ extern void FUN_710393e310(u64, s32, u32, u64);
 // ---- Functions ---------------------------------------------------------------
 
 // 0x71037b0a90 — paired FUN_71037adee0 calls + FUN_71037ade50, return first result (80 bytes)
-u32 FUN_71037b0a90(u32 *param_1, u32 *param_2)
+u64 FUN_71037b0a90(u32 *param_1, u32 *param_2)
 {
     u64 uVar1;
     u64 uVar2;
