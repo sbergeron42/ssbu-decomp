@@ -12,7 +12,7 @@ extern void FUN_7103775b40(u64);   // used by FUN_710327af70 / FUN_71032a8c30 in
 
 // External data
 extern s64  DAT_7105331f20;
-extern u8   DAT_7104ada140[];
+extern u8   DAT_7104ada140[] __attribute__((visibility("hidden")));
 
 // ---- Functions ---------------------------------------------------------------
 

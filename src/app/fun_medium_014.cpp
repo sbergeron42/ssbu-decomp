@@ -69,7 +69,7 @@ extern "C" u32   FUN_71001936d0(u64);
 extern u8  PTR_DAT_71052a2ca0[];
 extern u8  PTR_DAT_71052a2ed0[];
 extern u8  PTR_DAT_71052a3108[];
-extern u8  PTR_DAT_71052a39d0[];
+extern u8  PTR_DAT_71052a49d0[];
 extern u8  DAT_71052aafc8;
 extern u8  PTR_DAT_71052a3c18[];
 extern u8  PTR_DAT_71052a3c20[];
@@ -280,7 +280,7 @@ void FUN_71001170d0(u64* param_1)
 void FUN_710011efd0(s64* param_1)
 {
     FUN_7100140e60(param_1);
-    *param_1 = (s64)(PTR_DAT_71052a39d0 + 0x10);
+    *param_1 = (s64)(PTR_DAT_71052a49d0 + 0x10);
 }
 
 // ---- nn::pia::common::CallContext helpers ----------------------------------

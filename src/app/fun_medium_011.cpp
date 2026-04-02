@@ -58,7 +58,7 @@ void FUN_71001941b0(s64* param_1)
 }
 
 // 71001793a0 — call FUN_710014c900(param_1), set *param_1 = PTR+0x10
-void FUN_71001793a0(s64* param_1)
+__attribute__((noinline)) void FUN_71001793a0(s64* param_1)
 {
     FUN_710014c900(param_1);
     *param_1 = (s64)(PTR_DAT_71052a5288 + 0x10);

@@ -29,8 +29,8 @@ extern "C" s32 __cxa_guard_acquire(s64 *);
 extern "C" void __cxa_guard_release(s64 *);
 
 // Data symbols
-extern u8 PTR_LAB_71050a90b8;
-extern u8 DAT_7104ad95d0;
+extern u8 PTR_LAB_71050a90b8 __attribute__((visibility("hidden")));
+extern u8 DAT_7104ad95d0 __attribute__((visibility("hidden")));
 extern u8 PTR_DAT_710523c9a8;
 extern s64 *DAT_7105331f00;
 extern u64 DAT_71052c3c58;

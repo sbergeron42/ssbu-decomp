@@ -56,7 +56,7 @@ extern u8  PTR_DAT_71052a2378[];   // inner data
 
 extern u8  PTR_DAT_71052a2ed0[];   // StationConnectionInfo vtable
 extern u8  PTR_DAT_71052a3f28[];   // Protocol vtable
-extern u8  PTR_DAT_71052a3f40[];   // StepSequenceJob vtable (FUN_710014f1c0)
+extern u8  PTR_DAT_71052a4f40[];   // StepSequenceJob vtable (FUN_710014f1c0)
 extern u8  PTR_DAT_71052a3f90[];   // CryptoSetting-owner vtable
 extern u8  PTR_DAT_71052a4048[];   // ctor vtable (FUN_7100162930)
 extern u8  PTR_DAT_71052a4050[];   // ctor vtable (FUN_7100163940)
@@ -64,8 +64,8 @@ extern u8  PTR_DAT_71052a4060[];   // ctor vtable (FUN_7100164190)
 extern u8  PTR_DAT_71052a4070[];   // pead-alloc vtable (FUN_7100165640)
 extern u8  PTR_DAT_71052a4100[];   // InetAddress-owner vtable
 extern u8  PTR_DAT_71052a4188[];   // StepSequenceJob vtable (FUN_7100170cd0)
-extern u8  PTR_DAT_71052a41e0[];   // StepSequenceJob vtable (FUN_7100173e80)
-extern u8  PTR_DAT_71052a4210[];   // StepSequenceJob vtable (FUN_71001758d0)
+extern u8  PTR_DAT_71052a51e0[];   // StepSequenceJob vtable (FUN_7100173e80)
+extern u8  PTR_DAT_71052a5210[];   // StepSequenceJob vtable (FUN_71001758d0)
 
 extern u8  PTR_s_pMesh_71052a2df0[];
 extern u8  PTR_g_SessionBeginMonitoringContent_71052a2bd0[];
@@ -122,7 +122,7 @@ void FUN_710014c9f0(s64* param_1)
 void FUN_710014f1c0(s64* param_1)
 {
     new (param_1) nn::pia::common::StepSequenceJob();
-    *param_1 = (s64)(PTR_DAT_71052a3f40 + 0x10);
+    *param_1 = (s64)(PTR_DAT_71052a4f40 + 0x10);
 }
 
 // 7100154130 — set vtable, zero fields, construct CryptoSetting sub-object
@@ -209,7 +209,7 @@ void FUN_7100173e80(s64* param_1, s64 param_2)
     new (param_1) nn::pia::common::StepSequenceJob();
     param_1[0xb] = 0;
     param_1[0xc] = param_2;
-    *param_1     = (s64)(PTR_DAT_71052a41e0 + 0x10);
+    *param_1     = (s64)(PTR_DAT_71052a51e0 + 0x10);
 }
 
 // 71001758d0 — same as 7100173e80 but vtable 4210
@@ -218,7 +218,7 @@ void FUN_71001758d0(s64* param_1, s64 param_2)
     new (param_1) nn::pia::common::StepSequenceJob();
     param_1[0xb] = 0;
     param_1[0xc] = param_2;
-    *param_1     = (s64)(PTR_DAT_71052a4210 + 0x10);
+    *param_1     = (s64)(PTR_DAT_71052a5210 + 0x10);
 }
 
 // ---- Comparison / copy helpers -------------------------------------------

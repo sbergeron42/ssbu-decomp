@@ -16,8 +16,8 @@ extern void FUN_7103341050(u64*, u64*, u64*, u64*, u64*);
 extern u64  get_battle_object_from_id(u32);
 
 // External data symbols
-extern u8 PTR_LAB_710517b8e0[];
-extern u8 DAT_7105182268[];
+extern u8 PTR_LAB_710517b8e0[] __attribute__((visibility("hidden")));
+extern u8 DAT_7105182268[] __attribute__((visibility("hidden")));
 extern u8 PTR_LAB_71051824c0[];
 extern u8 PTR_LAB_71051825a8[];
 extern u8 DAT_7105184ee8[];

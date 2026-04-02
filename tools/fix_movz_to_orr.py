@@ -225,10 +225,15 @@ def patch_insn(data: bytearray, offset: int, sec_end: int) -> int:
         imm16 = (insn >> 5) & 0xFFFF
         value = imm16 << (hw * 16)
 
-        # Skip if followed by MOVK targeting same register
-        if next_insn is not None:
-            next_is_movk, movk_rd = is_movk(next_insn)
-            if next_is_movk and movk_rd == rd:
+        # Skip if any of the next few instructions is MOVK targeting same register
+        # (the compiler may interleave other-register ops between movz and movk)
+        for lookahead in range(1, 5):
+            peek_off = offset + lookahead * 4
+            if peek_off + 4 > sec_end:
+                break
+            peek_insn = struct.unpack_from('<I', data, peek_off)[0]
+            peek_is_movk, movk_rd = is_movk(peek_insn)
+            if peek_is_movk and movk_rd == rd:
                 return 0
 
         new_insn = encode_orr_imm(rd, value, is_64bit)

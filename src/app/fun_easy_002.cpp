@@ -4,7 +4,7 @@
 // Pool-b worker: manually decompiled from Ghidra
 
 // External labels (vtable pointers)
-extern u64 PTR_LAB_71050bf4d0;
+extern u64 PTR_LAB_71050bf4d0 __attribute__((visibility("hidden")));
 
 // 71024b8a00
 void FUN_71024b8a00(u64 param_1, u64 *param_2) {

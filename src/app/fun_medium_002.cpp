@@ -21,7 +21,7 @@ extern u32 DAT_71044705bc[];
 // -- FUN_7100044dd0 ----------------------------------------------------------
 // Check if values changed; update and return 1 if changed, 0 if same
 // 7100044dd0
-u64 FUN_7100044dd0(u8* param_1, s64 param_2, s16 param_3)
+u32 FUN_7100044dd0(u8* param_1, s64 param_2, s16 param_3)
 {
     if ((*(s64*)(param_1 + 400) == param_2) && (*(s16*)(param_1 + 0x198) == param_3)) {
         return 0;

@@ -41,7 +41,7 @@ extern u8 PTR_LAB_7105033200;
 extern u8 PTR_LAB_7105039af0;
 extern u8 PTR_LAB_7105045e18;
 extern u8 PTR_LAB_710505ce38;
-extern u8 PTR_LAB_7105065358;
+extern u8 PTR_LAB_7105065358 __attribute__((visibility("hidden")));
 
 // Misc data
 extern u64 DAT_710532e730;

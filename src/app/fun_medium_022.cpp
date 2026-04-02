@@ -12,8 +12,8 @@ extern "C" void  FUN_71000c5c20();
 extern "C" void  FUN_7100189a10();
 
 // External data
-extern u8  PTR_DAT_71052a2f70[];   // vtable (FUN_71000d31d0)
-extern u8  PTR_DAT_71052a2fa8[];   // vtable (FUN_71000d51e0)
+extern u8  PTR_DAT_71052a3f70[];   // vtable (FUN_71000d31d0)
+extern u8  PTR_DAT_71052a3fa8[];   // vtable (FUN_71000d51e0)
 extern u8  PTR_DAT_71052a28c0[];   // mid guard  (FUN_710007c720, FUN_710007b8d0)
 extern u8  PTR_DAT_71052a28c8[];   // mid data   (FUN_710007c720, FUN_710007b8d0)
 extern u8  PTR_DAT_71052a2890[];   // inner guard (shared)
@@ -40,14 +40,14 @@ void FUN_71000d31d0(s64* param_1)
 {
     FUN_71000c5c20();
     param_1[0x4b] = 0;
-    *param_1 = (s64)(PTR_DAT_71052a2f70 + 0x10);
+    *param_1 = (s64)(PTR_DAT_71052a3f70 + 0x10);
 }
 
 // 71000d51e0 — call base ctor, set vtable 2fa8
 void FUN_71000d51e0(s64* param_1)
 {
     FUN_7100189a10();
-    *param_1 = (s64)(PTR_DAT_71052a2fa8 + 0x10);
+    *param_1 = (s64)(PTR_DAT_71052a3fa8 + 0x10);
 }
 
 // ---- cxa_guard singletons ------------------------------------------------
