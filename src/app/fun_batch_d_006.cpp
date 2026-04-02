@@ -142,9 +142,9 @@ u64 *FUN_71037a02a0(void)
 }
 
 // 0x710335c478 — vtable call at 0x268 (no args), return 0 (300 bytes)
-u64 FUN_710335c478(s64 *param_1)
+u32 FUN_710335c478(s64 *param_1)
 {
-    (*(void(*)())(*param_1 + 0x268))();
+    (*(void(*)())(*(s64 *)(*param_1 + 0x268)))();
     return 0;
 }
 
@@ -156,16 +156,16 @@ u64 FUN_71031d04b0(s64 *param_1)
 }
 
 // 0x7103360268 — vtable call at 8 (no args), return 0 (352 bytes)
-u64 FUN_7103360268(s64 *param_1)
+u32 FUN_7103360268(s64 *param_1)
 {
-    (*(void(*)())(*param_1 + 8))();
+    (*(void(*)())(*(s64 *)(*param_1 + 8)))();
     return 0;
 }
 
 // 0x7103365d08 — vtable call at 8 (no args), return 0 (352 bytes)
-u64 FUN_7103365d08(s64 *param_1)
+u32 FUN_7103365d08(s64 *param_1)
 {
-    (*(void(*)())(*param_1 + 8))();
+    (*(void(*)())(*(s64 *)(*param_1 + 8)))();
     return 0;
 }
 
