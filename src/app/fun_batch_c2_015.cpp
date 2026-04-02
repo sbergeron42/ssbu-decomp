@@ -2,8 +2,8 @@
 
 extern "C" void* memcpy(void*, const void*, u64);
 
-// Batch decompiled via Ghidra MCP — pool-c, batch 015
-// Range: 0x7102000000 — 0x7102FFFFFF
+// Batch decompiled via Ghidra MCP -- pool-c, batch 015
+// Range: 0x7102000000 -- 0x7102FFFFFF
 
 // Forward declarations
 [[noreturn]] extern "C" void abort();

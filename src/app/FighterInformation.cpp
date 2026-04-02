@@ -1,6 +1,6 @@
 #include "types.h"
 
-// FighterInformation — operates on FighterInformation* directly
+// FighterInformation -- operates on FighterInformation* directly
 // Pattern: ldr x8,[x0,#0x8] gets internal data, then field reads
 
 struct FighterInformation;
@@ -73,7 +73,7 @@ bool FighterInformation__is_last_dead_suicide_impl(FighterInformation* fi) {
     auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);
     return *reinterpret_cast<bool*>(data + 0x1a3);
 }
-// setter — stores float to field
+// setter -- stores float to field
 void FighterInformation__set_add_rebirth_wait_frame_impl(FighterInformation* fi, f32 val) {
     auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);
     *reinterpret_cast<f32*>(data + 0x1ac) = val;
@@ -111,7 +111,7 @@ bool FighterInformation__is_battle_event_stick_reverse_impl(FighterInformation* 
     return *reinterpret_cast<bool*>(data + 0x9ca);
 }
 
-// 71020c9d60 — hit_point (14 instructions, vtable call + float math)
+// 71020c9d60 -- hit_point (14 instructions, vtable call + float math)
 // Original: str d8,[sp,#-0x20]!; stp x29,x30,[sp,#0x10]; add x29,sp,#0x10
 //   ldp x8,x9,[x0]; ldr x8,[x8,#0x20]; ldp s0,s1,[x9,#0x38]; fadd s8,s0,s1
 //   blr x8; fsub s0,s8,s0; fmov s1,wzr; fmax s0,s0,s1
@@ -136,7 +136,7 @@ f32 FighterInformation__hit_point_impl(FighterInformation* fi) {
 }
 #endif
 
-// 71020c9e50 — dead_count (11 instructions, branch on w1==-2)
+// 71020c9e50 -- dead_count (11 instructions, branch on w1==-2)
 s32 FighterInformation__dead_count_impl(FighterInformation* fi, s32 index) {
     auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);
     if (index == -2) {
@@ -152,7 +152,7 @@ s32 FighterInformation__dead_count_impl(FighterInformation* fi, s32 index) {
     return *reinterpret_cast<s32*>(data + static_cast<s64>(index) * 4 + 0xcc);
 }
 
-// 71020c9e90 — suicide_count (20 instructions)
+// 71020c9e90 -- suicide_count (20 instructions)
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 s32 FighterInformation__suicide_count_impl(FighterInformation* fi, s32 index) {
@@ -180,7 +180,7 @@ s32 FighterInformation__suicide_count_impl(FighterInformation* fi, s32 index) {
 }
 #endif
 
-// 71020c9ee0 — total_beat_count (2 instructions, tail call)
+// 71020c9ee0 -- total_beat_count (2 instructions, tail call)
 extern "C" void FUN_710065e8a0(void*);
 void FighterInformation__total_beat_count_impl(FighterInformation* fi) {
     FUN_710065e8a0(*reinterpret_cast<void**>(reinterpret_cast<u8*>(fi) + 0x8));

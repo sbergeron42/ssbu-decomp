@@ -1,6 +1,6 @@
 #include "types.h"
 
-// Batch decompiled via Ghidra MCP — pool-b, batch 022
+// Batch decompiled via Ghidra MCP -- pool-b, batch 022
 // Range: 0x7101d range
 
 [[noreturn]] extern "C" void abort();

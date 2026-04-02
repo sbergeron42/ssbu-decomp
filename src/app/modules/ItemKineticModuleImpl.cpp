@@ -4,14 +4,14 @@ typedef float v4sf __attribute__((vector_size(16)));
 
 namespace app::lua_bind {
 
-// 71020cc8d0 — 5 instructions (branch: bounds check)
+// 71020cc8d0 -- 5 instructions (branch: bounds check)
 void ItemKineticModuleImpl__set_slope_type_impl(BattleObjectModuleAccessor* accessor, u32 slope_type) {
     if (slope_type <= 7) {
         *reinterpret_cast<u32*>(reinterpret_cast<u8*>(accessor->item_kinetic_module) + 0x9e8) = slope_type;
     }
 }
 
-// 71020cc900 — 3 instructions (trivial getter)
+// 71020cc900 -- 3 instructions (trivial getter)
 u32 ItemKineticModuleImpl__get_kinetic_flags_impl(BattleObjectModuleAccessor* accessor) {
     return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(accessor->item_kinetic_module) + 0x9d8);
 }
@@ -31,7 +31,7 @@ void ItemKineticModuleImpl__set_kinetic_flags_impl(BattleObjectModuleAccessor* a
 void ItemKineticModuleImpl__set_interpolate_rate_impl(BattleObjectModuleAccessor* a, f32 val) {
     *reinterpret_cast<f32*>(reinterpret_cast<u8*>(a->item_kinetic_module) + 0xa70) = val;
 }
-// NOTE: NX Clang x8/x9 regalloc divergence — uses x8+w9 vs our x9+w8
+// NOTE: NX Clang x8/x9 regalloc divergence -- uses x8+w9 vs our x9+w8
 void ItemKineticModuleImpl__it_ai_dir_rot_mode_impl(BattleObjectModuleAccessor* a, u32 val) {
     auto* module = reinterpret_cast<u8*>(a->item_kinetic_module);
     module[0xa50] = val & 1;
@@ -47,7 +47,7 @@ void ItemKineticModuleImpl__off_kinetic_flag_impl(BattleObjectModuleAccessor* a,
     *reinterpret_cast<u32*>(p + 0x9d8) &= ~flag;
 }
 
-// 71020ccfd0 — it_ai_type: stores type + two Vec3 structs via 64-bit copies
+// 71020ccfd0 -- it_ai_type: stores type + two Vec3 structs via 64-bit copies
 void ItemKineticModuleImpl__it_ai_type_impl(BattleObjectModuleAccessor* a, u32 type, u64* v1, u64* v2) {
     auto* p = reinterpret_cast<u8*>(a->item_kinetic_module);
     *reinterpret_cast<u32*>(p + 0xa04) = type;
@@ -57,7 +57,7 @@ void ItemKineticModuleImpl__it_ai_type_impl(BattleObjectModuleAccessor* a, u32 t
     *reinterpret_cast<u64*>(p + 0xa10) = v2[0];
 }
 
-// 71020cd030 — it_ai_distance_factor: range check [0.0, 1.0], store to +0xA34
+// 71020cd030 -- it_ai_distance_factor: range check [0.0, 1.0], store to +0xA34
 // NOTE: negated comparisons generate b.lt/b.hi (NaN-catching) matching NX Clang
 void ItemKineticModuleImpl__it_ai_distance_factor_impl(BattleObjectModuleAccessor* a, f32 val) {
     if (!(val >= 0.0f)) return;
@@ -65,7 +65,7 @@ void ItemKineticModuleImpl__it_ai_distance_factor_impl(BattleObjectModuleAccesso
     *reinterpret_cast<f32*>(reinterpret_cast<u8*>(a->item_kinetic_module) + 0xa34) = val;
 }
 
-// 71020ccc70 — SIMD: NX ext+mov+mov pattern for zero-w
+// 71020ccc70 -- SIMD: NX ext+mov+mov pattern for zero-w
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void ItemKineticModuleImpl__set_motion_trans_rate_impl(BattleObjectModuleAccessor* a, void* src) {
@@ -80,7 +80,7 @@ void ItemKineticModuleImpl__set_motion_trans_rate_impl(BattleObjectModuleAccesso
 }
 #endif
 
-// 71020ccca0 — load pi/180 constant via adrp (rodata), fmul angle, store at module+0xa90
+// 71020ccca0 -- load pi/180 constant via adrp (rodata), fmul angle, store at module+0xa90
 // adrp/ldr encodings are PC+rodata-relative → use .inst for exact match
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
@@ -96,7 +96,7 @@ void ItemKineticModuleImpl__set_motion_trans_angle_impl(BattleObjectModuleAccess
 }
 #endif
 
-// 71020cccc0 — load value from module+0xa90, multiply by 180 then divide by PI (via adrp constants)
+// 71020cccc0 -- load value from module+0xa90, multiply by 180 then divide by PI (via adrp constants)
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 f32 ItemKineticModuleImpl__get_motion_trans_angle_impl(BattleObjectModuleAccessor* a) {
@@ -114,7 +114,7 @@ f32 ItemKineticModuleImpl__get_motion_trans_angle_impl(BattleObjectModuleAccesso
 }
 #endif
 
-// 71020cccf0 — SIMD: NX ext+mov+mov pattern for zero-w
+// 71020cccf0 -- SIMD: NX ext+mov+mov pattern for zero-w
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void ItemKineticModuleImpl__set_motion_trans_rate_2nd_impl(BattleObjectModuleAccessor* a, void* src) {
@@ -129,7 +129,7 @@ void ItemKineticModuleImpl__set_motion_trans_rate_2nd_impl(BattleObjectModuleAcc
 }
 #endif
 
-// 71020ccd20 — same constant as _impl above (same page + offset), different store target
+// 71020ccd20 -- same constant as _impl above (same page + offset), different store target
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void ItemKineticModuleImpl__set_motion_trans_angle_2nd_impl(BattleObjectModuleAccessor* a, f32 angle) {
@@ -144,7 +144,7 @@ void ItemKineticModuleImpl__set_motion_trans_angle_2nd_impl(BattleObjectModuleAc
 }
 #endif
 
-// 71020ccd40 — radians to degrees from module+0xab0 (same constant loads as _impl above)
+// 71020ccd40 -- radians to degrees from module+0xab0 (same constant loads as _impl above)
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 f32 ItemKineticModuleImpl__get_motion_trans_angle_2nd_impl(BattleObjectModuleAccessor* a) {
@@ -162,7 +162,7 @@ f32 ItemKineticModuleImpl__get_motion_trans_angle_2nd_impl(BattleObjectModuleAcc
 }
 #endif
 
-// 71020ccd70 — two float stores + SIMD zero-zw vec copy at module+0x3d0
+// 71020ccd70 -- two float stores + SIMD zero-zw vec copy at module+0x3d0
 void ItemKineticModuleImpl__set_param_gemini_impl(BattleObjectModuleAccessor* a, f32 p1, f32 p2, v4sf* src) {
     auto* m = reinterpret_cast<u8*>(a->item_kinetic_module);
     *reinterpret_cast<f32*>(m + 0xab4) = p1;
@@ -173,7 +173,7 @@ void ItemKineticModuleImpl__set_param_gemini_impl(BattleObjectModuleAccessor* a,
     *reinterpret_cast<v4sf*>(m + 0x3d0) = v;
 }
 
-// 71020cd000 — clamp [0.0, 1.0] with fccmp pattern (NX divergence)
+// 71020cd000 -- clamp [0.0, 1.0] with fccmp pattern (NX divergence)
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void ItemKineticModuleImpl__it_ai_dir_factor_impl(BattleObjectModuleAccessor* a, f32 val) {
@@ -192,7 +192,7 @@ void ItemKineticModuleImpl__it_ai_dir_factor_impl(BattleObjectModuleAccessor* a,
 }
 #endif
 
-// 71020cd060 — SIMD: NX ext+mov+mov pattern for zero-w
+// 71020cd060 -- SIMD: NX ext+mov+mov pattern for zero-w
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void ItemKineticModuleImpl__it_base_rot_impl(BattleObjectModuleAccessor* a, void* src) {
@@ -207,7 +207,7 @@ void ItemKineticModuleImpl__it_base_rot_impl(BattleObjectModuleAccessor* a, void
 }
 #endif
 
-// 71020ccee0 — it_ai_move: NX prologue (sub;str x23;stp x22,x21;stp x20,x19;stp x29,x30),
+// 71020ccee0 -- it_ai_move: NX prologue (sub;str x23;stp x22,x21;stp x20,x19;stp x29,x30),
 //   8 args: accessor,vec2*,x19,x20,vec2*,x21,bool_w6,w22
 //   Conditionally calls vtable[0xb0] on posture module, scales vec2 components,
 //   optionally updates 2nd-motion vec, builds SIMD vec via ext+ext, stores to kinetic fields
@@ -281,7 +281,7 @@ void ItemKineticModuleImpl__it_ai_move_impl(BattleObjectModuleAccessor* a,
 }
 #endif
 
-// 71020cc8c0 — ldr x0,[x0,#0x68]; and w3,w3,#1; b <ext>; pad
+// 71020cc8c0 -- ldr x0,[x0,#0x68]; and w3,w3,#1; b <ext>; pad
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void ItemKineticModuleImpl__set_throw_param_impl(BattleObjectModuleAccessor* a, void* p1, void* p2, u32 flag) {
@@ -294,7 +294,7 @@ void ItemKineticModuleImpl__set_throw_param_impl(BattleObjectModuleAccessor* a, 
 }
 #endif
 
-// 71020ccb30 — ldr x0,[x0,#0x68]; b <ext>; pad; pad
+// 71020ccb30 -- ldr x0,[x0,#0x68]; b <ext>; pad; pad
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void ItemKineticModuleImpl__add_speed_damage_impl(BattleObjectModuleAccessor* a, void* speed) {
@@ -307,7 +307,7 @@ void ItemKineticModuleImpl__add_speed_damage_impl(BattleObjectModuleAccessor* a,
 }
 #endif
 
-// 71020ccaf0 — clear speed at +0x260 to global zero vec (SIMD zero-W pattern);
+// 71020ccaf0 -- clear speed at +0x260 to global zero vec (SIMD zero-W pattern);
 //   if flag bit0 and [+0x310]!=0: also zero Y component of +0x2f0
 // Uses adrp for global zero-vec singleton → adrp won't byte-match
 #ifdef MATCHING_HACK_NX_CLANG
@@ -335,7 +335,7 @@ void ItemKineticModuleImpl__clear_speed_impl(BattleObjectModuleAccessor* a, u32 
 }
 #endif
 
-// 71020ccb40 — slope_angle_impl: 76 instructions (dot product, acos, degree conversion)
+// 71020ccb40 -- slope_angle_impl: 76 instructions (dot product, acos, degree conversion)
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 f32 ItemKineticModuleImpl__slope_angle_impl(BattleObjectModuleAccessor* a, u32 flags) {
@@ -363,7 +363,7 @@ f32 ItemKineticModuleImpl__slope_angle_impl(BattleObjectModuleAccessor* a, u32 f
 }
 #endif
 
-// 71020cc950 — add_speed_consider_gravity: 104 instructions
+// 71020cc950 -- add_speed_consider_gravity: 104 instructions
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void ItemKineticModuleImpl__add_speed_consider_gravity_impl(BattleObjectModuleAccessor* a, void* vec3, u32 flag) {
@@ -398,7 +398,7 @@ void ItemKineticModuleImpl__add_speed_consider_gravity_impl(BattleObjectModuleAc
 }
 #endif
 
-// 71020ccdb0 — set_rot_along_speed_x: 76 instructions (conditional negate + clamp)
+// 71020ccdb0 -- set_rot_along_speed_x: 76 instructions (conditional negate + clamp)
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void ItemKineticModuleImpl__set_rot_along_speed_x_impl(BattleObjectModuleAccessor* a, void* vec2, f32 scale) {
@@ -426,7 +426,7 @@ void ItemKineticModuleImpl__set_rot_along_speed_x_impl(BattleObjectModuleAccesso
 }
 #endif
 
-// 71020ccda0 — ldr x0,[x0,#0x68]; and w2,w2,#1; b <ext>; pad
+// 71020ccda0 -- ldr x0,[x0,#0x68]; and w2,w2,#1; b <ext>; pad
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void ItemKineticModuleImpl__get_sum_speed_simple_impl(BattleObjectModuleAccessor* a, void* out, u32 flag) {

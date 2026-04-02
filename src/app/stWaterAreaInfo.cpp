@@ -8,7 +8,7 @@ extern int DAT_710593a3a8[4];
 
 namespace app::lua_bind {
 
-// 71020d3e40 (512 bytes): load fields from L2CValue table — external branches, won't byte-match
+// 71020d3e40 (512 bytes): load fields from L2CValue table -- external branches, won't byte-match
 void stWaterAreaInfo__load_from_l2c_table_impl(stWaterAreaInfo* obj, void* lv_in) {
     int* plv = reinterpret_cast<int*>(lv_in);
     int* e; float v;
@@ -90,7 +90,7 @@ LargeRet stWaterAreaInfo__store_l2c_table_impl(stWaterAreaInfo* obj) {
 }
 #endif
 
-// 71020d42f0: fill trampoline — mov x2,x1; mov x1,x0; mov x0,x8; b FUN_71020d4110
+// 71020d42f0: fill trampoline -- mov x2,x1; mov x1,x0; mov x0,x8; b FUN_71020d4110
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void stWaterAreaInfo__store_l2c_table_impl_71020d42f0(stWaterAreaInfo* obj, void* lv) {

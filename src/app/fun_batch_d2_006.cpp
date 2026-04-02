@@ -1,6 +1,6 @@
 #include "types.h"
 
-// MEDIUM-tier FUN_* functions — 0x7103 address range, batch d2-006
+// MEDIUM-tier FUN_* functions -- 0x7103 address range, batch d2-006
 // Pool-d worker: auto-generated from Ghidra decompilation
 
 // ---- External declarations -----------------------------------------------
@@ -36,7 +36,7 @@ extern u8 PTR_LAB_7105230af0[];
 
 // ---- Functions ---------------------------------------------------------------
 
-// 0x71035da3d0 — type-dispatch: read/copy typed value from source ptr (592 bytes)
+// 0x71035da3d0 -- type-dispatch: read/copy typed value from source ptr (592 bytes)
 void FUN_71035da3d0(u32 param_1, s64 *param_2, u64 *param_3)
 {
     s64 lVar1;
@@ -184,7 +184,7 @@ LAB_71035da528:
     return;
 }
 
-// 0x71035da620 — type-dispatch: write typed value into dest via FUN_710356ba40 (800 bytes)
+// 0x71035da620 -- type-dispatch: write typed value into dest via FUN_710356ba40 (800 bytes)
 void FUN_71035da620(u32 param_1, s64 *param_2, u64 *param_3)
 {
     u32 uVar1;
@@ -332,7 +332,7 @@ void FUN_71035da620(u32 param_1, s64 *param_2, u64 *param_3)
     return;
 }
 
-// 0x71035e7a50 — type-dispatch: assign observable typed value (272 bytes)
+// 0x71035e7a50 -- type-dispatch: assign observable typed value (272 bytes)
 void FUN_71035e7a50(u32 param_1, s64 *param_2, s64 param_3)
 {
     u32 uVar1;
@@ -383,7 +383,7 @@ void FUN_71035e7a50(u32 param_1, s64 *param_2, s64 param_3)
     return;
 }
 
-// 0x71035e99f0 — type-dispatch: assign observable typed value variant B (1472 bytes)
+// 0x71035e99f0 -- type-dispatch: assign observable typed value variant B (1472 bytes)
 void FUN_71035e99f0(u32 param_1, s64 *param_2, s64 param_3)
 {
     u32 uVar1;

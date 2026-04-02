@@ -1,6 +1,6 @@
 #include "types.h"
 
-// MEDIUM-tier FUN_* functions — mixed address range, batch 8
+// MEDIUM-tier FUN_* functions -- mixed address range, batch 8
 // Pool-d worker: auto-generated from Ghidra decompilation
 
 // ---- External declarations -----------------------------------------------
@@ -103,28 +103,28 @@ void FUN_710003a5f0(void* param_1)
     memset(param_1, 0, 0x3018);
 }
 
-// 710013bc98 — wrapper: nn::os::SendMessageQueue, always returns 1
+// 710013bc98 -- wrapper: nn::os::SendMessageQueue, always returns 1
 u64 FUN_710013bc98(nn::os::MessageQueueType* param_1, u64 param_2)
 {
     nn::os::SendMessageQueue(param_1, param_2);
     return 1;
 }
 
-// 710013bd08 — wrapper: nn::os::JamMessageQueue, always returns 1
+// 710013bd08 -- wrapper: nn::os::JamMessageQueue, always returns 1
 u64 FUN_710013bd08(nn::os::MessageQueueType* param_1, u64 param_2)
 {
     nn::os::JamMessageQueue(param_1, param_2);
     return 1;
 }
 
-// 710013b910 — store system tick frequency to global
+// 710013b910 -- store system tick frequency to global
 void FUN_710013b910()
 {
     u64 uVar1 = nn::os::GetSystemTickFrequency();
     PTR_DAT_71052a3cd0 = uVar1;
 }
 
-// 71000c73d8 — forward copy via FUN_710015ffc0
+// 71000c73d8 -- forward copy via FUN_710015ffc0
 void FUN_71000c73d8(s64 param_1)
 {
     FUN_710015ffc0(param_1 + 0x48, param_1 + 0x48);
@@ -136,48 +136,48 @@ u8 FUN_7100177c90(s64 param_1)
     return FUN_7100175220(*(u64*)(param_1 + 0x2a8));
 }
 
-// 7100177cb0 — identical body to 7100177c90 (different callsite context)
+// 7100177cb0 -- identical body to 7100177c90 (different callsite context)
 u8 FUN_7100177cb0(s64 param_1)
 {
     return FUN_7100175220(*(u64*)(param_1 + 0x2a8));
 }
 
-// 71001d2550 — calls sub, returns 1
+// 71001d2550 -- calls sub, returns 1
 u64 FUN_71001d2550()
 {
     FUN_71001d2570();
     return 1;
 }
 
-// 71001d2810 — calls sub, returns 1
+// 71001d2810 -- calls sub, returns 1
 u64 FUN_71001d2810()
 {
     FUN_71001d2830();
     return 1;
 }
 
-// 71001d90a0 — calls sub, returns 0
+// 71001d90a0 -- calls sub, returns 0
 u64 FUN_71001d90a0()
 {
     FUN_71001d90c0();
     return 0;
 }
 
-// 710020f9f0 — calls sub, returns 0
+// 710020f9f0 -- calls sub, returns 0
 u64 FUN_710020f9f0()
 {
     FUN_710020f2b0();
     return 0;
 }
 
-// 7100210e50 — calls sub, returns 0
+// 7100210e50 -- calls sub, returns 0
 u64 FUN_7100210e50()
 {
     FUN_71002105a0();
     return 0;
 }
 
-// 71001e0c60 — error code XOR mask
+// 71001e0c60 -- error code XOR mask
 u32 FUN_71001e0c60()
 {
     u32 uVar1 = FUN_71001b34a0(&DAT_00006e48);
@@ -202,7 +202,7 @@ void FUN_71001f2e90(u64 param_1)
     FUN_71001f2ba0(param_1, &DAT_710449be5b, 0);
 }
 
-// 7100228180 — allocate 0x10 bytes, zero-initialize if successful
+// 7100228180 -- allocate 0x10 bytes, zero-initialize if successful
 void FUN_7100228180()
 {
     u64* puVar1 = (u64*)FUN_7100228110(0x10);
@@ -212,14 +212,14 @@ void FUN_7100228180()
     }
 }
 
-// 71002549d0 — bool: inner pointer is non-null
+// 71002549d0 -- bool: inner pointer is non-null
 bool FUN_71002549d0(s64 param_1)
 {
     s64 lVar1 = FUN_71001b4d20(*(u64*)(param_1 + 0x18));
     return lVar1 != 0;
 }
 
-// 71002b3670 — return pointer if flag bit 0 set, else null
+// 71002b3670 -- return pointer if flag bit 0 set, else null
 u8* FUN_71002b3670()
 {
     u64 uVar2 = FUN_71002b64f0();
@@ -228,44 +228,44 @@ u8* FUN_71002b3670()
     return &DAT_000048d8;
 }
 
-// 71002b3690 — return 8 if flag bit 0 set, else 0
+// 71002b3690 -- return 8 if flag bit 0 set, else 0
 u64 FUN_71002b3690()
 {
     u64 uVar2 = FUN_71002b64f0();
     return (uVar2 & 1) ? (u64)8 : (u64)0;
 }
 
-// 71002b4e30 — dereference pointer
+// 71002b4e30 -- dereference pointer
 u64 FUN_71002b4e30(u64* param_1)
 {
     return *param_1;
 }
 
-// 71002b8120 — forward to bb530 at +0x47a0
+// 71002b8120 -- forward to bb530 at +0x47a0
 void FUN_71002b8120(s64 param_1)
 {
     FUN_71002bb530(param_1 + 0x47a0);
 }
 
-// 71002b8140 — forward to bb540 at +0x47a0
+// 71002b8140 -- forward to bb540 at +0x47a0
 void FUN_71002b8140(s64 param_1)
 {
     FUN_71002bb540(param_1 + 0x47a0);
 }
 
-// 71002c28d0 — forward call via field at +0x10 (x1 passes through to FUN_71002c2e40)
+// 71002c28d0 -- forward call via field at +0x10 (x1 passes through to FUN_71002c2e40)
 void FUN_71002c28d0(s64 param_1, s32 /*param_2 passed through*/)
 {
     FUN_71002c2e40(*(u64*)(param_1 + 0x10));
 }
 
-// 71002c2b30 — address calculation with table lookup
+// 71002c2b30 -- address calculation with table lookup
 s64 FUN_71002c2b30(s64 param_1, u32 param_2)
 {
     return *(s64*)(param_1 + 0x18) + (u64)param_2 * 0x48 + 0x12704;
 }
 
-// 71002c31e0 — set field to value (guarded write when field != -1)
+// 71002c31e0 -- set field to value (guarded write when field != -1)
 void FUN_71002c31e0(s64 param_1, u64* param_2)
 {
     if (*(s64*)(param_1 + 0x120) != -1) {

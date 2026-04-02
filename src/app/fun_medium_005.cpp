@@ -1,6 +1,6 @@
 #include "types.h"
 
-// MEDIUM-tier FUN_* functions — address range 0x7100174000–0x7100b8000
+// MEDIUM-tier FUN_* functions -- address range 0x7100174000-0x7100b8000
 // Pool-d worker: auto-generated from Ghidra decompilation
 
 extern u8* PTR_DAT_71052a53d8;

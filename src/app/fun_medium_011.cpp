@@ -1,6 +1,6 @@
 #include "types.h"
 
-// MEDIUM-tier FUN_* functions — mixed address range, batch 12
+// MEDIUM-tier FUN_* functions -- mixed address range, batch 12
 // Pool-d worker: auto-generated from Ghidra decompilation
 
 // ---- External declarations -----------------------------------------------
@@ -50,28 +50,28 @@ extern u8  DAT_710449be79;
 
 // ---- Vtable init helpers (save x0, call sub, overwrite *param_1) ----------
 
-// 71001941b0 — call FUN_71001531c0(param_1), set *param_1 = PTR+0x10
+// 71001941b0 -- call FUN_71001531c0(param_1), set *param_1 = PTR+0x10
 void FUN_71001941b0(s64* param_1)
 {
     FUN_71001531c0(param_1);
     *param_1 = (s64)(PTR_DAT_71052a56c8 + 0x10);
 }
 
-// 71001793a0 — call FUN_710014c900(param_1), set *param_1 = PTR+0x10
+// 71001793a0 -- call FUN_710014c900(param_1), set *param_1 = PTR+0x10
 __attribute__((noinline)) void FUN_71001793a0(s64* param_1)
 {
     FUN_710014c900(param_1);
     *param_1 = (s64)(PTR_DAT_71052a5288 + 0x10);
 }
 
-// 7100167c50 — call FUN_71001793a0(param_1), set *param_1 = PTR+0x10
+// 7100167c50 -- call FUN_71001793a0(param_1), set *param_1 = PTR+0x10
 void FUN_7100167c50(s64* param_1)
 {
     FUN_71001793a0(param_1);
     *param_1 = (s64)(PTR_DAT_71052a50a8 + 0x10);
 }
 
-// 7100159ae0 — call FUN_7100156390(param_1), set *param_1 = PTR+0x10
+// 7100159ae0 -- call FUN_7100156390(param_1), set *param_1 = PTR+0x10
 void FUN_7100159ae0(s64* param_1)
 {
     FUN_7100156390(param_1);
@@ -80,58 +80,58 @@ void FUN_7100159ae0(s64* param_1)
 
 // ---- FUN_71001b4200 wrappers (push local constant, call with &local) ------
 
-// 71001e0870 — signal event 0x80010002
+// 71001e0870 -- signal event 0x80010002
 void FUN_71001e0870(u64 param_1)
 {
     u32 local_14 = 0x80010002;
     FUN_71001b4200(param_1, &local_14);
 }
 
-// 71001e08a0 — same body as FUN_71001e0870
+// 71001e08a0 -- same body as FUN_71001e0870
 void FUN_71001e08a0(u64 param_1)
 {
     u32 local_14 = 0x80010002;
     FUN_71001b4200(param_1, &local_14);
 }
 
-// 71001e08d0 — same body as FUN_71001e0870
+// 71001e08d0 -- same body as FUN_71001e0870
 void FUN_71001e08d0(u64 param_1)
 {
     u32 local_14 = 0x80010002;
     FUN_71001b4200(param_1, &local_14);
 }
 
-// 710023bd10 — same body as FUN_71001e0870
+// 710023bd10 -- same body as FUN_71001e0870
 void FUN_710023bd10(u64 param_1)
 {
     u32 local_14 = 0x80010002;
     FUN_71001b4200(param_1, &local_14);
 }
 
-// 710023bd40 — same body as FUN_71001e0870
+// 710023bd40 -- same body as FUN_71001e0870
 void FUN_710023bd40(u64 param_1)
 {
     u32 local_14 = 0x80010002;
     FUN_71001b4200(param_1, &local_14);
 }
 
-// 7100246560 — signal event 0x80050001
+// 7100246560 -- signal event 0x80050001
 void FUN_7100246560(u64 param_1)
 {
     u32 local_14 = 0x80050001;
     FUN_71001b4200(param_1, &local_14);
 }
 
-// 7100246590 — same body as FUN_7100246560
+// 7100246590 -- same body as FUN_7100246560
 void FUN_7100246590(u64 param_1)
 {
     u32 local_14 = 0x80050001;
     FUN_71001b4200(param_1, &local_14);
 }
 
-// ---- FUN_71001f4480/44b0 — store field + signal 0x10001 ------------------
+// ---- FUN_71001f4480/44b0 -- store field + signal 0x10001 ------------------
 
-// 71001f4480 — store param_3 to param_2+0xb0, then signal 0x10001
+// 71001f4480 -- store param_3 to param_2+0xb0, then signal 0x10001
 void FUN_71001f4480(u64 param_1, s64 param_2, u32 param_3)
 {
     u32 local_14 = 0x10001;
@@ -139,7 +139,7 @@ void FUN_71001f4480(u64 param_1, s64 param_2, u32 param_3)
     FUN_71001b4200(param_1, &local_14);
 }
 
-// 71001f44b0 — store param_3 to param_2+0xb8, then signal 0x10001
+// 71001f44b0 -- store param_3 to param_2+0xb8, then signal 0x10001
 void FUN_71001f44b0(u64 param_1, s64 param_2, u32 param_3)
 {
     u32 local_14 = 0x10001;
@@ -257,7 +257,7 @@ u32 FUN_710024ff30(s64 param_1, u64 param_2, u32 param_3)
     return FUN_710024ff60(param_1 + 0x140, param_2, &local_14) & 1;
 }
 
-// 7100250150 — u64 local variant
+// 7100250150 -- u64 local variant
 u32 FUN_7100250150(s64 param_1, u64 param_2, u64 param_3)
 {
     u64 local_18 = param_3;
@@ -287,7 +287,7 @@ u32 FUN_7100252300(s64 param_1, u64 param_2, u32 param_3)
 
 // ---- Misc -----------------------------------------------------------------
 
-// 7100157cc0 — zero first field, init sub-object, zero byte at offset
+// 7100157cc0 -- zero first field, init sub-object, zero byte at offset
 void FUN_7100157cc0(u64* param_1)
 {
     *param_1 = 0;
@@ -295,28 +295,28 @@ void FUN_7100157cc0(u64* param_1)
     *(u8*)(param_1 + 0xf) = 0;
 }
 
-// 71001b4dd0 — call FUN_71001b4940 with -1 sentinel, return param_1
+// 71001b4dd0 -- call FUN_71001b4940 with -1 sentinel, return param_1
 u64 FUN_71001b4dd0(u64 param_1, u64 param_2)
 {
     FUN_71001b4940(param_1, param_2, (u64)-1);
     return param_1;
 }
 
-// 71001b5de0 — safe strncpy with guaranteed null termination
+// 71001b5de0 -- safe strncpy with guaranteed null termination
 void FUN_71001b5de0(char* param_1, char* param_2, u64 param_3)
 {
     strncpy(param_2, param_1, param_3);
     param_2[param_3 - 1] = '\0';
 }
 
-// 71001dec40 — init sub-object at +0x80, store param_3 at +0xa8
+// 71001dec40 -- init sub-object at +0x80, store param_3 at +0xa8
 void FUN_71001dec40(s64 param_1, u64 /*param_2*/, u32 param_3)
 {
     FUN_71001b2f70(param_1 + 0x80);
     *(u32*)(param_1 + 0xa8) = param_3;
 }
 
-// 710016c060 — open LDN station, call FUN_710016b2f0
+// 710016c060 -- open LDN station, call FUN_710016b2f0
 void FUN_710016c060(u64 param_1)
 {
     u32 local_18[2];

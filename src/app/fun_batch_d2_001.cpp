@@ -1,6 +1,6 @@
 #include "types.h"
 
-// MEDIUM-tier FUN_* functions — 0x7103 address range, batch d2-001
+// MEDIUM-tier FUN_* functions -- 0x7103 address range, batch d2-001
 // Pool-d worker: auto-generated from Ghidra decompilation
 
 // ---- External declarations -----------------------------------------------
@@ -18,7 +18,7 @@ extern u8 DAT_710532e7b0[];    // pointer-to-manager base
 
 // ---- Functions ---------------------------------------------------------------
 
-// 0x710317d6e0 — collision region submit: read rect from param_1, find free slot, write and tag (1424 bytes)
+// 0x710317d6e0 -- collision region submit: read rect from param_1, find free slot, write and tag (1424 bytes)
 void FUN_710317d6e0(s64 param_1)
 {
     char cVar1;
@@ -228,7 +228,7 @@ LAB_710317dc60:
     return;
 }
 
-// 0x71032d05a0 — tournament UI slot set: update anim state based on resource callback (688 bytes)
+// 0x71032d05a0 -- tournament UI slot set: update anim state based on resource callback (688 bytes)
 void FUN_71032d05a0(s64 param_1, u32 param_2, s64 param_3)
 {
     s64 lVar1;
@@ -267,7 +267,7 @@ void FUN_71032d05a0(s64 param_1, u32 param_2, s64 param_3)
     return;
 }
 
-// 0x71032e2f20 — stage mode to hash40 constant lookup (small)
+// 0x71032e2f20 -- stage mode to hash40 constant lookup (small)
 u64 FUN_71032e2f20(u64 param_1)
 {
     s32 iVar1;

@@ -1,12 +1,12 @@
 #include "types.h"
 
-// FUN_* MEDIUM tier — __throw_out_of_range wrappers (pool-e)
+// FUN_* MEDIUM tier -- __throw_out_of_range wrappers (pool-e)
 // These call FUN_71039c0d80 = std::__1::__vector_base_common<true>::__throw_out_of_range
 //
 // Patterns:
-//   Group A: stp+mov+bl       (3 insns) — pass x0 unchanged
-//   Group B: stp+mov+add+bl   (4 insns) — add offset to x0 before call
-//   Group C: stp+mov+mov+bl   (4 insns) — pass x8 or x9 as 'this'
+//   Group A: stp+mov+bl       (3 insns) -- pass x0 unchanged
+//   Group B: stp+mov+add+bl   (4 insns) -- add offset to x0 before call
+//   Group C: stp+mov+mov+bl   (4 insns) -- pass x8 or x9 as 'this'
 
 extern "C" [[noreturn]] void FUN_71039c0d80(void*);
 

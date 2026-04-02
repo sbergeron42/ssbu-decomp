@@ -4,7 +4,7 @@
 inline void* operator new(unsigned long, void* p) noexcept { return p; }
 inline void  operator delete(void*, void*) noexcept {}
 
-// MEDIUM-tier FUN_* functions — mixed address range, batch 22
+// MEDIUM-tier FUN_* functions -- mixed address range, batch 22
 // Pool-d worker: auto-generated from Ghidra decompilation
 
 // ---- External declarations -----------------------------------------------
@@ -44,8 +44,8 @@ extern u8  PTR_DAT_71052a2f18[];   // vtable (FUN_71000d0910)
 extern u8  PTR_DAT_71052a3f78[];   // vtable (FUN_71000d38f0)
 extern u8  PTR_DAT_71052a29c8[];   // outer guard (FUN_71000855a0)
 extern u8  PTR_DAT_71052a29d0[];   // outer data  (FUN_71000855a0)
-extern u8  PTR_DAT_71052a2918[];   // inner guard  (FUN_71000855a0) — shared
-extern u8  PTR_DAT_71052a2920[];   // inner data   (FUN_71000855a0) — shared
+extern u8  PTR_DAT_71052a2918[];   // inner guard  (FUN_71000855a0) -- shared
+extern u8  PTR_DAT_71052a2920[];   // inner data   (FUN_71000855a0) -- shared
 extern u8  PTR_DAT_71052a2890[];   // guard (FUN_710007a2f0)
 extern u8  PTR_DAT_71052a2898[];   // data  (FUN_710007a2f0)
 extern u8  PTR_DAT_71052a26d8[];   // outer guard  (FUN_7100050840)
@@ -57,7 +57,7 @@ extern u8  PTR_DAT_71052a24c0[];   // inner data   (FUN_7100050840)
 
 // ---- StepSequenceJob constructors ----------------------------------------
 
-// 71000d0910 — StepSequenceJob base + zero 3 fields + vtable 2f18
+// 71000d0910 -- StepSequenceJob base + zero 3 fields + vtable 2f18
 void FUN_71000d0910(s64* param_1)
 {
     new (param_1) nn::pia::common::StepSequenceJob();
@@ -67,7 +67,7 @@ void FUN_71000d0910(s64* param_1)
     *param_1 = (s64)(PTR_DAT_71052a2f18 + 0x10);
 }
 
-// 71000d38f0 — StepSequenceJob base + zero 1 field + vtable 2f78
+// 71000d38f0 -- StepSequenceJob base + zero 1 field + vtable 2f78
 void FUN_71000d38f0(s64* param_1)
 {
     new (param_1) nn::pia::common::StepSequenceJob();
@@ -77,7 +77,7 @@ void FUN_71000d38f0(s64* param_1)
 
 // ---- Float clamp with NaN guard ------------------------------------------
 
-// 71000664b0 — clamp *param_3 to max(param_1, *param_3) with NaN handling
+// 71000664b0 -- clamp *param_3 to max(param_1, *param_3) with NaN handling
 void FUN_71000664b0(f32 param_1, f32 param_2, f32* param_3)
 {
     f32 fVar5 = *param_3;
@@ -104,7 +104,7 @@ void FUN_71000664b0(f32 param_1, f32 param_2, f32* param_3)
 
 // ---- cxa_guard singletons ------------------------------------------------
 
-// 710007a2f0 — simple cxa_guard: 2890/2898
+// 710007a2f0 -- simple cxa_guard: 2890/2898
 u8* FUN_710007a2f0()
 {
     s32 iVar1;
@@ -118,7 +118,7 @@ u8* FUN_710007a2f0()
     return PTR_DAT_71052a2898;
 }
 
-// 71000855a0 — nested cxa_guard: outer 29c8/29d0, inner 2918/2920
+// 71000855a0 -- nested cxa_guard: outer 29c8/29d0, inner 2918/2920
 u8* FUN_71000855a0()
 {
     s32 iVar1;
@@ -139,7 +139,7 @@ u8* FUN_71000855a0()
     return PTR_DAT_71052a29d0;
 }
 
-// 7100050840 — triple cxa_guard: outer 26d8/26e0 → mid 24a8/24b0 → inner 24b8/24c0
+// 7100050840 -- triple cxa_guard: outer 26d8/26e0 → mid 24a8/24b0 → inner 24b8/24c0
 u8* FUN_7100050840()
 {
     s32 iVar1;
@@ -169,7 +169,7 @@ u8* FUN_7100050840()
 
 // ---- NAT detection check with nn::err ------------------------------------
 
-// 71000cb1e0 — check if NAT port state allows new connection
+// 71000cb1e0 -- check if NAT port state allows new connection
 bool FUN_71000cb1e0(s64 param_1)
 {
     u16 uVar1 = FUN_71000c87e0();

@@ -1,17 +1,17 @@
 #include "types.h"
 
-// Batch decompiled via Ghidra MCP — pool-b, batch 006
-// Range: 0x7101000000 — 0x7101FFFFFF
+// Batch decompiled via Ghidra MCP -- pool-b, batch 006
+// Range: 0x7101000000 -- 0x7101FFFFFF
 
 // Forward declarations
 [[noreturn]] extern "C" void abort();
 extern "C" s32 __cxa_guard_acquire(s64 *);
 extern "C" void __cxa_guard_release(s64 *);
 
-// Data symbols — guard vars
+// Data symbols -- guard vars
 extern u64 DAT_71052c08d0;
 extern u64 DAT_71052c0900;
-// Data symbols — vtable pointers
+// Data symbols -- vtable pointers
 extern void *DAT_71052c08c8;
 extern void *DAT_71052c0908;
 // PTR_LAB targets

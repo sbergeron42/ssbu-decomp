@@ -1,6 +1,6 @@
 #include "types.h"
 
-// EASY-tier FUN_* functions — address range 0x7102xxxxxx
+// EASY-tier FUN_* functions -- address range 0x7102xxxxxx
 // Pool-b worker: manually decompiled from Ghidra
 
 // External labels (vtable pointers)

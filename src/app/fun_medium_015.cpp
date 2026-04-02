@@ -1,6 +1,6 @@
 #include "types.h"
 
-// MEDIUM-tier FUN_* functions — mixed address range, batch 16
+// MEDIUM-tier FUN_* functions -- mixed address range, batch 16
 // Pool-d worker: auto-generated from Ghidra decompilation
 
 // ---- External declarations -----------------------------------------------
@@ -16,7 +16,7 @@ namespace os {
 }
 namespace mem {
     struct NumberLineAllocator;
-    // Allocate(allocator, out_ptr) — returns 0 on success
+    // Allocate(allocator, out_ptr) -- returns 0 on success
     int NumberLineAllocator_Allocate(NumberLineAllocator*, u64*);
 }
 }
@@ -45,7 +45,7 @@ extern u8  PTR_DAT_71052a2720[];  // inner data   (FUN_7100065550)
 
 // ---- cxa_guard singletons ------------------------------------------------
 
-// 710007d360 — nested cxa_guard: outer 28f0/28f8 → inner 2890/2898
+// 710007d360 -- nested cxa_guard: outer 28f0/28f8 → inner 2890/2898
 u8* FUN_710007d360()
 {
     s32 iVar1;
@@ -66,7 +66,7 @@ u8* FUN_710007d360()
     return PTR_DAT_71052a28f8;
 }
 
-// 710007d410 — simple cxa_guard: guard 2900, data 2908
+// 710007d410 -- simple cxa_guard: guard 2900, data 2908
 u8* FUN_710007d410()
 {
     s32 iVar1;
@@ -80,7 +80,7 @@ u8* FUN_710007d410()
     return PTR_DAT_71052a2908;
 }
 
-// 710007d820 — simple cxa_guard: guard 2918, data 2920
+// 710007d820 -- simple cxa_guard: guard 2918, data 2920
 u8* FUN_710007d820()
 {
     s32 iVar1;
@@ -94,7 +94,7 @@ u8* FUN_710007d820()
     return PTR_DAT_71052a2920;
 }
 
-// 7100065550 — nested cxa_guard: outer 2710/2708 → inner 2718/2720
+// 7100065550 -- nested cxa_guard: outer 2710/2708 → inner 2718/2720
 u8* FUN_7100065550()
 {
     s32 iVar1;
@@ -117,14 +117,14 @@ u8* FUN_7100065550()
 
 // ---- Bit-packing / float helpers -----------------------------------------
 
-// 7100081cd0 — pack param_2/3/4 into a 64-bit word, then call FUN_7100081d20
+// 7100081cd0 -- pack param_2/3/4 into a 64-bit word, then call FUN_7100081d20
 void FUN_7100081cd0(u64 param_1, u64 param_2, u64 param_3, u64 param_4)
 {
     u64 packed = (param_3 << 0x30) | (param_2 & 0xffffffff) | ((u64)(param_4 & 0xffff) << 0x20);
     FUN_7100081d20(param_1, param_2, param_3, packed);
 }
 
-// 71000824a0 — call FUN_7100078b20, store constants + data ptr
+// 71000824a0 -- call FUN_7100078b20, store constants + data ptr
 void FUN_71000824a0(u64 param_1)
 {
     FUN_7100078b20();
@@ -134,7 +134,7 @@ void FUN_71000824a0(u64 param_1)
     *(u8**)(param_1 + 16) = PTR_DAT_71052a2958 + 0x1000000;
 }
 
-// 7100083cb0 — same as 71000824a0 but with PTR_DAT_71052a2988
+// 7100083cb0 -- same as 71000824a0 but with PTR_DAT_71052a2988
 void FUN_7100083cb0(u64 param_1)
 {
     FUN_7100078b20();
@@ -144,7 +144,7 @@ void FUN_7100083cb0(u64 param_1)
     *(u8**)(param_1 + 16) = PTR_DAT_71052a2988 + 0x1000000;
 }
 
-// 7100082550 — zero two locals, call FUN_7100082590, return float subtraction
+// 7100082550 -- zero two locals, call FUN_7100082590, return float subtraction
 f32 FUN_7100082550(u64 param_1, u64 param_2, u64 param_3)
 {
     u64 local_18 = 0;
@@ -153,7 +153,7 @@ f32 FUN_7100082550(u64 param_1, u64 param_2, u64 param_3)
     return (f32)local_18 - (f32)local_20;
 }
 
-// 7100083d60 — same pattern as 7100082550 but calls FUN_7100083da0
+// 7100083d60 -- same pattern as 7100082550 but calls FUN_7100083da0
 f32 FUN_7100083d60(u64 param_1, u64 param_2, u64 param_3)
 {
     u64 local_18 = 0;
@@ -164,7 +164,7 @@ f32 FUN_7100083d60(u64 param_1, u64 param_2, u64 param_3)
 
 // ---- Struct init helpers --------------------------------------------------
 
-// 7100066660 — write param_1/param_2 as s32 into two structs at param_3/param_4
+// 7100066660 -- write param_1/param_2 as s32 into two structs at param_3/param_4
 void FUN_7100066660(f32 param_1, f32 param_2, s32* param_3, s32* param_4)
 {
     *param_4                    = 0;
@@ -175,7 +175,7 @@ void FUN_7100066660(f32 param_1, f32 param_2, s32* param_3, s32* param_4)
     *(f32*)((s64)param_3 + 0xc) = param_2;
 }
 
-// 710003a9c0 — init mutex and zero struct fields
+// 710003a9c0 -- init mutex and zero struct fields
 void FUN_710003a9c0(u64* param_1)
 {
     *param_1 = 0;
@@ -184,7 +184,7 @@ void FUN_710003a9c0(u64* param_1)
     *(u64*)(param_1 + 2) = 0;
 }
 
-// 710003aa50 — NumberLineAllocator::Allocate + conditional return
+// 710003aa50 -- NumberLineAllocator::Allocate + conditional return
 u64 FUN_710003aa50(nn::mem::NumberLineAllocator* param_1)
 {
     u64 local_14 = 0;

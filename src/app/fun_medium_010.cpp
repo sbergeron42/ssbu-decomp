@@ -1,6 +1,6 @@
 #include "types.h"
 
-// MEDIUM-tier FUN_* functions — mixed address range, batch 11
+// MEDIUM-tier FUN_* functions -- mixed address range, batch 11
 // Pool-d worker: auto-generated from Ghidra decompilation
 
 // ---- External declarations -----------------------------------------------
@@ -51,19 +51,19 @@ extern u64  PTR_DAT_71052a3dc8;
     abort();
 }
 
-// 71002b8ce0 — dereference u32 pointer
+// 71002b8ce0 -- dereference u32 pointer
 u32 FUN_71002b8ce0(u32* param_1)
 {
     return *param_1;
 }
 
-// 71002b8d10 — linear map: (float)param_1 * scale + offset
+// 71002b8d10 -- linear map: (float)param_1 * scale + offset
 f32 FUN_71002b8d10(s32 param_1)
 {
     return (f32)param_1 * DAT_7104470ba0 + DAT_71044723d0;
 }
 
-// 71001932d0 — return aea80 result, or -3/-2 for missing state
+// 71001932d0 -- return aea80 result, or -3/-2 for missing state
 u64 FUN_71001932d0(s64 param_1)
 {
     if (*(s64*)PTR_DAT_71052a3dc8 == 0)
@@ -73,7 +73,7 @@ u64 FUN_71001932d0(s64 param_1)
     return (u64)-2;
 }
 
-// 7100002690 — null-guarded free + zero
+// 7100002690 -- null-guarded free + zero
 void FUN_7100002690(u64* param_1)
 {
     if (param_1 != nullptr) {
@@ -83,7 +83,7 @@ void FUN_7100002690(u64* param_1)
     }
 }
 
-// 7100013480 — conditional clear with FUN_710002a1f0
+// 7100013480 -- conditional clear with FUN_710002a1f0
 void FUN_7100013480(s64* param_1)
 {
     s64 lVar1 = *param_1;
@@ -93,7 +93,7 @@ void FUN_7100013480(s64* param_1)
     }
 }
 
-// 7100032e10 — pack 4 u32s to stack, then call FUN_7100032e40
+// 7100032e10 -- pack 4 u32s to stack, then call FUN_7100032e40
 void FUN_7100032e10(u32 param_1, u32 param_2, u32 param_3, u32 param_4,
                     u64 param_5, u64 param_6, u64 param_7)
 {
@@ -105,7 +105,7 @@ void FUN_7100032e10(u32 param_1, u32 param_2, u32 param_3, u32 param_4,
     FUN_7100032e40(param_5, param_6, local_20, param_7);
 }
 
-// 7100044480 — conditional FUN_7100048dd0 + zero fields
+// 7100044480 -- conditional FUN_7100048dd0 + zero fields
 void FUN_7100044480(u16* param_1)
 {
     if (*(s64*)(param_1 + 4) != 0) {
@@ -115,7 +115,7 @@ void FUN_7100044480(u16* param_1)
     }
 }
 
-// 710008b320 — clear 8 byte fields at +0x360 if first byte nonzero
+// 710008b320 -- clear 8 byte fields at +0x360 if first byte nonzero
 void FUN_710008b320(char* param_1)
 {
     if (*param_1 != '\0') {
@@ -131,7 +131,7 @@ void FUN_710008b320(char* param_1)
     }
 }
 
-// 71000b1910 — copy: *param_1 = *param_2, then memcpy 0x10 bytes
+// 71000b1910 -- copy: *param_1 = *param_2, then memcpy 0x10 bytes
 u32* FUN_71000b1910(u32* param_1, u32* param_2)
 {
     *param_1 = *param_2;
@@ -139,21 +139,21 @@ u32* FUN_71000b1910(u32* param_1, u32* param_2)
     return param_1;
 }
 
-// 71000b2890 — zero 0x10 bytes at +8, then zero u16 at +0x18
+// 71000b2890 -- zero 0x10 bytes at +8, then zero u16 at +0x18
 void FUN_71000b2890(s64 param_1)
 {
     memset((void*)(param_1 + 8), 0, 0x10);
     *(u16*)(param_1 + 0x18) = 0;
 }
 
-// 71000b28c0 — identical to FUN_71000b2890
+// 71000b28c0 -- identical to FUN_71000b2890
 void FUN_71000b28c0(s64 param_1)
 {
     memset((void*)(param_1 + 8), 0, 0x10);
     *(u16*)(param_1 + 0x18) = 0;
 }
 
-// 71000b63d0 — generate 8 cryptographically random bytes
+// 71000b63d0 -- generate 8 cryptographically random bytes
 u64 FUN_71000b63d0()
 {
     u64 local_18 = 0;
@@ -161,7 +161,7 @@ u64 FUN_71000b63d0()
     return local_18;
 }
 
-// 71000bca90 — initialize 4 fields of struct
+// 71000bca90 -- initialize 4 fields of struct
 void FUN_71000bca90(s64 param_1)
 {
     FUN_710002bb40(param_1 + 0x20);
@@ -170,28 +170,28 @@ void FUN_71000bca90(s64 param_1)
     *(u32*)(param_1 + 0x10) = 0;
 }
 
-// 71000befe0 — stack-alloc 16 bytes, call FUN_71000bf010
+// 71000befe0 -- stack-alloc 16 bytes, call FUN_71000bf010
 void FUN_71000befe0(s64 param_1)
 {
     u8 auStack_20[16];
     FUN_71000bf010(auStack_20, param_1, param_1 + 0x28, 0x5c0);
 }
 
-// 71000c04b0 — call FUN_710002a1f0 then zero field
+// 71000c04b0 -- call FUN_710002a1f0 then zero field
 void FUN_71000c04b0(s64 param_1)
 {
     FUN_710002a1f0(0);
     *(u32*)(param_1 + 0x80) = 0;
 }
 
-// 710012fd70 — stack-alloc 16 bytes, call FUN_71000bae70
+// 710012fd70 -- stack-alloc 16 bytes, call FUN_71000bae70
 void FUN_710012fd70(s64 param_1)
 {
     u8 auStack_20[16];
     FUN_71000bae70(auStack_20, param_1 + 0x18);
 }
 
-// 7100117020 — conditional call FUN_7100125af0, then zero field
+// 7100117020 -- conditional call FUN_7100125af0, then zero field
 void FUN_7100117020(s64* param_1)
 {
     if (*param_1 != 0)
@@ -199,21 +199,21 @@ void FUN_7100117020(s64* param_1)
     *param_1 = 0;
 }
 
-// 710014c900 — call FUN_71001941b0(param_1), then set vtable ptr at *param_1
+// 710014c900 -- call FUN_71001941b0(param_1), then set vtable ptr at *param_1
 __attribute__((noinline)) void FUN_710014c900(s64* param_1)
 {
     FUN_71001941b0(param_1);
     *param_1 = (s64)(PTR_DAT_71052a4f20 + 0x10);
 }
 
-// 71000d39b0 — call FUN_710014c900(param_1), then overwrite vtable ptr
+// 71000d39b0 -- call FUN_710014c900(param_1), then overwrite vtable ptr
 void FUN_71000d39b0(s64* param_1)
 {
     FUN_710014c900(param_1);
     *param_1 = (s64)(PTR_DAT_71052a3f80 + 0x10);
 }
 
-// 7100117190 — call FUN_710014c900(param_1), then overwrite vtable ptr
+// 7100117190 -- call FUN_710014c900(param_1), then overwrite vtable ptr
 void FUN_7100117190(s64* param_1)
 {
     FUN_710014c900(param_1);
@@ -222,7 +222,7 @@ void FUN_7100117190(s64* param_1)
 
 // ---- Vtable dispatch patterns --------------------------------------------
 
-// 71003cfc50 — vtable call at +0x130, return field at +8 or 0x50000000
+// 71003cfc50 -- vtable call at +0x130, return field at +8 or 0x50000000
 u32 FUN_71003cfc50(s64* param_1)
 {
     s64 lVar1 = (*(s64(**)(s64*))(*(s64*)param_1 + 0x130))(param_1);
@@ -231,21 +231,21 @@ u32 FUN_71003cfc50(s64* param_1)
     return 0x50000000;
 }
 
-// 710049d9c0 — vtable call at +0x680 with this, return byte at lVar1+0x13 != 0
+// 710049d9c0 -- vtable call at +0x680 with this, return byte at lVar1+0x13 != 0
 bool FUN_710049d9c0(s64* param_1)
 {
     s64 lVar1 = (*(s64(**)(s64*))(*(s64*)param_1 + 0x680))(param_1);
     return *(s8*)(lVar1 + 0x13) != 0;
 }
 
-// 710049e370 — vtable call at +0x680, return bit 3 of byte at +0x10
+// 710049e370 -- vtable call at +0x680, return bit 3 of byte at +0x10
 u8 FUN_710049e370(s64* param_1)
 {
     s64 lVar1 = (*(s64(**)(s64*))(*(s64*)param_1 + 0x680))(param_1);
     return (*(u8*)(lVar1 + 0x10) >> 3) & 1;
 }
 
-// 7100612130 — double-deref vtable at +0x108, call with arg 0x2000002c, return ~result & 1
+// 7100612130 -- double-deref vtable at +0x108, call with arg 0x2000002c, return ~result & 1
 u32 FUN_7100612130(s64 param_1)
 {
     s64* inner = *(s64**)(param_1 + 0x440);
@@ -253,7 +253,7 @@ u32 FUN_7100612130(s64 param_1)
     return ~uVar1 & 1;
 }
 
-// 71006c90d0 — double-deref vtable at +0x98, call with 0x10000001, return == 0x4d
+// 71006c90d0 -- double-deref vtable at +0x98, call with 0x10000001, return == 0x4d
 bool FUN_71006c90d0(u64 /*param_1*/, s64 param_2)
 {
     s64* inner = *(s64**)(param_2 + 0x50);

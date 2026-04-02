@@ -2,7 +2,7 @@
 
 namespace app::lua_bind {
 
-// 71020d1b20 — hash-switch on field name, call vtable[0x188/8] (refresh), return float field
+// 71020d1b20 -- hash-switch on field name, call vtable[0x188/8] (refresh), return float field
 // hash 0x2369a2644 → damage_module+0x44
 // hash 0xe085e_517c → damage_module+0x48
 // hash 0xa_c3a7_d97e → damage_module+0x58
@@ -57,7 +57,7 @@ f32 ItemDamageModuleImpl__damage_log_value_float_impl(BattleObjectModuleAccessor
 }
 #endif
 
-// 71020d1bc0 — hash-switch on field name, return int field
+// 71020d1bc0 -- hash-switch on field name, return int field
 // hash 0xf_2156_2598 → damage_module+0x84
 // hash 0x9_232d_562b → damage_module+0x80
 #ifdef MATCHING_HACK_NX_CLANG
@@ -99,7 +99,7 @@ u32 ItemDamageModuleImpl__damage_log_value_int_impl(BattleObjectModuleAccessor* 
 }
 #endif
 
-// 71020d1af0 — x0 (accessor) unused; loads global item param singleton (adrp),
+// 71020d1af0 -- x0 (accessor) unused; loads global item param singleton (adrp),
 //   reads float s2 at +0x73068, returns (val1 <= 0.0f) & (s2 <= val2)
 // NOTE: uses adrp → .inst for exact bytes
 #ifdef MATCHING_HACK_NX_CLANG

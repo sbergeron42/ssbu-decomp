@@ -3,61 +3,61 @@
 
 namespace app::lua_bind {
 
-// All PostureModule dispatchers — accessor+0x38
+// All PostureModule dispatchers -- accessor+0x38
 
-// 710206aeb0 — set_pos_2d
+// 710206aeb0 -- set_pos_2d
 void PostureModule__set_pos_2d_impl(BattleObjectModuleAccessor* accessor, void* pos) {
     auto* module = accessor->posture_module;
     auto* vtable = *reinterpret_cast<void***>(module);
     reinterpret_cast<void (*)(void*, void*)>(vtable[0x78 / 8])(module, pos);
 }
 
-// 710206aec0 — add_pos
+// 710206aec0 -- add_pos
 void PostureModule__add_pos_impl(BattleObjectModuleAccessor* accessor, void* pos) {
     auto* module = accessor->posture_module;
     auto* vtable = *reinterpret_cast<void***>(module);
     reinterpret_cast<void (*)(void*, void*)>(vtable[0x80 / 8])(module, pos);
 }
 
-// 710206aed0 — add_pos_2d
+// 710206aed0 -- add_pos_2d
 void PostureModule__add_pos_2d_impl(BattleObjectModuleAccessor* accessor, void* pos) {
     auto* module = accessor->posture_module;
     auto* vtable = *reinterpret_cast<void***>(module);
     reinterpret_cast<void (*)(void*, void*)>(vtable[0x88 / 8])(module, pos);
 }
 
-// 710206aee0 — prev_pos
+// 710206aee0 -- prev_pos
 void* PostureModule__prev_pos_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x38)); void* ret = reinterpret_cast<void*(*)(void*)>(VT(m)[0x90/8])(m); asm(""); return ret; }
 
-// 710206af00 — prev_pos_2d
+// 710206af00 -- prev_pos_2d
 void* PostureModule__prev_pos_2d_impl(BattleObjectModuleAccessor* accessor) {
     auto* module = accessor->posture_module;
     auto* vtable = *reinterpret_cast<void***>(module);
     return reinterpret_cast<void* (*)(void*)>(vtable[0x98 / 8])(module);
 }
 
-// 710206af10 — lr
+// 710206af10 -- lr
 f32 PostureModule__lr_impl(BattleObjectModuleAccessor* accessor) {
     auto* module = accessor->posture_module;
     auto* vtable = *reinterpret_cast<void***>(module);
     return reinterpret_cast<f32 (*)(void*)>(vtable[0xb0 / 8])(module);
 }
 
-// 710206af20 — set_lr
+// 710206af20 -- set_lr
 void PostureModule__set_lr_impl(BattleObjectModuleAccessor* accessor, f32 lr) {
     auto* module = accessor->posture_module;
     auto* vtable = *reinterpret_cast<void***>(module);
     reinterpret_cast<void (*)(void*, f32)>(vtable[0xb8 / 8])(module, lr);
 }
 
-// 710206af30 — reverse_lr
+// 710206af30 -- reverse_lr
 void PostureModule__reverse_lr_impl(BattleObjectModuleAccessor* accessor) {
     auto* module = accessor->posture_module;
     auto* vtable = *reinterpret_cast<void***>(module);
     reinterpret_cast<void (*)(void*)>(vtable[0xc0 / 8])(module);
 }
 
-// 710206af40 — init_rot
+// 710206af40 -- init_rot
 void* PostureModule__init_rot_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x38)); return reinterpret_cast<void*(*)(void*)>(VT(m)[0xc8/8])(m); }
 
 // Remaining pure dispatchers
@@ -78,7 +78,7 @@ void PostureModule__set_owner_scale_impl(BattleObjectModuleAccessor* a) { auto* 
 void PostureModule__set_link_scale_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=a->posture_module; auto* vt=*reinterpret_cast<void***>(m); reinterpret_cast<void(*)(void*,bool)>(vt[0x150/8])(m,p1); }
 void PostureModule__set_stick_lr_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x38)); reinterpret_cast<void(*)(void*)>(VT(m)[0x178/8])(m); }
 void PostureModule__set_sync_constraint_joint_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=a->posture_module; auto* vt=*reinterpret_cast<void***>(m); reinterpret_cast<void(*)(void*,u64)>(vt[0x180/8])(m,p1); }
-// blr wrappers — call vtable method returning Vector3f*, then extract component
+// blr wrappers -- call vtable method returning Vector3f*, then extract component
 // pos_impl calls vtable[0x60/8] and returns the pointer directly (8 insns)
 void* PostureModule__pos_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x38)); void* ret = reinterpret_cast<void*(*)(void*)>(VT(m)[0x60/8])(m); asm(""); return ret; }
 // pos_x calls vtable[0x60/8] then returns result[0] (9 insns)

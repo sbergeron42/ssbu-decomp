@@ -5,7 +5,7 @@ struct lib;
 struct Rect;
 struct LargeRet { u64 a, b, c; };
 
-// External helpers for L2CValue serialization (no symbols, external branches — won't byte-match)
+// External helpers for L2CValue serialization (no symbols, external branches -- won't byte-match)
 extern "C" void* FUN_7103733d50(void*, void*);  // L2CValue tree get-or-insert by hash
 extern int DAT_710593a3a8[4];                    // null sentinel L2CValue entry
 extern "C" void* je_aligned_alloc(unsigned long, unsigned long);
@@ -18,7 +18,7 @@ void* lib__BasicEvent__load_from_l2c_table_impl(lib* obj,u64 p1) { return reinte
 LargeRet lib__BasicEvent__store_l2c_table_impl(lib* obj) { return reinterpret_cast<LargeRet(*)(lib*)>(VT(obj)[0x28/8])(obj); }
 LargeRet lib__BasicEvent__store_l2c_table_impl_71020faf80(lib* obj,u64 p1) { return reinterpret_cast<LargeRet(*)(lib*,u64)>(VT(obj)[0x30/8])(obj,p1); }
 
-// lib::Rect l2c_table functions — all use external b branches, won't byte-match
+// lib::Rect l2c_table functions -- all use external b branches, won't byte-match
 
 // 71020fb380 (480 bytes): load x,y,w,h floats from L2CValue table by hash
 void lib__Rect__load_from_l2c_table_impl(Rect* r, void* lv_in) {
@@ -106,7 +106,7 @@ LargeRet lib__Rect__store_l2c_table_impl(Rect* r) {
 }
 #endif
 
-// 71020fb810: fill trampoline — mov x2,x1; mov x1,x0; mov x0,x8; b FUN_71020fb630
+// 71020fb810: fill trampoline -- mov x2,x1; mov x1,x0; mov x0,x8; b FUN_71020fb630
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void lib__Rect__store_l2c_table_impl_71020fb810(Rect* r, void* lv) {

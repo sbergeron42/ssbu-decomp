@@ -1,6 +1,6 @@
 #include "app/BattleObjectModuleAccessor.h"
 
-// FighterMotionModuleImpl — accesses MotionModule at accessor+0x88
+// FighterMotionModuleImpl -- accesses MotionModule at accessor+0x88
 // Most functions are tail-call wrappers to external targets (won't byte-match).
 // Complex functions include Kirby copy hash translation and damage stop logic.
 
@@ -28,32 +28,32 @@ extern "C" u64* DAT_71052c2760;
 
 namespace app::lua_bind {
 
-// 71020aa000 — mov x0,x1; mov w1,w2; b external
+// 71020aa000 -- mov x0,x1; mov w1,w2; b external
 void FighterMotionModuleImpl__add_body_type_hash_impl(BattleObjectModuleAccessor*, void* module, u32 hash) {
     FUN_71006e1b90(module, hash);
 }
 
-// 71020aa010 — ldr x0,[x0,#0x88]; and w2,w2,#0x1; b external
+// 71020aa010 -- ldr x0,[x0,#0x88]; and w2,w2,#0x1; b external
 void FighterMotionModuleImpl__get_cancel_frame_impl(BattleObjectModuleAccessor* a, u64 hash, bool p2) {
     FUN_71006e1e20(a->motion_module, hash, p2 & 1);
 }
 
-// 71020aa020 — ldr x0,[x0,#0x88]; and w2,w2,#0x1; b external
+// 71020aa020 -- ldr x0,[x0,#0x88]; and w2,w2,#0x1; b external
 void FighterMotionModuleImpl__is_valid_cancel_frame_impl(BattleObjectModuleAccessor* a, u64 hash, bool p2) {
     FUN_71006e20c0(a->motion_module, hash, p2 & 1);
 }
 
-// 71020aa030 — ldr x0,[x0,#0x88]; and w2,w2,#0x1; b external
+// 71020aa030 -- ldr x0,[x0,#0x88]; and w2,w2,#0x1; b external
 void FighterMotionModuleImpl__get_hit_normal_frame_impl(BattleObjectModuleAccessor* a, u64 hash, bool p2) {
     FUN_71006e2440(a->motion_module, hash, p2 & 1);
 }
 
-// 71020aa040 — ldr x0,[x0,#0x88]; and w2,w2,#0x1; b external
+// 71020aa040 -- ldr x0,[x0,#0x88]; and w2,w2,#0x1; b external
 void FighterMotionModuleImpl__get_hit_xlu_frame_impl(BattleObjectModuleAccessor* a, u64 hash, bool p2) {
     FUN_71006e2200(a->motion_module, hash, p2 & 1);
 }
 
-// 71020aa050 — Kirby copy hash table lookup (32 instructions)
+// 71020aa050 -- Kirby copy hash table lookup (32 instructions)
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 u64 FighterMotionModuleImpl__motion_kind_kirby_copy_original_impl(BattleObjectModuleAccessor* a, u64 hash) {
@@ -95,17 +95,17 @@ u64 FighterMotionModuleImpl__motion_kind_kirby_copy_original_impl(BattleObjectMo
 }
 #endif
 
-// 71020aa0d0 — ldr module; and w2,w3,w4 with #0x1; b change_motion_kirby_copy
+// 71020aa0d0 -- ldr module; and w2,w3,w4 with #0x1; b change_motion_kirby_copy
 void FighterMotionModuleImpl__change_motion_kirby_copy_impl(BattleObjectModuleAccessor* a, u64 hash, bool p2, bool p3, bool p4) {
     FUN_71006e2680(a->motion_module, hash, p2 & 1, p3 & 1, p4 & 1);
 }
 
-// 71020aa0f0 — ldr module; and w2,w3 with #0x1; b external
+// 71020aa0f0 -- ldr module; and w2,w3 with #0x1; b external
 void FighterMotionModuleImpl__change_motion_inherit_frame_kirby_copy_impl(BattleObjectModuleAccessor* a, u64 hash, bool p2, bool p3) {
     FUN_71006e27f0(a->motion_module, hash, p2 & 1, p3 & 1);
 }
 
-// 71020aa100 — ldr module; hardcode w3=1,w2=0; b same target as above
+// 71020aa100 -- ldr module; hardcode w3=1,w2=0; b same target as above
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void FighterMotionModuleImpl__change_motion_inherit_frame_keep_rate_kirby_copy_impl(BattleObjectModuleAccessor* a, u64 hash) {
@@ -116,7 +116,7 @@ void FighterMotionModuleImpl__change_motion_inherit_frame_keep_rate_kirby_copy_i
 }
 #endif
 
-// 71020aa110 — reads frame/rate via vtable, adjusts frame param, delegates to change_motion
+// 71020aa110 -- reads frame/rate via vtable, adjusts frame param, delegates to change_motion
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void FighterMotionModuleImpl__change_motion_force_inherit_frame_kirby_copy_impl(BattleObjectModuleAccessor* a, u64 hash, f32 frame, f32 rate, f32 blend) {
@@ -155,7 +155,7 @@ void FighterMotionModuleImpl__change_motion_force_inherit_frame_kirby_copy_impl(
 }
 #endif
 
-// 71020aa190 — Kirby copy hash lookup + tail call to end_frame_from_hash
+// 71020aa190 -- Kirby copy hash lookup + tail call to end_frame_from_hash
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void FighterMotionModuleImpl__end_frame_from_hash_kirby_copy_impl(BattleObjectModuleAccessor* a, u64 hash) {
@@ -197,12 +197,12 @@ void FighterMotionModuleImpl__end_frame_from_hash_kirby_copy_impl(BattleObjectMo
 }
 #endif
 
-// 71020aa210 — ldr x0,[x0,#0x88]; and w1,w1,#0x1; b external
+// 71020aa210 -- ldr x0,[x0,#0x88]; and w1,w1,#0x1; b external
 void FighterMotionModuleImpl__set_frame_sync_anim_cmd_kirby_copy_impl(BattleObjectModuleAccessor* a, bool val) {
     FUN_71006e29f0(a->motion_module, val & 1);
 }
 
-// 71020aa220 — Kirby copy hash lookup + tail call to get_cancel_frame
+// 71020aa220 -- Kirby copy hash lookup + tail call to get_cancel_frame
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void FighterMotionModuleImpl__get_cancel_frame_kirby_copy_impl(BattleObjectModuleAccessor* a, u64 hash, bool p2) {
@@ -248,7 +248,7 @@ void FighterMotionModuleImpl__get_cancel_frame_kirby_copy_impl(BattleObjectModul
 }
 #endif
 
-// 71020aa2b0 — Kirby copy hash lookup + many params preserved + tail call
+// 71020aa2b0 -- Kirby copy hash lookup + many params preserved + tail call
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void FighterMotionModuleImpl__add_motion_partial_kirby_copy_impl(
@@ -320,13 +320,13 @@ void FighterMotionModuleImpl__add_motion_partial_kirby_copy_impl(
 }
 #endif
 
-// 71020aa3a0 — set_blend_waist (4 insns: ldr module, and bool, strb to +0x2f2)
+// 71020aa3a0 -- set_blend_waist (4 insns: ldr module, and bool, strb to +0x2f2)
 void FighterMotionModuleImpl__set_blend_waist_impl(BattleObjectModuleAccessor* a, bool val) {
     auto* module = reinterpret_cast<u8*>(a->motion_module);
     module[0x2f2] = val & 1;
 }
 
-// 71020aa3b0 — start_damage_stop_interpolation: fcvtzs to +0x2f4, vtable calls
+// 71020aa3b0 -- start_damage_stop_interpolation: fcvtzs to +0x2f4, vtable calls
 // Original: prologue saves d8,x19,x29,x30; uses d8 for 0.0f across calls; tail-call via br
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
@@ -356,7 +356,7 @@ void FighterMotionModuleImpl__start_damage_stop_interpolation_impl(BattleObjectM
 }
 #endif
 
-// 71020aa410 — set_pause_motion_interpolation_stop: global check + module chain
+// 71020aa410 -- set_pause_motion_interpolation_stop: global check + module chain
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void FighterMotionModuleImpl__set_pause_motion_interpolation_stop_impl(BattleObjectModuleAccessor* a) {
@@ -393,7 +393,7 @@ void FighterMotionModuleImpl__set_pause_motion_interpolation_stop_impl(BattleObj
 }
 #endif
 
-// 71020aa490 — set_update_finger_and_face_joint: chain through module+0x10, +0x8, vtable
+// 71020aa490 -- set_update_finger_and_face_joint: chain through module+0x10, +0x8, vtable
 void FighterMotionModuleImpl__set_update_finger_and_face_joint_impl(BattleObjectModuleAccessor* a, bool val) {
     auto* module = MOTION(a);
     auto* chain1 = *reinterpret_cast<u8**>(module + 0x10);

@@ -1,7 +1,7 @@
 #include "types.h"
 
-// Batch decompiled via Ghidra MCP — pool-c, batch 017
-// Range: 0x7102000000 — 0x7102FFFFFF
+// Batch decompiled via Ghidra MCP -- pool-c, batch 017
+// Range: 0x7102000000 -- 0x7102FFFFFF
 // Contains: sv_system, sv_ground_collision_line, sv_information,
 //           sv_battle_object, sv_module_access, FL_sv_module_access
 
@@ -27,14 +27,14 @@ extern "C" __attribute__((visibility("hidden"))) u8 PTR_LAB_7104f61078[];
 
 #define VT(m) (*reinterpret_cast<void***>(m))
 
-// ── 0x710227db20 — app::sv_system::owner_id (16B) ───────────────────────────
+// ── 0x710227db20 -- app::sv_system::owner_id (16B) ───────────────────────────
 // ldur x8, [x0, #-8]; ldr w0, [x8, #0x190]; ret
 u32 owner_id_710227db20(void* p) {
     void* a = *reinterpret_cast<void**>(reinterpret_cast<u8*>(p) - 8);
     return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(a) + 0x190);
 }
 
-// ── 0x71022848d0 — app::sv_ground_collision_line::is_floor (16B) ─────────────
+// ── 0x71022848d0 -- app::sv_ground_collision_line::is_floor (16B) ─────────────
 // cbz x0, ret; ldrb w8, [x0, #0xc5]; ubfx w0, w8, #3, #1; ret
 u32 is_floor_71022848d0(void* p) {
     if (!p) return 0;
@@ -42,7 +42,7 @@ u32 is_floor_71022848d0(void* p) {
     return (b >> 3) & 1;
 }
 
-// ── 0x710227ee10 — app::sv_information::is_ready_go (32B) ────────────────────
+// ── 0x710227ee10 -- app::sv_information::is_ready_go (32B) ────────────────────
 // adrp x8, FighterManager singleton page; ldr x8,[x8,#off]; ldr x8,[x8]; ldrb w0,[x8,#0xd2]; ret
 u8 is_ready_go_710227ee10() {
     void* mgr = *reinterpret_cast<void**>(DAT_71052b84f8);
@@ -50,7 +50,7 @@ u8 is_ready_go_710227ee10() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// sv_battle_object helpers — all share the get_battle_object_from_id + guard
+// sv_battle_object helpers -- all share the get_battle_object_from_id + guard
 // variable fallback pattern
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -71,19 +71,19 @@ static inline void* resolve_battle_object(u32 id) {
     return *reinterpret_cast<void**>(DAT_71052b60f8);
 }
 
-// ── 0x7102283540 — app::sv_battle_object::kind (144B) ────────────────────────
+// ── 0x7102283540 -- app::sv_battle_object::kind (144B) ────────────────────────
 u32 kind_7102283540(u32 id) {
     void* obj = resolve_battle_object(id);
     return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0xc);
 }
 
-// ── 0x71022839d0 — app::sv_battle_object::is_active (144B) ──────────────────
+// ── 0x71022839d0 -- app::sv_battle_object::is_active (144B) ──────────────────
 bool is_active_71022839d0(u32 id) {
     void* obj = resolve_battle_object(id);
     return *reinterpret_cast<u8*>(reinterpret_cast<u8*>(obj) + 0x3a) > 3;
 }
 
-// ── 0x7102283660 — app::sv_battle_object::pos (160B) ────────────────────────
+// ── 0x7102283660 -- app::sv_battle_object::pos (160B) ────────────────────────
 void pos_7102283660(u32 id) {
     void* obj = resolve_battle_object(id);
     void* inner = *reinterpret_cast<void**>(reinterpret_cast<u8*>(obj) + 0x20);
@@ -91,7 +91,7 @@ void pos_7102283660(u32 id) {
     reinterpret_cast<void(*)(void*)>(VT(posture)[0x60/8])(posture);
 }
 
-// ── 0x7102283920 — app::sv_battle_object::set_float (176B) ──────────────────
+// ── 0x7102283920 -- app::sv_battle_object::set_float (176B) ──────────────────
 void set_float(u32 id, f32 val, s32 idx) {
     void* obj = resolve_battle_object(id);
     void* inner = *reinterpret_cast<void**>(reinterpret_cast<u8*>(obj) + 0x20);
@@ -100,11 +100,11 @@ void set_float(u32 id, f32 val, s32 idx) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// sv_module_access — damage/link/search: check accessor[+0x1a0] != 0,
+// sv_module_access -- damage/link/search: check accessor[+0x1a0] != 0,
 // then call FUN_71003cb840 with a module pointer and a stack struct
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// ── 0x710227dfb0 — app::sv_module_access::damage (192B) ─────────────────────
+// ── 0x710227dfb0 -- app::sv_module_access::damage (192B) ─────────────────────
 // accessor[+0x1a0] → accessor_data; uses module at +0xa8 (DamageModule)
 u32 damage_710227dfb0(void* L) {
     void* a = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
@@ -145,7 +145,7 @@ u32 damage_710227dfb0(void* L) {
     return *reinterpret_cast<u32*>(&ctx[1]);
 }
 
-// ── 0x710227e070 — app::sv_module_access::link (192B) ───────────────────────
+// ── 0x710227e070 -- app::sv_module_access::link (192B) ───────────────────────
 // Same as damage but uses module at +0xd0 (LinkModule)
 u32 link_710227e070(void* L) {
     void* a = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
@@ -185,7 +185,7 @@ u32 link_710227e070(void* L) {
     return *reinterpret_cast<u32*>(&ctx[1]);
 }
 
-// ── 0x710227e1f0 — app::sv_module_access::search (192B) ─────────────────────
+// ── 0x710227e1f0 -- app::sv_module_access::search (192B) ─────────────────────
 // Same as damage but uses module at +0xe0 (SearchModule)
 u32 search_710227e1f0(void* L) {
     void* a = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
@@ -226,13 +226,13 @@ u32 search_710227e1f0(void* L) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// sv_kinetic_energy — enable/unable/clear_speed/get_speed
+// sv_kinetic_energy -- enable/unable/clear_speed/get_speed
 // These operate on lua_State* and dispatch to KineticModule via accessor
 // ═══════════════════════════════════════════════════════════════════════════════
 
 extern "C" u64 FUN_71038f4000(void*, s32, s32);
 
-// Helper: Lua stack "pop all" — clears stack down to ci->base
+// Helper: Lua stack "pop all" -- clears stack down to ci->base
 static inline void lua_pop_all(void* L) {
     if (!L) return;
     u64 ci_base = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20));
@@ -246,7 +246,7 @@ static inline void lua_pop_all(void* L) {
     *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = target;
 }
 
-// ── 0x7102276a40 — app::sv_kinetic_energy::enable (192B) ────────────────────
+// ── 0x7102276a40 -- app::sv_kinetic_energy::enable (192B) ────────────────────
 void enable_7102276a40(void* L) {
     void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
     void** km = *reinterpret_cast<void***>(reinterpret_cast<u8*>(*reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x1a0)) + 0x68);
@@ -266,7 +266,7 @@ void enable_7102276a40(void* L) {
     lua_pop_all(L);
 }
 
-// ── 0x7102276b00 — app::sv_kinetic_energy::unable (192B) ────────────────────
+// ── 0x7102276b00 -- app::sv_kinetic_energy::unable (192B) ────────────────────
 void unable_7102276b00(void* L) {
     void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
     void** km = *reinterpret_cast<void***>(reinterpret_cast<u8*>(*reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x1a0)) + 0x68);
@@ -286,7 +286,7 @@ void unable_7102276b00(void* L) {
     lua_pop_all(L);
 }
 
-// ── 0x7102276c90 — app::sv_kinetic_energy::clear_speed (208B) ───────────────
+// ── 0x7102276c90 -- app::sv_kinetic_energy::clear_speed (208B) ───────────────
 void clear_speed_7102276c90(void* L) {
     void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
     void** km = *reinterpret_cast<void***>(reinterpret_cast<u8*>(*reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x1a0)) + 0x68);
@@ -306,7 +306,7 @@ void clear_speed_7102276c90(void* L) {
     lua_pop_all(L);
 }
 
-// ── 0x7102277640 — app::sv_kinetic_energy::get_speed (256B) ─────────────────
+// ── 0x7102277640 -- app::sv_kinetic_energy::get_speed (256B) ─────────────────
 void get_speed_7102277640(void* L) {
     void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
     void** km = *reinterpret_cast<void***>(reinterpret_cast<u8*>(*reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x1a0)) + 0x68);
@@ -327,7 +327,7 @@ void get_speed_7102277640(void* L) {
     lua_pop_all(L);
 }
 
-// ── 0x710227e930 — app::FL_sv_module_access::link (320B) ────────────────────
+// ── 0x710227e930 -- app::FL_sv_module_access::link (320B) ────────────────────
 u32 link_710227e930(void* L) {
     void* a = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
     void* acc_data = *reinterpret_cast<void**>(reinterpret_cast<u8*>(a) + 0x1a0);
@@ -383,4 +383,4 @@ u32 link_710227e930(void* L) {
 
 // Note: mul_speed (896B) and frame (224B) are too complex for batch generation.
 // They involve extensive Lua argument parsing (mul_speed) and coroutine yield
-// mechanics (frame). Skipping for now — these should be decompiled manually.
+// mechanics (frame). Skipping for now -- these should be decompiled manually.

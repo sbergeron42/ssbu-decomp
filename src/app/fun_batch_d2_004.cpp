@@ -1,6 +1,6 @@
 #include "types.h"
 
-// MEDIUM-tier FUN_* functions — 0x7103 address range, batch d2-004
+// MEDIUM-tier FUN_* functions -- 0x7103 address range, batch d2-004
 // Pool-d worker: auto-generated from Ghidra decompilation
 
 // ---- External declarations -----------------------------------------------
@@ -18,7 +18,7 @@ extern u8 PTR_FUN_71051ac5d0[];
 
 // ---- Functions ---------------------------------------------------------------
 
-// 0x710339d440 — controller icon name → FNV-1a hash40 writer (640 bytes)
+// 0x710339d440 -- controller icon name → FNV-1a hash40 writer (640 bytes)
 void FUN_710339d440(u32 *param_1, u32 param_2)
 {
     u32 uVar1;
@@ -91,7 +91,7 @@ void FUN_710339d440(u32 *param_1, u32 param_2)
     return;
 }
 
-// 0x710339d6c0 — player/team color index → FNV-1a hash40 writer (368 bytes)
+// 0x710339d6c0 -- player/team color index → FNV-1a hash40 writer (368 bytes)
 void FUN_710339d6c0(u32 *param_1, s16 param_2)
 {
     s32 iVar1;
@@ -147,7 +147,7 @@ LAB_710339d710:
     return;
 }
 
-// 0x71033be790 — lookup fighter action-info pointer by index, or return static singleton (816 bytes)
+// 0x71033be790 -- lookup fighter action-info pointer by index, or return static singleton (816 bytes)
 u64 *FUN_71033be790(u32 param_1)
 {
     s32 iVar1;
@@ -163,7 +163,7 @@ u64 *FUN_71033be790(u32 param_1)
     return (u64 *)DAT_710532e9a8;
 }
 
-// 0x7103441ae0 — set flag byte then vtable call at +0x10 (816 bytes)
+// 0x7103441ae0 -- set flag byte then vtable call at +0x10 (816 bytes)
 void FUN_7103441ae0(u64 param_1, u64 param_2, s64 *param_3)
 {
     u64 local_20;
@@ -176,7 +176,7 @@ void FUN_7103441ae0(u64 param_1, u64 param_2, s64 *param_3)
     return;
 }
 
-// 0x71034d0c20 — vtable call at +0x10 on param_3 (416 bytes)
+// 0x71034d0c20 -- vtable call at +0x10 on param_3 (416 bytes)
 void FUN_71034d0c20(u64 param_1, u64 param_2, s64 *param_3)
 {
     u64 local_20;

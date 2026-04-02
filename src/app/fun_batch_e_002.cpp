@@ -1,7 +1,7 @@
 #include "types.h"
 
-// Batch decompiled via Ghidra MCP — pool-e, batch 002
-// Range: 0x7100000000 — 0x7100FFFFFF
+// Batch decompiled via Ghidra MCP -- pool-e, batch 002
+// Range: 0x7100000000 -- 0x7100FFFFFF
 
 // ---- External declarations --------------------------------------------------
 

@@ -1,5 +1,5 @@
 // Batch C - 008: MEDIUM FUN_* batch decompilation (0x7102 range)
-// Functions: 37 — FighterSpecializer wrappers (Snake/Metaknight/Pit/SZerosuit/Pikmin/etc.)
+// Functions: 37 -- FighterSpecializer wrappers (Snake/Metaknight/Pit/SZerosuit/Pikmin/etc.)
 
 #include "types.h"
 #include "app/BattleObjectModuleAccessor.h"

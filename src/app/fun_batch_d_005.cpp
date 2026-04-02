@@ -1,6 +1,6 @@
 #include "types.h"
 
-// MEDIUM-tier FUN_* functions — 0x7103 address range, batch d-005
+// MEDIUM-tier FUN_* functions -- 0x7103 address range, batch d-005
 // Pool-d worker: auto-generated from Ghidra decompilation
 
 // ---- External declarations -----------------------------------------------
@@ -51,13 +51,13 @@ extern u8 DAT_710593abb0[];
 
 // ---- Functions ---------------------------------------------------------------
 
-// 0x710357a0dc — vtable call at 0x168 (no args), void return (228 bytes)
+// 0x710357a0dc -- vtable call at 0x168 (no args), void return (228 bytes)
 void FUN_710357a0dc(s64 *param_1)
 {
     (*(void(*)())(*param_1 + 0x168))();
 }
 
-// 0x710378d8f0 — triple-nested guard init, returns &DAT_710593aac0 (224 bytes)
+// 0x710378d8f0 -- triple-nested guard init, returns &DAT_710593aac0 (224 bytes)
 u64 *FUN_710378d8f0(void)
 {
     s32 iVar1;
@@ -80,7 +80,7 @@ u64 *FUN_710378d8f0(void)
     return (u64*)DAT_710593aac0;
 }
 
-// 0x7103791100 — triple-nested guard init, returns &DAT_710593ab10 (240 bytes)
+// 0x7103791100 -- triple-nested guard init, returns &DAT_710593ab10 (240 bytes)
 u64 *FUN_7103791100(void)
 {
     s32 iVar1;
@@ -103,57 +103,57 @@ u64 *FUN_7103791100(void)
     return (u64*)DAT_710593ab10;
 }
 
-// 0x7103716880 — nn::nfp::SetApplicationArea wrapper (256 bytes)
+// 0x7103716880 -- nn::nfp::SetApplicationArea wrapper (256 bytes)
 u64 FUN_7103716880(s64 param_1, void *param_2, u64 param_3)
 {
     return nn::nfp::SetApplicationArea((nn::nfp::DeviceHandle*)(param_1 + 0x84), param_2, param_3);
 }
 
-// 0x7103716b80 — nn::nfp::GetTagInfo wrapper (256 bytes)
+// 0x7103716b80 -- nn::nfp::GetTagInfo wrapper (256 bytes)
 u64 FUN_7103716b80(s64 param_1, nn::nfp::TagInfo *param_2)
 {
     return nn::nfp::GetTagInfo(param_2, (nn::nfp::DeviceHandle*)(param_1 + 0x84));
 }
 
-// 0x7103716cd0 — nn::nfp::GetRegisterInfo wrapper (256 bytes)
+// 0x7103716cd0 -- nn::nfp::GetRegisterInfo wrapper (256 bytes)
 u64 FUN_7103716cd0(s64 param_1, nn::nfp::RegisterInfo *param_2)
 {
     return nn::nfp::GetRegisterInfo(param_2, (nn::nfp::DeviceHandle*)(param_1 + 0x84));
 }
 
-// 0x7103716e20 — nn::nfp::GetCommonInfo wrapper (256 bytes)
+// 0x7103716e20 -- nn::nfp::GetCommonInfo wrapper (256 bytes)
 u64 FUN_7103716e20(s64 param_1, nn::nfp::CommonInfo *param_2)
 {
     return nn::nfp::GetCommonInfo(param_2, (nn::nfp::DeviceHandle*)(param_1 + 0x84));
 }
 
-// 0x7103716f70 — nn::nfp::GetModelInfo wrapper (256 bytes)
+// 0x7103716f70 -- nn::nfp::GetModelInfo wrapper (256 bytes)
 u64 FUN_7103716f70(s64 param_1, nn::nfp::ModelInfo *param_2)
 {
     return nn::nfp::GetModelInfo(param_2, (nn::nfp::DeviceHandle*)(param_1 + 0x84));
 }
 
-// 0x71037169d0 — nn::nfp::RecreateApplicationArea wrapper (256 bytes)
+// 0x71037169d0 -- nn::nfp::RecreateApplicationArea wrapper (256 bytes)
 u64 FUN_71037169d0(s64 param_1, nn::nfp::ApplicationAreaCreateInfo *param_2)
 {
     return nn::nfp::RecreateApplicationArea((nn::nfp::DeviceHandle*)(param_1 + 0x84), param_2);
 }
 
-// 0x710397a620 — vtable call at 0x1b0, return bool: iVar != 0 (256 bytes)
+// 0x710397a620 -- vtable call at 0x1b0, return bool: iVar != 0 (256 bytes)
 u8 FUN_710397a620(s64 *param_1)
 {
     s32 iVar1 = (*(s32(*)())(*param_1 + 0x1b0))();
     return (u8)(iVar1 != 0);
 }
 
-// 0x710335c924 — vtable call at 0x320 (no args), return 0 (272 bytes)
+// 0x710335c924 -- vtable call at 0x320 (no args), return 0 (272 bytes)
 u64 FUN_710335c924(s64 *param_1)
 {
     (*(void(*)())(*param_1 + 0x320))();
     return 0;
 }
 
-// 0x7103799b10 — quad-nested guard init, returns &DAT_710593abb0 (272 bytes)
+// 0x7103799b10 -- quad-nested guard init, returns &DAT_710593abb0 (272 bytes)
 u64 *FUN_7103799b10(void)
 {
     s32 iVar1;

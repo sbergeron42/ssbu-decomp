@@ -18,7 +18,7 @@ bool AttackModule__is_constraint_pos_impl(BattleObjectModuleAccessor* a) { auto*
 bool AttackModule__is_no_dead_damage_fly_effect_impl(BattleObjectModuleAccessor* a) { auto* m=AT(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x5E8/8])(m); }
 bool AttackModule__is_critical_attack_impl(BattleObjectModuleAccessor* a) { auto* m=AT(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x6D8/8])(m); }
 void AttackModule__set_is_critical_attack_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=AT(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x6F0/8])(m,p1); }
-// Batch 1 — 59 new dispatchers
+// Batch 1 -- 59 new dispatchers
 void AttackModule__clear_all_impl(BattleObjectModuleAccessor* a) { auto* m=AT(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x50/8])(m); }
 void AttackModule__clear_impl(BattleObjectModuleAccessor* a,u64 p1,bool p2) { auto* m=AT(a); reinterpret_cast<void(*)(void*,u64,bool)>(VT(m)[0x58/8])(m,p1,p2); }
 void AttackModule__sleep_partialy_impl(BattleObjectModuleAccessor* a,u64 p1,bool p2) { auto* m=AT(a); reinterpret_cast<void(*)(void*,u64,bool)>(VT(m)[0x60/8])(m,p1,p2); }
@@ -291,7 +291,7 @@ void AttackModule__set_lr_check_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2
 void AttackModule__resume_catch_absolute_damage_impl(BattleObjectModuleAccessor* a) { auto* m=AT(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x7a8/8])(m); }
 void* AttackModule__init_attack_pos_impl(BattleObjectModuleAccessor* a,u64 p1) asm("_ZN3app8lua_bind34AttackModule__init_attack_pos_implEPNS_26BattleObjectModuleAccessorE");
 void* AttackModule__init_attack_pos_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=AT(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x7c0/8])(m,p1); }
-// 7101fd04f0 — speed_impl: vtable[0x1d8/8](module) — non-leaf (NX Clang frame)
+// 7101fd04f0 -- speed_impl: vtable[0x1d8/8](module) -- non-leaf (NX Clang frame)
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void* AttackModule__speed_impl(BattleObjectModuleAccessor* a) {
@@ -307,7 +307,7 @@ void* AttackModule__speed_impl(BattleObjectModuleAccessor* a) {
 #else
 void* AttackModule__speed_impl(BattleObjectModuleAccessor* a) { auto* m=AT(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x1d8/8])(m); }
 #endif
-// 7101fd0930 — attack_part_speed_impl: vtable[0x4a0/8](module, p1) — non-leaf (NX Clang frame)
+// 7101fd0930 -- attack_part_speed_impl: vtable[0x4a0/8](module, p1) -- non-leaf (NX Clang frame)
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void* AttackModule__attack_part_speed_impl(BattleObjectModuleAccessor* a, u64 p1) {

@@ -8,7 +8,7 @@ extern int DAT_710593a3a8[4];
 
 namespace app::lua_bind {
 
-// 7102013080 (4896 bytes): load fields from L2CValue table — external branches, won't byte-match
+// 7102013080 (4896 bytes): load fields from L2CValue table -- external branches, won't byte-match
 void DamageLog__load_from_l2c_table_impl(DamageLog* obj, void* lv_in) {
     int* plv = reinterpret_cast<int*>(lv_in);
     int* e; int* sub; float v;
@@ -235,7 +235,7 @@ LargeRet DamageLog__store_l2c_table_impl(DamageLog* obj) {
 }
 #endif
 
-// 7102015430: fill trampoline — mov x2,x1; mov x1,x0; mov x0,x8; b FUN_7102014470
+// 7102015430: fill trampoline -- mov x2,x1; mov x1,x0; mov x0,x8; b FUN_7102014470
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void DamageLog__store_l2c_table_impl_7102015430(DamageLog* obj, void* lv) {

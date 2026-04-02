@@ -1,6 +1,6 @@
 #include "types.h"
 
-// MEDIUM-tier FUN_* functions — 0x7103 address range, batch d2-003
+// MEDIUM-tier FUN_* functions -- 0x7103 address range, batch d2-003
 // Pool-d worker: auto-generated from Ghidra decompilation
 
 // ---- External declarations -----------------------------------------------
@@ -16,7 +16,7 @@ extern void *FUN_7103390cb0;
 
 // ---- Functions ---------------------------------------------------------------
 
-// 0x7103390960 — event dispatcher: switch on event type, construct closure, call via vtable (848 bytes)
+// 0x7103390960 -- event dispatcher: switch on event type, construct closure, call via vtable (848 bytes)
 void FUN_7103390960(s64 param_1)
 {
     void ***pppuVar1;

@@ -1,6 +1,6 @@
 #include "types.h"
 
-// EASY-tier FUN_* functions — address range 0x7101xxxxxx
+// EASY-tier FUN_* functions -- address range 0x7101xxxxxx
 // Pool-b worker: manually decompiled from Ghidra
 
 // External functions

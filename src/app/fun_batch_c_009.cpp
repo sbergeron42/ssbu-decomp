@@ -1,5 +1,5 @@
 // Batch C - 009: MEDIUM FUN_* batch decompilation (0x7102 range)
-// Functions: 39 — FighterSpecializer wrappers (Inkling/Shizue/Ridley/Gaogaen/Packun/Jack/Brave/Tantan/etc.)
+// Functions: 39 -- FighterSpecializer wrappers (Inkling/Shizue/Ridley/Gaogaen/Packun/Jack/Brave/Tantan/etc.)
 
 #include "types.h"
 #include "app/BattleObjectModuleAccessor.h"

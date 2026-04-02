@@ -1,5 +1,5 @@
 // Batch C - 014: MEDIUM FUN_* batch decompilation (upper 0x7102 range)
-// Functions: 8 - Misc patterns from 0x7102a–0x7102f range
+// Functions: 8 - Misc patterns from 0x7102a-0x7102f range
 
 #include "types.h"
 

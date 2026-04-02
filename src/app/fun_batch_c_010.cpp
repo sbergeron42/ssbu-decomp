@@ -1,5 +1,5 @@
 // Batch C - 010: MEDIUM FUN_* batch decompilation (0x7102 range)
-// Functions: 35 — Tantan/Pickel/Demon/Trail/Edge/item/boss wrappers + misc
+// Functions: 35 -- Tantan/Pickel/Demon/Trail/Edge/item/boss wrappers + misc
 
 #include "types.h"
 #include "app/BattleObjectModuleAccessor.h"

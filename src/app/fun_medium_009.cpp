@@ -1,6 +1,6 @@
 #include "types.h"
 
-// MEDIUM-tier FUN_* functions — mixed address range, batch 10
+// MEDIUM-tier FUN_* functions -- mixed address range, batch 10
 // Pool-d worker: auto-generated from Ghidra decompilation
 
 // ---- External declarations -----------------------------------------------
@@ -18,7 +18,7 @@ namespace util {
 }
 }
 
-// External C functions — forward declarations
+// External C functions -- forward declarations
 extern "C" void  FUN_71001aff70(s64, const char*, ...);
 extern "C" u64   FUN_71002ba540(u8*, u32);
 extern "C" char* FUN_71002c1790(s64, u32);
@@ -45,50 +45,50 @@ extern u8   DAT_710437a4bc;
 
 // ---- Functions -----------------------------------------------------------
 
-// 7100255940 — FUN_71001aff70 with "%u,%u" on sub-object at +0x50
+// 7100255940 -- FUN_71001aff70 with "%u,%u" on sub-object at +0x50
 void FUN_7100255940(s64 param_1, u16 param_2, u16 param_3)
 {
     FUN_71001aff70(param_1 + 0x50, "%u,%u", (u32)param_2, (u32)param_3);
 }
 
-// 7100255960 — FUN_71001aff70 with &DAT on sub-object at +0x78
+// 7100255960 -- FUN_71001aff70 with &DAT on sub-object at +0x78
 void FUN_7100255960(s64 param_1, u16 param_2)
 {
     FUN_71001aff70(param_1 + 0x78, (const char*)&DAT_710427eedd, (u32)param_2);
 }
 
-// 7100255980 — FUN_71001aff70 with "%u,%u" on sub-object at +0x78
+// 7100255980 -- FUN_71001aff70 with "%u,%u" on sub-object at +0x78
 void FUN_7100255980(s64 param_1, u16 param_2, u16 param_3)
 {
     FUN_71001aff70(param_1 + 0x78, "%u,%u", (u32)param_2, (u32)param_3);
 }
 
-// 71002559a0 — FUN_71001aff70 at computed array offset (element size 0x28)
+// 71002559a0 -- FUN_71001aff70 at computed array offset (element size 0x28)
 void FUN_71002559a0(s64 param_1, u32 param_2)
 {
     FUN_71001aff70(*(s64*)(param_1 + 0x10) + (u64)param_2 * 0x28,
                    (const char*)&DAT_710427eedd);
 }
 
-// 7100255af0 — FUN_71001aff70 at computed offset, "%u,%u" format
+// 7100255af0 -- FUN_71001aff70 at computed offset, "%u,%u" format
 void FUN_7100255af0(s64 param_1, u32 param_2)
 {
     FUN_71001aff70(*(s64*)(param_1 + 0x10) + (u64)param_2 * 0x28, "%u,%u");
 }
 
-// 71002b41d0 — tail-call passthrough: *param_1 → FUN_71002ba540
+// 71002b41d0 -- tail-call passthrough: *param_1 → FUN_71002ba540
 void FUN_71002b41d0(u64* param_1, u32 param_2)
 {
     FUN_71002ba540((u8*)*param_1, param_2);
 }
 
-// 71002b4b10 — tail-call passthrough: *param_1 → FUN_71002c1790
+// 71002b4b10 -- tail-call passthrough: *param_1 → FUN_71002c1790
 void FUN_71002b4b10(u64* param_1, u32 param_2)
 {
     FUN_71002c1790((s64)*param_1, param_2);
 }
 
-// 71000c4cd0 — return field@+0x90 or field from FUN_71000c74a0+0x28
+// 71000c4cd0 -- return field@+0x90 or field from FUN_71000c74a0+0x28
 u64 FUN_71000c4cd0(s64 param_1)
 {
     u64 uVar1 = *(u64*)(param_1 + 0x90);
@@ -99,13 +99,13 @@ u64 FUN_71000c4cd0(s64 param_1)
     return uVar1;
 }
 
-// 71000c5368 — vtable dispatch: call vt[0x70/8](this)
+// 71000c5368 -- vtable dispatch: call vt[0x70/8](this)
 void FUN_71000c5368(s64* param_1)
 {
     (*(void(**)(s64*))(*(s64*)param_1 + 0x70))(param_1);
 }
 
-// 710022e4b8 — double-deref vtable at +0x28, call(inner, param_1), return 1
+// 710022e4b8 -- double-deref vtable at +0x28, call(inner, param_1), return 1
 u64 FUN_710022e4b8(s64 param_1)
 {
     s64* inner = *(s64**)(param_1 + 0x58);
@@ -113,7 +113,7 @@ u64 FUN_710022e4b8(s64 param_1)
     return 1;
 }
 
-// 710022e4e8 — double-deref vtable at +0x30, call(inner, param_1), return 1
+// 710022e4e8 -- double-deref vtable at +0x30, call(inner, param_1), return 1
 u64 FUN_710022e4e8(s64 param_1)
 {
     s64* inner = *(s64**)(param_1 + 0x58);
@@ -121,14 +121,14 @@ u64 FUN_710022e4e8(s64 param_1)
     return 1;
 }
 
-// 71003cb460 — double-deref vtable at +0x198, return u8
+// 71003cb460 -- double-deref vtable at +0x198, return u8
 u8 FUN_71003cb460(s64 param_1)
 {
     s64* inner = *(s64**)(param_1 + 0x48);
     return (*(u8(**)(s64*))(*(s64*)inner + 0x198))(inner);
 }
 
-// 71002b3fe8 — unconditional UnexpectedDefaultImpl
+// 71002b3fe8 -- unconditional UnexpectedDefaultImpl
 [[noreturn]] void FUN_71002b3fe8()
 {
     nn::detail::UnexpectedDefaultImpl("", "", 0);
@@ -146,13 +146,13 @@ u8 FUN_71003cb460(s64 param_1)
     abort();
 }
 
-// 7100798104 — forward x0 to FUN_71039c0d80
+// 7100798104 -- forward x0 to FUN_71039c0d80
 [[noreturn]] void FUN_7100798104(u64 param_1)
 {
     FUN_71039c0d80(param_1);
 }
 
-// 7100012dc0 — string table lookup by 1-indexed category (1..6)
+// 7100012dc0 -- string table lookup by 1-indexed category (1..6)
 void* FUN_7100012dc0(s32 param_1)
 {
     if ((u32)(param_1 - 1) < 6)
@@ -160,7 +160,7 @@ void* FUN_7100012dc0(s32 param_1)
     return (void*)&DAT_710437a4bc;
 }
 
-// 71002c2b50 — address calculation: base + idx*0x24 + 0x14c24
+// 71002c2b50 -- address calculation: base + idx*0x24 + 0x14c24
 s64 FUN_71002c2b50(s64 param_1, u32 param_2)
 {
     return *(s64*)(param_1 + 0x18) + (u64)param_2 * 0x24 + 0x14c24;
@@ -168,7 +168,7 @@ s64 FUN_71002c2b50(s64 param_1, u32 param_2)
 
 // ---- Large switch tables (fighter animation ID lookups) -------------------
 
-// 7100b30fd0 — return 1 if param_1 is one of ~50 known IDs, else 0
+// 7100b30fd0 -- return 1 if param_1 is one of ~50 known IDs, else 0
 u64 FUN_7100b30fd0(u32 param_1)
 {
     switch (param_1) {
@@ -188,7 +188,7 @@ u64 FUN_7100b30fd0(u32 param_1)
     }
 }
 
-// 7100b31000 — return 1 if param_1 is one of ~40 known IDs, else 0
+// 7100b31000 -- return 1 if param_1 is one of ~40 known IDs, else 0
 u64 FUN_7100b31000(u32 param_1)
 {
     switch (param_1) {
@@ -205,7 +205,7 @@ u64 FUN_7100b31000(u32 param_1)
     }
 }
 
-// 7100b31030 — return 1 if param_1 is one of ~60 known IDs, else 0
+// 7100b31030 -- return 1 if param_1 is one of ~60 known IDs, else 0
 u64 FUN_7100b31030(u32 param_1)
 {
     switch (param_1) {
@@ -227,7 +227,7 @@ u64 FUN_7100b31030(u32 param_1)
 
 // ---- Vtable + local buffer patterns --------------------------------------
 
-// 7100c2cd80 — stack-alloc 72-byte buffer, zero, vtable call at +0x50, return 1
+// 7100c2cd80 -- stack-alloc 72-byte buffer, zero, vtable call at +0x50, return 1
 u64 FUN_7100c2cd80(s64* param_1)
 {
     u32 local_58[18];
@@ -236,7 +236,7 @@ u64 FUN_7100c2cd80(s64* param_1)
     return 1;
 }
 
-// 7100dc1450 — same as 7100c2cd80 but returns 0
+// 7100dc1450 -- same as 7100c2cd80 but returns 0
 u64 FUN_7100dc1450(s64* param_1)
 {
     u32 local_58[18];
@@ -247,21 +247,21 @@ u64 FUN_7100dc1450(s64* param_1)
 
 // ---- Misc helpers --------------------------------------------------------
 
-// 7100127500 — call FUN_7100161fb0 with stored ptr, then init at +8
+// 7100127500 -- call FUN_7100161fb0 with stored ptr, then init at +8
 void FUN_7100127500()
 {
     s64 lVar1 = FUN_7100161fb0(*(u64*)PTR_DAT_71052a3dc8);
     FUN_71001602c0(lVar1 + 8);
 }
 
-// 7100127530 — call FUN_7100161fb0 with stored ptr, return ptr+8
+// 7100127530 -- call FUN_7100161fb0 with stored ptr, return ptr+8
 s64 FUN_7100127530()
 {
     s64 lVar1 = FUN_7100161fb0(*(u64*)PTR_DAT_71052a3dc8);
     return lVar1 + 8;
 }
 
-// 7100193710 — conditional: if FUN_71000b30b0 non-null, call b30b0 + b3860
+// 7100193710 -- conditional: if FUN_71000b30b0 non-null, call b30b0 + b3860
 void FUN_7100193710()
 {
     s64 lVar1 = FUN_71000b30b0();
@@ -271,7 +271,7 @@ void FUN_7100193710()
     }
 }
 
-// 7100193390 — conditional: if flag clear and FUN_71000b30b0 non-null, call b3150
+// 7100193390 -- conditional: if flag clear and FUN_71000b30b0 non-null, call b3150
 void FUN_7100193390(s64 param_1)
 {
     s64 lVar1;
@@ -281,42 +281,42 @@ void FUN_7100193390(s64 param_1)
     }
 }
 
-// 71001ae0a0 — store tick_freq * 500 to global
+// 71001ae0a0 -- store tick_freq * 500 to global
 void FUN_71001ae0a0()
 {
     s64* plVar1 = (s64*)FUN_71000bb680();
     *(s64*)PTR_DAT_71052a5800 = *plVar1 * 500;
 }
 
-// 71001e7a10 — bool: FUN_71001f2ba0("probeinit") returns non-null
+// 71001e7a10 -- bool: FUN_71001f2ba0("probeinit") returns non-null
 bool FUN_71001e7a10(u64 param_1)
 {
     s64 lVar1 = FUN_71001f2ba0(param_1, "probeinit", 0);
     return lVar1 != 0;
 }
 
-// 71001e88e0 — bool: FUN_71001f2ba0(&DAT) returns non-null
+// 71001e88e0 -- bool: FUN_71001f2ba0(&DAT) returns non-null
 bool FUN_71001e88e0(u64 param_1)
 {
     s64 lVar1 = FUN_71001f2ba0(param_1, (const char*)&DAT_710449be79, 0);
     return lVar1 != 0;
 }
 
-// 710020f860 — calls FUN_710020f2b0, returns 1
+// 710020f860 -- calls FUN_710020f2b0, returns 1
 u64 FUN_710020f860()
 {
     FUN_710020f2b0();
     return 1;
 }
 
-// 71000b1f20 — compare 16 bytes at param_1+8 against constant, return non-zero
+// 71000b1f20 -- compare 16 bytes at param_1+8 against constant, return non-zero
 bool FUN_71000b1f20(s64 param_1)
 {
     s32 iVar1 = memcmp((void*)(param_1 + 8), &DAT_71044929c4, 0x10);
     return iVar1 != 0;
 }
 
-// 71000b2820 — compare 16 bytes at param_1+8 vs param_2+8, return equal
+// 71000b2820 -- compare 16 bytes at param_1+8 vs param_2+8, return equal
 bool FUN_71000b2820(s64 param_1, s64 param_2)
 {
     s32 iVar1 = memcmp((void*)(param_1 + 8), (void*)(param_2 + 8), 0x10);

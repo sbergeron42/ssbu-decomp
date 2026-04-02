@@ -51,7 +51,7 @@ void ArticleModule__get_float_from_no_impl(BattleObjectModuleAccessor* a,u64 p1,
 void* ArticleModule__get_joint_scale_impl(BattleObjectModuleAccessor* a) { auto* m=AR(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0x278/8])(m); }
 void ArticleModule__set_frame_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x98)); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xf0/8])(m,p1); }
 void ArticleModule__set_situation_kind_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x98)); reinterpret_cast<void(*)(void*,u64,u64)>(VT(m)[0x140/8])(m,p1,p2); }
-// 7102092c10 — add_motion_partial: NX schedules vtable load between and w6 and and w7
+// 7102092c10 -- add_motion_partial: NX schedules vtable load between and w6 and and w7
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void ArticleModule__add_motion_partial_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2, u64 p3, bool p4, bool p5, bool p6, bool p7, bool p8) {

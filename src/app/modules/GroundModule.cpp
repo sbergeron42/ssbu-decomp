@@ -1,5 +1,5 @@
 #include "app/BattleObjectModuleAccessor.h"
-// GroundModule — accessor+0x58
+// GroundModule -- accessor+0x58
 #define GM(a) (a->ground_module)
 #define VT(m) (*reinterpret_cast<void***>(m))
 namespace app::lua_bind {

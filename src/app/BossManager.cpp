@@ -1,6 +1,6 @@
 #include "types.h"
 
-// BossManager — operates on BossManager* directly
+// BossManager -- operates on BossManager* directly
 // Inner struct at [bm + 0x8]; entity list begin/end at [inner + 0x110/0x118]
 // Each list entry is 16 bytes (stride 0x10), first 8 bytes = entity handle pointer
 // Default entity singleton loaded via adrp 0x7104f73000 + 0xb70
@@ -19,7 +19,7 @@ namespace app::lua_bind {
 #define BVTCALL(obj, off, ...) \
     reinterpret_cast<void(*)(void*, ##__VA_ARGS__)>((*reinterpret_cast<void***>(obj))[(off)/8])(obj, ##__VA_ARGS__)
 
-// 7102145890 — framed loop: notify boss defeat for entries with hash 0x18e
+// 7102145890 -- framed loop: notify boss defeat for entries with hash 0x18e
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void BossManager__notify_on_boss_defeat_impl(BossManager* bm, s32 id) {
@@ -82,13 +82,13 @@ void BossManager__notify_on_boss_defeat_impl(BossManager* bm, s32 id) {
 }
 #endif
 
-// 7102145950 — cmp w1,#0x4d; b.ne ret; ldr x0,[x0,#8]; mov w1,#0x18e; b external
+// 7102145950 -- cmp w1,#0x4d; b.ne ret; ldr x0,[x0,#8]; mov w1,#0x18e; b external
 void BossManager__notify_on_boss_keyoff_bgm_impl(BossManager* bm, s32 id) {
     if (id != 0x4d) return;
     FUN_71004e9e30(*reinterpret_cast<void**>(reinterpret_cast<u8*>(bm) + 0x8), 0x18e);
 }
 
-// 71021457a0 — framed loop: check if any boss SE is stoppable
+// 71021457a0 -- framed loop: check if any boss SE is stoppable
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 bool BossManager__is_stoppable_se_impl(BossManager* bm, s32 id) {
@@ -168,7 +168,7 @@ bool BossManager__is_stoppable_se_impl(BossManager* bm, s32 id) {
 }
 #endif
 
-// 7102145970 — iterate boss list by index; if hash==0x18e, clear entry and
+// 7102145970 -- iterate boss list by index; if hash==0x18e, clear entry and
 // release shared_ptr weak refcount via ldaxr/stlxr loop
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))

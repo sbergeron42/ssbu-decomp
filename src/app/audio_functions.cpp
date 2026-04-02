@@ -1,6 +1,6 @@
 #include "types.h"
 
-// Audio/BGM/SE functions — pool-c assignment
+// Audio/BGM/SE functions -- pool-c assignment
 
 extern "C" __attribute__((visibility("hidden"))) void* DAT_7105328f38;  // bgm system ptr
 extern "C" __attribute__((visibility("hidden"))) float DAT_7104471e0c;  // volume divisor
@@ -15,7 +15,7 @@ extern "C" void FUN_71015c1770(void*, u32, u64, u32, void*, u64, u32);
 
 namespace app::kozukatasight {
 
-// 7101647180 (48B) — convert uint volume to normalized float, call bgm setter
+// 7101647180 (48B) -- convert uint volume to normalized float, call bgm setter
 // s0 (float param_1) is live, so ucvtf uses s1 not s0; scheduling differs too.
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
@@ -37,7 +37,7 @@ void set_bgm_volume(float, u32) {
 }
 #endif
 
-// 7101647200 (64B) — stop and disable two sound effector vtable slots on SoundModule
+// 7101647200 (64B) -- stop and disable two sound effector vtable slots on SoundModule
 // Non-leaf; NX Clang schedules add-x29 before the ldr x19 (prologue scheduling divergence).
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
@@ -67,14 +67,14 @@ void end_sound_effector(void*, float) {
 
 namespace app::shiokarazu {
 
-// 710164bd50 (16B) — invalid_bgm_handle: sentinel for "no bgm handle"
+// 710164bd50 (16B) -- invalid_bgm_handle: sentinel for "no bgm handle"
 u32 invalid_bgm_handle(void) { return 0xffffffff; }
 
 } // namespace app::shiokarazu
 
 namespace app::kiiladarzmanager {
 
-// 71016538d0 (16B) — stop_stage_sound: delegate to StageManager
+// 71016538d0 (16B) -- stop_stage_sound: delegate to StageManager
 void stop_stage_sound(void) {
     FUN_7102608770(DAT_71052bb3b0);
 }
@@ -83,7 +83,7 @@ void stop_stage_sound(void) {
 
 namespace app::buddybomb {
 
-// 71016595c0 (32B) — bound_se_speed_less: read float field from nested param accessor
+// 71016595c0 (32B) -- bound_se_speed_less: read float field from nested param accessor
 float bound_se_speed_less(void) {
     u8* inner = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x12d0);
     return *reinterpret_cast<float*>(inner + 0x2b0);
@@ -93,7 +93,7 @@ float bound_se_speed_less(void) {
 
 namespace app::item {
 
-// 71015c1a10 (32B) — request cut-in without BGM volume change; passes fixed Hash40 + false
+// 71015c1a10 (32B) -- request cut-in without BGM volume change; passes fixed Hash40 + false
 void request_cut_in_from_param_with_target_no_bgm_volume_change(
         void* p1, u32 p2, u64 p3, u32 p4, void* p5) {
     FUN_71015c1770(p1, p2, p3, p4, p5, 0x7fb997a80ULL, 0u);
@@ -103,7 +103,7 @@ void request_cut_in_from_param_with_target_no_bgm_volume_change(
 
 namespace app::boss_private {
 
-// 71015c85e0 (64B) — notify boss bgm keyoff if BossManager singleton is live
+// 71015c85e0 (64B) -- notify boss bgm keyoff if BossManager singleton is live
 // Conditional non-leaf: frame set up only in non-null path; upstream would tail-call, NX doesn't.
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))

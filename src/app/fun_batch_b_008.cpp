@@ -1,7 +1,7 @@
 #include "types.h"
 
-// Batch decompiled via Ghidra MCP — pool-b, batch 008
-// Range: 0x7101000000 — 0x7101FFFFFF
+// Batch decompiled via Ghidra MCP -- pool-b, batch 008
+// Range: 0x7101000000 -- 0x7101FFFFFF
 
 [[noreturn]] extern "C" void abort();
 extern "C" s32 __cxa_guard_acquire(s64 *);

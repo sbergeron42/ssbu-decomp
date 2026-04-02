@@ -1,6 +1,6 @@
 #include "types.h"
 
-// Graphics/shader/draw functions — pool-c assignment
+// Graphics/shader/draw functions -- pool-c assignment
 
 // All extern data symbols need visibility("hidden") to get direct ADRP+ADD/LDR
 // rather than GOT indirection under -fPIC.
@@ -10,17 +10,17 @@ extern "C" __attribute__((visibility("hidden"))) u64 DAT_7104470aa8[];  // shade
 extern "C" __attribute__((visibility("hidden"))) void* DAT_71052a32d8;  // shader type table ptr
 extern "C" __attribute__((visibility("hidden"))) void* DAT_7105336ce8;  // renderer global
 
-// 7100037440 (16B) — look up draw primitive enum from index
+// 7100037440 (16B) -- look up draw primitive enum from index
 u32 GetDrawPrimitive(u32 idx) {
     return DAT_710446f530[idx];
 }
 
-// 7100037450 (16B) — look up shader stage enum from index
+// 7100037450 (16B) -- look up shader stage enum from index
 u32 GetShaderStage(u32 idx) {
     return DAT_710446f56c[idx];
 }
 
-// 7100037460 (64B) — pack stage-bits flags into a 6-bit field
+// 7100037460 (64B) -- pack stage-bits flags into a 6-bit field
 // Upstream Clang produces different bit-manipulation sequence; use naked asm.
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
@@ -43,12 +43,12 @@ u32 GetShaderStageBits(u64 /*flags*/) {
 }
 #endif
 
-// 7100038100 (32B) — get shader code pointer at type-indexed offset
+// 7100038100 (32B) -- get shader code pointer at type-indexed offset
 u8* GetShaderCodePtr(u8* p0, u32 p1) {
     return *reinterpret_cast<u8**>(p0 + DAT_7104470aa8[p1]);
 }
 
-// 7100054150 (32B) — get constant buffer pointer for vertex shader
+// 7100054150 (32B) -- get constant buffer pointer for vertex shader
 u64 GetConstantBufferForVertexShader(u8* p0, u8* p1) {
     u8* inner = *reinterpret_cast<u8**>(p1 + 0xc8);
     u64 lv = *reinterpret_cast<u64*>(inner + 0x38);
@@ -56,7 +56,7 @@ u64 GetConstantBufferForVertexShader(u8* p0, u8* p1) {
     return 0;
 }
 
-// 7100066010 (48B) — check if ResShaderContainer is fully initialized
+// 7100066010 (48B) -- check if ResShaderContainer is fully initialized
 bool IsResShaderContainerInitialized_(u8* p) {
     if (*reinterpret_cast<u64*>(p + 0x28) == 0) return false;
     u8* a = *reinterpret_cast<u8**>(*reinterpret_cast<u64*>(p + 0x28) + 0x20);
@@ -64,7 +64,7 @@ bool IsResShaderContainerInitialized_(u8* p) {
     return false;
 }
 
-// 7100086d10 (64B) — get shader object pointer by slot index (3 = null sentinel)
+// 7100086d10 (64B) -- get shader object pointer by slot index (3 = null sentinel)
 u64 GetShader(u8* p) {
     u32 idx = *reinterpret_cast<u32*>(p + 0x10);
     if (idx == 3) return 0;
@@ -73,7 +73,7 @@ u64 GetShader(u8* p) {
     return *reinterpret_cast<u64*>(b + (u64)idx * 8 + 0x340);
 }
 
-// 710009c320 (48B) — initialize shader slot: lookup offset table by type, store vtable+0x68
+// 710009c320 (48B) -- initialize shader slot: lookup offset table by type, store vtable+0x68
 bool InitializeShader(u8* p0, u8* p1, u32 p2) {
     u64 offset = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(DAT_71052a32d8) + (u64)p2 * 8);
     u8* entry = *reinterpret_cast<u8**>(p1 + offset);
@@ -82,7 +82,7 @@ bool InitializeShader(u8* p0, u8* p1, u32 p2) {
     return true;
 }
 
-// 710009c9c0 (32B) — ShaderManager ctor: zero all member fields
+// 710009c9c0 (32B) -- ShaderManager ctor: zero all member fields
 void ShaderManager(u8* p) {
     p[0] = 0;
     *reinterpret_cast<u64*>(p + 0x8) = 0;
@@ -93,7 +93,7 @@ void ShaderManager(u8* p) {
     *reinterpret_cast<u64*>(p + 0x28) = 0;
 }
 
-// 710009ce30 (16B) — ComputeShaderManager ctor: zero fields
+// 710009ce30 (16B) -- ComputeShaderManager ctor: zero fields
 void ComputeShaderManager(u8* p) {
     p[0] = 0;
     *reinterpret_cast<u32*>(p + 0x28) = 0;
@@ -116,7 +116,7 @@ void draw_circle_green(void*, float, int) {} // 7100376c40 (16B)
 
 namespace app::FighterUtil {
 
-// 7100694dc0 (32B) — get renderer color rate float from nested pointer chain
+// 7100694dc0 (32B) -- get renderer color rate float from nested pointer chain
 float renderer_get_color_rate(void) {
     u8* p = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_7105336ce8) + 8);
     return *reinterpret_cast<float*>(p + 0x10);
@@ -128,7 +128,7 @@ float renderer_get_color_rate(void) {
 
 namespace app::stage {
 
-// 71015ce6b0 (16B) — always returns false (no render offset needed)
+// 71015ce6b0 (16B) -- always returns false (no render offset needed)
 bool is_the_stage_needs_render_offset(void) { return false; }
 
 } // namespace app::stage

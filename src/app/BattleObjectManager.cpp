@@ -5,7 +5,7 @@ struct BattleObjectManager;
 
 namespace app::lua_bind {
 
-// 7101fca0b0 — 19 instructions (calls, branches, tbz, cset)
+// 7101fca0b0 -- 19 instructions (calls, branches, tbz, cset)
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 bool BattleObjectManager__is_active_find_battle_object_impl(BattleObjectManager* mgr, u32 id) {

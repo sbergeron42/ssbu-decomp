@@ -2,7 +2,7 @@
 
 namespace app::lua_bind {
 
-// 71020d1970 — load ink paint module from +0x198, call vtable[0x250] on sub[0x78],
+// 71020d1970 -- load ink paint module from +0x198, call vtable[0x250] on sub[0x78],
 //   call vtable[0x528] on sub[0xd0], check ret.w!=0, if so set w=1.0 and call vtable[0x240]
 // NX clang prologue: sub sp; str x19; stp x29,x30; add x29
 #ifdef MATCHING_HACK_NX_CLANG

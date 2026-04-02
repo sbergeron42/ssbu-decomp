@@ -2,7 +2,7 @@
 
 namespace app::lua_bind {
 
-// 71020ad720 — is_damage_stop: check status range, dispatch to work module query
+// 71020ad720 -- is_damage_stop: check status range, dispatch to work module query
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 bool FighterStopModuleImpl__is_damage_stop_impl(BattleObjectModuleAccessor* a) {
@@ -60,7 +60,7 @@ bool FighterStopModuleImpl__is_damage_stop_impl(BattleObjectModuleAccessor* a) {
 }
 #endif
 
-// 71020ad7e0 — get_damage_stop_frame: same status check, tail call to work module
+// 71020ad7e0 -- get_damage_stop_frame: same status check, tail call to work module
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
 void FighterStopModuleImpl__get_damage_stop_frame_impl(BattleObjectModuleAccessor* a) {
