@@ -235,12 +235,6 @@ u64 FUN_71002b3690()
     return (uVar2 & 1) ? (u64)8 : (u64)0;
 }
 
-// 71002b4e30 — dereference pointer
-u64 FUN_71002b4e30(u64* param_1)
-{
-    return *param_1;
-}
-
 // 71002b8120 — forward to bb530 at +0x47a0
 void FUN_71002b8120(s64 param_1)
 {

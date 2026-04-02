@@ -184,8 +184,6 @@ u8 FUN_71000eb6b0_eb6b0(void* obj) { return *reinterpret_cast<u8*>(reinterpret_c
 void EndTurn_78f70(void* obj) { }
 // 0x7100079140
 void dtor_dtor_CancelModule_79140(void* obj, u64 val) { *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0xb0) = val; }
-// 0x7100088970
-void SetDrawPath_88970(void* obj, u32 val) { *reinterpret_cast<u32*>(reinterpret_cast<u8*>(obj) + 0x400) = val; }
 // Auto-generated EASY functions
 // 0x71000047a0
 void Curl_resolver_cleanup_47a0(void* obj) { }

@@ -534,6 +534,13 @@ def main():
     print()
 
     if update_csv and results:
+        # Build addr → status for functions where compiled symbol differs from CSV name
+        # (e.g. FUN_71017e4940 compiled under a named CSV entry like load_fighter's_nro___)
+        addr_to_status = {}
+        for dname, (st, pct) in results.items():
+            if dname in source_addr_map:
+                addr_to_status[source_addr_map[dname]] = (st, pct)
+
         rows = []
         with open(FUNCTIONS_CSV) as f:
             reader = csv.DictReader(f)
@@ -547,6 +554,11 @@ def main():
                 elif short in results:
                     status, _ = results[short]
                     row['Quality'] = status
+                else:
+                    csv_addr = int(row['Address'], 16)
+                    if csv_addr in addr_to_status:
+                        status, _ = addr_to_status[csv_addr]
+                        row['Quality'] = status
                 rows.append(row)
         with open(FUNCTIONS_CSV, 'w', newline='') as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction='ignore')
