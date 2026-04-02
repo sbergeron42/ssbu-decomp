@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python tools/verify_all.py --summary)",
+      "Bash(cmd //c build.bat)"
+    ]
+  }
+}
