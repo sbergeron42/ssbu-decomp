@@ -6,7 +6,7 @@
 
 // ---- External declarations -----------------------------------------------
 
-extern "C" void abort(void);
+extern "C" [[noreturn]] void FUN_71039c20a0();  // abort
 
 extern void  FUN_71032e5480(u64);
 extern void  FUN_71032e47c0(u64, u32, u32, u32, u32, u32);
@@ -19,7 +19,7 @@ extern s64 DAT_710532e7c8;
 // ---- Functions ---------------------------------------------------------------
 
 // 0x7103344c38 — abort wrapper (24 bytes)
-void FUN_7103344c38(void) { abort(); }
+[[noreturn]] void FUN_7103344c38(void) { FUN_71039c20a0(); }
 
 // 0x71033625b8 — vtable call at *param_1+8, return 0 (56 bytes)
 u64 FUN_71033625b8(s64 *param_1)

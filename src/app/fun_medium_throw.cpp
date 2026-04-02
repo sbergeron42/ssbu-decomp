@@ -24,8 +24,14 @@ namespace app::lua_bind {
 [[noreturn]] void FUN_7101eacc50(long param_1) { FUN_71039c0d80((void*)param_1); }
 // 7102e2a9fc
 [[noreturn]] void FUN_7102e2a9fc(long param_1) { FUN_71039c0d80((void*)param_1); }
+// 71031cedf4
+[[noreturn]] void FUN_71031cedf4(long param_1) { FUN_71039c0d80((void*)param_1); }
+// 71032cb748
+[[noreturn]] void FUN_71032cb748(long param_1) { FUN_71039c0d80((void*)param_1); }
 // 71032cb7ec
 [[noreturn]] void FUN_71032cb7ec(long param_1) { FUN_71039c0d80((void*)param_1); }
+// 710358fb24
+[[noreturn]] void FUN_710358fb24(long param_1) { FUN_71039c0d80((void*)param_1); }
 
 // ── Group B: add offset to x0 (naked: NX Clang schedules mov x29 before add) ─
 
