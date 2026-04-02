@@ -135,36 +135,6 @@ u64 FUN_7101008dd0(u64 param_1, s64 param_2)
   return 1;
 }
 
-// 0x71013292b0
-u32 FUN_71013292b0(u64 param_1, s64 param_2)
-{
-  u32 uVar1;
-
-  uVar1 = (*(u32(*)(s64 *, u32))(*(s64 *)*(s64 **)(param_2 + 0x50) + 0x108))(
-            *(s64 **)(param_2 + 0x50), 0x2100000c);
-  return ~uVar1 & 1;
-}
-
-// 0x7101329670
-u32 FUN_7101329670(u64 param_1, s64 param_2)
-{
-  u32 uVar1;
-
-  uVar1 = (*(u32(*)(s64 *, u32))(*(s64 *)*(s64 **)(param_2 + 0x50) + 0x108))(
-            *(s64 **)(param_2 + 0x50), 0x2100000c);
-  return ~uVar1 & 1;
-}
-
-// 0x7101329890
-u32 FUN_7101329890(u64 param_1, s64 param_2)
-{
-  u32 uVar1;
-
-  uVar1 = (*(u32(*)(s64 *, u32))(*(s64 *)*(s64 **)(param_2 + 0x50) + 0x108))(
-            *(s64 **)(param_2 + 0x50), 0x2100000c);
-  return ~uVar1 & 1;
-}
-
 // ── Guard-init vtable setters ─────────────────────────────────────────────────
 
 // 0x7101043990

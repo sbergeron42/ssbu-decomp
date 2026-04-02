@@ -349,50 +349,6 @@ u64 FUN_7102203b00(s64 param_1)
     return 0;
 }
 
-// 0x7102208730
-u64 FUN_7102208730(s64 param_1)
-{
-    s64 *plVar1;
-    s64 lVar2;
-    plVar1 = *(s64 **)(*(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0) + 0x68);
-    lVar2 = (**(s64 (**)(s64 *, s32))(*plVar1 + 0x60))(plVar1, 0xc);
-    *(u8 *)(lVar2 + 0x30) = 0;
-    return 0;
-}
-
-// 0x7102208770
-u64 FUN_7102208770(s64 param_1)
-{
-    s64 *plVar1;
-    s64 lVar2;
-    plVar1 = *(s64 **)(*(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0) + 0x68);
-    lVar2 = (**(s64 (**)(s64 *, s32))(*plVar1 + 0x60))(plVar1, 0xd);
-    *(u8 *)(lVar2 + 0x30) = 0;
-    return 0;
-}
-
-// 0x7102208810
-u64 FUN_7102208810(s64 param_1)
-{
-    s64 *plVar1;
-    s64 lVar2;
-    plVar1 = *(s64 **)(*(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0) + 0x68);
-    lVar2 = (**(s64 (**)(s64 *, s32))(*plVar1 + 0x60))(plVar1, 0xc);
-    *(u8 *)(lVar2 + 0x30) = 1;
-    return 0;
-}
-
-// 0x7102208850
-u64 FUN_7102208850(s64 param_1)
-{
-    s64 *plVar1;
-    s64 lVar2;
-    plVar1 = *(s64 **)(*(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0) + 0x68);
-    lVar2 = (**(s64 (**)(s64 *, s32))(*plVar1 + 0x60))(plVar1, 0xd);
-    *(u8 *)(lVar2 + 0x30) = 1;
-    return 0;
-}
-
 // 0x7102208ccc
 u64 FUN_7102208ccc(s64 param_1, s64 param_2)
 {
