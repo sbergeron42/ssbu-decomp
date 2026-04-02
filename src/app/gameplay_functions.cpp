@@ -147,6 +147,9 @@ u8 has_attack_100(void* p) {
 
 // 71003665f0
 s32 target_fighter_kind(void* p) {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
     void* r = FUN_7100314030(DAT_71052b5fd8, (u8*)a + 0xc50);
     return *reinterpret_cast<s32*>((u8*)r + 0x28);
@@ -154,6 +157,9 @@ s32 target_fighter_kind(void* p) {
 
 // 7100366620
 s32 target_copy_fighter_kind(void* p) {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
     void* r = FUN_7100314030(DAT_71052b5fd8, (u8*)a + 0xc50);
     return *reinterpret_cast<s32*>((u8*)r + 0x1f4);
@@ -161,6 +167,9 @@ s32 target_copy_fighter_kind(void* p) {
 
 // 7100366650
 s32 target_current_attack_start_frame(void* p) {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
     void* r = FUN_7100314030(DAT_71052b5fd8, (u8*)a + 0xc50);
     return *reinterpret_cast<s32*>((u8*)r + 0x120);
@@ -168,6 +177,9 @@ s32 target_current_attack_start_frame(void* p) {
 
 // 7100366680
 s32 target_current_attack_combo_end_frame(void* p) {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
     void* r = FUN_7100314030(DAT_71052b5fd8, (u8*)a + 0xc50);
     return *reinterpret_cast<s32*>((u8*)r + 0x128);
@@ -175,6 +187,9 @@ s32 target_current_attack_combo_end_frame(void* p) {
 
 // 71003666b0
 s32 target_current_attack_cancel_frame(void* p) {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
     void* r = FUN_7100314030(DAT_71052b5fd8, (u8*)a + 0xc50);
     return *reinterpret_cast<s32*>((u8*)r + 0x12c);
@@ -182,6 +197,9 @@ s32 target_current_attack_cancel_frame(void* p) {
 
 // 7100366880 — bit 6 of r[0x55]
 bool check_target_stat_attack_catch(void* p) {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
     void* r = FUN_7100314030(DAT_71052b5fd8, (u8*)a + 0xc50);
     return (*reinterpret_cast<u8*>((u8*)r + 0x55) >> 6) & 1;
@@ -189,6 +207,9 @@ bool check_target_stat_attack_catch(void* p) {
 
 // 7100366b30 — r[0x74] == 5
 bool check_target_stat_damage(void* p) {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
     void* r = FUN_7100314030(DAT_71052b5fd8, (u8*)a + 0xc50);
     return *reinterpret_cast<s32*>((u8*)r + 0x74) == 5;
@@ -196,6 +217,9 @@ bool check_target_stat_damage(void* p) {
 
 // 7100366bf0 — r[0x74] in [0x15, 0x16]
 bool check_target_stat_attack(void* p) {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
     void* r = FUN_7100314030(DAT_71052b5fd8, (u8*)a + 0xc50);
     return (u32)(*reinterpret_cast<s32*>((u8*)r + 0x74) - 0x15) < 2;
@@ -203,6 +227,9 @@ bool check_target_stat_attack(void* p) {
 
 // 7100366c30 — r[0x74] in [0x17, 0x18]
 bool check_target_stat_attack_hold(void* p) {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
     void* r = FUN_7100314030(DAT_71052b5fd8, (u8*)a + 0xc50);
     return (u32)(*reinterpret_cast<s32*>((u8*)r + 0x74) - 0x17) < 2;
@@ -210,6 +237,9 @@ bool check_target_stat_attack_hold(void* p) {
 
 // 7100366ca0 — bit 3 of r[0x59]
 bool check_target_stat_unable_attack(void* p) {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
     void* r = FUN_7100314030(DAT_71052b5fd8, (u8*)a + 0xc50);
     return (*reinterpret_cast<u8*>((u8*)r + 0x59) >> 3) & 1;
@@ -217,6 +247,9 @@ bool check_target_stat_unable_attack(void* p) {
 
 // 7100366f90 — float r[0xe0]
 float target_damage(void* p) {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
     void* r = FUN_7100314030(DAT_71052b5fd8, (u8*)a + 0xc50);
     return *reinterpret_cast<float*>((u8*)r + 0xe0);
@@ -280,6 +313,9 @@ void load_summon_fighter_dark(s32 fighter_kind_arg, s32 player_no, s32 p2, s32 p
 
 // 7100369ad0
 s32 attack_start_frame(void* p) {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
     void* r = FUN_710033c360((u8*)a + 0x988);
     if (r) return *reinterpret_cast<s32*>((u8*)r + 0x8);
@@ -288,6 +324,9 @@ s32 attack_start_frame(void* p) {
 
 // 7100369b70
 s32 attack_end_frame(void* p) {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
     void* r = FUN_710033c360((u8*)a + 0x988);
     if (r) return *reinterpret_cast<s32*>((u8*)r + 0xc);
@@ -296,6 +335,9 @@ s32 attack_end_frame(void* p) {
 
 // 7100369c10
 float attack_data_x0(void* p) {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
     s32 id = *reinterpret_cast<s32*>((u8*)a + 0x988);
     void* r = FUN_710033c510(id);
@@ -305,6 +347,9 @@ float attack_data_x0(void* p) {
 
 // 7100369c40
 float attack_data_x1(void* p) {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
     s32 id = *reinterpret_cast<s32*>((u8*)a + 0x988);
     void* r = FUN_710033c510(id);
@@ -314,6 +359,9 @@ float attack_data_x1(void* p) {
 
 // 7100369c70
 float attack_data_y0(void* p) {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
     s32 id = *reinterpret_cast<s32*>((u8*)a + 0x988);
     void* r = FUN_710033c510(id);
@@ -323,6 +371,9 @@ float attack_data_y0(void* p) {
 
 // 7100369ca0
 float attack_data_y1(void* p) {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
     s32 id = *reinterpret_cast<s32*>((u8*)a + 0x988);
     void* r = FUN_710033c510(id);
@@ -332,6 +383,9 @@ float attack_data_y1(void* p) {
 
 // 710036b060 — return -1 on null
 s32 most_earliest_hit_frame(void* p) {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
     void* sub = *reinterpret_cast<void**>((u8*)a + 0x168);
     void* r = FUN_71003596f0(sub);
@@ -395,6 +449,9 @@ void final_module_hit_success_7101197690() {
 
 // 7100ba3380
 void purin_clear_copy_attack_data(void* p) {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
     void* work = *reinterpret_cast<void**>((u8*)p + 0x50);
     s32 idx = reinterpret_cast<s32(*)(void*, s32)>(VT(work)[0x98/8])(work, 0x10000000);
     if (idx <= 7)
@@ -403,6 +460,9 @@ void purin_clear_copy_attack_data(void* p) {
 
 // 7100fe0760
 void special_n_clear_copy_attack_data(void* p) {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
     void* work = *reinterpret_cast<void**>((u8*)p + 0x50);
     s32 idx = reinterpret_cast<s32(*)(void*, s32)>(VT(work)[0x98/8])(work, 0x10000000);
     if (idx <= 7)
@@ -461,6 +521,9 @@ void final_module_hit_success_7101289c80() {
 
 // 71015c2720 — accessor[-8]→[+0x1a0]→[+0x190]→[+0x220], call with (obj, x1, 0)
 void throw_attack(void* p, void* other) {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
     void* b = *reinterpret_cast<void**>((u8*)a + 0x1a0);
     void* c = *reinterpret_cast<void**>((u8*)b + 0x190);
@@ -554,6 +617,9 @@ void cancel_change_fighter_restart_position() {
 
 // 7101651a20 — [p+0xa8] obj → vtable[0x198/8]() → [result+0xc] or 0x50000000
 s32 get_damage_attacker_id(void* p) {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
     void* obj = *reinterpret_cast<void**>((u8*)p + 0xa8);
     void* r = reinterpret_cast<void*(*)(void*)>(VT(obj)[0x198/8])(obj);
     if (!r) return 0x50000000;
@@ -571,23 +637,23 @@ void entry_summon_fighter(s32 fighter_kind) {
 // ── Light/dark fighter count ──────────────────────────────────────────────────
 
 // 7101653710 — (ptr_end - ptr_begin) / 8 for light fighter array
-u64 get_light_fighter_kind_num() {
+int get_light_fighter_kind_num() {
     void* g = DAT_7105329868;
     if (!g) return 0;
     void* p = *reinterpret_cast<void**>(g);
     u8* end   = *reinterpret_cast<u8**>((u8*)p + 0x238);
     u8* begin = *reinterpret_cast<u8**>((u8*)p + 0x230);
-    return (u64)(end - begin) >> 3;
+    return (int)((u64)(end - begin) >> 3);
 }
 
 // 71016537d0 — same for dark fighter array
-u64 get_dark_fighter_kind_num() {
+int get_dark_fighter_kind_num() {
     void* g = DAT_7105329868;
     if (!g) return 0;
     void* p = *reinterpret_cast<void**>(g);
     u8* end   = *reinterpret_cast<u8**>((u8*)p + 0x250);
     u8* begin = *reinterpret_cast<u8**>((u8*)p + 0x248);
-    return (u64)(end - begin) >> 3;
+    return (int)((u64)(end - begin) >> 3);
 }
 
 // ── Global singleton float getters ────────────────────────────────────────────
@@ -907,6 +973,9 @@ float get_default_fighter_param_ground_speed_limit() {
 
 // 7102281a90 — request camera rumble via FighterManager
 void set_dead_camera_hit_rumble() {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
     void* mgr = *reinterpret_cast<void**>(DAT_71052b84f8);
     FUN_710067de90(mgr, 0x001013dbb854ull, 0, 0, 0x50000000);
 }
@@ -943,6 +1012,9 @@ float AttackModule__attack_part_speed_impl(void* acc, s32 part) {
 
 // 7101ff0960 — acc[+0x60] → vtable[0x140/8], tail call (no frame)
 void CameraModule__set_player_no_impl(void* acc, s32 player_no) {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
     void* mod = *reinterpret_cast<void**>((u8*)acc + 0x60);
     reinterpret_cast<void(*)(void*, s32)>(VT(mod)[0x140 / 8])(mod, player_no);
 }
@@ -959,6 +1031,9 @@ void ControlModule__request_rumble_hit_impl(void* acc) {
 
 // 710200b690 — acc[+0xa8] → vtable[0x50/8], bool param (and w1,w1,#1)
 void DamageModule__sleep_impl(void* acc, s32 enable) {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
     void* mod = *reinterpret_cast<void**>((u8*)acc + 0xa8);
     reinterpret_cast<void(*)(void*, bool)>(VT(mod)[0x50 / 8])(mod, (bool)enable);
 }

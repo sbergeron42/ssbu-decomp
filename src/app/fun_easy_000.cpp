@@ -97,9 +97,9 @@ extern "C" void FUN_7100047800(u64, u64, u16);
 
 // Forward declarations (defined later in address order, called earlier)
 u64 FUN_7100018910(u64, s32*, s32);
-u64 FUN_710001ef40(u64, s32*, s32);
-u64 FUN_710001ef60(u64, s32*, s32);
-u64 FUN_7100026380(u64, s32*, s32);
+u32 FUN_710001ef40(u64, s32*, s32);
+u32 FUN_710001ef60(u64, s32*, s32);
+u32 FUN_7100026380(u64, s32*, s32);
 
 // -- FUN_7100000220 ----------------------------------------------------------
 // 7100000220
@@ -778,7 +778,7 @@ void FUN_7100078f60(s64 param_1)
 
 // -- FUN_7100078fd0 ----------------------------------------------------------
 // 7100078fd0
-u64 FUN_7100078fd0(s64 param_1, u64 param_2, s64 *param_3)
+u32 FUN_7100078fd0(s64 param_1, u64 param_2, s64 *param_3)
 {
     s64 lVar1;
 
@@ -1745,7 +1745,7 @@ s32 FUN_7100004790(void)
 
 // -- FUN_7100004b70 ----------------------------------------------------------
 // 7100004b70
-u64 FUN_7100004b70(u64 param_1, s32 *param_2, s32 param_3)
+u32 FUN_7100004b70(u64 param_1, s32 *param_2, s32 param_3)
 {
     return 0;
 }
@@ -1934,9 +1934,9 @@ s32 FUN_7100018bb0(void)
 
 // -- FUN_710001ef40 ----------------------------------------------------------
 // 710001ef40
-u64 FUN_710001ef40(u64 param_1, s32 *param_2, s32 param_3)
+u32 FUN_710001ef40(u64 param_1, s32 *param_2, s32 param_3)
 {
-    typedef u64 (*fn_t)(u64, s32 *, s32);
+    typedef u32 (*fn_t)(u64, s32 *, s32);
     fn_t fn = (fn_t)(*(u64 *)(*(u64 *)(param_1 + 0x858) + 0x40));
     if (!fn) return 0;
     return fn(param_1, param_2, param_3);
@@ -1944,10 +1944,10 @@ u64 FUN_710001ef40(u64 param_1, s32 *param_2, s32 param_3)
 
 // -- FUN_710001ef60 ----------------------------------------------------------
 // 710001ef60
-u64 FUN_710001ef60(u64 param_1, s32 *param_2, s32 param_3)
+u32 FUN_710001ef60(u64 param_1, s32 *param_2, s32 param_3)
 {
     if (!param_1) return 0;
-    typedef u64 (*fn_t)(u64, s32 *, s32);
+    typedef u32 (*fn_t)(u64, s32 *, s32);
     fn_t fn = (fn_t)(*(u64 *)(*(u64 *)(param_1 + 0x858) + 0x48));
     if (!fn) return 0;
     return fn(param_1, param_2, param_3);
@@ -1962,7 +1962,7 @@ s32 FUN_7100024760(void)
 
 // -- FUN_7100026380 ----------------------------------------------------------
 // 7100026380
-u64 FUN_7100026380(u64 param_1, s32 *param_2, s32 param_3)
+u32 FUN_7100026380(u64 param_1, s32 *param_2, s32 param_3)
 {
     return 0;
 }
@@ -2698,7 +2698,7 @@ void FUN_7100078fc0(void) {}
 
 // -- FUN_7100078fd0 ----------------------------------------------------------
 // 7100078fd0
-u64 FUN_7100078fd0(u64 param_1, u64 param_2, u64 *param_3)
+u32 FUN_7100078fd0(u64 param_1, u64 param_2, u64 *param_3)
 {
     if (*(s32 *)(param_1 + 0x98) > 0) return 0;
     s32 count = (s32)param_3[2];
@@ -2948,9 +2948,9 @@ void FUN_71000b63c0(u64 param_1, u64 param_2)
 
 // -- FUN_71000b6400 ----------------------------------------------------------
 // 71000b6400
-void FUN_71000b6400(void *param_1, u64 param_2)
+void FUN_71000b6400(void *param_1, u32 param_2)
 {
-    nn::crypto::GenerateCryptographicallyRandomBytes(param_1, param_2 & 0xffffffff);
+    nn::crypto::GenerateCryptographicallyRandomBytes(param_1, param_2);
 }
 
 // -- FUN_71000b6600 ----------------------------------------------------------
