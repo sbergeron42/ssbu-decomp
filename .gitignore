@@ -35,4 +35,3 @@ __pycache__/
 *.pyc
 .venv/
 .claude_bus/
-WORKER.md
