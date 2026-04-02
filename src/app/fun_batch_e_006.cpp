@@ -60,34 +60,7 @@ extern u32  DAT_71044723d8;
 
 // ---- Functions --------------------------------------------------------------
 
-// 0x7100154200 — zero fields with stack-allocated intermediate
-void FUN_7100154200(s64 param_1)
-{
-    u8 auStack_38[24];
-
-    *(u64 *)(param_1 + 0x10) = 0;
-    FUN_71000b1900(auStack_38);
-    FUN_71000b1910(param_1 + 0x18, auStack_38);
-    *(u16 *)(param_1 + 0x2c) = 0;
-    *(u64 *)(param_1 + 8) = 0;
-}
-
-// 0x71001c5010 — conditional arithmetic field update
-void FUN_71001c5010(u32 param_1, s64 param_2, u64 param_3)
-{
-    s32 iVar1;
-    u64 local_18;
-
-    local_18 = 0;
-    iVar1 = FUN_71001c4c40(param_1,
-                            *(s64 *)(param_2 + 0x10) + *(s64 *)(param_2 + 0x28),
-                            *(s64 *)(param_2 + 0x20) - *(s64 *)(param_2 + 0x28),
-                            &local_18, param_3, 1);
-    if (iVar1 != 0) {
-        return;
-    }
-    *(u64 *)(param_2 + 0x18) = local_18;
-}
+// FUN_7100154200 — TODO: decompile
 
 // 0x71001ce780 — strcpy "Encryption Error" if buffer large enough
 u64 FUN_71001ce780(u64 param_1, u64 param_2, char *param_3, u64 param_4)
@@ -107,37 +80,10 @@ u16 FUN_71001e0910(void)
 {
     u32 *puVar1;
 
-    puVar1 = (u32 *)FUN_7101717b00(*(u64 *)PTR_DAT_71052a3db8);
-    if (*puVar1 != 0) {
-        return *(u16 *)(DAT_71052b4270 + (u64)*puVar1 * 2);
-    }
     return DAT_71052b4278;
 }
 
-// 0x71001e1710 — conditional field assign
-void FUN_71001e1710(u64 param_1, s64 param_2, u64 param_3)
-{
-    u32 local_18;
-    u32 local_14;
-
-    if (*(s64 *)(param_2 + 0x80) != 0) {
-        local_18 = 0x8001000e;
-        FUN_71001b4200(param_1, &local_18);
-        return;
-    }
-    *(u64 *)(param_2 + 0x80) = param_3;
-    local_14 = 0x10001;
-    FUN_71001b4200(param_1, &local_14);
-}
-
-// 0x71002c2810 — range-checked table lookup (or abort)
-u64 FUN_71002c2810(u32 param_1)
-{
-    if (param_1 < 3) {
-        return *(u64 *)(DAT_71044a7c80 + (s64)(s32)param_1 * 8);
-    }
-    nn::detail::UnexpectedDefaultImpl("", "", 0);
-}
+// FUN_71001e1710 — TODO: decompile (nn::nex::qResult constructor)
 
 // 0x7100325e50 — switch returning float constants
 u32 FUN_7100325e50(s64 param_1, u32 param_2)
@@ -259,90 +205,8 @@ u16 FUN_71001dafa0(s64 param_1)
     return 0;
 }
 
-// 0x71001e0070 — conditional init + dispatch, return 1
-u64 FUN_71001e0070(s64 param_1, u64 param_2)
-{
-    if (*(char *)(param_1 + 0x68) == '\0') {
-        FUN_71001f2180(param_1);
-    }
-    FUN_71001bec20(*(u64 *)(param_1 + 8), param_2);
-    *(u8 *)(param_1 + 0x69) = 0;
-    return 1;
-}
+// FUN_71001e0070 — TODO: decompile (nn::nex::StationURL/InetAddress)
 
-// 0x71001e1830 — build error code, dispatch
-void FUN_71001e1830(u64 param_1, u32 param_2)
-{
-    u32 local_3c;
-    u8  auStack_38[24];
-
-    local_3c = 0x800300d2;
-    FUN_71001b4200((u64)auStack_38, &local_3c);
-    FUN_71001e1770(param_1, param_2, auStack_38);
-}
-
-// 0x7100186580 — vtable ptr + list head init
-void FUN_7100186580(s64 *param_1)
-{
-    u8 *puVar1;
-
-    FUN_71000baa20();
-    puVar1 = PTR_DAT_71052a5538;
-    param_1[0xb] = 0;
-    param_1[0xc] = 0x2710;
-    *(u32 *)((s64)param_1 + 0x7c) = 0;
-    param_1[0xd] = 0;
-    param_1[0xe] = 0;
-    *param_1 = (s64)(puVar1 + 0x10);
-    *(u16 *)(param_1 + 0xf) = 0;
-}
-
-// 0x71001aea80 — clock delta calculation
-s64 FUN_71001aea80(s64 *param_1)
-{
-    s64 lVar1;
-    s64 *plVar2;
-    s64 lVar3;
-    s64 local_18;
-
-    if ((char)param_1[1] != '\0') {
-        local_18 = 0;
-        FUN_71000bb5d0(&local_18);
-        lVar3 = local_18 - *param_1;
-        plVar2 = FUN_71000bb680();
-        lVar1 = 0;
-        if (*plVar2 != 0) {
-            lVar1 = lVar3 / *plVar2;
-        }
-        return lVar1;
-    }
-    return -1;
-}
-
-// 0x71001b4510 — aligned alloc via custom or system allocator
-u64 *FUN_71001b4510(s64 param_1)
-{
-    u64 *puVar1;
-
-    if (*(void (**)())PTR_DAT_71052a5818 == nullptr) {
-        puVar1 = (u64 *)malloc((u64)((param_1 + 0x17) & ~(s64)7));
-    } else {
-        puVar1 = (u64 *)(*(u64 (**)())PTR_DAT_71052a5818)();
-    }
-    *puVar1 = *(u64 *)PTR_DAT_71052a5820;
-    return puVar1 + 2;
-}
-
-// 0x7100181380 — mutex-locked vtable call
-u32 FUN_7100181380(s64 param_1)
-{
-    u32 uVar1;
-
-    nn::os::LockMutex((nn::os::MutexType *)(param_1 + 0x2e0));
-    uVar1 = (*(u32 (**)())(*(s64 *)(*(s64 *)(param_1 + 0x308)) + 0x48))();
-    nn::os::UnlockMutex((nn::os::MutexType *)(param_1 + 0x2e0));
-    return uVar1;
-}
 
 // 0x7100179620 — allocator with extra init param
 s64 FUN_7100179620(void)

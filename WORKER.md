@@ -1,72 +1,25 @@
-<<<<<<< HEAD
-# Worker: pool-d (Round 4)
+# Worker: pool-e
 
-## Assignment
-Large `store_l2c_table_impl` serialization functions across all event/gimmick modules.
-These are 200-2000 byte functions that serialize struct fields to Lua tables.
+## Model: Sonnet
 
-## Assigned Modules (all remaining store_l2c_table variants)
-- All `LinkEvent*` modules (LinkEventCapture, LinkEventThrow, LinkEventPos, LinkEventMask, etc.)
-- All `GimmickEvent*` modules (GimmickEventPos, GimmickEventNotify, GimmickEventWarp, etc.)
-- All `FighterPikmin*` modules
-- `FighterCloudLinkEventFinal`, `FighterInklingLinkEventPaint`, `FighterRidleyLinkEventMotion`
-- `FighterRyuLinkEventFinalDeadDamage`, `FighterRyuLinkEventFinalMoveTarget`
-- `FighterPokemonLinkEventChange`
-- `WeaponRobotHominglaserLinkEvent*`, `WeaponShizueFishingrodLinkEvent*`
-- `OnCalcParamEvent`, `GimmickEventPresenter`, `LinkEventTouchItem`, `LinkEventLassoHang`
-- `BossManager` (1 remaining)
-=======
-# Worker: pool-b (Round 4)
+## Task: Batch decomp MEDIUM FUN_* (0x7102-0x7103 range) via Ghidra pipeline
 
-## Assignment
-Remaining Item complex functions + event store_l2c_table serialization (split with pool-d)
+Batch-decompile MEDIUM-tier functions in address range 0x7102000000-0x7103FFFFFF.
 
-## Assigned Modules
-- `Item` (10 remaining — complex, 48-288B)
-- `ItemKineticModuleImpl` (7 remaining — SIMD patterns)
-- `ItemCameraModuleImpl` (6 remaining — complex vtable chains)
-- `ItemParamAccessor` (3 remaining)
-- `ItemDamageModuleImpl` (1 remaining)
-- `ItemManager` (1 remaining)
-- `WeaponKineticEnergyGravity` (1 remaining)
-- Event store_l2c_table (first half, alphabetically A-G):
-  - `FighterCloudLinkEventFinal`, `FighterInklingLinkEventPaint`
-  - `FighterPikminLinkEvent*` (all 9 modules)
-  - `FighterPokemonLinkEventChange`, `FighterRidleyLinkEventMotion`
-  - `FighterRyuLinkEventFinal*` (2 modules)
-  - `GimmickEvent`, `GimmickEventBarrel`, `GimmickEventCatch`
-  - `GimmickEventDrum*` (5 modules)
->>>>>>> worker/pool-b
+### Batch pipeline workflow
+1. Pick 20-30 uncompiled MEDIUM functions from data/fun_triage.csv in your address range
+2. For each, call mcp__ghidra__decompile_function_by_address(address)
+3. Apply type fixups: undefined8->u64, undefined4->u32, undefined2->u16, byte->u8, uint->u32, int->s32, long->s64, ulong->u64, bool->u8
+4. Skip functions with WARNING comments or broken decompilation
+5. Write to a single .cpp file with // 0x71XXXXXXXX address comments
+6. Build and verify, fix compile errors, commit, repeat
 
-## Rules
-1. **ONLY edit .cpp files for your assigned modules**
-2. **NEVER modify data/functions.csv**
-<<<<<<< HEAD
-3. Commit to branch `worker/pool-d`
+### Output files
+- Create src/app/fun_batch_e2_001.cpp, fun_batch_e2_002.cpp, etc.
+- Do NOT put functions in any namespace (global functions)
+- Forward-declare unknown called functions as extern "C" void FUNCNAME();
 
-## Key Notes
-- These `store_l2c_table` functions call external functions via `b` (PC-relative branch)
-- They WON'T byte-match — decompile them anyway for viking semantic verification
-- Use Ghidra MCP to decompile: `mcp__ghidra__decompile_function_by_address`
-- For `store_l2c_table` return type: use `LargeRet` to force x9 scratch register
-
-## Workflow
-```bash
-python tools/verify_local.py --build --modules GimmickEventPos LinkEventCapture
-git add src/app/GimmickEventPos.cpp src/app/LinkEventCapture.cpp
-git commit -m "Decompile store_l2c_table for N modules"
-=======
-3. Commit to branch `worker/pool-b`
-
-## Key Notes
-- store_l2c_table functions use `b` (external branch) — won't byte-match but decompile anyway
-- Use Ghidra MCP: `mcp__ghidra__decompile_function_by_address`
-- SIMD patterns: use `v4sf` type with `__attribute__((vector_size(16)))`
-
-## Workflow
-```bash
-python tools/verify_local.py --build --modules Item ItemKineticModuleImpl
-git add src/app/*.cpp src/app/modules/*.cpp
-git commit -m "Decompile N functions across Item + events"
->>>>>>> worker/pool-b
-```
+### Rules
+- ONLY create NEW files named src/app/fun_batch_e2_*.cpp
+- Do NOT edit any existing files
+- Do NOT modify data/functions.csv or tools/

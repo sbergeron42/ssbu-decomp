@@ -52,34 +52,6 @@ s64 FUN_7100194310(void)
     uVar1 = FUN_71000b1b90();
     lVar2 = FUN_7100130810(0x60, uVar1);
     if (lVar2 != 0) {
-        FUN_71001875f0(lVar2);
-    }
-    return lVar2;
-}
-
-// 0x7100194390 — alloc 0xf0, init FUN_7100189a10
-s64 FUN_7100194390(void)
-{
-    u64 uVar1;
-    s64 lVar2;
-
-    uVar1 = FUN_71000b1b90();
-    lVar2 = FUN_7100130810(0xf0, uVar1);
-    if (lVar2 != 0) {
-        FUN_7100189a10(lVar2);
-    }
-    return lVar2;
-}
-
-// 0x7100179500 — alloc 0x118, init FUN_7100194810
-s64 FUN_7100179500(void)
-{
-    u64 uVar1;
-    s64 lVar2;
-
-    uVar1 = FUN_71000b1b90();
-    lVar2 = FUN_7100130810(0x118, uVar1);
-    if (lVar2 != 0) {
         FUN_7100194810(lVar2);
     }
     return lVar2;
@@ -192,34 +164,6 @@ s64 FUN_7100194710(void)
     uVar1 = FUN_71000b1b90();
     lVar2 = FUN_7100130810(0x260, uVar1);
     if (lVar2 != 0) {
-        FUN_710019b910(lVar2);
-    }
-    return lVar2;
-}
-
-// 0x7100194790 — alloc 0x1130, init FUN_710019f980
-s64 FUN_7100194790(void)
-{
-    u64 uVar1;
-    s64 lVar2;
-
-    uVar1 = FUN_71000b1b90();
-    lVar2 = FUN_7100130810(0x1130, uVar1);
-    if (lVar2 != 0) {
-        FUN_710019f980(lVar2);
-    }
-    return lVar2;
-}
-
-// 0x7100179b30 — alloc 0xb8, init FUN_710017bb40
-s64 FUN_7100179b30(void)
-{
-    u64 uVar1;
-    s64 lVar2;
-
-    uVar1 = FUN_71000b1b90();
-    lVar2 = FUN_7100130810(0xb8, uVar1);
-    if (lVar2 != 0) {
         FUN_710017bb40(lVar2);
     }
     return lVar2;
@@ -253,14 +197,6 @@ void FUN_71001aa330(s64 param_1)
     *(u32 *)(param_1 + 0x78) = 0;
 }
 
-// 0x71001b3cb0 — conditional update via FUN_71001b47e0
-s64 FUN_71001b3cb0(s64 param_1, s64 param_2)
-{
-    if (*(s64 *)(param_1 + 0x18) != param_2) {
-        FUN_71001b47e0(param_1, param_2, 0xffffffffffffffff);
-    }
-    return param_1;
-}
 
 // 0x71001cfce0 — passthrough to FUN_71001cb870
 u64 FUN_71001cfce0(u64 param_1, s64 param_2)

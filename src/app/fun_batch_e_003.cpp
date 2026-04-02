@@ -119,16 +119,7 @@ void FUN_71002c2f70(s64 param_1)
 {
     FUN_710003a0e0();
     FUN_710003a240(param_1 + 0xd8);
-    *(u64 *)(param_1 + 0x120) = 0xffffffffffffffff;
-}
-
-// 0x7100cec330 — nested vtable call, return bool
-bool FUN_7100cec330(u64 param_1, s64 param_2)
-{
-    u32 uVar1;
-
-    uVar1 = (*(u32 (**)())(*(s64 *)(*(s64 *)(*(s64 *)(param_2 + 0x20) + 0x40)) + 0x110))();
-    return (uVar1 & 0xfffffffe) != 0x1ea;
+    *(u64 *)(param_1 + 0x120) = 0xffffffffffffffffULL;
 }
 
 // 0x710065f938 — abort stub
@@ -192,7 +183,6 @@ s64 FUN_7100179480(void)
     uVar1 = FUN_71000b1b90();
     lVar2 = FUN_7100130810(0xab0, uVar1);
     if (lVar2 != 0) {
-        FUN_7100195180(lVar2);
     }
     return lVar2;
 }
