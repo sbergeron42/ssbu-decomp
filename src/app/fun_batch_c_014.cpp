@@ -62,6 +62,9 @@ u32 FUN_7102a65c84(s64 *param_1, s64 param_2)
 void FUN_7102a364b0(s64 param_1)
 {
     s64 lVar1;
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
     lVar1 = *(s64 *)(param_1 + 8);
     if (lVar1 != 0) {
         *(u8 *)(lVar1 + 0xf0) = 1;
@@ -77,6 +80,9 @@ void FUN_7102a364b0(s64 param_1)
 void FUN_7102a36350(s64 param_1)
 {
     s64 lVar1;
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
     lVar1 = *(s64 *)(param_1 + 8);
     if (lVar1 != 0) {
         *(u8 *)(lVar1 + 0xf0) = 1;

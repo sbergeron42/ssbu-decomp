@@ -96,7 +96,7 @@ u32 FUN_7103364460(s64 *param_1)
 u8 FUN_710341aac0(u64 param_1, s64 param_2)
 {
     s64 *plVar2 = *(s64**)(*(s64*)(param_2 + 0x20) + 0x50);
-    s32 iVar1 = (*(s32(*)(s64*, u32))(*plVar2 + 0x98))(plVar2, 0x10000005);
+    s32 iVar1 = (*(s32(*)(s64*, u32))(*(s64 *)(*plVar2 + 0x98)))(plVar2, 0x10000005);
     return (u8)(3 < iVar1);
 }
 
@@ -126,7 +126,7 @@ s64 *FUN_7103541c00(u64 param_1, s64 param_2)
 }
 
 // 0x710335a5fc — wrapper: FUN_71037a1cc0(p1, p2, 0xffffffff, 1) (180 bytes)
-u64 FUN_710335a5fc(u64 param_1, u64 param_2)
+u32 FUN_710335a5fc(u64 param_1, u64 param_2)
 {
     FUN_71037a1cc0(param_1, param_2, 0xffffffff, 1);
     return 0;
@@ -216,7 +216,7 @@ u64 FUN_71031cfbe0(s64 param_1)
 // 0x71031cfd10 — vtable call at 0x20, return 1 (192 bytes)
 u64 FUN_71031cfd10(s64 *param_1)
 {
-    (*(void(*)(s64*))(*param_1 + 0x20))(param_1);
+    (*(void(*)(s64*))(*(s64 *)(*param_1 + 0x20)))(param_1);
     return 1;
 }
 

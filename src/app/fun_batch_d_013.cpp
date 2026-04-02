@@ -14,13 +14,13 @@ extern "C" {
 extern void  FUN_71032e5640(s64);
 extern void  FUN_71032e5560(u64);
 extern void  FUN_7101af9320(u64);
-extern u32   FUN_7103300dd0();
+extern u64   FUN_7103300dd0();
 extern void  FUN_7103540560(s64);
 extern void  FUN_71036b58b0(s64);
 extern void  FUN_710007db90();
-extern u32   FUN_71037223f0(s64);
-extern u32   FUN_7103721ea0(s64, u8);
-extern u32   FUN_71037228b0(s64, u64, u64, u64);
+extern u64   FUN_71037223f0(s64);
+extern u64   FUN_7103721ea0(s64, u8);
+extern u64   FUN_71037228b0(s64, u64, u64, u64);
 extern void  FUN_71037aeec0(s64);
 extern void  FUN_71037af350(s64);
 
@@ -33,21 +33,21 @@ extern s64   DAT_7105331f20;
 namespace nn { namespace nfp {
     struct DeviceHandle;
     struct ApplicationAreaCreateInfo;
-    extern u32 StartDetection(DeviceHandle*);
-    extern u32 StopDetection(DeviceHandle*);
-    extern u32 Mount(DeviceHandle*, int);
-    extern u32 Unmount(DeviceHandle*);
-    extern u32 OpenApplicationArea(DeviceHandle*, u32);
-    extern u32 GetApplicationArea(void*, u64*, DeviceHandle*, u64);
-    extern u32 Flush(DeviceHandle*);
-    extern u32 Restore(DeviceHandle*);
-    extern u32 CreateApplicationArea(DeviceHandle*, ApplicationAreaCreateInfo*);
+    extern u64 StartDetection(DeviceHandle*);
+    extern u64 StopDetection(DeviceHandle*);
+    extern u64 Mount(DeviceHandle*, int);
+    extern u64 Unmount(DeviceHandle*);
+    extern u64 OpenApplicationArea(DeviceHandle*, u32);
+    extern u64 GetApplicationArea(void*, u64*, DeviceHandle*, u64);
+    extern u64 Flush(DeviceHandle*);
+    extern u64 Restore(DeviceHandle*);
+    extern u64 CreateApplicationArea(DeviceHandle*, ApplicationAreaCreateInfo*);
 }}
 
 // ---- Functions ---------------------------------------------------------------
 
 // 0x71033011cc — wrapper: FUN_7103300dd0() (36 bytes)
-u64 FUN_71033011cc(void) { return FUN_7103300dd0(); }
+u64 FUN_71033011cc(void) { return FUN_7103300dd0() & 0xFFFFFFFF; }
 
 // 0x71033646c0 — vtable call at +0x10, return 0 (48 bytes)
 u32 FUN_71033646c0(s64 *param_1)
@@ -111,12 +111,12 @@ void FUN_7103720640(s64 param_1)
 }
 
 // 0x7103720de0 — wrapper: FUN_71037223f0(param_2 + 0xc) (32 bytes)
-u64 FUN_7103720de0(u64 param_1, s64 param_2) { return FUN_71037223f0(param_2 + 0xc); }
+u64 FUN_7103720de0(u64 param_1, s64 param_2) { return FUN_71037223f0(param_2 + 0xc) & 0xFFFFFFFF; }
 
 // 0x7103720e00 — wrapper: FUN_7103721ea0(param_2+0xc, byte at +0x158) (48 bytes)
 u64 FUN_7103720e00(u64 param_1, s64 param_2)
 {
-    return FUN_7103721ea0(param_2 + 0xc, *(u8*)(param_2 + 0x158));
+    return FUN_7103721ea0(param_2 + 0xc, *(u8*)(param_2 + 0x158)) & 0xFFFFFFFF;
 }
 
 // 0x7103720ee0 — wrapper: FUN_71037228b0 with three u64 fields (48 bytes)
@@ -125,46 +125,46 @@ u64 FUN_7103720ee0(u64 param_1, s64 param_2)
     return FUN_71037228b0(param_2 + 0xc,
                           *(u64*)(param_2 + 0x110),
                           *(u64*)(param_2 + 0x118),
-                          *(u64*)(param_2 + 0x120));
+                          *(u64*)(param_2 + 0x120)) & 0xFFFFFFFF;
 }
 
 // 0x71037153d8 — call function pointer with no args (24 bytes)
 u64 FUN_71037153d8(u32 (*param_1)()) { return param_1(); }
 
 // 0x71037162f0 — nn::nfp::StartDetection (32 bytes)
-u64 FUN_71037162f0(s64 param_1) { return nn::nfp::StartDetection((nn::nfp::DeviceHandle*)(param_1 + 0x84)); }
+u64 FUN_71037162f0(s64 param_1) { return nn::nfp::StartDetection((nn::nfp::DeviceHandle*)(param_1 + 0x84)) & 0xFFFFFFFF; }
 
 // 0x7103716310 — nn::nfp::StopDetection (32 bytes)
-u64 FUN_7103716310(s64 param_1) { return nn::nfp::StopDetection((nn::nfp::DeviceHandle*)(param_1 + 0x84)); }
+u64 FUN_7103716310(s64 param_1) { return nn::nfp::StopDetection((nn::nfp::DeviceHandle*)(param_1 + 0x84)) & 0xFFFFFFFF; }
 
 // 0x7103716330 — nn::nfp::Mount with mode 0 (32 bytes)
-u64 FUN_7103716330(s64 param_1) { return nn::nfp::Mount((nn::nfp::DeviceHandle*)(param_1 + 0x84), 0); }
+u64 FUN_7103716330(s64 param_1) { return nn::nfp::Mount((nn::nfp::DeviceHandle*)(param_1 + 0x84), 0) & 0xFFFFFFFF; }
 
 // 0x7103716350 — nn::nfp::Unmount (32 bytes)
-u64 FUN_7103716350(s64 param_1) { return nn::nfp::Unmount((nn::nfp::DeviceHandle*)(param_1 + 0x84)); }
+u64 FUN_7103716350(s64 param_1) { return nn::nfp::Unmount((nn::nfp::DeviceHandle*)(param_1 + 0x84)) & 0xFFFFFFFF; }
 
 // 0x71037164a0 — nn::nfp::OpenApplicationArea (48 bytes)
 u64 FUN_71037164a0(s64 param_1, u32 param_2)
 {
-    return nn::nfp::OpenApplicationArea((nn::nfp::DeviceHandle*)(param_1 + 0x84), param_2);
+    return nn::nfp::OpenApplicationArea((nn::nfp::DeviceHandle*)(param_1 + 0x84), param_2) & 0xFFFFFFFF;
 }
 
 // 0x7103716720 — nn::nfp::GetApplicationArea (64 bytes)
 u64 FUN_7103716720(s64 param_1, void *param_2, u64 *param_3, u64 param_4)
 {
-    return nn::nfp::GetApplicationArea(param_2, param_3, (nn::nfp::DeviceHandle*)(param_1 + 0x84), param_4);
+    return nn::nfp::GetApplicationArea(param_2, param_3, (nn::nfp::DeviceHandle*)(param_1 + 0x84), param_4) & 0xFFFFFFFF;
 }
 
 // 0x7103716b20 — nn::nfp::Flush (32 bytes)
-u64 FUN_7103716b20(s64 param_1) { return nn::nfp::Flush((nn::nfp::DeviceHandle*)(param_1 + 0x84)); }
+u64 FUN_7103716b20(s64 param_1) { return nn::nfp::Flush((nn::nfp::DeviceHandle*)(param_1 + 0x84)) & 0xFFFFFFFF; }
 
 // 0x7103716b40 — nn::nfp::Restore (32 bytes)
-u64 FUN_7103716b40(s64 param_1) { return nn::nfp::Restore((nn::nfp::DeviceHandle*)(param_1 + 0x84)); }
+u64 FUN_7103716b40(s64 param_1) { return nn::nfp::Restore((nn::nfp::DeviceHandle*)(param_1 + 0x84)) & 0xFFFFFFFF; }
 
 // 0x7103716b60 — nn::nfp::CreateApplicationArea (48 bytes)
 u64 FUN_7103716b60(s64 param_1, nn::nfp::ApplicationAreaCreateInfo *param_2)
 {
-    return nn::nfp::CreateApplicationArea((nn::nfp::DeviceHandle*)(param_1 + 0x84), param_2);
+    return nn::nfp::CreateApplicationArea((nn::nfp::DeviceHandle*)(param_1 + 0x84), param_2) & 0xFFFFFFFF;
 }
 
 // 0x71037aeb30 — store two u32 params to array (48 bytes)

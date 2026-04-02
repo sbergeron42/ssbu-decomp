@@ -84,7 +84,7 @@ void FUN_7103579b10(s64 param_1, u8 param_2)
 u64 FUN_7103444090(u64 param_1, s64 param_2)
 {
     s64 *plVar2 = *(s64 **)(*(s64 *)(param_2 + 0x20) + 0x50);
-    u32 uVar1 = (*(u32 (*)(s64 *, u32))(*plVar2 + 0x108))(plVar2, 0x20000006);
+    u32 uVar1 = (*(u32 (*)(s64 *, u32))(*(s64 *)(*plVar2 + 0x108)))(plVar2, 0x20000006);
     return ~uVar1 & 1;
 }
 
@@ -154,6 +154,9 @@ u64 FUN_71037c6940(s64 param_1, void *param_2, u64 param_3)
 {
     s64 local_28;
     s32 iVar2;
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
 
     if ((*(s32 *)(param_1 + 0x14) == 0) ||
         (iVar2 = nn::fs::ReadFile((nn::fs::FileHandle)*(u64 *)(param_1 + 0x18),

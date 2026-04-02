@@ -151,7 +151,7 @@ u64 FUN_710335c478(s64 *param_1)
 // 0x71031d04b0 — vtable call at 0x20 (no args), return 1 (320 bytes)
 u64 FUN_71031d04b0(s64 *param_1)
 {
-    (*(void(*)())(*param_1 + 0x20))();
+    (*(void(*)())(*(s64 *)(*param_1 + 0x20)))();
     return 1;
 }
 
