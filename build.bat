@@ -15,6 +15,13 @@ for /R src %%f in (*.cpp) do (
     if errorlevel 1 goto :error
 )
 
+REM Post-process: Fix PLT stubs - upstream Clang uses GOT-relative calls,
+REM but NX uses direct ADRP+LDR+ADD+BR pattern with x16/x17.
+echo Fixing PLT stubs...
+for %%f in (build\fun_region_039.o) do (
+    python tools\fix_plt_stubs.py "%%f"
+)
+
 REM Post-process: upstream Clang emits movz for bitmask immediates,
 REM but the NX original uses orr-with-wzr. Patch to match.
 echo Patching movz-^>orr...
