@@ -113,9 +113,9 @@ void FUN_7100013730(u64 param_1, s32 param_2)
 }
 
 // 710002b800 — allocate param_2*param_3 bytes (result discarded)
-void FUN_710002b800(u64 /*param_1*/, s32 param_2, s32 param_3)
+void* FUN_710002b800(u64 /*param_1*/, s32 param_2, s32 param_3)
 {
-    malloc((u64)(u32)(param_3 * param_2));
+    return malloc((u64)(u32)(param_3 * param_2));
 }
 
 // 710003aaa0 — conditional Free (skip if param_2 == -1)

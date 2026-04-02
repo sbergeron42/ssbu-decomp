@@ -244,17 +244,18 @@ u64 FUN_71000887d0(u8* param_1, s32 param_2)
 // -- FUN_710008a3b0 ----------------------------------------------------------
 // Walk linked list at param_1+0x150 via +0x80 next pointers, param_2 steps (no return)
 // 710008a3b0
-void FUN_710008a3b0(u8* param_1, s32 param_2)
+u8* FUN_710008a3b0(u8* param_1, s32 param_2)
 {
-    s64 lVar1 = *(s64*)(param_1 + 0x150);
-    if ((param_2 != 0) && (lVar1 != 0)) {
+    u8* node = *(u8**)(param_1 + 0x150);
+    if (param_2 != 0 && node != nullptr) {
         param_2--;
         do {
-            lVar1 = *(s64*)(lVar1 + 0x80);
-            if (param_2 == 0) return;
+            node = *(u8**)(node + 0x80);
+            if (param_2 == 0) return node;
             param_2--;
-        } while (lVar1 != 0);
+        } while (node != nullptr);
     }
+    return node;
 }
 
 // -- FUN_710008a3e0 ----------------------------------------------------------
@@ -264,7 +265,7 @@ s64 FUN_710008a3e0(u64* param_1)
 {
     s64 lVar1 = (s64)*param_1;
     if (lVar1 != 0) {
-        if ((s32)param_1[1] != *(s32*)(lVar1 + 0x2c)) lVar1 = 0;
+        if (*(s32*)((u8*)param_1 + 8) != *(s32*)(lVar1 + 0x2c)) lVar1 = 0;
         return lVar1;
     }
     return 0;

@@ -17,7 +17,7 @@ extern "C" void FUN_7100005b40();
 extern "C" void FUN_7100026140();
 extern "C" void FUN_7100004780();
 extern "C" int  FUN_71000052d0(void*, int, void*, void*, void*);
-extern "C" void FUN_7100006870(void*, void*, int);
+extern "C" void FUN_7100006870(void*, void*, void*);
 extern "C" u64  FUN_71000272d0(u64, int);
 
 // -- FUN_7100000250 ----------------------------------------------------------
@@ -117,7 +117,7 @@ void FUN_710000bba0(u8* param_1, s32 param_2)
     if (node == nullptr) return;
     do {
         if (*(s32*)((*(u64*)node) + 0x28) == param_2) {
-            FUN_7100006870(param_1 + 0x4d58, node, 0);
+            FUN_7100006870(param_1 + 0x4d58, node, nullptr);
             return;
         }
         node = *(u8**)(node + 0x10);
@@ -214,7 +214,7 @@ u64 FUN_710001ebb0(u64 param_1, u64* param_2)
     if (param_2 != nullptr) {
         for (u64* node = (u64*)*param_2; node != nullptr; node = (u64*)node[2]) {
             if (*node == param_1) {
-                FUN_7100006870(param_2, node, 0);
+                FUN_7100006870(param_2, node, nullptr);
                 return 1;
             }
         }
