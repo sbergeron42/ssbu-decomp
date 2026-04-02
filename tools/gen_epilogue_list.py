@@ -28,7 +28,8 @@ def main():
     # Get batch_c/d function names from source
     my_files = sorted(
         glob.glob(str(PROJECT_ROOT / 'src' / 'app' / 'fun_batch_c_*.cpp')) +
-        glob.glob(str(PROJECT_ROOT / 'src' / 'app' / 'fun_batch_d_*.cpp'))
+        glob.glob(str(PROJECT_ROOT / 'src' / 'app' / 'fun_batch_d_*.cpp')) +
+        glob.glob(str(PROJECT_ROOT / 'src' / 'app' / 'fun_batch_e2_*.cpp'))
     )
     my_funcs = set()
     for f in my_files:

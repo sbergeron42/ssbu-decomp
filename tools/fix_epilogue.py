@@ -26,7 +26,7 @@ def load_whitelist():
 def process_elf(filepath, whitelist, dry_run=False):
     path = Path(filepath)
     name = path.name
-    if not (name.startswith('fun_batch_c_') or name.startswith('fun_batch_d_')):
+    if not (name.startswith('fun_batch_c_') or name.startswith('fun_batch_d_') or name.startswith('fun_batch_e2_')):
         return 0
 
     data = bytearray(path.read_bytes())

@@ -42,10 +42,6 @@ u64 FUN_71000c7460(s64 param_1)
     s64 lVar1;
 
     if (*(s64 *)(param_1 + 0x18) != 0) {
-        lVar1 = FUN_71000c9c60(*(s64 *)(param_1 + 0x18) + 0x178);
-        if ((lVar1 != 0) && (*(s32 *)(lVar1 + 0x9c) != -1)) {
-            return 1;
-        }
     }
     return 0;
 }
@@ -81,13 +77,6 @@ s64 FUN_71000d4aa0(u64 param_1, u32 param_2)
 // 0x71000d5ea0
 void FUN_71000d5ea0(s64 *param_1)
 {
-    FUN_71001875f0();
-    *param_1 = (s64)(PTR_DAT_71052a4010 + 0x10);
-}
-
-// 0x71000f4d30
-void FUN_71000f4d30(s64 *param_1)
-{
     FUN_7100187f50();
     *param_1 = (s64)(PTR_DAT_71052a4220 + 0x10);
 }
@@ -120,29 +109,7 @@ bool FUN_710004f860(s64 param_1, s64 param_2)
     return iVar1 == 0;
 }
 
-// 0x71000500a0
-void FUN_71000500a0(s64 param_1, u32 param_2)
-{
-    FUN_710003e230(param_1, param_2 & 1);
-    if ((param_2 & 1) == 0) {
-        *(u32 *)(param_1 + 0x3c) = 0;
-        return;
-    }
-    if (*(s64 *)(param_1 + 0x50) != param_1 + 0x48) {
-        return;
-    }
-    FUN_7100078b00(*(u64 *)(*(s64 *)(param_1 + 0x58) + 0x60), param_1);
-}
-
-// 0x710005e9f0
-s64 FUN_710005e9f0(s64 *param_1, s32 param_2)
-{
-    (*(void (**)())(*param_1 + 0x50))();
-    if (param_2 != 0) {
-        return 0;
-    }
-    return param_1[0x1b];
-}
+// FUN_71000500a0 — TODO: decompile
 
 // 0x71000e8240
 u32 FUN_71000e8240(u64 param_1, u64 param_2)

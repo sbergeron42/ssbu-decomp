@@ -1,10 +1,10 @@
-# Worker: pool-d
+# Worker: pool-e
 
 ## Model: Sonnet
 
-## Task: Batch decomp MEDIUM FUN_* (0x7100-0x7101 range) via Ghidra pipeline
+## Task: Batch decomp MEDIUM FUN_* (0x7102-0x7103 range) via Ghidra pipeline
 
-Batch-decompile MEDIUM-tier functions in address range 0x7100000000-0x7101FFFFFF.
+Batch-decompile MEDIUM-tier functions in address range 0x7102000000-0x7103FFFFFF.
 
 ### Batch pipeline workflow
 1. Pick 20-30 uncompiled MEDIUM functions from data/fun_triage.csv in your address range
@@ -15,16 +15,11 @@ Batch-decompile MEDIUM-tier functions in address range 0x7100000000-0x7101FFFFFF
 6. Build and verify, fix compile errors, commit, repeat
 
 ### Output files
-- Create src/app/fun_batch_d3_001.cpp, fun_batch_d3_002.cpp, etc.
+- Create src/app/fun_batch_e2_001.cpp, fun_batch_e2_002.cpp, etc.
 - Do NOT put functions in any namespace (global functions)
 - Forward-declare unknown called functions as extern "C" void FUNCNAME();
 
-### Progress (as of 2026-04-02)
-Completed batches d3-001 through d3-023.
-Last compiled address: 0x7100255b60
-Next range to scan: 0x7100255b70 onwards (0x71002b35xx dense cluster is next in CSV)
-
 ### Rules
-- ONLY create NEW files named src/app/fun_batch_d3_*.cpp
+- ONLY create NEW files named src/app/fun_batch_e2_*.cpp
 - Do NOT edit any existing files
 - Do NOT modify data/functions.csv or tools/

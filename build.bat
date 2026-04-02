@@ -33,7 +33,7 @@ REM Post-process: Fix epilogue scheduling in batch files (whitelist-based).
 REM Generate whitelist first, then apply.
 python tools\gen_epilogue_list.py
 echo Fixing epilogue scheduling...
-for %%f in (build\fun_batch_c_*.o build\fun_batch_d_*.o) do (
+for %%f in (build\fun_batch_c_*.o build\fun_batch_d_*.o build\fun_batch_e2_*.o) do (
     python tools\fix_epilogue.py "%%f"
 )
 
