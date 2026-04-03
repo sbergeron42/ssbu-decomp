@@ -1,58 +1,32 @@
-# Worker: pool-e
+# Worker: pool-b
 
 ## Model: Opus
 
-## Task: Build post-processing tools for register allocation divergence
+## Task: Decomp CSS state serialization trio for rollback
 
-4,525 non-matching functions remain. After prologue/epilogue (pool-d), the next biggest category is register allocation differences. Build tools to fix these.
+Decomp the save/restore state functions identified in src/docs/game_state.md. These are the model for battle state rollback — they show exactly what state the game considers important to serialize.
 
-### Known divergence patterns
-1. Return register: mov w0,wzr vs mov x0,xzr (32-bit vs 64-bit zero)
-2. Tail call register: br x1 vs br x5 (which register holds the function pointer)
-3. Scratch register choice: x8 vs x9 for intermediate values
-4. Parameter passing: x8 for indirect result location (C++ ABI difference)
+### Target functions
+- css_serialize_state_to_buffer (5.7KB) — serializes CSS state to flat buffer
+- css_restore_state_from_save (4.9KB) — restores from buffer to globals
+- css_read_state_to_compact_buffer (560B) — compact form for network transmission
+- Also: any related state structs these functions reveal
 
 ### Approach
-1. Sample 100 non-matching functions and categorize the diff patterns
-2. For each pattern, determine if it can be post-processed (byte patch in .o)
-3. Write fix_*.py tools for the automatable ones
-4. Add to build.bat pipeline
-
-### Also: analyze the x8-dispatch pattern more deeply
-Pool-c used naked asm for 268 x8-dispatch functions. Can a post-processor fix these instead? The x8 register issue might be patchable by rewriting the mov instruction in the .o file.
-
-### Results
-
-#### Analysis (1,632 non-matching functions sampled)
-| Category | Count | % | Automatable? |
-|----------|-------|---|-------------|
-| OTHER (fundamental codegen diff) | 1,301 | 79.7% | No — wrong source/decompilation |
-| PCREL_ONLY (b/bl/adrp offsets) | 105 | 6.4% | Link-time only |
-| X8_DISPATCH (x8 vs x9 scratch) | 97 | 5.9% | **Yes — fix_x8_regalloc.py** |
-| RETURN_ZERO_WIDTH (w0 vs x0) | 25+ | 1.5% | **Yes — fix_return_width.py** |
-| SCRATCH_REG (other register) | 39 | 2.4% | No — varied patterns |
-| EPILOGUE_ORDER | 2 | 0.1% | Already handled |
-| INSN_REORDER | 10 | 0.6% | No — too varied |
-
-#### New tools delivered
-1. **tools/analyze_regalloc.py** — Categorizes all non-matching functions by divergence type
-2. **tools/fix_return_width.py** — Patches `mov w0,wzr` ↔ `mov x0,xzr` width differences (~259 patches)
-3. **tools/fix_x8_regalloc.py** — Rewrites x8-dispatch register allocation from x8→x9 scratch (~96 functions)
-
-#### Build pipeline updated
-- `build.bat` now includes fix_return_width.py and fix_x8_regalloc.py after existing steps
-
-#### X8-dispatch conclusion
-The 96/97 x8-dispatch functions (9-insn pattern) can be fixed by post-processor, **eliminating the need for naked asm** in those cases. The post-processor rewrites `mov x0,x8; ldr x8,[x8]; ldr x8,[x8,#off]; blr x8` to `ldr x9,[x8]; ldr x9,[x9,#off]; mov x0,x8; blr x9`.
+- Use mcp__ghidra__decompile_function_by_address for each function
+- These are large functions — work through them methodically
+- Document every field being serialized — this tells us what rollback needs to save
+- Define proper structs for the state buffers
+- Write READABLE C++ with comments on every serialized field
 
 ### Output
-- New tools/fix_*.py scripts
-- tools/analyze_regalloc.py analysis tool
-- Analysis of which patterns are automatable vs need naked asm
-- build/regalloc_analysis.csv with per-function categorization
+- src/app/networking/state_serialize.cpp
+- include/app/CSSState.h or similar for the state struct
+- Comments mapping each serialized field to its game meaning
 
 ### Rules
-- ONLY create/edit files in tools/
-- CAN edit build.bat to add post-processing steps
-- Do NOT edit source files
-- Do NOT modify data/functions.csv
+- ONLY create/edit files in src/app/networking/ and include/app/
+- CAN use Ghidra MCP to decompile and cross-reference
+- Do NOT edit existing source files outside networking/
+- Do NOT modify tools/ or data/
+- Prioritize READABILITY and DOCUMENTATION over matching
