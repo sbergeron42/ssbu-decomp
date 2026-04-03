@@ -30,7 +30,7 @@ extern u8 PTR_FUN_71050a0b28;
 
 // ── Iterator begin() vtable-stub ──────────────────────────────────────────────
 
-// 0x710184b8d0
+// addr-TBD-710184b8d0
 void FUN_710184b8d0(s64 param_1, u64 *param_2)
 {
   *param_2 = (u64)&PTR_FUN_71050a0b28;
@@ -39,5 +39,5 @@ void FUN_710184b8d0(s64 param_1, u64 *param_2)
 
 // ── Trivial no-op ─────────────────────────────────────────────────────────────
 
-// 0x710184b8f0
+// addr-TBD-710184b8f0
 void FUN_710184b8f0() {}

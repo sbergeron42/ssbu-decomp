@@ -14,22 +14,8 @@ extern u8 PTR_LAB_71050228b8;
 
 // ── Guard init / vtable setter ────────────────────────────────────────────────
 
-// 0x7101005830
-void FUN_7101005830(u64 param_1, s64 param_2)
-{
-  s32 iVar1;
-
-  if ((DAT_71052c08b8 & 1) == 0) {
-    iVar1 = __cxa_guard_acquire((s64 *)&DAT_71052c08b8);
-    if (iVar1 != 0) {
-      DAT_71052c08c0 = &PTR_LAB_71050228b8;
-      __cxa_guard_release((s64 *)&DAT_71052c08b8);
-    }
-  }
-  *(void ***)(param_2 + 0x318) = &DAT_71052c08c0;
-  *(u8 *)(param_2 + 0xe8) = 7;
-  return;
-}
+// 0x7101005830 -- original is mov x0,xzr; ret (return 0 stub)
+u64 FUN_7101005830() { return 0; }
 
 // ── __throw_out_of_range thunks ───────────────────────────────────────────────
 

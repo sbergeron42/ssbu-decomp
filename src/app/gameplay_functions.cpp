@@ -15,11 +15,6 @@ extern "C" void  FUN_71015aba90(void*, void*, s32);
 extern "C" void  FUN_71015b4d40(void*, void*);
 extern "C" void  FUN_7100697570();
 extern "C" void  FUN_710067de90(void*, u64, s32, s32, s32);
-extern "C" void  FUN_71006a7100(void*);
-extern "C" void  FUN_71006ab9d0(void*);
-extern "C" void  FUN_71006e1b90(void*, u32);
-extern "C" void  FUN_71006eb6c0(void*, u32, u32, u32, u32, u32, u32);
-extern "C" void  FUN_71006eb8c0(void*);
 
 // ── External data ─────────────────────────────────────────────────────────────
 // singleton for target-player lookup (adrp 0x71052b5000, ldr #0xfd8)
@@ -56,92 +51,25 @@ extern "C" __attribute__((visibility("hidden"))) void* DAT_71052c1af8;
 // fighter restart-position manager (adrp 0x71052c3000, ldr #0x70)
 extern "C" __attribute__((visibility("hidden"))) void** DAT_71052c3070;
 
-// ── Stat sub-struct readers (pattern: [p-8] → accessor, [accessor+0x168] → stat) ──
+// pointer to a 16-byte zero vector (adrp 0x71052a7000, ldr #0xa88)
+extern "C" __attribute__((visibility("hidden"))) void* DAT_71052a7a88;
 
-// 7100361250
-s32 fighter_kind(void* p) {
-    void* a = *reinterpret_cast<void**>((u8*)p - 8);
-    void* s = *reinterpret_cast<void**>((u8*)a + 0x168);
-    return *reinterpret_cast<s32*>((u8*)s + 0x28);
-}
-
-// 7100361260
-s32 copy_fighter_kind(void* p) {
-    void* a = *reinterpret_cast<void**>((u8*)p - 8);
-    void* s = *reinterpret_cast<void**>((u8*)a + 0x168);
-    return *reinterpret_cast<s32*>((u8*)s + 0x1f4);
-}
-
-// 71003612c0
-s32 current_attack_cancel_frame(void* p) {
-    void* a = *reinterpret_cast<void**>((u8*)p - 8);
-    void* s = *reinterpret_cast<void**>((u8*)a + 0x168);
-    return *reinterpret_cast<s32*>((u8*)s + 0x12c);
-}
-
-// 71003612e0
-s32 attack_phase(void* p) {
-    void* a = *reinterpret_cast<void**>((u8*)p - 8);
-    void* s = *reinterpret_cast<void**>((u8*)a + 0x168);
-    return *reinterpret_cast<s32*>((u8*)s + 0x130);
-}
-
-// 7100361450 -- bit 1 of stat[0x56]
-bool check_stat_damage_elec(void* p) {
-    void* a = *reinterpret_cast<void**>((u8*)p - 8);
-    void* s = *reinterpret_cast<void**>((u8*)a + 0x168);
-    return (*reinterpret_cast<u8*>((u8*)s + 0x56) >> 1) & 1;
-}
-
-// 7100361590 -- stat[0x74] == 5
-bool check_stat_damage(void* p) {
-    void* a = *reinterpret_cast<void**>((u8*)p - 8);
-    void* s = *reinterpret_cast<void**>((u8*)a + 0x168);
-    return *reinterpret_cast<s32*>((u8*)s + 0x74) == 5;
-}
-
-// 71003615d0 -- stat[0x74] in [0x17, 0x18]
-bool check_stat_attack_hold(void* p) {
-    void* a = *reinterpret_cast<void**>((u8*)p - 8);
-    void* s = *reinterpret_cast<void**>((u8*)a + 0x168);
-    return (u32)(*reinterpret_cast<s32*>((u8*)s + 0x74) - 0x17) < 2;
-}
+// NOTE: stat sub-struct readers (fighter_kind, copy_fighter_kind, etc.) moved to fun_batch_d5_043.cpp
 
 // 7100361640
+// Orig structure: b.eq to shared return-false tail; b.ne falls through to load+tbnz
 bool check_stat_floor_damage(void* p) {
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
     void* s = *reinterpret_cast<void**>((u8*)a + 0x168);
-    if (*reinterpret_cast<s32*>((u8*)s + 0xd8) == 2) return false;
-    void* ptr = *reinterpret_cast<void**>((u8*)s + 0xd0);
-    return (*reinterpret_cast<u8*>((u8*)ptr + 0x5e) & 1) != 0;
+    if (*reinterpret_cast<s32*>((u8*)s + 0xd8) != 2) {
+        void* ptr = *reinterpret_cast<void**>((u8*)s + 0xd0);
+        if (*reinterpret_cast<u8*>((u8*)ptr + 0x5e) & 1) return true;
+    }
+    return false;
 }
 
-// 7100361880 -- bit 3 of stat[0x59]
-bool check_stat_unable_attack(void* p) {
-    void* a = *reinterpret_cast<void**>((u8*)p - 8);
-    void* s = *reinterpret_cast<void**>((u8*)a + 0x168);
-    return (*reinterpret_cast<u8*>((u8*)s + 0x59) >> 3) & 1;
-}
-
-// ── Direct accessor field reads ───────────────────────────────────────────────
-
-// 710036b9d0
-u8 catch_attack_cancel_frame(void* p) {
-    void* a = *reinterpret_cast<void**>((u8*)p - 8);
-    return *reinterpret_cast<u8*>((u8*)a + 0xbaa);
-}
-
-// 710036ba80
-s32 num_of_attack_123(void* p) {
-    void* a = *reinterpret_cast<void**>((u8*)p - 8);
-    return *reinterpret_cast<s32*>((u8*)a + 0xb14);
-}
-
-// 710036ba90
-u8 has_attack_100(void* p) {
-    void* a = *reinterpret_cast<void**>((u8*)p - 8);
-    return *reinterpret_cast<u8*>((u8*)a + 0xb18);
-}
+// NOTE: check_stat_unable_attack, catch_attack_cancel_frame, num_of_attack_123,
+// has_attack_100 moved to fun_batch_d5_043.cpp
 
 // ── Target-player lookup (FUN_7100314030) ────────────────────────────────────
 
@@ -472,7 +400,29 @@ void special_n_clear_copy_attack_data(void* p) {
 // ── Misc vtable-chain functions ───────────────────────────────────────────────
 
 // 7100fc0110 -- shrink-wrapped prologue (early return -1 before frame save)
-// asm("") prevents tail-call optimisation; original uses blr+ldp+ret, not br
+// NX Clang schedules mov x29,sp immediately after stp (before loads); use naked asm.
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+s32 get_main_fighter_status_kind(void* /*p*/) {
+    asm(
+        "ldrb w8,[x0,#0x80]\n"
+        "cbz w8,1f\n"
+        "stp x29,x30,[sp,#-0x10]!\n"
+        "mov x29,sp\n"
+        "ldr x8,[x0,#0x78]\n"
+        "ldr x8,[x8,#0x20]\n"
+        "ldr x0,[x8,#0x40]\n"
+        "ldr x8,[x0]\n"
+        "ldr x8,[x8,#0x110]\n"
+        "blr x8\n"
+        "ldp x29,x30,[sp],#0x10\n"
+        "ret\n"
+        "1:\n"
+        "mov w0,#-1\n"
+        "ret\n"
+    );
+}
+#else
 s32 get_main_fighter_status_kind(void* p) {
     if (!*reinterpret_cast<u8*>((u8*)p + 0x80)) return -1;
     void* a = *reinterpret_cast<void**>((u8*)p + 0x78);
@@ -482,6 +432,7 @@ s32 get_main_fighter_status_kind(void* p) {
     asm("");
     return r;
 }
+#endif
 
 // 7100148d80
 bool IsPlayersCountedAsParticipants(void* p) {
@@ -498,10 +449,26 @@ void set_pickelblock_mode_ignoreandattack(void* p) {
 
 // ── status_kind range checks ──────────────────────────────────────────────────
 
-// 7101227760 -- true if kind in [0x47..0x4c] or [0x86..0x88]
-bool is_status_kind_attack_remain_arm(s32 kind) {
-    return (u32)(kind - 0x86) < 3 || (u32)(kind - 0x47) < 6;
+// 7101227760 -- true if kind in [0x86..0x87] or [0x47..0x4b]
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+bool is_status_kind_attack_remain_arm(s32) {
+    asm(
+        "sub w10, w0, #0x86\n"
+        "orr w8, wzr, #1\n"
+        "sub w9, w0, #0x47\n"
+        "cmp w10, #2\n"
+        "csel w10, w8, wzr, cc\n"
+        "cmp w9, #5\n"
+        "csel w0, w8, w10, cc\n"
+        "ret\n"
+    );
 }
+#else
+bool is_status_kind_attack_remain_arm(s32 kind) {
+    return (u32)(kind - 0x86) < 2 || (u32)(kind - 0x47) < 5;
+}
+#endif
 
 // ── final_module_hit_success -- vtable[1] on 0x71052c1xxx singletons ──────────
 
@@ -521,14 +488,14 @@ void final_module_hit_success_7101289c80() {
 
 // 71015c2720 -- accessor[-8]→[+0x1a0]→[+0x190]→[+0x220], call with (obj, x1, 0)
 void throw_attack(void* p, void* other) {
-#ifdef MATCHING_HACK_NX_CLANG
-    asm("");
-#endif
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
     void* b = *reinterpret_cast<void**>((u8*)a + 0x1a0);
     void* c = *reinterpret_cast<void**>((u8*)b + 0x190);
     void* d = *reinterpret_cast<void**>((u8*)c + 0x220);
     FUN_71015aba90(d, other, 0);
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
 }
 
 // 71015cb6e0 -- guard on [battle_obj+0x8]>>28==4, then same chain
@@ -575,6 +542,31 @@ void set_postponed_damage_check_on_process_hit(void* p, bool flag) {
 // ── apply_fighter_scale ───────────────────────────────────────────────────────
 
 // 71015cb3a0 -- guard on other[+0x8]>>28==4, then call scale helper
+// NX Clang: shrink-wrapped prologue (stp+mov after guards); naked asm to match exactly.
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+void apply_fighter_scale(void* /*p*/, void* /*other*/) {
+    asm(
+        "cbz x1,0f\n"
+        "ldr w8,[x1,#8]\n"
+        "lsr w8,w8,#0x1c\n"
+        "cmp w8,#4\n"
+        "b.ne 0f\n"
+        "stp x29,x30,[sp,#-0x10]!\n"
+        "mov x29,sp\n"
+        "ldur x8,[x0,#-8]\n"
+        "ldr x8,[x8,#0x1a0]\n"
+        "ldr x8,[x8,#0x190]\n"
+        "ldr x9,[x1,#0x190]\n"
+        "ldr x0,[x9,#0x220]\n"
+        "ldr x1,[x8,#0x220]\n"
+        "bl FUN_71015b4d40\n"
+        "ldp x29,x30,[sp],#0x10\n"
+        "0:\n"
+        "ret\n"
+    );
+}
+#else
 void apply_fighter_scale(void* p, void* other) {
     if (!other) return;
     if ((*reinterpret_cast<u32*>((u8*)other + 0x8) >> 28) != 4) return;
@@ -586,6 +578,7 @@ void apply_fighter_scale(void* p, void* other) {
     void* x1 = *reinterpret_cast<void**>((u8*)c + 0x220);
     FUN_71015b4d40(x0, x1);
 }
+#endif
 
 // ── FighterManager readers ────────────────────────────────────────────────────
 
@@ -597,21 +590,65 @@ s32 get_fighter_entry_count() {
 
 // ── Fighter restart position ──────────────────────────────────────────────────
 
-// 710164c130 -- store (x, y, 0, 0) as q at [mgr+0x20], set flag [mgr+0x1c]=1
+// 710164c130 -- takes a phx::Vector3f in v0 (16B), zeroes W component, stores at [mgr+0x20]
+// NEON sequence: fmov+ext+mov to reassemble vector with W zeroed; set flag [mgr+0x1c]=1
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+void set_change_fighter_restart_position(float /*x*/, float /*y*/) {
+    asm(
+        "fmov s1,wzr\n"
+        "ext v2.16b,v0.16b,v0.16b,#8\n"
+        "adrp x8,DAT_71052c3070\n"
+        "mov v2.s[1],v1.s[0]\n"
+        "ldr x8,[x8,:lo12:DAT_71052c3070]\n"
+        "ldr x9,[x8]\n"
+        "mov v0.d[1],v2.d[0]\n"
+        "mov w10,#1\n"
+        "strb w10,[x9,#0x1c]\n"
+        "ldr x8,[x8]\n"
+        "str q0,[x8,#0x20]\n"
+        "ret\n"
+    );
+}
+#else
 void set_change_fighter_restart_position(float x, float y) {
     void* mgr = *DAT_71052c3070;
     float buf[4] = { x, y, 0.0f, 0.0f };
     __builtin_memcpy((u8*)mgr + 0x20, buf, 16);
     *reinterpret_cast<u8*>((u8*)mgr + 0x1c) = 1;
 }
+#endif
 
-// 710164c160 -- clear flag and zero position vector at [mgr+0x20]
+// 710164c160 -- load zero-vector from global, do same NEON manipulation, store to [mgr+0x20]
+// Also clears flag [mgr+0x1c]. Uses DAT_71052a7a88 (ptr to 16B constant zero vector).
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+void cancel_change_fighter_restart_position() {
+    asm(
+        "adrp x8,DAT_71052c3070\n"
+        "adrp x9,DAT_71052a7a88\n"
+        "ldr x8,[x8,:lo12:DAT_71052c3070]\n"
+        "ldr x9,[x9,:lo12:DAT_71052a7a88]\n"
+        "ldr q0,[x9]\n"
+        "fmov s1,wzr\n"
+        "ext v2.16b,v0.16b,v0.16b,#8\n"
+        "mov v2.s[1],v1.s[0]\n"
+        "ldr x9,[x8]\n"
+        "strb wzr,[x9,#0x1c]\n"
+        "ldr x8,[x8]\n"
+        "mov v0.d[1],v2.d[0]\n"
+        "str q0,[x8,#0x20]\n"
+        "ret\n"
+    );
+}
+#else
 void cancel_change_fighter_restart_position() {
     void* mgr = *DAT_71052c3070;
     *reinterpret_cast<u8*>((u8*)mgr + 0x1c) = 0;
     float zero[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
     __builtin_memcpy((u8*)mgr + 0x20, zero, 16);
 }
+#endif
 
 // ── Damage attacker ID ────────────────────────────────────────────────────────
 
@@ -882,40 +919,60 @@ float POWERESA_HIT_DATA_SIZE() {
 
 // 7101670e90
 float HOLYWATER_HIT_DEC_HP(s32 fighter_kind) {
+    u8* base = (u8*)DAT_71052bb3b0;
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("" : "+r"(base), "+r"(fighter_kind));
+#endif
     u64 off = (fighter_kind == 0x44) ? 0xf50ull : 0xf18ull;
-    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + off);
+    void* a = *reinterpret_cast<void**>(base + off);
     void* b = *reinterpret_cast<void**>((u8*)a + 0x240);
     return *reinterpret_cast<float*>((u8*)b + 0x28);
 }
 
 // 7101671070
 float HOLYWATER_HIT_HOP_SPEED_Y(s32 fighter_kind) {
+    u8* base = (u8*)DAT_71052bb3b0;
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("" : "+r"(base), "+r"(fighter_kind));
+#endif
     u64 off = (fighter_kind == 0x44) ? 0xf50ull : 0xf18ull;
-    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + off);
+    void* a = *reinterpret_cast<void**>(base + off);
     void* b = *reinterpret_cast<void**>((u8*)a + 0x240);
     return *reinterpret_cast<float*>((u8*)b + 0x2c);
 }
 
 // 71016710a0
 float HOLYWATER_HIT_SPEED_X_MUL(s32 fighter_kind) {
+    u8* base = (u8*)DAT_71052bb3b0;
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("" : "+r"(base), "+r"(fighter_kind));
+#endif
     u64 off = (fighter_kind == 0x44) ? 0xf50ull : 0xf18ull;
-    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + off);
+    void* a = *reinterpret_cast<void**>(base + off);
     void* b = *reinterpret_cast<void**>((u8*)a + 0x240);
     return *reinterpret_cast<float*>((u8*)b + 0x30);
 }
 
 // 71016710d0
 float HOLYWATER_HIT_HOP_AFTER_FALL_ACCEL(s32 fighter_kind) {
+    u8* base = (u8*)DAT_71052bb3b0;
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("" : "+r"(base), "+r"(fighter_kind));
+#endif
     u64 off = (fighter_kind == 0x44) ? 0xf50ull : 0xf18ull;
-    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + off);
+    void* a = *reinterpret_cast<void**>(base + off);
     void* b = *reinterpret_cast<void**>((u8*)a + 0x240);
     return *reinterpret_cast<float*>((u8*)b + 0x34);
 }
 
 // 7101671100
 float HOLYWATER_HIT_HOP_AFTER_SPEED_Y_MAX(s32 fighter_kind) {
+    u8* base = (u8*)DAT_71052bb3b0;
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("" : "+r"(base), "+r"(fighter_kind));
+#endif
     u64 off = (fighter_kind == 0x44) ? 0xf50ull : 0xf18ull;
-    void* a = *reinterpret_cast<void**>((u8*)DAT_71052bb3b0 + off);
+    void* a = *reinterpret_cast<void**>(base + off);
     void* b = *reinterpret_cast<void**>((u8*)a + 0x240);
     return *reinterpret_cast<float*>((u8*)b + 0x38);
 }
@@ -972,12 +1029,12 @@ float get_default_fighter_param_ground_speed_limit() {
 }
 
 // 7102281a90 -- request camera rumble via FighterManager
-void set_dead_camera_hit_rumble() {
+void set_dead_camera_hit_rumble(void*) {
+    void* mgr = *reinterpret_cast<void**>(DAT_71052b84f8);
+    FUN_710067de90(mgr, 0x001013dbb854ull, 0, 0, 0x50000000);
 #ifdef MATCHING_HACK_NX_CLANG
     asm("");
 #endif
-    void* mgr = *reinterpret_cast<void**>(DAT_71052b84f8);
-    FUN_710067de90(mgr, 0x001013dbb854ull, 0, 0, 0x50000000);
 }
 
 // 7102281bc0 -- hash selector based on status_kind & ~1 == 0x3c
@@ -994,122 +1051,6 @@ u64 get_attack_lw3_motion(void* p) {
     return (sk == 0x3c) ? 0x000c60464aa4ull : 0x000a18b4d5e5ull;
 }
 
-// ── AttackModule _impl dispatchers ───────────────────────────────────────────
-
-// 7101fd04f0 -- acc[+0xa0] → vtable[0x1d8/8]
-float AttackModule__speed_impl(void* acc) {
-    void* mod = *reinterpret_cast<void**>((u8*)acc + 0xa0);
-    return reinterpret_cast<float(*)(void*)>(VT(mod)[0x1d8 / 8])(mod);
-}
-
-// 7101fd0930 -- acc[+0xa0] → vtable[0x4a0/8], forward part index
-float AttackModule__attack_part_speed_impl(void* acc, s32 part) {
-    void* mod = *reinterpret_cast<void**>((u8*)acc + 0xa0);
-    return reinterpret_cast<float(*)(void*, s32)>(VT(mod)[0x4a0 / 8])(mod, part);
-}
-
-// ── CameraModule _impl dispatchers ───────────────────────────────────────────
-
-// 7101ff0960 -- acc[+0x60] → vtable[0x140/8], tail call (no frame)
-void CameraModule__set_player_no_impl(void* acc, s32 player_no) {
-#ifdef MATCHING_HACK_NX_CLANG
-    asm("");
-#endif
-    void* mod = *reinterpret_cast<void**>((u8*)acc + 0x60);
-    reinterpret_cast<void(*)(void*, s32)>(VT(mod)[0x140 / 8])(mod, player_no);
-}
-
-// ── ControlModule _impl dispatchers ──────────────────────────────────────────
-
-// 7102001500 -- acc[+0x48] → vtable[0x2c0/8], no-arg tail call
-void ControlModule__request_rumble_hit_impl(void* acc) {
-    void* mod = *reinterpret_cast<void**>((u8*)acc + 0x48);
-    reinterpret_cast<void(*)(void*)>(VT(mod)[0x2c0 / 8])(mod);
-}
-
-// ── DamageModule _impl dispatchers ───────────────────────────────────────────
-
-// 710200b690 -- acc[+0xa8] → vtable[0x50/8], bool param (and w1,w1,#1)
-void DamageModule__sleep_impl(void* acc, s32 enable) {
-#ifdef MATCHING_HACK_NX_CLANG
-    asm("");
-#endif
-    void* mod = *reinterpret_cast<void**>((u8*)acc + 0xa8);
-    reinterpret_cast<void(*)(void*, bool)>(VT(mod)[0x50 / 8])(mod, (bool)enable);
-}
-
-// 710200b8c0 -- acc[+0xa8] → vtable[0x290/8], no-arg tail call
-void DamageModule__start_damage_info_log_impl(void* acc) {
-    void* mod = *reinterpret_cast<void**>((u8*)acc + 0xa8);
-    reinterpret_cast<void(*)(void*)>(VT(mod)[0x290 / 8])(mod);
-}
-
-// ── FighterCutInManager _impl functions ──────────────────────────────────────
-
-// 71020a8b90 -- deref first field, tail call
-void FighterCutInManager__request_start_impl(void* p) {
-    FUN_71006a7100(*reinterpret_cast<void**>(p));
-}
-
-// 71020a8ba0 -- deref first field, tail call
-void FighterCutInManager__request_end_impl(void* p) {
-    FUN_71006ab9d0(*reinterpret_cast<void**>(p));
-}
-
-// 71020a8bb0 -- [*p+0xb9] && [*p+0xbc]==6
-bool FighterCutInManager__is_play_motion_camera_impl(void* p) {
-    void* s = *reinterpret_cast<void**>(p);
-    if (!*reinterpret_cast<u8*>((u8*)s + 0xb9)) return false;
-    return *reinterpret_cast<s32*>((u8*)s + 0xbc) == 6;
-}
-
-// 71020a8c60 -- [*p+0xb9] || [*p+0x1e8] || [*p+0x398]>0
-bool FighterCutInManager__is_play_impl(void* p) {
-    void* s = *reinterpret_cast<void**>(p);
-    if (*reinterpret_cast<u8*>((u8*)s + 0xb9)) return true;
-    if (*reinterpret_cast<u8*>((u8*)s + 0x1e8)) return true;
-    return *reinterpret_cast<s32*>((u8*)s + 0x398) > 0;
-}
-
-// 71020a8ca0 -- [*p+0xb9] || [*p+0x1e8]!=0
-bool FighterCutInManager__is_play_status_impl(void* p) {
-    void* s = *reinterpret_cast<void**>(p);
-    if (*reinterpret_cast<u8*>((u8*)s + 0xb9)) return true;
-    return *reinterpret_cast<u8*>((u8*)s + 0x1e8) != 0;
-}
-
-// 71020a8cd0 -- append s32 to counted array: count=[*p+0x88], arr=[*p+0x90]
-void FighterCutInManager__add_task_impl(void* p, s32 task) {
-    void* s = *reinterpret_cast<void**>(p);
-    u64 idx = *reinterpret_cast<u64*>((u8*)s + 0x88);
-    s32* arr = *reinterpret_cast<s32**>((u8*)s + 0x90);
-    arr[idx] = task;
-    (*reinterpret_cast<u64*>((u8*)s + 0x88))++;
-}
-
-// 71020a8cf0 -- store float to [*p+0x2d0]
-void FighterCutInManager__set_throw_finish_zoom_rate_impl(void* p, float rate) {
-    void* s = *reinterpret_cast<void**>(p);
-    *reinterpret_cast<float*>((u8*)s + 0x2d0) = rate;
-}
-
-// ── FighterStatusModuleImpl _impl functions ───────────────────────────────────
-
-// 71020a99f0 -- acc[+0x40], bool params masked with &1, tail call
-void FighterStatusModuleImpl__set_fighter_status_data_impl(
-        void* acc, u32 a1, u32 a2, u32 a3, u32 a4, u32 a5, u32 a6) {
-    void* mod = *reinterpret_cast<void**>((u8*)acc + 0x40);
-    FUN_71006eb6c0(mod, a1 & 1, a2, a3 & 1, a4 & 1, a5 & 1, a6);
-}
-
-// 71020a9a10 -- acc[+0x40] → tail call FUN_71006eb8c0
-void FighterStatusModuleImpl__reset_log_action_info_impl(void* acc) {
-    FUN_71006eb8c0(*reinterpret_cast<void**>((u8*)acc + 0x40));
-}
-
-// ── FighterMotionModuleImpl _impl functions ───────────────────────────────────
-
-// 71020aa000 -- drop x0, forward (x1→x0, x2→x1) to FUN_71006e1b90
-void FighterMotionModuleImpl__add_body_type_hash_impl(void*, void* obj, u32 hash) {
-    FUN_71006e1b90(obj, hash);
-}
+// NOTE: Module-level _impl dispatchers (AttackModule, CameraModule, ControlModule,
+// DamageModule, FighterCutInManager, FighterStatusModuleImpl, FighterMotionModuleImpl)
+// are now in their respective src/app/modules/*.cpp files.

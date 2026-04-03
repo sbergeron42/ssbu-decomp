@@ -104,7 +104,7 @@ void* FighterCloudLinkEventFinal__load_from_l2c_table_impl_21992c0(void* obj, u6
 
 // MANUAL: 0x7100039e10  ViewportScissorState::GetRequiredMemorySize  (ldrh+mul-sub)
 // ldrh w8,[x0,#2]; mov w9,#40; mul x8,x8,x9; sub x0,x8,#40; ret
-// 7100003e10
+// 7100039e10
 u64 GetRequiredMemorySize_3e10(void* obj) {
     u16 n = *reinterpret_cast<u16*>(reinterpret_cast<u8*>(obj) + 2);
     return (u64)n * 0x28 - 0x28;

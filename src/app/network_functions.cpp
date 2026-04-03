@@ -71,7 +71,7 @@ void Curl_digest_cleanup_13700(long p) {
 // 0x71000b9f50  16B  ~Socket -- noop dtor
 void dtor_Socket_b9f50(void*) { }
 
-// 0x7100162480  16B  GetNetworkFactory -- return factory pointer field at +0
+// 0x7100162480  16B  GetNetworkFactory -- return factory pointer field at +8
 u64 GetNetworkFactory_162480(void* obj) {
-    return *reinterpret_cast<u64*>(obj);
+    return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x8);
 }

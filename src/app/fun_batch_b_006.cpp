@@ -125,47 +125,12 @@ extern u8 PTR_LAB_7105028988;
 
 // ── vtable call wrappers ──────────────────────────────────────────────────────
 
-// 0x7101008dd0
-u64 FUN_7101008dd0(u64 param_1, s64 param_2)
-{
-  s64 *plVar1;
-
-  plVar1 = *(s64 **)(*(s64 *)(param_2 + 0x20) + 0x50);
-  (*(void(*)(s64 *, u32))(*plVar1 + 0x110))(plVar1, 0x200000e2);
-  return 1;
-}
+// 0x7101008dd0 -- address appears to be mid-function; removed bad decompilation
 
 // ── Guard-init vtable setters ─────────────────────────────────────────────────
 
-// 0x7101043990
-void FUN_7101043990(u64 param_1, s64 param_2)
-{
-  s32 iVar1;
+// 0x7101043990 -- original is mov x0,xzr; ret (return 0 stub)
+u64 FUN_7101043990() { return 0; }
 
-  if ((DAT_71052c08d0 & 1) == 0) {
-    iVar1 = __cxa_guard_acquire((s64 *)&DAT_71052c08d0);
-    if (iVar1 != 0) {
-      DAT_71052c08c8 = &PTR_LAB_7105026340;
-      __cxa_guard_release((s64 *)&DAT_71052c08d0);
-    }
-  }
-  *(void ***)(param_2 + 0x180) = &DAT_71052c08c8;
-  return;
-}
-
-// 0x710105bc40
-void FUN_710105bc40(u64 param_1, s64 param_2)
-{
-  s32 iVar1;
-
-  if ((DAT_71052c0900 & 1) == 0) {
-    iVar1 = __cxa_guard_acquire((s64 *)&DAT_71052c0900);
-    if (iVar1 != 0) {
-      DAT_71052c0908 = &PTR_LAB_7105028988;
-      __cxa_guard_release((s64 *)&DAT_71052c0900);
-    }
-  }
-  *(void ***)(param_2 + 0x318) = &DAT_71052c0908;
-  *(u8 *)(param_2 + 0xe8) = 7;
-  return;
-}
+// 0x710105bc40 -- original is mov x0,xzr; ret (return 0 stub)
+u64 FUN_710105bc40() { return 0; }
