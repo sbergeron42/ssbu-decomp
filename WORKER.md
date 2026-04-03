@@ -19,12 +19,16 @@ Decomp HARD-tier functions (30-100+ instructions) using Ghidra MCP. These are re
 - Add address comments above each function
 
 ### Progress (2026-04-03)
-- Batches 001-014 complete: 213 functions committed
+- Batches 001-022 complete: ~228 functions committed
 - Batches 001-008: 80B HARD (8 batches, ~8-12 funcs each)
 - Batches 009-010: 80B HARD (2 batches, ~25 funcs each)
 - Batches 011-013: 96B HARD (3 batches, ~15-18 funcs each)
 - Batch 014: 96B HARD (12 funcs, dtor/encode/ListBase patterns)
-- Remaining: 320 96B, 222 80B, plus larger sizes
+- Batches 015-016: 96B and 80B HARD (nn::nex tree dtors, mutex-guarded patterns)
+- Batches 017-019: 80B/96B/48B HARD (Key/Buffer dtors, jemalloc, InkPaintModule)
+- Batches 020-021: 112B/128B/144B HARD (node walker, bit-buffer, session auth)
+- Batch 022: 80B nn::nex interior functions (String dtor, vector ctor, string-clear)
+- Remaining: ~320 96B, ~200 80B, ~150 112B, ~150 128B, ~180 144B, plus larger
 
 ### Rules
 - ONLY create NEW files named src/app/fun_hard_d_*.cpp
