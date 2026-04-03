@@ -56,16 +56,15 @@ This repo supports parallel decomp work via git worktrees. Multiple Claude Code 
 - **Workers** (git worktrees on `worker/pool-*` branches): decomp assigned modules, compile, verify locally
 
 ### Pool Assignment Protocol
-**CRITICAL:** Before assigning or reassigning ANY pool:
-1. **READ `data/pool_assignments.md`** — this is the source of truth for current assignments
-2. **UPDATE `data/pool_assignments.md`** when changing assignments
-3. **THEN write WORKER.md** in the pool's worktree
-4. WORKER.md is .gitignored and gets lost on rebase — `pool_assignments.md` is tracked in git
-5. **NEVER overwrite a pool's WORKER.md without first checking `pool_assignments.md`**
-6. Pools that ignore their assignment waste hours of compute — this is a serious problem
+**CRITICAL:** Each pool's `WORKER.md` is the **single source of truth** for its assignment.
+1. **READ the pool's WORKER.md** before reassigning — check if it's already doing useful work
+2. **WRITE WORKER.md** in the pool's worktree when assigning new work
+3. WORKER.md is tracked in git and survives rebases
+4. `data/pool_assignments.md` is just a quick overview — WORKER.md wins if they conflict
+5. Pools that ignore their assignment waste hours of compute — this is a serious problem
 
 ### Worker Rules
-1. **ONLY edit files in your assigned file territory** — see WORKER.md and `data/pool_assignments.md`
+1. **ONLY edit files in your assigned file territory** — see WORKER.md
 2. **NEVER modify `data/functions.csv`** — the orchestrator handles this exclusively
 3. **NEVER edit files assigned to other workers**
 4. Commit to your worker branch, never push to master directly
