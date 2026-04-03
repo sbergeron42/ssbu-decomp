@@ -121,7 +121,7 @@ void FUN_71037c2a30(s64 *param_1, u64 param_2)
 }
 
 // 0x71037f7ad0 — abort wrapper (16 bytes)
-void FUN_71037f7ad0(void) { FUN_710356bb20(); }
+u32 FUN_71037f7ad0(void) { FUN_710356bb20(); }
 
 // 0x71037f7ae0 — abort wrapper (16 bytes)
-void FUN_71037f7ae0(void) { FUN_710356bb20(); }
+u32 FUN_71037f7ae0(void) { FUN_710356bb20(); }

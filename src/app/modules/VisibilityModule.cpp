@@ -18,9 +18,9 @@ void VisibilityModule__set_default_int64_impl(BattleObjectModuleAccessor* a,u64 
 bool VisibilityModule__is_visible_mesh_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=VM(a); return reinterpret_cast<bool(*)(void*,u64)>(VT(m)[0x100/8])(m,p1); }
 void VisibilityModule__set_model_visible_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=VM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x118/8])(m,p1); }
 // 710208c000
-void VisibilityModule__set_status_default_impl2(BattleObjectModuleAccessor* a,u64 p1) { auto* m=VM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x60/8])(m,p1); }
+void VisibilityModule__set_status_default_impl2(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=VM(a); reinterpret_cast<void(*)(void*,u64,u64)>(VT(m)[0x60/8])(m,p1,p2); }
 // 710208c010
-void VisibilityModule__set_status_default_int64_impl2(BattleObjectModuleAccessor* a,u64 p1) { auto* m=VM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x68/8])(m,p1); }
+void VisibilityModule__set_status_default_int64_impl2(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=VM(a); reinterpret_cast<void(*)(void*,u64,u64)>(VT(m)[0x68/8])(m,p1,p2); }
 void VisibilityModule__set_whole_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=VM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0xc0/8])(m,p1); }
 void VisibilityModule__set_visibility_mode_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=VM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x110/8])(m,p1); }
 void VisibilityModule__set_status_default_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x150)); reinterpret_cast<void(*)(void*,u64,u64)>(VT(m)[0x60/8])(m,p1,p2); }

@@ -61,44 +61,44 @@ void* CameraModule__get_camera_view_volume_z0_rect_impl(BattleObjectModuleAccess
 
 // Remaining CameraModule dispatchers
 // 7101ff0820
-void CameraModule__v0x70(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x70/8])(m,p1); }
+void CameraModule__v0x70(BattleObjectModuleAccessor* a) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x70/8])(m); }
 // 7101ff0830
-void CameraModule__v0x80(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x80/8])(m,p1); }
+void CameraModule__v0x80(BattleObjectModuleAccessor* a,u64 p1,u64 p2,u64 p3) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,u64,u64,u64)>(VT(m)[0x80/8])(m,p1,p2,p3); }
 // 7101ff0840
-void CameraModule__v0x88(BattleObjectModuleAccessor* a,bool p1) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x88/8])(m,p1); }
+void CameraModule__v0x88(BattleObjectModuleAccessor* a,bool p1,u64 p2) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,bool,u64)>(VT(m)[0x88/8])(m,p1,p2); }
 void CameraModule__v0x90(BattleObjectModuleAccessor* a,bool p1) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x90/8])(m,p1); }
 // 7101ff0880
-void CameraModule__v0x98(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x98/8])(m,p1); }
+void CameraModule__v0x98(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,u64,u64)>(VT(m)[0x98/8])(m,p1,p2); }
 // 7101ff0890
-void CameraModule__v0xa0(BattleObjectModuleAccessor* a,bool p1) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0xa0/8])(m,p1); }
+void CameraModule__v0xa0(BattleObjectModuleAccessor* a,bool p1,u64 p2) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,bool,u64)>(VT(m)[0xa0/8])(m,p1,p2); }
 void CameraModule__v0xb8(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xb8/8])(m,p1); }
 // 7101ff08c0
-void CameraModule__v0xc0(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xc0/8])(m,p1); }
+void CameraModule__v0xc0(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,u64,u64)>(VT(m)[0xc0/8])(m,p1,p2); }
 void CameraModule__v0xe8(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xe8/8])(m,p1); }
 void CameraModule__v0xf0(BattleObjectModuleAccessor* a,u64 p1,u64 p2,u64 p3,bool p4) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,u64,u64,u64,bool)>(VT(m)[0xf0/8])(m,p1,p2,p3,p4); }
 void CameraModule__v0xf8(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xf8/8])(m,p1); }
 // 7101ff0930
-void CameraModule__v0x128(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x128/8])(m,p1); }
+void CameraModule__v0x128(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,u64,u64)>(VT(m)[0x128/8])(m,p1,p2); }
 // 7101ff0940
-void CameraModule__v0x130(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x130/8])(m,p1); }
+void CameraModule__v0x130(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,u64,u64)>(VT(m)[0x130/8])(m,p1,p2); }
 // 7101ff0960
-void CameraModule__v0x140(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x140/8])(m,p1); }
+void CameraModule__v0x140(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,u64,u64)>(VT(m)[0x140/8])(m,p1,p2); }
 void CameraModule__v0x160(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x160/8])(m,p1); }
 void CameraModule__v0x170(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x170/8])(m,p1); }
 void CameraModule__v0x180(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x180/8])(m,p1); }
 void CameraModule__v0x198(BattleObjectModuleAccessor* a,bool p1) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x198/8])(m,p1); }
 void CameraModule__v0x1a0(BattleObjectModuleAccessor* a,bool p1) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x1a0/8])(m,p1); }
 // 7101ff0a20
-void CameraModule__v0x1b8(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x1b8/8])(m,p1); }
+void CameraModule__v0x1b8(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,u64,u64)>(VT(m)[0x1b8/8])(m,p1,p2); }
 void CameraModule__v0x1f0(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x1f0/8])(m,p1); }
 void CameraModule__v0x200(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x200/8])(m,p1); }
 // 7101ff0ac0
-void CameraModule__v0x208(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x208/8])(m,p1); }
+void CameraModule__v0x208(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,u64,u64)>(VT(m)[0x208/8])(m,p1,p2); }
 void CameraModule__v0x210(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x210/8])(m,p1); }
 // 7101ff0af0
-void CameraModule__v0x220(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x220/8])(m,p1); }
+void CameraModule__v0x220(BattleObjectModuleAccessor* a,u64 p1,u64 p2,u64 p3) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,u64,u64,u64)>(VT(m)[0x220/8])(m,p1,p2,p3); }
 // 7101ff0b20
-void CameraModule__v0x238(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x238/8])(m,p1); }
+void CameraModule__v0x238(BattleObjectModuleAccessor* a) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x238/8])(m); }
 // Auto-generated named dispatchers
 void CameraModule__reset_all_impl(BattleObjectModuleAccessor* a) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x70/8])(m); }
 void CameraModule__update_force_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,u64 p3) { auto* m=CAMERA_MODULE(a); reinterpret_cast<void(*)(void*,u64,u64,u64)>(VT(m)[0x80/8])(m,p1,p2,p3); }

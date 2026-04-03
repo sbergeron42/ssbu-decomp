@@ -1192,7 +1192,7 @@ u64 FUN_71002babc0(u64 p1) {
 int FUN_71002babd0(int p1) { return p1 >> 8; }
 
 // 71002babe0
-u8 FUN_71002babe0(u32 p1) { return (u8)p1; }
+u32 FUN_71002babe0(u32 p1) { return (u8)p1; }
 
 // 71002babf0
 u32 FUN_71002babf0(int p1, u32 p2) { return p2 | (u32)p1 << 8; }
