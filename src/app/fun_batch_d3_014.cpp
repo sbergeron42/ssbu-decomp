@@ -1,18 +1,21 @@
 #include "types.h"
 
+#define HIDDEN __attribute__((visibility("hidden")))
+
 // MEDIUM-tier FUN_* functions — 0x7100 address range, batch d3-014
 // Pool-d worker: auto-generated from Ghidra decompilation
 
 // ---- External declarations -----------------------------------------------
 
 // External data
-extern u8 PTR_DAT_71052a22d8[];
+extern u8 PTR_DAT_71052a22d8[] HIDDEN;
 
 // External FUN_* forward declarations
 extern void FUN_7100082590(u64, u64 *, u64, u32);
 extern void FUN_71000397f0(s64);
 extern void FUN_71000399d0(s64, u64);
 extern void FUN_7100039580(s64, u64);
+extern void FUN_7100099520(s64, u64);
 
 // ---- Functions ---------------------------------------------------------------
 
@@ -125,12 +128,10 @@ s64 FUN_710008a3e0(s64 *param_1)
     return 0;
 }
 
-// 0x710008a740 — delegate: three sub-calls at fixed offsets (16 bytes)
+// 0x710008a740 — tail-call wrapper: forward to FUN_7100099520 at +0x118 (16 bytes)
 void FUN_710008a740(s64 param_1, u64 param_2)
 {
-    FUN_71000397f0(param_1 + 0x120);
-    FUN_71000399d0(param_1 + 0x148, param_2);
-    FUN_7100039580(param_1 + 0x164, param_2);
+    FUN_7100099520(param_1 + 0x118, param_2);
 }
 
 // 0x710008d090 — empty stub (16 bytes)

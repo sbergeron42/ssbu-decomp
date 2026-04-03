@@ -7,7 +7,8 @@
 
 // External FUN_* forward declarations
 extern void FUN_710015ffc0(s64);
-extern void FUN_7100181270(void);
+extern void FUN_7100181270(s64);
+extern void FUN_710017f100(s64);
 
 // Intra-batch forward declaration (defined later in this file)
 u8 FUN_710017f1d0(s64 param_1);
@@ -107,23 +108,19 @@ void FUN_71001672d0(void)
 {
 }
 
-// 0x7100175240 — conditional delegate: if ptr at +0x18 != 0, call FUN_7100181270 (16 bytes)
+// 0x7100175240 — conditional delegate: if ptr at +0x18 != 0, tail-call FUN_7100181270 (16 bytes)
 void FUN_7100175240(s64 param_1)
 {
-    if (*(s64 *)(param_1 + 0x18) != 0) {
-        FUN_7100181270();
-        return;
+    s64 ptr = *(s64 *)(param_1 + 0x18);
+    if (ptr != 0) {
+        FUN_7100181270(ptr);
     }
 }
 
-// 0x7100175780 — indirect clear: zero two u64 fields at *(+0x18)+0x520/0x528 (16 bytes)
+// 0x7100175780 — delegate: tail-call FUN_710017f100 with ptr at +0x18 (16 bytes)
 void FUN_7100175780(s64 param_1)
 {
-    s64 lVar1;
-
-    lVar1 = *(s64 *)(param_1 + 0x18);
-    *(u64 *)(lVar1 + 0x520) = 0;
-    *(u64 *)(lVar1 + 0x528) = 0;
+    FUN_710017f100(*(s64 *)(param_1 + 0x18));
 }
 
 // 0x7100175790 — delegate: call FUN_710017f1d0 with u64 at *(+0x18) (16 bytes)

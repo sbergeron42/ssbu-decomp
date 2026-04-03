@@ -1,11 +1,14 @@
 #include "types.h"
 
+#define HIDDEN __attribute__((visibility("hidden")))
+
 // MEDIUM-tier FUN_* functions — 0x7100 address range, batch d3-002
 // Pool-d worker: auto-generated from Ghidra decompilation
 
 // ---- External declarations -----------------------------------------------
 
-extern "C" void *memset(void *, int, u64);
+// Declare with asm label to prevent builtin inlining
+extern "C" void *ext_memset(void *, int, u64) asm("memset");
 
 // nn forward declarations
 namespace nn { namespace os {
@@ -14,10 +17,10 @@ namespace nn { namespace os {
 }}
 
 // External data
-extern u8 PTR_DAT_71052a5108[];
-extern u8 PTR_DAT_71052a5190[];
-extern u8 PTR_DAT_71052a5198[];
-extern u8 PTR_DAT_71052a5200[];
+extern u8 PTR_DAT_71052a5108[] HIDDEN;
+extern u8 PTR_DAT_71052a5190[] HIDDEN;
+extern u8 PTR_DAT_71052a5198[] HIDDEN;
+extern u8 PTR_DAT_71052a5200[] HIDDEN;
 
 // External FUN_* forward declarations
 extern void FUN_71001738e0();
@@ -182,7 +185,7 @@ u64 FUN_7100194050(s64 param_1, s64 param_2)
 void FUN_710019c3b0(s64 param_1)
 {
     nn::os::LockMutex((void *)(param_1 + 0x138));
-    memset((void *)(param_1 + 0x160), 0, 0x100);
+    ext_memset((void *)(param_1 + 0x160), 0, 0x100);
     nn::os::UnlockMutex((void *)(param_1 + 0x138));
 }
 
