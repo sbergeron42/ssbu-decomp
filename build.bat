@@ -44,6 +44,20 @@ for %%f in (build\fun_batch_c_*.o build\fun_batch_d_*.o build\fun_batch_e2_*.o) 
     python tools\fix_epilogue.py "%%f"
 )
 
+REM Post-process: Fix return-register width (mov w0,wzr vs mov x0,xzr).
+REM NX Clang may use different widths for zeroing return registers.
+echo Fixing return-register width...
+for %%f in (build\*.o) do (
+    python tools\fix_return_width.py "%%f"
+)
+
+REM Post-process: Fix x8-dispatch register allocation (x8->x9 scratch).
+REM NX Clang uses x9 for vtable chain, upstream Clang 8.0.0 uses x8.
+echo Fixing x8-dispatch register allocation...
+for %%f in (build\*.o) do (
+    python tools\fix_x8_regalloc.py "%%f"
+)
+
 echo.
 echo Disassembly:
 for %%f in (build\*.o) do (

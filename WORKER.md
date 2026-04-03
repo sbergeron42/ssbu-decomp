@@ -2,47 +2,57 @@
 
 ## Model: Opus
 
-## Task: Fix non-matching functions in fun_batch_b* and remaining scattered files
+## Task: Build post-processing tools for register allocation divergence
 
-5,101 non-matching functions need codegen fixes. This pool handles batch_b files plus any non-matching in non-batch source files.
+4,525 non-matching functions remain. After prologue/epilogue (pool-d), the next biggest category is register allocation differences. Build tools to fix these.
 
-### Workflow
-1. Run python tools/verify_all.py to get the non-matching list
-2. Filter to functions in YOUR files only
-3. Use python tools/show_diff.py func_name for instruction-level diff
-4. Common fixes: swap u32/s32, u8/bool, void*/u64, add asm("") barriers
-5. Rebuild (cmd /c build.bat), re-verify, commit in batches of 10-20
+### Known divergence patterns
+1. Return register: mov w0,wzr vs mov x0,xzr (32-bit vs 64-bit zero)
+2. Tail call register: br x1 vs br x5 (which register holds the function pointer)
+3. Scratch register choice: x8 vs x9 for intermediate values
+4. Parameter passing: x8 for indirect result location (C++ ABI difference)
+
+### Approach
+1. Sample 100 non-matching functions and categorize the diff patterns
+2. For each pattern, determine if it can be post-processed (byte patch in .o)
+3. Write fix_*.py tools for the automatable ones
+4. Add to build.bat pipeline
+
+### Also: analyze the x8-dispatch pattern more deeply
+Pool-c used naked asm for 268 x8-dispatch functions. Can a post-processor fix these instead? The x8 register issue might be patchable by rewriting the mov instruction in the .o file.
+
+### Results
+
+#### Analysis (1,632 non-matching functions sampled)
+| Category | Count | % | Automatable? |
+|----------|-------|---|-------------|
+| OTHER (fundamental codegen diff) | 1,301 | 79.7% | No — wrong source/decompilation |
+| PCREL_ONLY (b/bl/adrp offsets) | 105 | 6.4% | Link-time only |
+| X8_DISPATCH (x8 vs x9 scratch) | 97 | 5.9% | **Yes — fix_x8_regalloc.py** |
+| RETURN_ZERO_WIDTH (w0 vs x0) | 25+ | 1.5% | **Yes — fix_return_width.py** |
+| SCRATCH_REG (other register) | 39 | 2.4% | No — varied patterns |
+| EPILOGUE_ORDER | 2 | 0.1% | Already handled |
+| INSN_REORDER | 10 | 0.6% | No — too varied |
+
+#### New tools delivered
+1. **tools/analyze_regalloc.py** — Categorizes all non-matching functions by divergence type
+2. **tools/fix_return_width.py** — Patches `mov w0,wzr` ↔ `mov x0,xzr` width differences (~259 patches)
+3. **tools/fix_x8_regalloc.py** — Rewrites x8-dispatch register allocation from x8→x9 scratch (~96 functions)
+
+#### Build pipeline updated
+- `build.bat` now includes fix_return_width.py and fix_x8_regalloc.py after existing steps
+
+#### X8-dispatch conclusion
+The 96/97 x8-dispatch functions (9-insn pattern) can be fixed by post-processor, **eliminating the need for naked asm** in those cases. The post-processor rewrites `mov x0,x8; ldr x8,[x8]; ldr x8,[x8,#off]; blr x8` to `ldr x9,[x8]; ldr x9,[x9,#off]; mov x0,x8; blr x9`.
+
+### Output
+- New tools/fix_*.py scripts
+- tools/analyze_regalloc.py analysis tool
+- Analysis of which patterns are automatable vs need naked asm
+- build/regalloc_analysis.csv with per-function categorization
 
 ### Rules
-- ONLY edit: src/app/fun_batch_b_*.cpp, src/app/fun_batch_a_*.cpp, src/app/fun_batch_test.cpp
-- Also can edit: src/app/gameplay_functions.cpp, src/app/engine_functions.cpp, src/app/audio_functions.cpp, src/app/graphics_functions.cpp, src/app/particle_functions.cpp, src/app/network_functions.cpp, src/app/memory_functions.cpp, src/app/threading_functions.cpp, src/app/lib.cpp
-- Do NOT edit modules/, game type files, or other batch files
-
-### Progress (session 5, 2026-04-03)
-Starting non-matching: 89 in pool-e territory.
-
-**Fixes applied:**
-- Removed 28 duplicate definitions from gameplay_functions.cpp (already matching in module/batch files)
-- Fixed wrong implementations:
-  - stop_stage_sound: wrong global (DAT_71052bb3b0 → DAT_71053299d8, double deref)
-  - GetNetworkFactory_162480: wrong offset (+0 → +8)
-  - GetBlockSize_b5090: u64→u32 shift width
-  - Fiber_353c200: empty→store zero
-  - dtor_Mutex_37c9250: empty→tail call FUN_71039c0460
-  - GetRequiredMemorySize_3e10: address typo (3e10 → 39e10)
-- Fixed scheduling with asm barriers:
-  - HOLYWATER_HIT_*: asm("+r" base, fighter_kind) → all 5 MATCH
-  - FUN_710022b510/e510: asm("+r" base) for reassociation → 16/17
-- Fixed tail-call optimization:
-  - throw_attack, set_dead_camera_hit_rumble: asm("") after bl → MATCH
-- Fixed wrong addresses:
-  - batch_b_006/008: guard-init→return-0 stubs (orig was mov x0,xzr;ret)
-  - batch_b_013: iterator addresses removed (mid-function addresses)
-  - batch_b_014-017: mid-function addresses removed
-
-**Current: verified=260, non-matching=49**
-
-**Known blockers (batch_b_001-005):**
-- ~30 functions have NX Clang prologue divergence (sub sp vs str-with-predecrement)
-  - Cannot be fixed at C level; would need a new post-processing tool
-- Several functions have register allocation differences in vtable dispatch chains
+- ONLY create/edit files in tools/
+- CAN edit build.bat to add post-processing steps
+- Do NOT edit source files
+- Do NOT modify data/functions.csv
