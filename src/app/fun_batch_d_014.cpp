@@ -23,7 +23,7 @@ u8 FUN_71036de518(s64 *param_1)
 }
 
 // 0x710373e054 -- call FUN_710392e590, return 0 (44 bytes)
-u64 FUN_710373e054(void) { FUN_710392e590(); return 0; }
+u32 FUN_710373e054(void) { FUN_710392e590(); return 0; }
 
 // 0x71037b7b30 -- wrapper: FUN_71037b36d0(param_1) (48 bytes)
 void FUN_71037b7b30(u64 param_1) { FUN_71037b36d0(param_1); }
