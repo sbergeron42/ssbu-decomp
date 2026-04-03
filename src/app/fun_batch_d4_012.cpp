@@ -31,20 +31,6 @@ extern "C" u64 FUN_7100157cf0(s64);
 
 // ---- Functions ---------------------------------------------------------------
 
-// 0x7100158070 — write param_3, *param_2, two bit0 bytes, and two zeros to struct fields
-void FUN_7100158070(s64 param_1, u32 *param_2, u32 param_3, u8 param_4, u8 param_5)
-{
-    u32 uVar1;
-
-    *(u32 *)(param_1 + 0x608) = param_3;
-    uVar1 = *param_2;
-    *(u8 *)(param_1 + 0x61c) = param_4 & 1;
-    *(u8 *)(param_1 + 0xa04) = 0;
-    *(u32 *)(param_1 + 0xa00) = 0;
-    *(u32 *)(param_1 + 0x618) = uVar1;
-    *(u8 *)(param_1 + 0x61d) = param_5 & 1;
-}
-
 // 0x71001583c0 — write 3 u64 fields + 2 bit0 bytes into array entry at index field+0xa00
 void FUN_71001583c0(s64 param_1, u64 param_2, u64 param_3, u64 param_4, u8 param_5, u8 param_6, u8 param_7)
 {
@@ -62,12 +48,6 @@ void FUN_71001583c0(s64 param_1, u64 param_2, u64 param_3, u64 param_4, u8 param
     *(u32 *)(param_1 + 0xa00) = uVar2 + 1;
 }
 
-// 0x710015d240 — set field+0x488 to (PTR_DAT_xxx * param_2) / 1000
-void FUN_710015d240(s64 param_1, u32 param_2)
-{
-    *(s64 *)(param_1 + 0x488) = (s64)(*(s64 *)PTR_DAT_71052a3cd0 * (u64)param_2) / 1000;
-}
-
 // 0x710015e850 — if ptr+0x50 != 0 and byte+0x38 != -3: call FUN_710015f5c0, else -1
 u64 FUN_710015e850(s64 param_1)
 {
@@ -76,20 +56,6 @@ u64 FUN_710015e850(s64 param_1)
     if ((*(s64 *)(param_1 + 0x50) != 0) && (*(s8 *)(param_1 + 0x38) != -3)) {
         uVar1 = FUN_710015f5c0();
         return uVar1;
-    }
-    return 0xffffffff;
-}
-
-// 0x710015e880 — if ptr+0x50 != 0 and byte+0x38 != -3: call FUN_710015f600, else -1
-u64 FUN_710015e880(s64 param_1, u32 param_2)
-{
-    u64 uVar1;
-
-    if (*(s64 *)(param_1 + 0x50) != 0) {
-        if (*(s8 *)(param_1 + 0x38) != -3) {
-            uVar1 = FUN_710015f600(*(s64 *)(param_1 + 0x50), *(s8 *)(param_1 + 0x38), param_2);
-            return uVar1;
-        }
     }
     return 0xffffffff;
 }
@@ -141,12 +107,6 @@ void FUN_710015fb50(s8 *param_1)
         param_1[0x52] = '\0';
         param_1[0x53] = '\0';
     }
-}
-
-// 0x71001604a0 — insert 2-bit field (param_2 & 3) at bits [3:2] of byte field+0x78
-void FUN_71001604a0(s64 param_1, u32 param_2)
-{
-    *(u8 *)(param_1 + 0x78) = *(u8 *)(param_1 + 0x78) & 0xf3 | (u8)((param_2 & 3) << 2);
 }
 
 // 0x7100162ce0 — clamp field+0xa4 to [1..0xfe]→0xff, write to PTR_DAT+0x2b6
@@ -218,15 +178,6 @@ void FUN_7100174ff0(s64 param_1, s64 *param_2)
 
     *(s64 **)(param_1 + 0x18) = param_2;
     (**(void(**)(u8 *, s64 *, u64))(*param_2 + 0x178))(auStack_20, param_2, *(u64 *)(param_1 + 0x10));
-}
-
-// 0x7100175030 — if ptr+0x18 != null: call vtable[0x180], then zero ptr+0x18
-void FUN_7100175030(s64 param_1)
-{
-    if (*(s64 **)(param_1 + 0x18) != (s64 *)0x0) {
-        (**(void(**)())(**(s64 **)(param_1 + 0x18) + 0x180))();
-    }
-    *(u64 *)(param_1 + 0x18) = 0;
 }
 
 // 0x7100181270 — check network protocol readiness via b2850/b2b10 chain, return field+0x46c
@@ -339,25 +290,6 @@ u8 FUN_7100193740(s64 param_1)
 {
     if (*(s64 *)(param_1 + 0x38) != 0) {
         return *(s8 *)(*(s64 *)(param_1 + 0x38) + 0x84) != '\0';
-    }
-    return 0;
-}
-
-// 0x7100194e60 — return vtable[200] result, or check byte+0x31 flags and FUN_7100157cf0
-u8 FUN_7100194e60(s64 *param_1, s64 param_2)
-{
-    u64 uVar1;
-
-    uVar1 = (**(u64(**)())(*param_1 + 200))();
-    if ((uVar1 & 1) != 0) {
-        return 1;
-    }
-    if ((*(u8 *)(param_2 + 0x31) & 3) == 1) {
-        uVar1 = FUN_7100157cf0(param_2);
-        if (uVar1 >> 0x20 != 0) {
-            return 0;
-        }
-        return (s32)param_1[0x22] == 0;
     }
     return 0;
 }

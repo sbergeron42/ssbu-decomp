@@ -11,12 +11,9 @@
 //   Group 3: see fun_medium_abort3.cpp
 
 extern "C" [[noreturn]] void FUN_71039c20a0();  // abort
+extern "C" [[noreturn]] void FUN_710356bb30();  // panic (defined in fun_batch_e2_012.cpp)
 
 namespace app::lua_bind {
-
-// ── FUN_710356bb30 ─ primary abort wrapper (Group 1, calls abort directly) ──
-// 710356bb30
-[[noreturn]] void FUN_710356bb30() { FUN_71039c20a0(); }
 
 // ── Group 1: direct abort wrappers ───────────────────────────────────────────
 
@@ -108,50 +105,6 @@ namespace app::lua_bind {
 [[noreturn]] void FUN_7101f3842c() { FUN_71039c20a0(); }
 // 7101fa4afc
 [[noreturn]] void FUN_7101fa4afc() { FUN_71039c20a0(); }
-// 7102300a6c
-[[noreturn]] void FUN_7102300a6c() { FUN_71039c20a0(); }
-// 7102343934
-[[noreturn]] void FUN_7102343934() { FUN_71039c20a0(); }
-// 710239e04c
-[[noreturn]] void FUN_710239e04c() { FUN_71039c20a0(); }
-// 71024a4344
-[[noreturn]] void FUN_71024a4344() { FUN_71039c20a0(); }
-// 71024a45bc
-[[noreturn]] void FUN_71024a45bc() { FUN_71039c20a0(); }
-// 71024f0d94
-[[noreturn]] void FUN_71024f0d94() { FUN_71039c20a0(); }
-// 7102513280
-[[noreturn]] void FUN_7102513280() { FUN_71039c20a0(); }
-// 7102513ad4
-[[noreturn]] void FUN_7102513ad4() { FUN_71039c20a0(); }
-// 7102528660
-[[noreturn]] void FUN_7102528660() { FUN_71039c20a0(); }
-// 71025a99c4
-[[noreturn]] void FUN_71025a99c4() { FUN_71039c20a0(); }
-// 7102625014
-[[noreturn]] void FUN_7102625014() { FUN_71039c20a0(); }
-// 7102627c10
-[[noreturn]] void FUN_7102627c10() { FUN_71039c20a0(); }
-// 71027519dc
-[[noreturn]] void FUN_71027519dc() { FUN_71039c20a0(); }
-// 7102751f8c
-[[noreturn]] void FUN_7102751f8c() { FUN_71039c20a0(); }
-// 710275af94
-[[noreturn]] void FUN_710275af94() { FUN_71039c20a0(); }
-// 710275f250
-[[noreturn]] void FUN_710275f250() { FUN_71039c20a0(); }
-// 7102855970
-[[noreturn]] void FUN_7102855970() { FUN_71039c20a0(); }
-// 7102967cbc
-[[noreturn]] void FUN_7102967cbc() { FUN_71039c20a0(); }
-// 710297d29c
-[[noreturn]] void FUN_710297d29c() { FUN_71039c20a0(); }
-// 710298782c
-[[noreturn]] void FUN_710298782c() { FUN_71039c20a0(); }
-// 7102a30e9c
-[[noreturn]] void FUN_7102a30e9c() { FUN_71039c20a0(); }
-// 7102a399c4
-[[noreturn]] void FUN_7102a399c4() { FUN_71039c20a0(); }
 // 71031534d0
 [[noreturn]] void FUN_71031534d0() { FUN_71039c20a0(); }
 // 71031535c0

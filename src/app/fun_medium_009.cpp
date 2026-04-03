@@ -160,12 +160,6 @@ void* FUN_7100012dc0(s32 param_1)
     return (void*)&DAT_710437a4bc;
 }
 
-// 71002c2b50 -- address calculation: base + idx*0x24 + 0x14c24
-s64 FUN_71002c2b50(s64 param_1, u32 param_2)
-{
-    return *(s64*)(param_1 + 0x18) + (u64)param_2 * 0x24 + 0x14c24;
-}
-
 // ---- Large switch tables (fighter animation ID lookups) -------------------
 
 // 7100b30fd0 -- return 1 if param_1 is one of ~50 known IDs, else 0

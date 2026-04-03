@@ -11,125 +11,6 @@ extern void* PTR_DAT_71052a5528;
 static const char* s_result_cpp =
     "C:/home/ws/hac-appc2/Pack/7923402a/OnlineCore/src/Platform/Core/Result.cpp";
 
-// -- FUN_7100174530 ----------------------------------------------------------
-// Call vtable fn at *param_1+0x30; clear byte at param_1+9
-// 7100174530
-void FUN_7100174530(u64* param_1)
-{
-    (*(void(**)())(param_1[0] + 0x30))();
-    *(u8*)((u8*)param_1 + 9) = 0;
-}
-
-// -- FUN_7100174cb0 ----------------------------------------------------------
-// Return true if flag at +8 set and *(*(param_1+0x18)+0x418) != 0
-// 7100174cb0
-bool FUN_7100174cb0(u8* param_1)
-{
-    if (*(s8*)(param_1 + 8) == '\0') return false;
-    u64 p = *(u64*)(param_1 + 0x18);
-    if (p != 0) return *(s32*)(p + 0x418) != 0;
-    return false;
-}
-
-// -- FUN_7100174ff0 ----------------------------------------------------------
-// Store param_2 at +0x18; call vtable fn at *param_2+0x178(local, param_2, *(param_1+0x10))
-// 7100174ff0
-void FUN_7100174ff0(u8* param_1, u64* param_2)
-{
-    u8 auStack_20[16];
-    *(u64**)(param_1 + 0x18) = param_2;
-    (*(void(**)(u8*, u64*, u64))(param_2[0] + 0x178))(auStack_20, param_2, *(u64*)(param_1 + 0x10));
-}
-
-// -- FUN_7100182c70 ----------------------------------------------------------
-// Init struct with vtable from PTR_DAT_71052a53d8+0x10; set fields
-// 7100182c70
-void FUN_7100182c70(u64* param_1, s64 param_2, u16 param_3)
-{
-    *(u16*)(param_1 + 2) = param_3;
-    *(u16*)(param_1 + 3) = 0;
-    *param_1 = (u64)(PTR_DAT_71052a53d8 + 0x10);
-    param_1[1] = (u64)param_2;
-    *(u8*)((u8*)param_1 + 0x12) = 0x12;
-    *(u32*)((u8*)param_1 + 0x14) = 0x10;
-}
-
-// -- FUN_7100182d10 ----------------------------------------------------------
-// Init struct with vtable from PTR_DAT_71052a53e0+0x10; set fields
-// 7100182d10
-void FUN_7100182d10(u64* param_1, s64 param_2, u16 param_3)
-{
-    *(u16*)(param_1 + 2) = param_3;
-    *(u16*)(param_1 + 3) = 0;
-    *param_1 = (u64)(PTR_DAT_71052a53e0 + 0x10);
-    param_1[1] = (u64)param_2;
-    *(u8*)((u8*)param_1 + 0x12) = 0x13;
-    *(u32*)((u8*)param_1 + 0x14) = 0x10;
-}
-
-// -- FUN_7100182db0 ----------------------------------------------------------
-// Init struct with vtable from PTR_DAT_71052a53e8+0x10; set fields
-// 7100182db0
-void FUN_7100182db0(u64* param_1, s64 param_2, u16 param_3, u8 param_4, u32 param_5)
-{
-    *(u16*)(param_1 + 2) = param_3;
-    *(u16*)(param_1 + 3) = 0;
-    *(u32*)((u8*)param_1 + 0x1c) = param_5;
-    *param_1 = (u64)(PTR_DAT_71052a53e8 + 0x10);
-    param_1[1] = (u64)param_2;
-    *(u8*)((u8*)param_1 + 0x12) = param_4;
-    *(u32*)((u8*)param_1 + 0x14) = 0x14;
-}
-
-// -- FUN_7100185e30 ----------------------------------------------------------
-// Clear bit param_2 in u32 at param_1+0x5c
-// 7100185e30
-void FUN_7100185e30(u8* param_1, u32 param_2)
-{
-    *(u32*)(param_1 + 0x5c) =
-        *(u32*)(param_1 + 0x5c) & (u32)(1u << (param_2 & 0x1f) ^ 0xffffffffu);
-}
-
-// -- FUN_7100186270 ----------------------------------------------------------
-// Init struct with vtable from PTR_DAT_71052a5528+0x10
-// 7100186270
-void FUN_7100186270(u64* param_1)
-{
-    *(u32*)(param_1 + 1) = 0;
-    *param_1 = (u64)((u8*)PTR_DAT_71052a5528 + 0x10);
-}
-
-// -- FUN_7100191f90 ----------------------------------------------------------
-// Return true if +0x118==2 and +0xe8 in [2..4]
-// 7100191f90
-bool FUN_7100191f90(u8* param_1)
-{
-    if (*(s32*)(param_1 + 0x118) == 2) return (u32)(*(s32*)(param_1 + 0xe8) - 2) < 3;
-    return false;
-}
-// 7100192260
-bool FUN_7100192260(u8* param_1)
-{
-    if (*(s32*)(param_1 + 0x118) == 3) return (u32)(*(s32*)(param_1 + 0xe8) - 2) < 3;
-    return false;
-}
-// 7100192ce0
-bool FUN_7100192ce0(u8* param_1)
-{
-    if (*(s32*)(param_1 + 0x118) == 5) return (u32)(*(s32*)(param_1 + 0xe8) - 2) < 3;
-    return false;
-}
-
-// -- FUN_7100193740 ----------------------------------------------------------
-// Return true if *(param_1+0x38) non-null and byte at +0x84 != '\0'
-// 7100193740
-bool FUN_7100193740(u8* param_1)
-{
-    u64 p = *(u64*)(param_1 + 0x38);
-    if (p != 0) return *(s8*)(p + 0x84) != '\0';
-    return false;
-}
-
 // -- FUN_71001aa3d0 ----------------------------------------------------------
 // SetDefault: zero + set constant fields
 // 71001aa3d0
@@ -239,16 +120,6 @@ u64 FUN_71001b1270(u32 param_1)
     return (u64)param_1 / 10000 | (u64)(param_1 % 10000) << 0x20;
 }
 
-// -- FUN_71001b3140 ----------------------------------------------------------
-// Clamped subtraction: max(0, *(param_1+8) - param_2)
-// 71001b3140
-void FUN_71001b3140(u8* param_1, u32 param_2)
-{
-    u32 uVar1 = *(u32*)(param_1 + 8);
-    if (*(u32*)(param_1 + 8) <= param_2) uVar1 = param_2;
-    *(u32*)(param_1 + 8) = uVar1 - param_2;
-}
-
 // -- FUN_71001b4220 ----------------------------------------------------------
 // Set Result struct: check *param_2 for code; write to param_1, set line 0x74
 // 71001b4220
@@ -273,53 +144,6 @@ void FUN_71001b42a0(u32* param_1, s8* param_2)
     if (cVar1 != '\0') uVar2 = 0x10001;
     *param_1 = uVar2;
     param_1[4] = 0x91;
-}
-
-// -- FUN_71001b42e0 ----------------------------------------------------------
-// Set Result struct: copy from param_2, set line 0xa1
-// 71001b42e0
-void FUN_71001b42e0(u32* param_1, u32* param_2)
-{
-    u32 uVar1 = *param_2;
-    *(const char**)(param_1 + 2) = s_result_cpp;
-    *param_1 = uVar1;
-    param_1[4] = 0xa1;
-}
-
-// -- FUN_71001b7b50 ----------------------------------------------------------
-// Return *param_1 if param_1[1]==6 or ==1; else 0
-// 71001b7b50
-u64 FUN_71001b7b50(u64* param_1)
-{
-    if (*(s32*)(param_1 + 1) == 6 || *(s32*)(param_1 + 1) == 1) return *param_1;
-    return 0;
-}
-
-// -- FUN_71001b7b70 ----------------------------------------------------------
-// Return *param_1 if param_1[1]==6 or ==1; else 0 (identical to FUN_71001b7b50)
-// 71001b7b70
-u64 FUN_71001b7b70(u64* param_1)
-{
-    if (*(s32*)(param_1 + 1) == 6 || *(s32*)(param_1 + 1) == 1) return *param_1;
-    return 0;
-}
-
-// -- FUN_71001b7b90 ----------------------------------------------------------
-// Return *param_1 (u32) if param_1[2]==6 or ==1; else 0
-// 71001b7b90
-u32 FUN_71001b7b90(u32* param_1)
-{
-    if (param_1[2] == 6 || param_1[2] == 1) return *param_1;
-    return 0;
-}
-
-// -- FUN_71001b7bb0 ----------------------------------------------------------
-// Return *param_1 (u32) if param_1[2]==6 or ==1; else 0 (identical)
-// 71001b7bb0
-u32 FUN_71001b7bb0(u32* param_1)
-{
-    if (param_1[2] == 6 || param_1[2] == 1) return *param_1;
-    return 0;
 }
 
 // -- FUN_71001b7c80 ----------------------------------------------------------

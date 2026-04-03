@@ -269,28 +269,6 @@ u64 FUN_7100146fe0(s64 param_1)
     return uVar2;
 }
 
-// 710015fb50 -- clear struct fields if first byte non-zero
-void FUN_710015fb50(char* param_1)
-{
-    if (*param_1 == '\0')
-        return;
-    param_1[4]  = -1;  param_1[5]  = -1;  param_1[6]  = -1;  param_1[7]  = -1;
-    param_1[8]  = -1;  param_1[9]  = -1;  param_1[10] = -1;  param_1[0xb] = -1;
-    param_1[0xc]= -1;  param_1[0xd]= -1;  param_1[0xe]= -1;  param_1[0xf]= -1;
-    *param_1    = '\0';
-    param_1[0x10] = '\0'; param_1[0x11] = '\0'; param_1[0x12] = '\0';
-    param_1[0x13] = '\0'; param_1[0x14] = '\0'; param_1[0x15] = '\0';
-    param_1[0x16] = '\0'; param_1[0x17] = '\0'; param_1[0x18] = '\0';
-    param_1[0x48] = '\0'; param_1[0x49] = '\0'; param_1[0x4a] = '\0';
-    param_1[0x4b] = '\0'; param_1[0x4c] = '\0'; param_1[0x4d] = '\0';
-    param_1[0x4e] = '\0'; param_1[0x4f] = '\0';
-    param_1[0x1c] = '\0'; param_1[0x1d] = '\0'; param_1[0x1e] = '\0';
-    param_1[0x1f] = '\0'; param_1[0x20] = '\0'; param_1[0x21] = '\0';
-    param_1[0x22] = '\0'; param_1[0x23] = '\0';
-    param_1[0x50] = '\0'; param_1[0x51] = '\0'; param_1[0x52] = '\0';
-    param_1[0x53] = '\0';
-}
-
 // 7100160ae0 -- call two helpers, write global monitoring content field
 void FUN_7100160ae0(s64 param_1, u64 param_2)
 {

@@ -76,28 +76,6 @@ s32 FUN_71000a38f0(s64 param_1)
     return (s32)fVar2;
 }
 
-// ---- Variable-length struct linear search --------------------------------
-
-// 710007c310 -- do-while search through variable-stride entries
-s32* FUN_710007c310(s64 param_1, s32 param_2)
-{
-    u32 uVar1;
-    s32* piVar2;
-
-    if (*(u16*)(param_1 + 0x10) != 0) {
-        uVar1 = 0;
-        piVar2 = (s32*)(param_1 + (u64)*(u16*)(param_1 + 6));
-        do {
-            if (*piVar2 == param_2) {
-                return piVar2 + 2;
-            }
-            uVar1 = uVar1 + 1;
-            piVar2 = (s32*)((s64)piVar2 + (u64)(u32)piVar2[1]);
-        } while (uVar1 < *(u16*)(param_1 + 0x10));
-    }
-    return (s32*)0;
-}
-
 // ---- cxa_guard singleton -------------------------------------------------
 
 // 71000854a0 -- nested cxa_guard: outer 29b8/29c0, inner 2900/2908
@@ -119,32 +97,6 @@ u8* FUN_71000854a0()
         }
     }
     return PTR_DAT_71052a29c0;
-}
-
-// ---- Conditional memcpy block --------------------------------------------
-
-// 710008d670 -- copy up to 11 buffer slots when flag byte is zero
-void FUN_710008d670(u64 param_1, s64 param_2)
-{
-    if (*(s8*)(*(s64*)(param_2 + 0xa0) + 0x752) == '\0') {
-        u64* puVar1 = *(u64**)(param_2 + 0xc0);
-        u64 __n = (u64)*(s32*)(param_2 + 0x28) << 4;
-        memcpy((void*)*puVar1,         *(void**)(param_2 + 0x1d0), __n);
-        memcpy((void*)puVar1[1],       *(void**)(param_2 + 0x1d8), __n);
-        memcpy((void*)puVar1[2],       *(void**)(param_2 + 0x1e0), __n);
-        memcpy((void*)puVar1[4],       *(void**)(param_2 + 0x1f0), __n);
-        memcpy((void*)puVar1[3],       *(void**)(param_2 + 0x1e8), __n);
-        memcpy((void*)puVar1[5],       *(void**)(param_2 + 0x1f8), __n);
-        if ((void*)puVar1[6] != nullptr) {
-            memcpy((void*)puVar1[6],   *(void**)(param_2 + 0x200), __n);
-            memcpy((void*)puVar1[7],   *(void**)(param_2 + 0x208), __n);
-        }
-        if ((void*)puVar1[8] != nullptr) {
-            memcpy((void*)puVar1[8],   *(void**)(param_2 + 0x210), __n);
-            memcpy((void*)puVar1[9],   *(void**)(param_2 + 0x218), __n);
-            memcpy((void*)puVar1[10],  *(void**)(param_2 + 0x220), __n);
-        }
-    }
 }
 
 // ---- Sampler pattern callback loop ---------------------------------------
@@ -174,23 +126,6 @@ void FUN_71000b1d10(s64 param_1, u32 param_2)
     local_18[0] = param_2;
     memset((void*)(param_1 + 8), 0, 0x10);
     memcpy((void*)(param_1 + 8), local_18, 4);
-}
-
-// ---- Vtable chain null checks --------------------------------------------
-
-// 71000c5330 -- guard-null + vtable chain + field check
-u64 FUN_71000c5330(s64 param_1)
-{
-    if (*(s64*)(param_1 + 0x90) == 0)
-        return 0;
-    s64 lVar1 = *(s64*)(*(s64*)(param_1 + 0x90) + 0x18);
-    if (lVar1 != 0) {
-        lVar1 = FUN_71000c9c60(lVar1 + 0x178);
-        if (lVar1 != 0 && *(s32*)(lVar1 + 0x9c) != -1) {
-            return 1;
-        }
-    }
-    return 0;
 }
 
 // ---- StepSequenceJob constructor with extended zero fields ---------------

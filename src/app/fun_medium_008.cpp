@@ -103,15 +103,6 @@ u32 FUN_71002b8c80(u32* param_1)
     return *param_1;
 }
 
-// 7100013730 -- set socket nonblocking flag via fcntl
-void FUN_7100013730(u64 param_1, s32 param_2)
-{
-    u32 uVar1 = 2;
-    if (param_2 != 0)
-        uVar1 = 0x802;
-    nnsocketFcntl(param_1, 4, uVar1);
-}
-
 // 710002b800 -- allocate param_2*param_3 bytes (result discarded)
 void* FUN_710002b800(u64 /*param_1*/, s32 param_2, s32 param_3)
 {
@@ -126,12 +117,6 @@ void FUN_710003aaa0(s32 param_1, s32 param_2)
     }
 }
 
-// 7100044970 -- dispatch with hardcoded args
-void FUN_7100044970(u64 param_1, s64 param_2)
-{
-    FUN_7100031e90(param_1, 3, 1, *(s64*)(param_2 + 0xb8) + 0x248, 6, 0);
-}
-
 // 7100044db0 -- if flag set, call FUN_7100046380 then clear flag
 void FUN_7100044db0(s64 param_1)
 {
@@ -141,38 +126,10 @@ void FUN_7100044db0(s64 param_1)
     }
 }
 
-// 7100046380 -- forward to FUN_71000325b0 at offset +0x1f0
-void FUN_7100046380(s64 param_1, u64 param_2)
-{
-    FUN_71000325b0(param_2, 0, param_1 + 0x1f0, 8, 0x20);
-}
-
-// 7100077eb0 -- SNPrintf "%s_%d" with counter field
-void FUN_7100077eb0(char* param_1, s32 param_2, u64 param_3, s64 param_4)
-{
-    nn::util::SNPrintf(param_1, (s64)param_2, "%s_%d", param_3,
-                       (u64)*(u32*)(param_4 + 4));
-}
-
 // 71000880e0 -- call FUN_71000afae0 with two cached fields
 void FUN_71000880e0(s64 param_1, u32 param_2, u64 param_3)
 {
     FUN_71000afae0(param_1 + 0x7a8, *(u64*)(param_1 + 0x700), param_2, param_3);
-}
-
-// 71000b1940 -- SDK presence marker
-void FUN_71000b1940()
-{
-    nn::util::ReferSymbol("SDK MW+Nintendo+PiaCommon-5_19_1");
-}
-
-// 71000b65e0 -- initialize struct: set id=-1, zero ptr, set flag, init sub
-void FUN_71000b65e0(u32* param_1)
-{
-    *param_1 = 0xffffffff;
-    *(u64*)(param_1 + 2) = 0;
-    *(u8*)(param_1 + 4) = 1;
-    FUN_71000bb5d0(param_1 + 2);
 }
 
 // 71000c5ad0 -- conditional: if field@+0x90 non-null, call FUN_71000c73f0
@@ -276,12 +233,6 @@ void FUN_7100255920(s64 param_1, u16 param_2)
     FUN_71001aff70(param_1 + 0x50, &DAT_710427eedd, (u32)param_2);
 }
 
-// 710058b1d0 -- vtable dispatch: call vt[0xc0/8](this)
-void FUN_710058b1d0(s64* param_1)
-{
-    (*(void(**)(s64*))(*(s64*)param_1 + 0xc0))(param_1);
-}
-
 // ---- Register-passthrough wrappers (x0 = *param_1, x1/x2 pass-through) ----
 
 // 71002b3860
@@ -314,12 +265,6 @@ void FUN_71002b38e0(u64* param_1, u32 param_2, s32 param_3)
 [[noreturn]] void FUN_71005071d0(u64 /*x0_ignored*/, u64 param_x1)
 {
     FUN_71039c0d80(param_x1);
-}
-
-// 71004af3f0 -- forward x0 to FUN_71039c0d80
-[[noreturn]] void FUN_71004af3f0(u64 param_1)
-{
-    FUN_71039c0d80(param_1);
 }
 
 // ---- Complex lookup ---------------------------------------------------------

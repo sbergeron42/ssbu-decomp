@@ -73,26 +73,6 @@ u64 FUN_71001932d0(s64 param_1)
     return (u64)-2;
 }
 
-// 7100002690 -- null-guarded free + zero
-void FUN_7100002690(u64* param_1)
-{
-    if (param_1 != nullptr) {
-        FUN_7100002540(*param_1);
-        param_1[0] = 0;
-        param_1[3] = 0;
-    }
-}
-
-// 7100013480 -- conditional clear with FUN_710002a1f0
-void FUN_7100013480(s64* param_1)
-{
-    s64 lVar1 = *param_1;
-    if (*(s32*)(lVar1 + 0x194) != 0) {
-        FUN_710002a1f0(lVar1 + 0x198);
-        *(u32*)(lVar1 + 0x194) = 0;
-    }
-}
-
 // 7100032e10 -- pack 4 u32s to stack, then call FUN_7100032e40
 void FUN_7100032e10(u32 param_1, u32 param_2, u32 param_3, u32 param_4,
                     u64 param_5, u64 param_6, u64 param_7)
@@ -103,16 +83,6 @@ void FUN_7100032e10(u32 param_1, u32 param_2, u32 param_3, u32 param_4,
     local_20[2] = param_3;
     local_20[3] = param_4;
     FUN_7100032e40(param_5, param_6, local_20, param_7);
-}
-
-// 7100044480 -- conditional FUN_7100048dd0 + zero fields
-void FUN_7100044480(u16* param_1)
-{
-    if (*(s64*)(param_1 + 4) != 0) {
-        FUN_7100048dd0();
-        *(u64*)(param_1 + 4) = 0;
-        *param_1 = 0;
-    }
 }
 
 // 710008b320 -- clear 8 byte fields at +0x360 if first byte nonzero
@@ -218,17 +188,6 @@ void FUN_7100117190(s64* param_1)
 {
     FUN_710014c900(param_1);
     *param_1 = (s64)(PTR_DAT_71052a4838 + 0x10);
-}
-
-// ---- Vtable dispatch patterns --------------------------------------------
-
-// 71003cfc50 -- vtable call at +0x130, return field at +8 or 0x50000000
-u32 FUN_71003cfc50(s64* param_1)
-{
-    s64 lVar1 = (*(s64(**)(s64*))(*(s64*)param_1 + 0x130))(param_1);
-    if (lVar1 != 0)
-        return *(u32*)(lVar1 + 8);
-    return 0x50000000;
 }
 
 // 710049d9c0 -- vtable call at +0x680 with this, return byte at lVar1+0x13 != 0

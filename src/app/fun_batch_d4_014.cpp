@@ -51,35 +51,6 @@ void FUN_7100031330(s64 param_1)
     *(u64 *)(param_1 + 0x1c) = 1;
 }
 
-// 0x7100031360 — init u16* struct with packed constants
-void FUN_7100031360(u16 *param_1)
-{
-    *param_1 = 1;
-    *(u64 *)(param_1 + 2) = 0x504030200000000ULL;
-    *(u32 *)(param_1 + 8) = 0x10000;
-    *(u64 *)(param_1 + 0x10) = 0x100000000ULL;
-    *(u64 *)(param_1 + 0x18) = 0;
-}
-
-// 0x7100031390 — init u8* struct: flag, reserved, version fields
-void FUN_7100031390(u8 *param_1)
-{
-    *param_1 = 1;
-    *(u64 *)(param_1 + 4) = 0;
-    *(u16 *)(param_1 + 2) = 0;
-    *(u32 *)(param_1 + 0xc) = 1;
-    *(u64 *)(param_1 + 0x18) = 0;
-}
-
-// 0x71000313b0 — init u8* struct: flag, u16 zero, packed constant
-void FUN_71000313b0(u8 *param_1)
-{
-    *param_1 = 1;
-    *(u16 *)(param_1 + 2) = 0;
-    *(u64 *)(param_1 + 8) = 0x100000000ULL;
-    *(u64 *)(param_1 + 0x18) = 0;
-}
-
 // 0x71000313f0 — init u64* struct with &DAT_100000001 pointer at index 2
 void FUN_71000313f0(u64 *param_1)
 {
@@ -100,32 +71,6 @@ void FUN_7100031410(u64 *param_1)
     param_1[1] = 0;
     *(u16 *)((s64)param_1 + 0x24) = 0;
     param_1[5] = 0x100000000ULL;
-}
-
-// 0x71000314e0 — init u8* struct: set flag, OR byte[1] bit0, store u64 param_2
-void FUN_71000314e0(u8 *param_1, u64 param_2)
-{
-    *param_1 = 1;
-    param_1[1] = param_1[1] | 1;
-    *(u64 *)(param_1 + 8) = param_2;
-}
-
-// 0x7100031510 — table lookup in DAT_710446f0e0, range [0x27..0x3b), default 4
-u32 FUN_7100031510(s32 param_1)
-{
-    if ((u32)(param_1 - 0x27) < 0x14) {
-        return *(u32 *)(&DAT_710446f0e0 + (s64)(s32)((u32)param_1 - 0x27) * 4);
-    }
-    return 4;
-}
-
-// 0x7100031540 — table lookup in DAT_710446f090, range [0x27..0x3b), default 4
-u32 FUN_7100031540(s32 param_1)
-{
-    if ((u32)(param_1 - 0x27) < 0x14) {
-        return *(u32 *)(&DAT_710446f090 + (s64)(s32)((u32)param_1 - 0x27) * 4);
-    }
-    return 4;
 }
 
 // 0x71000316b0 — decode mode [1,2,3] using param_2/param_3 bit0 flags

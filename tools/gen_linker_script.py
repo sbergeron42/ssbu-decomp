@@ -91,7 +91,7 @@ def build_source_addr_map():
             if not fn.endswith('.cpp'):
                 continue
             path = os.path.join(root, fn)
-            with open(path) as f:
+            with open(path, encoding='utf-8', errors='replace') as f:
                 lines = f.readlines()
             for i, line in enumerate(lines):
                 m = re.search(r'//\s*(?:0x)?(71[0-9a-fA-F]{6,10})\b', line)
@@ -246,17 +246,6 @@ def main():
 
     lines.append("")
     lines.append("SECTIONS {")
-    lines.append("  /* ELF metadata at a high address to avoid collisions with .text */")
-    lines.append("  . = 0x7200000000;")
-    lines.append("  .dynsym : { *(.dynsym) }")
-    lines.append("  .gnu.hash : { *(.gnu.hash) }")
-    lines.append("  .dynstr : { *(.dynstr) }")
-    lines.append("  .hash : { *(.hash) }")
-    lines.append("  .dynamic : { *(.dynamic) }")
-    lines.append("  .rela.dyn : { *(.rela.dyn) }")
-    lines.append("  .got : { *(.got) }")
-    lines.append("  .got.plt : { *(.got.plt) }")
-    lines.append("")
 
     # Sort functions by original address
     sorted_funcs = sorted(func_sections.items(), key=lambda x: x[1])
@@ -268,14 +257,16 @@ def main():
         lines.append("  . = 0x%x;" % orig_addr)
         lines.append("  %s : { *(%s) }" % (section_name, section_name))
 
-    # Catch-all for remaining sections
+    # Catch-all for remaining sections (after all addressed functions)
     lines.append("")
     lines.append("  /* Remaining sections */")
     lines.append("  .text : { *(.text .text.*) }")
     lines.append("  .rodata : { *(.rodata .rodata.*) }")
     lines.append("  .data : { *(.data .data.*) }")
     lines.append("  .bss : { *(.bss .bss.*) }")
-    lines.append("  /DISCARD/ : { *(.comment) *(.note*) *(.eh_frame*) }")
+    lines.append("  /DISCARD/ : { *(.dynsym) *(.gnu.hash) *(.dynstr) *(.hash)")
+    lines.append("               *(.dynamic) *(.rela.dyn) *(.got) *(.got.plt)")
+    lines.append("               *(.comment) *(.note*) *(.eh_frame*) }")
     lines.append("}")
 
     with open(out, 'w') as f:

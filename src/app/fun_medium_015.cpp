@@ -144,15 +144,6 @@ void FUN_7100083cb0(u64 param_1)
     *(u8**)(param_1 + 16) = PTR_DAT_71052a2988 + 0x1000000;
 }
 
-// 7100082550 -- zero two locals, call FUN_7100082590, return float subtraction
-f32 FUN_7100082550(u64 param_1, u64 param_2, u64 param_3)
-{
-    u64 local_18 = 0;
-    u64 local_20 = 0;
-    FUN_7100082590(param_1, &local_20, param_2, param_3);
-    return (f32)local_18 - (f32)local_20;
-}
-
 // 7100083d60 -- same pattern as 7100082550 but calls FUN_7100083da0
 f32 FUN_7100083d60(u64 param_1, u64 param_2, u64 param_3)
 {
@@ -160,19 +151,6 @@ f32 FUN_7100083d60(u64 param_1, u64 param_2, u64 param_3)
     u64 local_20 = 0;
     FUN_7100083da0(param_1, &local_20, param_2, param_3);
     return (f32)local_18 - (f32)local_20;
-}
-
-// ---- Struct init helpers --------------------------------------------------
-
-// 7100066660 -- write param_1/param_2 as s32 into two structs at param_3/param_4
-void FUN_7100066660(f32 param_1, f32 param_2, s32* param_3, s32* param_4)
-{
-    *param_4                    = 0;
-    *(s32*)(param_4 + 1)        = (s32)param_1;
-    *(s32*)((s64)param_4 + 0xc) = (s32)param_2;
-    *param_3                    = 0;
-    *(f32*)(param_3 + 1)        = param_1;
-    *(f32*)((s64)param_3 + 0xc) = param_2;
 }
 
 // 710003a9c0 -- init mutex and zero struct fields

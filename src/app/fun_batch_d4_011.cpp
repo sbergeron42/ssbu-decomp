@@ -2,11 +2,11 @@
 
 // MEDIUM-tier FUN_* functions — 0x71001xxxxx range, batch d4-011
 // Pool-d worker: auto-generated from Ghidra decompilation
-// Includes: bool-check variants, DLL circular search, protocol tables, ring buf
+// Includes: DLL circular search, protocol tables, ring buf
 
 // ---- External declarations -----------------------------------------------
 
-// Network protocol field write targets (FUN_7100149270 / FUN_7100149290)
+// Network protocol field write targets (FUN_7100149270 / FUN_7100149290 removed — dup)
 extern u64 PTR_DAT_71052a3bd0;
 extern u64 PTR_DAT_71052a3bd8;
 
@@ -15,69 +15,6 @@ extern u64 PTR_DAT_71052a4f38;
 
 // ---- Functions ---------------------------------------------------------------
 
-// 0x7100145ec0 — true if field+0x140 == 3 and field+0x110 in [2..4]
-u8 FUN_7100145ec0(s64 param_1)
-{
-    if (*(s32 *)(param_1 + 0x140) == 3) {
-        return *(s32 *)(param_1 + 0x110) - 2U < 3;
-    }
-    return 0;
-}
-
-// 0x7100146070 — true if field+0x140 == 4 and field+0x110 in [2..4]
-u8 FUN_7100146070(s64 param_1)
-{
-    if (*(s32 *)(param_1 + 0x140) == 4) {
-        return *(s32 *)(param_1 + 0x110) - 2U < 3;
-    }
-    return 0;
-}
-
-// 0x71001462a0 — true if field+0x140 == 5 and field+0x110 in [2..4]
-u8 FUN_71001462a0(s64 param_1)
-{
-    if (*(s32 *)(param_1 + 0x140) == 5) {
-        return *(s32 *)(param_1 + 0x110) - 2U < 3;
-    }
-    return 0;
-}
-
-// 0x7100146670 — true if field+0x140 == 7 and field+0x110 in [2..4]
-u8 FUN_7100146670(s64 param_1)
-{
-    if (*(s32 *)(param_1 + 0x140) == 7) {
-        return *(s32 *)(param_1 + 0x110) - 2U < 3;
-    }
-    return 0;
-}
-
-// 0x71001468b0 — true if field+0x140 == 8 and field+0x110 in [2..4]
-u8 FUN_71001468b0(s64 param_1)
-{
-    if (*(s32 *)(param_1 + 0x140) == 8) {
-        return *(s32 *)(param_1 + 0x110) - 2U < 3;
-    }
-    return 0;
-}
-
-// 0x7100146a90 — true if field+0x140 == 0x13 and field+0x110 in [2..4]
-u8 FUN_7100146a90(s64 param_1)
-{
-    if (*(s32 *)(param_1 + 0x140) == 0x13) {
-        return *(s32 *)(param_1 + 0x110) - 2U < 3;
-    }
-    return 0;
-}
-
-// 0x7100149180 — true if field+0x140 == 0x1a and field+0x110 in [2..4]
-u8 FUN_7100149180(s64 param_1)
-{
-    if (*(s32 *)(param_1 + 0x140) == 0x1a) {
-        return *(s32 *)(param_1 + 0x110) - 2U < 3;
-    }
-    return 0;
-}
-
 // 0x7100149270 — write param_2 to indexed slot at +0x180, conditionally to PTR field
 void FUN_7100149270(s64 param_1, s32 param_2)
 {
@@ -85,23 +22,6 @@ void FUN_7100149270(s64 param_1, s32 param_2)
     if (param_2 != 0) {
         *(s32 *)(PTR_DAT_71052a3bd0 + 0x124) = param_2;
     }
-}
-
-// 0x7100149290 — write param_2 to indexed slot at +0x180 (index by null-check), conditionally to PTR
-void FUN_7100149290(s64 param_1, s32 param_2)
-{
-    *(s32 *)(param_1 + (u64)(*(s8 *)(param_1 + 0x162) == '\0') * 4 + 0x180) = param_2;
-    if (param_2 != 0) {
-        *(s32 *)(PTR_DAT_71052a3bd8 + 0x300) = param_2;
-    }
-}
-
-// 0x710014f090 — copy 3 u32 fields from param_2+8..+0x10 to param_1+8..+0x10
-void FUN_710014f090(s64 param_1, s64 param_2)
-{
-    *(u32 *)(param_1 + 0x10) = *(u32 *)(param_2 + 0x10);
-    *(u32 *)(param_1 + 8) = *(u32 *)(param_2 + 8);
-    *(u32 *)(param_1 + 0xc) = *(u32 *)(param_2 + 0xc);
 }
 
 // 0x710014f150 — init vtable ptr in param_1[0] to PTR_DAT+0x10, zero param_1[1] low 32b
@@ -124,24 +44,6 @@ u64 FUN_71001506d0(s64 param_1, s64 param_2, u8 param_3)
         if (*(s64 *)(lVar1 + 0x20) == param_2) {
             *(u8 *)(lVar1 + 0x2e) = param_3 & 1;
             return 1;
-        }
-        lVar1 = *(s64 *)(lVar1 + 8);
-    } while (lVar1 != param_1 + 8);
-    return 0;
-}
-
-// 0x7100150720 — circular DLL search: find node+0x20==param_2, return byte+0x2e != 0
-u8 FUN_7100150720(s64 param_1, s64 param_2)
-{
-    s64 lVar1;
-
-    lVar1 = *(s64 *)(param_1 + 0x10);
-    if (lVar1 == param_1 + 8) {
-        return 0;
-    }
-    do {
-        if (*(s64 *)(lVar1 + 0x20) == param_2) {
-            return *(s8 *)(lVar1 + 0x2e) != '\0';
         }
         lVar1 = *(s64 *)(lVar1 + 8);
     } while (lVar1 != param_1 + 8);
@@ -224,46 +126,6 @@ u32 FUN_7100151fe0(s64 param_1)
         return 0x31U >> (u64)(*(u32 *)(param_1 + 0x78) & 0x1f) & 1;
     }
     return 0;
-}
-
-// 0x7100153200 — return 1 if param_2 is a known network protocol byte value
-u64 FUN_7100153200(u64 param_1, u8 param_2)
-{
-    switch(param_2) {
-    case 8:
-    case 0x14:
-    case 0x18:
-    case 0x1c:
-    case 0x24:
-    case 0x28:
-    case 0x2c:
-    case 0x34:
-    case 0x44:
-    case 0x54:
-    case 0x58:
-    case 0x65:
-    case 0x68:
-    case 0x6c:
-    case 0x73:
-    case 0x74:
-    case 0x76:
-    case 0x77:
-    case 0x78:
-    case 0x7b:
-    case 0x7c:
-    case 0x80:
-    case 0x81:
-    case 0x84:
-    case 0x94:
-    case 0xa4:
-    case 0xa8:
-    case 0xac:
-    case 0xb0:
-    case 0xb4:
-        return 1;
-    default:
-        return 0;
-    }
 }
 
 // 0x7100153d50 — write *param_2 to array slot 0x1b, call vtable[0x98], return slot 0x1d
@@ -359,150 +221,6 @@ void FUN_7100155000(s64 param_1)
     if (-1 < *(s64 *)(param_1 + 0x20)) {
         *(s32 *)(param_1 + 0x1c) = (s32)*(s64 *)(param_1 + 0x20);
         *(u64 *)(param_1 + 0x20) = 0xffffffffffffffff;
-    }
-}
-
-// 0x7100156720 — network protocol ID byte → string name
-const char *FUN_7100156720(u64 param_1)
-{
-    const char *pcVar1;
-
-    pcVar1 = "KeepAlive";
-    switch((u32)((u64)param_1 >> 0x18) & 0xff) {
-    case 8:
-        goto switchD_7100156748_caseD_8;
-    default:
-        pcVar1 = "(KickoutReason_Unknown PROTOCOL NAME)";
-switchD_7100156748_caseD_8:
-        return pcVar1;
-    case 0x14:
-        return "Station";
-    case 0x18:
-        return "Mesh";
-    case 0x1c:
-        return "SyncClock";
-    case 0x24:
-        return "Local";
-    case 0x28:
-        return "Direct";
-    case 0x2c:
-        return "Net";
-    case 0x34:
-        return "Nat";
-    case 0x44:
-        return "Lan";
-    case 0x54:
-        return "BandwidthCheck";
-    case 0x58:
-        return "Rtt";
-    case 0x65:
-        return "Sync";
-    case 0x68:
-        return "Unreliable";
-    case 0x6c:
-        return "RoundrobinUnreliable";
-    case 0x73:
-        return "Clone";
-    case 0x74:
-        return "Atomic";
-    case 0x76:
-        return "Event";
-    case 0x77:
-        return "Clock";
-    case 0x78:
-        return "InterpolationClock";
-    case 0x7b:
-        return "Voice";
-    case 0x7c:
-        return "Reliable";
-    case 0x80:
-        return "BroadcastReliable";
-    case 0x81:
-        return "StreamBroadcastReliable";
-    case 0x84:
-        return "ReliableBroadcast";
-    case 0x94:
-        return "Session";
-    case 0x98:
-        return "Lobby";
-    case 0xa4:
-        return "Feedback";
-    case 0xa8:
-        return "RelayService";
-    case 0xac:
-        return "WanNat";
-    }
-}
-
-// 0x7100156d00 — network protocol ID → capability mask (u64)
-u64 FUN_7100156d00(u16 param_1)
-{
-    u64 uVar1;
-
-    uVar1 = 2;
-    switch(param_1) {
-    case 0x14:
-        goto switchD_7100156d24_caseD_14;
-    default:
-        uVar1 = 0;
-switchD_7100156d24_caseD_14:
-        return uVar1;
-    case 0x18:
-        return 4;
-    case 0x1c:
-        return 8;
-    case 0x24:
-        return 0x80000;
-    case 0x28:
-        return 0x100000;
-    case 0x2c:
-        return 0x200000;
-    case 0x34:
-        return 0x10;
-    case 0x44:
-        return 0x20000;
-    case 0x54:
-        return 0x40000;
-    case 0x58:
-        return 0x20;
-    case 0x65:
-        return 0x40;
-    case 0x68:
-        return 0x80;
-    case 0x6c:
-        return 0x1000;
-    case 0x73:
-        return 0x4000;
-    case 0x74:
-        return 0x4000000;
-    case 0x76:
-        return 0x800000;
-    case 0x77:
-        return 0x2000000;
-    case 0x78:
-        return 0x2000;
-    case 0x7b:
-        return 0x8000;
-    case 0x7c:
-        return 0x100;
-    case 0x80:
-        return 0x10000000;
-    case 0x81:
-        return 0x20000000;
-    case 0x84:
-        return 0x200;
-    case 0x94:
-        return 0x10000;
-    case 0x98:
-        return 0x400000;
-    case 0xa4:
-        return 0x400;
-    case 0xac:
-        return 0x8000000;
-    case 0xb0:
-        return 0x40000000;
-    case 0xb4:
-        return 0x80000000;
     }
 }
 

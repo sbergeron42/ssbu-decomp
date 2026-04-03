@@ -102,16 +102,6 @@ void FUN_710022bcf0(u64 param_1, u64 param_2, u64 param_3, u64 param_4)
     (*(void(**)(u64*, u64, u64, u64, u64))((*obj) + 0x28))(obj, param_1, param_2, param_3, param_4);
 }
 
-// -- FUN_710022f060 ----------------------------------------------------------
-// Copy u8+u32+u32 fields from param_2+8 to param_1+8
-// 710022f060
-void FUN_710022f060(u8* param_1, u8* param_2)
-{
-    *(u8*)(param_1 + 8)   = *(u8*)(param_2 + 8);
-    *(u32*)(param_1 + 0xc) = *(u32*)(param_2 + 0xc);
-    *(u32*)(param_1 + 0x10) = *(u32*)(param_2 + 0x10);
-}
-
 // -- FUN_71002315f0 ----------------------------------------------------------
 // Call cleanup fn on old value at +0x28 (vtable[1]); store new param_2
 // 71002315f0
@@ -233,27 +223,4 @@ u64 FUN_71002ba540(u8* param_1, u32 param_2)
         return (u64)FUN_71002c31d0(param_1 + (u64)param_2 * 0x128 + 0x5a0);
     }
     return 0;
-}
-
-// -- FUN_71002bb310 ----------------------------------------------------------
-// SetDefault: zero 14 u64 + u32 in reverse-pair order
-// 71002bb310
-void FUN_71002bb310(u64* param_1)
-{
-    *(u32*)(param_1 + 0xd) = 0;
-    param_1[0xb] = 0; param_1[0xc] = 0;
-    param_1[0]   = 0;
-    param_1[9]   = 0; param_1[10]  = 0;
-    param_1[7]   = 0; param_1[8]   = 0;
-    param_1[5]   = 0; param_1[6]   = 0;
-    param_1[3]   = 0; param_1[4]   = 0;
-    param_1[1]   = 0; param_1[2]   = 0;
-}
-
-// -- FUN_71002c1f70 ----------------------------------------------------------
-// Align-up: param_1+0x10 = (param_1+0x10 + param_2 - 1) & ~(param_2-1)
-// 71002c1f70
-void FUN_71002c1f70(u8* param_1, s64 param_2)
-{
-    *(u64*)(param_1 + 0x10) = (u64)((param_2 + *(s64*)(param_1 + 0x10)) - 1) & (u64)(-param_2);
 }

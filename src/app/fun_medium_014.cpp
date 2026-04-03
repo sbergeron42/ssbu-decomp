@@ -295,20 +295,6 @@ void FUN_710012b440(s64 param_1)
         FUN_71000ba010(auStack_30, param_1 + 0x60);
 }
 
-// 710012b490 -- guard: skip if param_2 out of range [1,2] or already running
-u64 FUN_710012b490(s64 param_1, s8 param_2)
-{
-    if ((u8)(param_2 - 1) > 1)
-        return 0;
-    if (*(s32*)(param_1 + 0xd88) == 1)
-        return 0;
-    *(u8*)(param_1 + 0xd81) = 1;
-    *(s8*)(param_1 + 0xd80) = param_2;
-    nn::pia::common::CallContext::Reset((s32*)(param_1 + 0xd88));
-    nn::pia::common::CallContext::InitiateCall((s32*)(param_1 + 0xd88));
-    return 1;
-}
-
 // ---- nn::os MessageQueue / Thread helpers ---------------------------------
 
 // 710013bcb0 -- conditional ReceiveMessageQueue (blocking or try)
@@ -323,19 +309,6 @@ u64 FUN_710013bcb0(nn::os::MessageQueueType* param_1, s32 param_2)
     }
     nn::os::ReceiveMessageQueue(&local_18, param_1);
     return local_18;
-}
-
-// 710013c200 -- start thread if not already running
-u64 FUN_710013c200(s64 param_1)
-{
-    if (*(s32*)(param_1 + 0xcc) != 0)
-        return 0;
-    nn::os::StartThread(*(nn::os::ThreadType**)(param_1 + 0xd0));
-    *(s32*)(param_1 + 0xc8) = (s32)*(u64*)(param_1 + 0xd0);
-    if (*(s32*)(param_1 + 0xcc) != 0)
-        return 1;
-    *(u32*)(param_1 + 0xcc) = 1;
-    return 1;
 }
 
 // ---- Misc helpers ----------------------------------------------------------

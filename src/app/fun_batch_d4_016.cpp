@@ -40,48 +40,6 @@ void FUN_7100078b00(s64 param_1, s64 param_2)
     *plVar1 = lVar3;
 }
 
-// 0x7100078b20 — init u64* struct with float/int packed constants
-void FUN_7100078b20(u64 *param_1)
-{
-    *param_1 = 0xffffffffffffffffULL;
-    param_1[1] = 0x3f80000000000000ULL;
-    *(u16 *)(param_1 + 7) = 0xff00;
-    param_1[2] = 0x3f800000ULL;
-    param_1[5] = 0;
-    param_1[6] = 0;
-    param_1[3] = 0;
-    param_1[4] = 0;
-}
-
-// 0x7100078f80 — zero-fill 24 u64 fields + u32 at [1]+4
-void FUN_7100078f80(u64 *param_1)
-{
-    *param_1 = 0;
-    *(u32 *)(param_1 + 1) = 0;
-    param_1[0x16] = 0;
-    param_1[0x17] = 0;
-    param_1[0x14] = 0;
-    param_1[0x15] = 0;
-    param_1[0x12] = 0;
-    param_1[0x13] = 0;
-    param_1[0x10] = 0;
-    param_1[0x11] = 0;
-    param_1[0xe] = 0;
-    param_1[0xf] = 0;
-    param_1[0xc] = 0;
-    param_1[0xd] = 0;
-    param_1[10] = 0;
-    param_1[0xb] = 0;
-    param_1[8] = 0;
-    param_1[9] = 0;
-    param_1[6] = 0;
-    param_1[7] = 0;
-    param_1[4] = 0;
-    param_1[5] = 0;
-    param_1[2] = 0;
-    param_1[3] = 0;
-}
-
 // 0x71000887d0 — cycling counter: advance slot index modulo 2 or 3 (based on flag)
 u64 FUN_71000887d0(s64 param_1, s32 param_2)
 {
@@ -141,40 +99,6 @@ void FUN_710008d670(u64 param_1, s64 param_2)
     }
 }
 
-// 0x710009e130 — count linked list nodes at (param_1+0x418)+0x18, add to param_1+0x2c
-s32 FUN_710009e130(s64 param_1)
-{
-    s32 iVar1;
-    s64 lVar2;
-
-    if (*(s8 *)(*(s64 *)(param_1 + 0x418) + 0x10) == '\0') {
-        return 0;
-    }
-    iVar1 = *(s32 *)(param_1 + 0x2c);
-    for (lVar2 = *(s64 *)(*(s64 *)(param_1 + 0x418) + 0x18); lVar2 != 0;
-        lVar2 = *(s64 *)(lVar2 + 0x68)) {
-        iVar1 = iVar1 + 1;
-    }
-    return iVar1;
-}
-
-// 0x71000a3920 — count linked list nodes at (param_1+0x418)+0x18, add to param_1+0x2c
-s32 FUN_71000a3920(s64 param_1)
-{
-    s32 iVar1;
-    s64 lVar2;
-
-    if (*(s8 *)(*(s64 *)(param_1 + 0x418) + 0x10) == '\0') {
-        return 0;
-    }
-    iVar1 = *(s32 *)(param_1 + 0x2c);
-    for (lVar2 = *(s64 *)(*(s64 *)(param_1 + 0x418) + 0x18); lVar2 != 0;
-        lVar2 = *(s64 *)(lVar2 + 0x68)) {
-        iVar1 = iVar1 + 1;
-    }
-    return iVar1;
-}
-
 // 0x71000af810 — indexed lookup: PTR_DAT_71052a3bc0 base + packed byte index * 0xa8
 s64 FUN_71000af810(s64 param_1)
 {
@@ -202,27 +126,6 @@ void FUN_71000b1bb0(s32 param_1)
         return;
     }
     *(u32 *)PTR_DAT_71052a3c10 = 0x19;
-}
-
-// 0x71000b71c0 — linked list pop: dequeue head node, return it or null
-s64 *FUN_71000b71c0(u64 *param_1)
-{
-    s64 lVar1;
-    s32 iVar2;
-    s64 *plVar3;
-
-    iVar2 = *(s32 *)(param_1 + 2);
-    if (iVar2 != 0) {
-        plVar3 = (s64 *)*param_1;
-        lVar1 = *plVar3;
-        *(s64 *)(lVar1 + 8) = plVar3[1];
-        *(s64 *)plVar3[1] = lVar1;
-        *plVar3 = 0;
-        plVar3[1] = 0;
-        *(s32 *)(param_1 + 2) = iVar2 + -1;
-        return plVar3;
-    }
-    return (s64 *)0x0;
 }
 
 // 0x71000bb050 — count UTF-8 characters in string within bounds, handling multi-byte sequences
@@ -298,12 +201,6 @@ u32 FUN_71000bb050(s64 param_1)
     return 0;
 }
 
-// 0x71000bb9f0 — check if byte is control char or 0xfd
-u8 FUN_71000bb9f0(u8 param_1)
-{
-    return param_1 < 0x20 || param_1 == 0xfd;
-}
-
 // 0x71000bed20 — init s64* struct: zero [2], store PTR_DAT_71052a3d28+0x10 as vtable
 void FUN_71000bed20(s64 *param_1)
 {
@@ -362,18 +259,6 @@ s32 FUN_71000e4340(s32 param_1)
     iVar1 = (u32)(param_1 == 1) << 1;
     if (param_1 == 0) {
         iVar1 = 1;
-    }
-    return iVar1;
-}
-
-// 0x71000eb680 — map param_1: 2→5, 1→4, else→0
-s32 FUN_71000eb680(s32 param_1)
-{
-    s32 iVar1;
-
-    iVar1 = 5;
-    if (param_1 != 2) {
-        iVar1 = (u32)(param_1 == 1) << 2;
     }
     return iVar1;
 }

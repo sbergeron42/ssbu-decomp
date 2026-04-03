@@ -61,12 +61,6 @@ extern u8   DAT_00006e48;
     abort();
 }
 
-// 71003dde90
-[[noreturn]] void FUN_71003dde90()
-{
-    abort();
-}
-
 // 7100655f50
 [[noreturn]] void FUN_7100655f50()
 {
@@ -103,20 +97,6 @@ void FUN_710003a5f0(void* param_1)
     memset(param_1, 0, 0x3018);
 }
 
-// 710013bc98 -- wrapper: nn::os::SendMessageQueue, always returns 1
-u64 FUN_710013bc98(nn::os::MessageQueueType* param_1, u64 param_2)
-{
-    nn::os::SendMessageQueue(param_1, param_2);
-    return 1;
-}
-
-// 710013bd08 -- wrapper: nn::os::JamMessageQueue, always returns 1
-u64 FUN_710013bd08(nn::os::MessageQueueType* param_1, u64 param_2)
-{
-    nn::os::JamMessageQueue(param_1, param_2);
-    return 1;
-}
-
 // 710013b910 -- store system tick frequency to global
 void FUN_710013b910()
 {
@@ -140,20 +120,6 @@ u8 FUN_7100177c90(s64 param_1)
 u8 FUN_7100177cb0(s64 param_1)
 {
     return FUN_7100175220(*(u64*)(param_1 + 0x2a8));
-}
-
-// 71001d2550 -- calls sub, returns 1
-u64 FUN_71001d2550()
-{
-    FUN_71001d2570();
-    return 1;
-}
-
-// 71001d2810 -- calls sub, returns 1
-u64 FUN_71001d2810()
-{
-    FUN_71001d2830();
-    return 1;
 }
 
 // 71001d90a0 -- calls sub, returns 0
@@ -251,25 +217,4 @@ void FUN_71002b8120(s64 param_1)
 void FUN_71002b8140(s64 param_1)
 {
     FUN_71002bb540(param_1 + 0x47a0);
-}
-
-// 71002c28d0 -- forward call via field at +0x10 (x1 passes through to FUN_71002c2e40)
-void FUN_71002c28d0(s64 param_1, s32 /*param_2 passed through*/)
-{
-    FUN_71002c2e40(*(u64*)(param_1 + 0x10));
-}
-
-// 71002c2b30 -- address calculation with table lookup
-s64 FUN_71002c2b30(s64 param_1, u32 param_2)
-{
-    return *(s64*)(param_1 + 0x18) + (u64)param_2 * 0x48 + 0x12704;
-}
-
-// 71002c31e0 -- set field to value (guarded write when field != -1)
-void FUN_71002c31e0(s64 param_1, u64* param_2)
-{
-    if (*(s64*)(param_1 + 0x120) != -1) {
-        *(u64*)(param_1 + 0x120) = 0xffffffffffffffff;
-    }
-    *(u64*)(param_1 + 0x120) = *param_2;
 }

@@ -51,16 +51,6 @@ void FUN_71001e59e0(s64 param_1, u32 param_2)
     *(u8 *)(param_1 + 0x69) = 0;
 }
 
-// 0x71001ecde0 -- conditional init then store field
-void FUN_71001ecde0(s64 param_1, u32 param_2)
-{
-    if (*(char *)(param_1 + 0x68) == '\0') {
-        FUN_71001f2180(param_1);
-    }
-    *(u32 *)(param_1 + 0x10) = param_2;
-    *(u8 *)(param_1 + 0x69) = 0;
-}
-
 // 0x71001f3690 -- conditional init then dispatch
 void FUN_71001f3690(u64 param_1, s64 param_2)
 {
@@ -68,19 +58,6 @@ void FUN_71001f3690(u64 param_1, s64 param_2)
         FUN_71001f24a0(param_2);
     }
     FUN_71001b0ab0(param_1, (const char *)*(u64 *)(param_2 + 0x60));
-}
-
-// 0x7100230c10 -- check flag then dispatch
-u64 FUN_7100230c10(u64 param_1)
-{
-    u64 uVar1;
-
-    uVar1 = FUN_7100230c50();
-    if ((uVar1 & 1) != 0) {
-        return 1;
-    }
-    FUN_7100230a20(param_1);
-    return 0;
 }
 
 // 0x7100251110 -- wrapper: FUN_7100251150(param_1+0x140, ...) & 1
@@ -132,38 +109,6 @@ u64 FUN_71002b3e80(u64 param_1)
     uVar2 = FUN_71002babd0((u32)param_1);
     uVar3 = FUN_71002babf0(uVar2, 1);
     return uVar3;
-}
-
-// 0x71002c2910 -- 3-call dispatch
-void FUN_71002c2910(s64 param_1, u32 param_2, u32 param_3)
-{
-    u32 uVar1;
-
-    uVar1 = FUN_71002c2f60(param_2, param_3);
-    FUN_71002c2df0(param_2);
-    FUN_71002c2e50(*(u64 *)(param_1 + 0x10), param_2, uVar1);
-}
-
-// 0x71002c2960 -- 3-call dispatch variant
-void FUN_71002c2960(s64 param_1, u32 param_2, u32 param_3)
-{
-    u32 uVar1;
-
-    uVar1 = FUN_71002c2d60(param_2, param_3);
-    FUN_71002c2bf0(param_2);
-    FUN_71002c2c30(*(u64 *)(param_1 + 0x18), param_2, uVar1);
-}
-
-// 0x71003a71f0 -- vtable ptr init with linked list heads
-void FUN_71003a71f0(u64 *param_1)
-{
-    *param_1 = (u64)&PTR_FUN_7104f61778;
-    FUN_71037378c0(param_1 + 0xc);
-    param_1[0xc] = 0;
-    *(u32 *)(param_1 + 0xd) = 0xffffffff;
-    FUN_71037378c0(param_1 + 10);
-    *(u32 *)(param_1 + 0xb) = 0xffffffff;
-    param_1[10] = 0;
 }
 
 // 0x7100254160 -- copy byte field, conditional copy via FUN_710170de70
@@ -231,46 +176,6 @@ u64 FUN_7100223fa0(u64 param_1, u8 *param_2, s64 param_3)
         } while (param_3 != 0);
     }
     return 0;
-}
-
-// 0x71002b41f0 -- single-call wrapper
-void FUN_71002b41f0(u64 *param_1)
-{
-    FUN_71002ba5e0(*param_1);
-}
-
-// 0x71002b4b30 -- single-call wrapper
-void FUN_71002b4b30(u64 *param_1)
-{
-    FUN_71002c1d20(*param_1);
-}
-
-// 0x71002b8ca0 -- no-op
-void FUN_71002b8ca0(void)
-{
-    return;
-}
-
-// 0x71001b0f80 -- conditional arithmetic based on mode flag
-u64 FUN_71001b0f80(u32 *param_1)
-{
-    s32 iVar1;
-    s32 iVar2;
-    u64 uVar3;
-
-    uVar3 = FUN_71001b0fd0();
-    iVar2 = (s32)uVar3;
-    if (iVar2 != 0) {
-        uVar3 = 0x15fde20;
-        if (iVar2 >= 0) {
-            iVar1 = 0x1600530;
-            if ((*param_1 & 0x7ff0000) != 0x720000) {
-                iVar1 = 0x15fde20;
-            }
-            uVar3 = (u64)(u32)(iVar1 + iVar2);
-        }
-    }
-    return uVar3;
 }
 
 // 0x71001b2f70 -- conditional update via FUN_71001b47e0
