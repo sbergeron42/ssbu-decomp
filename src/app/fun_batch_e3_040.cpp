@@ -118,61 +118,25 @@ u64 FUN_710223ad10(void) {
 // 0x710223fc70 â€” bl homerun_contest_change_fly_camera
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
-u64 FUN_710223fc70(void) {
-    asm(
-        "stp x29, x30, [sp, #-0x10]!\n"
-        "mov x29, sp\n"
-        "bl homerun_contest_change_fly_camera\n"
-        "mov w0, wzr\n"
-        "ldp x29, x30, [sp], #0x10\n"
-        "ret\n"
-    );
-}
+// FUN_710223fc70 — defined in earlier batch file
 #endif
 
 // 0x710223fc90 â€” bl homerun_contest_change_landing_camera
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
-u64 FUN_710223fc90(void) {
-    asm(
-        "stp x29, x30, [sp, #-0x10]!\n"
-        "mov x29, sp\n"
-        "bl homerun_contest_change_landing_camera\n"
-        "mov w0, wzr\n"
-        "ldp x29, x30, [sp], #0x10\n"
-        "ret\n"
-    );
-}
+// FUN_710223fc90 — defined in earlier batch file
 #endif
 
 // 0x710223fcb0 â€” bl homerun_contest_change_timeup_fly_camera
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
-u64 FUN_710223fcb0(void) {
-    asm(
-        "stp x29, x30, [sp, #-0x10]!\n"
-        "mov x29, sp\n"
-        "bl homerun_contest_change_timeup_fly_camera\n"
-        "mov w0, wzr\n"
-        "ldp x29, x30, [sp], #0x10\n"
-        "ret\n"
-    );
-}
+// FUN_710223fcb0 — defined in earlier batch file
 #endif
 
 // 0x710223fcd0 â€” bl homerun_contest_change_normal_camera
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
-u64 FUN_710223fcd0(void) {
-    asm(
-        "stp x29, x30, [sp, #-0x10]!\n"
-        "mov x29, sp\n"
-        "bl homerun_contest_change_normal_camera\n"
-        "mov w0, wzr\n"
-        "ldp x29, x30, [sp], #0x10\n"
-        "ret\n"
-    );
-}
+// FUN_710223fcd0 — defined in earlier batch file
 #endif
 
 // 0x71022409e0 â€” bl escape_from_fighter

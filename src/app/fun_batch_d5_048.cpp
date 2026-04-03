@@ -8,19 +8,16 @@ extern "C" {
 
 // MEDIUM-tier FUN_* functions — batch d5-048
 // Pool-d worker: misc small functions from 0x71000* range
-// FUN_71000313b0 FUN_71000313f0 FUN_71000314e0 FUN_7100031850 FUN_71000338f0
-// FUN_7100037790 FUN_7100037d20 FUN_7100039e30 FUN_710003a240 FUN_710003a3c0
-// FUN_710003a4e0 FUN_710003a5f0 FUN_710003aaa0 FUN_710003ac20 FUN_7100044c70
-// FUN_7100044db0 FUN_7100047c70 FUN_710004c5e0 FUN_7100055470 FUN_7100060e80
-// FUN_7100060f20 FUN_7100060f40 FUN_7100066040 FUN_710006fcc0 FUN_7100077eb0
-// FUN_71000093f0 FUN_71000145a0 FUN_71000145c0 FUN_710002b800 FUN_71000c73d8
-// FUN_7100113400 FUN_7100113480 FUN_71001133a0 FUN_71001133c0 FUN_71001133e0
-// FUN_71001134a0 FUN_71001136c0 FUN_710012eb20 FUN_710012eb40 FUN_710012eb60
-// FUN_710012eb80 FUN_7100130aa0 FUN_7100130ac0 FUN_710013bc98 FUN_710013bd08
-// FUN_7100149270 FUN_710014f090 FUN_710014f150 FUN_71001579a0 FUN_71001604a0
-// FUN_7100186270 FUN_710003bc80 FUN_710003a240 FUN_7100031390 FUN_7100013730
-// FUN_71000b1940 FUN_71000b65e0 FUN_710013b910 FUN_7100182b30 FUN_7100177c90
-// FUN_7100177cb0 FUN_7100044970
+// Duplicates removed — those functions live in their earlier batch files:
+//   fun_medium_007: FUN_71000338f0 FUN_7100037d20 FUN_710003a5f0 FUN_71000c73d8
+//                   FUN_710013b910 FUN_7100177c90 FUN_7100177cb0
+//   fun_medium_008: FUN_710003aaa0 FUN_710002b800 FUN_710006fcc0
+//                   FUN_71001579a0 FUN_7100182b30
+//   fun_batch_d4_014: FUN_7100037790 FUN_7100039e30 FUN_710003a240 FUN_710003a3c0
+//   fun_batch_d4_015: FUN_710003a4e0 FUN_710003ac20 FUN_710003bc80
+//   fun_batch_d4_010: FUN_7100130aa0
+//   fun_batch_d4_011: FUN_7100149270 FUN_710014f150
+//   fun_batch_d4_012: FUN_7100186270
 
 // ---- Struct initializers and field setters ----
 
@@ -59,101 +56,6 @@ void FUN_7100031850(u64 *param_1) {
     param_1[4] = 0;
     param_1[1] = 0;
     param_1[2] = 0;
-}
-
-// 0x71000338f0 — memset 0x120 bytes
-void FUN_71000338f0(void *param_1) {
-    memset(param_1, 0, 0x120);
-}
-
-// 0x7100037d20 — memset 0x2028 bytes
-void FUN_7100037d20(void *param_1) {
-    memset(param_1, 0, 0x2028);
-}
-
-// 0x710003a5f0 — memset 0x3018 bytes
-void FUN_710003a5f0(void *param_1) {
-    memset(param_1, 0, 0x3018);
-}
-
-// 0x7100039e30 — zero 9 u64 fields (identical to FUN_7100031850)
-void FUN_7100039e30(u64 *param_1) {
-    param_1[7] = 0;
-    param_1[8] = 0;
-    param_1[0] = 0;
-    param_1[5] = 0;
-    param_1[6] = 0;
-    param_1[3] = 0;
-    param_1[4] = 0;
-    param_1[1] = 0;
-    param_1[2] = 0;
-}
-
-// 0x710003a240 — zero 9 u64 fields
-void FUN_710003a240(u64 *param_1) {
-    param_1[7] = 0;
-    param_1[8] = 0;
-    param_1[0] = 0;
-    param_1[5] = 0;
-    param_1[6] = 0;
-    param_1[3] = 0;
-    param_1[4] = 0;
-    param_1[1] = 0;
-    param_1[2] = 0;
-}
-
-// 0x710003a3c0 — zero 9 u64 fields
-void FUN_710003a3c0(u64 *param_1) {
-    param_1[7] = 0;
-    param_1[8] = 0;
-    param_1[0] = 0;
-    param_1[5] = 0;
-    param_1[6] = 0;
-    param_1[3] = 0;
-    param_1[4] = 0;
-    param_1[1] = 0;
-    param_1[2] = 0;
-}
-
-// 0x710003a4e0 — zero 9 u64 fields
-void FUN_710003a4e0(u64 *param_1) {
-    param_1[7] = 0;
-    param_1[8] = 0;
-    param_1[0] = 0;
-    param_1[5] = 0;
-    param_1[6] = 0;
-    param_1[3] = 0;
-    param_1[4] = 0;
-    param_1[1] = 0;
-    param_1[2] = 0;
-}
-
-// 0x710003aaa0 — conditional free via nn::mem::NumberLineAllocator::Free
-extern void FUN_710003aab0(s32 param_1); // nn::mem::NumberLineAllocator::Free
-void FUN_710003aaa0(s32 param_1, s32 param_2) {
-    if (param_2 != -1) {
-        FUN_710003aab0(param_1);
-    }
-}
-
-// 0x710003ac20 — set format type fields
-void FUN_710003ac20(s64 param_1, s32 param_2) {
-    u32 uVar1 = 1;
-    if (0xffff < param_2) {
-        uVar1 = 2;
-    }
-    *(u32 *)(param_1 + 0x1c) = uVar1;
-    *(s32 *)(param_1 + 0x28) = param_2;
-}
-
-// 0x710003bc80 — vtable + capacity init
-extern u8 *PTR_DAT_71052a2390;
-void FUN_710003bc80(s64 *param_1) {
-    param_1[2] = 0;
-    param_1[3] = 0;
-    *param_1 = (s64)(PTR_DAT_71052a2390 + 0x10);
-    param_1[1] = 0x1f00000000LL;
-    *(u32 *)(param_1 + 4) = 0;
 }
 
 // 0x7100044c70 — init render state
@@ -215,14 +117,6 @@ u64 FUN_7100066040(u64 param_1) {
     return param_1;
 }
 
-// 0x710006fcc0 — write 4 fields to struct
-void FUN_710006fcc0(u32 param_1, u32 param_2, u64 param_3, s64 param_4) {
-    *(u32 *)(param_4 + 0x24) = param_1;
-    *(u32 *)(param_4 + 0x28) = param_2;
-    *(u32 *)(param_4 + 0x30) = 0;
-    *(u8 *)(param_4 + 0x34) = 1;
-}
-
 // 0x7100077eb0 — SNPrintf with format "%s_%d"
 extern int FUN_7100a85650(char *buf, s64 sz, const char *fmt, ...); // nn::util::SNPrintf
 int FUN_7100077eb0(char *param_1, s32 param_2, u64 param_3, s64 param_4) {
@@ -253,17 +147,6 @@ bool FUN_71000145c0(s64 param_1, s64 param_2) {
     return false;
 }
 
-// 0x710002b800 — malloc product of two dims
-void FUN_710002b800(u64 param_1, s32 param_2, s32 param_3) {
-    malloc((u32)(param_3 * param_2));
-}
-
-// 0x71000c73d8 — call FUN_710015ffc0 with offset
-extern void FUN_710015ffc0(s64 param_1);
-void FUN_71000c73d8(s64 param_1) {
-    FUN_710015ffc0(param_1 + 0x48);
-}
-
 // 0x7100013730 — socket fcntl set nonblocking
 extern s32 FUN_71001a9ba0(u64 sock, s32 cmd, u32 flags); // nnsocketFcntl
 void FUN_7100013730(u64 param_1, s32 param_2) {
@@ -287,13 +170,6 @@ void FUN_71000b65e0(u32 *param_1) {
     *(u64 *)(param_1 + 2) = 0;
     *(u8 *)(param_1 + 4) = 1;
     FUN_71000b65f0(param_1 + 2);
-}
-
-// 0x710013b910 — store system tick frequency
-extern u64 FUN_710013b920(void); // nn::os::GetSystemTickFrequency
-extern u64 *PTR_cFrequency_71052a2cd0;
-void FUN_710013b910(void) {
-    *PTR_cFrequency_71052a2cd0 = FUN_710013b920();
 }
 
 // 0x710013bc98 — SendMessageQueue wrapper returning 1
@@ -380,17 +256,6 @@ void FUN_710012eb80(s64 param_1, u8 param_2) {
     *(u32 *)(param_1 + 0x260) = *(u32 *)(param_1 + 0x260) | 8;
 }
 
-// 0x7100130aa0 — intrusive list insert after
-void FUN_7100130aa0(s64 param_1, s64 *param_2) {
-    s64 *puVar1 = *(s64 **)(param_1 + 8);
-    *(s64 **)(param_1 + 8) = param_2;
-    *param_2 = param_1;
-    param_2[1] = (s64)puVar1;
-    if (puVar1 != (s64 *)0) {
-        *puVar1 = (s64)param_2;
-    }
-}
-
 // 0x7100130ac0 — intrusive list insert before (head)
 void FUN_7100130ac0(s64 *param_1, s64 *param_2) {
     s64 lVar1 = *param_1;
@@ -402,15 +267,6 @@ void FUN_7100130ac0(s64 *param_1, s64 *param_2) {
     }
 }
 
-// 0x7100149270 — store value at indexed position, update global
-extern s32 *PTR_g_SessionBeginMonitoringContent_71052a2bd0;
-void FUN_7100149270(s64 param_1, s32 param_2) {
-    *(s32 *)(param_1 + (u64)*(u8 *)(param_1 + 0x162) * 4 + 0x180) = param_2;
-    if (param_2 != 0) {
-        *(s32 *)(PTR_g_SessionBeginMonitoringContent_71052a2bd0 + 0x124/4) = param_2;
-    }
-}
-
 // 0x710014f090 — copy 3 u32 fields from src to dst
 void FUN_710014f090(s64 param_1, s64 param_2) {
     *(u32 *)(param_1 + 0x10) = *(u32 *)(param_2 + 0x10);
@@ -418,53 +274,7 @@ void FUN_710014f090(s64 param_1, s64 param_2) {
     *(u32 *)(param_1 + 0xc) = *(u32 *)(param_2 + 0xc);
 }
 
-// 0x710014f150 — vtable + zero field init
-extern u8 *PTR_DAT_71052a3f38;
-void FUN_710014f150(s64 *param_1) {
-    *(u32 *)(param_1 + 1) = 0;
-    *param_1 = (s64)(PTR_DAT_71052a3f38 + 0x10);
-}
-
-// 0x71001579a0 — vtable + sub-init
-extern u8 *PTR_DAT_71052a2d20;
-extern void FUN_71000b1cf0(s64 param_1);
-void FUN_71001579a0(s64 param_1) {
-    *(u8 **)(param_1 + 0x50) = PTR_DAT_71052a2d20 + 0x10;
-    FUN_71000b1cf0(param_1 + 0x58);
-}
-
 // 0x71001604a0 — set 2-bit field in byte
 void FUN_71001604a0(s64 param_1, u32 param_2) {
     *(u8 *)(param_1 + 0x78) = (u8)(*(u8 *)(param_1 + 0x78) & 0xf3 | (u8)((param_2 & 3) << 2));
-}
-
-// 0x7100182b30 — memcpy with u16 size from struct
-void FUN_7100182b30(s64 param_1, void *param_2, s32 param_3, u64 param_4) {
-    memcpy(param_2,
-           (void *)(*(s64 *)(param_1 + 8) + (u64)*(u16 *)(param_1 + 0x14) + (s64)param_3),
-           param_4 & 0xffff);
-}
-
-// 0x71001186270 — vtable + zero field init (same pattern as FUN_710014f150)
-extern u8 *PTR_DAT_71052a4528;
-void FUN_7100186270(s64 *param_1) {
-    *(u32 *)(param_1 + 1) = 0;
-    *param_1 = (s64)(PTR_DAT_71052a4528 + 0x10);
-}
-
-// 0x7100177c90 — delegate to FUN_7100175220
-extern u8 FUN_7100175220(s64 param_1);
-u8 FUN_7100177c90(s64 param_1) {
-    return FUN_7100175220(*(s64 *)(param_1 + 0x2a8));
-}
-
-// 0x7100177cb0 — delegate to FUN_7100175220 (same as above)
-u8 FUN_7100177cb0(s64 param_1) {
-    return FUN_7100175220(*(s64 *)(param_1 + 0x2a8));
-}
-
-// 0x7100037790 — table lookup (u32 at stride 8)
-extern u8 DAT_710446f5bc;
-u32 FUN_7100037790(u64 param_1) {
-    return *(u32 *)(&DAT_710446f5bc + (param_1 & 0xffffffff) * 8);
 }

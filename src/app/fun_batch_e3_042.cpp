@@ -64,10 +64,7 @@ u64 FUN_7103716b60(u64 param_1, u64 param_2) {
 
 // ---- pass-through returning u64 ----
 
-// 0x71033011cc â€” bl FUN_7103300dd0, return zero-extended u32
-u64 FUN_71033011cc(void) {
-    return FUN_7103300dd0() & 0xffffffffULL;
-}
+// FUN_71033011cc — defined in earlier batch file
 
 // ---- param_2+0xc reindex wrappers ----
 

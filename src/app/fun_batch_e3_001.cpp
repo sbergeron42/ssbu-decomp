@@ -25,44 +25,30 @@ extern void FUN_7102608770(u64);
 // ---- Abort wrappers (0x7102a66xxx / 0x71028595b4 / 0x7102853f6c) ---------
 // Pattern: stp+mov+bl abort  (3 insns, no epilogue, caller never returns)
 
-// 0x7102a66198
-void FUN_7102a66198(void) { abort(); }
+// FUN_7102a66198 — defined in earlier batch file
 
-// 0x7102a661d8
-void FUN_7102a661d8(void) { abort(); }
+// FUN_7102a661d8 — defined in earlier batch file
 
-// 0x7102a66208
-void FUN_7102a66208(void) { abort(); }
+// FUN_7102a66208 — defined in earlier batch file
 
-// 0x7102a66238
-void FUN_7102a66238(void) { abort(); }
+// FUN_7102a66238 — defined in earlier batch file
 
-// 0x7102a66268
-void FUN_7102a66268(void) { abort(); }
+// FUN_7102a66268 — defined in earlier batch file
 
-// 0x7102a66298
-void FUN_7102a66298(void) { abort(); }
+// FUN_7102a66298 — defined in earlier batch file
 
-// 0x7102a662c8
-void FUN_7102a662c8(void) { abort(); }
+// FUN_7102a662c8 — defined in earlier batch file
 
-// 0x7102a666f8
-void FUN_7102a666f8(void) { abort(); }
+// FUN_7102a666f8 — defined in earlier batch file
 
-// 0x7102a66768
-void FUN_7102a66768(void) { abort(); }
+// FUN_7102a66768 — defined in earlier batch file
 
-// 0x7102a667c8
-void FUN_7102a667c8(void) { abort(); }
+// FUN_7102a667c8 — defined in earlier batch file
 
-// 0x7102a66828
-void FUN_7102a66828(void) { abort(); }
+// FUN_7102a66828 — defined in earlier batch file
 
-// 0x71028595b4
-void FUN_71028595b4(void) { abort(); }
-
-// 0x7102853f6c
-void FUN_7102853f6c(void) { abort(); }
+// 0x71028595b4 â€” defined in fun_batch_c2_002.cpp
+// 0x7102853f6c â€” defined in fun_batch_c2_003.cpp
 
 // ---- StageManager singleton dispatch (no params) --------------------------
 // Global DAT_71053299d8 = StageManager** (double-indirect).
