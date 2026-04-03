@@ -1,53 +1,71 @@
-# Worker: pool-d
+# Worker: pool-b
 
-## Model: Sonnet
+## Model: Opus
 
-## Task: Batch decomp MEDIUM FUN_* (all ranges, continued) via Ghidra pipeline
+## Task: Build proper C++ struct definitions for all game types
 
-Continue batch-decompiling MEDIUM-tier functions across all address ranges.
+The decomp currently uses raw pointer arithmetic (`reinterpret_cast<u8*>(obj) + 0x60`) instead of proper struct field access (`obj->cameraModule`). This makes the code unreadable. Build real C++ struct/class headers so the decomp produces human-readable code.
 
-### Batch pipeline workflow
-1. Pick 20-30 uncompiled MEDIUM functions from data/fun_triage.csv
-2. For each, call mcp__ghidra__decompile_function_by_address(address)
-3. Apply type fixups: undefined8->u64, undefined4->u32, undefined2->u16, byte->u8, uint->u32, int->s32, long->s64, ulong->u64, bool->u8
-4. Skip functions with WARNING comments or broken decompilation
-5. Write to a single .cpp file with // 0x71XXXXXXXX address comments
-6. Build and verify, fix compile errors, commit, repeat
+### Phase 1: Complete BattleObjectModuleAccessor struct
+`include/app/BattleObjectModuleAccessor.h` already has partial fields. Fill in ALL module pointers using the verified offset map:
 
-### Output files
-- Create src/app/fun_batch_d4_001.cpp, fun_batch_d4_002.cpp, etc.
-- Do NOT put functions in any namespace (global functions)
-- Forward-declare unknown called functions as extern "C" void FUNCNAME();
+| Offset | Field | Type |
+|--------|-------|------|
+| +0x38 | posture_module | PostureModule* |
+| +0x40 | status_module | StatusModule* |
+| +0x48 | control_module | ControlModule* |
+| +0x50 | work_module | WorkModule* |
+| +0x58 | ground_module | GroundModule* |
+| +0x60 | camera_module | CameraModule* |
+| +0x68 | kinetic_module | KineticModule* |
+| +0x70 | color_blend_module | ColorBlendModule* |
+| +0x78 | model_module | ModelModule* |
+| +0x80 | physics_module | PhysicsModule* |
+| +0x88 | motion_module | MotionModule* |
+| +0x90 | stop_module | StopModule* |
+| +0x98 | article_module | ArticleModule* |
+| +0xA0 | attack_module | AttackModule* |
+| +0xA8 | damage_module | DamageModule* |
+| +0xB0 | hit_module | HitModule* |
+| +0xB8 | combo_module | ComboModule* |
+| +0xC0 | area_module | AreaModule* |
+| +0xC8 | item_module | ItemModule* |
+| +0xD0 | link_module | LinkModule* |
+| +0xD8 | team_module | TeamModule* |
+| +0xE0 | search_module | SearchModule* |
+| +0xF0 | turn_module | TurnModule* |
+| +0xF8 | reflect_module | ReflectModule* |
+| +0x100 | shield_module | ShieldModule* |
+| +0x108 | reflector_module | ReflectorModule* |
+| +0x110 | absorber_module | AbsorberModule* |
+| +0x118 | jostle_module | JostleModule* |
+| +0x120 | catch_module | CatchModule* |
+| +0x128 | cancel_module | CancelModule* |
+| +0x138 | capture_module | CaptureModule* |
+| +0x140 | effect_module | EffectModule* |
+| +0x148 | sound_module | SoundModule* |
+| +0x150 | visibility_module | VisibilityModule* |
+| +0x158 | grab_module | GrabModule* |
+| +0x168 | shake_module | ShakeModule* |
+| +0x170 | slow_module | SlowModule* |
+| +0x180 | shadow_module | ShadowModule* |
+| +0x188 | motion_animcmd_module | MotionAnimcmdModule* |
+| +0x198 | ink_paint_module | InkPaintModule* |
+
+Use forward-declared struct types (not void*) for each module.
+
+### Phase 2: Add stub struct headers for each module type
+Create `include/app/modules/CameraModule.h`, `include/app/modules/WorkModule.h`, etc. — each is just a forward declaration or empty struct for now. This lets the accessor header use real types.
+
+### Phase 3: Add FighterManager, FighterInformation, FighterEntry structs
+These operate on their own pointer (not through the accessor). Define their known field offsets from our verified decomp.
+
+### Phase 4: Refactor ONE module file as proof of concept
+Pick CameraModule.cpp and replace all `reinterpret_cast<u8*>(acc) + 0x60` with `acc->camera_module`. Verify it still compiles and matches. This proves the struct is correct.
 
 ### Rules
-- ONLY create NEW files named src/app/fun_batch_d4_*.cpp
-- Do NOT edit any existing files
+- ONLY edit files in `include/app/` and `include/app/modules/`
+- For Phase 4, ONLY edit `src/app/modules/CameraModule.cpp`
+- Do NOT edit any other source files
 - Do NOT modify data/functions.csv or tools/
-
-### Progress
-- d4-001: 19 functions, 0x71002bb310–0x710031367c
-- d4-002: 6 functions, 0x71002f0f70–0x7100314d50
-- d4-003: 14 functions, 0x7100325e50–0x71003cb1b0
-- d4-004: 2 functions, 0x71003a0a20–0x71003abd60
-- d4-005: 18 functions, 0x71003cfc50–0x7100421d10
-- d4-006: 12 functions, 0x7100422720–0x71004af3f0
-- d4-007: 10 functions, 0x71004f5750–0x710067e650
-- d4-008: 10 functions, 0x7100837d1c–0x7100d12af0
-- d4-009: 26 functions, 0x7100000250–0x710013bd08
-- d4-010: 24 functions, 0x710007a9d0–0x71000b3d10
-- d4-011: 28 functions, 0x7100145ec0–0x71001578e0
-- d4-012: 25 functions, 0x7100158070–0x7100194e60
-- d4-013: 24 functions, 0x710003a790–0x7100358c20
-- d4-014: 22 functions, 0x7100031330–0x7100489e80
-- d4-015: 23 functions, 0x710003a4e0–0x7100066040
-- d4-016: 21 functions, 0x7100078b00–0x710013c200
-- d4-017: 14 functions, 0x7100156720–0x710068d530
-- d4-018: 21 functions, 0x710064b730–0x710107dae0
-- d4-019: 19 functions, 0x710116b7f0–0x7101d2c6b0
-- d4-020: 29 functions, 0x7102000e40–0x7102009f70
-- d4-021: 27 functions, 0x710200a300–0x710202c290
-- d4-022: 27 functions, 0x710202c4d0–0x710203bdd0
-- d4-023: 25 functions, 0x710203dcf0–0x71020628f0
-- d4-024: 25 functions, 0x7102065690–0x710206cb80
-- d4-025: 20 functions, 0x710202f870–0x7102077ae0
-- d4-026: 25 functions, 0x7102077d10–0x7102087140
+- Verify matching is preserved after each change: `cmd /c build.bat && python tools/verify_all.py --summary`
