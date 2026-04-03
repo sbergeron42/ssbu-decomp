@@ -317,6 +317,165 @@ different socket types (TCP stream vs UDP datagram).
 | 0x71039c78xx | Account availability stubs |
 | 0x710744xxxx | SDK module (duplicate stubs) |
 
+## Layer 6: UDP Game Data Transport (~0x710012xxxx)
+
+**CONFIRMED**: Game data exchange does NOT go through nn::ldn::SendData/
+ReceiveData. Instead, after nn::ldn::Connect establishes the session, the
+game opens a **raw UDP socket on port 12345 (0x3039)** and exchanges
+serialized game state directly via nn::socket::SendTo / RecvFrom.
+
+### Connection Establishment Flow
+
+```
+ldn_connect_with_retry (0x710016f0c0)
+  |
+  +-- ldn_open_station_wrapper (0x710016c060)
+  +-- ldn_set_mode(session, 2) (0x710017ddf0)
+  +-- Build SecurityConfig (mode 1=open, 2=private)
+  +-- ldn_initialize_wrapper (0x710016e740) — get user nickname
+  +-- nn::ldn::Connect(NetworkInfo, SecurityConfig, UserConfig)
+  |     retry once on error 0x6838 (transient failure)
+  +-- ldn_post_connect_get_config (0x710016f400)
+  |     calls nn::ldn::GetNetworkConfig
+  +-- ldn_post_connect_setup_udp (0x710016da00)
+  |     calls nn::ldn::GetIpv4Address -> MakeBroadcastAddress
+  |     creates UDP address object for broadcast:12345
+  |     registers with session socket list under mutex
+  +-- ldn_connect_setup_socket (0x710016c120)
+  |     creates UDP socket (AF_INET, SOCK_DGRAM, IPPROTO_UDP)
+  |     binds to INADDR_ANY:12345
+  |     registers with two transport endpoints
+  +-- set job "LdnBackgroundProcessJob::WaitConnectNetworkEvent"
+```
+
+### Per-Frame Data Exchange
+
+```
+ldn_recv_and_process (0x710012ac30)     [called each game tick]
+  |
+  +-- RecvFrom(socket, buffer, 0x554, MSG_DONTWAIT)
+  +-- Validate source address
+  +-- Parse packet header:
+  |     [0]       packet_type (0=gamedata, 1=encrypted, 2=sync)
+  |     [1..4]    payload_length
+  |     [N+5]     end_marker (2)
+  |     [N+6]     is_host (0 or 1)
+  |     [N+7..14] sequence_number
+  +-- If encrypted: decrypt via AES, verify auth tag
+  +-- Deserialize game state via vtable dispatch
+  +-- If send_pending:
+        for each peer (0..num_peers):
+          ldn_send_game_state(session, peer_index)
+```
+
+```
+ldn_send_game_state (0x710012b530)      [per peer]
+  |
+  +-- Serialize game state via vtable[0x28] (max 0x425 bytes)
+  +-- Build packet in send_buffer:
+  |     type=0 (unencrypted) or type=1 (encrypted)
+  |     payload_length, payload, marker, is_host, sequence_number
+  |     + encryption key/random padding
+  +-- SendTo(socket, send_buffer, total_len, dest_addr)
+```
+
+```
+ldn_send_reply (0x710012ba00)           [reply/sync packets]
+  |
+  +-- Serialize reply via vtable[0x70] or [0x78] (max 0x515 bytes)
+  +-- Build packet with type=1 or type=2
+  +-- SendTo x3 (triple-send for UDP reliability)
+  +-- On failure != 0x4c0d: trigger disconnect
+```
+
+### Game Data Packet Format
+
+```
+Offset  Size   Field
+------  ----   -----
+0x00    1      packet_type: 0=gamedata, 1=encrypted, 2=sync
+0x01    4      payload_length (LE)
+0x05    N      serialized game state payload
+N+5     1      end_marker (always 2 = end-of-frame-data)
+N+6     1      is_host (0=client, 1=host)
+N+7     8      sequence_number (monotonic, incremented each send)
+N+15    16     encryption_key material
+
+--- Unencrypted mode (type 0): ---
+N+0x1F  256    random padding bytes (from FUN_7100138620 PRNG)
+               Total extra: 0x12F bytes after payload
+
+--- Encrypted mode (type 1): ---
+N+0x1F  16     AES auth tag
+               Total extra: 0x3F bytes after payload
+```
+
+### Key Data Exchange Functions
+
+| Name | Address | Purpose |
+|------|---------|---------|
+| ldn_send_game_state | 0x710012b530 | Serialize + send game state to one peer |
+| ldn_recv_and_process | 0x710012ac30 | Receive + parse + dispatch game data |
+| ldn_send_reply | 0x710012ba00 | Send reply packet (3x redundant) |
+| socket_send_to | 0x71000ba5c0 | nn::socket::SendTo wrapper with error handling |
+| socket_recv_from | 0x71000ba450 | nn::socket::RecvFrom wrapper (MSG_DONTWAIT) |
+| socket_send_to_alt | 0x71000ba740 | Alternative SendTo (different address format) |
+| socket_create | 0x71000b9f60 | Create AF_INET socket |
+
+### Encryption
+
+Two modes based on `is_host` flag and connection type:
+
+1. **Unencrypted** (LDN local, or host in certain modes):
+   - Packet type 0
+   - 16-byte key + 256 bytes random padding appended (obfuscation only)
+
+2. **Encrypted** (online relay mode):
+   - Packet type 1
+   - AES encryption via FUN_7100129590 (encrypt) / FUN_71001296b0 (decrypt)
+   - 16-byte auth tag for integrity verification
+   - Key stored at session+0xDD0, IV material at session+0xDE0
+
+### LDN Transport Session Layout
+
+```
+Offset   Size    Field
+------   ----    -----
++0x58    8       session_handle (connection/crypto context)
++0x60    16      socket_descriptor {fd:4, generation:4, family:1, pad:7}
++0x70    0x554   recv_buffer
++0x5C4   0x554   send_buffer
++0xB18   ...     frame data state machine
++0xD80   1       num_peers
++0xD81   1       send_pending flag
++0xD88   4       keepalive_state (1=active)
++0xDB8   8       next_keepalive_deadline
++0xDC0   1       crypto_pending flag
++0xDC8   8       sequence_number (u64, monotonic)
++0xDD0   16      encryption_key
++0xDE0   256     encryption_iv_material
+```
+
+### Error Code Map (FUN_710016b2f0)
+
+The game translates nn::ldn SDK Result codes into its own error system:
+
+| Game Error | Value | Meaning |
+|-----------|-------|---------|
+| LDN_OK | 0x0000 | Success |
+| LDN_ERR_SPECTATOR_JOIN | 0x6422 | Spectator join issue |
+| LDN_ERR_CONNECT_TRANSIENT | 0x6838 | Transient failure (retried once) |
+| LDN_ERR_DISCONNECTED | 0x6c0e | Peer disconnected |
+| LDN_ERR_NETWORK_GENERAL | 0x6c1b | General LDN network error |
+| LDN_ERR_CONNECT_REJECTED | 0x6c1c | Connection rejected |
+| LDN_ERR_RECV_DISCONNECT | 0x2c09 | Disconnect during receive |
+| LDN_ERR_SEND_FAIL | 0x4c0d | UDP send failure |
+| LDN_ERR_GENERAL_NET | 0xa46e | General net error (with SDK detail) |
+| LDN_ERR_CRYPTO_A | 0xc420 | Crypto/auth error |
+| LDN_ERR_CRYPTO_B | 0xc421 | Crypto/auth error |
+| LDN_ERR_INVALID_STATE | 0x10c07 | Bad state / invalid socket |
+| LDN_ERR_UNKNOWN | 0x10c08 | Unrecognized SDK error |
+
 ## Notes for Rollback Modding
 
 1. **The actual game frame sync path is NOT through libcurl.** libcurl handles
@@ -330,9 +489,10 @@ different socket types (TCP stream vs UDP datagram).
    (0x7103705150) is where the session mode is decided. The mode byte at
    param_1+0x14 controls LDN vs Online vs Arena.
 
-4. **Data exchange functions are likely in the 0x710016xxxx-0x710019xxxx
-   range** but use nn::ldn internally (no named symbols found for SendData/
-   ReceiveData -- these may be inlined or use a different API path).
+4. **Game data goes over raw UDP, NOT nn::ldn::SendData/ReceiveData.**
+   After nn::ldn::Connect, the game opens its own UDP socket on port 12345
+   and exchanges serialized game state directly via nn::socket::SendTo/RecvFrom.
+   The nn::ldn SDK is only used for session establishment.
 
 5. **The global player manager** at DAT_710593a580 is critical infrastructure
    -- it holds all connected player state with 408-byte entries.
@@ -340,3 +500,19 @@ different socket types (TCP stream vs UDP datagram).
 6. **Two SDK stub ranges** (0x71039bxxxx and 0x710744xxxx) suggest the binary
    has multiple modules/NSOs linked together. The 0x71039b range is in the
    main executable, the 0x710744 range is in an SDK support module.
+
+7. **Triple-send for reliability**: Reply/sync packets (0x710012ba00) are
+   sent 3 times to compensate for UDP packet loss. Game data packets are
+   sent once per peer per frame.
+
+8. **Encryption is AES-based**: Online mode encrypts game data with a
+   session key at +0xDD0. Local LDN mode uses unencrypted packets with
+   random padding. The encrypt/decrypt functions at 0x7100129590/0x71001296b0
+   are the key intercept points for packet analysis.
+
+9. **For rollback implementation**: The critical intercept points are:
+   - **ldn_send_game_state (0x710012b530)**: Hook to inject rollback frame data
+   - **ldn_recv_and_process (0x710012ac30)**: Hook to intercept received state
+   - **The vtable serialize/deserialize calls**: These encode/decode the actual
+     game state that needs to be saved/restored for rollback
+   - **sequence_number at session+0xDC8**: Can be used to detect packet ordering
