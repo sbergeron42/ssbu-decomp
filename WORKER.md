@@ -1,39 +1,46 @@
-# Worker: pool-a
+# Worker: pool-c
 
 ## Model: Opus
 
-## Task: Refactor non-module files to use struct field access (batch/region files)
+## Task: Define data struct headers + refactor data/event/link files
 
-Replace raw reinterpret_cast offset patterns with proper struct member access. Module files are done — this covers the batch and region files.
+Your assigned files don't use BattleObjectModuleAccessor — they use their own data structs (AttackData, DamageLog, Circle, etc.) with raw offset access. To refactor these, define the struct layouts first.
 
-### Your files (batch + region — highest cast counts)
-- src/app/engine_functions.cpp (133 casts)
-- src/app/fun_region_000.cpp (52)
-- src/app/fun_region_001.cpp (80)
-- src/app/fun_region_002.cpp (34)
-- src/app/fun_batch_c2_017.cpp (98)
-- src/app/fun_batch_c2_018.cpp
-- src/app/fun_batch_c2_019.cpp
-- All other src/app/fun_region_*.cpp and src/app/fun_batch_*.cpp files
+### Phase 1: Define struct headers
+Create NEW header files in include/app/ for the data types used by your files:
+- include/app/AttackData.h
+- include/app/AttackAbsoluteData.h  
+- include/app/DamageLog.h
+- include/app/DamageInfo.h
+- include/app/AreaContactLog.h
+- include/app/Circle.h
+- include/app/Rhombus2.h
+- include/app/stWaterAreaInfo.h
+- (any others you discover)
 
-### What to change
-For functions taking BattleObjectModuleAccessor* as first param:
-    #include "app/BattleObjectModuleAccessor.h"
-Replace:
-    auto* m = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x60);
-With:
-    auto* m = acc->camera_module;
+Derive the struct layout from the offset patterns in the .cpp files. For example, if code does:
+    *reinterpret_cast<float*>(reinterpret_cast<u8*>(obj)+0x10) = v;
+Then the struct has a float field at offset 0x10.
 
-For functions taking FighterInformation*, FighterManager*, FighterEntry*:
-    #include "app/FighterInformation.h"  (etc.)
-Replace raw offset casts with struct field access where the header defines the field.
+Use Ghidra MCP to cross-reference: mcp__ghidra__decompile_function_by_address to see how Ghidra types these.
 
-### Critical rule
-After EACH file, rebuild and verify: cmd /c build.bat && python tools/verify_all.py --summary
-If verified drops, REVERT and move on.
+### Phase 2: Refactor source files
+Replace raw offset casts with struct field access using your new headers.
+
+### Your files
+- src/app/AttackData.cpp, AttackAbsoluteData.cpp
+- src/app/DamageLog.cpp, DamageInfo.cpp
+- src/app/AreaContactLog.cpp, Circle.cpp, Rhombus2.cpp, stWaterAreaInfo.cpp
+- src/app/OnCalcParamEvent.cpp
+- src/app/GimmickEvent*.cpp, LinkEvent*.cpp
+- src/app/FighterPikmin*.cpp, FighterCloud*.cpp, FighterInkling*.cpp, etc.
+- src/app/Weapon*.cpp
+- src/app/gameplay_functions.cpp, lib.cpp
+- src/app/particle/audio/graphics/network/memory/threading_functions.cpp
 
 ### Rules
-- ONLY edit src/app/fun_region_*.cpp, src/app/fun_batch_*.cpp, src/app/engine_functions.cpp
-- Do NOT edit modules/ (already done)
-- Do NOT edit game type files (pool-b territory)
-- Do NOT modify include/ headers, tools/, or data/
+- CAN create NEW headers in include/app/ for data types listed above
+- Do NOT edit existing headers (BattleObjectModuleAccessor.h, FighterManager.h, etc. — pool-b territory)
+- Do NOT edit modules/ or fun_batch/fun_region files
+- After each file change: cmd /c build.bat && python tools/verify_all.py --summary
+- If verified drops, REVERT and move on
