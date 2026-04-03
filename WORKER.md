@@ -1,36 +1,30 @@
-# Worker: pool-a
+# Worker: pool-b
 
 ## Model: Opus
 
-## Task: Map networking SDK calls and find game-level netcode functions
+## Task: Trace game state serialization for rollback
 
-Trace the networking code path from SDK layer upward to find all game-level networking functions. This is targeted RE for rollback netplay support.
+For rollback netplay, we need to know what game state must be saved and restored each frame. Find the state serialization functions.
 
-### Step 1: Find all nn::socket usage
-Use Ghidra MCP to find functions that call networking SDK functions:
-- mcp__ghidra__search_functions_by_name for nn::socket, nn::nifm, nn::ssl, nn::nex
-- mcp__ghidra__get_xrefs_to on each SDK function to find callers
+### What to look for
+- Functions that snapshot game state (position, velocity, damage, stocks, frame counter)
+- Functions that restore/load state from a buffer
+- The main game loop tick function (what runs each frame)
+- BattleObject state save/load patterns
+- Fighter state that changes per frame
 
-### Step 2: Walk up the call graph
-For each game function that calls SDK networking:
-- mcp__ghidra__get_xrefs_to to find who calls IT
-- mcp__ghidra__decompile_function_by_address to understand what it does
-- Name the function based on what it does (packet_send_wrapper, session_create, etc.)
-- Use mcp__ghidra__rename_function_by_address to update Ghidra
-
-### Step 3: Document the networking architecture
-Write findings to src/docs/networking.md (create this file):
-- Layer diagram: SDK → packet framing → game sync → session management
-- Key function addresses and names
-- Data structures used for packets/state
+### Approach
+1. Search Ghidra for functions with "save", "load", "serialize", "snapshot", "state" in names
+2. Look at store_l2c_table / load_from_l2c_table patterns — these serialize struct fields
+3. Trace what BattleObjectModuleAccessor stores per frame
+4. Find the main game update loop (the function called 60 times per second)
 
 ### Output
-- src/docs/networking.md with the call graph and architecture notes
-- Renamed functions in Ghidra via MCP
-- Any decomped networking functions go in src/app/networking/ (new directory)
+- src/docs/game_state.md with findings on state management
+- Key function addresses, what state they manage, data flow
 
 ### Rules
-- CAN create: src/docs/networking.md, src/app/networking/*.cpp
-- CAN use Ghidra MCP to rename functions and read decompilations
+- CAN create: src/docs/game_state.md
+- CAN use Ghidra MCP to search and decompile
 - Do NOT edit existing source files
 - Do NOT modify data/functions.csv or tools/
