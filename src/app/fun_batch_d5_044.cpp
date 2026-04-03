@@ -56,23 +56,8 @@ float BattleObjectWorld__scale_z_impl(void *world) {
     return *(float*)((u8*)world + 8);
 }
 
-// 0x7101fcc050 — AreaModule__set_auto_layer_update_impl
-void AreaModule__set_auto_layer_update_impl(BattleObjectModuleAccessor *a, bool p1) {
-    auto *m = *reinterpret_cast<void**>(reinterpret_cast<u8*>(a) + 0xc0);
-    reinterpret_cast<void(*)(void*, bool)>((*reinterpret_cast<void***>(m))[0x58/8])(m, p1);
-}
-
-// 0x7101fcc0a0 — AreaModule__set_whole_impl
-void AreaModule__set_whole_impl(BattleObjectModuleAccessor *a, bool p1) {
-    auto *m = *reinterpret_cast<void**>(reinterpret_cast<u8*>(a) + 0xc0);
-    reinterpret_cast<void(*)(void*, bool)>((*reinterpret_cast<void***>(m))[0xa0/8])(m, p1);
-}
-
-// 0x7101fd0370 — AttackModule__get_power_impl
-void AttackModule__get_power_impl(BattleObjectModuleAccessor *a, u64 p1, bool p2, bool p3) {
-    auto *m = *reinterpret_cast<void**>(reinterpret_cast<u8*>(a) + 0xa0);
-    reinterpret_cast<void(*)(void*, u64, bool, bool)>((*reinterpret_cast<void***>(m))[0x158/8])(m, p1, p2, p3);
-}
+// 0x7101fcc050 — AreaModule__set_auto_layer_update_impl — in modules/AreaModule.cpp
+// 0x7101fd0370 — AttackModule__get_power_impl — in modules/AttackModule.cpp
 
 } // namespace app::lua_bind
 

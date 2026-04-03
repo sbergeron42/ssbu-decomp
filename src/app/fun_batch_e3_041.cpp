@@ -149,16 +149,7 @@ u64 FUN_7102249b30(void) {
 // 0x710224b5e0 â€” bl FUN_710160dea0
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
-u64 FUN_710224b5e0(void) {
-    asm(
-        "stp x29, x30, [sp, #-0x10]!\n"
-        "mov x29, sp\n"
-        "bl FUN_710160dea0\n"
-        "mov w0, wzr\n"
-        "ldp x29, x30, [sp], #0x10\n"
-        "ret\n"
-    );
-}
+// FUN_710224b5e0 — defined in earlier batch file
 #endif
 
 // 0x710224c3d0 â€” bl set_all_shield
@@ -232,16 +223,7 @@ u64 FUN_710224e230(void) {
 // 0x7102251380 â€” bl FUN_710160dea0
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
-u64 FUN_7102251380(void) {
-    asm(
-        "stp x29, x30, [sp, #-0x10]!\n"
-        "mov x29, sp\n"
-        "bl FUN_710160dea0\n"
-        "mov w0, wzr\n"
-        "ldp x29, x30, [sp], #0x10\n"
-        "ret\n"
-    );
-}
+// FUN_7102251380 — defined in earlier batch file
 #endif
 
 // 0x7102252e00 â€” bl set_all_shield (0x710164ef40)
@@ -332,31 +314,13 @@ u64 FUN_7102256790(void) {
 // 0x7102256b00 â€” bl notify_melee_start_to_hud_manager
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
-u64 FUN_7102256b00(void) {
-    asm(
-        "stp x29, x30, [sp, #-0x10]!\n"
-        "mov x29, sp\n"
-        "bl notify_melee_start_to_hud_manager\n"
-        "mov w0, wzr\n"
-        "ldp x29, x30, [sp], #0x10\n"
-        "ret\n"
-    );
-}
+// FUN_7102256b00 — defined in earlier batch file
 #endif
 
 // 0x7102258b60 â€” bl FUN_710160dea0
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
-u64 FUN_7102258b60(void) {
-    asm(
-        "stp x29, x30, [sp, #-0x10]!\n"
-        "mov x29, sp\n"
-        "bl FUN_710160dea0\n"
-        "mov w0, wzr\n"
-        "ldp x29, x30, [sp], #0x10\n"
-        "ret\n"
-    );
-}
+// FUN_7102258b60 — defined in earlier batch file
 #endif
 
 // 0x710226d400 â€” bl update_collision_work

@@ -17,16 +17,7 @@ extern "C" void clear_owner_color(u64);
 // 0x71021f72f0 — bl FUN_71015c0410
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked))
-u64 FUN_71021f72f0(void) {
-    asm(
-        "stp x29, x30, [sp, #-0x10]!\n"
-        "mov x29, sp\n"
-        "bl FUN_71015c0410\n"
-        "mov w0, wzr\n"
-        "ldp x29, x30, [sp], #0x10\n"
-        "ret\n"
-    );
-}
+// FUN_71021f72f0 � defined in earlier batch file
 #endif
 
 // 0x71021ff030 — bl apply_powerup_throw

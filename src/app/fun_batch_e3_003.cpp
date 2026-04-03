@@ -98,57 +98,24 @@ void FUN_7102931ae0(u64 *param_1, u32 param_2)
 
 // ---- std::__throw_out_of_range wrappers ----------------------------------
 
-// 0x710257eb3c (96 bytes)
-void FUN_710257eb3c(void) {
-    std::__1::__vector_base_common<true>::__throw_out_of_range();
-}
+// FUN_710257eb3c — defined in earlier batch file
 
-// 0x7102ce204c (96 bytes)
-void FUN_7102ce204c(void) {
-    std::__1::__vector_base_common<true>::__throw_out_of_range();
-}
+// FUN_7102ce204c — defined in earlier batch file
 
-// 0x7102898d6c (96 bytes)
-void FUN_7102898d6c(void) {
-    std::__1::__vector_base_common<true>::__throw_out_of_range();
-}
+// FUN_7102898d6c — defined in earlier batch file
 
-// 0x7102898efc (96 bytes)
-void FUN_7102898efc(void) {
-    std::__1::__vector_base_common<true>::__throw_out_of_range();
-}
+// FUN_7102898efc — defined in earlier batch file
 
-// 0x71027cea9c (96 bytes)
-void FUN_71027cea9c(void) {
-    std::__1::__vector_base_common<true>::__throw_out_of_range();
-}
+// FUN_71027cea9c — defined in earlier batch file
 
-// 0x710293a80c (96 bytes)
-void FUN_710293a80c(void) {
-    std::__1::__vector_base_common<true>::__throw_out_of_range();
-}
+// FUN_710293a80c — defined in earlier batch file
 
-// 0x7102cbf3cc (96 bytes)
-void FUN_7102cbf3cc(void) {
-    std::__1::__vector_base_common<true>::__throw_out_of_range();
-}
+// FUN_7102cbf3cc — defined in earlier batch file
 
-// 0x7102c7aa8c (96 bytes)
-void FUN_7102c7aa8c(void) {
-    std::__1::__vector_base_common<true>::__throw_out_of_range();
-}
+// FUN_7102c7aa8c — defined in earlier batch file
 
-// 0x7102df744c (96 bytes)
-void FUN_7102df744c(void) {
-    std::__1::__vector_base_common<true>::__throw_out_of_range();
-}
+// FUN_7102df744c — defined in earlier batch file
 
-// 0x710287787c (96 bytes)
-void FUN_710287787c(void) {
-    std::__1::__vector_base_common<true>::__throw_out_of_range();
-}
+// FUN_710287787c — defined in earlier batch file
 
-// 0x7102f408ec (96 bytes)
-void FUN_7102f408ec(void) {
-    std::__1::__vector_base_common<true>::__throw_out_of_range();
-}
+// FUN_7102f408ec — defined in earlier batch file
