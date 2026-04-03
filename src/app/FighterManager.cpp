@@ -3,7 +3,35 @@
 // FighterManager -- operates on FighterManager* (not BattleObjectModuleAccessor)
 // These access FighterManager->internal_data (first ldr x8,[x0]) then fields
 
-struct FighterManager;
+struct FighterManagerData {
+    u8   pad_0x00[0x20];
+    void* entries[8];                        // +0x20
+    u8   pad_0x60[0x40];
+    u32  entry_count;                        // +0xA0
+    u8   pad_0xA4[0x04];
+    u32  final_actor_entry_id;               // +0xA8
+    u32  no_discretion_final_beat_count;     // +0xAC
+    u8   pad_0xB0[0x10];
+    u8   melee_mode;                         // +0xC0
+    u8   pad_0xC1[0x0B];
+    u8   discretion_final_enabled;           // +0xCC
+    u8   pad_0xCD[0x05];
+    u8   ready_go;                           // +0xD2
+    u8   pad_0xD3[0x03];
+    u8   cursor_whole;                       // +0xD6
+    u8   pad_0xD7[0x12];
+    u8   result_mode;                        // +0xE9
+    u8   pad_0xEA[0x04];
+    u8   ko_camera_enabled;                  // +0xEE
+    u8   pad_0xEF[0x01];
+    f32  one_on_one_ratio;                   // +0xF0
+    u8   pad_0xF4[0xA8C];
+    void* movie_ptr;                         // +0xB80
+};
+
+struct FighterManager {
+    FighterManagerData* data;                // +0x0
+};
 
 extern "C" [[noreturn]] void abort();
 extern "C" [[noreturn]] void FUN_71039c20a0();
@@ -14,97 +42,81 @@ namespace app::lua_bind {
 
 // 7102140d60 -- entry_count (3 instructions)
 u32 FighterManager__entry_count_impl(FighterManager* mgr) {
-    auto* data = *reinterpret_cast<u8**>(mgr);
-    return *reinterpret_cast<u32*>(data + 0xa0);
+    return mgr->data->entry_count;
 }
 
 // 7102141650 -- enable_ko_camera (4 instructions)
 void FighterManager__enable_ko_camera_impl(FighterManager* mgr) {
-    auto* data = *reinterpret_cast<u8**>(mgr);
-    data[0xee] = 1;
+    mgr->data->ko_camera_enabled = 1;
 }
 
 // 7102141660 -- disable_ko_camera (3 instructions)
 void FighterManager__disable_ko_camera_impl(FighterManager* mgr) {
-    auto* data = *reinterpret_cast<u8**>(mgr);
-    data[0xee] = 0;
+    mgr->data->ko_camera_enabled = 0;
 }
 
 // Simple field reads (3-5 instructions)
 bool FighterManager__is_disable_ko_camera_impl(FighterManager* mgr) {
-    auto* data = *reinterpret_cast<u8**>(mgr);
-    return data[0xee] == 0; // cmp #0, cset eq
+    return mgr->data->ko_camera_enabled == 0; // cmp #0, cset eq
 }
 bool FighterManager__is_melee_mode_homerun_impl(FighterManager* mgr) {
-    auto* data = *reinterpret_cast<u8**>(mgr);
-    return data[0xc0] == 9; // cmp #9, cset eq
+    return mgr->data->melee_mode == 9; // cmp #9, cset eq
 }
 bool FighterManager__is_melee_mode_online_tournament_impl(FighterManager* mgr) {
-    auto* data = *reinterpret_cast<u8**>(mgr);
-    return data[0xc0] == 0x18; // cmp #0x18, cset eq
+    return mgr->data->melee_mode == 0x18; // cmp #0x18, cset eq
 }
 u8 FighterManager__is_discretion_final_enabled_impl(FighterManager* mgr) {
-    auto* data = *reinterpret_cast<u8**>(mgr);
-    return data[0xcc];
+    return mgr->data->discretion_final_enabled;
 }
 u8 FighterManager__is_ready_go_impl(FighterManager* mgr) {
-    auto* data = *reinterpret_cast<u8**>(mgr);
-    return data[0xd2];
+    return mgr->data->ready_go;
 }
 u8 FighterManager__is_result_mode_impl(FighterManager* mgr) {
-    auto* data = *reinterpret_cast<u8**>(mgr);
-    return data[0xe9];
+    return mgr->data->result_mode;
 }
 // 4-instruction setter with bool masking
 void FighterManager__set_cursor_whole_impl(FighterManager* mgr, bool val) {
-    auto* data = *reinterpret_cast<u8**>(mgr);
+    auto* data = reinterpret_cast<u8*>(mgr->data);
     data[0xd6] = val & 1;
 }
 // 3-instruction getters
 u32 FighterManager__get_no_discretion_final_beat_count_impl(FighterManager* mgr) {
-    auto* data = *reinterpret_cast<u8**>(mgr);
-    return *reinterpret_cast<u32*>(data + 0xac);
+    return mgr->data->no_discretion_final_beat_count;
 }
 u32 FighterManager__get_final_actor_entry_id_impl(FighterManager* mgr) {
-    auto* data = *reinterpret_cast<u8**>(mgr);
-    return *reinterpret_cast<u32*>(data + 0xa8);
+    return mgr->data->final_actor_entry_id;
 }
 
 // 7102140f90 -- get_fighter_entry (10 instructions, bounds check + indexed)
 void* FighterManager__get_fighter_entry_impl(FighterManager* mgr, u32 index) {
     if (index >= 8) { FUN_71039c20a0(); }
-    auto* data = *reinterpret_cast<u8**>(mgr);
-    return *reinterpret_cast<void**>(data + static_cast<u64>(index) * 8 + 0x20);
+    return mgr->data->entries[index];
 }
 
 // 7102140fc0 -- get_fighter_information (11 instructions, bounds check + offset)
 void* FighterManager__get_fighter_information_impl(FighterManager* mgr, u32 index) {
     if (index >= 8) { FUN_71039c20a0(); }
-    auto* data = *reinterpret_cast<u8**>(mgr);
-    auto* entry = *reinterpret_cast<u8**>(data + static_cast<u64>(index) * 8 + 0x20);
+    auto* entry = reinterpret_cast<u8*>(mgr->data->entries[index]);
     return entry + 0xf0;
 }
 
 // 7102141910 -- is_end_movie (7 instructions, pointer chain + cmp)
 bool FighterManager__is_end_movie_impl(FighterManager* mgr) {
-    auto* data = *reinterpret_cast<u8**>(mgr);
-    auto* p1 = *reinterpret_cast<u8**>(data + 0xb80);
+    auto* p1 = reinterpret_cast<u8*>(mgr->data->movie_ptr);
     auto* p2 = *reinterpret_cast<u8**>(p1);
     return *reinterpret_cast<u32*>(p2 + 0x20) == 8;
 }
 
 // 71021418a0 -- is_prepared_movie (7 instructions, pointer chain + cmp 4)
 bool FighterManager__is_prepared_movie_impl(FighterManager* mgr) {
-    auto* data = *reinterpret_cast<u8**>(mgr);
-    auto* p1 = *reinterpret_cast<u8**>(data + 0xb80);
+    auto* p1 = reinterpret_cast<u8*>(mgr->data->movie_ptr);
     auto* p2 = *reinterpret_cast<u8**>(p1);
     return *reinterpret_cast<u32*>(p2 + 0x20) == 4;
 }
 
 // 71021418d0 -- is_process_movie (7 instructions, pointer chain + cmp 0, ne)
 bool FighterManager__is_process_movie_impl(FighterManager* mgr) {
-    auto* data = *reinterpret_cast<u8**>(mgr);
-    auto* p1 = *reinterpret_cast<u8**>(data + 0xb80);
+    auto* p1 = reinterpret_cast<u8*>(mgr->data->movie_ptr);
     auto* p2 = *reinterpret_cast<u8**>(p1);
     return *reinterpret_cast<u32*>(p2 + 0x20) != 0;
 }
@@ -113,16 +125,15 @@ void FighterManager__reset_fighter_impl(FighterManager* obj) { }
 
 // 71021410d0 -- one_on_one_ratio (3 instructions, simple field read)
 f32 FighterManager__one_on_one_ratio_impl(FighterManager* mgr) {
-    auto* data = *reinterpret_cast<u8**>(mgr);
-    return *reinterpret_cast<f32*>(data + 0xf0);
+    return mgr->data->one_on_one_ratio;
 }
 
 // 7102140d70 -- total_fighter_num: sum fighter_num across 8 entry slots
 u32 FighterManager__total_fighter_num_impl(FighterManager* mgr) {
-    auto* data = *reinterpret_cast<u8**>(mgr);
+    auto* d = mgr->data;
     u32 total = 0;
     for (s32 i = 0; i < 8; i++) {
-        auto* entry = *reinterpret_cast<u8**>(data + 0x20 + static_cast<u64>(i) * 8);
+        auto* entry = reinterpret_cast<u8*>(d->entries[i]);
         if (entry) {
             total += *reinterpret_cast<u32*>(entry + 0x14);
         }
@@ -132,9 +143,9 @@ u32 FighterManager__total_fighter_num_impl(FighterManager* mgr) {
 
 // 7102140e10 -- get_entry_id: walk 8 slots (unrolled), decrement counter, return index
 u64 FighterManager__get_entry_id_impl(FighterManager* mgr, s32 n) {
-    auto* data = *reinterpret_cast<u8**>(mgr);
+    auto* d = mgr->data;
 #define CHECK_SLOT(I) \
-    if (*reinterpret_cast<void**>(data + 0x20 + (I) * 8)) { \
+    if (d->entries[I]) { \
         if (n == 0) return (I); \
         n--; \
     }
@@ -143,7 +154,7 @@ u64 FighterManager__get_entry_id_impl(FighterManager* mgr, s32 n) {
 #undef CHECK_SLOT
     // Slot 7 -- merged compare pattern: movn w8,#0 first, then orr w9,#7, csel eq
     u64 result = 0xFFFFFFFF;
-    if (*reinterpret_cast<void**>(data + 0x58) != nullptr && n == 0) {
+    if (d->entries[7] != nullptr && n == 0) {
         result = 7;
     }
     return result;

@@ -3,58 +3,95 @@
 // FighterInformation -- operates on FighterInformation* directly
 // Pattern: ldr x8,[x0,#0x8] gets internal data, then field reads
 
-struct FighterInformation;
+struct FighterInformationData {
+    u8   pad_0x00[0x38];
+    f32  hp_base;                        // +0x38
+    f32  hp_temp;                        // +0x3C
+    u8   pad_0x40[0x11];
+    u8   fighter_color;                  // +0x51
+    u8   pad_0x52[0x07];
+    bool rabbit_cap;                     // +0x59
+    bool reflector;                      // +0x5A
+    bool superleaf;                      // +0x5B
+    bool rocketbelt;                     // +0x5C
+    bool screw;                          // +0x5D
+    bool backshield;                     // +0x5E
+    u8   pad_0x5F[0x33];
+    bool operation_cpu;                  // +0x92
+    bool no_change_hp;                   // +0x93
+    u8   pad_0x94[0x38];
+    s32  dead_count[3];                  // +0xCC
+    u32  stock_count;                    // +0xD8
+    u8   pad_0xDC[0x70];
+    s32  suicide_count_a[3];             // +0x14C
+    s32  suicide_count_b[3];             // +0x158
+    u8   pad_0x164[0x3F];
+    bool last_dead_suicide;              // +0x1A3
+    u8   pad_0x1A4[0x08];
+    f32  add_rebirth_wait_frame;         // +0x1AC
+    u8   pad_0x1B0[0x1BC];
+    f32  gravity;                        // +0x36C
+    u8   pad_0x370[0x1C];
+    bool on_rebirth;                     // +0x38C
+    u8   pad_0x38D[0x1F];
+    u8   fighter_category;               // +0x3AC
+    u8   pad_0x3AD[0x5F3];
+    u32  summon_boss_id;                 // +0x9A0
+    u8   pad_0x9A4[0x08];
+    u32  summon_bomb_ready_frame;        // +0x9AC
+    u32  summon_pre_bomb_effect_frame;   // +0x9B0
+    u8   pad_0x9B4[0x08];
+    f32  summon_suicide_bomb_attack_mul; // +0x9BC
+    f32  summon_suicide_bomb_reaction_mul; // +0x9C0
+    u8   pad_0x9C4[0x06];
+    bool battle_event_stick_reverse;     // +0x9CA
+};
+
+struct FighterInformation {
+    void** vtable;                       // +0x0
+    FighterInformationData* data;        // +0x8
+};
 
 namespace app::lua_bind {
 
 // Simple 3-instruction struct reads (ldr data ptr, ldr/ldrb field, ret)
 u8 FighterInformation__fighter_color_impl(FighterInformation* fi) {
-    auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);
-    return data[0x51];
+    return fi->data->fighter_color;
 }
 bool FighterInformation__is_rabbit_cap_impl(FighterInformation* fi) {
-    auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);
-    return *reinterpret_cast<bool*>(data + 0x59);
+    return fi->data->rabbit_cap;
 }
 bool FighterInformation__is_reflector_impl(FighterInformation* fi) {
-    auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);
-    return *reinterpret_cast<bool*>(data + 0x5a);
+    return fi->data->reflector;
 }
 bool FighterInformation__is_superleaf_impl(FighterInformation* fi) {
-    auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);
-    return *reinterpret_cast<bool*>(data + 0x5b);
+    return fi->data->superleaf;
 }
 bool FighterInformation__is_rocketbelt_impl(FighterInformation* fi) {
-    auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);
-    return *reinterpret_cast<bool*>(data + 0x5c);
+    return fi->data->rocketbelt;
 }
 bool FighterInformation__is_screw_impl(FighterInformation* fi) {
-    auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);
-    return *reinterpret_cast<bool*>(data + 0x5d);
+    return fi->data->screw;
 }
 bool FighterInformation__is_backshield_impl(FighterInformation* fi) {
-    auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);
-    return *reinterpret_cast<bool*>(data + 0x5e);
+    return fi->data->backshield;
 }
 bool FighterInformation__is_operation_cpu_impl(FighterInformation* fi) {
-    auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);
-    return *reinterpret_cast<bool*>(data + 0x92);
+    return fi->data->operation_cpu;
 }
 u32 FighterInformation__stock_count_impl(FighterInformation* fi) {
-    auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);
-    return *reinterpret_cast<u32*>(data + 0xd8);
+    return fi->data->stock_count;
 }
 u8 FighterInformation__fighter_category_impl(FighterInformation* fi) {
-    auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);
-    return data[0x3ac];
+    return fi->data->fighter_category;
 }
 
 // 6-instruction branching function
 f32 FighterInformation__hit_point_max_impl(FighterInformation* fi, bool include_temp) {
-    auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);
-    f32 base = *reinterpret_cast<f32*>(data + 0x38);
+    auto* d = fi->data;
+    f32 base = d->hp_base;
     if (!include_temp) {
-        base += *reinterpret_cast<f32*>(data + 0x3c);
+        base += d->hp_temp;
     }
     return base;
 }
@@ -62,53 +99,41 @@ f32 FighterInformation__hit_point_max_impl(FighterInformation* fi, bool include_
 // Additional simple getters from agent data
 // 71020c9e30
 bool FighterInformation__is_operation_cpu_real_impl(FighterInformation* fi) {
-    auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);
-    return *reinterpret_cast<bool*>(data + 0x92);
+    return fi->data->operation_cpu;
 }
 bool FighterInformation__get_no_change_hp_impl(FighterInformation* fi) {
-    auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);
-    return *reinterpret_cast<bool*>(data + 0x93);
+    return fi->data->no_change_hp;
 }
 bool FighterInformation__is_last_dead_suicide_impl(FighterInformation* fi) {
-    auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);
-    return *reinterpret_cast<bool*>(data + 0x1a3);
+    return fi->data->last_dead_suicide;
 }
 // setter -- stores float to field
 void FighterInformation__set_add_rebirth_wait_frame_impl(FighterInformation* fi, f32 val) {
-    auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);
-    *reinterpret_cast<f32*>(data + 0x1ac) = val;
+    fi->data->add_rebirth_wait_frame = val;
 }
 bool FighterInformation__is_on_rebirth_impl(FighterInformation* fi) {
-    auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);
-    return *reinterpret_cast<bool*>(data + 0x38c);
+    return fi->data->on_rebirth;
 }
 f32 FighterInformation__gravity_impl(FighterInformation* fi) {
-    auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);
-    return *reinterpret_cast<f32*>(data + 0x36c);
+    return fi->data->gravity;
 }
 u32 FighterInformation__summon_boss_id_impl(FighterInformation* fi) {
-    auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);
-    return *reinterpret_cast<u32*>(data + 0x9a0);
+    return fi->data->summon_boss_id;
 }
 u32 FighterInformation__summon_bomb_ready_frame_impl(FighterInformation* fi) {
-    auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);
-    return *reinterpret_cast<u32*>(data + 0x9ac);
+    return fi->data->summon_bomb_ready_frame;
 }
 u32 FighterInformation__summon_pre_bomb_effect_frame_impl(FighterInformation* fi) {
-    auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);
-    return *reinterpret_cast<u32*>(data + 0x9b0);
+    return fi->data->summon_pre_bomb_effect_frame;
 }
 f32 FighterInformation__summon_suicide_bomb_attack_mul_impl(FighterInformation* fi) {
-    auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);
-    return *reinterpret_cast<f32*>(data + 0x9bc);
+    return fi->data->summon_suicide_bomb_attack_mul;
 }
 f32 FighterInformation__summon_suicide_bomb_reaction_mul_impl(FighterInformation* fi) {
-    auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);
-    return *reinterpret_cast<f32*>(data + 0x9c0);
+    return fi->data->summon_suicide_bomb_reaction_mul;
 }
 bool FighterInformation__is_battle_event_stick_reverse_impl(FighterInformation* fi) {
-    auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);
-    return *reinterpret_cast<bool*>(data + 0x9ca);
+    return fi->data->battle_event_stick_reverse;
 }
 
 // 71020c9d60 -- hit_point (14 instructions, vtable call + float math)
@@ -175,7 +200,7 @@ s32 FighterInformation__suicide_count_impl(FighterInformation* fi, s32 index) {
 // 71020c9ee0 -- total_beat_count (2 instructions, tail call)
 extern "C" void FUN_710065e8a0(void*);
 void FighterInformation__total_beat_count_impl(FighterInformation* fi) {
-    FUN_710065e8a0(*reinterpret_cast<void**>(reinterpret_cast<u8*>(fi) + 0x8));
+    FUN_710065e8a0(fi->data);
 }
 
 // 71020c9fa0 -- get_log_int: large switch/dispatch (1552 insns)

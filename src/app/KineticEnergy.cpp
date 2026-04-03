@@ -5,7 +5,12 @@
 // Tail-call pattern: ldr x8,[x0]; ldr xN,[x8,#off]; br xN
 // Framed-call pattern: stp/mov frame; vtable call; load result; ldp/ret
 
-struct KineticEnergy;
+struct KineticEnergy {
+    void** vtable;          // +0x0
+    u8  pad_0x08[0x18];
+    u8  rotation[0x10];     // +0x20
+    u8  enabled;            // +0x30
+};
 
 #define VT(p) (*reinterpret_cast<void***>(p))
 
@@ -17,7 +22,7 @@ namespace app::lua_bind {
 
 // 71020f64c0 -- add x0,x0,#0x20; ret
 void* KineticEnergy__get_rotation_impl(KineticEnergy* ke) {
-    return reinterpret_cast<u8*>(ke) + 0x20;
+    return ke->rotation;
 }
 
 // 71020f64d0 -- ldr x8,[x0]; ldr x5,[x8,#0x40]; br x5 (uses x5: x0-x4 are forwarded)
@@ -67,12 +72,12 @@ void KineticEnergy__off_consider_ground_friction_impl(KineticEnergy* ke) {
 
 // 71020f6560 -- mov w8,#0x1; strb w8,[x0,#0x30]; ret
 void KineticEnergy__enable_impl(KineticEnergy* ke) {
-    *reinterpret_cast<u8*>(reinterpret_cast<u8*>(ke) + 0x30) = 1;
+    ke->enabled = 1;
 }
 
 // 71020f6570 -- strb wzr,[x0,#0x30]; ret
 void KineticEnergy__unable_impl(KineticEnergy* ke) {
-    *reinterpret_cast<u8*>(reinterpret_cast<u8*>(ke) + 0x30) = 0;
+    ke->enabled = 0;
 }
 
 } // namespace app::lua_bind

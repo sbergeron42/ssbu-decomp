@@ -2,49 +2,40 @@
 
 ## Model: Opus
 
-## Task: Refactor module files H-Z to use struct field access
+## Task: Refactor game type files to use struct field access
 
-Replace raw pointer arithmetic with proper struct member access across module source files. The struct headers now exist in include/app/.
-
-### What to change
-Replace patterns like:
-    auto* m = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x60);
-With:
-    auto* m = acc->camera_module;
+Replace raw reinterpret_cast offset patterns with proper struct member access in the game type source files (non-module, non-batch).
 
 ### Your files
-Refactor these source files (alphabetically H through Z):
-- src/app/modules/HitModule.cpp
-- src/app/modules/ItemModule.cpp
-- src/app/modules/JostleModule.cpp
-- src/app/modules/KineticModule.cpp
-- src/app/modules/LinkModule.cpp
-- src/app/modules/ModelModule.cpp
-- src/app/modules/MotionAnimcmdModule.cpp
-- src/app/modules/MotionModule.cpp
-- src/app/modules/PhysicsModule.cpp
-- src/app/modules/PostureModule.cpp
-- src/app/modules/ReflectModule.cpp
-- src/app/modules/ReflectorModule.cpp
-- src/app/modules/SearchModule.cpp
-- src/app/modules/ShieldModule.cpp
-- src/app/modules/SlowModule.cpp
-- src/app/modules/SoundModule.cpp
-- src/app/modules/StatusModule.cpp
-- src/app/modules/TurnModule.cpp
-- src/app/modules/VisibilityModule.cpp
-- src/app/modules/WorkModule.cpp
+- src/app/FighterInformation.cpp (27 casts)
+- src/app/FighterManager.cpp
+- src/app/FighterEntry.cpp
+- src/app/FighterKineticEnergyMotion.cpp (13)
+- src/app/FighterKineticEnergyController.cpp (11)
+- src/app/FighterKineticEnergyGravity.cpp (10)
+- src/app/KineticEnergy.cpp
+- src/app/KineticEnergyNormal.cpp (20)
+- src/app/KineticEnergyRotNormal.cpp
+- src/app/BattleObjectSlow.cpp
+- src/app/BattleObjectWorld.cpp
+- src/app/BattleObjectManager.cpp
+- src/app/BossManager.cpp
+- src/app/StageManager.cpp
+- src/app/Item.cpp
+- src/app/ItemManager.cpp
+- src/app/Weapon.cpp
+- src/app/Article.cpp
+
+### What to change
+Use the struct headers in include/app/:
+    #include "app/FighterInformation.h"
+Replace raw offset patterns with named field access.
 
 ### Critical rule
-After EACH file change, rebuild and verify matching is preserved:
-    cmd /c build.bat && python tools/verify_all.py --summary
-If verified count drops, REVERT that file and move on.
-
-### Include the header
-Add #include "app/BattleObjectModuleAccessor.h" at top of each file.
+After EACH file, rebuild and verify: cmd /c build.bat && python tools/verify_all.py --summary
+If verified drops, REVERT and move on.
 
 ### Rules
 - ONLY edit files listed above
-- Do NOT edit include/ headers
-- Do NOT modify data/functions.csv or tools/
-- NEVER reduce verified count
+- Do NOT edit modules/ (done), fun_batch/fun_region (pool-a), or data files (pool-c)
+- Do NOT modify include/ headers, tools/, or data/

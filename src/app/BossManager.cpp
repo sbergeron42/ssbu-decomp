@@ -5,7 +5,16 @@
 // Each list entry is 16 bytes (stride 0x10), first 8 bytes = entity handle pointer
 // Default entity singleton loaded via adrp 0x7104f73000 + 0xb70
 
-struct BossManager;
+struct BossManagerData {
+    u8   pad_0x00[0x110];
+    u8** list_begin;            // +0x110
+    u8** list_end;              // +0x118
+};
+
+struct BossManager {
+    u8   pad_0x00[0x8];
+    BossManagerData* inner;     // +0x8
+};
 
 extern "C" void FUN_71004e9e30(void*, s32);
 extern "C" bool FUN_71004e5780(void*);
@@ -22,7 +31,7 @@ namespace app::lua_bind {
 // 7102145890 -- framed loop: notify boss defeat for entries with hash 0x18e
 void BossManager__notify_on_boss_defeat_impl(BossManager* bm, s32 id) {
     if (id != 0x4d) return;
-    auto* inner = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(bm) + 0x8);
+    auto* inner = reinterpret_cast<u8*>(bm->inner);
     u8** begin = *reinterpret_cast<u8***>(inner + 0x110);
     u8** end = *reinterpret_cast<u8***>(inner + 0x118);
     for (u8** it = begin; it != end; it = reinterpret_cast<u8**>(reinterpret_cast<u8*>(it) + 0x10)) {
@@ -52,7 +61,7 @@ void BossManager__notify_on_boss_defeat_impl(BossManager* bm, s32 id) {
 // 7102145950 -- cmp w1,#0x4d; b.ne ret; ldr x0,[x0,#8]; mov w1,#0x18e; b external
 void BossManager__notify_on_boss_keyoff_bgm_impl(BossManager* bm, s32 id) {
     if (id != 0x4d) return;
-    FUN_71004e9e30(*reinterpret_cast<void**>(reinterpret_cast<u8*>(bm) + 0x8), 0x18e);
+    FUN_71004e9e30(bm->inner, 0x18e);
 }
 
 // 71021457a0 -- framed loop: check if any boss SE is stoppable
