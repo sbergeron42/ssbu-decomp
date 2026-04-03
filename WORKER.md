@@ -1,35 +1,35 @@
-# Worker: pool-c
+# Worker: pool-a
 
-## Model: Opus
+## Model: Sonnet
 
-## Task: Decomp nn::ldn game data exchange for rollback
+## Status: COMPLETE — All EASY-tier batches compiled (001–006)
 
-Decomp the game-level LDN functions that handle actual frame data exchange. These are in the 0x710016xxxx-0x710019xxxx range per src/docs/networking.md.
+## Task: Decomp remaining 241 EASY-tier functions (DONE)
 
-### Target functions
-- FUN_710016f400 — post-connect setup after LDN Connect
-- FUN_710016da00 — secondary post-connect initialization
-- FUN_710016c120 — called during LDN connect flow
-- FUN_710016b2f0 — error code translation for LDN
-- FUN_710016af60 — gets LDN connection parameter
-- online_ldn_initialize @ 0x7100191040
-- game_ldn_initialize @ 0x7103741990
-- Functions that call nn::ldn::SendData / ReceiveData (find via Ghidra xrefs)
+241 EASY-tier functions remain uncompiled. Use Ghidra MCP to decomp them. These are 1-7 instruction functions.
+
+### Finding targets
+```python
+import csv
+with open('data/fun_triage.csv') as f:
+    reader = csv.DictReader(f)
+    for row in reader:
+        if row['Tier'] == 'EASY':
+            print(row['Address'], row['Size'])
+```
+Then check which are already compiled by grepping build/*.o symbols.
 
 ### Approach
-- Start with mcp__ghidra__get_xrefs_to on nn::ldn SDK functions to find data send/receive
-- Decomp each function with understanding — what data is being sent, how is it framed
-- Document the packet format and frame sync protocol
-- Write READABLE C++ with meaningful names and comments
+- Use mcp__ghidra__decompile_function_by_address for each
+- Use struct headers from include/app/ where applicable
+- Add // 0x71XXXXXXXX address comment above each function
+- These are simple — field reads, stores, noops, dispatchers
 
-### Output
-- src/app/networking/ldn_transport.cpp
-- include/app/LDNSession.h or similar for session/packet structs
-- Update src/docs/networking.md with new findings
+### Output files
+- Create src/app/fun_easy_final_001.cpp, fun_easy_final_002.cpp, etc.
+- Build, verify, commit in batches
 
 ### Rules
-- ONLY create/edit files in src/app/networking/, include/app/, and src/docs/
-- CAN use Ghidra MCP to decompile and cross-reference
-- Do NOT edit existing source files outside these directories
+- ONLY create NEW files named src/app/fun_easy_final_*.cpp
+- Do NOT edit existing files
 - Do NOT modify tools/ or data/
-- Prioritize UNDERSTANDING over matching
