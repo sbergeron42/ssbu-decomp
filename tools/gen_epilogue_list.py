@@ -47,6 +47,8 @@ def main():
             func_data[short_name] = (mangled, size)
 
     needs_swap = []
+
+    # Method 1: Check original binary's epilogue pattern
     with open(ORIGINAL_ELF, 'rb') as orig_f:
         for fn in my_funcs:
             if fn not in func_data:
@@ -68,6 +70,41 @@ def main():
             if (insns[-1] == RET and
                 (insns[-3] & LDP_MASK) == LDP_BITS and
                 (insns[-2] & 0x1F) == 0):
+                needs_swap.append(mangled)
+
+    needs_swap_set = set(needs_swap)
+
+    # Method 2: Direct comparison — for each compiled function in batch files,
+    # check if decomp has [mov Rd=0] [ldp] [ret] and original has [ldp] [mov] [ret].
+    # This catches cases where CSV size differs from actual function size,
+    # causing Method 1 to read wrong bytes from the original.
+    with open(ORIGINAL_ELF, 'rb') as orig_f:
+        for mangled, size, decomp_bytes, relocs in all_funcs:
+            if mangled in needs_swap_set:
+                continue
+            short_name = extract_short_name(mangled)
+            if short_name not in my_funcs:
+                continue
+            num = size // 4
+            if num < 3:
+                continue
+            d_insns = [struct.unpack('<I', decomp_bytes[i*4:i*4+4])[0] for i in range(num)]
+            # Decomp ends with [mov Rd=0] [ldp x29,x30] [ret]?
+            if not (d_insns[-1] == RET and
+                    (d_insns[-2] & LDP_MASK) == LDP_BITS and
+                    (d_insns[-3] & 0x1F) == 0):
+                continue
+            # Read original bytes at decomp size and verify swap pattern
+            orig_addr = resolve_addr(csv_lookup, source_addr_map, mangled, short_name, size)
+            if orig_addr is None:
+                continue
+            orig_vaddr = orig_addr - ELF_BASE if orig_addr >= ELF_BASE else orig_addr
+            orig_bytes = read_bytes_at(orig_f, orig_segments, orig_vaddr, size)
+            if orig_bytes is None:
+                continue
+            o_insns = [struct.unpack('<I', orig_bytes[i*4:i*4+4])[0] for i in range(num)]
+            # Original has swapped order: [ldp] [mov] [ret]?
+            if o_insns[-3] == d_insns[-2] and o_insns[-2] == d_insns[-3]:
                 needs_swap.append(mangled)
 
     out = PROJECT_ROOT / 'build' / 'epilogue_swap_list.txt'

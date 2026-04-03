@@ -126,7 +126,7 @@ s64 *FUN_7103541c00(u64 param_1, s64 param_2)
 }
 
 // 0x710335a5fc -- wrapper: FUN_71037a1cc0(p1, p2, 0xffffffff, 1) (180 bytes)
-u64 FUN_710335a5fc(u64 param_1, u64 param_2)
+u32 FUN_710335a5fc(u64 param_1, u64 param_2)
 {
     FUN_71037a1cc0(param_1, param_2, 0xffffffff, 1);
     return 0;

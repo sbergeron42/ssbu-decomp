@@ -42,14 +42,14 @@ extern u8 DAT_710593aae0[];
 // ---- Functions ---------------------------------------------------------------
 
 // 0x710335d314 -- vtable dispatch at offset 0x280 (104 bytes)
-u64 FUN_710335d314(s64 *param_1)
+u32 FUN_710335d314(s64 *param_1)
 {
     (*(void (*)(s64 *))(*(s64 *)(*param_1 + 0x280)))(param_1);
     return 0;
 }
 
 // 0x7103366688 -- vtable dispatch at offset 8 (104 bytes)
-u64 FUN_7103366688(s64 *param_1)
+u32 FUN_7103366688(s64 *param_1)
 {
     (*(void (*)(s64 *))(*(s64 *)(*param_1 + 8)))(param_1);
     return 0;
