@@ -40,6 +40,16 @@ Batches e3-028 through e3-041 committed (2026-04-02):
 ALL simple framed_vtable_call thunks in N-quality are now written.
 Next: look for other compilable patterns in remaining N-quality (0x7103 range)
 
+### Progress (session 4)
+Batch e3-042 committed (2026-04-02):
+- e3-042: 10 framed u64 wrappers (0x71033011cc + 0x71037162f0-0x7103720e00)
+  - 7 nn::nfp API wrappers (add x0,x0,#0x84 + and x0,x0,#0xffffffff)
+  - 1 pass-through (FUN_71033011cc → FUN_7103300dd0)
+  - 2 param_2+0xc reindex wrappers (FUN_7103720de0, FUN_7103720e00)
+  - All use & 0xffffffffULL to force and-x0-0xffffffff (not mov-w0-w0)
+  - Targets declared as FUN_71039c7xxx so linker PROVIDE resolves BL correctly
+  - build.bat fix_prologue.py fixes mov-x29-sp ordering for all .o files
+
 ### Rules
 - ONLY create NEW files named src/app/fun_batch_e3_*.cpp
 - Do NOT edit any existing files
