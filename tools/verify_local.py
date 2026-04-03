@@ -124,12 +124,12 @@ def build_incremental():
         if objs:
             subprocess.run(["python", str(fix_script)] + objs, capture_output=True)
 
-    # Generate linker script for address-matched layout
+    # Generate address-specific linker script (for ADRP correctness)
     gen_ld = PROJECT_ROOT / "tools" / "gen_linker_script.py"
     linker_script = build_dir / "decomp.ld"
     subprocess.run(["python", str(gen_ld)], capture_output=True)
 
-    # Link with linker script for correct symbol placement
+    # Link with address-specific linker script
     obj_files = list(build_dir.glob("*.o"))
     cmd = [LLD, "-T", str(linker_script), "-o", str(DECOMP_ELF),
            "--unresolved-symbols=ignore-all",
@@ -137,8 +137,43 @@ def build_incremental():
            "--noinhibit-exec"] + [str(o) for o in obj_files]
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
-        print(f"  Link error: {result.stderr[:500]}")
-        return False
+        stderr_lines = result.stderr.split('\n')
+        real_errors = [l for l in stderr_lines if 'error:' in l and 'no space on device' not in l
+                       and 'duplicate symbol' not in l]
+        dup_errors = [l for l in stderr_lines if 'duplicate symbol' in l]
+        if dup_errors:
+            print(f"  Link error (duplicate symbols): {dup_errors[0]}")
+            return False
+        if real_errors:
+            print(f"  Link error: {real_errors[0]}")
+            return False
+        # Only 'no space on device' — fall back to flat layout (Windows mmap limitation)
+        print("  Address-specific link failed (mmap limit), falling back to flat layout...")
+        flat_ld = build_dir / "decomp_flat.ld"
+        flat_content = (
+            "SECTIONS {\n"
+            "  . = 0x7100000000;\n"
+            "  .text : { *(.text .text.*) }\n"
+            "  .rodata : { *(.rodata .rodata.*) }\n"
+            "  .data : { *(.data .data.*) }\n"
+            "  .bss : { *(.bss .bss.*) }\n"
+            "  /DISCARD/ : { *(.dynsym) *(.gnu.hash) *(.dynstr) *(.hash)\n"
+            "               *(.dynamic) *(.rela.dyn) *(.rela.plt) *(.got) *(.got.plt)\n"
+            "               *(.comment) *(.note*) *(.eh_frame*) }\n"
+            "}\n"
+        )
+        with open(flat_ld, 'w') as f:
+            f.write(flat_content)
+        cmd2 = [LLD, "-T", str(flat_ld), "-o", str(DECOMP_ELF),
+                "--unresolved-symbols=ignore-all",
+                "--no-undefined-version", "-nostdlib",
+                "--noinhibit-exec"] + [str(o) for o in obj_files]
+        result2 = subprocess.run(cmd2, capture_output=True, text=True)
+        if result2.returncode != 0:
+            print(f"  Link error (flat): {result2.stderr[:500]}")
+            return False
+        print("  Linked OK (flat layout — ADRP may be approximate)")
+        return True
 
     print("  Linked OK")
     return True

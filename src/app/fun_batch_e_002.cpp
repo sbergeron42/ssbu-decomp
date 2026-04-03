@@ -73,6 +73,7 @@ void FUN_71000d5ea0(s64 *param_1)
     FUN_7100187f50();
     *param_1 = (s64)(PTR_DAT_71052a4220 + 0x10);
 }
+
 // FUN_71000500a0 — TODO: decompile
 
 // 0x71000e8240

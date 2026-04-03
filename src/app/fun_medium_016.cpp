@@ -58,35 +58,6 @@ u32 FUN_7100004270(s64 param_1, s32 param_2)
     return (u32)(0 < (s32)uVar1) & uVar1;
 }
 
-// 7100004720 -- iterate curl hash, return first non-null element data
-u64 FUN_7100004720(u64 param_1)
-{
-    u64* puVar2;
-    u8 auStack_28[24];
-    Curl_hash_start_iterate(param_1, auStack_28);
-    do {
-        s64 lVar1 = Curl_hash_next_element(auStack_28);
-        if (lVar1 == 0)
-            return 0;
-        puVar2 = *(u64**)(*(s64*)(lVar1 + 0x18) + 0x10);
-    } while (puVar2 == nullptr);
-    return *puVar2;
-}
-
-// 7100005a10 -- conditional pointer move, call disconnect
-s32 FUN_7100005a10(s64 param_1)
-{
-    if (*(s64*)(param_1 + 0xa48) != 0) {
-        *(s64*)(param_1 + 0x70) = *(s64*)(param_1 + 0xa48);
-        *(u64*)(param_1 + 0xa48) = 0;
-    }
-    s32 iVar1 = FUN_710001f100(param_1);
-    if (iVar1 != 0) {
-        Curl_disconnect(param_1, 0);
-    }
-    return iVar1;
-}
-
 // 7100015110 -- reset timer fields using curlx_tvnow
 void FUN_7100015110(s64 param_1)
 {

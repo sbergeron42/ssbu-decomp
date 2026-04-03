@@ -62,64 +62,6 @@ extern u8  PTR_DAT_71052a2510[];
 extern u8  PTR_DAT_71052a2530[];
 extern void* PTR_LAB_71052a1240;
 
-// ---- Simple wrappers / comparisons ----------------------------------------
-
-// 7100005878 -- memcmp: return 1 if equal, 0 if not
-u64 FUN_7100005878(void* param_1, u64 param_2, void* param_3)
-{
-    s32 iVar1 = memcmp(param_1, param_3, param_2);
-    if (iVar1 != 0)
-        return 0;
-    return 1;
-}
-
-// 710004f50c -- strcmp at +0x10 vs +0x18, return 1 if equal
-u64 FUN_710004f50c(s64 param_1, s64 param_2)
-{
-    s32 iVar1 = strcmp(*(const char**)(param_1 + 0x10), *(const char**)(param_2 + 0x18));
-    if (iVar1 != 0)
-        return 0;
-    return 1;
-}
-
-// 710004f57c -- identical to FUN_710004f50c
-u64 FUN_710004f57c(s64 param_1, s64 param_2)
-{
-    s32 iVar1 = strcmp(*(const char**)(param_1 + 0x10), *(const char**)(param_2 + 0x18));
-    if (iVar1 != 0)
-        return 0;
-    return 1;
-}
-
-// ---- libcurl helpers -------------------------------------------------------
-
-// 7100005b40 -- conditional Curl_hash_destroy + clear flag
-void FUN_7100005b40()
-{
-    if (DAT_71052a80f8 == '\x01') {
-        Curl_hash_destroy(DAT_71052a8100);
-        DAT_71052a80f8 = '\0';
-    }
-}
-
-// 710000e730 -- FUN_7100026170 dispatch with conditional FUN_7100004200
-s32 FUN_710000e730(u64 param_1, u64 param_2)
-{
-    s32 iVar1 = FUN_7100026170(param_1, 0, param_2);
-    if (iVar1 != 0)
-        FUN_7100004200(param_1, 1);
-    return iVar1;
-}
-
-// 7100017580 -- FUN_71000272b0 result check; conditionally free param_1
-s64 FUN_7100017580(u64 param_1, s64 param_2)
-{
-    s64 lVar1 = FUN_71000272b0();
-    if ((param_2 != 0) && (lVar1 == 0))
-        Curl_SigloFree(param_1);
-    return lVar1;
-}
-
 // ---- [[noreturn]] abort wrappers ------------------------------------------
 
 // 7100027950
@@ -148,32 +90,6 @@ u64 FUN_7100027110(u32* param_1)
     FUN_71000067e0(param_1 + 6, PTR_LAB_71052a1240);
     *param_1 = 1;
     return 0;
-}
-
-// 710004ad50 -- conditional: init local buffer, call two subs
-void FUN_710004ad50(s64 param_1, u64 param_2, u32 param_3)
-{
-    u8 auStack_48[40];
-    if (*(s64*)(param_1 + 0x18) != 0) {
-        FUN_7100059f90(auStack_48, param_2, param_1);
-        FUN_7100059760(*(u64*)(param_1 + 0x18), auStack_48, param_3 & 1);
-    }
-}
-
-// ---- nn::ui2d Pane vtable init helpers ------------------------------------
-
-// 7100043160 -- call FUN_7100057350, set vtable to PTR+0x10
-void FUN_7100043160(s64* param_1, u64 param_2, u64 param_3, u64 param_4)
-{
-    FUN_7100057350(param_1, 0, 0, param_2, param_4);
-    *param_1 = (s64)(PTR_DAT_71052a2510 + 0x10);
-}
-
-// 7100043310 -- call FUN_7100057350, set vtable to PTR+0x10 (different vtable)
-void FUN_7100043310(s64* param_1, u64 param_2, u64 param_3, u64 param_4)
-{
-    FUN_7100057350(param_1, 0, 0, param_2, param_4);
-    *param_1 = (s64)(PTR_DAT_71052a2530 + 0x10);
 }
 
 // ---- __cxa_guard_acquire singleton init patterns --------------------------

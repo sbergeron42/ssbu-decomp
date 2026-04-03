@@ -21,18 +21,6 @@ extern u8  PTR_DAT_71052a2898[];   // inner data  (shared)
 extern u8  PTR_DAT_71052a28b0[];   // outer guard (FUN_710007b8d0)
 extern u8  PTR_DAT_71052a28b8[];   // outer data  (FUN_710007b8d0)
 
-// ---- Simple vtable call + conditional return -----------------------------
-
-// 71000626a0 -- vtable call at +0x50 then return param_1[0x28] or 0
-s64 FUN_71000626a0(s64* param_1, s32 param_2)
-{
-    (*(void(**)())(*(s64*)param_1 + 0x50))();
-    if (param_2 != 0) {
-        return 0;
-    }
-    return param_1[0x28];
-}
-
 // ---- Constructor + vtable override ----------------------------------------
 
 // 71000d31d0 -- call base ctor, zero field, set vtable 2f70
@@ -99,15 +87,6 @@ u8* FUN_710007b8d0()
         }
     }
     return PTR_DAT_71052a28b8;
-}
-
-// ---- Function pointer callback -------------------------------------------
-
-// 710007a9d0 -- call param_2 with two offsets from param_1, then store -1
-void FUN_710007a9d0(s64 param_1, void (*param_2)(s64, s64))
-{
-    param_2(param_1 + 0x408, param_1 + 0x390);
-    *(u64*)(param_1 + 0x408) = 0xffffffffffffffff;
 }
 
 // ---- Curl connection info log --------------------------------------------

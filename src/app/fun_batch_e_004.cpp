@@ -56,6 +56,7 @@ s64 FUN_7100194310(void)
     }
     return lVar2;
 }
+
 // 0x7100179ab0 -- alloc 0xa0, init FUN_710017ada0
 s64 FUN_7100179ab0(void)
 {
@@ -167,6 +168,7 @@ s64 FUN_7100194710(void)
     }
     return lVar2;
 }
+
 // ---- Other small functions --------------------------------------------------
 
 // 0x710065fa64 -- abort stub

@@ -76,6 +76,7 @@ u64 FUN_7100174f00(s64 param_1)
     }
     return 0;
 }
+
 // ---- InetAddress helpers -------------------------------------------------
 
 // 71001800a0 -- double IsValid check, return compare result

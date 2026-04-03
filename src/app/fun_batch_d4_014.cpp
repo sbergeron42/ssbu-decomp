@@ -40,7 +40,204 @@ namespace nn { namespace detail {
 }}
 
 // ---- Functions ---------------------------------------------------------------
-// FUN_7100037cb0 — deduped to fun_medium_001.cpp
+
+// 0x7100031330 — init struct: byte flag, packed const, &DAT_100000001 ptr at +0x14
+void FUN_7100031330(s64 param_1)
+{
+    *(u8 *)(param_1 + 1) = 2;
+    *(u64 *)(param_1 + 2) = 0x1000100000000ULL;
+    *(u8 **)(param_1 + 0x14) = &DAT_100000001;
+    *(u64 *)(param_1 + 0xc) = 0;
+    *(u64 *)(param_1 + 0x1c) = 1;
+}
+
+// 0x71000313f0 — init u64* struct with &DAT_100000001 pointer at index 2
+void FUN_71000313f0(u64 *param_1)
+{
+    param_1[2] = (u64)&DAT_100000001;
+    *param_1 = 0;
+    param_1[1] = 0x100000000ULL;
+    *(u16 *)(param_1 + 3) = 0;
+    *(u64 *)((s64)param_1 + 0x1c) = 0x100000000ULL;
+}
+
+// 0x7100031410 — init u64* struct with &DAT_100000001 pointer at index 3
+void FUN_7100031410(u64 *param_1)
+{
+    param_1[2] = 0;
+    param_1[3] = (u64)&DAT_100000001;
+    *(u32 *)(param_1 + 4) = 1;
+    *param_1 = 0;
+    param_1[1] = 0;
+    *(u16 *)((s64)param_1 + 0x24) = 0;
+    param_1[5] = 0x100000000ULL;
+}
+
+// 0x71000316b0 — decode mode [1,2,3] using param_2/param_3 bit0 flags
+u32 FUN_71000316b0(s32 param_1, u64 param_2, u64 param_3)
+{
+    u32 uVar1;
+    u32 uVar2;
+
+    if (param_1 == 3) {
+        return 2;
+    }
+    if (param_1 == 2) {
+        uVar2 = 6;
+        uVar1 = 7;
+        if ((param_3 & 1) == 0) {
+            uVar2 = 1;
+            uVar1 = 5;
+        }
+        if ((param_2 & 1) != 0) {
+            uVar2 = uVar1;
+        }
+        return uVar2;
+    }
+    if (param_1 != 1) {
+        nn::detail::UnexpectedDefaultImpl("", "", 0);
+    }
+    uVar1 = 4;
+    if ((param_2 & 1) == 0) {
+        uVar1 = 0;
+    }
+    return uVar1;
+}
+
+// 0x7100037790 — table lookup in DAT_71044705bc, stride 8, index = param_1 & 0xffffffff
+u32 FUN_7100037790(u64 param_1)
+{
+    return *(u32 *)(&DAT_71044705bc + (param_1 & 0xffffffff) * 8);
+}
+
+// 0x7100037cb0 — singleton init: zero 9 u64 globals, return &DAT_71052aa338
+u64 *FUN_7100037cb0(void)
+{
+    s32 iVar1;
+
+    if (((DAT_71052aa330 & 1) == 0) && (iVar1 = __cxa_guard_acquire(&DAT_71052aa330), iVar1 != 0)) {
+        DAT_71052aa370 = 0;
+        DAT_71052aa378 = 0;
+        DAT_71052aa360 = 0;
+        DAT_71052aa368 = 0;
+        DAT_71052aa338 = 0;
+        DAT_71052aa350 = 0;
+        DAT_71052aa358 = 0;
+        DAT_71052aa340 = 0;
+        DAT_71052aa348 = 0;
+        __cxa_guard_release(&DAT_71052aa330);
+    }
+    return &DAT_71052aa338;
+}
+
+// 0x71000380b0 — check nested ptr: if [lVar1+0x30] != [lVar1+0x20], clear; else call FUN_71000339b0
+void FUN_71000380b0(s64 param_1)
+{
+    s64 lVar1;
+
+    lVar1 = *(s64 *)(param_1 + 0x28);
+    if (*(s64 *)(lVar1 + 0x30) != *(s64 *)(lVar1 + 0x20)) {
+        *(u64 *)(lVar1 + 0x30) = 0;
+        return;
+    }
+    FUN_71000339b0();
+    *(u64 *)(lVar1 + 0x30) = 0;
+}
+
+// 0x7100038120 — zero-fill 15 u64 fields (out-of-order sequence)
+void FUN_7100038120(u64 *param_1)
+{
+    param_1[0xd] = 0;
+    param_1[0xe] = 0;
+    *param_1 = 0;
+    param_1[0xb] = 0;
+    param_1[0xc] = 0;
+    param_1[9] = 0;
+    param_1[10] = 0;
+    param_1[7] = 0;
+    param_1[8] = 0;
+    param_1[5] = 0;
+    param_1[6] = 0;
+    param_1[3] = 0;
+    param_1[4] = 0;
+    param_1[1] = 0;
+    param_1[2] = 0;
+}
+
+// 0x7100039e30 — zero-fill 9 u64 fields
+void FUN_7100039e30(u64 *param_1)
+{
+    param_1[7] = 0;
+    param_1[8] = 0;
+    *param_1 = 0;
+    param_1[5] = 0;
+    param_1[6] = 0;
+    param_1[3] = 0;
+    param_1[4] = 0;
+    param_1[1] = 0;
+    param_1[2] = 0;
+}
+
+// 0x710003a0e0 — zero-fill 27 u64 fields (out-of-order sequence)
+void FUN_710003a0e0(u64 *param_1)
+{
+    param_1[0x19] = 0;
+    param_1[0x1a] = 0;
+    *param_1 = 0;
+    param_1[0x17] = 0;
+    param_1[0x18] = 0;
+    param_1[0x15] = 0;
+    param_1[0x16] = 0;
+    param_1[0x13] = 0;
+    param_1[0x14] = 0;
+    param_1[0x11] = 0;
+    param_1[0x12] = 0;
+    param_1[0xf] = 0;
+    param_1[0x10] = 0;
+    param_1[0xd] = 0;
+    param_1[0xe] = 0;
+    param_1[0xb] = 0;
+    param_1[0xc] = 0;
+    param_1[9] = 0;
+    param_1[10] = 0;
+    param_1[7] = 0;
+    param_1[8] = 0;
+    param_1[5] = 0;
+    param_1[6] = 0;
+    param_1[3] = 0;
+    param_1[4] = 0;
+    param_1[1] = 0;
+    param_1[2] = 0;
+}
+
+// 0x710003a240 — zero-fill 9 u64 fields
+void FUN_710003a240(u64 *param_1)
+{
+    param_1[7] = 0;
+    param_1[8] = 0;
+    *param_1 = 0;
+    param_1[5] = 0;
+    param_1[6] = 0;
+    param_1[3] = 0;
+    param_1[4] = 0;
+    param_1[1] = 0;
+    param_1[2] = 0;
+}
+
+// 0x710003a3c0 — zero-fill 9 u64 fields
+void FUN_710003a3c0(u64 *param_1)
+{
+    param_1[7] = 0;
+    param_1[8] = 0;
+    *param_1 = 0;
+    param_1[5] = 0;
+    param_1[6] = 0;
+    param_1[3] = 0;
+    param_1[4] = 0;
+    param_1[1] = 0;
+    param_1[2] = 0;
+}
+
 // 0x71000a6610 — check 8 mask/value pairs at param_1+0x1188..+0x11a4, return matching u64
 u64 FUN_71000a6610(s64 param_1, u64 param_2)
 {

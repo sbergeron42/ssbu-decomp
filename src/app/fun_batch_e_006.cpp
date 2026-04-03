@@ -71,6 +71,7 @@ void FUN_7100154200(s64 param_1)
     *(u16 *)(param_1 + 0x2c) = 0;
     *(u64 *)(param_1 + 8) = 0;
 }
+
 // 0x71001ce780 -- strcpy "Encryption Error" if buffer large enough
 u64 FUN_71001ce780(u64 param_1, u64 param_2, char *param_3, u64 param_4)
 {
@@ -107,6 +108,7 @@ void FUN_71001e1710(u64 param_1, s64 param_2, u64 param_3)
     local_14 = 0x10001;
     FUN_71001b4200(param_1, &local_14);
 }
+
 // 0x71004f6590 -- empty CXA guard, return byte
 u8 FUN_71004f6590(void)
 {
@@ -124,6 +126,7 @@ void FUN_710065f8a8(void)
 {
     abort();
 }
+
 // 0x710065f65c -- abort stub
 void FUN_710065f65c(void)
 {
@@ -202,6 +205,7 @@ u64 FUN_71001e0070(s64 param_1, u64 param_2)
     *(u8 *)(param_1 + 0x69) = 0;
     return 1;
 }
+
 // 0x7100186580 -- vtable ptr + list head init
 void FUN_7100186580(s64 *param_1)
 {

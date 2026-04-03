@@ -46,6 +46,7 @@ u32 FUN_710022e510(s64 param_1)
   *(s64 *)(param_1 + 0x18) = lVar2 + 4;
   return uVar3;
 }
+
 // 0x71004794b0
 void FUN_71004794b0(s64 param_1, u32 param_2)
 {

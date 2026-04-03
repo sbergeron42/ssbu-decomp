@@ -314,49 +314,6 @@ u8* FUN_7100065380()
     return PTR_DAT_71052a27c0;
 }
 
-// ---- nn::ui2d helpers -----------------------------------------------------
-
-// 71000666b0 -- string dup: allocate sVar1+1 bytes, strncpy, return ptr
-char* FUN_71000666b0(char* param_1)
-{
-    u64 sVar1 = strlen(param_1);
-    char* dest = (char*)nn::ui2d::Layout::AllocateMemory(sVar1 + 1);
-    strncpy(dest, param_1, sVar1 + 1);
-    return dest;
-}
-
-// 7100065310 -- init struct: zero field[2], set vtable ptr, set field[1]=-1, string-dup field[2]
-void FUN_7100065310(s64* param_1, u64 param_2)
-{
-    param_1[2] = 0;
-    *param_1 = (s64)(PTR_DAT_71052a27b0 + 0x10);
-    param_1[1] = -1;
-    s64 lVar2 = (s64)FUN_71000666b0((char*)param_2);
-    param_1[2] = lVar2;
-}
-
-// 7100064450 -- conditional store u32 at +0x150 or +0x154, set flag bits
-void FUN_7100064450(u32 param_1, s64 param_2, s32 param_3)
-{
-    if (param_3 != 1) {
-        if (param_3 == 0)
-            **(u32**)(param_2 + 0x150) = param_1;
-        *(u16*)(param_2 + 0x114) |= 4;
-        return;
-    }
-    *(u32*)(*(s64*)(param_2 + 0x150) + 4) = param_1;
-    *(u16*)(param_2 + 0x114) |= 4;
-}
-
-// 7100078970 -- write float if changed, set dirty bit
-void FUN_7100078970(f32 param_1, s64 param_2)
-{
-    if (*(f32*)(param_2 + 0x150) != param_1) {
-        *(f32*)(param_2 + 0x150) = param_1;
-        *(u8*)(param_2 + 0x158) |= 1;
-    }
-}
-
 // 71000716dc -- compute (pi / acosf(-2/x + 1)) * 4 + 8
 s32 FUN_71000716dc(f32 param_1)
 {
@@ -365,48 +322,6 @@ s32 FUN_71000716dc(f32 param_1)
         return (s32)(*PTR_FloatPi_71052a27d8 / fVar1) * 4 + 8;
     }
     return 8;
-}
-
-// ---- vtable dispatch helpers -----------------------------------------------
-
-// 71000789e0 -- vtable call at +0x30 with 0, return result + 1
-s32 FUN_71000789e0(s64* param_1)
-{
-    s32 iVar1 = (*(s32(**)(s64*, s32))(*(s64*)param_1 + 0x30))(param_1, 0);
-    return iVar1 + 1;
-}
-
-// 7100078bc0 -- double-deref vtable at +0x20, return field*result
-f32 FUN_7100078bc0(s64 param_1)
-{
-    s32 iVar1 = (*(s32(**)(void))(*(s64*)*(s64**)(param_1 + 0x28) + 0x20))();
-    return *(f32*)(param_1 + 0xc) * (f32)iVar1;
-}
-
-// 7100078c00 -- double-deref vtable at +0x28, return field*result
-f32 FUN_7100078c00(s64 param_1)
-{
-    s32 iVar1 = (*(s32(**)(void))(*(s64*)*(s64**)(param_1 + 0x28) + 0x28))();
-    return *(f32*)(param_1 + 0x10) * (f32)iVar1;
-}
-
-// 7100078c40 -- double-deref vtable at +0x30, return field*result
-f32 FUN_7100078c40(s64 param_1)
-{
-    s32 iVar1 = (*(s32(**)(void))(*(s64*)*(s64**)(param_1 + 0x28) + 0x30))();
-    return *(f32*)(param_1 + 0x10) * (f32)iVar1;
-}
-
-// ---- Struct init helpers ---------------------------------------------------
-
-// 710005a5e0 -- zero first field, call sub x3, memset middle region
-void FUN_710005a5e0(u64* param_1)
-{
-    *param_1 = 0;
-    FUN_7100060e80(param_1 + 2);
-    FUN_7100060e80(param_1 + 4);
-    FUN_7100060e80(param_1 + 0xc);
-    memset(param_1 + 1, 0, 0x1a1);
 }
 
 // 71000b1d50 -- copy two 8-byte params to struct via stack locals

@@ -1,41 +1,37 @@
-# Worker: pool-b
+# Worker: pool-d
 
-## Model: Opus
+## Model: Sonnet
 
-## Task: Refactor game type files to use struct field access
+## Task: Batch MEDIUM decomp (0x7100-0x7101 range, continued)
 
-Replace raw reinterpret_cast offset patterns with proper struct member access in the game type source files (non-module, non-batch).
+Continue batch-decompiling MEDIUM-tier functions. Now use the struct headers in include/app/ for better readability.
 
-### Your files
-- src/app/FighterInformation.cpp (27 casts)
-- src/app/FighterManager.cpp
-- src/app/FighterEntry.cpp
-- src/app/FighterKineticEnergyMotion.cpp (13)
-- src/app/FighterKineticEnergyController.cpp (11)
-- src/app/FighterKineticEnergyGravity.cpp (10)
-- src/app/KineticEnergy.cpp
-- src/app/KineticEnergyNormal.cpp (20)
-- src/app/KineticEnergyRotNormal.cpp
-- src/app/BattleObjectSlow.cpp
-- src/app/BattleObjectWorld.cpp
-- src/app/BattleObjectManager.cpp
-- src/app/BossManager.cpp
-- src/app/StageManager.cpp
-- src/app/Item.cpp
-- src/app/ItemManager.cpp
-- src/app/Weapon.cpp
-- src/app/Article.cpp
+### Status: Deduplication complete (2025-04-03)
+Fixed 600+ duplicate symbol definitions across the following files:
+- Deleted: fun_batch_d4_009.cpp, fun_batch_d5_043-045.cpp (100% redundant)
+- Cleaned: fun_batch_d4_010-017, d4_020-026, fun_batch_e_002-006
+- Cleaned: fun_batch_test, fun_easy_000, fun_easy_004
+- Cleaned: fun_medium_000-022, fun_medium_abort
+- Fixed: gen_linker_script.py (removed 0x7200000000 metadata placement)
+- Fixed: verify_local.py (fallback flat layout for Windows mmap limit)
+Build now: 2217/2461 checked functions byte-identical (90.1%)
 
-### What to change
-Use the struct headers in include/app/:
-    #include "app/FighterInformation.h"
-Replace raw offset patterns with named field access.
+### Batch pipeline workflow
+1. Pick 20-30 uncompiled MEDIUM functions from data/fun_triage.csv in 0x7100-0x7101 range
+2. For each, call mcp__ghidra__decompile_function_by_address(address)
+3. Apply type fixups (undefined8->u64, uint->u32, etc.)
+4. Where possible, use BattleObjectModuleAccessor fields instead of raw offsets
+5. Write to src/app/fun_batch_d5_NNN.cpp with // 0x71XXXXXXXX address comments
+6. Build, verify, commit, repeat
 
-### Critical rule
-After EACH file, rebuild and verify: cmd /c build.bat && python tools/verify_all.py --summary
-If verified drops, REVERT and move on.
+### Using structs
+If a function takes BattleObjectModuleAccessor* as first param:
+    #include "app/BattleObjectModuleAccessor.h"
+    void func(app::BattleObjectModuleAccessor* acc) {
+        auto* m = acc->camera_module;  // instead of *(void**)((u8*)acc + 0x60)
+    }
 
 ### Rules
-- ONLY edit files listed above
-- Do NOT edit modules/ (done), fun_batch/fun_region (pool-a), or data files (pool-c)
-- Do NOT modify include/ headers, tools/, or data/
+- ONLY create NEW files named src/app/fun_batch_d5_*.cpp
+- Do NOT edit any existing files (exception: cleanup of duplicates as done above)
+- Do NOT modify data/functions.csv

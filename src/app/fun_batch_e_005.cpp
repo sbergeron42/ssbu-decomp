@@ -50,6 +50,7 @@ void FUN_71001e59e0(s64 param_1, u32 param_2)
     FUN_71001bee30(*(u64 *)(param_1 + 8), param_2);
     *(u8 *)(param_1 + 0x69) = 0;
 }
+
 // 0x71001f3690 -- conditional init then dispatch
 void FUN_71001f3690(u64 param_1, s64 param_2)
 {
@@ -58,6 +59,7 @@ void FUN_71001f3690(u64 param_1, s64 param_2)
     }
     FUN_71001b0ab0(param_1, (const char *)*(u64 *)(param_2 + 0x60));
 }
+
 // 0x7100251110 -- wrapper: FUN_7100251150(param_1+0x140, ...) & 1
 u32 FUN_7100251110(s64 param_1, u64 param_2, u64 param_3, u64 param_4, u64 param_5)
 {
@@ -108,6 +110,7 @@ u64 FUN_71002b3e80(u64 param_1)
     uVar3 = FUN_71002babf0(uVar2, 1);
     return uVar3;
 }
+
 // 0x7100254160 -- copy byte field, conditional copy via FUN_710170de70
 s64 FUN_7100254160(s64 param_1, s64 param_2)
 {
@@ -174,6 +177,7 @@ u64 FUN_7100223fa0(u64 param_1, u8 *param_2, s64 param_3)
     }
     return 0;
 }
+
 // 0x71001b2f70 -- conditional update via FUN_71001b47e0
 s64 FUN_71001b2f70(s64 param_1, s64 param_2)
 {

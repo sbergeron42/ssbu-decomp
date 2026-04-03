@@ -34,8 +34,6 @@ extern "C" void __cxa_guard_release(u64 *);
 
 // ---- Functions ---------------------------------------------------------------
 
-// FUN_7100156720 — deduped to fun_batch_d3_005.cpp
-
 // 0x71001e1770 — map error code (param_2) to Result constant; default: copy param_3 into param_1
 void FUN_71001e1770(u64 *param_1, u32 param_2, u64 *param_3)
 {

@@ -88,6 +88,7 @@ void FUN_71002b4ae0(u64 *param_1)
     FUN_71002bf040(*param_1);
     *param_1 = 0;
 }
+
 // 0x7100cec330 -- nested vtable call, return bool
 bool FUN_7100cec330(u64 param_1, s64 param_2)
 {
