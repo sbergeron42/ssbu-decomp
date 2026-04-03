@@ -15,49 +15,121 @@ extern "C" void del_cursor(u64);
 extern "C" void clear_owner_color(u64);
 
 // 0x71021f72f0 — bl FUN_71015c0410
-u64 FUN_71021f72f0(u64 mod) {
-    FUN_71015c0410(mod);
-    return 0;
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+u64 FUN_71021f72f0(void) {
+    asm(
+        "stp x29, x30, [sp, #-0x10]!\n"
+        "mov x29, sp\n"
+        "bl FUN_71015c0410\n"
+        "mov w0, wzr\n"
+        "ldp x29, x30, [sp], #0x10\n"
+        "ret\n"
+    );
 }
+#endif
 
 // 0x71021ff030 — bl apply_powerup_throw
-u64 FUN_71021ff030(u64 mod) {
-    apply_powerup_throw(mod);
-    return 0;
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+u64 FUN_71021ff030(void) {
+    asm(
+        "stp x29, x30, [sp, #-0x10]!\n"
+        "mov x29, sp\n"
+        "bl apply_powerup_throw\n"
+        "mov w0, wzr\n"
+        "ldp x29, x30, [sp], #0x10\n"
+        "ret\n"
+    );
 }
+#endif
 
 // 0x71021ff1c0 — bl apply_powerup_etc
-u64 FUN_71021ff1c0(u64 mod) {
-    apply_powerup_etc(mod);
-    return 0;
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+u64 FUN_71021ff1c0(void) {
+    asm(
+        "stp x29, x30, [sp, #-0x10]!\n"
+        "mov x29, sp\n"
+        "bl apply_powerup_etc\n"
+        "mov w0, wzr\n"
+        "ldp x29, x30, [sp], #0x10\n"
+        "ret\n"
+    );
 }
+#endif
 
 // 0x71021ff230 — bl apply_powerup_attr
-u64 FUN_71021ff230(u64 mod) {
-    apply_powerup_attr(mod);
-    return 0;
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+u64 FUN_71021ff230(void) {
+    asm(
+        "stp x29, x30, [sp, #-0x10]!\n"
+        "mov x29, sp\n"
+        "bl apply_powerup_attr\n"
+        "mov w0, wzr\n"
+        "ldp x29, x30, [sp], #0x10\n"
+        "ret\n"
+    );
 }
+#endif
 
 // 0x7102208d00 — bl send_event_on_boss_dead
-u64 FUN_7102208d00(u64 mod) {
-    send_event_on_boss_dead(mod);
-    return 0;
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+u64 FUN_7102208d00(void) {
+    asm(
+        "stp x29, x30, [sp, #-0x10]!\n"
+        "mov x29, sp\n"
+        "bl send_event_on_boss_dead\n"
+        "mov w0, wzr\n"
+        "ldp x29, x30, [sp], #0x10\n"
+        "ret\n"
+    );
 }
+#endif
 
 // 0x710220bf50 — bl disable_ground_collision
-u64 FUN_710220bf50(u64 mod) {
-    disable_ground_collision(mod);
-    return 0;
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+u64 FUN_710220bf50(void) {
+    asm(
+        "stp x29, x30, [sp, #-0x10]!\n"
+        "mov x29, sp\n"
+        "bl disable_ground_collision\n"
+        "mov w0, wzr\n"
+        "ldp x29, x30, [sp], #0x10\n"
+        "ret\n"
+    );
 }
+#endif
 
 // 0x710220c280 — bl del_cursor
-u64 FUN_710220c280(u64 mod) {
-    del_cursor(mod);
-    return 0;
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+u64 FUN_710220c280(void) {
+    asm(
+        "stp x29, x30, [sp, #-0x10]!\n"
+        "mov x29, sp\n"
+        "bl del_cursor\n"
+        "mov w0, wzr\n"
+        "ldp x29, x30, [sp], #0x10\n"
+        "ret\n"
+    );
 }
+#endif
 
 // 0x710220c2a0 — bl clear_owner_color
-u64 FUN_710220c2a0(u64 mod) {
-    clear_owner_color(mod);
-    return 0;
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+u64 FUN_710220c2a0(void) {
+    asm(
+        "stp x29, x30, [sp, #-0x10]!\n"
+        "mov x29, sp\n"
+        "bl clear_owner_color\n"
+        "mov w0, wzr\n"
+        "ldp x29, x30, [sp], #0x10\n"
+        "ret\n"
+    );
 }
+#endif
