@@ -22,7 +22,7 @@ void FUN_71006ea040(s64 param_1, s64 param_2)
 }
 
 // 0x7101beed30 — call FUN_71017982b0 with hash constant, return 0
-u64 FUN_7101beed30(void)
+u32 FUN_7101beed30(void)
 {
     FUN_71017982b0(0x4bffff1be50309a6ULL);
     return 0;

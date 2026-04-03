@@ -109,7 +109,7 @@ u32 FUN_71013298b0(u64 param_1, s64 param_2)
 }
 
 // 0x7101661e20 — vtable +0x110 via *(param_2+0xe8), const 0x20000002
-u64 FUN_7101661e20(u64 param_1, s64 param_2)
+u32 FUN_7101661e20(u64 param_1, s64 param_2)
 {
     s64 *obj = *(s64 **)(param_2 + 0xe8);
     (*(void(**)(s64 *, u32))(*obj + 0x110))(obj, 0x20000002);

@@ -103,10 +103,10 @@ namespace app {
 // ---- sv_animcmd lua_bind wrappers ----------------------------------------
 
 // 0x7101fb2690 — second registration of EFFECT_GLOBAL
-u64 FUN_7101fb2690(lua_State *param_1) { app::sv_animcmd::EFFECT_GLOBAL(param_1); return 0; }
+u32 FUN_7101fb2690(lua_State *param_1) { app::sv_animcmd::EFFECT_GLOBAL(param_1); return 0; }
 
 // 0x7101fc3bb0
-u64 FUN_7101fc3bb0(lua_State *param_1) { app::sv_animcmd::SET_PLAY_INHIVIT(param_1); return 0; }
+u32 FUN_7101fc3bb0(lua_State *param_1) { app::sv_animcmd::SET_PLAY_INHIVIT(param_1); return 0; }
 
 // ---- Vtable dispatchers --------------------------------------------------
 

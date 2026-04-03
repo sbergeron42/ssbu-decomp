@@ -138,13 +138,13 @@ void FUN_710151f850(void) { FUN_71015030c0(*DAT_71052c2760); }
 // ---- lua_bind wrappers -------------------------------------------------------
 
 // 0x7101fb4160
-u64 FUN_7101fb4160(lua_State *p1)
+u32 FUN_7101fb4160(lua_State *p1)
 {
     app::sv_animcmd::EFFECT_REMOVE_ATTR(p1);
     return 0;
 }
 // 0x7101fba1b0
-u64 FUN_7101fba1b0(lua_State *p1)
+u32 FUN_7101fba1b0(lua_State *p1)
 {
     app::sv_animcmd::LAST_EFFECT_SET_DISABLE_SYSTEM_SLOW(p1);
     return 0;
@@ -228,7 +228,7 @@ u64 *FUN_710048a350(void)
 // ---- Vtable call returning 0 ------------------------------------------------
 
 // 0x710151a950 — vtable+0x10 on p2
-u64 FUN_710151a950(u64 p1, s64 *p2)
+u32 FUN_710151a950(u64 p1, s64 *p2)
 {
     (*(void(**)(s64*))(*p2 + 0x10))(p2);
     return 0;
@@ -259,13 +259,13 @@ u64 *FUN_71017f4b40(void)
 // ---- lua_bind wrappers -------------------------------------------------------
 
 // 0x7101fbdbb0
-u64 FUN_7101fbdbb0(lua_State *p1)
+u32 FUN_7101fbdbb0(lua_State *p1)
 {
     app::sv_animcmd::SCREEN_EFFECT_SLOW_WHOLE(p1);
     return 0;
 }
 // 0x7101fc26f0
-u64 FUN_7101fc26f0(lua_State *p1)
+u32 FUN_7101fc26f0(lua_State *p1)
 {
     app::sv_animcmd::FT_START_ADJUST_MOTION_FRAME_arg1(p1);
     return 0;
@@ -336,13 +336,13 @@ u64 *FUN_7101388960(void)
 // ---- lua_bind wrappers -------------------------------------------------------
 
 // 0x7101fb91e0
-u64 FUN_7101fb91e0(lua_State *p1)
+u32 FUN_7101fb91e0(lua_State *p1)
 {
     app::sv_animcmd::EFFECT_OFF_KIND(p1);
     return 0;
 }
 // 0x7101fc1e40
-u64 FUN_7101fc1e40(lua_State *p1)
+u32 FUN_7101fc1e40(lua_State *p1)
 {
     app::sv_animcmd::SLOW_OPPONENT(p1);
     return 0;

@@ -62,145 +62,145 @@ namespace app {
 // ---- Functions ---------------------------------------------------------------
 
 // 0x7101fbfaf0
-u64 FUN_7101fbfaf0(lua_State *param_1) { app::sv_animcmd::SET_RATE_ARTICLE(param_1); return 0; }
+u32 FUN_7101fbfaf0(lua_State *param_1) { app::sv_animcmd::SET_RATE_ARTICLE(param_1); return 0; }
 
 // 0x7101fbfd30
-u64 FUN_7101fbfd30(lua_State *param_1) { app::sv_animcmd::ADD_SPEED_NO_LIMIT(param_1); return 0; }
+u32 FUN_7101fbfd30(lua_State *param_1) { app::sv_animcmd::ADD_SPEED_NO_LIMIT(param_1); return 0; }
 
 // 0x7101fc0db0
-u64 FUN_7101fc0db0(lua_State *param_1) { app::sv_animcmd::SET_SPEED(param_1); return 0; }
+u32 FUN_7101fc0db0(lua_State *param_1) { app::sv_animcmd::SET_SPEED(param_1); return 0; }
 
 // 0x7101fc0dd0
-u64 FUN_7101fc0dd0(lua_State *param_1) { app::sv_animcmd::SET_SPEED_EX(param_1); return 0; }
+u32 FUN_7101fc0dd0(lua_State *param_1) { app::sv_animcmd::SET_SPEED_EX(param_1); return 0; }
 
 // 0x7101fc0df0
-u64 FUN_7101fc0df0(lua_State *param_1) { app::sv_animcmd::SET_SPEED_EX(param_1); return 0; }
+u32 FUN_7101fc0df0(lua_State *param_1) { app::sv_animcmd::SET_SPEED_EX(param_1); return 0; }
 
 // 0x7101fc0e10
-u64 FUN_7101fc0e10(lua_State *param_1) { app::sv_animcmd::SET_SPEED_EX(param_1); return 0; }
+u32 FUN_7101fc0e10(lua_State *param_1) { app::sv_animcmd::SET_SPEED_EX(param_1); return 0; }
 
 // 0x7101fc0e30
-u64 FUN_7101fc0e30(lua_State *param_1) { app::sv_animcmd::WHOLE_HIT(param_1); return 0; }
+u32 FUN_7101fc0e30(lua_State *param_1) { app::sv_animcmd::WHOLE_HIT(param_1); return 0; }
 
 // 0x7101fc0e50
-u64 FUN_7101fc0e50(lua_State *param_1) { app::sv_animcmd::HIT_NODE(param_1); return 0; }
+u32 FUN_7101fc0e50(lua_State *param_1) { app::sv_animcmd::HIT_NODE(param_1); return 0; }
 
 // 0x7101fc0fe0
-u64 FUN_7101fc0fe0(lua_State *param_1) { app::sv_animcmd::CAM_ZOOM_IN_arg5(param_1); return 0; }
+u32 FUN_7101fc0fe0(lua_State *param_1) { app::sv_animcmd::CAM_ZOOM_IN_arg5(param_1); return 0; }
 
 // 0x7101fc1000
-u64 FUN_7101fc1000(lua_State *param_1) { app::sv_animcmd::CAM_ZOOM_IN_arg6(param_1); return 0; }
+u32 FUN_7101fc1000(lua_State *param_1) { app::sv_animcmd::CAM_ZOOM_IN_arg6(param_1); return 0; }
 
 // 0x7101fc1020
-u64 FUN_7101fc1020(lua_State *param_1) { app::sv_animcmd::CAM_ZOOM_IN_FINAL(param_1); return 0; }
+u32 FUN_7101fc1020(lua_State *param_1) { app::sv_animcmd::CAM_ZOOM_IN_FINAL(param_1); return 0; }
 
 // 0x7101fc1140
-u64 FUN_7101fc1140(lua_State *param_1) { app::sv_animcmd::REQ_FINAL_START_CAMERA(param_1); return 0; }
+u32 FUN_7101fc1140(lua_State *param_1) { app::sv_animcmd::REQ_FINAL_START_CAMERA(param_1); return 0; }
 
 // 0x7101fc1160
-u64 FUN_7101fc1160(lua_State *param_1) { app::sv_animcmd::REQ_FINAL_START_CAMERA_arg3(param_1); return 0; }
+u32 FUN_7101fc1160(lua_State *param_1) { app::sv_animcmd::REQ_FINAL_START_CAMERA_arg3(param_1); return 0; }
 
 // 0x7101fc1180
-u64 FUN_7101fc1180(lua_State *param_1) { app::sv_animcmd::REQ_MOTION_CAMERA(param_1); return 0; }
+u32 FUN_7101fc1180(lua_State *param_1) { app::sv_animcmd::REQ_MOTION_CAMERA(param_1); return 0; }
 
 // 0x7101fc11a0
-u64 FUN_7101fc11a0(lua_State *param_1) { app::sv_animcmd::CHECK_FINISH_CAMERA(param_1); return 0; }
+u32 FUN_7101fc11a0(lua_State *param_1) { app::sv_animcmd::CHECK_FINISH_CAMERA(param_1); return 0; }
 
 // 0x7101fc12a0
-u64 FUN_7101fc12a0(lua_State *param_1) { app::sv_animcmd::QUAKE(param_1); return 0; }
+u32 FUN_7101fc12a0(lua_State *param_1) { app::sv_animcmd::QUAKE(param_1); return 0; }
 
 // 0x7101fc22c0
-u64 FUN_7101fc22c0(lua_State *param_1) { app::sv_animcmd::FT_MOTION_INTP_WAIT(param_1); return 0; }
+u32 FUN_7101fc22c0(lua_State *param_1) { app::sv_animcmd::FT_MOTION_INTP_WAIT(param_1); return 0; }
 
 // 0x7101fc22e0
-u64 FUN_7101fc22e0(lua_State *param_1) { app::sv_animcmd::FT_MOTION_INTP_WAIT_ITEM(param_1); return 0; }
+u32 FUN_7101fc22e0(lua_State *param_1) { app::sv_animcmd::FT_MOTION_INTP_WAIT_ITEM(param_1); return 0; }
 
 // 0x7101fc2300
-u64 FUN_7101fc2300(lua_State *param_1) { app::sv_animcmd::FT_MOTION_INTP_TURN_END(param_1); return 0; }
+u32 FUN_7101fc2300(lua_State *param_1) { app::sv_animcmd::FT_MOTION_INTP_TURN_END(param_1); return 0; }
 
 // 0x7101fc2320
-u64 FUN_7101fc2320(lua_State *param_1) { app::sv_animcmd::FT_MOTION_CHANGE_HAVE_ITEM(param_1); return 0; }
+u32 FUN_7101fc2320(lua_State *param_1) { app::sv_animcmd::FT_MOTION_CHANGE_HAVE_ITEM(param_1); return 0; }
 
 // 0x7101fc2b80
-u64 FUN_7101fc2b80(lua_State *param_1) { app::sv_animcmd::ATK_NO_REACTION_SEARCH_WITCH_TIME(param_1); return 0; }
+u32 FUN_7101fc2b80(lua_State *param_1) { app::sv_animcmd::ATK_NO_REACTION_SEARCH_WITCH_TIME(param_1); return 0; }
 
 // 0x7101fc2ba0
-u64 FUN_7101fc2ba0(lua_State *param_1) { app::sv_animcmd::FT_CATCH_STOP(param_1); return 0; }
+u32 FUN_7101fc2ba0(lua_State *param_1) { app::sv_animcmd::FT_CATCH_STOP(param_1); return 0; }
 
 // 0x7101fc2bc0
-u64 FUN_7101fc2bc0(lua_State *param_1) { app::sv_animcmd::FT_ADD_DAMAGE(param_1); return 0; }
+u32 FUN_7101fc2bc0(lua_State *param_1) { app::sv_animcmd::FT_ADD_DAMAGE(param_1); return 0; }
 
 // 0x7101fc2be0
-u64 FUN_7101fc2be0(lua_State *param_1) { app::sv_animcmd::RUMBLE_HIT(param_1); return 0; }
+u32 FUN_7101fc2be0(lua_State *param_1) { app::sv_animcmd::RUMBLE_HIT(param_1); return 0; }
 
 // 0x7101fc2c60
-u64 FUN_7101fc2c60(lua_State *param_1) { app::sv_animcmd::RUMBLE_FINAL_TARGET(param_1); return 0; }
+u32 FUN_7101fc2c60(lua_State *param_1) { app::sv_animcmd::RUMBLE_FINAL_TARGET(param_1); return 0; }
 
 // 0x7101fc2c80
-u64 FUN_7101fc2c80(lua_State *param_1) { app::sv_animcmd::RUMBLE_FINAL_OTHER(param_1); return 0; }
+u32 FUN_7101fc2c80(lua_State *param_1) { app::sv_animcmd::RUMBLE_FINAL_OTHER(param_1); return 0; }
 
 // 0x7101fc2e80
-u64 FUN_7101fc2e80(lua_State *param_1) { app::sv_animcmd::FT_START_CUTIN(param_1); return 0; }
+u32 FUN_7101fc2e80(lua_State *param_1) { app::sv_animcmd::FT_START_CUTIN(param_1); return 0; }
 
 // 0x7101fc2ea0
-u64 FUN_7101fc2ea0(lua_State *param_1) { app::sv_animcmd::FT_START_CUTIN_arg1(param_1); return 0; }
+u32 FUN_7101fc2ea0(lua_State *param_1) { app::sv_animcmd::FT_START_CUTIN_arg1(param_1); return 0; }
 
 // 0x7101fc2f20
-u64 FUN_7101fc2f20(lua_State *param_1) { app::sv_animcmd::FT_SET_FINAL_FEAR_FACE(param_1); return 0; }
+u32 FUN_7101fc2f20(lua_State *param_1) { app::sv_animcmd::FT_SET_FINAL_FEAR_FACE(param_1); return 0; }
 
 // 0x7101fc2f40
-u64 FUN_7101fc2f40(lua_State *param_1) { app::sv_animcmd::FT_UPDATE_FACE_MOTION(param_1); return 0; }
+u32 FUN_7101fc2f40(lua_State *param_1) { app::sv_animcmd::FT_UPDATE_FACE_MOTION(param_1); return 0; }
 
 // 0x7101fc2f60
-u64 FUN_7101fc2f60(lua_State *param_1) { app::sv_animcmd::FT_REQ_FINAL_AURA(param_1); return 0; }
+u32 FUN_7101fc2f60(lua_State *param_1) { app::sv_animcmd::FT_REQ_FINAL_AURA(param_1); return 0; }
 
 // 0x7101fc2f80
-u64 FUN_7101fc2f80(lua_State *param_1) { app::sv_animcmd::FT_REMOVE_FINAL_AURA(param_1); return 0; }
+u32 FUN_7101fc2f80(lua_State *param_1) { app::sv_animcmd::FT_REMOVE_FINAL_AURA(param_1); return 0; }
 
 // 0x7101fc3010
-u64 FUN_7101fc3010(lua_State *param_1) { app::sv_animcmd::FT_LEAVE_NEAR_OTTOTTO(param_1); return 0; }
+u32 FUN_7101fc3010(lua_State *param_1) { app::sv_animcmd::FT_LEAVE_NEAR_OTTOTTO(param_1); return 0; }
 
 // 0x7101fc3030
-u64 FUN_7101fc3030(lua_State *param_1) { app::sv_animcmd::FT_SHOOTING_ATTACK_GROUND_CHECK_NEW(param_1); return 0; }
+u32 FUN_7101fc3030(lua_State *param_1) { app::sv_animcmd::FT_SHOOTING_ATTACK_GROUND_CHECK_NEW(param_1); return 0; }
 
 // 0x7101fc3190
-u64 FUN_7101fc3190(lua_State *param_1) { app::sv_animcmd::PLAY_SE(param_1); return 0; }
+u32 FUN_7101fc3190(lua_State *param_1) { app::sv_animcmd::PLAY_SE(param_1); return 0; }
 
 // 0x7101fc31b0
-u64 FUN_7101fc31b0(lua_State *param_1) { app::sv_animcmd::PLAY_SE_NO_3D(param_1); return 0; }
+u32 FUN_7101fc31b0(lua_State *param_1) { app::sv_animcmd::PLAY_SE_NO_3D(param_1); return 0; }
 
 // 0x7101fc31d0
-u64 FUN_7101fc31d0(lua_State *param_1) { app::sv_animcmd::PLAY_SE_NO_3D_FORCE_AUTO_PITCH(param_1); return 0; }
+u32 FUN_7101fc31d0(lua_State *param_1) { app::sv_animcmd::PLAY_SE_NO_3D_FORCE_AUTO_PITCH(param_1); return 0; }
 
 // 0x7101fc31f0
-u64 FUN_7101fc31f0(lua_State *param_1) { app::sv_animcmd::PLAY_SE_REMAIN(param_1); return 0; }
+u32 FUN_7101fc31f0(lua_State *param_1) { app::sv_animcmd::PLAY_SE_REMAIN(param_1); return 0; }
 
 // 0x7101fc3210
-u64 FUN_7101fc3210(lua_State *param_1) { app::sv_animcmd::PLAY_STATUS(param_1); return 0; }
+u32 FUN_7101fc3210(lua_State *param_1) { app::sv_animcmd::PLAY_STATUS(param_1); return 0; }
 
 // 0x7101fc3230
-u64 FUN_7101fc3230(lua_State *param_1) { app::sv_animcmd::STOP_SE(param_1); return 0; }
+u32 FUN_7101fc3230(lua_State *param_1) { app::sv_animcmd::STOP_SE(param_1); return 0; }
 
 // 0x7101fc33b0
-u64 FUN_7101fc33b0(lua_State *param_1) { app::sv_animcmd::PLAY_STEP(param_1); return 0; }
+u32 FUN_7101fc33b0(lua_State *param_1) { app::sv_animcmd::PLAY_STEP(param_1); return 0; }
 
 // 0x7101fc33d0
-u64 FUN_7101fc33d0(lua_State *param_1) { app::sv_animcmd::PLAY_STEP_FLIPPABLE(param_1); return 0; }
+u32 FUN_7101fc33d0(lua_State *param_1) { app::sv_animcmd::PLAY_STEP_FLIPPABLE(param_1); return 0; }
 
 // 0x7101fc33f0
-u64 FUN_7101fc33f0(lua_State *param_1) { app::sv_animcmd::PLAY_LANDING_SE(param_1); return 0; }
+u32 FUN_7101fc33f0(lua_State *param_1) { app::sv_animcmd::PLAY_LANDING_SE(param_1); return 0; }
 
 // 0x7101fc3b30
-u64 FUN_7101fc3b30(lua_State *param_1) { app::sv_animcmd::PLAY_SEQUENCE(param_1); return 0; }
+u32 FUN_7101fc3b30(lua_State *param_1) { app::sv_animcmd::PLAY_SEQUENCE(param_1); return 0; }
 
 // 0x7101fc3b50
-u64 FUN_7101fc3b50(lua_State *param_1) { app::sv_animcmd::PLAY_DAMAGESTOP(param_1); return 0; }
+u32 FUN_7101fc3b50(lua_State *param_1) { app::sv_animcmd::PLAY_DAMAGESTOP(param_1); return 0; }
 
 // 0x7101fc3b70
-u64 FUN_7101fc3b70(lua_State *param_1) { app::sv_animcmd::PLAY_SEQUENCE_DAMAGESTOP(param_1); return 0; }
+u32 FUN_7101fc3b70(lua_State *param_1) { app::sv_animcmd::PLAY_SEQUENCE_DAMAGESTOP(param_1); return 0; }
 
 // 0x7101fc3b90
-u64 FUN_7101fc3b90(lua_State *param_1) { app::sv_animcmd::SET_TAKEOUT_SE(param_1); return 0; }
+u32 FUN_7101fc3b90(lua_State *param_1) { app::sv_animcmd::SET_TAKEOUT_SE(param_1); return 0; }
 
 // 0x7101fc3e90
-u64 FUN_7101fc3e90(lua_State *param_1) { app::sv_animcmd::PLAY_FLY_VOICE(param_1); return 0; }
+u32 FUN_7101fc3e90(lua_State *param_1) { app::sv_animcmd::PLAY_FLY_VOICE(param_1); return 0; }

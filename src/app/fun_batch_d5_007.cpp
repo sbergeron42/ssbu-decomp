@@ -35,22 +35,22 @@ namespace app {
 // ---- sv_kinetic_energy / sv_animcmd wrappers -----------------------------
 
 // 0x7101fa3060
-u64 FUN_7101fa3060(lua_State *param_1) { app::sv_kinetic_energy::set_motion_energy_update_flag(param_1); return 0; }
+u32 FUN_7101fa3060(lua_State *param_1) { app::sv_kinetic_energy::set_motion_energy_update_flag(param_1); return 0; }
 
 // 0x7101fc43d0
-u64 FUN_7101fc43d0(lua_State *param_1) { app::sv_animcmd::PLAY_ITEM_EMPTY_SE(param_1); return 0; }
+u32 FUN_7101fc43d0(lua_State *param_1) { app::sv_animcmd::PLAY_ITEM_EMPTY_SE(param_1); return 0; }
 
 // 0x7101fc7280
-u64 FUN_7101fc7280(lua_State *param_1) { app::sv_animcmd::THROW_ITEM(param_1); return 0; }
+u32 FUN_7101fc7280(lua_State *param_1) { app::sv_animcmd::THROW_ITEM(param_1); return 0; }
 
 // 0x7101fc73a0
-u64 FUN_7101fc73a0(lua_State *param_1) { app::sv_animcmd::THROW_ITEM_REFLET(param_1); return 0; }
+u32 FUN_7101fc73a0(lua_State *param_1) { app::sv_animcmd::THROW_ITEM_REFLET(param_1); return 0; }
 
 // 0x7101fc73c0
-u64 FUN_7101fc73c0(lua_State *param_1) { app::sv_animcmd::THROW_ITEM_OFFSET(param_1); return 0; }
+u32 FUN_7101fc73c0(lua_State *param_1) { app::sv_animcmd::THROW_ITEM_OFFSET(param_1); return 0; }
 
 // 0x7101fc73e0
-u64 FUN_7101fc73e0(lua_State *param_1) { app::sv_animcmd::THROW_ITEM_OFFSET_arg4(param_1); return 0; }
+u32 FUN_7101fc73e0(lua_State *param_1) { app::sv_animcmd::THROW_ITEM_OFFSET_arg4(param_1); return 0; }
 
 // ---- abort() thunks -------------------------------------------------------
 
@@ -177,7 +177,7 @@ u64 FUN_710164baf0(u64 param_1, s64 param_2)
 }
 
 // 0x710165a960 — double-deref: obj=*(param_2+0xe8), vtable +0xa0 with two consts
-u64 FUN_710165a960(u64 param_1, s64 param_2)
+u32 FUN_710165a960(u64 param_1, s64 param_2)
 {
     s64 *obj = *(s64 **)(param_2 + 0xe8);
     (*(void(**)(s64 *, u32, u32))(*(s64 *)obj + 0xa0))(obj, 0x50000000, 0x10000000);
@@ -192,7 +192,7 @@ bool FUN_710165c960(u64 param_1, s64 param_2)
 }
 
 // 0x710165e050 — same as 710165a960
-u64 FUN_710165e050(u64 param_1, s64 param_2)
+u32 FUN_710165e050(u64 param_1, s64 param_2)
 {
     s64 *obj = *(s64 **)(param_2 + 0xe8);
     (*(void(**)(s64 *, u32, u32))(*(s64 *)obj + 0xa0))(obj, 0x50000000, 0x10000000);
@@ -214,7 +214,7 @@ bool FUN_710166ec80(u64 param_1, s64 param_2)
 }
 
 // 0x7101674ba0 — same as 710165a960
-u64 FUN_7101674ba0(u64 param_1, s64 param_2)
+u32 FUN_7101674ba0(u64 param_1, s64 param_2)
 {
     s64 *obj = *(s64 **)(param_2 + 0xe8);
     (*(void(**)(s64 *, u32, u32))(*(s64 *)obj + 0xa0))(obj, 0x50000000, 0x10000000);

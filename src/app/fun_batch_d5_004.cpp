@@ -114,21 +114,21 @@ void FUN_7101523b40(void)
 // Pattern: call helper with *(param_1 - 8) + offset as argument
 
 // 0x7101f78db0 — FUN_71002f43c0(*(param_1 - 8) + 0x180)
-u64 FUN_7101f78db0(s64 param_1)
+u32 FUN_7101f78db0(s64 param_1)
 {
     FUN_71002f43c0(*(s64 *)(param_1 - 8) + 0x180);
     return 0;
 }
 
 // 0x7101f78dd0 — FUN_71002f4590(*(param_1 - 8) + 0x180)
-u64 FUN_7101f78dd0(s64 param_1)
+u32 FUN_7101f78dd0(s64 param_1)
 {
     FUN_71002f4590(*(s64 *)(param_1 - 8) + 0x180);
     return 0;
 }
 
 // 0x7101f78df0 — FUN_71002f4830(*(param_1 - 8) + 0x180)
-u64 FUN_7101f78df0(s64 param_1)
+u32 FUN_7101f78df0(s64 param_1)
 {
     FUN_71002f4830(*(s64 *)(param_1 - 8) + 0x180);
     return 0;
