@@ -1,5 +1,5 @@
 #include "app/BattleObjectModuleAccessor.h"
-#define AR(a) (*reinterpret_cast<void**>(reinterpret_cast<u8*>(a) + 0x98))
+#define AR(a) ((a)->article_module)
 #define VT(m) (*reinterpret_cast<void***>(m))
 namespace app::lua_bind {
 // Pure dispatchers only (skipping add_motion_partial which has 11 instructions)

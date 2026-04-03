@@ -1,5 +1,5 @@
 #include "app/BattleObjectModuleAccessor.h"
-#define CP(a) (*reinterpret_cast<void**>(reinterpret_cast<u8*>(a) + 0x138))
+#define CP(a) ((a)->capture_module)
 #define VT(m) (*reinterpret_cast<void***>(m))
 namespace app::lua_bind {
 bool CaptureModule__is_thrown_finish_impl(BattleObjectModuleAccessor* a) { auto* m=CP(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x50/8])(m); }

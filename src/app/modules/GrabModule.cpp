@@ -1,5 +1,5 @@
 #include "app/BattleObjectModuleAccessor.h"
-#define GM(a) (*reinterpret_cast<void**>(reinterpret_cast<u8*>(a) + 0x158))
+#define GM(a) ((a)->grab_module)
 #define VT(m) (*reinterpret_cast<void***>(m))
 namespace app::lua_bind {
 void GrabModule__clear_all_impl(BattleObjectModuleAccessor* a) { auto* m=GM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x50/8])(m); }

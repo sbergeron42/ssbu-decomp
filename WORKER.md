@@ -1,25 +1,52 @@
-# Worker: pool-c
+# Worker: pool-a
 
 ## Model: Opus
 
-## Task: Fix 2,395 non-matching functions using auto_fix_nonmatching.py + manual fixes
+## Task: Refactor module files A-G to use struct field access
 
-2,395 functions compile but do not byte-match. Use the auto-fixer tool first, then manually fix what it cannot.
+Replace raw pointer arithmetic with proper struct member access across module source files. The struct headers now exist in include/app/.
 
-### Step 1: Run the auto-fixer
-    python tools/auto_fix_nonmatching.py --apply --limit 100
-Review what it changed, rebuild, verify. If it works, run with higher limits.
+### What to change
+Replace patterns like:
+    auto* m = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x60);
+With:
+    auto* m = acc->camera_module;
 
-### Step 2: Manual fixes for remaining
-For functions the auto-fixer cannot handle:
-1. Run python tools/verify_all.py to get the non-matching list
-2. Use python tools/show_diff.py func_name for instruction-level diff
-3. Common fixes: swap u32/s32, u8/bool, void*/u64, add asm("") barriers
-4. Rebuild and verify after each batch
+And replace vtable casts like:
+    reinterpret_cast<void(*)(void*)>(VT(m)[0x48/8])(m);
+With:
+    reinterpret_cast<void(*)(void*)>((*reinterpret_cast<void***>(m))[0x48/8])(m);
+(keep vtable calls as-is for now, just fix the module access pattern)
+
+### Your files
+Refactor these source files (alphabetically A through G):
+- src/app/modules/AbsorberModule.cpp
+- src/app/modules/AreaModule.cpp
+- src/app/modules/ArticleModule.cpp
+- src/app/modules/AttackModule.cpp
+- src/app/modules/CancelModule.cpp
+- src/app/modules/CaptureModule.cpp
+- src/app/modules/CatchModule.cpp
+- src/app/modules/ColorBlendModule.cpp
+- src/app/modules/ComboModule.cpp
+- src/app/modules/ControlModule.cpp
+- src/app/modules/DamageModule.cpp
+- src/app/modules/EffectModule.cpp
+- src/app/modules/FighterAreaModuleImpl.cpp
+- src/app/modules/FighterControlModuleImpl.cpp
+- src/app/modules/GrabModule.cpp
+- src/app/modules/GroundModule.cpp
+
+### Critical rule
+After EACH file change, rebuild and verify matching is preserved:
+    cmd /c build.bat && python tools/verify_all.py --summary
+If verified count drops, REVERT that file and move on.
+
+### Include the header
+Add #include "app/BattleObjectModuleAccessor.h" at top of each file.
 
 ### Rules
-- Edit any src/app/*.cpp file EXCEPT modules/ (pool-a and pool-b territory)
-- Can edit tools/auto_fix_nonmatching.py to improve it
-- Do NOT modify data/functions.csv
+- ONLY edit files listed above
 - Do NOT edit include/ headers
+- Do NOT modify data/functions.csv or tools/
 - NEVER reduce verified count

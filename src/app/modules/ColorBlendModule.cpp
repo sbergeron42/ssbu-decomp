@@ -1,7 +1,7 @@
 #include "app/BattleObjectModuleAccessor.h"
 
 // ColorBlendModule -- accessor+0x70
-#define COLORBLEND_MODULE(acc) (*reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x70))
+#define COLORBLEND_MODULE(acc) ((acc)->color_blend_module)
 #define VTABLE(mod) (*reinterpret_cast<void***>(mod))
 
 namespace app::lua_bind {
