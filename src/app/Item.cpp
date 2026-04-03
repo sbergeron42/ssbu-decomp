@@ -5,7 +5,17 @@
 // Direct field reads: ldr wN,[x0,#off]; ret
 // add-return-pointer: add x0,x0,#off; ret
 
-struct Item;
+struct Item {
+    void** vtable;                   // +0x0
+    u8  pad_0x08[0x90];
+    u8  module_accessor_base[0x40];  // +0x98 (returned as void*)
+    void* status_module;             // +0xD8
+    u8  pad_0xE0[0x88];
+    void* link_module;               // +0x168
+    u8  pad_0x170[0xD8];
+    void* spec_handler;              // +0x248
+    u32 owner_id;                    // +0x250
+};
 struct LinkEventCaptureItem;
 struct LinkEventTouchItem;
 
@@ -44,12 +54,12 @@ void Item__action_impl(Item* item, u64 p1) {
 
 // 71020f4470 -- add x0,x0,#0x98; ret
 void* Item__item_module_accessor_impl(Item* item) {
-    return reinterpret_cast<u8*>(item) + 0x98;
+    return item->module_accessor_base;
 }
 
 // 71020f4670 -- ldr w0,[x0,#0x250]; ret
 u32 Item__owner_id_impl(Item* item) {
-    return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(item) + 0x250);
+    return item->owner_id;
 }
 
 // 71020f4600 -- if param_id > 2, return error hash; else tail-call FUN_71015b4e40
@@ -229,7 +239,7 @@ u32 Item__common_param_int_impl(Item* item, u32 param_id) {
 // 71020f4630 -- call vtable[0x18](item[0x248], item, param_id, &out); return out if ok else 0
 u32 Item__specialized_param_int_impl(Item* item, u32 param_id) {
     u32 out;
-    void* obj = *reinterpret_cast<void**>(reinterpret_cast<u8*>(item) + 0x248);
+    void* obj = item->spec_handler;
     bool ok = reinterpret_cast<bool(*)(void*, Item*, u32, u32*)>(VT(obj)[0x18/8])(obj, item, param_id, &out);
     return ok ? out : 0;
 }
@@ -238,15 +248,15 @@ u32 Item__specialized_param_int_impl(Item* item, u32 param_id) {
 //   if state==2 or (allow_had && state==8) → return 1
 //   else tail-call vtable[0x70](accessor+0x168, 4) as u32
 bool Item__is_had_impl(Item* item, u32 allow_had) {
-    void* obj = *reinterpret_cast<void**>(reinterpret_cast<u8*>(item) + 0xd8);
+    void* obj = item->status_module;
     u32 state = reinterpret_cast<u32(*)(void*)>(VT(obj)[0x110/8])(obj);
     if (state == 2) return true;
     if (allow_had & 1) {
-        void* obj2 = *reinterpret_cast<void**>(reinterpret_cast<u8*>(item) + 0xd8);
+        void* obj2 = item->status_module;
         state = reinterpret_cast<u32(*)(void*)>(VT(obj2)[0x110/8])(obj2);
         if (state == 8) return true;
     }
-    void* m = *reinterpret_cast<void**>(reinterpret_cast<u8*>(item) + 0x168);
+    void* m = item->link_module;
     return reinterpret_cast<bool(*)(void*, u32)>(VT(m)[0x70/8])(m, 4);
 }
 

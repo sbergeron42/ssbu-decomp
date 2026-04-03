@@ -2,28 +2,34 @@
 
 // FighterEntry — operates on FighterEntry* directly
 
-struct FighterEntry;
+struct FighterEntry {
+    u8    pad_0x00[0x14];
+    u32   fighter_num;           // +0x14
+    u8    pad_0x18[0x4138];
+    u64   slot_count;            // +0x4150
+    u8    pad_0x4158[0x08];
+    void* slots[759];            // +0x4160
+    u8    current_index;         // +0x5918
+};
 
 namespace app::lua_bind {
 
 // 71020cbc40 — fighter_num (2 instructions)
 u32 FighterEntry__fighter_num_impl(FighterEntry* entry) {
-    return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(entry) + 0x14);
+    return entry->fighter_num;
 }
 
 // 71020cbc50 — get_fighter_id: bounds check + optional active check via vtable
 u32 FighterEntry__get_fighter_id_impl(FighterEntry* entry, s32 index, bool check_active) {
     u32 result = 0x50000000u;
-    auto* p = reinterpret_cast<u8*>(entry);
-    u64 count = *reinterpret_cast<u64*>(p + 0x4150);
     s64 idx = static_cast<s64>(index);
-    if (static_cast<u64>(idx) >= count) return result;
-    auto* slot = *reinterpret_cast<u8**>(p + idx * 8 + 0x4160);
+    if (static_cast<u64>(idx) >= entry->slot_count) return result;
+    auto* slot = reinterpret_cast<u8*>(entry->slots[idx]);
     if (!slot) return result;
     if (check_active) {
         bool active = reinterpret_cast<bool(*)(void*)>((*reinterpret_cast<void***>(slot))[0x518/8])(slot);
         if (!active) return result;
-        slot = *reinterpret_cast<u8**>(p + idx * 8 + 0x4160);
+        slot = reinterpret_cast<u8*>(entry->slots[idx]);
     }
     return *reinterpret_cast<u32*>(slot + 0x8);
 }
@@ -31,15 +37,13 @@ u32 FighterEntry__get_fighter_id_impl(FighterEntry* entry, s32 index, bool check
 // 71020cbcb0 — current_fighter_id: use current index at +0x5918
 u32 FighterEntry__current_fighter_id_impl(FighterEntry* entry) {
     u32 result = 0x50000000u;
-    auto* p = reinterpret_cast<u8*>(entry);
-    u64 idx = p[0x5918];
-    u64 count = *reinterpret_cast<u64*>(p + 0x4150);
-    if (idx >= count) return result;
-    auto* slot = *reinterpret_cast<u8**>(p + idx * 8 + 0x4160);
+    u64 idx = entry->current_index;
+    if (idx >= entry->slot_count) return result;
+    auto* slot = reinterpret_cast<u8*>(entry->slots[idx]);
     if (!slot) return result;
     bool active = reinterpret_cast<bool(*)(void*)>((*reinterpret_cast<void***>(slot))[0x518/8])(slot);
     if (!active) return result;
-    auto* slot2 = *reinterpret_cast<u8**>(p + idx * 8 + 0x4160);
+    auto* slot2 = reinterpret_cast<u8*>(entry->slots[idx]);
     return *reinterpret_cast<u32*>(slot2 + 0x8);
 }
 
