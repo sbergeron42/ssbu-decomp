@@ -58,6 +58,13 @@ for %%f in (build\*.o) do (
     python tools\fix_x8_regalloc.py "%%f"
 )
 
+REM Post-process: Fix instruction reordering (same instructions, different order).
+REM NX Clang may schedule instructions differently from upstream Clang 8.0.0.
+echo Fixing instruction reordering...
+for %%f in (build\*.o) do (
+    python tools\fix_insn_reorder.py "%%f"
+)
+
 echo.
 echo Disassembly:
 for %%f in (build\*.o) do (

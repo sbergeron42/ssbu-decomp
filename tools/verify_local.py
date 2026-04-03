@@ -102,27 +102,39 @@ def build_incremental():
         if objs:
             subprocess.run(["python", str(fix_movz)] + objs, capture_output=True)
 
-    # Check for fix_prologue_sched.py and run it if present
-    fix_script = PROJECT_ROOT / "tools" / "fix_prologue_sched.py"
-    if fix_script.exists():
-        prologue_targets = ["PostureModule", "KineticEnergy", "CameraModule",
-                           "GroundModule", "KineticModule", "LinkModule",
-                           "FighterControlModuleImpl", "BattleObjectManager",
-                           "FighterManager", "FighterEntry", "FighterCutInManager",
-                           "FighterInformation", "ItemManager",
-                           "FighterMotionModuleImpl", "EffectModule",
-                           "FighterBayonettaFinalModule", "ItemKineticModuleImpl",
-                           "FighterKineticEnergyMotion", "KineticEnergyNormal",
-                           "gameplay_functions",
-                           "lib", "AreaContactLog", "stWaterAreaInfo",
-                           "AttackAbsoluteData", "DamageInfo", "Circle",
-                           "Rhombus2", "DamageLog", "AttackData",
-                           "BossManager", "Item", "ArticleModule",
-                           "FighterStopModuleImpl", "ItemDamageModuleImpl",
-                           "ControlModule"]
-        objs = [str(build_dir / f"{t}.o") for t in prologue_targets if (build_dir / f"{t}.o").exists()]
-        if objs:
-            subprocess.run(["python", str(fix_script)] + objs, capture_output=True)
+    # Run all post-processors on all .o files (matching build.bat pipeline)
+    all_objs = [str(o) for o in build_dir.glob("*.o")]
+    if all_objs:
+        # Prologue scheduling (all .o files, not just specific modules)
+        fix_script = PROJECT_ROOT / "tools" / "fix_prologue_sched.py"
+        if fix_script.exists():
+            subprocess.run(["python", str(fix_script)] + all_objs, capture_output=True)
+
+        # Return-register width (mov w0,wzr vs mov x0,xzr)
+        fix_script = PROJECT_ROOT / "tools" / "fix_return_width.py"
+        if fix_script.exists():
+            subprocess.run(["python", str(fix_script)] + all_objs, capture_output=True)
+
+        # x8-dispatch register allocation (x8->x9 scratch)
+        fix_script = PROJECT_ROOT / "tools" / "fix_x8_regalloc.py"
+        if fix_script.exists():
+            subprocess.run(["python", str(fix_script)] + all_objs, capture_output=True)
+
+        # Instruction reordering (same instructions, different order)
+        fix_script = PROJECT_ROOT / "tools" / "fix_insn_reorder.py"
+        if fix_script.exists():
+            subprocess.run(["python", str(fix_script)] + all_objs, capture_output=True)
+
+    # Epilogue scheduling (batch files only, uses whitelist)
+    gen_epi = PROJECT_ROOT / "tools" / "gen_epilogue_list.py"
+    if gen_epi.exists():
+        subprocess.run(["python", str(gen_epi)], capture_output=True)
+    batch_objs = []
+    for pattern in ["fun_batch_c_*.o", "fun_batch_d_*.o", "fun_batch_e2_*.o"]:
+        batch_objs.extend(str(o) for o in build_dir.glob(pattern))
+    fix_script = PROJECT_ROOT / "tools" / "fix_epilogue.py"
+    if fix_script.exists() and batch_objs:
+        subprocess.run(["python", str(fix_script)] + batch_objs, capture_output=True)
 
     # Generate address-specific linker script (for ADRP correctness)
     gen_ld = PROJECT_ROOT / "tools" / "gen_linker_script.py"
