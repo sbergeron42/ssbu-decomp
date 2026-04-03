@@ -1,30 +1,30 @@
-# Worker: pool-b
+# Worker: pool-c
 
 ## Model: Opus
 
-## Task: Trace game state serialization for rollback
+## Task: Trace input handling path for rollback
 
-For rollback netplay, we need to know what game state must be saved and restored each frame. Find the state serialization functions.
+For rollback netplay, we need to understand how inputs flow from controller to game state. Map the input pipeline.
 
 ### What to look for
-- Functions that snapshot game state (position, velocity, damage, stocks, frame counter)
-- Functions that restore/load state from a buffer
-- The main game loop tick function (what runs each frame)
-- BattleObject state save/load patterns
-- Fighter state that changes per frame
+- Controller polling functions (nn::hid usage)
+- Input buffering / input delay logic
+- How inputs are transmitted over network (input packets)
+- Where inputs get consumed by the game simulation
+- Input prediction logic (if any exists for online play)
 
 ### Approach
-1. Search Ghidra for functions with "save", "load", "serialize", "snapshot", "state" in names
-2. Look at store_l2c_table / load_from_l2c_table patterns — these serialize struct fields
-3. Trace what BattleObjectModuleAccessor stores per frame
-4. Find the main game update loop (the function called 60 times per second)
+1. Search Ghidra for nn::hid references (controller input SDK)
+2. Find functions with "input", "controller", "pad", "button", "stick" in names
+3. Trace from SDK input polling → game input consumption
+4. Look for the network input send/receive path (inputs sent to opponent)
 
 ### Output
-- src/docs/game_state.md with findings on state management
-- Key function addresses, what state they manage, data flow
+- src/docs/input_handling.md with the input pipeline architecture
+- Key function addresses and data flow
 
 ### Rules
-- CAN create: src/docs/game_state.md
+- CAN create: src/docs/input_handling.md
 - CAN use Ghidra MCP to search and decompile
 - Do NOT edit existing source files
 - Do NOT modify data/functions.csv or tools/
