@@ -1,31 +1,42 @@
-# Worker: pool-c
+# Worker: pool-a
 
 ## Model: Opus
 
-## Task: Convert non-PLT naked asm functions to C++ with asm barriers (files M-Z)
+## Task: Build auto-fixer tool for non-matching functions
 
-~93 non-PLT naked asm functions are scattered across module files. Convert them to readable C++ using asm("") barriers.
+2,008 functions compile but do not byte-match. Most fail for predictable reasons. Build a tool that reads the instruction diff and auto-applies fixes.
 
-### How to convert
-For each naked asm function:
-1. Read the assembly and understand the logic
-2. Write equivalent C++ with the same struct field accesses and control flow
-3. Insert asm("") barriers between independent operations to force correct scheduling
-4. Wrap barriers in #ifdef MATCHING_HACK_NX_CLANG
-5. Verify the C++ version produces identical bytes
+### Tool: tools/auto_fix_nonmatching.py
 
-### Your files (M through Z alphabetically, plus fun_batch_c/d/e, fun_medium, fun_nro)
-Check these for __attribute__((naked)):
-- OnCalcParamEvent, Rhombus2
-- particle_functions, audio_functions, graphics_functions
-- stWaterAreaInfo, StatusModule
-- WeaponKineticEnergyGravity, WeaponSnakeMissileKineticEnergyNormal
-- GimmickEventPresenter
-- fun_batch_c_*, fun_batch_c2_*, fun_batch_d_*, fun_batch_d2_*, fun_batch_e_*
-- fun_medium_*, fun_nro_load.cpp
+The tool should:
+1. Run verify_all.py to get the non-matching function list
+2. For each non-matching function, compare decomp bytes vs original bytes
+3. Detect the mismatch pattern and apply the appropriate fix to the .cpp source
+4. Rebuild and verify to confirm the fix worked
+
+### Patterns to detect and fix (in priority order)
+
+1. **Register width mismatch (w0 vs x0)**: decomp uses 32-bit where original uses 64-bit or vice versa. Fix: swap u32/s32 with u64/s64 in the param or return type.
+
+2. **Bool truncation (and w0, w0, #1)**: decomp has extra bool truncation. Fix: swap bool with u8 in the param type.
+
+3. **Return type mismatch**: different register used for return. Fix: try void, u32, u64, void* for the return type.
+
+4. **Instruction reordering**: same instructions but different order. Fix: insert asm("") barriers between independent operations, guarded by MATCHING_HACK_NX_CLANG.
+
+### Workflow
+1. Start with pattern 1 (register width) — likely fixes the most functions
+2. For each pattern, test on 10 functions manually first
+3. Then automate: read source, apply regex fix, rebuild, check if verified
+4. If fix breaks compilation or makes it worse, revert automatically
+
+### Key resources
+- tools/show_diff.py — shows instruction-level diff for a function
+- tools/verify_all.py — the verifier (read_o_file_functions gives you decomp bytes)
+- data/main.elf — original binary bytes
 
 ### Rules
-- ONLY edit files listed above
-- Do NOT edit fun_region_039.cpp (pool-a territory)
-- Do NOT edit files starting with A-L or fun_batch_a/b (pool-b territory)
-- Do NOT modify tools/ or data/functions.csv
+- ONLY create/edit: tools/auto_fix_nonmatching.py (new tool)
+- Do NOT manually edit any .cpp source files
+- Do NOT modify data/functions.csv
+- The tool should be non-destructive: revert any fix that does not improve the match

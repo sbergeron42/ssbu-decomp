@@ -190,11 +190,11 @@ void FUN_7103839270(u32 param_1)
     FUN_710356bb20();
 }
 
-// 0x7103841cf0 -- abort wrapper (16 bytes)
-void FUN_7103841cf0(void) { FUN_710356bb20(); }
+// 0x7103841cf0 — abort wrapper (16 bytes)
+u32 FUN_7103841cf0(void) { FUN_710356bb20(); }
 
-// 0x7103841d00 -- abort wrapper (16 bytes)
-void FUN_7103841d00(void) { FUN_710356bb20(); }
+// 0x7103841d00 — abort wrapper (16 bytes)
+u32 FUN_7103841d00(void) { FUN_710356bb20(); }
 
 // 0x71038e0bec -- strcmp returning negated result (36 bytes)
 s32 FUN_71038e0bec(s64 param_1, u64 param_2, const char *param_3)

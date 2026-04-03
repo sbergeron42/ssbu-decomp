@@ -63,5 +63,5 @@ void FUN_710357ac7c(s64 *param_1)
     (*(void(*)())(*(s64*)(*param_1 + 0x388)))();
 }
 
-// 0x71036981fc -- wrapper: FUN_710368b740(param_1, 1) (36 bytes)
-void FUN_71036981fc(u64 param_1) { FUN_710368b740(param_1, 1); }
+// 0x71036981fc — wrapper: FUN_710368b740(param_1, 1) (36 bytes)
+u32 FUN_71036981fc(u64 param_1) { FUN_710368b740(param_1, 1); }

@@ -103,7 +103,7 @@ void ControlModule__start_clatter_motion_rate_impl(BattleObjectModuleAccessor* a
 void ControlModule__reset_button_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0xf0/8])(m); }
 void ControlModule__reset_button_on_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0xf8/8])(m); }
 // 7102001190
-void ControlModule__reset_button_off_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x100/8])(m); }
+void ControlModule__reset_button_off_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x100/8])(m,p1); }
 void ControlModule__reset_button_trigger_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x108/8])(m); }
 void ControlModule__reset_main_stick_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x128/8])(m); }
 void ControlModule__reset_sub_stick_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x140/8])(m); }
@@ -118,11 +118,11 @@ void ControlModule__reset_flick_sub_y_impl(BattleObjectModuleAccessor* a) { auto
 void ControlModule__reset_trigger_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0xf8/8])(m); }
 void ControlModule__reset_trigger_count_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x170/8])(m); }
 // 7102001490
-void ControlModule__set_near_cliff_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=CM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x290/8])(m,p1); }
+void ControlModule__set_near_cliff_impl(BattleObjectModuleAccessor* a,bool p1,u64 p2) { auto* m=CM(a); reinterpret_cast<void(*)(void*,bool,u64)>(VT(m)[0x290/8])(m,p1,p2); }
 // 7102001500
-void ControlModule__set_rumble_body_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x2c0/8])(m,p1); }
+void ControlModule__set_rumble_body_impl(BattleObjectModuleAccessor* a) { auto* m=CM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x2c0/8])(m); }
 // 7102001540
-void ControlModule__set_rumble_heavy_hit_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x2e0/8])(m,p1); }
+void ControlModule__set_rumble_heavy_hit_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=CM(a); reinterpret_cast<void(*)(void*,u64,u64)>(VT(m)[0x2e0/8])(m,p1,p2); }
 void ControlModule__set_rumble_hit_damage_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x2e8/8])(m,p1); }
 void ControlModule__set_keep_rumble_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=CM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x2f0/8])(m,p1); }
 // 7102001560
