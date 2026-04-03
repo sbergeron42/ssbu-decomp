@@ -44,3 +44,4 @@ Continue batch-decompiling MEDIUM-tier functions across all address ranges.
 - d4-017: 14 functions, 0x7100156720–0x710068d530
 - d4-018: 21 functions, 0x710064b730–0x710107dae0
 - d4-019: 19 functions, 0x710116b7f0–0x7101d2c6b0
+- d4-020: 29 functions, 0x7102000e40–0x7102009f70
