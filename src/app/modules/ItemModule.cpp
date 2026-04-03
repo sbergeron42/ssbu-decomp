@@ -1,5 +1,5 @@
 #include "app/BattleObjectModuleAccessor.h"
-#define IM(a) (*reinterpret_cast<void**>(reinterpret_cast<u8*>(a) + 0xC8))
+#define IM(a) (a->item_module)
 #define HIT_MODULE(a) IM(a)
 #define VT(m) (*reinterpret_cast<void***>(m))
 namespace app::lua_bind {

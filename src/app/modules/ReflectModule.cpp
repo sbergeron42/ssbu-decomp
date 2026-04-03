@@ -1,5 +1,5 @@
 #include "app/BattleObjectModuleAccessor.h"
-#define RM(a) (*reinterpret_cast<void**>(reinterpret_cast<u8*>(a) + 0xF8))
+#define RM(a) (a->reflect_module)
 #define VT(m) (*reinterpret_cast<void***>(m))
 namespace app::lua_bind {
 void ReflectModule__reset_info_impl(BattleObjectModuleAccessor* a) { auto* m=RM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x50/8])(m); }

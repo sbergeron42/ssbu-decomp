@@ -1,5 +1,5 @@
 #include "app/BattleObjectModuleAccessor.h"
-#define SM(a) (*reinterpret_cast<void**>(reinterpret_cast<u8*>(a) + 0x100))
+#define SM(a) (a->shield_module)
 #define VT(m) (*reinterpret_cast<void***>(m))
 namespace app::lua_bind {
 void ShieldModule__clean_impl(BattleObjectModuleAccessor* a) { auto* m=SM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x50/8])(m); }

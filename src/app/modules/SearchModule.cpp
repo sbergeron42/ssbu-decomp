@@ -1,5 +1,5 @@
 #include "app/BattleObjectModuleAccessor.h"
-#define SR(a) (*reinterpret_cast<void**>(reinterpret_cast<u8*>(a) + 0xE0))
+#define SR(a) (a->search_module)
 #define VT(m) (*reinterpret_cast<void***>(m))
 namespace app::lua_bind {
 void SearchModule__clear_all_impl(BattleObjectModuleAccessor* a) { auto* m=SR(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x50/8])(m); }

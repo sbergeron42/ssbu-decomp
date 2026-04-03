@@ -1,8 +1,8 @@
-# Worker: pool-a
+# Worker: pool-b
 
 ## Model: Opus
 
-## Task: Refactor module files A-G to use struct field access
+## Task: Refactor module files H-Z to use struct field access
 
 Replace raw pointer arithmetic with proper struct member access across module source files. The struct headers now exist in include/app/.
 
@@ -12,30 +12,28 @@ Replace patterns like:
 With:
     auto* m = acc->camera_module;
 
-And replace vtable casts like:
-    reinterpret_cast<void(*)(void*)>(VT(m)[0x48/8])(m);
-With:
-    reinterpret_cast<void(*)(void*)>((*reinterpret_cast<void***>(m))[0x48/8])(m);
-(keep vtable calls as-is for now, just fix the module access pattern)
-
 ### Your files
-Refactor these source files (alphabetically A through G):
-- src/app/modules/AbsorberModule.cpp
-- src/app/modules/AreaModule.cpp
-- src/app/modules/ArticleModule.cpp
-- src/app/modules/AttackModule.cpp
-- src/app/modules/CancelModule.cpp
-- src/app/modules/CaptureModule.cpp
-- src/app/modules/CatchModule.cpp
-- src/app/modules/ColorBlendModule.cpp
-- src/app/modules/ComboModule.cpp
-- src/app/modules/ControlModule.cpp
-- src/app/modules/DamageModule.cpp
-- src/app/modules/EffectModule.cpp
-- src/app/modules/FighterAreaModuleImpl.cpp
-- src/app/modules/FighterControlModuleImpl.cpp
-- src/app/modules/GrabModule.cpp
-- src/app/modules/GroundModule.cpp
+Refactor these source files (alphabetically H through Z):
+- src/app/modules/HitModule.cpp
+- src/app/modules/ItemModule.cpp
+- src/app/modules/JostleModule.cpp
+- src/app/modules/KineticModule.cpp
+- src/app/modules/LinkModule.cpp
+- src/app/modules/ModelModule.cpp
+- src/app/modules/MotionAnimcmdModule.cpp
+- src/app/modules/MotionModule.cpp
+- src/app/modules/PhysicsModule.cpp
+- src/app/modules/PostureModule.cpp
+- src/app/modules/ReflectModule.cpp
+- src/app/modules/ReflectorModule.cpp
+- src/app/modules/SearchModule.cpp
+- src/app/modules/ShieldModule.cpp
+- src/app/modules/SlowModule.cpp
+- src/app/modules/SoundModule.cpp
+- src/app/modules/StatusModule.cpp
+- src/app/modules/TurnModule.cpp
+- src/app/modules/VisibilityModule.cpp
+- src/app/modules/WorkModule.cpp
 
 ### Critical rule
 After EACH file change, rebuild and verify matching is preserved:
