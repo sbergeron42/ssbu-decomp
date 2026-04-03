@@ -16,8 +16,8 @@
 // =============================================================================
 
 #include "app/InputState.h"
-#include <cstdlib>  // abort()
-#include <cmath>    // fabsf
+extern "C" [[noreturn]] void abort();
+extern "C" float fabsf(float);
 
 // External param lookup function (hash-based binary search in param data)
 // Address: 0x710175ff70
