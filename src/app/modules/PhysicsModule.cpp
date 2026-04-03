@@ -1,5 +1,5 @@
 #include "app/BattleObjectModuleAccessor.h"
-#define PM(a) (*reinterpret_cast<void**>(reinterpret_cast<u8*>(a) + 0x80))
+#define PM(a) (a->physics_module)
 #define SLOW_MODULE(a) PM(a)
 #define VT(m) (*reinterpret_cast<void***>(m))
 namespace app::lua_bind {
@@ -158,5 +158,5 @@ u32 PhysicsModule__get_2nd_touch_ground_line_num_impl(BattleObjectModuleAccessor
 void PhysicsModule__set_enable_floor_collision_line_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=SLOW_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x3a8/8])(m,p1); }
 // 710209fcd0
 void PhysicsModule__set_swing_ground_collision_all_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=SLOW_MODULE(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x3b8/8])(m,p1); }
-void PhysicsModule__set_swing_special_state_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x80)); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x3d8/8])(m,p1); }
+void PhysicsModule__set_swing_special_state_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=a->physics_module; reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x3d8/8])(m,p1); }
 } // namespace app::lua_bind

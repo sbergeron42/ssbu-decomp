@@ -1,5 +1,5 @@
 #include "app/BattleObjectModuleAccessor.h"
-#define HM(a) (*reinterpret_cast<void**>(reinterpret_cast<u8*>(a) + 0xB0))
+#define HM(a) (a->hit_module)
 #define VT(m) (*reinterpret_cast<void***>(m))
 namespace app::lua_bind {
 void HitModule__clean_impl(BattleObjectModuleAccessor* a) { auto* m=HM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x58/8])(m); }

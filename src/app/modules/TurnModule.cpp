@@ -1,5 +1,5 @@
 #include "app/BattleObjectModuleAccessor.h"
-#define TN(a) (*reinterpret_cast<void**>(reinterpret_cast<u8*>(a) + 0xF0))
+#define TN(a) (a->turn_module)
 #define VT(m) (*reinterpret_cast<void***>(m))
 namespace app::lua_bind {
 // set_turn has 3 bool params (and w2,w3,w4 #1)

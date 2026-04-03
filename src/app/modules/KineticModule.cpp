@@ -118,7 +118,7 @@ void KineticModule__v0x148(BattleObjectModuleAccessor* a,u64 p1) { auto* m=a->it
 void KineticModule__v0x150(BattleObjectModuleAccessor* a,u64 p1) { auto* m=a->item_kinetic_module; auto* vt=*reinterpret_cast<void***>(m); reinterpret_cast<void(*)(void*,u64)>(vt[0x150/8])(m,p1); }
 void KineticModule__v0x168(BattleObjectModuleAccessor* a,bool p1) { auto* m=a->item_kinetic_module; auto* vt=*reinterpret_cast<void***>(m); reinterpret_cast<void(*)(void*,bool)>(vt[0x168/8])(m,p1); }
 // Auto-generated named dispatchers
-void* KineticModule__get_energy_impl(BattleObjectModuleAccessor* a) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0x68)); void* ret = reinterpret_cast<void*(*)(void*)>(VT(m)[0x60/8])(m); asm(""); return ret; }
+void* KineticModule__get_energy_impl(BattleObjectModuleAccessor* a) { auto* m=a->item_kinetic_module; void* ret = reinterpret_cast<void*(*)(void*)>(VT(m)[0x60/8])(m); asm(""); return ret; }
 void KineticModule__clear_speed_energy_id_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=KINETIC_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x98/8])(m,p1); }
 // 71020439b0
 void KineticModule__clear_speed_attr_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=KINETIC_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xa0/8])(m,p1); }
