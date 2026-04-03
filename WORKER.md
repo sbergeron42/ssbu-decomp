@@ -1,50 +1,46 @@
-# Worker: pool-b
+# Worker: pool-c
 
 ## Model: Opus
 
-## Task: Refactor module files H-Z to use struct field access
+## Task: Define data struct headers + refactor data/event/link files
 
-Replace raw pointer arithmetic with proper struct member access across module source files. The struct headers now exist in include/app/.
+Your assigned files don't use BattleObjectModuleAccessor — they use their own data structs (AttackData, DamageLog, Circle, etc.) with raw offset access. To refactor these, define the struct layouts first.
 
-### What to change
-Replace patterns like:
-    auto* m = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x60);
-With:
-    auto* m = acc->camera_module;
+### Phase 1: Define struct headers
+Create NEW header files in include/app/ for the data types used by your files:
+- include/app/AttackData.h
+- include/app/AttackAbsoluteData.h  
+- include/app/DamageLog.h
+- include/app/DamageInfo.h
+- include/app/AreaContactLog.h
+- include/app/Circle.h
+- include/app/Rhombus2.h
+- include/app/stWaterAreaInfo.h
+- (any others you discover)
+
+Derive the struct layout from the offset patterns in the .cpp files. For example, if code does:
+    *reinterpret_cast<float*>(reinterpret_cast<u8*>(obj)+0x10) = v;
+Then the struct has a float field at offset 0x10.
+
+Use Ghidra MCP to cross-reference: mcp__ghidra__decompile_function_by_address to see how Ghidra types these.
+
+### Phase 2: Refactor source files
+Replace raw offset casts with struct field access using your new headers.
 
 ### Your files
-Refactor these source files (alphabetically H through Z):
-- src/app/modules/HitModule.cpp
-- src/app/modules/ItemModule.cpp
-- src/app/modules/JostleModule.cpp
-- src/app/modules/KineticModule.cpp
-- src/app/modules/LinkModule.cpp
-- src/app/modules/ModelModule.cpp
-- src/app/modules/MotionAnimcmdModule.cpp
-- src/app/modules/MotionModule.cpp
-- src/app/modules/PhysicsModule.cpp
-- src/app/modules/PostureModule.cpp
-- src/app/modules/ReflectModule.cpp
-- src/app/modules/ReflectorModule.cpp
-- src/app/modules/SearchModule.cpp
-- src/app/modules/ShieldModule.cpp
-- src/app/modules/SlowModule.cpp
-- src/app/modules/SoundModule.cpp
-- src/app/modules/StatusModule.cpp
-- src/app/modules/TurnModule.cpp
-- src/app/modules/VisibilityModule.cpp
-- src/app/modules/WorkModule.cpp
-
-### Critical rule
-After EACH file change, rebuild and verify matching is preserved:
-    cmd /c build.bat && python tools/verify_all.py --summary
-If verified count drops, REVERT that file and move on.
-
-### Include the header
-Add #include "app/BattleObjectModuleAccessor.h" at top of each file.
+- src/app/AttackData.cpp, AttackAbsoluteData.cpp
+- src/app/DamageLog.cpp, DamageInfo.cpp
+- src/app/AreaContactLog.cpp, Circle.cpp, Rhombus2.cpp, stWaterAreaInfo.cpp
+- src/app/OnCalcParamEvent.cpp
+- src/app/GimmickEvent*.cpp, LinkEvent*.cpp
+- src/app/FighterPikmin*.cpp, FighterCloud*.cpp, FighterInkling*.cpp, etc.
+- src/app/Weapon*.cpp
+- src/app/gameplay_functions.cpp, lib.cpp
+- src/app/particle/audio/graphics/network/memory/threading_functions.cpp
 
 ### Rules
-- ONLY edit files listed above
-- Do NOT edit include/ headers
-- Do NOT modify data/functions.csv or tools/
-- NEVER reduce verified count
+- CAN create NEW headers in include/app/ for data types listed above
+- Do NOT edit existing headers (BattleObjectModuleAccessor.h, FighterManager.h, etc. — pool-b territory)
+- Do NOT edit modules/ or fun_batch/fun_region files
+- After each file change: cmd /c build.bat && python tools/verify_all.py --summary
+- If verified drops, REVERT and move on

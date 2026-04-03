@@ -1,8 +1,9 @@
 #include "types.h"
+#include "app/Rect.h"
 #define VT(m) (*reinterpret_cast<void***>(m))
 
 struct lib;
-struct Rect;
+using app::Rect;
 struct LargeRet { u64 a, b, c; };
 
 // External helpers for L2CValue serialization (no symbols, external branches -- won't byte-match)
@@ -28,22 +29,22 @@ void lib__Rect__load_from_l2c_table_impl(Rect* r, void* lv_in) {
     u64 h0 = 0x47a67e768ULL;
     e = (*plv == 5) ? (int*)FUN_7103733d50(*(void**)(plv+2), &h0) : DAT_710593a3a8;
     { int t=*e; if(t==7||t==2) v=(float)*(long long*)(e+2); else if(t==3) v=*reinterpret_cast<float*>(e+2); else v=0.0f; }
-    *reinterpret_cast<float*>(reinterpret_cast<u8*>(r)+0) = v;
+    r->x = v;
     // Rect::y at +4, hash 0x5b4ca7514
     u64 h1 = 0x5b4ca7514ULL;
     e = (*plv == 5) ? (int*)FUN_7103733d50(*(void**)(plv+2), &h1) : DAT_710593a3a8;
     { int t=*e; if(t==7||t==2) v=(float)*(long long*)(e+2); else if(t==3) v=*reinterpret_cast<float*>(e+2); else v=0.0f; }
-    *reinterpret_cast<float*>(reinterpret_cast<u8*>(r)+4) = v;
+    r->y = v;
     // Rect::w at +8, hash 0x31ed91fca
     u64 h2 = 0x31ed91fcaULL;
     e = (*plv == 5) ? (int*)FUN_7103733d50(*(void**)(plv+2), &h2) : DAT_710593a3a8;
     { int t=*e; if(t==7||t==2) v=(float)*(long long*)(e+2); else if(t==3) v=*reinterpret_cast<float*>(e+2); else v=0.0f; }
-    *reinterpret_cast<float*>(reinterpret_cast<u8*>(r)+8) = v;
+    r->w = v;
     // Rect::h at +0xc, hash 0x6895f72a4
     u64 h3 = 0x6895f72a4ULL;
     e = (*plv == 5) ? (int*)FUN_7103733d50(*(void**)(plv+2), &h3) : DAT_710593a3a8;
     { int t=*e; if(t==7||t==2) v=(float)*(long long*)(e+2); else if(t==3) v=*reinterpret_cast<float*>(e+2); else v=0.0f; }
-    *reinterpret_cast<float*>(reinterpret_cast<u8*>(r)+0xc) = v;
+    r->h = v;
 }
 
 // 71020fb560: allocate L2CValue table, fill via FUN_71020fb630, return as LargeRet
