@@ -1,5 +1,5 @@
 #include "app/BattleObjectModuleAccessor.h"
-#define AT(a) (*reinterpret_cast<void**>(reinterpret_cast<u8*>(a) + 0xA0))
+#define AT(a) ((a)->attack_module)
 #define VT(m) (*reinterpret_cast<void***>(m))
 namespace app::lua_bind {
 // Existing

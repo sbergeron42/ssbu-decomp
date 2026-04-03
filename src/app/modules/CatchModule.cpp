@@ -1,5 +1,5 @@
 #include "app/BattleObjectModuleAccessor.h"
-#define CTM(a) (*reinterpret_cast<void**>(reinterpret_cast<u8*>(a) + 0x120))
+#define CTM(a) ((a)->catch_module)
 #define VT(m) (*reinterpret_cast<void***>(m))
 namespace app::lua_bind {
 void CatchModule__set_catch_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CTM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x58/8])(m,p1); }

@@ -1,7 +1,7 @@
 #include "app/BattleObjectModuleAccessor.h"
 
 // EffectModule -- accessor+0x140 (accessed via raw offset)
-#define EFFECT_MODULE(acc) (*reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x140))
+#define EFFECT_MODULE(acc) ((acc)->effect_module)
 #define VTABLE(mod) (*reinterpret_cast<void***>(mod))
 
 namespace app::lua_bind {

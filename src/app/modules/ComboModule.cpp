@@ -1,5 +1,5 @@
 #include "app/BattleObjectModuleAccessor.h"
-#define CM(a) (*reinterpret_cast<void**>(reinterpret_cast<u8*>(a) + 0xB8))
+#define CM(a) ((a)->combo_module)
 #define VT(m) (*reinterpret_cast<void***>(m))
 namespace app::lua_bind {
 void ComboModule__set_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=CM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x48/8])(m,p1); }
