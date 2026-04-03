@@ -21,14 +21,14 @@
 
 // ── Simple vtable dispatch wrappers (0x71015 range) ──────────────────────────
 
-// 0x710151a710
+// addr-TBD-710151a710
 u64 FUN_710151a710(u64 param_1, s64 *param_2)
 {
   (*(void(*)(s64 *))(*param_2 + 0x10))(param_2);
   return 0;
 }
 
-// 0x710151a740
+// addr-TBD-710151a740
 u64 FUN_710151a740(u64 param_1, s64 *param_2)
 {
   (*(void(*)(s64 *))(*param_2 + 0x10))(param_2);
@@ -45,13 +45,13 @@ u64 FUN_710151a740(u64 param_1, s64 *param_2)
 
 // ── Simple vtable call wrappers (0x71016 range) ──────────────────────────────
 
-// 0x71016158b0
+// addr-TBD-71016158b0
 void FUN_71016158b0(s64 *param_1)
 {
   (*(void(*)(void))(*param_1 + 0xc0))();
 }
 
-// 0x71016158d0
+// addr-TBD-71016158d0
 u32 FUN_71016158d0(s64 *param_1)
 {
   return (*(u32(*)(void))(*param_1 + 0xc0))();

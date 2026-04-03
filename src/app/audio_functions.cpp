@@ -7,6 +7,7 @@ extern "C" __attribute__((visibility("hidden"))) float DAT_7104471e0c;  // volum
 extern "C" __attribute__((visibility("hidden"))) float DAT_7104471598;  // volume multiplier
 extern "C" __attribute__((visibility("hidden"))) void* DAT_71052bb3b0;  // StageManager/ParamAccessor2 singleton
 extern "C" __attribute__((visibility("hidden"))) void* DAT_71052b7ef8;  // BossManager singleton
+extern "C" __attribute__((visibility("hidden"))) void* DAT_71053299d8;  // StageManager indirect ptr
 
 extern "C" void FUN_71023ee610(void*, u32, u32);
 extern "C" void FUN_7102608770(void*);
@@ -74,9 +75,9 @@ u32 invalid_bgm_handle(void) { return 0xffffffff; }
 
 namespace app::kiiladarzmanager {
 
-// 71016538d0 (16B) -- stop_stage_sound: delegate to StageManager
+// 71016538d0 (16B) -- stop_stage_sound: delegate via StageManager indirect
 void stop_stage_sound(void) {
-    FUN_7102608770(DAT_71052bb3b0);
+    FUN_7102608770(*reinterpret_cast<void**>(DAT_71053299d8));
 }
 
 } // namespace app::kiiladarzmanager

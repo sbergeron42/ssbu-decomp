@@ -24,7 +24,11 @@ u32 FUN_710022b510(s64 param_1)
     *(u8 *)(param_1 + 8) = 1;
     return 0;
   }
-  uVar3 = *(u32 *)(*(s64 *)(lVar1 + 0x10) + *(s64 *)(lVar1 + 0x28) + lVar2);
+  s64 base = *(s64 *)(lVar1 + 0x10) + *(s64 *)(lVar1 + 0x28);
+#ifdef MATCHING_HACK_NX_CLANG
+  asm("" : "+r"(base));
+#endif
+  uVar3 = *(u32 *)(base + lVar2);
   *(s64 *)(param_1 + 0x18) = lVar2 + 4;
   return uVar3;
 }
@@ -42,7 +46,11 @@ u32 FUN_710022e510(s64 param_1)
     *(u8 *)(param_1 + 8) = 1;
     return 0;
   }
-  uVar3 = *(u32 *)(*(s64 *)(lVar1 + 0x10) + *(s64 *)(lVar1 + 0x28) + lVar2);
+  s64 base = *(s64 *)(lVar1 + 0x10) + *(s64 *)(lVar1 + 0x28);
+#ifdef MATCHING_HACK_NX_CLANG
+  asm("" : "+r"(base));
+#endif
+  uVar3 = *(u32 *)(base + lVar2);
   *(s64 *)(param_1 + 0x18) = lVar2 + 4;
   return uVar3;
 }
