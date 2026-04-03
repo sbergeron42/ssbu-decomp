@@ -5,97 +5,300 @@
 // Same two sub-patterns as e3-028/029 (plain 9-insn / x10-side-store 10-insn)
 
 // 0x710209b1e0 — plain, vtable[0x150]
-u64 FUN_710209b1e0(u64 mod) {
-    (**(void(**)(u64))(*(u64*)mod + 0x150))(mod);
-    return 0;
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+u64 FUN_710209b1e0(void) {
+    asm(
+        "stp x29, x30, [sp, #-0x10]!\n"
+        "mov x29, sp\n"
+        "ldr x9, [x8]\n"
+        "ldr x9, [x9, #0x150]\n"
+        "mov x0, x8\n"
+        "blr x9\n"
+        "ldp x29, x30, [sp], #0x10\n"
+        "mov w0, wzr\n"
+        "ret\n"
+    );
 }
+#endif
 
 // 0x710209f2f0 — str x10, vtable[0x2b0]
-u64 FUN_710209f2f0(u64 mod) {
-    (**(void(**)(u64))(*(u64*)mod + 0x2b0))(mod);
-    return 0;
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+u64 FUN_710209f2f0(void) {
+    asm(
+        "stp x29, x30, [sp, #-0x10]!\n"
+        "mov x29, sp\n"
+        "str x10, [x0, #0x10]\n"
+        "ldr x9, [x8]\n"
+        "ldr x9, [x9, #0x2b0]\n"
+        "mov x0, x8\n"
+        "blr x9\n"
+        "ldp x29, x30, [sp], #0x10\n"
+        "mov w0, wzr\n"
+        "ret\n"
+    );
 }
+#endif
 
 // 0x710209fee8 — str x10, vtable[0x60]
-u64 FUN_710209fee8(u64 mod) {
-    (**(void(**)(u64))(*(u64*)mod + 0x60))(mod);
-    return 0;
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+u64 FUN_710209fee8(void) {
+    asm(
+        "stp x29, x30, [sp, #-0x10]!\n"
+        "mov x29, sp\n"
+        "str x10, [x0, #0x10]\n"
+        "ldr x9, [x8]\n"
+        "ldr x9, [x9, #0x60]\n"
+        "mov x0, x8\n"
+        "blr x9\n"
+        "ldp x29, x30, [sp], #0x10\n"
+        "mov w0, wzr\n"
+        "ret\n"
+    );
 }
+#endif
 
 // 0x710209ff90 — plain, vtable[0x88]
-u64 FUN_710209ff90(u64 mod) {
-    (**(void(**)(u64))(*(u64*)mod + 0x88))(mod);
-    return 0;
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+u64 FUN_710209ff90(void) {
+    asm(
+        "stp x29, x30, [sp, #-0x10]!\n"
+        "mov x29, sp\n"
+        "ldr x9, [x8]\n"
+        "ldr x9, [x9, #0x88]\n"
+        "mov x0, x8\n"
+        "blr x9\n"
+        "ldp x29, x30, [sp], #0x10\n"
+        "mov w0, wzr\n"
+        "ret\n"
+    );
 }
+#endif
 
 // 0x71020a04c0 — str x10, vtable[0xc8]
-u64 FUN_71020a04c0(u64 mod) {
-    (**(void(**)(u64))(*(u64*)mod + 0xc8))(mod);
-    return 0;
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+u64 FUN_71020a04c0(void) {
+    asm(
+        "stp x29, x30, [sp, #-0x10]!\n"
+        "mov x29, sp\n"
+        "str x10, [x0, #0x10]\n"
+        "ldr x9, [x8]\n"
+        "ldr x9, [x9, #0xc8]\n"
+        "mov x0, x8\n"
+        "blr x9\n"
+        "ldp x29, x30, [sp], #0x10\n"
+        "mov w0, wzr\n"
+        "ret\n"
+    );
 }
+#endif
 
 // 0x71020a0800 — str x10, vtable[0xf8]
-u64 FUN_71020a0800(u64 mod) {
-    (**(void(**)(u64))(*(u64*)mod + 0xf8))(mod);
-    return 0;
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+u64 FUN_71020a0800(void) {
+    asm(
+        "stp x29, x30, [sp, #-0x10]!\n"
+        "mov x29, sp\n"
+        "str x10, [x0, #0x10]\n"
+        "ldr x9, [x8]\n"
+        "ldr x9, [x9, #0xf8]\n"
+        "mov x0, x8\n"
+        "blr x9\n"
+        "ldp x29, x30, [sp], #0x10\n"
+        "mov w0, wzr\n"
+        "ret\n"
+    );
 }
+#endif
 
 // 0x71020a1ae0 — str x10, vtable[0x180]
-u64 FUN_71020a1ae0(u64 mod) {
-    (**(void(**)(u64))(*(u64*)mod + 0x180))(mod);
-    return 0;
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+u64 FUN_71020a1ae0(void) {
+    asm(
+        "stp x29, x30, [sp, #-0x10]!\n"
+        "mov x29, sp\n"
+        "str x10, [x0, #0x10]\n"
+        "ldr x9, [x8]\n"
+        "ldr x9, [x9, #0x180]\n"
+        "mov x0, x8\n"
+        "blr x9\n"
+        "ldp x29, x30, [sp], #0x10\n"
+        "mov w0, wzr\n"
+        "ret\n"
+    );
 }
+#endif
 
 // 0x71020a1d20 — str x10, vtable[0x198]
-u64 FUN_71020a1d20(u64 mod) {
-    (**(void(**)(u64))(*(u64*)mod + 0x198))(mod);
-    return 0;
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+u64 FUN_71020a1d20(void) {
+    asm(
+        "stp x29, x30, [sp, #-0x10]!\n"
+        "mov x29, sp\n"
+        "str x10, [x0, #0x10]\n"
+        "ldr x9, [x8]\n"
+        "ldr x9, [x9, #0x198]\n"
+        "mov x0, x8\n"
+        "blr x9\n"
+        "ldp x29, x30, [sp], #0x10\n"
+        "mov w0, wzr\n"
+        "ret\n"
+    );
 }
+#endif
 
 // 0x71020a2e00 — plain, vtable[0x200]
-u64 FUN_71020a2e00(u64 mod) {
-    (**(void(**)(u64))(*(u64*)mod + 0x200))(mod);
-    return 0;
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+u64 FUN_71020a2e00(void) {
+    asm(
+        "stp x29, x30, [sp, #-0x10]!\n"
+        "mov x29, sp\n"
+        "ldr x9, [x8]\n"
+        "ldr x9, [x9, #0x200]\n"
+        "mov x0, x8\n"
+        "blr x9\n"
+        "ldp x29, x30, [sp], #0x10\n"
+        "mov w0, wzr\n"
+        "ret\n"
+    );
 }
+#endif
 
 // 0x71020a5c40 — plain, vtable[0x2e8]
-u64 FUN_71020a5c40(u64 mod) {
-    (**(void(**)(u64))(*(u64*)mod + 0x2e8))(mod);
-    return 0;
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+u64 FUN_71020a5c40(void) {
+    asm(
+        "stp x29, x30, [sp, #-0x10]!\n"
+        "mov x29, sp\n"
+        "ldr x9, [x8]\n"
+        "ldr x9, [x9, #0x2e8]\n"
+        "mov x0, x8\n"
+        "blr x9\n"
+        "ldp x29, x30, [sp], #0x10\n"
+        "mov w0, wzr\n"
+        "ret\n"
+    );
 }
+#endif
 
 // 0x71020a5da0 — str x10, vtable[0x2f0]
-u64 FUN_71020a5da0(u64 mod) {
-    (**(void(**)(u64))(*(u64*)mod + 0x2f0))(mod);
-    return 0;
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+u64 FUN_71020a5da0(void) {
+    asm(
+        "stp x29, x30, [sp, #-0x10]!\n"
+        "mov x29, sp\n"
+        "str x10, [x0, #0x10]\n"
+        "ldr x9, [x8]\n"
+        "ldr x9, [x9, #0x2f0]\n"
+        "mov x0, x8\n"
+        "blr x9\n"
+        "ldp x29, x30, [sp], #0x10\n"
+        "mov w0, wzr\n"
+        "ret\n"
+    );
 }
+#endif
 
 // 0x71020a5f10 — str x10, vtable[0x300]
-u64 FUN_71020a5f10(u64 mod) {
-    (**(void(**)(u64))(*(u64*)mod + 0x300))(mod);
-    return 0;
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+u64 FUN_71020a5f10(void) {
+    asm(
+        "stp x29, x30, [sp, #-0x10]!\n"
+        "mov x29, sp\n"
+        "str x10, [x0, #0x10]\n"
+        "ldr x9, [x8]\n"
+        "ldr x9, [x9, #0x300]\n"
+        "mov x0, x8\n"
+        "blr x9\n"
+        "ldp x29, x30, [sp], #0x10\n"
+        "mov w0, wzr\n"
+        "ret\n"
+    );
 }
+#endif
 
 // 0x71020a7008 — str x10, vtable[0x3a8]
-u64 FUN_71020a7008(u64 mod) {
-    (**(void(**)(u64))(*(u64*)mod + 0x3a8))(mod);
-    return 0;
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+u64 FUN_71020a7008(void) {
+    asm(
+        "stp x29, x30, [sp, #-0x10]!\n"
+        "mov x29, sp\n"
+        "str x10, [x0, #0x10]\n"
+        "ldr x9, [x8]\n"
+        "ldr x9, [x9, #0x3a8]\n"
+        "mov x0, x8\n"
+        "blr x9\n"
+        "ldp x29, x30, [sp], #0x10\n"
+        "mov w0, wzr\n"
+        "ret\n"
+    );
 }
+#endif
 
 // 0x71020a7160 — str x10, vtable[0x3b8]
-u64 FUN_71020a7160(u64 mod) {
-    (**(void(**)(u64))(*(u64*)mod + 0x3b8))(mod);
-    return 0;
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+u64 FUN_71020a7160(void) {
+    asm(
+        "stp x29, x30, [sp, #-0x10]!\n"
+        "mov x29, sp\n"
+        "str x10, [x0, #0x10]\n"
+        "ldr x9, [x8]\n"
+        "ldr x9, [x9, #0x3b8]\n"
+        "mov x0, x8\n"
+        "blr x9\n"
+        "ldp x29, x30, [sp], #0x10\n"
+        "mov w0, wzr\n"
+        "ret\n"
+    );
 }
+#endif
 
 // 0x71020a79e0 — plain, vtable[0x70]
-u64 FUN_71020a79e0(u64 mod) {
-    (**(void(**)(u64))(*(u64*)mod + 0x70))(mod);
-    return 0;
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+u64 FUN_71020a79e0(void) {
+    asm(
+        "stp x29, x30, [sp, #-0x10]!\n"
+        "mov x29, sp\n"
+        "ldr x9, [x8]\n"
+        "ldr x9, [x9, #0x70]\n"
+        "mov x0, x8\n"
+        "blr x9\n"
+        "ldp x29, x30, [sp], #0x10\n"
+        "mov w0, wzr\n"
+        "ret\n"
+    );
 }
+#endif
 
 // 0x71020adef0 — str x10, vtable[0x280]
-u64 FUN_71020adef0(u64 mod) {
-    (**(void(**)(u64))(*(u64*)mod + 0x280))(mod);
-    return 0;
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+u64 FUN_71020adef0(void) {
+    asm(
+        "stp x29, x30, [sp, #-0x10]!\n"
+        "mov x29, sp\n"
+        "str x10, [x0, #0x10]\n"
+        "ldr x9, [x8]\n"
+        "ldr x9, [x9, #0x280]\n"
+        "mov x0, x8\n"
+        "blr x9\n"
+        "ldp x29, x30, [sp], #0x10\n"
+        "mov w0, wzr\n"
+        "ret\n"
+    );
 }
+#endif
