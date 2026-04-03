@@ -1,4 +1,7 @@
 #include "types.h"
+#include "app/BattleObjectModuleAccessor.h"
+
+using app::BattleObjectModuleAccessor;
 
 // Batch decompiled via Ghidra MCP -- pool-c, batch 017
 // Range: 0x7102000000 -- 0x7102FFFFFF
@@ -86,16 +89,16 @@ bool is_active_71022839d0(u32 id) {
 // ── 0x7102283660 -- app::sv_battle_object::pos (160B) ────────────────────────
 void pos_7102283660(u32 id) {
     void* obj = resolve_battle_object(id);
-    void* inner = *reinterpret_cast<void**>(reinterpret_cast<u8*>(obj) + 0x20);
-    void* posture = *reinterpret_cast<void**>(reinterpret_cast<u8*>(inner) + 0x38);
+    auto* inner = reinterpret_cast<BattleObjectModuleAccessor*>(*reinterpret_cast<void**>(reinterpret_cast<u8*>(obj) + 0x20));
+    void* posture = inner->posture_module;
     reinterpret_cast<void(*)(void*)>(VT(posture)[0x60/8])(posture);
 }
 
 // ── 0x7102283920 -- app::sv_battle_object::set_float (176B) ──────────────────
 void set_float(u32 id, f32 val, s32 idx) {
     void* obj = resolve_battle_object(id);
-    void* inner = *reinterpret_cast<void**>(reinterpret_cast<u8*>(obj) + 0x20);
-    void* work = *reinterpret_cast<void**>(reinterpret_cast<u8*>(inner) + 0x50);
+    auto* inner = reinterpret_cast<BattleObjectModuleAccessor*>(*reinterpret_cast<void**>(reinterpret_cast<u8*>(obj) + 0x20));
+    void* work = inner->work_module;
     reinterpret_cast<void(*)(void*, f32, s32)>(VT(work)[0x60/8])(work, val, idx);
 }
 
@@ -126,7 +129,7 @@ u32 damage_710227dfb0(void* L) {
     *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x20) = L;
     *reinterpret_cast<u8*>(reinterpret_cast<u8*>(ctx) + 0x28) = 0;
 
-    void* mod = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc_data) + 0xa8);
+    void* mod = reinterpret_cast<BattleObjectModuleAccessor*>(acc_data)->damage_module;
     FUN_71003cb840(mod, ctx);
 
     u8 done = *reinterpret_cast<u8*>(reinterpret_cast<u8*>(ctx) + 0x28);
@@ -166,7 +169,7 @@ u32 link_710227e070(void* L) {
     *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x20) = L;
     *reinterpret_cast<u8*>(reinterpret_cast<u8*>(ctx) + 0x28) = 0;
 
-    void* mod = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc_data) + 0xd0);
+    void* mod = reinterpret_cast<BattleObjectModuleAccessor*>(acc_data)->link_module;
     return *reinterpret_cast<u32*>(&ctx[1]);
 }
 
@@ -191,7 +194,7 @@ u32 search_710227e1f0(void* L) {
     *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x20) = L;
     *reinterpret_cast<u8*>(reinterpret_cast<u8*>(ctx) + 0x28) = 0;
 
-    void* mod = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc_data) + 0xe0);
+    void* mod = reinterpret_cast<BattleObjectModuleAccessor*>(acc_data)->search_module;
     return *reinterpret_cast<u32*>(&ctx[1]);
 }
 
@@ -219,7 +222,7 @@ static inline void lua_pop_all(void* L) {
 // ── 0x7102276a40 -- app::sv_kinetic_energy::enable (192B) ────────────────────
 void enable_7102276a40(void* L) {
     void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
-    void** km = *reinterpret_cast<void***>(reinterpret_cast<u8*>(*reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x1a0)) + 0x68);
+    void** km = reinterpret_cast<void**>(reinterpret_cast<BattleObjectModuleAccessor*>(*reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x1a0))->item_kinetic_module);
 
     u64 top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
     u64 ci_base = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20)) + 0x10;
@@ -239,7 +242,7 @@ void enable_7102276a40(void* L) {
 // ── 0x7102276b00 -- app::sv_kinetic_energy::unable (192B) ────────────────────
 void unable_7102276b00(void* L) {
     void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
-    void** km = *reinterpret_cast<void***>(reinterpret_cast<u8*>(*reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x1a0)) + 0x68);
+    void** km = reinterpret_cast<void**>(reinterpret_cast<BattleObjectModuleAccessor*>(*reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x1a0))->item_kinetic_module);
 
     u64 top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
     u64 ci_base = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20)) + 0x10;
@@ -259,7 +262,7 @@ void unable_7102276b00(void* L) {
 // ── 0x7102276c90 -- app::sv_kinetic_energy::clear_speed (208B) ───────────────
 void clear_speed_7102276c90(void* L) {
     void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
-    void** km = *reinterpret_cast<void***>(reinterpret_cast<u8*>(*reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x1a0)) + 0x68);
+    void** km = reinterpret_cast<void**>(reinterpret_cast<BattleObjectModuleAccessor*>(*reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x1a0))->item_kinetic_module);
 
     u64 top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
     u64 ci_base = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20)) + 0x10;
@@ -279,7 +282,7 @@ void clear_speed_7102276c90(void* L) {
 // ── 0x7102277640 -- app::sv_kinetic_energy::get_speed (256B) ─────────────────
 void get_speed_7102277640(void* L) {
     void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
-    void** km = *reinterpret_cast<void***>(reinterpret_cast<u8*>(*reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x1a0)) + 0x68);
+    void** km = reinterpret_cast<void**>(reinterpret_cast<BattleObjectModuleAccessor*>(*reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x1a0))->item_kinetic_module);
 
     u64 top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
     u64 ci_base = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20)) + 0x10;
@@ -317,7 +320,7 @@ u32 link_710227e930(void* L) {
     *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x20) = L;
     *reinterpret_cast<u8*>(reinterpret_cast<u8*>(ctx) + 0x28) = 0;
 
-    void** link_mod = *reinterpret_cast<void***>(reinterpret_cast<u8*>(acc_data) + 0xd0);
+    void** link_mod = reinterpret_cast<void**>(reinterpret_cast<BattleObjectModuleAccessor*>(acc_data)->link_module);
     u32 result = reinterpret_cast<u32(*)(void**, void*)>(VT(link_mod)[0x20/8])(link_mod, ctx);
 
     void* inner_L = reinterpret_cast<void*>(iter_ptr[2]);
