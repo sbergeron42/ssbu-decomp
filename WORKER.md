@@ -1,71 +1,46 @@
-# Worker: pool-b
+# Worker: pool-e
 
-## Model: Opus
+## Model: Sonnet
 
-## Task: Build proper C++ struct definitions for all game types
+## Task: Batch MEDIUM decomp (0x7102-0x7103 range, continued)
 
-The decomp currently uses raw pointer arithmetic (`reinterpret_cast<u8*>(obj) + 0x60`) instead of proper struct field access (`obj->cameraModule`). This makes the code unreadable. Build real C++ struct/class headers so the decomp produces human-readable code.
+Continue batch-decompiling MEDIUM-tier functions. Now use the struct headers in include/app/ for better readability.
 
-### Phase 1: Complete BattleObjectModuleAccessor struct
-`include/app/BattleObjectModuleAccessor.h` already has partial fields. Fill in ALL module pointers using the verified offset map:
+### Batch pipeline workflow
+1. Pick 20-30 uncompiled MEDIUM functions from data/fun_triage.csv in 0x7102-0x7103 range
+2. For each, call mcp__ghidra__decompile_function_by_address(address)
+3. Apply type fixups (undefined8->u64, uint->u32, etc.)
+4. Where possible, use BattleObjectModuleAccessor fields instead of raw offsets
+5. Write to src/app/fun_batch_e3_NNN.cpp with // 0x71XXXXXXXX address comments
+6. Build, verify, commit, repeat
 
-| Offset | Field | Type |
-|--------|-------|------|
-| +0x38 | posture_module | PostureModule* |
-| +0x40 | status_module | StatusModule* |
-| +0x48 | control_module | ControlModule* |
-| +0x50 | work_module | WorkModule* |
-| +0x58 | ground_module | GroundModule* |
-| +0x60 | camera_module | CameraModule* |
-| +0x68 | kinetic_module | KineticModule* |
-| +0x70 | color_blend_module | ColorBlendModule* |
-| +0x78 | model_module | ModelModule* |
-| +0x80 | physics_module | PhysicsModule* |
-| +0x88 | motion_module | MotionModule* |
-| +0x90 | stop_module | StopModule* |
-| +0x98 | article_module | ArticleModule* |
-| +0xA0 | attack_module | AttackModule* |
-| +0xA8 | damage_module | DamageModule* |
-| +0xB0 | hit_module | HitModule* |
-| +0xB8 | combo_module | ComboModule* |
-| +0xC0 | area_module | AreaModule* |
-| +0xC8 | item_module | ItemModule* |
-| +0xD0 | link_module | LinkModule* |
-| +0xD8 | team_module | TeamModule* |
-| +0xE0 | search_module | SearchModule* |
-| +0xF0 | turn_module | TurnModule* |
-| +0xF8 | reflect_module | ReflectModule* |
-| +0x100 | shield_module | ShieldModule* |
-| +0x108 | reflector_module | ReflectorModule* |
-| +0x110 | absorber_module | AbsorberModule* |
-| +0x118 | jostle_module | JostleModule* |
-| +0x120 | catch_module | CatchModule* |
-| +0x128 | cancel_module | CancelModule* |
-| +0x138 | capture_module | CaptureModule* |
-| +0x140 | effect_module | EffectModule* |
-| +0x148 | sound_module | SoundModule* |
-| +0x150 | visibility_module | VisibilityModule* |
-| +0x158 | grab_module | GrabModule* |
-| +0x168 | shake_module | ShakeModule* |
-| +0x170 | slow_module | SlowModule* |
-| +0x180 | shadow_module | ShadowModule* |
-| +0x188 | motion_animcmd_module | MotionAnimcmdModule* |
-| +0x198 | ink_paint_module | InkPaintModule* |
+### Using structs
+If a function takes BattleObjectModuleAccessor* as first param:
+    #include "app/BattleObjectModuleAccessor.h"
+    void func(app::BattleObjectModuleAccessor* acc) {
+        auto* m = acc->camera_module;  // instead of *(void**)((u8*)acc + 0x60)
+    }
 
-Use forward-declared struct types (not void*) for each module.
+### Progress (session 2)
+Batches e3-017 through e3-025 committed (2026-04-02):
+- e3-017: 13 ComboModule (0xb8) lua_bind wrappers
+- e3-018/019: 22 ModelModule (+0x78) _impl thunks (4/5-insn tail calls)
+- e3-020: 9 more ModelModule thunks
+- e3-021/022/023: 93 MotionModule (+0x88) thunks
+- e3-023 also: 13 MotionAnimcmdModule (+0x188) thunks
+- e3-024/025: 41 PostureModule (+0x38) + ReflectModule (+0xf8) thunks
 
-### Phase 2: Add stub struct headers for each module type
-Create `include/app/modules/CameraModule.h`, `include/app/modules/WorkModule.h`, etc. — each is just a forward declaration or empty struct for now. This lets the accessor header use real types.
-
-### Phase 3: Add FighterManager, FighterInformation, FighterEntry structs
-These operate on their own pointer (not through the accessor). Define their known field offsets from our verified decomp.
-
-### Phase 4: Refactor ONE module file as proof of concept
-Pick CameraModule.cpp and replace all `reinterpret_cast<u8*>(acc) + 0x60` with `acc->camera_module`. Verify it still compiles and matches. This proves the struct is correct.
+### Progress (session 3)
+Batches e3-028 through e3-041 committed (2026-04-02):
+- e3-028/029/030/031: vtable dispatch thunks (framed_vtable_call, pattern A/B)
+- e3-032/033: named bl-direct thunks (framed_vtable_call, x8-dispatch)
+- e3-034 through e3-041: 147 more bl-direct thunks discovered via raw ELF byte scan
+  (Ghidra missed most as separate function boundaries; identified via raw bytes)
+  Coverage: 0x710215e150 through 0x710226e0c0, all 8-insn/6-insn thunk patterns
+ALL simple framed_vtable_call thunks in N-quality are now written.
+Next: look for other compilable patterns in remaining N-quality (0x7103 range)
 
 ### Rules
-- ONLY edit files in `include/app/` and `include/app/modules/`
-- For Phase 4, ONLY edit `src/app/modules/CameraModule.cpp`
-- Do NOT edit any other source files
+- ONLY create NEW files named src/app/fun_batch_e3_*.cpp
+- Do NOT edit any existing files
 - Do NOT modify data/functions.csv or tools/
-- Verify matching is preserved after each change: `cmd /c build.bat && python tools/verify_all.py --summary`
