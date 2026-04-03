@@ -10,11 +10,11 @@
 extern "C" void *memcpy(void *, const void *, u64);
 
 // External data
-extern u8  PTR_DAT_71052a5058[] HIDDEN;
-extern u8  PTR_DAT_71052a50c0[] HIDDEN;
-extern u8  PTR_DAT_71052a50e0[] HIDDEN;
-extern u8  PTR_DAT_71052a57d8[] HIDDEN;
-extern u8  PTR_DAT_71052a57e0[] HIDDEN;
+extern u64 PTR_DAT_71052a5058 HIDDEN;
+extern u64 PTR_DAT_71052a50c0 HIDDEN;
+extern u64 PTR_DAT_71052a50e0 HIDDEN;
+extern u64 PTR_DAT_71052a57d8 HIDDEN;
+extern u64 PTR_DAT_71052a57e0 HIDDEN;
 
 // External FUN_* forward declarations
 extern u64  FUN_71000b1b90();
@@ -156,23 +156,23 @@ bool FUN_7100166180(s64 *param_1)
 // 0x7100168810 — ctor: parent + sub init, set vtable + sub-vtable ptr (80 bytes)
 void FUN_7100168810(s64 *param_1)
 {
-    u8 *puVar1;
+    u64 uVar1;
     FUN_71001770c0();
     FUN_71000bed00(param_1 + 2);
-    puVar1 = PTR_DAT_71052a50c0 + 0x48;
-    *param_1 = (s64)(PTR_DAT_71052a50c0 + 0x10);
-    param_1[2] = (s64)puVar1;
+    uVar1 = PTR_DAT_71052a50c0;
+    *param_1 = (s64)(uVar1 + 0x10);
+    param_1[2] = (s64)(uVar1 + 0x48);
 }
 
 // 0x710016a240 — ctor: parent + sub init, set vtable + sub-vtable ptr (80 bytes)
 void FUN_710016a240(s64 *param_1)
 {
-    u8 *puVar1;
+    u64 uVar1;
     FUN_710017c1c0();
     FUN_71000bed00(param_1 + 2);
-    puVar1 = PTR_DAT_71052a50e0 + 0x68;
-    *param_1 = (s64)(PTR_DAT_71052a50e0 + 0x10);
-    param_1[2] = (s64)puVar1;
+    uVar1 = PTR_DAT_71052a50e0;
+    *param_1 = (s64)(uVar1 + 0x10);
+    param_1[2] = (s64)(uVar1 + 0x68);
 }
 
 // 0x710016b7a0 — factory: alloc 0x68-byte object, init with FUN_7100170cd0 (144 bytes)

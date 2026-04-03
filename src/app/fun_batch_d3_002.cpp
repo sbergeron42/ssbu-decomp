@@ -17,10 +17,10 @@ namespace nn { namespace os {
 }}
 
 // External data
-extern u8 PTR_DAT_71052a5108[] HIDDEN;
-extern u8 PTR_DAT_71052a5190[] HIDDEN;
-extern u8 PTR_DAT_71052a5198[] HIDDEN;
-extern u8 PTR_DAT_71052a5200[] HIDDEN;
+extern u64 PTR_DAT_71052a5108 HIDDEN;
+extern u64 PTR_DAT_71052a5190 HIDDEN;
+extern u64 PTR_DAT_71052a5198 HIDDEN;
+extern u64 PTR_DAT_71052a5200 HIDDEN;
 
 // External FUN_* forward declarations
 extern void FUN_71001738e0();

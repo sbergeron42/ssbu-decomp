@@ -8,7 +8,7 @@
 // ---- External declarations -----------------------------------------------
 
 // External data
-extern u8  PTR_DAT_71052a4180[] HIDDEN;
+extern u64 PTR_DAT_71052a4180 HIDDEN;
 
 // External FUN_* forward declarations
 extern void FUN_710013e590();
@@ -25,16 +25,16 @@ extern void FUN_71001b4200(u64, u32 *);
 // 0x71000f20e0 — ctor: parent init, clear 5 fields, set vtable (80 bytes)
 void FUN_71000f20e0(s64 *param_1)
 {
-    u8 *puVar1;
+    u64 uVar1;
 
     FUN_710013e590();
-    puVar1 = PTR_DAT_71052a4180;
+    uVar1 = PTR_DAT_71052a4180;
     *(u32 *)(param_1 + 0x2d) = 0;
     param_1[0x27] = 0;
     param_1[0x28] = 0;
     param_1[0x29] = 0;
     param_1[0x2a] = 0;
-    *param_1 = (s64)(puVar1 + 0x10);
+    *param_1 = (s64)(uVar1 + 0x10);
     *(u8 *)((s64)param_1 + 0x16c) = 0;
     param_1[0x2e] = 0;
 }

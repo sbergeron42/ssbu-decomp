@@ -8,8 +8,8 @@
 // ---- External declarations -----------------------------------------------
 
 // External data
-extern u8  PTR_DAT_71052a5808[] HIDDEN;
-extern u8  PTR_DAT_71052a3cd0[] HIDDEN;
+extern u64 PTR_DAT_71052a5808 HIDDEN;
+extern u64 PTR_DAT_71052a3cd0 HIDDEN;
 extern u8  DAT_710449be2f HIDDEN;
 
 // External FUN_* forward declarations

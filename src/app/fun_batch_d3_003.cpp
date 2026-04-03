@@ -8,12 +8,12 @@
 // ---- External declarations -----------------------------------------------
 
 // External data
-extern u8  PTR_DAT_71052a4ec0[] HIDDEN;
+extern u64 PTR_DAT_71052a4ec0 HIDDEN;
 extern u8  PTR_FUN_71052a5728[] HIDDEN;
 extern u8  PTR_DAT_71052a5868[] HIDDEN;
 extern u8  PTR_DAT_71052a5870[] HIDDEN;
-extern u8  PTR_DAT_71052a5970[] HIDDEN;
-extern u8  PTR_DAT_71052a5d00[] HIDDEN;
+extern u64 PTR_DAT_71052a5970 HIDDEN;
+extern u64 PTR_DAT_71052a5d00 HIDDEN;
 extern u8  DAT_710449be6f HIDDEN;
 
 // External FUN_* forward declarations
@@ -39,13 +39,13 @@ extern void FUN_71001dd4a0(s64 *, u64);
 // 0x7100149540 — ctor: parent init, clear +0xec/+0xf0, set vtable (128 bytes)
 void FUN_7100149540(s64 *param_1)
 {
-    u8 *puVar1;
+    u64 uVar1;
 
     FUN_71000baa20();
-    puVar1 = PTR_DAT_71052a4ec0;
+    uVar1 = PTR_DAT_71052a4ec0;
     *(u8 *)((s64)param_1 + 0xec) = 0;
     param_1[0x1e] = 0;
-    *param_1 = (s64)(puVar1 + 0x10);
+    *param_1 = (s64)(uVar1 + 0x10);
 }
 
 // 0x7100161d00 — delegate: forward sub-object at +0x60 to FUN_7100156220 at +0xa4c (176 bytes)
