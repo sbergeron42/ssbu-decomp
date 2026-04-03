@@ -1,13 +1,13 @@
-# Worker: pool-e
+# Worker: pool-d
 
 ## Model: Sonnet
 
-## Task: Batch decomp MEDIUM FUN_* (0x7102-0x7103 range) via Ghidra pipeline
+## Task: Batch decomp MEDIUM FUN_* (all ranges, continued) via Ghidra pipeline
 
-Batch-decompile MEDIUM-tier functions in address range 0x7102000000-0x7103FFFFFF.
+Continue batch-decompiling MEDIUM-tier functions across all address ranges.
 
 ### Batch pipeline workflow
-1. Pick 20-30 uncompiled MEDIUM functions from data/fun_triage.csv in your address range
+1. Pick 20-30 uncompiled MEDIUM functions from data/fun_triage.csv
 2. For each, call mcp__ghidra__decompile_function_by_address(address)
 3. Apply type fixups: undefined8->u64, undefined4->u32, undefined2->u16, byte->u8, uint->u32, int->s32, long->s64, ulong->u64, bool->u8
 4. Skip functions with WARNING comments or broken decompilation
@@ -15,11 +15,25 @@ Batch-decompile MEDIUM-tier functions in address range 0x7102000000-0x7103FFFFFF
 6. Build and verify, fix compile errors, commit, repeat
 
 ### Output files
-- Create src/app/fun_batch_e2_001.cpp, fun_batch_e2_002.cpp, etc.
+- Create src/app/fun_batch_d4_001.cpp, fun_batch_d4_002.cpp, etc.
 - Do NOT put functions in any namespace (global functions)
 - Forward-declare unknown called functions as extern "C" void FUNCNAME();
 
 ### Rules
-- ONLY create NEW files named src/app/fun_batch_e2_*.cpp
+- ONLY create NEW files named src/app/fun_batch_d4_*.cpp
 - Do NOT edit any existing files
 - Do NOT modify data/functions.csv or tools/
+
+### Progress
+- d4-001: 19 functions, 0x71002bb310–0x710031367c
+- d4-002: 6 functions, 0x71002f0f70–0x7100314d50
+- d4-003: 14 functions, 0x7100325e50–0x71003cb1b0
+- d4-004: 2 functions, 0x71003a0a20–0x71003abd60
+- d4-005: 18 functions, 0x71003cfc50–0x7100421d10
+- d4-006: 12 functions, 0x7100422720–0x71004af3f0
+- d4-007: 10 functions, 0x71004f5750–0x710067e650
+- d4-008: 10 functions, 0x7100837d1c–0x7100d12af0
+- d4-009: 26 functions, 0x7100000250–0x710013bd08
+- d4-010: 24 functions, 0x710007a9d0–0x71000b3d10
+- d4-011: 28 functions, 0x7100145ec0–0x71001578e0
+- d4-012: 25 functions, 0x7100158070–0x7100194e60
