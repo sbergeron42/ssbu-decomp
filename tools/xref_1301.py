@@ -187,10 +187,12 @@ def main():
                     updated += 1
                 rows.append(row)
 
-        with open(SSBU_CSV, 'w', newline='') as f:
+        tmp = str(SSBU_CSV) + '.tmp'
+        with open(tmp, 'w', newline='') as f:
             writer = csv.writer(f)
             writer.writerow(header)
             writer.writerows(rows)
+        import os; os.replace(tmp, str(SSBU_CSV))
 
         print("Updated %d function names" % updated)
     elif dry_run:

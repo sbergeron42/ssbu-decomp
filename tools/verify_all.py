@@ -560,10 +560,12 @@ def main():
                         status, _ = addr_to_status[csv_addr]
                         row['Quality'] = status
                 rows.append(row)
-        with open(FUNCTIONS_CSV, 'w', newline='') as f:
+        tmp_csv = str(FUNCTIONS_CSV) + '.tmp'
+        with open(tmp_csv, 'w', newline='') as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction='ignore')
             writer.writeheader()
             writer.writerows(rows)
+        os.replace(tmp_csv, str(FUNCTIONS_CSV))
         print("  Updated %d entries in functions.csv" % len(results))
 
 
