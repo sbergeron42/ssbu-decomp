@@ -4,6 +4,8 @@
 // Pool-d worker: auto-generated from Ghidra decompilation
 // Includes: vtable dispatch, singleton guard, abort wrappers, FNV hash switches, struct copies, nested switch
 
+#define HIDDEN __attribute__((visibility("hidden")))
+
 // ---- External declarations -----------------------------------------------
 
 // Singleton guard globals (FUN_71012859f0)
@@ -12,8 +14,8 @@ extern u64 DAT_71052c1b08;
 extern u8  PTR_LAB_7105051418;
 
 // PTR_LAB globals for struct-copy functions
-extern u8 PTR_LAB_7105079ed0;
-extern u8 PTR_LAB_71050806a8;
+extern u8 PTR_LAB_7105079ed0 HIDDEN;
+extern u8 PTR_LAB_71050806a8 HIDDEN;
 
 extern "C" s32 __cxa_guard_acquire(u64 *);
 extern "C" void __cxa_guard_release(u64 *);
