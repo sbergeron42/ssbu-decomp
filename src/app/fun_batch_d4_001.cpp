@@ -24,26 +24,6 @@ extern u8 DAT_71044a7cd0;
 extern u8 DAT_71044a7d50;
 
 // ---- Functions ---------------------------------------------------------------
-
-// 0x71002bb310 — zero struct: clear 14 u64 slots and one u32 field
-void FUN_71002bb310(u64 *param_1)
-{
-    *(u32 *)(param_1 + 0xd) = 0;
-    param_1[0xb] = 0;
-    param_1[0xc] = 0;
-    *param_1 = 0;
-    param_1[9] = 0;
-    param_1[10] = 0;
-    param_1[7] = 0;
-    param_1[8] = 0;
-    param_1[5] = 0;
-    param_1[6] = 0;
-    param_1[3] = 0;
-    param_1[4] = 0;
-    param_1[1] = 0;
-    param_1[2] = 0;
-}
-
 // 0x71002c2810 — table lookup by index (<3): return u64 entry from DAT table
 u64 FUN_71002c2810(u32 param_1)
 {
@@ -159,13 +139,6 @@ void FUN_71002c1d20(s64 param_1, u32 param_2)
 {
     FUN_71002c3200((void *)(param_1 + (u64)param_2 * 0x128 + 8));
 }
-
-// 0x71002c1f70 — align up: align (param_1+0x10) to param_2 byte boundary
-void FUN_71002c1f70(s64 param_1, s64 param_2)
-{
-    *(u64 *)(param_1 + 0x10) = (param_2 + *(s64 *)(param_1 + 0x10)) - 1U & -param_2;
-}
-
 // 0x71002c1fe0 — delegate+offset: return FUN_71000339f0(*p) + p[2]
 s64 FUN_71002c1fe0(u64 *param_1)
 {
@@ -174,19 +147,6 @@ s64 FUN_71002c1fe0(u64 *param_1)
     lVar1 = FUN_71000339f0(*param_1);
     return lVar1 + param_1[2];
 }
-
-// 0x71002c2b30 — compute offset: base+0x18 + param_2*0x48 + 0x12704
-s64 FUN_71002c2b30(s64 param_1, u32 param_2)
-{
-    return *(s64 *)(param_1 + 0x18) + (u64)param_2 * 0x48 + 0x12704;
-}
-
-// 0x71002c2b50 — compute offset: base+0x18 + param_2*0x24 + 0x14c24
-s64 FUN_71002c2b50(s64 param_1, u32 param_2)
-{
-    return *(s64 *)(param_1 + 0x18) + (u64)param_2 * 0x24 + 0x14c24;
-}
-
 // 0x71002c2ba0 — divide field +0x2c by table[1] entry
 u64 FUN_71002c2ba0(s64 param_1)
 {
@@ -230,16 +190,6 @@ void FUN_71002c2f70(s64 param_1)
     FUN_710003a240(param_1 + 0xd8);
     *(u64 *)(param_1 + 0x120) = 0xffffffffffffffff;
 }
-
-// 0x71002c31e0 — conditional assign: if field != -1, clear then store *param_2
-void FUN_71002c31e0(s64 param_1, u64 *param_2)
-{
-    if (*(s64 *)(param_1 + 0x120) != -1) {
-        *(u64 *)(param_1 + 0x120) = 0xffffffffffffffff;
-    }
-    *(u64 *)(param_1 + 0x120) = *param_2;
-}
-
 // 0x710031321c — delegate: call FUN_7100313000 with 4 sub-offsets
 u64 FUN_710031321c(s64 param_1, s64 param_2)
 {

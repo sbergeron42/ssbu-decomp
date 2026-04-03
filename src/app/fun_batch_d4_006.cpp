@@ -196,28 +196,6 @@ u8 FUN_710049f598(s64 param_1, u64 param_2, u64 param_3)
                 (*(s64 **)(param_1 + 8), param_3 & 0xffffffffff);
     return iVar1 != -1;
 }
-
-// 0x71004af3f0 — bounds-checked write: write param_1 to two offsets in array entry
-void FUN_71004af3f0(u32 param_1, s64 param_2, u32 param_3)
-{
-    s64 *plVar1;
-    u64 uVar2;
-    u64 uVar3;
-
-    plVar1 = *(s64 **)(param_2 + 200);
-    uVar3 = (u64)((plVar1[1] - *plVar1) >> 4) * (u64)(-0x30c30c30c30c30c3LL);
-    uVar2 = (u64)param_3;
-    if (uVar2 <= uVar3 && uVar3 - uVar2 != 0) {
-        *(u32 *)(*plVar1 + (s64)uVar2 * 0x150 + 0x54) = param_1;
-        uVar3 = (u64)((plVar1[1] - *plVar1) >> 4) * (u64)(-0x30c30c30c30c30c3LL);
-        if (uVar2 <= uVar3 && uVar3 - uVar2 != 0) {
-            *(u32 *)(*plVar1 + (s64)uVar2 * 0x150 + 0x5c) = param_1;
-            return;
-        }
-    }
-    abort();
-}
-
 // 0x710049f630 — conditional static init + vtable lookup
 u64 FUN_710049f630(s64 param_1, u64 param_2)
 {

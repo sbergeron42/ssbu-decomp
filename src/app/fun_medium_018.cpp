@@ -76,15 +76,6 @@ u64 FUN_7100174f00(s64 param_1)
     }
     return 0;
 }
-
-// 7100174ff0 -- vtable call at +0x178 with 16-byte stack buf
-void FUN_7100174ff0(s64 param_1, s64* param_2)
-{
-    u8 auStack_20[16];
-    *(s64**)(param_1 + 0x18) = param_2;
-    (*(void(**)(u8*, s64*, u64))(*(s64*)param_2 + 0x178))(auStack_20, param_2, *(u64*)(param_1 + 0x10));
-}
-
 // ---- InetAddress helpers -------------------------------------------------
 
 // 71001800a0 -- double IsValid check, return compare result

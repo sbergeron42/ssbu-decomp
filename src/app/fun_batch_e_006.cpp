@@ -71,24 +71,6 @@ void FUN_7100154200(s64 param_1)
     *(u16 *)(param_1 + 0x2c) = 0;
     *(u64 *)(param_1 + 8) = 0;
 }
-
-// 0x71001c5010 -- conditional arithmetic field update
-void FUN_71001c5010(u32 param_1, s64 param_2, u64 param_3)
-{
-    s32 iVar1;
-    u64 local_18;
-
-    local_18 = 0;
-    iVar1 = FUN_71001c4c40(param_1,
-                            *(s64 *)(param_2 + 0x10) + *(s64 *)(param_2 + 0x28),
-                            *(s64 *)(param_2 + 0x20) - *(s64 *)(param_2 + 0x28),
-                            &local_18, param_3, 1);
-    if (iVar1 != 0) {
-        return;
-    }
-    *(u64 *)(param_2 + 0x18) = local_18;
-}
-
 // 0x71001ce780 -- strcpy "Encryption Error" if buffer large enough
 u64 FUN_71001ce780(u64 param_1, u64 param_2, char *param_3, u64 param_4)
 {
@@ -125,38 +107,6 @@ void FUN_71001e1710(u64 param_1, s64 param_2, u64 param_3)
     local_14 = 0x10001;
     FUN_71001b4200(param_1, &local_14);
 }
-
-// 0x71002c2810 -- range-checked table lookup (or abort)
-u64 FUN_71002c2810(u32 param_1)
-{
-    if (param_1 < 3) {
-        return *(u64 *)(DAT_71044a7c80 + (s64)(s32)param_1 * 8);
-    }
-    nn::detail::UnexpectedDefaultImpl("", "", 0);
-}
-
-// 0x7100325e50 -- switch returning float constants
-u32 FUN_7100325e50(s64 param_1, u32 param_2)
-{
-    switch (param_2) {
-    case 0x23:
-        return 0;
-    case 0x24: case 0x25: case 0x26: case 0x27:
-        return 0x41c80000;
-    case 0x3f: case 0x40: case 0x41:
-        return DAT_71044718a4;
-    case 0x42: case 0x43: case 0x44: case 0x45: case 0x46:
-        if (*(s32 *)(param_1 + 0x120) == 0x39) {
-            return 0x41a00000;
-        }
-        if (*(s32 *)(param_1 + 0x120) == 0x47) {
-            return 0x41a00000;
-        }
-        break;
-    }
-    return DAT_71044723d8;
-}
-
 // 0x71004f6590 -- empty CXA guard, return byte
 u8 FUN_71004f6590(void)
 {
@@ -174,19 +124,6 @@ void FUN_710065f8a8(void)
 {
     abort();
 }
-
-// 0x7100405d60 -- vtable call + bit test
-u32 FUN_7100405d60(s64 *param_1)
-{
-    s32 iVar1;
-
-    iVar1 = (*(s32 (**)())(*param_1 + 0x28))();
-    if ((u32)(iVar1 - 7) < 0x17) {
-        return 0x500003u >> ((u64)(u32)((iVar1 - 7) & 0x1f)) & 1;
-    }
-    return 0;
-}
-
 // 0x710065f65c -- abort stub
 void FUN_710065f65c(void)
 {
@@ -265,18 +202,6 @@ u64 FUN_71001e0070(s64 param_1, u64 param_2)
     *(u8 *)(param_1 + 0x69) = 0;
     return 1;
 }
-
-// 0x71001e1830 -- build error code, dispatch
-void FUN_71001e1830(u64 param_1, u32 param_2)
-{
-    u32 local_3c;
-    u8  auStack_38[24];
-
-    local_3c = 0x800300d2;
-    FUN_71001b4200((u64)auStack_38, &local_3c);
-    FUN_71001e1770(param_1, param_2, auStack_38);
-}
-
 // 0x7100186580 -- vtable ptr + list head init
 void FUN_7100186580(s64 *param_1)
 {

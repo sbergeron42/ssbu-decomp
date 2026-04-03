@@ -25,6 +25,20 @@ void FighterKineticEnergyMotion__set_speed_mul_impl(FighterKineticEnergyMotion* 
 
 // 7102120f70 -- set_angle_whole: multiply by deg2rad constant, store to +0x94 and +0x98
 // Naked asm: fmul must precede str w1, and fmul uses s0 as first source operand.
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked))
+void FighterKineticEnergyMotion__set_angle_whole_impl(FighterKineticEnergyMotion*, f32, s32) {
+    asm("adrp x8, DAT_71044716e0\n"
+        "ldr s1, [x8, :lo12:DAT_71044716e0]\n"
+        "fmul s0, s0, s1\n"
+        "str w1, [x0, #0x98]\n"
+        "str s0, [x0, #0x94]\n"
+        "cbz w1, 1f\n"
+        "ret\n"
+        "1: str s0, [x0, #0x90]\n"
+        "ret\n");
+}
+#else
 void FighterKineticEnergyMotion__set_angle_whole_impl(FighterKineticEnergyMotion* ke, f32 angle, s32 mode) {
     auto* p = reinterpret_cast<u8*>(ke);
     f32 rad = angle * DAT_71044716e0;
@@ -34,6 +48,7 @@ void FighterKineticEnergyMotion__set_angle_whole_impl(FighterKineticEnergyMotion
         *reinterpret_cast<f32*>(p + 0x90) = rad;
     }
 }
+#endif
 
 // 7102120fb0 -- set_chara_dir: if changed, negate old dir into vec[0] at +0xa0
 #ifdef MATCHING_HACK_NX_CLANG

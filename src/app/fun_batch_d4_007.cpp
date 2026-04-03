@@ -26,13 +26,6 @@ void FUN_71004f5750(u64 *param_1)
     param_1[0x12]= (u64)&DAT_c1ffff0000000000;
     param_1[0x15]= (u64)&DAT_c1ffff0000000000;
 }
-
-// 0x710058b1d0 — vtable dispatch: call vtable[0xc0], forward return
-u32 FUN_710058b1d0(s64 *param_1)
-{
-    return (**(u32 (**)())(*param_1 + 0xc0))();
-}
-
 // 0x710065dca0 — motion-type remap: switch selected pairs to alternate IDs
 u32 FUN_710065dca0(u32 *param_1)
 {

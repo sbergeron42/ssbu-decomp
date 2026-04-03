@@ -56,35 +56,6 @@ s64 FUN_7100194310(void)
     }
     return lVar2;
 }
-
-// 0x7100194390 -- alloc 0xf0, init FUN_7100189a10
-s64 FUN_7100194390(void)
-{
-    u64 uVar1;
-    s64 lVar2;
-
-    uVar1 = FUN_71000b1b90();
-    lVar2 = FUN_7100130810(0xf0, uVar1);
-    if (lVar2 != 0) {
-        FUN_7100189a10(lVar2);
-    }
-    return lVar2;
-}
-
-// 0x7100179500 -- alloc 0x118, init FUN_7100194810
-s64 FUN_7100179500(void)
-{
-    u64 uVar1;
-    s64 lVar2;
-
-    uVar1 = FUN_71000b1b90();
-    lVar2 = FUN_7100130810(0x118, uVar1);
-    if (lVar2 != 0) {
-        FUN_7100194810(lVar2);
-    }
-    return lVar2;
-}
-
 // 0x7100179ab0 -- alloc 0xa0, init FUN_710017ada0
 s64 FUN_7100179ab0(void)
 {
@@ -196,35 +167,6 @@ s64 FUN_7100194710(void)
     }
     return lVar2;
 }
-
-// 0x7100194790 -- alloc 0x1130, init FUN_710019f980
-s64 FUN_7100194790(void)
-{
-    u64 uVar1;
-    s64 lVar2;
-
-    uVar1 = FUN_71000b1b90();
-    lVar2 = FUN_7100130810(0x1130, uVar1);
-    if (lVar2 != 0) {
-        FUN_710019f980(lVar2);
-    }
-    return lVar2;
-}
-
-// 0x7100179b30 -- alloc 0xb8, init FUN_710017bb40
-s64 FUN_7100179b30(void)
-{
-    u64 uVar1;
-    s64 lVar2;
-
-    uVar1 = FUN_71000b1b90();
-    lVar2 = FUN_7100130810(0xb8, uVar1);
-    if (lVar2 != 0) {
-        FUN_710017bb40(lVar2);
-    }
-    return lVar2;
-}
-
 // ---- Other small functions --------------------------------------------------
 
 // 0x710065fa64 -- abort stub

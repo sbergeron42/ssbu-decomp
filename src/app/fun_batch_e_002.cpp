@@ -29,13 +29,6 @@ extern u8 *PTR_DAT_71052a4220;
 extern u8 *PTR_DAT_71052a3d88;
 
 // ---- Functions --------------------------------------------------------------
-
-// 0x71000bb9f0
-bool FUN_71000bb9f0(u8 param_1)
-{
-    return param_1 < 0x20 || param_1 == 0xfd;
-}
-
 // 0x71000c7460
 u64 FUN_71000c7460(s64 param_1)
 {
@@ -80,35 +73,6 @@ void FUN_71000d5ea0(s64 *param_1)
     FUN_7100187f50();
     *param_1 = (s64)(PTR_DAT_71052a4220 + 0x10);
 }
-
-// 0x71000e4340
-s32 FUN_71000e4340(s32 param_1)
-{
-    s32 iVar1;
-
-    iVar1 = (u32)(param_1 == 1) << 1;
-    if (param_1 == 0) {
-        iVar1 = 1;
-    }
-    return iVar1;
-}
-
-// 0x710004f860
-bool FUN_710004f860(s64 param_1, s64 param_2)
-{
-    s32 iVar1;
-
-    if (*(s32 *)(param_2 + 0x10) != 8) {
-        return false;
-    }
-    iVar1 = strcmp(*(char **)(param_2 + 0x20), *(char **)(param_1 + 0x10));
-    if (iVar1 != 0) {
-        return false;
-    }
-    iVar1 = strcmp(*(char **)(param_2 + 0x28), *(char **)(param_1 + 0x18));
-    return iVar1 == 0;
-}
-
 // FUN_71000500a0 — TODO: decompile
 
 // 0x71000e8240

@@ -88,40 +88,6 @@ void FUN_71002b4ae0(u64 *param_1)
     FUN_71002bf040(*param_1);
     *param_1 = 0;
 }
-
-// 0x71002c1fe0 -- offset lookup + field addition
-s64 FUN_71002c1fe0(u64 *param_1)
-{
-    s64 lVar1;
-
-    lVar1 = FUN_71000339f0(*param_1);
-    return lVar1 + param_1[2];
-}
-
-// 0x71002c2ba0 -- field / FUN_71002c2810(1), guarded divide
-u64 FUN_71002c2ba0(s64 param_1)
-{
-    u32 uVar1;
-    u64 uVar2;
-    u64 uVar3;
-
-    uVar1 = *(u32 *)(param_1 + 0x2c);
-    uVar3 = FUN_71002c2810(1);
-    uVar2 = 0;
-    if (uVar3 != 0) {
-        uVar2 = uVar1 / uVar3;
-    }
-    return uVar2;
-}
-
-// 0x71002c2f70 -- init + store 0xffffffffffffffff
-void FUN_71002c2f70(s64 param_1)
-{
-    FUN_710003a0e0();
-    FUN_710003a240(param_1 + 0xd8);
-    *(u64 *)(param_1 + 0x120) = 0xffffffffffffffff;
-}
-
 // 0x7100cec330 -- nested vtable call, return bool
 bool FUN_7100cec330(u64 param_1, s64 param_2)
 {

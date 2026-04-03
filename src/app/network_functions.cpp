@@ -16,10 +16,7 @@ bool Curl_ipvalid_6530(void* p) {
     return *reinterpret_cast<long*>(reinterpret_cast<u8*>(p) + 0x868) != 2;
 }
 
-// 0x710000069a0  16B  Curl_llist_count -- return list->size field at +0x8
-u64 Curl_llist_count_69a0(void* obj) {
-    return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(obj) + 0x8);
-}
+// Curl_llist_count_69a0 — deduped to fun_region_000.cpp
 
 // 0x710000 5b80  32B  Curl_num_addresses -- walk linked list via +0x28, count nodes
 int Curl_num_addresses_5b80(long p) {

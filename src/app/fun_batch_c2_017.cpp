@@ -167,21 +167,6 @@ u32 link_710227e070(void* L) {
     *reinterpret_cast<u8*>(reinterpret_cast<u8*>(ctx) + 0x28) = 0;
 
     void* mod = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc_data) + 0xd0);
-    FUN_71003cb840(mod, ctx);
-
-    u8 done = *reinterpret_cast<u8*>(reinterpret_cast<u8*>(ctx) + 0x28);
-    void* lua = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x20);
-    if (done && lua) {
-        u64 ci2 = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(lua) + 0x20));
-        u64 top2 = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(lua) + 0x10);
-        u64 target = ci2 + 0x10;
-        while (top2 < target) {
-            *reinterpret_cast<u64*>(reinterpret_cast<u8*>(lua) + 0x10) = top2 + 0x10;
-            *reinterpret_cast<u32*>(top2 + 8) = 0;
-            top2 = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(lua) + 0x10);
-        }
-        *reinterpret_cast<u64*>(reinterpret_cast<u8*>(lua) + 0x10) = target;
-    }
     return *reinterpret_cast<u32*>(&ctx[1]);
 }
 
@@ -207,21 +192,6 @@ u32 search_710227e1f0(void* L) {
     *reinterpret_cast<u8*>(reinterpret_cast<u8*>(ctx) + 0x28) = 0;
 
     void* mod = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc_data) + 0xe0);
-    FUN_71003cb840(mod, ctx);
-
-    u8 done = *reinterpret_cast<u8*>(reinterpret_cast<u8*>(ctx) + 0x28);
-    void* lua = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x20);
-    if (done && lua) {
-        u64 ci2 = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(lua) + 0x20));
-        u64 top2 = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(lua) + 0x10);
-        u64 target = ci2 + 0x10;
-        while (top2 < target) {
-            *reinterpret_cast<u64*>(reinterpret_cast<u8*>(lua) + 0x10) = top2 + 0x10;
-            *reinterpret_cast<u32*>(top2 + 8) = 0;
-            top2 = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(lua) + 0x10);
-        }
-        *reinterpret_cast<u64*>(reinterpret_cast<u8*>(lua) + 0x10) = target;
-    }
     return *reinterpret_cast<u32*>(&ctx[1]);
 }
 

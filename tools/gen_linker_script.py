@@ -91,10 +91,10 @@ def build_source_addr_map():
             if not fn.endswith('.cpp'):
                 continue
             path = os.path.join(root, fn)
-            with open(path) as f:
+            with open(path, encoding='utf-8', errors='replace') as f:
                 lines = f.readlines()
             for i, line in enumerate(lines):
-                m = re.search(r'//\s*(?:0x)?(71[0-9a-fA-F]{6,10})\b', line)
+                m = re.search(r'//\s*(?:0x)?(71[0-9a-fA-F]{8})\b', line)
                 if m:
                     addr = int(m.group(1), 16)
                     for j in range(i + 1, min(i + 3, len(lines))):
@@ -266,7 +266,7 @@ def main():
         section_name = ".text.%s" % mangled
         lines.append("  /* %s */" % short)
         lines.append("  . = 0x%x;" % orig_addr)
-        lines.append("  %s : { *(%s) }" % (section_name, section_name))
+        lines.append("  %s : SUBALIGN(4) { *(%s) }" % (section_name, section_name))
 
     # Catch-all for remaining sections
     lines.append("")

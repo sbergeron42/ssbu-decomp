@@ -7,19 +7,6 @@
 [[noreturn]] extern "C" void abort();
 
 // ── abort() / noreturn thunks ────────────────────────────────────────────────
-
-// 0x71024a4344
-[[noreturn]] void FUN_71024a4344()
-{
-  abort();
-}
-
-// 0x7102a399c4
-[[noreturn]] void FUN_7102a399c4()
-{
-  abort();
-}
-
 // 0x7102853f6c
 [[noreturn]] void FUN_7102853f6c()
 {

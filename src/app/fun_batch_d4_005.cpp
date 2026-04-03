@@ -80,27 +80,6 @@ extern const char *DAT_71053278c8;
 extern u64 DAT_71053278d0;
 extern u64 DAT_71053278d8;
 extern u64 DAT_71053278e0;
-
-// ---- Functions ---------------------------------------------------------------
-
-// 0x71003cfc50 — vtable dispatch: call vtable[0x130], return field+8 or sentinel
-u32 FUN_71003cfc50(s64 *param_1)
-{
-    s64 lVar1;
-
-    lVar1 = (**(s64 (**)())(*param_1 + 0x130))();
-    if (lVar1 != 0) {
-        return *(u32 *)(lVar1 + 8);
-    }
-    return 0x50000000;
-}
-
-// 0x71003dde90 — [[noreturn]] abort stub
-[[noreturn]] void FUN_71003dde90()
-{
-    abort();
-}
-
 // 0x71003ee260 — vtable dispatch: call vtable[0x160] with 4 args, forward return
 u32 FUN_71003ee260(s64 param_1)
 {

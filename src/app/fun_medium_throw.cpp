@@ -24,14 +24,8 @@ namespace app::lua_bind {
 [[noreturn]] void FUN_7101eacc50(long param_1) { FUN_71039c0d80((void*)param_1); }
 // 7102e2a9fc
 [[noreturn]] void FUN_7102e2a9fc(long param_1) { FUN_71039c0d80((void*)param_1); }
-// 71031cedf4
-[[noreturn]] void FUN_71031cedf4(long param_1) { FUN_71039c0d80((void*)param_1); }
-// 71032cb748
-[[noreturn]] void FUN_71032cb748(long param_1) { FUN_71039c0d80((void*)param_1); }
 // 71032cb7ec
 [[noreturn]] void FUN_71032cb7ec(long param_1) { FUN_71039c0d80((void*)param_1); }
-// 710358fb24
-[[noreturn]] void FUN_710358fb24(long param_1) { FUN_71039c0d80((void*)param_1); }
 
 // ── Group B: add offset to x0 (naked: NX Clang schedules mov x29 before add) ─
 
@@ -62,6 +56,30 @@ __attribute__((naked, noreturn)) void FUN_7101a4e400() {
 
 // ── Group C: non-x0 register → x0 (naked: x8/x9 not accessible in plain C++) ─
 
+// 71031cedf4  (mov x0,x8)
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked, noreturn)) void FUN_71031cedf4() {
+    asm("stp x29, x30, [sp, #-0x10]!\n\tmov x29, sp\n\tmov x0, x8\n\tbl FUN_71039c0d80\n");
+}
+#else
+[[noreturn]] void FUN_71031cedf4() { FUN_71039c0d80(nullptr); }
+#endif
+// 71032cb748  (mov x0,x8)
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked, noreturn)) void FUN_71032cb748() {
+    asm("stp x29, x30, [sp, #-0x10]!\n\tmov x29, sp\n\tmov x0, x8\n\tbl FUN_71039c0d80\n");
+}
+#else
+[[noreturn]] void FUN_71032cb748() { FUN_71039c0d80(nullptr); }
+#endif
+// 710358fb24  (mov x0,x8)
+#ifdef MATCHING_HACK_NX_CLANG
+__attribute__((naked, noreturn)) void FUN_710358fb24() {
+    asm("stp x29, x30, [sp, #-0x10]!\n\tmov x29, sp\n\tmov x0, x8\n\tbl FUN_71039c0d80\n");
+}
+#else
+[[noreturn]] void FUN_710358fb24() { FUN_71039c0d80(nullptr); }
+#endif
 // 7101bca270  (mov x0,x8)
 #ifdef MATCHING_HACK_NX_CLANG
 __attribute__((naked, noreturn)) void FUN_7101bca270() {

@@ -8,19 +8,6 @@
 extern u64 DAT_7104ad9bc0[];
 
 // ── abort() / noreturn thunks ────────────────────────────────────────────────
-
-// 0x71024a45bc
-[[noreturn]] void FUN_71024a45bc()
-{
-  abort();
-}
-
-// 0x7102967cbc
-[[noreturn]] void FUN_7102967cbc()
-{
-  abort();
-}
-
 // 0x7102528558
 [[noreturn]] void FUN_7102528558()
 {

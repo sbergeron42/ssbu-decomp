@@ -46,27 +46,6 @@ u32 FUN_710022e510(s64 param_1)
   *(s64 *)(param_1 + 0x18) = lVar2 + 4;
   return uVar3;
 }
-
-// 0x71002c2bf0
-u32 FUN_71002c2bf0(u32 param_1)
-{
-  if (param_1 < 0xc) {
-    return *(u32 *)(&DAT_71044a7cd0 + (s64)(s32)param_1 * 4);
-  }
-  /* WARNING: Subroutine does not return */
-  nn__detail__UnexpectedDefaultImpl("", "", 0);
-}
-
-// 0x71002c2df0
-u32 FUN_71002c2df0(u32 param_1)
-{
-  if (param_1 < 0xb) {
-    return *(u32 *)(&DAT_71044a7d50 + (s64)(s32)param_1 * 4);
-  }
-  /* WARNING: Subroutine does not return */
-  nn__detail__UnexpectedDefaultImpl("", "", 0);
-}
-
 // 0x71004794b0
 void FUN_71004794b0(s64 param_1, u32 param_2)
 {
