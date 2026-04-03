@@ -47,13 +47,13 @@ namespace app {
 // ---- sv_animcmd lua_bind wrappers ----------------------------------------
 
 // 0x7101fba2e0
-u64 FUN_7101fba2e0(lua_State *param_1) { app::sv_animcmd::LAST_EFFECT_SET_WORK_INT(param_1); return 0; }
+u32 FUN_7101fba2e0(lua_State *param_1) { app::sv_animcmd::LAST_EFFECT_SET_WORK_INT(param_1); return 0; }
 
 // 0x7101fc0e70
-u64 FUN_7101fc0e70(lua_State *param_1) { app::sv_animcmd::HIT_NO(param_1); return 0; }
+u32 FUN_7101fc0e70(lua_State *param_1) { app::sv_animcmd::HIT_NO(param_1); return 0; }
 
 // 0x7101fc3c80
-u64 FUN_7101fc3c80(lua_State *param_1) { app::sv_animcmd::REG_LANDING_SE(param_1); return 0; }
+u32 FUN_7101fc3c80(lua_State *param_1) { app::sv_animcmd::REG_LANDING_SE(param_1); return 0; }
 
 // ---- Simple call wrapper -------------------------------------------------
 

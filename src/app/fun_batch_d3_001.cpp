@@ -8,15 +8,15 @@
 // External data — hidden visibility for direct ADRP access (no GOT indirection)
 #define HIDDEN __attribute__((visibility("hidden")))
 extern u64 PTR_DAT_71052a50b0 HIDDEN;   // allocator factory context ptr
-extern u8  PTR_DAT_71052a4610[] HIDDEN;
-extern u8  PTR_DAT_71052a4630[] HIDDEN;
-extern u8  PTR_DAT_71052a46c8[] HIDDEN;
-extern u8  PTR_DAT_71052a4718[] HIDDEN;
-extern u8  PTR_DAT_71052a4880[] HIDDEN;
-extern u8  PTR_DAT_71052a4a00[] HIDDEN;
-extern u8  PTR_DAT_71052a4a88[] HIDDEN;
-extern u8  PTR_DAT_71052a4a90[] HIDDEN;
-extern u8  PTR_DAT_71052a4a98[] HIDDEN;
+extern u64 PTR_DAT_71052a4610 HIDDEN;
+extern u64 PTR_DAT_71052a4630 HIDDEN;
+extern u64 PTR_DAT_71052a46c8 HIDDEN;
+extern u64 PTR_DAT_71052a4718 HIDDEN;
+extern u64 PTR_DAT_71052a4880 HIDDEN;
+extern u64 PTR_DAT_71052a4a00 HIDDEN;
+extern u64 PTR_DAT_71052a4a88 HIDDEN;
+extern u64 PTR_DAT_71052a4a90 HIDDEN;
+extern u64 PTR_DAT_71052a4a98 HIDDEN;
 extern u8  PTR_DAT_71052a4c08[] HIDDEN;
 extern u8 *PTR_DAT_71052a4c10 HIDDEN;
 extern u8  PTR_DAT_71052a4c28[] HIDDEN;
@@ -160,8 +160,8 @@ s64 FUN_7100179a20(void)
 void FUN_710010ab30(s64 *param_1)
 {
     FUN_710013ce70();
-    param_1[0x13] = 0;
     *param_1 = (s64)(PTR_DAT_71052a4610 + 0x10);
+    param_1[0x13] = 0;
 }
 
 // 0x710010b0b0 — ctor: call parent init, set vtable ptr + clear fields (128 bytes)
@@ -169,10 +169,10 @@ void FUN_710010b0b0(s64 *param_1)
 {
     FUN_710013d130();
     param_1[0x12] = 0;
+    *param_1 = (s64)(PTR_DAT_71052a4630 + 0x10);
     *(u32 *)(param_1 + 0x13) = 0;
     param_1[0x14] = 0;
     param_1[0x15] = 0;
-    *param_1 = (s64)(PTR_DAT_71052a4630 + 0x10);
     *(u8 *)(param_1 + 0x16) = 1;
 }
 
@@ -180,18 +180,18 @@ void FUN_710010b0b0(s64 *param_1)
 void FUN_710010d4f0(s64 *param_1)
 {
     FUN_7100151120();
+    *param_1 = (s64)(PTR_DAT_71052a46c8 + 0x10);
     param_1[0x13] = 0;
     *(u32 *)(param_1 + 0x58) = 0;
     *(u8 *)((s64)param_1 + 0x2c4) = 0;
-    *param_1 = (s64)(PTR_DAT_71052a46c8 + 0x10);
 }
 
 // 0x710010ead0 — ctor: call parent init, set vtable ptr (80 bytes)
 void FUN_710010ead0(s64 *param_1)
 {
     FUN_710013e400();
-    param_1[0x13] = 0;
     *param_1 = (s64)(PTR_DAT_71052a4718 + 0x10);
+    param_1[0x13] = 0;
 }
 
 // 0x71001125a0 — clear flag field, call FUN with saved ptr (48 bytes)
@@ -242,9 +242,9 @@ void FUN_710011f880(s64 *param_1)
 void FUN_7100121500(s64 *param_1)
 {
     FUN_7100141e80();
+    *param_1 = (s64)(PTR_DAT_71052a4a88 + 0x10);
     param_1[0x55] = 0;
     *(u32 *)(param_1 + 0x56) = 0;
-    *param_1 = (s64)(PTR_DAT_71052a4a88 + 0x10);
 }
 
 // 0x7100121d40 — ctor: call parent init, set vtable ptr (48 bytes)
@@ -258,9 +258,9 @@ void FUN_7100121d40(s64 *param_1)
 void FUN_7100122220(s64 *param_1)
 {
     FUN_7100151120();
+    *param_1 = (s64)(PTR_DAT_71052a4a98 + 0x10);
     param_1[0x13] = 0;
     *(u8 *)(param_1 + 0x14) = 0;
-    *param_1 = (s64)(PTR_DAT_71052a4a98 + 0x10);
 }
 
 // 0x710012d350 — delegate to sub-object at +0x1e0 (32 bytes)

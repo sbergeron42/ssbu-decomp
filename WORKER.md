@@ -1,10 +1,10 @@
-# Worker: pool-d
+# Worker: pool-b
 
 ## Model: Opus
 
-## Task: Fix non-matching functions in fun_medium*, fun_region*, and fun_easy* files
+## Task: Fix non-matching functions in fun_batch_d2* through fun_batch_d5* files
 
-5,101 non-matching functions need codegen fixes. This pool handles medium, region, and easy files.
+5,101 non-matching functions need codegen fixes. This pool handles the d2/d3/d4/d5 batch files.
 
 ### Workflow
 1. Run python tools/verify_all.py to get the non-matching list
@@ -14,5 +14,5 @@
 5. Rebuild (cmd /c build.bat), re-verify, commit in batches of 10-20
 
 ### Rules
-- ONLY edit: src/app/fun_medium_*.cpp, src/app/fun_region_*.cpp, src/app/fun_easy_*.cpp
+- ONLY edit: src/app/fun_batch_d2_*.cpp, src/app/fun_batch_d3_*.cpp, src/app/fun_batch_d4_*.cpp, src/app/fun_batch_d5_*.cpp
 - Do NOT edit any other files

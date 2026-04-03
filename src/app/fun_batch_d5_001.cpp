@@ -115,7 +115,7 @@ void FUN_7101615ac0(s64 *param_1)
 }
 
 // 0x7101f836e0 — call FUN_71002ec1a0 with *(param_1 - 8)
-u64 FUN_7101f836e0(s64 param_1)
+u32 FUN_7101f836e0(s64 param_1)
 {
     FUN_71002ec1a0(*(u64 *)(param_1 - 8));
     return 0;

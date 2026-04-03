@@ -74,16 +74,16 @@ namespace app {
 // ---- sv_kinetic_energy / sv_animcmd wrappers -----------------------------
 
 // 0x7101fa2790
-u64 FUN_7101fa2790(lua_State *param_1) { app::sv_kinetic_energy::unable(param_1); return 0; }
+u32 FUN_7101fa2790(lua_State *param_1) { app::sv_kinetic_energy::unable(param_1); return 0; }
 
 // 0x7101fa2d20
-u64 FUN_7101fa2d20(lua_State *param_1) { app::sv_kinetic_energy::clear_speed_ex(param_1); return 0; }
+u32 FUN_7101fa2d20(lua_State *param_1) { app::sv_kinetic_energy::clear_speed_ex(param_1); return 0; }
 
 // 0x7101fc2c00
-u64 FUN_7101fc2c00(lua_State *param_1) { app::sv_animcmd::RUMBLE_HIT_STATUS(param_1); return 0; }
+u32 FUN_7101fc2c00(lua_State *param_1) { app::sv_animcmd::RUMBLE_HIT_STATUS(param_1); return 0; }
 
 // 0x7101fc2ec0
-u64 FUN_7101fc2ec0(lua_State *param_1) { app::sv_animcmd::FT_START_CUTIN_JACK_FINAL(param_1); return 0; }
+u32 FUN_7101fc2ec0(lua_State *param_1) { app::sv_animcmd::FT_START_CUTIN_JACK_FINAL(param_1); return 0; }
 
 // ---- Simple call wrapper -------------------------------------------------
 

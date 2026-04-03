@@ -18,7 +18,7 @@
 
 // 0x71003611c0 — target_id (48B)
 extern s64 FUN_7100314030(s64*, s64);
-extern s64 DAT_71052b5fd8;
+extern s64 DAT_71052b5fd8 __attribute__((visibility("hidden")));
 u32 FUN_71003611c0(void *param_1) {
     s64 lVar1 = FUN_7100314030((s64*)&DAT_71052b5fd8, *(s64*)((u8*)param_1 - 8) + 0xc50);
     return *(u32*)(*(s64*)(lVar1 + 0x10) + 8);
@@ -41,7 +41,7 @@ void FUN_7100369720(void *param_1, u32 param_2, float p3, float p4, float p5, fl
 // Complex NEON intrinsics; skipped (too complex)
 
 // 0x710036b3a0 — ai_stage::is_gravity (48B)
-extern u8 lib_Singleton_BattleObjectWorld_instance_;
+extern u8 lib_Singleton_BattleObjectWorld_instance_ __attribute__((visibility("hidden")));
 bool FUN_710036b3a0(void) {
     if (*(char*)(&lib_Singleton_BattleObjectWorld_instance_ + 0x5c) != '\0') return false;
     return *(char*)(&lib_Singleton_BattleObjectWorld_instance_ + 0x59) == '\0';

@@ -8,12 +8,12 @@
 // ---- External declarations -----------------------------------------------
 
 // External data
-extern u8  PTR_DAT_71052a3bd8[] HIDDEN;
-extern u8  PTR_DAT_71052a4490[] HIDDEN;
-extern u8  PTR_DAT_71052a44f8[] HIDDEN;
-extern u8  PTR_DAT_71052a4570[] HIDDEN;
-extern u8  PTR_DAT_71052a4608[] HIDDEN;
-extern u8  PTR_DAT_71052a4740[] HIDDEN;
+extern u64 PTR_DAT_71052a3bd8 HIDDEN;
+extern u64 PTR_DAT_71052a4490 HIDDEN;
+extern u64 PTR_DAT_71052a44f8 HIDDEN;
+extern u64 PTR_DAT_71052a4570 HIDDEN;
+extern u64 PTR_DAT_71052a4608 HIDDEN;
+extern u64 PTR_DAT_71052a4740 HIDDEN;
 
 // External FUN_* forward declarations
 extern void FUN_71000b1900(u8 *);
@@ -31,14 +31,14 @@ extern s64  FUN_7100154fa0(u64, u32);
 // 0x7100104ce0 — ctor: parent init, clear fields, set vtable (112 bytes)
 void FUN_7100104ce0(s64 *param_1)
 {
-    u8 *puVar1;
+    u64 uVar1;
 
     FUN_710013d270();
     param_1[0x14] = 0;
-    puVar1 = PTR_DAT_71052a4490;
+    uVar1 = PTR_DAT_71052a4490;
     *(u32 *)(param_1 + 0x17) = 0;
     param_1[0x18] = 0;
-    *param_1 = (s64)(puVar1 + 0x10);
+    *param_1 = (s64)(uVar1 + 0x10);
     *(u8 *)(param_1 + 0x19) = 0;
     param_1[0x1a] = 0;
 }
@@ -53,12 +53,12 @@ void FUN_710010a650(s64 *param_1)
 // 0x710010f170 — ctor: parent init, set vtable + secondary ptr (64 bytes)
 void FUN_710010f170(s64 *param_1)
 {
-    u8 *puVar1;
+    u64 uVar1;
 
     FUN_71000bed00();
-    puVar1 = PTR_DAT_71052a4740 + 0x60;
-    *param_1 = (s64)(PTR_DAT_71052a4740 + 0x10);
-    param_1[3] = (s64)puVar1;
+    uVar1 = PTR_DAT_71052a4740;
+    *param_1 = (s64)(uVar1 + 0x10);
+    param_1[3] = (s64)(uVar1 + 0x60);
 }
 
 // 0x7100106240 — ctor: parent init, set vtable (48 bytes)
@@ -71,16 +71,16 @@ void FUN_7100106240(s64 *param_1)
 // 0x7100107800 — ctor: parent init, clear 5 fields, set vtable + clear more (96 bytes)
 void FUN_7100107800(s64 *param_1)
 {
-    u8 *puVar1;
+    u64 uVar1;
 
     FUN_71001424e0();
-    puVar1 = PTR_DAT_71052a4570;
+    uVar1 = PTR_DAT_71052a4570;
     param_1[0x2d] = 0;
     param_1[0x29] = 0;
     param_1[0x2a] = 0;
     param_1[0x2b] = 0;
     param_1[0x2c] = 0;
-    *param_1 = (s64)(puVar1 + 0x10);
+    *param_1 = (s64)(uVar1 + 0x10);
     *(u32 *)(param_1 + 0x30) = 0;
     *(u16 *)((s64)param_1 + 0x184) = 0;
     param_1[0x31] = 0;

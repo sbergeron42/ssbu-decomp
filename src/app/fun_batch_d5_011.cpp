@@ -85,7 +85,7 @@ void FUN_7101520030(void)
 // ---- sv_animcmd lua_bind wrapper -----------------------------------------
 
 // 0x7101fc2ca0
-u64 FUN_7101fc2ca0(lua_State *param_1) { app::sv_animcmd::RUMBLE_ALL(param_1); return 0; }
+u32 FUN_7101fc2ca0(lua_State *param_1) { app::sv_animcmd::RUMBLE_ALL(param_1); return 0; }
 
 // ---- Vtable dispatcher ---------------------------------------------------
 

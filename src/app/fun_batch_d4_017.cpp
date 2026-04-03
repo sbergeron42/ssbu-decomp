@@ -4,6 +4,8 @@
 // Pool-d worker: auto-generated from Ghidra decompilation
 // Includes: string switch, error code switch, bit-field ops, vtable dispatch loops, singleton guards
 
+#define HIDDEN __attribute__((visibility("hidden")))
+
 // ---- External declarations -----------------------------------------------
 
 // DAT small-addr globals (used as base for pointer arithmetic)
@@ -20,7 +22,7 @@ extern "C" void FUN_7100489b00(s64, s64, u8 **, u8);
 extern "C" void FUN_710065d450(s64, s32, s32);
 
 // FUN_710064c290 vtable label
-extern u64 PTR_LAB_7104f7fe70;
+extern u64 PTR_LAB_7104f7fe70 HIDDEN;
 
 // FUN_710068d530 table + singleton globals
 extern u64 PTR_PTR_710529bfd0;

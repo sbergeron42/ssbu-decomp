@@ -71,7 +71,7 @@ u32 FUN_7100037450(u64 param_1) {
 
 // 0x7100038100 — indexed table load
 u64 FUN_7100038100(s64 param_1, u32 param_2) {
-    extern s64 DAT_7104470aa8;
+    extern s64 DAT_7104470aa8 __attribute__((visibility("hidden")));
     return *(u64*)(param_1 + *(s64*)((u8*)&DAT_7104470aa8 + (u64)param_2 * 8));
 }
 
@@ -413,7 +413,7 @@ u32 speed_x(void *param_1, void *param_2) {
 } // namespace app::ai_weapon
 
 // 0x710036b490 — ai_dangerzone::is_exist
-extern s64 DAT_71052b5fd8;
+extern s64 DAT_71052b5fd8 __attribute__((visibility("hidden")));
 bool FUN_710036b490(void) {
     return **(int**)(*reinterpret_cast<s64*>(&DAT_71052b5fd8) + 0xc0) != 0;
 }
@@ -473,7 +473,7 @@ bool FUN_710068f790(int param_1) {
 void FUN_7100694560(void *param_1) { return; }
 
 // 0x7100694dc0 — renderer_get_color_rate
-extern s64 DAT_7105336ce8;
+extern s64 DAT_7105336ce8 __attribute__((visibility("hidden")));
 u32 FUN_7100694dc0(void) {
     s64 ptr = *(s64*)(&DAT_7105336ce8);
     return *(u32*)(*(s64*)(ptr + 8) + 0x10);
@@ -488,42 +488,42 @@ void FUN_710069bf60(void *param_1) {
 // ---- FighterSpecializer final_module_hit_success — vtable[1] on global singleton ----
 
 // 0x7100936fa0 — Demon
-extern s64 DAT_71052bb550;
+extern s64 DAT_71052bb550 __attribute__((visibility("hidden")));
 void FUN_7100936fa0(void) {
     s64 obj = *reinterpret_cast<s64*>(&DAT_71052bb550);
     reinterpret_cast<void(*)(void*)>((*reinterpret_cast<void***>(obj))[8/8])((void*)obj);
 }
 
 // 0x7100974650 — Dolly
-extern s64 DAT_71052bb578;
+extern s64 DAT_71052bb578 __attribute__((visibility("hidden")));
 void FUN_7100974650(void) {
     s64 obj = *reinterpret_cast<s64*>(&DAT_71052bb578);
     reinterpret_cast<void(*)(void*)>((*reinterpret_cast<void***>(obj))[8/8])((void*)obj);
 }
 
 // 0x7100a0d230 — EFlame
-extern s64 DAT_71052bb630;
+extern s64 DAT_71052bb630 __attribute__((visibility("hidden")));
 void FUN_7100a0d230(void) {
     s64 obj = *reinterpret_cast<s64*>(&DAT_71052bb630);
     reinterpret_cast<void(*)(void*)>((*reinterpret_cast<void***>(obj))[8/8])((void*)obj);
 }
 
 // 0x7100a2a6d0 — ELight
-extern s64 DAT_71052bb638;
+extern s64 DAT_71052bb638 __attribute__((visibility("hidden")));
 void FUN_7100a2a6d0(void) {
     s64 obj = *reinterpret_cast<s64*>(&DAT_71052bb638);
     reinterpret_cast<void(*)(void*)>((*reinterpret_cast<void***>(obj))[8/8])((void*)obj);
 }
 
 // 0x7100b35c20 — Jack
-extern s64 DAT_71052bb6a8;
+extern s64 DAT_71052bb6a8 __attribute__((visibility("hidden")));
 void FUN_7100b35c20(void) {
     s64 obj = *reinterpret_cast<s64*>(&DAT_71052bb6a8);
     reinterpret_cast<void(*)(void*)>((*reinterpret_cast<void***>(obj))[8/8])((void*)obj);
 }
 
 // 0x7100cec9c0 — Master
-extern s64 DAT_71052c0de0;
+extern s64 DAT_71052c0de0 __attribute__((visibility("hidden")));
 void FUN_7100cec9c0(void) {
     s64 obj = *reinterpret_cast<s64*>(&DAT_71052c0de0);
     reinterpret_cast<void(*)(void*)>((*reinterpret_cast<void***>(obj))[8/8])((void*)obj);
@@ -535,14 +535,14 @@ bool FUN_7100f0a970(int param_1) {
 }
 
 // 0x7100f11e50 — Pickel
-extern s64 DAT_71052c0f48;
+extern s64 DAT_71052c0f48 __attribute__((visibility("hidden")));
 void FUN_7100f11e50(void) {
     s64 obj = *reinterpret_cast<s64*>(&DAT_71052c0f48);
     reinterpret_cast<void(*)(void*)>((*reinterpret_cast<void***>(obj))[8/8])((void*)obj);
 }
 
 // 0x7101197690 — Simon
-extern s64 DAT_71052c19f8;
+extern s64 DAT_71052c19f8 __attribute__((visibility("hidden")));
 void FUN_7101197690(void) {
     s64 obj = *reinterpret_cast<s64*>(&DAT_71052c19f8);
     reinterpret_cast<void(*)(void*)>((*reinterpret_cast<void***>(obj))[8/8])((void*)obj);
@@ -554,14 +554,14 @@ bool FUN_7101227750(int param_1) {
 }
 
 // 0x71012281a0 — Tantan
-extern s64 DAT_71052c1a48;
+extern s64 DAT_71052c1a48 __attribute__((visibility("hidden")));
 void FUN_71012281a0(void) {
     s64 obj = *reinterpret_cast<s64*>(&DAT_71052c1a48);
     reinterpret_cast<void(*)(void*)>((*reinterpret_cast<void***>(obj))[8/8])((void*)obj);
 }
 
 // 0x7101289c80 — Wario
-extern s64 DAT_71052c1af8;
+extern s64 DAT_71052c1af8 __attribute__((visibility("hidden")));
 void FUN_7101289c80(void) {
     s64 obj = *reinterpret_cast<s64*>(&DAT_71052c1af8);
     reinterpret_cast<void(*)(void*)>((*reinterpret_cast<void***>(obj))[8/8])((void*)obj);
