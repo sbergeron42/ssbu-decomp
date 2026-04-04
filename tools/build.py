@@ -87,7 +87,8 @@ def main():
         print("BUILD FAILED with %d error(s)." % errors)
         # Continue to post-processing anyway — other .o files are fine
 
-    # Post-processing (always runs on all .o files — idempotent)
+    # Post-processing (sequential — parallel was tested and causes regressions
+    # due to tools writing to the same .o files concurrently)
     print()
     print("Post-processing...")
 
