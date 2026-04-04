@@ -325,3 +325,46 @@ u64 FUN_7100172880(long param_1)
     uVar1 = FUN_71000b2850(param_1 + 8);
     return uVar1;
 }
+
+// FUN_710017dcc0 — Cleanup three optional sub-objects via vtable dispatch
+// Address: 0x710017dcc0 | Size: 96 bytes
+// Calls vtable[0x10] (destructor) on up to 3 sub-objects at +0x300/+0x308/+0x310
+// if they are non-null.
+
+void FUN_710017dcc0(long param_1)
+{
+    if (*(long **)(param_1 + 0x310) != (long *)0) {
+        (**(void (**)())(* *(long **)(param_1 + 0x310) + 0x10))();
+    }
+    if (*(long **)(param_1 + 0x308) != (long *)0) {
+        (**(void (**)())(* *(long **)(param_1 + 0x308) + 0x10))();
+    }
+    if (*(long **)(param_1 + 0x300) != (long *)0) {
+        (**(void (**)())(* *(long **)(param_1 + 0x300) + 0x10))();
+    }
+}
+
+// FUN_7100177d40 — Initialize LDN message handler
+// Address: 0x7100177d40 | Size: 80 bytes
+// Sets vtable from PTR_DAT_71052a5280, stores parent ref at +3,
+// zeros out fields, and initializes sub-object at +9 via FUN_71000b4050.
+
+extern void FUN_710013cff0(void);
+extern void FUN_71000b4050(long *);
+extern u8 PTR_DAT_71052a5280;
+
+void FUN_7100177d40(long *param_1, long param_2)
+{
+    u8 *puVar1;
+
+    FUN_710013cff0();
+    puVar1 = &PTR_DAT_71052a5280;
+    param_1[5] = 0;
+    param_1[3] = param_2;
+    param_1[4] = 0;
+    *(u32 *)(param_1 + 6) = 0;
+    param_1[7] = 0;
+    *(u8 *)(param_1 + 8) = 0;
+    *param_1 = (long)(puVar1 + 0x10);
+    FUN_71000b4050(param_1 + 9);
+}
