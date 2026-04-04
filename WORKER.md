@@ -1,15 +1,15 @@
-# Worker: pool-d
+# Worker: pool-e
 
 ## Model: Opus
 
-## Task: Recover MotionModule (+0x88) and AttackModule (+0xA0) structs
+## Task: Recover FighterManager and FighterInformation full structs
 
-MotionModule handles animation frame data (25+ accesses). AttackModule handles hitbox state (25+ accesses).
+Both already have partial headers in include/app/. Flesh them out into complete struct definitions and rewrite their functions.
 
-### Phase 1: Cross-reference accesses for both modules via Ghidra MCP
-### Phase 2: Build include/app/modules/MotionModule.h and AttackModule.h
-### Phase 3: Rewrite src/app/modules/MotionModule.cpp and AttackModule.cpp using the structs
+### Phase 1: Cross-reference all field accesses in FighterManager.cpp, FighterInformation.cpp, FighterEntry.cpp via Ghidra MCP
+### Phase 2: Complete include/app/FighterManager.h, FighterInformation.h, FighterEntry.h
+### Phase 3: Rewrite the source files using the structs
 
 ### DO NOT use reinterpret_cast for struct members, paste assembly, or use raw hex offsets
 
-### Rules: ONLY edit MotionModule.h, AttackModule.h, MotionModule.cpp, AttackModule.cpp in their respective dirs
+### Rules: ONLY edit FighterManager.h, FighterInformation.h, FighterEntry.h and their .cpp files

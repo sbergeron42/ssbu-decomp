@@ -1,37 +1,9 @@
-#include "types.h"
+#include "app/FighterManager.h"
+#include "app/FighterEntry.h"
 
-// FighterManager -- operates on FighterManager* (not BattleObjectModuleAccessor)
-// These access FighterManager->internal_data (first ldr x8,[x0]) then fields
-
-struct FighterManagerData {
-    u8   pad_0x00[0x20];
-    void* entries[8];                        // +0x20
-    u8   pad_0x60[0x40];
-    u32  entry_count;                        // +0xA0
-    u8   pad_0xA4[0x04];
-    u32  final_actor_entry_id;               // +0xA8
-    u32  no_discretion_final_beat_count;     // +0xAC
-    u8   pad_0xB0[0x10];
-    u8   melee_mode;                         // +0xC0
-    u8   pad_0xC1[0x0B];
-    u8   discretion_final_enabled;           // +0xCC
-    u8   pad_0xCD[0x05];
-    u8   ready_go;                           // +0xD2
-    u8   pad_0xD3[0x03];
-    u8   cursor_whole;                       // +0xD6
-    u8   pad_0xD7[0x12];
-    u8   result_mode;                        // +0xE9
-    u8   pad_0xEA[0x04];
-    u8   ko_camera_enabled;                  // +0xEE
-    u8   pad_0xEF[0x01];
-    f32  one_on_one_ratio;                   // +0xF0
-    u8   pad_0xF4[0xA8C];
-    void* movie_ptr;                         // +0xB80
-};
-
-struct FighterManager {
-    FighterManagerData* data;                // +0x0
-};
+using app::FighterManager;
+using app::FighterManagerData;
+using app::FighterEntry;
 
 extern "C" [[noreturn]] void abort();
 extern "C" [[noreturn]] void FUN_71039c20a0();
@@ -76,8 +48,7 @@ u8 FighterManager__is_result_mode_impl(FighterManager* mgr) {
 }
 // 4-instruction setter with bool masking
 void FighterManager__set_cursor_whole_impl(FighterManager* mgr, bool val) {
-    auto* data = reinterpret_cast<u8*>(mgr->data);
-    data[0xd6] = val & 1;
+    mgr->data->cursor_whole = val & 1;
 }
 // 3-instruction getters
 u32 FighterManager__get_no_discretion_final_beat_count_impl(FighterManager* mgr) {
@@ -96,29 +67,25 @@ void* FighterManager__get_fighter_entry_impl(FighterManager* mgr, u32 index) {
 // 7102140fc0 -- get_fighter_information (11 instructions, bounds check + offset)
 void* FighterManager__get_fighter_information_impl(FighterManager* mgr, u32 index) {
     if (index >= 8) { FUN_71039c20a0(); }
-    auto* entry = reinterpret_cast<u8*>(mgr->data->entries[index]);
-    return entry + 0xf0;
+    return reinterpret_cast<u8*>(mgr->data->entries[index]) + 0xf0;
 }
 
 // 7102141910 -- is_end_movie (7 instructions, pointer chain + cmp)
 bool FighterManager__is_end_movie_impl(FighterManager* mgr) {
-    auto* p1 = reinterpret_cast<u8*>(mgr->data->movie_ptr);
-    auto* p2 = *reinterpret_cast<u8**>(p1);
-    return *reinterpret_cast<u32*>(p2 + 0x20) == 8;
+    auto* movie = *reinterpret_cast<u8**>(mgr->data->movie_ptr);
+    return *reinterpret_cast<u32*>(movie + 0x20) == 8;
 }
 
 // 71021418a0 -- is_prepared_movie (7 instructions, pointer chain + cmp 4)
 bool FighterManager__is_prepared_movie_impl(FighterManager* mgr) {
-    auto* p1 = reinterpret_cast<u8*>(mgr->data->movie_ptr);
-    auto* p2 = *reinterpret_cast<u8**>(p1);
-    return *reinterpret_cast<u32*>(p2 + 0x20) == 4;
+    auto* movie = *reinterpret_cast<u8**>(mgr->data->movie_ptr);
+    return *reinterpret_cast<u32*>(movie + 0x20) == 4;
 }
 
 // 71021418d0 -- is_process_movie (7 instructions, pointer chain + cmp 0, ne)
 bool FighterManager__is_process_movie_impl(FighterManager* mgr) {
-    auto* p1 = reinterpret_cast<u8*>(mgr->data->movie_ptr);
-    auto* p2 = *reinterpret_cast<u8**>(p1);
-    return *reinterpret_cast<u32*>(p2 + 0x20) != 0;
+    auto* movie = *reinterpret_cast<u8**>(mgr->data->movie_ptr);
+    return *reinterpret_cast<u32*>(movie + 0x20) != 0;
 }
 
 void FighterManager__reset_fighter_impl(FighterManager* obj) { }
@@ -133,9 +100,9 @@ u32 FighterManager__total_fighter_num_impl(FighterManager* mgr) {
     auto* d = mgr->data;
     u32 total = 0;
     for (s32 i = 0; i < 8; i++) {
-        auto* entry = reinterpret_cast<u8*>(d->entries[i]);
+        auto* entry = static_cast<FighterEntry*>(d->entries[i]);
         if (entry) {
-            total += *reinterpret_cast<u32*>(entry + 0x14);
+            total += entry->fighter_num;
         }
     }
     return total;
@@ -334,7 +301,7 @@ bool FighterManager__is_available_discretion_final_impl(FighterManager* mgr) {
 // 7102141370 -- is_final: ldr x0,[x0]; b external
 extern "C" void FUN_7100677240(void*);
 void FighterManager__is_final_impl(FighterManager* mgr) {
-    FUN_7100677240(*reinterpret_cast<void**>(mgr));
+    FUN_7100677240(mgr->data);
 }
 
 // 7102141380 -- set_final: cross-entry lookup + conditional global store
@@ -364,34 +331,32 @@ void FighterManager__set_final_impl(FighterManager* mgr, u32 entry_id, u32 p2, u
 // 7102141440 -- get_beat_point_diff_from_top: ldr x0,[x0]; and x1; b external
 extern "C" void FUN_7100679ed0(void*, u64);
 void FighterManager__get_beat_point_diff_from_top_impl(FighterManager* mgr, u64 id) {
-    FUN_7100679ed0(*reinterpret_cast<void**>(mgr), id & 0xFFFFFFFF);
+    FUN_7100679ed0(mgr->data, id & 0xFFFFFFFF);
 }
 
 // 7102141450 -- set_final_fear_face: reads/writes data+0x160, calls external
 extern "C" void FUN_7100674d80(void*, s32, s32);
 void FighterManager__set_final_fear_face_impl(FighterManager* mgr, s32 entry_id, s32 enable) {
-    auto* data = *reinterpret_cast<u8**>(mgr);
-    s32 field = *reinterpret_cast<s32*>(data + 0x160);
-    if (field >= 1) {
-        FUN_7100674d80(data, -1, 0);
-        *reinterpret_cast<s32*>(data + 0x160) = 0;
+    auto* d = mgr->data;
+    if (d->fear_face_entry_id >= 1) {
+        FUN_7100674d80(d, -1, 0);
+        d->fear_face_entry_id = 0;
     }
     s32 flag = (enable >= 1) ? 1 : 0;
-    FUN_7100674d80(data, entry_id, flag);
-    *reinterpret_cast<s32*>(data + 0x160) = enable;
+    FUN_7100674d80(d, entry_id, flag);
+    d->fear_face_entry_id = enable;
 }
 
 // 71021414d0 -- start_finalbg: search list for id, load SIMD const + global, call external
 extern "C" void FUN_710260a560(void*, void*, void*);
 void FighterManager__start_finalbg_impl(FighterManager* mgr, u32 id) {
-    auto* data = *reinterpret_cast<u8**>(mgr);
-    auto* ptr1 = *reinterpret_cast<u8**>(data + 0xb78);
+    auto* d = mgr->data;
+    auto* ptr1 = *reinterpret_cast<u8**>(d->finalbg_ptr);
     auto* ptr2 = *reinterpret_cast<u8**>(ptr1);
     u32* begin = *reinterpret_cast<u32**>(ptr2);
     u32* end = *reinterpret_cast<u32**>(reinterpret_cast<u8*>(ptr2) + 0x8);
     for (u32* it = begin; it != end; it += 2) {
         if (*it == id) {
-            // Found — load constant, call external, set flag
             u8 buf[16];
             *reinterpret_cast<__uint128_t*>(buf) = *reinterpret_cast<__uint128_t*>(DAT_7104464700);
             FUN_710260a560(*reinterpret_cast<void**>(DAT_71053299d8), nullptr, buf);
@@ -404,8 +369,8 @@ void FighterManager__start_finalbg_impl(FighterManager* mgr, u32 id) {
 // 7102141560 -- exit_finalbg: check active flag, call external, clear flag
 extern "C" void FUN_710260b9b0(void*);
 void FighterManager__exit_finalbg_impl(FighterManager* mgr) {
-    auto* data = *reinterpret_cast<u8**>(mgr);
-    auto* ptr1 = *reinterpret_cast<u8**>(data + 0xb78);
+    auto* d = mgr->data;
+    auto* ptr1 = *reinterpret_cast<u8**>(d->finalbg_ptr);
     auto* ptr2 = *reinterpret_cast<u8**>(ptr1);
     if (ptr2[0x18] != 0) {
         FUN_710260b9b0(*reinterpret_cast<void**>(DAT_71053299d8));
@@ -446,13 +411,13 @@ void FighterManager__set_visible_finalbg_impl(FighterManager*, bool val) {
 // 7102141600 -- notify_log_event_collision_hit: ldr x0,[x0]; and w4; b external
 extern "C" void FUN_710067a7b0(void*, u64, u64, u64, bool);
 void FighterManager__notify_log_event_collision_hit_impl(FighterManager* mgr, u64 p1, u64 p2, u64 p3, bool p4) {
-    FUN_710067a7b0(*reinterpret_cast<void**>(mgr), p1, p2, p3, p4 & 1);
+    FUN_710067a7b0(mgr->data, p1, p2, p3, p4 & 1);
 }
 
 // 7102141610 -- is_process_technique: ldr x0,[x0]; b external
 extern "C" void FUN_710067bcf0(void*);
 void FighterManager__is_process_technique_impl(FighterManager* mgr) {
-    FUN_710067bcf0(*reinterpret_cast<void**>(mgr));
+    FUN_710067bcf0(mgr->data);
 }
 
 // 7102141670 -- set_dead_up_camera_hit_cursor_status: refcount + vtable dispatch
@@ -494,7 +459,7 @@ void FighterManager__set_dead_up_camera_hit_cursor_status_impl(FighterManager* m
 // 71021417b0 -- set_controller_rumble_all: ldr x0,[x0]; and w3; b external
 extern "C" void FUN_710067de90(void*, u64, u64, bool);
 void FighterManager__set_controller_rumble_all_impl(FighterManager* mgr, u64 p1, u64 p2, bool p3) {
-    FUN_710067de90(*reinterpret_cast<void**>(mgr), p1, p2, p3 & 1);
+    FUN_710067de90(mgr->data, p1, p2, p3 & 1);
 }
 
 // 71021417c0 -- is_rebirth_plate_line: NOTE: does NOT deref x0
@@ -561,35 +526,31 @@ void FighterManager__set_position_lock_impl(FighterManager* mgr, u32 entry_id, b
 // 7102141890 -- prepare_movie: ldr x8,[x0]; ldr x8,[x8,#0xb80]; ldr x0,[x8]; b external
 extern "C" void FUN_710067f480(void*);
 void FighterManager__prepare_movie_impl(FighterManager* mgr) {
-    auto* data = *reinterpret_cast<u8**>(mgr);
-    auto* movie_ctrl = *reinterpret_cast<u8**>(data + 0xb80);
-    FUN_710067f480(*reinterpret_cast<void**>(movie_ctrl));
+    FUN_710067f480(*reinterpret_cast<void**>(mgr->data->movie_ptr));
 }
 
 // 71021418c0 -- exit_movie: same chain as prepare_movie, different target
 extern "C" void FUN_710067f640(void*);
 void FighterManager__exit_movie_impl(FighterManager* mgr) {
-    auto* data = *reinterpret_cast<u8**>(mgr);
-    auto* movie_ctrl = *reinterpret_cast<u8**>(data + 0xb80);
-    FUN_710067f640(*reinterpret_cast<void**>(movie_ctrl));
+    FUN_710067f640(*reinterpret_cast<void**>(mgr->data->movie_ptr));
 }
 
 // 71021418f0 -- start_movie: ldr x0,[x0]; b external
 extern "C" void FUN_710067f720(void*);
 void FighterManager__start_movie_impl(FighterManager* mgr) {
-    FUN_710067f720(*reinterpret_cast<void**>(mgr));
+    FUN_710067f720(mgr->data);
 }
 
 // 7102141900 -- start_movie_on_rendering_2d: ldr x0,[x0]; b external
 extern "C" void FUN_710067f850(void*);
 void FighterManager__start_movie_on_rendering_2d_impl(FighterManager* mgr) {
-    FUN_710067f850(*reinterpret_cast<void**>(mgr));
+    FUN_710067f850(mgr->data);
 }
 
 // 7102141930 -- get_jack_final_cut_in: ldr x0,[x0]; b external
 extern "C" void FUN_710067f970(void*);
 void FighterManager__get_jack_final_cut_in_impl(FighterManager* mgr) {
-    FUN_710067f970(*reinterpret_cast<void**>(mgr));
+    FUN_710067f970(mgr->data);
 }
 
 } // namespace app::lua_bind
