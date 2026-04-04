@@ -1,24 +1,24 @@
-# Worker: pool-b
+# Worker: pool-d
 
 ## Model: Opus
 
-## Task: Finish remaining module structs (batch 2: 11 modules)
+## Task: Test types-first HARD decomp — AttackModule + MotionModule functions
 
-Recover the remaining empty module structs.
+Now that structs are recovered, test HARD decomp with types.
+Target functions that access AttackModule (+0xA0) or MotionModule (+0x88).
 
-### Your modules
-MotionAnimcmdModule, ReflectModule, ReflectorModule, SearchModule, ShadowModule,
-ShakeModule, SlowModule, StopModule, TeamModule, TurnModule, VisibilityModule
+### Approach
+1. python tools/next_batch.py --tier HARD --limit 30
+2. Filter to functions that access AttackModule or MotionModule
+3. Write idiomatic C++ using the struct headers
+4. Track throughput: functions per hour, match rate, build cycles per function
 
-### Workflow per module
-1. Ghidra MCP: decompile functions accessing the module
-2. Map vtable entries with confidence-tagged names
-3. Build the .h header with void** _vt + inline methods
-4. Rewrite the .cpp using clean dispatch
-5. Build and verify
+### Output
+- src/app/fun_typed_d_001.cpp onward
+- Report throughput numbers in commit messages
 
 ### Rules
-- CAN edit: include/app/modules/ and src/app/modules/ for your 11 modules only
-- Use [confirmed: lua_bind API name] for names from lua_bind
-- Use [inferred: ...] for guesses
+- ONLY create NEW files named src/app/fun_typed_d_*.cpp
+- Use struct field access from include/app/modules/
 - Do NOT copy-paste Ghidra pseudocode
+- Do NOT use naked asm
