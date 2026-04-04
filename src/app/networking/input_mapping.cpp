@@ -664,7 +664,7 @@ void final_input_mapping(PerPlayerMapping* mappings, int player_idx,
 
     float stick_raw[2] = { stick_x, stick_y };
     float stick_normalized[2] = {0, 0};
-    normalize_stick(stick_normalized, stick_raw);
+    normalize_stick(stick_normalized, stick_raw, style);
     out->stick_x = (int8_t)(int)(g_stick_scale * stick_normalized[0]);
     out->stick_y = (int8_t)(int)(g_stick_scale * stick_normalized[1]);
 

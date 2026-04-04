@@ -29,7 +29,8 @@
 #include "types.h"
 #include "app/CSSState.h"
 
-#include <cstring>  // memset, memcpy
+extern "C" void* memset(void*, int, unsigned long);
+extern "C" void* memcpy(void*, const void*, unsigned long);
 
 // ============================================================
 // External BSS Globals (CSS state region)
@@ -112,6 +113,10 @@ extern u64  DAT_71052c3c58;                // Scene manager pointer
 extern u64  DAT_710532e730;                // Content manager pointer
 extern u64  DAT_710532e7d0;                // Network manager pointer
 extern u64  DAT_71052b82e0;                // One-time init guard
+extern u64  DAT_71052c4180;                // Team param data (atexit arg)
+extern u64  DAT_71052b8338;                // DLC purchase manager pointer
+extern u8   DAT_710530547c;                // Offline player type (local state)
+extern u8   DAT_7105307798;                // Player 0 deep data base
 
 // ============================================================
 // External Functions
@@ -128,7 +133,7 @@ extern "C" {
     void FUN_7101695c80(void* buf);                       // Initialize 0x308-byte player data buffer
     void FUN_7101696040(void* dst, void* src);            // Copy tag/icon data
     void FUN_71016eee30(void* dst, void* src);            // Copy extended data
-    void FUN_71016f64e0(void* ptr);                       // Get network slot index
+    u64  FUN_71016f64e0(void* ptr);                       // Get network slot index
     char FUN_71016ea430(void** param_1, u8 slot);         // Look up player by slot index
     void* FUN_71016b6ac0(void* scene, char player_idx);   // Get player data pointer
     u8   FUN_7101686610(void* ptr);                       // Get max player count
@@ -335,7 +340,7 @@ void css_read_state_to_compact_buffer(u8* param_1) {
                 *(u64*)(*(long*)(DAT_710532e730 + 8) + 0x178), content_id);
 
             if ((exists & 1) != 0) {
-                u64 purchased = FUN_7100556c40(*(u64*)0 /* DAT_71052b8338 */, content_id);
+                u64 purchased = FUN_7100556c40(DAT_71052b8338, content_id);
                 if ((purchased & 1) == 0) {
                     // Content exists but not purchased — clear the bit
                     *word &= ~bit;
@@ -556,7 +561,7 @@ after_mode:
                 *(u64*)(*(long*)(DAT_710532e730 + 8) + 0x178), content_id);
 
             if ((exists & 1) != 0) {
-                u64 purchased = FUN_7100556c40(*(u64*)0 /* DAT_71052b8338 */, content_id);
+                u64 purchased = FUN_7100556c40(DAT_71052b8338, content_id);
                 if ((purchased & 1) == 0) {
                     *word &= ~bit;
                 }
@@ -671,7 +676,7 @@ after_mode:
 
         char player_idx = FUN_71016ea430(param_1, slot);
 
-        if (player_idx == -1) {
+        if (player_idx == (char)-1) {
             // No player found — copy data directly from param_1 struct
             // buf+0x60: player header (24 bytes from param_1+3)
             // buf+0x78: name with hash (from param_1+7)
