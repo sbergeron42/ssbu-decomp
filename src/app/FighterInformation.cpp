@@ -1,56 +1,7 @@
-#include "types.h"
+#include "app/FighterInformation.h"
 
-// FighterInformation -- operates on FighterInformation* directly
-// Pattern: ldr x8,[x0,#0x8] gets internal data, then field reads
-
-struct FighterInformationData {
-    u8   pad_0x00[0x38];
-    f32  hp_base;                        // +0x38
-    f32  hp_temp;                        // +0x3C
-    u8   pad_0x40[0x11];
-    u8   fighter_color;                  // +0x51
-    u8   pad_0x52[0x07];
-    bool rabbit_cap;                     // +0x59
-    bool reflector;                      // +0x5A
-    bool superleaf;                      // +0x5B
-    bool rocketbelt;                     // +0x5C
-    bool screw;                          // +0x5D
-    bool backshield;                     // +0x5E
-    u8   pad_0x5F[0x33];
-    bool operation_cpu;                  // +0x92
-    bool no_change_hp;                   // +0x93
-    u8   pad_0x94[0x38];
-    s32  dead_count[3];                  // +0xCC
-    u32  stock_count;                    // +0xD8
-    u8   pad_0xDC[0x70];
-    s32  suicide_count_a[3];             // +0x14C
-    s32  suicide_count_b[3];             // +0x158
-    u8   pad_0x164[0x3F];
-    bool last_dead_suicide;              // +0x1A3
-    u8   pad_0x1A4[0x08];
-    f32  add_rebirth_wait_frame;         // +0x1AC
-    u8   pad_0x1B0[0x1BC];
-    f32  gravity;                        // +0x36C
-    u8   pad_0x370[0x1C];
-    bool on_rebirth;                     // +0x38C
-    u8   pad_0x38D[0x1F];
-    u8   fighter_category;               // +0x3AC
-    u8   pad_0x3AD[0x5F3];
-    u32  summon_boss_id;                 // +0x9A0
-    u8   pad_0x9A4[0x08];
-    u32  summon_bomb_ready_frame;        // +0x9AC
-    u32  summon_pre_bomb_effect_frame;   // +0x9B0
-    u8   pad_0x9B4[0x08];
-    f32  summon_suicide_bomb_attack_mul; // +0x9BC
-    f32  summon_suicide_bomb_reaction_mul; // +0x9C0
-    u8   pad_0x9C4[0x06];
-    bool battle_event_stick_reverse;     // +0x9CA
-};
-
-struct FighterInformation {
-    void** vtable;                       // +0x0
-    FighterInformationData* data;        // +0x8
-};
+using app::FighterInformation;
+using app::FighterInformationData;
 
 namespace app::lua_bind {
 
@@ -142,12 +93,9 @@ bool FighterInformation__is_battle_event_stick_reverse_impl(FighterInformation* 
 //   blr x8; fsub s0,s8,s0; fmov s1,wzr; fmax s0,s0,s1
 //   ldp x29,x30,[sp,#0x10]; ldr d8,[sp],#0x20; ret
 f32 FighterInformation__hit_point_impl(FighterInformation* fi) {
-    auto* p = reinterpret_cast<u8*>(fi);
-    auto fn = reinterpret_cast<f32(*)(FighterInformation*)>((*reinterpret_cast<void***>(p))[0x20/8]);
-    auto* data = *reinterpret_cast<u8**>(p + 0x8);
-    f32 base = *reinterpret_cast<f32*>(data + 0x38);
-    f32 temp = *reinterpret_cast<f32*>(data + 0x3c);
-    f32 max_hp = base + temp;
+    auto fn = reinterpret_cast<f32(*)(FighterInformation*)>(fi->vtable[0x20/8]);
+    auto* d = fi->data;
+    f32 max_hp = d->hp_base + d->hp_temp;
     f32 damage = fn(fi);
 #ifdef MATCHING_HACK_NX_CLANG
     asm("" : "+w"(max_hp));
@@ -159,35 +107,35 @@ f32 FighterInformation__hit_point_impl(FighterInformation* fi) {
 
 // 71020c9e50 -- dead_count (11 instructions, branch on w1==-2)
 s32 FighterInformation__dead_count_impl(FighterInformation* fi, s32 index) {
-    auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);
+    auto* d = fi->data;
     if (index == -2) {
-        s32 a = *reinterpret_cast<s32*>(data + 0xcc);
-        s32 b = *reinterpret_cast<s32*>(data + 0xd0);
-        s32 c = *reinterpret_cast<s32*>(data + 0xd4);
+        s32 a = d->dead_count[0];
+        s32 b = d->dead_count[1];
+        s32 c = d->dead_count[2];
         s32 temp = b + a;
 #ifdef MATCHING_HACK_NX_CLANG
         asm("" : "+r"(c), "+r"(temp));
 #endif
         return c + temp;
     }
-    return *reinterpret_cast<s32*>(data + static_cast<s64>(index) * 4 + 0xcc);
+    return d->dead_count[index];
 }
 
 // 71020c9e90 -- suicide_count (20 instructions)
 s32 FighterInformation__suicide_count_impl(FighterInformation* fi, s32 index) {
-    auto* data = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(fi) + 0x8);
+    auto* d = fi->data;
     if (index != -2) {
-        s32 a = *reinterpret_cast<s32*>(data + static_cast<s64>(index) * 4 + 0x14c);
-        s32 b = *reinterpret_cast<s32*>(data + static_cast<s64>(index) * 4 + 0x158);
+        s32 a = d->suicide_count_a[index];
+        s32 b = d->suicide_count_b[index];
         return a + b;
     }
-    s32 v0 = *reinterpret_cast<s32*>(data + 0x14c);
-    s32 v1 = *reinterpret_cast<s32*>(data + 0x150);
+    s32 v0 = d->suicide_count_a[0];
+    s32 v1 = d->suicide_count_a[1];
     s32 sum01 = v1 + v0;
-    s32 v3 = *reinterpret_cast<s32*>(data + 0x158);
-    s32 v4 = *reinterpret_cast<s32*>(data + 0x15c);
-    s32 v2 = *reinterpret_cast<s32*>(data + 0x154);
-    s32 v5 = *reinterpret_cast<s32*>(data + 0x160);
+    s32 v3 = d->suicide_count_b[0];
+    s32 v4 = d->suicide_count_b[1];
+    s32 v2 = d->suicide_count_a[2];
+    s32 v5 = d->suicide_count_b[2];
 #ifdef MATCHING_HACK_NX_CLANG
     asm("" : "+r"(v3), "+r"(v4), "+r"(v2), "+r"(v5), "+r"(sum01));
 #endif

@@ -1,16 +1,6 @@
-#include "types.h"
+#include "app/FighterEntry.h"
 
-// FighterEntry — operates on FighterEntry* directly
-
-struct FighterEntry {
-    u8    pad_0x00[0x14];
-    u32   fighter_num;           // +0x14
-    u8    pad_0x18[0x4138];
-    u64   slot_count;            // +0x4150
-    u8    pad_0x4158[0x08];
-    void* slots[759];            // +0x4160
-    u8    current_index;         // +0x5918
-};
+using app::FighterEntry;
 
 namespace app::lua_bind {
 
@@ -50,18 +40,17 @@ u32 FighterEntry__current_fighter_id_impl(FighterEntry* entry) {
 // 71020cbd10 — heal: applies damage to one or all fighters via external function
 extern "C" void FUN_71006645d0(void*, bool, s32, u64);
 void FighterEntry__heal_impl(FighterEntry* entry, f32 damage, bool param3, s32 target, u64 hash) {
-    auto* p = reinterpret_cast<u8*>(entry);
-    u64 count = *reinterpret_cast<u64*>(p + 0x4150);
+    u64 count = entry->slot_count;
     if (target == 3) {
         // Heal all fighters
         if (count == 0) return;
         f32 neg_damage = -damage;
         for (u64 i = 0; i < count; i++) {
-            auto* slot = *reinterpret_cast<u8**>(p + i * 8 + 0x4160);
+            auto* slot = reinterpret_cast<u8*>(entry->slots[i]);
             if (!slot) continue;
             bool active = reinterpret_cast<bool(*)(void*)>((*reinterpret_cast<void***>(slot))[0x518/8])(slot);
             if (!active) continue;
-            auto* fighter = *reinterpret_cast<void**>(p + i * 8 + 0x4160);
+            auto* fighter = entry->slots[i];
             *reinterpret_cast<f32*>(&fighter) = neg_damage;  // s0 = neg_damage via ABI
             FUN_71006645d0(fighter, param3 & 1, 0, hash);
         }
@@ -69,11 +58,11 @@ void FighterEntry__heal_impl(FighterEntry* entry, f32 damage, bool param3, s32 t
         // Heal specific fighter
         s64 idx = static_cast<s64>(target);
         if (static_cast<u64>(idx) >= count) return;
-        auto* slot = *reinterpret_cast<u8**>(p + idx * 8 + 0x4160);
+        auto* slot = reinterpret_cast<u8*>(entry->slots[idx]);
         if (!slot) return;
         bool active = reinterpret_cast<bool(*)(void*)>((*reinterpret_cast<void***>(slot))[0x518/8])(slot);
         if (!active) return;
-        auto* fighter = *reinterpret_cast<void**>(p + idx * 8 + 0x4160);
+        auto* fighter = entry->slots[idx];
         FUN_71006645d0(fighter, param3 & 1, 0, hash);
     }
 }

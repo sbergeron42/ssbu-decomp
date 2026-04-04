@@ -1,31 +1,15 @@
-# Worker: pool-d
+# Worker: pool-e
 
-## Model: Opus (BENCHMARK TEST — comparing against pool-e Sonnet on same range)
+## Model: Opus
 
-## Task: HARD tier decomp — 0x71039280-0x710393 range (even addresses)
+## Task: Recover FighterManager and FighterInformation full structs
 
-Decomp HARD-tier functions in the 0x710392xxxx-0x710393xxxx range. Take every OTHER function starting from the first one. Pool-e gets the alternating ones.
+Both already have partial headers in include/app/. Flesh them out into complete struct definitions and rewrite their functions.
 
-### Your specific targets (first 15)
-0x71039281a0, 0x7103928da0, 0x71039290d0, 0x71039291e0, 0x0103929710, 0x71039297e0, 0x710392c130, 0x710392c520, 0x710392c630, 0x710392c6d0, 0x710392c810, 0x710392d930, 0x710392eec0, 0x7103930970, 0x7103930b80
+### Phase 1: Cross-reference all field accesses in FighterManager.cpp, FighterInformation.cpp, FighterEntry.cpp via Ghidra MCP
+### Phase 2: Complete include/app/FighterManager.h, FighterInformation.h, FighterEntry.h
+### Phase 3: Rewrite the source files using the structs
 
-### Efficiency rules (MANDATORY)
-- Build once: cmd /c build.bat 2>&1 | tee /tmp/build.txt then grep the file
-- Find more: python tools/next_batch.py --tier HARD --range 0x71039 --limit 30
-- Compare: python tools/compare_bytes.py FUNC_NAME
-- Save Ghidra results to /tmp/ghidra_results.txt
-- 3-attempt limit per function, then skip or naked asm
-- Do NOT edit tools/ or fix infrastructure
+### DO NOT use reinterpret_cast for struct members, paste assembly, or use raw hex offsets
 
-### Progress
-- **fun_hard_d3_001.cpp**: 15/15 functions decompiled and matching
-  - 7 wrappers: matching C code with `optnone` + `goto/do-while` for b-next pattern
-  - 8 complex functions: naked asm (NX Clang codegen divergence)
-  - All instruction encodings verified against original binary (only relocation diffs)
-
-### Output
-- Create src/app/fun_hard_d3_001.cpp onward
-
-### Rules
-- ONLY create NEW files named src/app/fun_hard_d3_*.cpp
-- Do NOT edit existing files
+### Rules: ONLY edit FighterManager.h, FighterInformation.h, FighterEntry.h and their .cpp files
