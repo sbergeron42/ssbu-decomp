@@ -1,10 +1,10 @@
-# Worker: pool-e
+# Worker: pool-c
 
 ## Model: Opus
 
-## Task: Recover ShieldModule (+0x100), HitModule (+0xB0), and ComboModule (+0xB8) structs
+## Task: Recover DamageModule (+0xA8) and KineticModule (+0x68) structs
 
-Three smaller modules. ShieldModule has 38 raw casts. HitModule has 26. ComboModule has 5 functions.
+DamageModule has 33 functions / 54 raw casts. KineticModule has 27 functions / 74 raw casts.
 
 ### Workflow per module
 1. Use Ghidra MCP: decompile functions that access the module
@@ -14,6 +14,6 @@ Three smaller modules. ShieldModule has 38 raw casts. HitModule has 26. ComboMod
 5. Build and verify
 
 ### Rules
-- CAN edit: include/app/modules/ShieldModule.h, HitModule.h, ComboModule.h and their .cpp files
+- CAN edit: include/app/modules/DamageModule.h, KineticModule.h, src/app/modules/DamageModule.cpp, KineticModule.cpp
 - Do NOT edit other files
 - Do NOT copy-paste Ghidra pseudocode
