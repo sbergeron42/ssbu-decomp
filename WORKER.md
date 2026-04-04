@@ -1,27 +1,24 @@
-# Worker: pool-a
+# Worker: pool-b
 
-## Model: Opus
+## Model: Sonnet
 
-## Task: Convert networking reference code to compilable decomp, then HARD tier networking
+## Task: HARD tier decomp (0x7100-0x7101 range)
 
-### Phase 1: Fix reference/networking_src/ files
-The 3 networking files (input_mapping.cpp, state_serialize.cpp, ldn_transport.cpp) were moved to reference/ because they don't compile. Fix them and move back to src/app/networking/:
-- Replace #include <cstdlib>, <cmath> with extern "C" declarations
-- Fix function signature mismatches
-- Remove or stub functions that reference unknown types
-- Goal: compile without errors, verify what matches
-
-### Phase 2: Decomp HARD tier networking functions
-Functions in the 0x710016xxxx-0x710019xxxx range (game LDN data exchange) and 0x71037xxxxx (session management). Use src/docs/networking.md as reference.
+Decomp HARD-tier functions (30-100+ instructions) using Ghidra MCP.
 
 ### Efficiency rules (MANDATORY)
 - Build once: cmd /c build.bat 2>&1 | tee /tmp/build.txt then grep the file
-- Find targets: python tools/next_batch.py --tier HARD --range 0x710016 --limit 30
+- Find targets: python tools/next_batch.py --tier HARD --range 0x7100 --limit 30
 - Compare bytes: python tools/compare_bytes.py FUNC_NAME
 - Save Ghidra results to /tmp/ghidra_results.txt
 - 3-attempt limit per function, then skip or naked asm
 - Do NOT edit tools/ or fix infrastructure — report issues and move on
 
+### Output
+- Create src/app/fun_hard_b_001.cpp onward
+- Use struct headers from include/app/
+- Add // 0x71XXXXXXXX address comments
+
 ### Rules
-- CAN edit: reference/networking_src/*.cpp, src/app/networking/*.cpp (create dir if needed), include/app/*.h
-- Do NOT edit other source files, tools/, or data/
+- ONLY create NEW files named src/app/fun_hard_b_*.cpp
+- Do NOT edit existing files
