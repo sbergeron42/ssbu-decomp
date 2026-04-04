@@ -13,6 +13,24 @@ extern "C" void FUN_71013e70c0(void*);
 extern "C" void FUN_710143ebe0(void*);
 extern "C" void FUN_7101465760(void*);
 extern "C" void FUN_710149a8d0(void*);
+// Pattern E cleanup functions
+extern "C" void FUN_710171d040(void*);
+extern "C" void FUN_7101813d70(void*);
+extern "C" void FUN_710181e8a0(void*);
+extern "C" void FUN_710186fbb0(void*);
+extern "C" void FUN_71018e2d40(void*);
+extern "C" void FUN_71018f7490(void*);
+extern "C" void FUN_710196dde0(void*);
+extern "C" void FUN_71019f0e30(void*);
+extern "C" void FUN_7101aef260(void*);
+extern "C" void FUN_7101cbb160(void*);
+extern "C" void FUN_7101ccc180(void*);
+extern "C" void FUN_7101cd2ae0(void*);
+extern "C" void FUN_7101ce9eb0(void*);
+extern "C" void FUN_7101f314f0(void*);
+extern "C" void FUN_7101f35910(void*);
+extern "C" void FUN_7101f43ae0(void*);
+extern "C" void FUN_71037a2400(void*);
 
 // Vtable symbols — hidden visibility to get ADRP+ADD (not GOT)
 #define VTABLE_EXTERN(name) extern "C" __attribute__((visibility("hidden"))) char name[]
@@ -32,6 +50,24 @@ VTABLE_EXTERN(PTR_LAB_7105062970);
 VTABLE_EXTERN(PTR_LAB_7105066c20);
 VTABLE_EXTERN(PTR_LAB_71050676d8);
 VTABLE_EXTERN(PTR_LAB_7105068cd0);
+// Pattern E vtables
+VTABLE_EXTERN(PTR_LAB_710509cad8);
+VTABLE_EXTERN(PTR_LAB_71050a0d00);
+VTABLE_EXTERN(PTR_LAB_71050a1208);
+VTABLE_EXTERN(PTR_LAB_71050a2b78);
+VTABLE_EXTERN(PTR_LAB_71050a4588);
+VTABLE_EXTERN(PTR_LAB_71050a4730);
+VTABLE_EXTERN(PTR_LAB_71050a5ad0);
+VTABLE_EXTERN(PTR_LAB_71050a7278);
+VTABLE_EXTERN(PTR_LAB_71050a9148);
+VTABLE_EXTERN(PTR_LAB_71050ad1f0);
+VTABLE_EXTERN(PTR_LAB_71050ad2e0);
+VTABLE_EXTERN(PTR_LAB_71050ad3b0);
+VTABLE_EXTERN(PTR_LAB_71050ad500);
+VTABLE_EXTERN(PTR_LAB_71050b2ff0);
+VTABLE_EXTERN(PTR_LAB_71050b3090);
+VTABLE_EXTERN(PTR_LAB_71050b3358);
+VTABLE_EXTERN(PTR_LAB_71052404c0);
 
 // ============================================================
 // Destructor Pattern: sub at +0x50, inner cleanup at sub+0x8,
@@ -430,3 +466,160 @@ void FUN_7101f455e0(void** node) {
     FUN_7101f455e0(static_cast<void**>(node[1]));
     FUN_710392e590(node);
 }
+
+// ============================================================
+// Pattern E: Simple vtable dtor + cleanup sub + tail-call delete self
+// ============================================================
+
+// --- sub at [1] (+0x8), uses stp for adjacent vtable+field ---
+
+// 0x71019f0de0
+void FUN_71019f0de0(void** self) {
+    void* sub = self[1];
+    self[0] = PTR_LAB_71050a7278;
+    self[1] = nullptr;
+    if (sub) { FUN_71019f0e30(sub); FUN_710392e590(sub); }
+    FUN_710392e590(self);
+}
+
+// 0x7101af06f0
+void FUN_7101af06f0(void** self) {
+    void* sub = self[1];
+    self[0] = PTR_LAB_71050a9148;
+    self[1] = nullptr;
+    if (sub) { FUN_7101aef260(sub); FUN_710392e590(sub); }
+    FUN_710392e590(self);
+}
+
+// 0x7101cbd5e0
+void FUN_7101cbd5e0(void** self) {
+    void* sub = self[1];
+    self[0] = PTR_LAB_71050ad1f0;
+    self[1] = nullptr;
+    if (sub) { FUN_7101cbb160(sub); FUN_710392e590(sub); }
+    FUN_710392e590(self);
+}
+
+// 0x7101cccde0
+void FUN_7101cccde0(void** self) {
+    void* sub = self[1];
+    self[0] = PTR_LAB_71050ad2e0;
+    self[1] = nullptr;
+    if (sub) { FUN_7101ccc180(sub); FUN_710392e590(sub); }
+    FUN_710392e590(self);
+}
+
+// 0x7101ce9e60
+void FUN_7101ce9e60(void** self) {
+    void* sub = self[1];
+    self[0] = PTR_LAB_71050ad500;
+    self[1] = nullptr;
+    if (sub) { FUN_7101ce9eb0(sub); FUN_710392e590(sub); }
+    FUN_710392e590(self);
+}
+
+// 0x7101f314a0
+void FUN_7101f314a0(void** self) {
+    void* sub = self[1];
+    self[0] = PTR_LAB_71050b2ff0;
+    self[1] = nullptr;
+    if (sub) { FUN_7101f314f0(sub); FUN_710392e590(sub); }
+    FUN_710392e590(self);
+}
+
+// 0x7101f358c0
+void FUN_7101f358c0(void** self) {
+    void* sub = self[1];
+    self[0] = PTR_LAB_71050b3090;
+    self[1] = nullptr;
+    if (sub) { FUN_7101f35910(sub); FUN_710392e590(sub); }
+    FUN_710392e590(self);
+}
+
+// 0x7101f43a90
+void FUN_7101f43a90(void** self) {
+    void* sub = self[1];
+    self[0] = PTR_LAB_71050b3358;
+    self[1] = nullptr;
+    if (sub) { FUN_7101f43ae0(sub); FUN_710392e590(sub); }
+    FUN_710392e590(self);
+}
+
+// 0x71037a2f10
+void FUN_71037a2f10(void** self) {
+    void* sub = self[1];
+    self[0] = PTR_LAB_71052404c0;
+    self[1] = nullptr;
+    if (sub) { FUN_71037a2400(sub); FUN_710392e590(sub); }
+    FUN_710392e590(self);
+}
+
+// --- sub at [0xb] (+0x58), uses separate str for remote field ---
+
+// 0x7101813f80
+void FUN_7101813f80(void** self) {
+    void* sub = self[0xb];
+    self[0] = PTR_LAB_71050a0d00;
+    self[0xb] = nullptr;
+    if (sub) { FUN_7101813d70(sub); FUN_710392e590(sub); }
+    FUN_710392e590(self);
+}
+
+// 0x710181e9a0
+void FUN_710181e9a0(void** self) {
+    void* sub = self[0xb];
+    self[0] = PTR_LAB_71050a1208;
+    self[0xb] = nullptr;
+    if (sub) { FUN_710181e8a0(sub); FUN_710392e590(sub); }
+    FUN_710392e590(self);
+}
+
+// 0x710186fca0
+void FUN_710186fca0(void** self) {
+    void* sub = self[0xb];
+    self[0] = PTR_LAB_71050a2b78;
+    self[0xb] = nullptr;
+    if (sub) { FUN_710186fbb0(sub); FUN_710392e590(sub); }
+    FUN_710392e590(self);
+}
+
+// 0x71018e9150
+void FUN_71018e9150(void** self) {
+    void* sub = self[0xb];
+    self[0] = PTR_LAB_71050a4588;
+    self[0xb] = nullptr;
+    if (sub) { FUN_71018e2d40(sub); FUN_710392e590(sub); }
+    FUN_710392e590(self);
+}
+
+// 0x71018f75d0
+void FUN_71018f75d0(void** self) {
+    void* sub = self[0xb];
+    self[0] = PTR_LAB_71050a4730;
+    self[0xb] = nullptr;
+    if (sub) { FUN_71018f7490(sub); FUN_710392e590(sub); }
+    FUN_710392e590(self);
+}
+
+// 0x710196df70
+void FUN_710196df70(void** self) {
+    void* sub = self[0xb];
+    self[0] = PTR_LAB_71050a5ad0;
+    self[0xb] = nullptr;
+    if (sub) { FUN_710196dde0(sub); FUN_710392e590(sub); }
+    FUN_710392e590(self);
+}
+
+// --- sub at [2] (+0x10), uses separate str ---
+
+// 0x710171cff0
+void FUN_710171cff0(void** self) {
+    void* sub = self[2];
+    self[0] = PTR_LAB_710509cad8;
+    self[2] = nullptr;
+    if (sub) { FUN_710171d040(sub); FUN_710392e590(sub); }
+    FUN_710392e590(self);
+}
+
+// --- sub at [1] for 7101cd2cc0 (96B, has extra cleanup) ---
+// Skipping 7101cd2cc0 as it's 96B and may have a different structure
