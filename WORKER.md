@@ -1,31 +1,15 @@
-# Worker: pool-d
+# Worker: pool-b
 
-## Model: Opus (BENCHMARK TEST — comparing against pool-e Sonnet on same range)
+## Model: Opus
 
-## Task: HARD tier decomp — 0x71039280-0x710393 range (even addresses)
+## Task: Recover StatusModule struct (+0x40)
 
-Decomp HARD-tier functions in the 0x710392xxxx-0x710393xxxx range. Take every OTHER function starting from the first one. Pool-e gets the alternating ones.
+StatusModule is accessed by 73+ functions. Controls fighter state transitions. Recover its struct layout and decompile its functions.
 
-### Your specific targets (first 15)
-0x71039281a0, 0x7103928da0, 0x71039290d0, 0x71039291e0, 0x0103929710, 0x71039297e0, 0x710392c130, 0x710392c520, 0x710392c630, 0x710392c6d0, 0x710392c810, 0x710392d930, 0x710392eec0, 0x7103930970, 0x7103930b80
+### Phase 1: Cross-reference all StatusModule accesses via Ghidra MCP
+### Phase 2: Build include/app/modules/StatusModule.h
+### Phase 3: Rewrite src/app/modules/StatusModule.cpp using the struct
 
-### Efficiency rules (MANDATORY)
-- Build once: cmd /c build.bat 2>&1 | tee /tmp/build.txt then grep the file
-- Find more: python tools/next_batch.py --tier HARD --range 0x71039 --limit 30
-- Compare: python tools/compare_bytes.py FUNC_NAME
-- Save Ghidra results to /tmp/ghidra_results.txt
-- 3-attempt limit per function, then skip or naked asm
-- Do NOT edit tools/ or fix infrastructure
+### DO NOT use reinterpret_cast for struct members, paste assembly, or use raw hex offsets
 
-### Progress
-- **fun_hard_d3_001.cpp**: 15/15 functions decompiled and matching
-  - 7 wrappers: matching C code with `optnone` + `goto/do-while` for b-next pattern
-  - 8 complex functions: naked asm (NX Clang codegen divergence)
-  - All instruction encodings verified against original binary (only relocation diffs)
-
-### Output
-- Create src/app/fun_hard_d3_001.cpp onward
-
-### Rules
-- ONLY create NEW files named src/app/fun_hard_d3_*.cpp
-- Do NOT edit existing files
+### Rules: ONLY edit include/app/modules/StatusModule.h and src/app/modules/StatusModule.cpp
