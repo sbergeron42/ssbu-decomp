@@ -326,3 +326,107 @@ void FUN_71016bd520(void** node) {
     FUN_71016bd520(static_cast<void**>(node[1]));
     FUN_710392e590(node);
 }
+
+// 0x710175cd20
+void FUN_710175cd20(void** node) {
+    if (!node) return;
+    FUN_710175cd20(static_cast<void**>(node[0]));
+    FUN_710175cd20(static_cast<void**>(node[1]));
+    FUN_710392e590(node);
+}
+
+// 0x71017626c0
+void FUN_71017626c0(void** node) {
+    if (!node) return;
+    FUN_71017626c0(static_cast<void**>(node[0]));
+    FUN_71017626c0(static_cast<void**>(node[1]));
+    FUN_710392e590(node);
+}
+
+// 0x7101aef220
+void FUN_7101aef220(void** node) {
+    if (!node) return;
+    FUN_7101aef220(static_cast<void**>(node[0]));
+    FUN_7101aef220(static_cast<void**>(node[1]));
+    FUN_710392e590(node);
+}
+
+// 0x71017a91b0
+void FUN_71017a91b0(void** node) {
+    if (!node) return;
+    FUN_71017a91b0(static_cast<void**>(node[0]));
+    FUN_71017a91b0(static_cast<void**>(node[1]));
+    FUN_710392e590(node);
+}
+
+// 0x71017c4f20
+void FUN_71017c4f20(void** node) {
+    if (!node) return;
+    FUN_71017c4f20(static_cast<void**>(node[0]));
+    FUN_71017c4f20(static_cast<void**>(node[1]));
+    FUN_710392e590(node);
+}
+
+// 0x710184c5f0
+void FUN_710184c5f0(void** node) {
+    if (!node) return;
+    FUN_710184c5f0(static_cast<void**>(node[0]));
+    FUN_710184c5f0(static_cast<void**>(node[1]));
+    FUN_710392e590(node);
+}
+
+// 0x710187cc40
+void FUN_710187cc40(void** node) {
+    if (!node) return;
+    FUN_710187cc40(static_cast<void**>(node[0]));
+    FUN_710187cc40(static_cast<void**>(node[1]));
+    FUN_710392e590(node);
+}
+
+// 0x7101b1d1e0
+void FUN_7101b1d1e0(void** node) {
+    if (!node) return;
+    FUN_7101b1d1e0(static_cast<void**>(node[0]));
+    FUN_7101b1d1e0(static_cast<void**>(node[1]));
+    FUN_710392e590(node);
+}
+
+// 0x7101d11020
+void FUN_7101d11020(void** node) {
+    if (!node) return;
+    FUN_7101d11020(static_cast<void**>(node[0]));
+    FUN_7101d11020(static_cast<void**>(node[1]));
+    FUN_710392e590(node);
+}
+
+// 0x7101ed2180
+void FUN_7101ed2180(void** node) {
+    if (!node) return;
+    FUN_7101ed2180(static_cast<void**>(node[0]));
+    FUN_7101ed2180(static_cast<void**>(node[1]));
+    FUN_710392e590(node);
+}
+
+// 0x7101f22470
+void FUN_7101f22470(void** node) {
+    if (!node) return;
+    FUN_7101f22470(static_cast<void**>(node[0]));
+    FUN_7101f22470(static_cast<void**>(node[1]));
+    FUN_710392e590(node);
+}
+
+// 0x7101d88350
+void FUN_7101d88350(void** node) {
+    if (!node) return;
+    FUN_7101d88350(static_cast<void**>(node[0]));
+    FUN_7101d88350(static_cast<void**>(node[1]));
+    FUN_710392e590(node);
+}
+
+// 0x7101f455e0
+void FUN_7101f455e0(void** node) {
+    if (!node) return;
+    FUN_7101f455e0(static_cast<void**>(node[0]));
+    FUN_7101f455e0(static_cast<void**>(node[1]));
+    FUN_710392e590(node);
+}
