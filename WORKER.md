@@ -1,10 +1,10 @@
-# Worker: pool-c
+# Worker: pool-d
 
 ## Model: Opus
 
-## Task: Recover DamageModule (+0xA8) and KineticModule (+0x68) structs
+## Task: Recover SoundModule (+0x148) and CameraModule (+0x60) structs
 
-DamageModule has 33 functions / 54 raw casts. KineticModule has 27 functions / 74 raw casts.
+SoundModule has 20 functions / 54 raw casts. CameraModule has 39 functions / 68 raw casts.
 
 ### Workflow per module
 1. Use Ghidra MCP: decompile functions that access the module
@@ -14,6 +14,6 @@ DamageModule has 33 functions / 54 raw casts. KineticModule has 27 functions / 7
 5. Build and verify
 
 ### Rules
-- CAN edit: include/app/modules/DamageModule.h, KineticModule.h, src/app/modules/DamageModule.cpp, KineticModule.cpp
+- CAN edit: include/app/modules/SoundModule.h, CameraModule.h, src/app/modules/SoundModule.cpp, CameraModule.cpp
 - Do NOT edit other files
 - Do NOT copy-paste Ghidra pseudocode
