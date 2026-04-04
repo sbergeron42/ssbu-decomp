@@ -273,3 +273,56 @@ void FUN_710149c420(void** self) {
     }
     FUN_710392e590(self);
 }
+
+// ============================================================
+// Pattern D: Binary tree recursive delete (64 bytes)
+// if null return; recurse left; recurse right; free self
+// ============================================================
+
+// 0x71014106f0
+void FUN_71014106f0(void** node) {
+    if (!node) return;
+    FUN_71014106f0(static_cast<void**>(node[0]));
+    FUN_71014106f0(static_cast<void**>(node[1]));
+    FUN_710392e590(node);
+}
+
+// 0x7101468100
+void FUN_7101468100(void** node) {
+    if (!node) return;
+    FUN_7101468100(static_cast<void**>(node[0]));
+    FUN_7101468100(static_cast<void**>(node[1]));
+    FUN_710392e590(node);
+}
+
+// 0x71014879e0
+void FUN_71014879e0(void** node) {
+    if (!node) return;
+    FUN_71014879e0(static_cast<void**>(node[0]));
+    FUN_71014879e0(static_cast<void**>(node[1]));
+    FUN_710392e590(node);
+}
+
+// 0x710160a610
+void FUN_710160a610(void** node) {
+    if (!node) return;
+    FUN_710160a610(static_cast<void**>(node[0]));
+    FUN_710160a610(static_cast<void**>(node[1]));
+    FUN_710392e590(node);
+}
+
+// 0x71016b4870
+void FUN_71016b4870(void** node) {
+    if (!node) return;
+    FUN_71016b4870(static_cast<void**>(node[0]));
+    FUN_71016b4870(static_cast<void**>(node[1]));
+    FUN_710392e590(node);
+}
+
+// 0x71016bd520
+void FUN_71016bd520(void** node) {
+    if (!node) return;
+    FUN_71016bd520(static_cast<void**>(node[0]));
+    FUN_71016bd520(static_cast<void**>(node[1]));
+    FUN_710392e590(node);
+}
