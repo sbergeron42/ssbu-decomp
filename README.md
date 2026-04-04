@@ -11,18 +11,18 @@ Targeting the final version: **patch 13.0.4**.
 | Category | Count | Percentage |
 |----------|------:|------------|
 | **Total functions** | 39,635 | |
-| Verified byte-identical | 7,933 | 20.02% |
-| Compiled (non-matching) | 6,572 | 16.58% |
+| Verified byte-identical | 7,904 | 19.94% |
+| Compiled (non-matching) | 6,601 | 16.65% |
 | **Total decompiled** | **14,505** | **36.60%** |
 | Undecompiled | 25,130 | 63.40% |
 
 ```
-Verified  [########                                ]  7,933 / 39,635  (20.02%)
+Verified  [#######                                 ]  7,904 / 39,635  (19.94%)
 Compiled  [##############                          ]  14,505 / 39,635  (36.60%)
 ```
 
-> **7,933 functions verified byte-identical** against the real 13.0.4 binary.
-> 56.1% match rate on verified functions. Autonomous multi-agent orchestrator operational.
+> **7,904 functions verified byte-identical** against the real 13.0.4 binary.
+> 56.0% match rate on verified functions. Autonomous multi-agent orchestrator operational.
 
 ## Build Info
 
