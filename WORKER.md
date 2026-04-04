@@ -1,14 +1,14 @@
-# Worker: pool-a
+# Worker: pool-b
 
 ## Model: Opus
 
-## Task: Finish remaining module structs (batch 1: 12 modules)
+## Task: Finish remaining module structs (batch 2: 11 modules)
 
-Recover the remaining empty module structs. Same workflow as previous rounds.
+Recover the remaining empty module structs.
 
 ### Your modules
-AbsorberModule, AreaModule, ArticleModule, CancelModule, CaptureModule, CatchModule,
-ColorBlendModule, GrabModule, InkPaintModule, ItemModule, JostleModule, ModelModule
+MotionAnimcmdModule, ReflectModule, ReflectorModule, SearchModule, ShadowModule,
+ShakeModule, SlowModule, StopModule, TeamModule, TurnModule, VisibilityModule
 
 ### Workflow per module
 1. Ghidra MCP: decompile functions accessing the module
@@ -18,7 +18,7 @@ ColorBlendModule, GrabModule, InkPaintModule, ItemModule, JostleModule, ModelMod
 5. Build and verify
 
 ### Rules
-- CAN edit: include/app/modules/ and src/app/modules/ for your 12 modules only
+- CAN edit: include/app/modules/ and src/app/modules/ for your 11 modules only
 - Use [confirmed: lua_bind API name] for names from lua_bind
 - Use [inferred: ...] for guesses
 - Do NOT copy-paste Ghidra pseudocode
