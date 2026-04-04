@@ -1,19 +1,24 @@
-# Worker: pool-b
+# Worker: pool-d
 
 ## Model: Opus
 
-## Task: Recover EffectModule (+0x140) and ControlModule (+0x48) structs
+## Task: Test types-first HARD decomp — AttackModule + MotionModule functions
 
-EffectModule has 24 functions / 239 raw casts. ControlModule has 24 functions / 211 raw casts.
+Now that structs are recovered, test HARD decomp with types.
+Target functions that access AttackModule (+0xA0) or MotionModule (+0x88).
 
-### Workflow per module
-1. Use Ghidra MCP: decompile functions that access the module
-2. Record every offset accessed, type, and usage
-3. Build struct header with confidence-tagged names
-4. Rewrite .cpp idiomatically
-5. Build and verify
+### Approach
+1. python tools/next_batch.py --tier HARD --limit 30
+2. Filter to functions that access AttackModule or MotionModule
+3. Write idiomatic C++ using the struct headers
+4. Track throughput: functions per hour, match rate, build cycles per function
+
+### Output
+- src/app/fun_typed_d_001.cpp onward
+- Report throughput numbers in commit messages
 
 ### Rules
-- CAN edit: include/app/modules/EffectModule.h, ControlModule.h, src/app/modules/EffectModule.cpp, ControlModule.cpp
-- Do NOT edit other files
+- ONLY create NEW files named src/app/fun_typed_d_*.cpp
+- Use struct field access from include/app/modules/
 - Do NOT copy-paste Ghidra pseudocode
+- Do NOT use naked asm
