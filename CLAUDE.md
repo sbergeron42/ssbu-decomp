@@ -69,6 +69,12 @@ This repo supports parallel decomp work via git worktrees. Multiple Claude Code 
 3. **NEVER edit files assigned to other workers**
 4. Commit to your worker branch, never push to master directly
 
+### Worker Code Quality Rules
+1. **Write C++ that a Bandai Namco developer would have written.** Use the struct definitions in `include/app/`. If Ghidra shows a pattern, understand it and rewrite it idiomatically — do NOT copy-paste Ghidra pseudocode.
+2. **Use struct field access, not raw offsets.** Write `acc->camera_module` not `*reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x60)`. If the struct header exists, use it.
+3. **Do NOT paste assembly into C functions.** `__attribute__((naked))` with inline asm is a last resort after 3 failed matching attempts, not a first approach. It inflates progress metrics without recovering source.
+4. **Decompile module-by-module, not random addresses.** Understand the module's struct layout first, then decomp its functions. Each function you decomp should reveal new field information for the struct.
+
 ### Worker Efficiency Rules
 1. **NEVER rebuild just to re-parse output** — run `cmd /c build.bat 2>&1 | tee /tmp/build.txt` once, then grep the saved file. One build, not ten.
 2. **Save Ghidra results to disk** — after each `mcp__ghidra__decompile_function_by_address` call, append the result to `/tmp/ghidra_results.txt`. On context continuation, read the file instead of re-calling Ghidra.
