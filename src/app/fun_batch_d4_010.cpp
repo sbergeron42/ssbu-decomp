@@ -11,10 +11,12 @@ extern "C" void FUN_71000b40e0(s64);
 extern "C" void FUN_71000b4160(s64);
 
 // FUN_71000b3c70 / FUN_71000b3d10 globals
+#pragma GCC visibility push(hidden)
 extern u64 DAT_7104f49388;
 extern u64 DAT_7104f49390;
 extern u64 DAT_7104f49428;
 extern u64 DAT_7104f49430;
+#pragma GCC visibility pop
 
 // ---- Functions ---------------------------------------------------------------
 
@@ -107,11 +109,11 @@ void FUN_710008a3b0(s64 param_1, s32 param_2)
 {
     s64 lVar1;
 
-    lVar1 = *(s64 *)(param_1 + 0x150);
+    lVar1 = *(volatile s64 *)(param_1 + 0x150);
     if ((param_2 != 0) && (lVar1 != 0)) {
         param_2 = param_2 + -1;
         do {
-            lVar1 = *(s64 *)(lVar1 + 0x80);
+            lVar1 = *(volatile s64 *)(lVar1 + 0x80);
             if (param_2 == 0) {
                 return;
             }

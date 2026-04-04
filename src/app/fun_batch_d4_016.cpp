@@ -6,6 +6,7 @@
 
 // ---- External declarations -----------------------------------------------
 
+#pragma GCC visibility push(hidden)
 extern s64 *PTR_DAT_71052a3bc0; // base for FUN_71000af810
 extern u64 PTR_DAT_71052a3c18;  // array base for FUN_71000b1b50
 extern s64 DAT_7104492890;      // index table for FUN_71000b1b50
@@ -14,6 +15,7 @@ extern u8 DAT_7104492960;       // index table for FUN_71000b1bb0
 extern u8 *PTR_DAT_71052a3d28;  // vtable base for FUN_71000bed20
 extern u8 *PTR_DAT_71052a3ee8;  // vtable base for FUN_71000cf5c0
 extern s64 *PTR_DAT_71052a4080; // global ptr for FUN_71000ee650
+#pragma GCC visibility pop
 
 extern "C" void *memcpy(void *, const void *, u64);
 
@@ -62,10 +64,7 @@ u64 FUN_71000887d0(s64 param_1, s32 param_2)
     if (*(s8 *)(*(s64 *)(*(s64 *)(param_1 + 0x78) + 0x20) + 0x36) != '\0') {
         iVar4 = 3;
     }
-    iVar3 = 0;
-    if (iVar4 != 0) {
-        iVar3 = iVar1 / iVar4;
-    }
+    iVar3 = iVar1 / iVar4;
     uVar2 = iVar1 - iVar3 * iVar4;
     *(u32 *)(param_1 + 0x30) = uVar2;
     *(u64 *)(param_1 + 0xc0) = param_1 + (u64)uVar2 * 0x58 + 200;

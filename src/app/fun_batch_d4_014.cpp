@@ -6,10 +6,11 @@
 
 // ---- External declarations -----------------------------------------------
 
-// DAT_100000001 — sentinel constant (address 0x100000001)
-extern u8 DAT_100000001;
+// Bitmask immediate constants used in struct initializers
+// Ghidra misinterprets these as &DAT_ addresses; they are literal values
 
 // Lookup tables
+#pragma GCC visibility push(hidden)
 extern u8 DAT_710446f0e0; // FUN_7100031510 table
 extern u8 DAT_710446f090; // FUN_7100031540 table
 extern u8 DAT_71044705bc; // FUN_7100037790 table
@@ -27,6 +28,7 @@ extern u8 DAT_71052b7960;  // singleton data
 extern u64 DAT_71052b6f18; // guard
 extern u64 DAT_71052b6a08; // vtable ptr storage
 extern u64 PTR_LAB_7104f62810; // vtable label
+#pragma GCC visibility pop
 
 // Forward-declared functions
 extern "C" void FUN_71000339b0();
@@ -46,7 +48,7 @@ void FUN_7100031330(s64 param_1)
 {
     *(u8 *)(param_1 + 1) = 2;
     *(u64 *)(param_1 + 2) = 0x1000100000000ULL;
-    *(u8 **)(param_1 + 0x14) = &DAT_100000001;
+    *(u64 *)(param_1 + 0x14) = 0x100000001ULL;
     *(u64 *)(param_1 + 0xc) = 0;
     *(u64 *)(param_1 + 0x1c) = 1;
 }
@@ -54,7 +56,7 @@ void FUN_7100031330(s64 param_1)
 // 0x71000313f0 — init u64* struct with &DAT_100000001 pointer at index 2
 void FUN_71000313f0(u64 *param_1)
 {
-    param_1[2] = (u64)&DAT_100000001;
+    param_1[2] = 0x100000001ULL;
     *param_1 = 0;
     param_1[1] = 0x100000000ULL;
     *(u16 *)(param_1 + 3) = 0;
@@ -65,7 +67,7 @@ void FUN_71000313f0(u64 *param_1)
 void FUN_7100031410(u64 *param_1)
 {
     param_1[2] = 0;
-    param_1[3] = (u64)&DAT_100000001;
+    param_1[3] = 0x100000001ULL;
     *(u32 *)(param_1 + 4) = 1;
     *param_1 = 0;
     param_1[1] = 0;

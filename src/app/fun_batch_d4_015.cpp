@@ -7,9 +7,11 @@
 // ---- External declarations -----------------------------------------------
 
 // PTR_DAT globals — hold runtime pointer values
+#pragma GCC visibility push(hidden)
 extern u8 *PTR_DAT_71052a3328; // vtable base for FUN_710003aac0
 extern u8 *PTR_DAT_71052a3390; // vtable base for FUN_710003bc80
 extern s32 *PTR_DAT_71052a3648; // count limit for FUN_710004a590
+#pragma GCC visibility pop
 
 // ---- Functions ---------------------------------------------------------------
 
@@ -108,6 +110,10 @@ u64 FUN_710003c350(s64 *param_1)
         (*(void(**)(s64 *, s32))(*param_1 + 0xd8))(param_1, 1);
         (*(void(**)(s64 *))(*param_1 + 0x98))(param_1);
         break;
+    case 1:
+    case 3:
+    case 5:
+        break;
     case 4:
     case 6:
         return 0;
@@ -125,6 +131,9 @@ u64 FUN_710003de30(s64 *param_1)
         (*(void(**)(s64 *, s32))(*param_1 + 0xd8))(param_1, 1);
         (*(void(**)(s64 *))(*param_1 + 0x98))(param_1);
         break;
+    case 1:
+    case 3:
+        break;
     case 4:
     case 6:
         return 0;
@@ -141,6 +150,9 @@ u64 FUN_710003e030(s64 *param_1)
     case 5:
         (*(void(**)(s64 *, s32))(*param_1 + 0xd8))(param_1, 1);
         (*(void(**)(s64 *))(*param_1 + 0x98))(param_1);
+        break;
+    case 1:
+    case 3:
         break;
     case 4:
     case 6:

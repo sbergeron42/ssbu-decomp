@@ -7,6 +7,7 @@
 // ---- External declarations -----------------------------------------------
 
 // Multiplier for time conversion (FUN_710015d240)
+#pragma GCC visibility push(hidden)
 extern u64 PTR_DAT_71052a3cd0;
 
 // Network context pointer (FUN_7100162ce0 / 7100163d40)
@@ -17,9 +18,10 @@ extern u64 PTR_DAT_71052a53d8;
 extern u64 PTR_DAT_71052a53e0;
 extern u64 PTR_DAT_71052a53e8;
 extern u64 PTR_DAT_71052a5528;
+#pragma GCC visibility pop
 
 // FUN_710015e850 / FUN_710015e880 callees
-extern "C" u64 FUN_710015f5c0();
+extern "C" u64 FUN_710015f5c0(s64, s8);
 extern "C" u64 FUN_710015f600(s64, s8, u32);
 
 // FUN_7100181270 callees
@@ -54,7 +56,7 @@ u64 FUN_710015e850(s64 param_1)
     u64 uVar1;
 
     if ((*(s64 *)(param_1 + 0x50) != 0) && (*(s8 *)(param_1 + 0x38) != -3)) {
-        uVar1 = FUN_710015f5c0();
+        uVar1 = FUN_710015f5c0(*(s64 *)(param_1 + 0x50), *(s8 *)(param_1 + 0x38));
         return uVar1;
     }
     return 0xffffffff;
@@ -64,48 +66,14 @@ u64 FUN_710015e850(s64 param_1)
 void FUN_710015fb50(s8 *param_1)
 {
     if (*param_1 != '\0') {
-        param_1[4] = -1;
-        param_1[5] = -1;
-        param_1[6] = -1;
-        param_1[7] = -1;
-        param_1[8] = -1;
-        param_1[9] = -1;
-        param_1[10] = -1;
-        param_1[0xb] = -1;
+        *(u64 *)((u8 *)param_1 + 4) = 0xFFFFFFFFFFFFFFFFULL;
         *param_1 = '\0';
-        param_1[0x10] = '\0';
-        param_1[0x11] = '\0';
-        param_1[0x12] = '\0';
-        param_1[0x13] = '\0';
-        param_1[0x14] = '\0';
-        param_1[0x15] = '\0';
-        param_1[0x16] = '\0';
-        param_1[0x17] = '\0';
-        param_1[0x18] = '\0';
-        param_1[0x48] = '\0';
-        param_1[0x49] = '\0';
-        param_1[0x4a] = '\0';
-        param_1[0x4b] = '\0';
-        param_1[0x4c] = '\0';
-        param_1[0x4d] = '\0';
-        param_1[0x4e] = '\0';
-        param_1[0x4f] = '\0';
-        param_1[0x1c] = '\0';
-        param_1[0x1d] = '\0';
-        param_1[0x1e] = '\0';
-        param_1[0x1f] = '\0';
-        param_1[0x20] = '\0';
-        param_1[0x21] = '\0';
-        param_1[0x22] = '\0';
-        param_1[0x23] = '\0';
-        param_1[0xc] = -1;
-        param_1[0xd] = -1;
-        param_1[0xe] = -1;
-        param_1[0xf] = -1;
-        param_1[0x50] = '\0';
-        param_1[0x51] = '\0';
-        param_1[0x52] = '\0';
-        param_1[0x53] = '\0';
+        *(u64 *)(param_1 + 0x10) = 0;
+        *(u8 *)(param_1 + 0x18) = 0;
+        *(u64 *)(param_1 + 0x48) = 0;
+        *(u64 *)((u8 *)param_1 + 0x1c) = 0;
+        *(u32 *)(param_1 + 0xc) = 0xFFFFFFFF;
+        *(u32 *)(param_1 + 0x50) = 0;
     }
 }
 
@@ -148,6 +116,9 @@ void FUN_7100164070(s64 param_1)
         puVar1[2] = 0;
         *(u32 *)(puVar1 + 3) = 0;
         *(u8 *)((s64)puVar1 + 0x1c) = 0;
+#ifdef MATCHING_HACK_NX_CLANG
+        asm("");
+#endif
     } while (lVar2 != 0x400);
     *(u32 *)(param_1 + 0x400) = 0;
 }

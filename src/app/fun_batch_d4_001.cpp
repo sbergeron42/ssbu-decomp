@@ -19,9 +19,11 @@ extern "C" void  FUN_7100313000(s64, s64, s64, s64, s64);
 extern "C" void  FUN_7100313460(s64, s64, s64, s64, s64);
 
 // External data
+#pragma GCC visibility push(hidden)
 extern u8 DAT_71044a7c80;
 extern u8 DAT_71044a7cd0;
 extern u8 DAT_71044a7d50;
+#pragma GCC visibility pop
 
 // ---- Functions ---------------------------------------------------------------
 // 0x71002c2810 — table lookup by index (<3): return u64 entry from DAT table

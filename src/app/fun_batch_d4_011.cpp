@@ -7,11 +7,13 @@
 // ---- External declarations -----------------------------------------------
 
 // Network protocol field write targets (FUN_7100149270 / FUN_7100149290 removed — dup)
+#pragma GCC visibility push(hidden)
 extern u64 PTR_DAT_71052a3bd0;
 extern u64 PTR_DAT_71052a3bd8;
 
 // Vtable init base (FUN_710014f150)
 extern u64 PTR_DAT_71052a4f38;
+#pragma GCC visibility pop
 
 // ---- Functions ---------------------------------------------------------------
 
@@ -35,6 +37,7 @@ void FUN_710014f150(s64 *param_1)
 u64 FUN_71001506d0(s64 param_1, s64 param_2, u8 param_3)
 {
     s64 lVar1;
+    u8 masked = param_3 & 1;
 
     lVar1 = *(s64 *)(param_1 + 0x10);
     if (lVar1 == param_1 + 8) {
@@ -42,7 +45,7 @@ u64 FUN_71001506d0(s64 param_1, s64 param_2, u8 param_3)
     }
     do {
         if (*(s64 *)(lVar1 + 0x20) == param_2) {
-            *(u8 *)(lVar1 + 0x2e) = param_3 & 1;
+            *(u8 *)(lVar1 + 0x2e) = masked;
             return 1;
         }
         lVar1 = *(s64 *)(lVar1 + 8);
