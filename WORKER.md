@@ -1,15 +1,19 @@
-# Worker: pool-e
+# Worker: pool-d
 
 ## Model: Opus
 
-## Task: Recover FighterManager and FighterInformation full structs
+## Task: Recover SoundModule (+0x148) and CameraModule (+0x60) structs
 
-Both already have partial headers in include/app/. Flesh them out into complete struct definitions and rewrite their functions.
+SoundModule has 20 functions / 54 raw casts. CameraModule has 39 functions / 68 raw casts.
 
-### Phase 1: Cross-reference all field accesses in FighterManager.cpp, FighterInformation.cpp, FighterEntry.cpp via Ghidra MCP
-### Phase 2: Complete include/app/FighterManager.h, FighterInformation.h, FighterEntry.h
-### Phase 3: Rewrite the source files using the structs
+### Workflow per module
+1. Use Ghidra MCP: decompile functions that access the module
+2. Record every offset accessed, type, and usage
+3. Build struct header with confidence-tagged names
+4. Rewrite .cpp idiomatically
+5. Build and verify
 
-### DO NOT use reinterpret_cast for struct members, paste assembly, or use raw hex offsets
-
-### Rules: ONLY edit FighterManager.h, FighterInformation.h, FighterEntry.h and their .cpp files
+### Rules
+- CAN edit: include/app/modules/SoundModule.h, CameraModule.h, src/app/modules/SoundModule.cpp, CameraModule.cpp
+- Do NOT edit other files
+- Do NOT copy-paste Ghidra pseudocode
