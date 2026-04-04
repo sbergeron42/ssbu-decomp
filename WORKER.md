@@ -1,24 +1,26 @@
-# Worker: pool-d
+# Worker: pool-e
 
 ## Model: Opus
 
-## Task: Test types-first HARD decomp � AttackModule + MotionModule functions
+## Task: Decomp remaining EASY + HARD tree-delete functions
 
-Now that structs are recovered, test HARD decomp with types.
-Target functions that access AttackModule (+0xA0) or MotionModule (+0x88).
+### Completed
+- All DamageModule/GroundModule lua_bind wrappers were already compiled (CSV stale)
+- MEDIUM tier: 0 remaining (all compiled)
+- Compiled 36 functions across 3 files:
+  - `src/app/fun_typed_e_001.cpp` — 6 EASY stubs (noop, memset_s, field accessor, tail calls)
+  - `src/app/fun_typed_e_002.cpp` — 8 HARD tree deletes (patterns A/B/C)
+  - `src/app/fun_typed_e_003.cpp` — 22 HARD tree deletes (patterns A/B/D)
+- All 36 verified against binary (only branch relocations differ, expected for .o)
 
-### Approach
-1. python tools/next_batch.py --tier HARD --limit 30
-2. Filter to functions that access AttackModule or MotionModule
-3. Write idiomatic C++ using the struct headers
-4. Track throughput: functions per hour, match rate, build cycles per function
-
-### Output
-- src/app/fun_typed_d_001.cpp onward
-- Report throughput numbers in commit messages
+### Notes
+- HARD tier is ~9000 destructor/tree-delete functions, not module accessor functions
+- Tree-delete Pattern A (recurse left/right + delete) is the most common 64-byte HARD pattern
+- Pattern D (two-param tree delete) uses alternate delete function FUN_71001b1870
+- 47 EASY targets remain but most are 4-byte NOPs or complex internal functions
 
 ### Rules
-- ONLY create NEW files named src/app/fun_typed_d_*.cpp
+- ONLY create NEW files named src/app/fun_typed_e_*.cpp
 - Use struct field access from include/app/modules/
 - Do NOT copy-paste Ghidra pseudocode
 - Do NOT use naked asm
