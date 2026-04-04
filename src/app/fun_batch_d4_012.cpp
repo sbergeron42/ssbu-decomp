@@ -7,6 +7,7 @@
 // ---- External declarations -----------------------------------------------
 
 // Multiplier for time conversion (FUN_710015d240)
+#pragma GCC visibility push(hidden)
 extern u64 PTR_DAT_71052a3cd0;
 
 // Network context pointer (FUN_7100162ce0 / 7100163d40)
@@ -17,9 +18,10 @@ extern u64 PTR_DAT_71052a53d8;
 extern u64 PTR_DAT_71052a53e0;
 extern u64 PTR_DAT_71052a53e8;
 extern u64 PTR_DAT_71052a5528;
+#pragma GCC visibility pop
 
 // FUN_710015e850 / FUN_710015e880 callees
-extern "C" u64 FUN_710015f5c0();
+extern "C" u64 FUN_710015f5c0(s64, s8);
 extern "C" u64 FUN_710015f600(s64, s8, u32);
 
 // FUN_7100181270 callees
@@ -54,7 +56,7 @@ u64 FUN_710015e850(s64 param_1)
     u64 uVar1;
 
     if ((*(s64 *)(param_1 + 0x50) != 0) && (*(s8 *)(param_1 + 0x38) != -3)) {
-        uVar1 = FUN_710015f5c0();
+        uVar1 = FUN_710015f5c0(*(s64 *)(param_1 + 0x50), *(s8 *)(param_1 + 0x38));
         return uVar1;
     }
     return 0xffffffff;

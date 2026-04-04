@@ -7,11 +7,13 @@
 // ---- External declarations -----------------------------------------------
 
 // Network protocol field write targets (FUN_7100149270 / FUN_7100149290 removed — dup)
+#pragma GCC visibility push(hidden)
 extern u64 PTR_DAT_71052a3bd0;
 extern u64 PTR_DAT_71052a3bd8;
 
 // Vtable init base (FUN_710014f150)
 extern u64 PTR_DAT_71052a4f38;
+#pragma GCC visibility pop
 
 // ---- Functions ---------------------------------------------------------------
 

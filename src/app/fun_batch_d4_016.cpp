@@ -6,6 +6,7 @@
 
 // ---- External declarations -----------------------------------------------
 
+#pragma GCC visibility push(hidden)
 extern s64 *PTR_DAT_71052a3bc0; // base for FUN_71000af810
 extern u64 PTR_DAT_71052a3c18;  // array base for FUN_71000b1b50
 extern s64 DAT_7104492890;      // index table for FUN_71000b1b50
@@ -14,6 +15,7 @@ extern u8 DAT_7104492960;       // index table for FUN_71000b1bb0
 extern u8 *PTR_DAT_71052a3d28;  // vtable base for FUN_71000bed20
 extern u8 *PTR_DAT_71052a3ee8;  // vtable base for FUN_71000cf5c0
 extern s64 *PTR_DAT_71052a4080; // global ptr for FUN_71000ee650
+#pragma GCC visibility pop
 
 extern "C" void *memcpy(void *, const void *, u64);
 
