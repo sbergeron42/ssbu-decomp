@@ -1,15 +1,22 @@
-# Worker: pool-e
+# Worker: pool-a
 
 ## Model: Opus
 
-## Task: Recover FighterManager and FighterInformation full structs
+## Task: Recover LinkModule (+0xD0) and PhysicsModule (+0x80) structs
 
-Both already have partial headers in include/app/. Flesh them out into complete struct definitions and rewrite their functions.
+LinkModule has 88 functions / 209 raw casts. PhysicsModule has 45 functions / 105 raw casts.
 
-### Phase 1: Cross-reference all field accesses in FighterManager.cpp, FighterInformation.cpp, FighterEntry.cpp via Ghidra MCP
-### Phase 2: Complete include/app/FighterManager.h, FighterInformation.h, FighterEntry.h
-### Phase 3: Rewrite the source files using the structs
+### Workflow per module
+1. Use Ghidra MCP: decompile functions that access the module
+2. Record every offset accessed, its type, and how it is used
+3. Build the struct header with confidence-tagged names:
+   - [confirmed: lua_bind API name] for names from the Lua API
+   - [inferred: read as s32 by N functions] for AI guesses
+   - unk_0xXX for unknown padding
+4. Rewrite the .cpp using the struct — write idiomatic C++ a developer would write
+5. Build and verify after each file change
 
-### DO NOT use reinterpret_cast for struct members, paste assembly, or use raw hex offsets
-
-### Rules: ONLY edit FighterManager.h, FighterInformation.h, FighterEntry.h and their .cpp files
+### Rules
+- CAN edit: include/app/modules/LinkModule.h, PhysicsModule.h, src/app/modules/LinkModule.cpp, PhysicsModule.cpp
+- Do NOT edit other files
+- Do NOT copy-paste Ghidra pseudocode — understand and reimplement
