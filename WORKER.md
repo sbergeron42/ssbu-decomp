@@ -2,25 +2,26 @@
 
 ## Model: Opus
 
-## Task: Fix non-matching functions + find new post-processing patterns
+## Task: Convert networking reference code to compilable decomp, then HARD tier networking
 
-4,621 non-matching functions remain. Analyze the most common patterns and either fix them manually or build new post-processing tools.
+### Phase 1: Fix reference/networking_src/ files
+The 3 networking files (input_mapping.cpp, state_serialize.cpp, ldn_transport.cpp) were moved to reference/ because they don't compile. Fix them and move back to src/app/networking/:
+- Replace #include <cstdlib>, <cmath> with extern "C" declarations
+- Fix function signature mismatches
+- Remove or stub functions that reference unknown types
+- Goal: compile without errors, verify what matches
 
-### Approach
-1. Run python tools/analyze_regalloc.py to categorize all non-matching by divergence type
-2. For the largest unfixed categories, determine if a post-processor can handle them
-3. Build new tools/fix_*.py scripts for automatable patterns
-4. Manually fix functions where type swaps or barriers work
-5. Add new tools to build.bat post-processing pipeline
+### Phase 2: Decomp HARD tier networking functions
+Functions in the 0x710016xxxx-0x710019xxxx range (game LDN data exchange) and 0x71037xxxxx (session management). Use src/docs/networking.md as reference.
 
-### Priority
-- Focus on patterns that affect 50+ functions (biggest bang for buck)
-- Existing tools already handle: prologue scheduling, epilogue swap, movz/orr, return width, x8 dispatch
-- Look for: scratch register choice, store ordering, branch layout, frame size
+### Efficiency rules (MANDATORY)
+- Build once: cmd /c build.bat 2>&1 | tee /tmp/build.txt then grep the file
+- Find targets: python tools/next_batch.py --tier HARD --range 0x710016 --limit 30
+- Compare bytes: python tools/compare_bytes.py FUNC_NAME
+- Save Ghidra results to /tmp/ghidra_results.txt
+- 3-attempt limit per function, then skip or naked asm
+- Do NOT edit tools/ or fix infrastructure — report issues and move on
 
 ### Rules
-- CAN create/edit files in tools/
-- CAN edit build.bat to add post-processing steps
-- Do NOT edit source files (except to test fixes, then revert)
-- Do NOT modify data/functions.csv
-- Test thoroughly before committing
+- CAN edit: reference/networking_src/*.cpp, src/app/networking/*.cpp (create dir if needed), include/app/*.h
+- Do NOT edit other source files, tools/, or data/
