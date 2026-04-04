@@ -2,14 +2,18 @@
 
 ## Model: Opus
 
-## Task: Recover FighterManager and FighterInformation full structs
+## Task: Recover ShieldModule (+0x100), HitModule (+0xB0), and ComboModule (+0xB8) structs
 
-Both already have partial headers in include/app/. Flesh them out into complete struct definitions and rewrite their functions.
+Three smaller modules. ShieldModule has 38 raw casts. HitModule has 26. ComboModule has 5 functions.
 
-### Phase 1: Cross-reference all field accesses in FighterManager.cpp, FighterInformation.cpp, FighterEntry.cpp via Ghidra MCP
-### Phase 2: Complete include/app/FighterManager.h, FighterInformation.h, FighterEntry.h
-### Phase 3: Rewrite the source files using the structs
+### Workflow per module
+1. Use Ghidra MCP: decompile functions that access the module
+2. Record every offset accessed, type, and usage
+3. Build struct header with confidence-tagged names
+4. Rewrite .cpp idiomatically
+5. Build and verify
 
-### DO NOT use reinterpret_cast for struct members, paste assembly, or use raw hex offsets
-
-### Rules: ONLY edit FighterManager.h, FighterInformation.h, FighterEntry.h and their .cpp files
+### Rules
+- CAN edit: include/app/modules/ShieldModule.h, HitModule.h, ComboModule.h and their .cpp files
+- Do NOT edit other files
+- Do NOT copy-paste Ghidra pseudocode
