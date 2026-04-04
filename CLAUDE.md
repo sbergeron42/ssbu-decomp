@@ -69,6 +69,13 @@ This repo supports parallel decomp work via git worktrees. Multiple Claude Code 
 3. **NEVER edit files assigned to other workers**
 4. Commit to your worker branch, never push to master directly
 
+### Worker Efficiency Rules
+1. **NEVER rebuild just to re-parse output** — run `cmd /c build.bat 2>&1 | tee /tmp/build.txt` once, then grep the saved file. One build, not ten.
+2. **Save Ghidra results to disk** — after each `mcp__ghidra__decompile_function_by_address` call, append the result to `/tmp/ghidra_results.txt`. On context continuation, read the file instead of re-calling Ghidra.
+3. **Use existing helper scripts** — run `python tools/next_batch.py` to find targets, `python tools/compare_bytes.py` to diff. Do NOT write inline Python for CSV parsing or byte comparison.
+4. **Do NOT fix infrastructure** — if a tool (verify_all.py, build.bat, linker script) is broken, report the issue in your commit message and move to the next function. The orchestrator handles tool fixes.
+5. **3-attempt limit on matching** — if a function doesn't match after 3 edit-build-verify cycles, either use `__attribute__((naked))` with inline asm or skip it and move on. Do NOT spiral on one function.
+
 ### Worker Verification
 Workers use `tools/verify_local.py` for self-checks (read-only, no CSV writes):
 ```bash
