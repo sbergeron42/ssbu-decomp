@@ -1,19 +1,24 @@
-# Worker: pool-b
+# Worker: pool-a
 
 ## Model: Opus
 
-## Task: Recover EffectModule (+0x140) and ControlModule (+0x48) structs
+## Task: Finish remaining module structs (batch 1: 12 modules)
 
-EffectModule has 24 functions / 239 raw casts. ControlModule has 24 functions / 211 raw casts.
+Recover the remaining empty module structs. Same workflow as previous rounds.
+
+### Your modules
+AbsorberModule, AreaModule, ArticleModule, CancelModule, CaptureModule, CatchModule,
+ColorBlendModule, GrabModule, InkPaintModule, ItemModule, JostleModule, ModelModule
 
 ### Workflow per module
-1. Use Ghidra MCP: decompile functions that access the module
-2. Record every offset accessed, type, and usage
-3. Build struct header with confidence-tagged names
-4. Rewrite .cpp idiomatically
+1. Ghidra MCP: decompile functions accessing the module
+2. Map vtable entries with confidence-tagged names
+3. Build the .h header with void** _vt + inline methods
+4. Rewrite the .cpp using clean dispatch
 5. Build and verify
 
 ### Rules
-- CAN edit: include/app/modules/EffectModule.h, ControlModule.h, src/app/modules/EffectModule.cpp, ControlModule.cpp
-- Do NOT edit other files
+- CAN edit: include/app/modules/ and src/app/modules/ for your 12 modules only
+- Use [confirmed: lua_bind API name] for names from lua_bind
+- Use [inferred: ...] for guesses
 - Do NOT copy-paste Ghidra pseudocode

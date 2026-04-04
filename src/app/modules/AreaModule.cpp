@@ -1,39 +1,42 @@
 #include "app/BattleObjectModuleAccessor.h"
+#include "app/modules/AreaModule.h"
 // AreaModule shares accessor+0xC0 with FighterAreaModule (polymorphic)
-#define AM(a) (a->fighter_area_module)
-#define VT(m) (*reinterpret_cast<void***>(m))
+#define AM(a) static_cast<AreaModule*>((a)->fighter_area_module)
+
 namespace app::lua_bind {
-void AreaModule__force_update_impl(BattleObjectModuleAccessor* a) { auto* m=AM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x50/8])(m); }
-void AreaModule__clean_impl(BattleObjectModuleAccessor* a) { auto* m=AM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x70/8])(m); }
-void* AreaModule__get_group_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xc0)); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0xb0/8])(m,p1); }
-u32 AreaModule__area_instance_size_impl(BattleObjectModuleAccessor* a) { auto* m=AM(a); return reinterpret_cast<u32(*)(void*)>(VT(m)[0xB8/8])(m); }
-void AreaModule__enable_area_impl(BattleObjectModuleAccessor* a,u64 p1,bool p2,u64 p3) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xc0)); reinterpret_cast<void(*)(void*,u64,bool,u64)>(VT(m)[0xc0/8])(m,p1,p2,p3); }
-bool AreaModule__is_enable_area_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xc0)); return reinterpret_cast<bool(*)(void*,u64)>(VT(m)[0xc8/8])(m,p1); }
-u32 AreaModule__get_area_id_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xc0)); return reinterpret_cast<u32(*)(void*,u64)>(VT(m)[0x108/8])(m,p1); }
-bool AreaModule__is_exist_area_instance_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=AM(a); return reinterpret_cast<bool(*)(void*,u64)>(VT(m)[0x110/8])(m,p1); }
-u32 AreaModule__get_area_index_from_id_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=AM(a); return reinterpret_cast<u32(*)(void*,u64)>(VT(m)[0x120/8])(m,p1); }
-u32 AreaModule__get_area_contact_count_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xc0)); return reinterpret_cast<u32(*)(void*,u64)>(VT(m)[0x128/8])(m,p1); }
-void* AreaModule__get_area_contact_log_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xc0)); return reinterpret_cast<void*(*)(void*,u64,u64)>(VT(m)[0x130/8])(m,p1,p2); }
-u32 AreaModule__get_area_contact_target_id_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xc0)); return reinterpret_cast<u32(*)(void*,u64,u64)>(VT(m)[0x138/8])(m,p1,p2); }
-void AreaModule__erase_wind_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=AM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x140/8])(m,p1); }
-void AreaModule__add_wind_area_2nd_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,u64 p3,u64 p4) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xc0)); reinterpret_cast<void(*)(void*,u64,u64,u64,u64)>(VT(m)[0x158/8])(m,p1,p2,p3,p4); }
-void AreaModule__add_wind_area_2nd_rad_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,u64 p3) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xc0)); reinterpret_cast<void(*)(void*,u64,u64,u64)>(VT(m)[0x160/8])(m,p1,p2,p3); }
-bool AreaModule__is_sleep_impl(BattleObjectModuleAccessor* a) { auto* m=AM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x170/8])(m); }
-bool AreaModule__is_water_impl(BattleObjectModuleAccessor* a) { auto* m=AM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x198/8])(m); }
-u32 AreaModule__get_water_task_id_impl(BattleObjectModuleAccessor* a) { auto* m=AM(a); return reinterpret_cast<u32(*)(void*)>(VT(m)[0x1B0/8])(m); }
-f32 AreaModule__get_water_surface_y_impl(BattleObjectModuleAccessor* a) { auto* m=AM(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x1B8/8])(m); }
-void AreaModule__set_auto_layer_update_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=AM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x58/8])(m,p1); }
-void AreaModule__set_layer_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xc0)); reinterpret_cast<void(*)(void*,u64,u64)>(VT(m)[0x90/8])(m,p1,p2); }
-void* AreaModule__layer_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xc0)); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x98/8])(m,p1); }
-void AreaModule__set_whole_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=AM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0xa0/8])(m,p1); }
-u32 AreaModule__get_whole_impl(BattleObjectModuleAccessor* a) { auto* m=AM(a); return reinterpret_cast<u32(*)(void*)>(VT(m)[0xa8/8])(m); }
-void AreaModule__reset_area_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=AM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xd0/8])(m,p1); }
-void AreaModule__set_area_target_group_mask_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xc0)); reinterpret_cast<void(*)(void*,u64,u64)>(VT(m)[0xd8/8])(m,p1,p2); }
-void AreaModule__set_area_target_local_group_mask_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xc0)); reinterpret_cast<void(*)(void*,u64,u64)>(VT(m)[0xe0/8])(m,p1,p2); }
-void AreaModule__set_area_shape_aabb_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,u64 p3) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xc0)); reinterpret_cast<void(*)(void*,u64,u64,u64)>(VT(m)[0xe8/8])(m,p1,p2,p3); }
-void AreaModule__set_area_shape_circle_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xc0)); reinterpret_cast<void(*)(void*,u64,u64)>(VT(m)[0xf0/8])(m,p1,p2); }
-void AreaModule__set_area_shape_type_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xc0)); reinterpret_cast<void(*)(void*,u64,u64)>(VT(m)[0xf8/8])(m,p1,p2); }
-void AreaModule__set_center_x0_impl(BattleObjectModuleAccessor* a,u64 p1,bool p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xc0)); reinterpret_cast<void(*)(void*,u64,bool)>(VT(m)[0x100/8])(m,p1,p2); }
-void AreaModule__sleep_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=AM(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x168/8])(m,p1); }
-void* AreaModule__test_water_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=reinterpret_cast<void*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(a)+0xc0)); return reinterpret_cast<void*(*)(void*,u64,u64)>(VT(m)[0x1c8/8])(m,p1,p2); }
+
+void AreaModule__force_update_impl(BattleObjectModuleAccessor* a) { AM(a)->force_update(); }
+void AreaModule__set_auto_layer_update_impl(BattleObjectModuleAccessor* a, bool p1) { AM(a)->set_auto_layer_update(p1); }
+void AreaModule__clean_impl(BattleObjectModuleAccessor* a) { AM(a)->clean(); }
+void AreaModule__set_layer_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2) { AM(a)->set_layer(p1, p2); }
+void* AreaModule__layer_impl(BattleObjectModuleAccessor* a, u64 p1) { return AM(a)->layer(p1); }
+void AreaModule__set_whole_impl(BattleObjectModuleAccessor* a, bool p1) { AM(a)->set_whole(p1); }
+u32 AreaModule__get_whole_impl(BattleObjectModuleAccessor* a) { return AM(a)->get_whole(); }
+void* AreaModule__get_group_impl(BattleObjectModuleAccessor* a, u64 p1) { return AM(a)->get_group(p1); }
+u32 AreaModule__area_instance_size_impl(BattleObjectModuleAccessor* a) { return AM(a)->area_instance_size(); }
+void AreaModule__enable_area_impl(BattleObjectModuleAccessor* a, u64 p1, bool p2, u64 p3) { AM(a)->enable_area(p1, p2, p3); }
+bool AreaModule__is_enable_area_impl(BattleObjectModuleAccessor* a, u64 p1) { return AM(a)->is_enable_area(p1); }
+void AreaModule__reset_area_impl(BattleObjectModuleAccessor* a, u64 p1) { AM(a)->reset_area(p1); }
+void AreaModule__set_area_target_group_mask_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2) { AM(a)->set_area_target_group_mask(p1, p2); }
+void AreaModule__set_area_target_local_group_mask_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2) { AM(a)->set_area_target_local_group_mask(p1, p2); }
+void AreaModule__set_area_shape_aabb_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2, u64 p3) { AM(a)->set_area_shape_aabb(p1, p2, p3); }
+void AreaModule__set_area_shape_circle_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2) { AM(a)->set_area_shape_circle(p1, p2); }
+void AreaModule__set_area_shape_type_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2) { AM(a)->set_area_shape_type(p1, p2); }
+void AreaModule__set_center_x0_impl(BattleObjectModuleAccessor* a, u64 p1, bool p2) { AM(a)->set_center_x0(p1, p2); }
+u32 AreaModule__get_area_id_impl(BattleObjectModuleAccessor* a, u64 p1) { return AM(a)->get_area_id(p1); }
+bool AreaModule__is_exist_area_instance_impl(BattleObjectModuleAccessor* a, u64 p1) { return AM(a)->is_exist_area_instance(p1); }
+u32 AreaModule__get_area_index_from_id_impl(BattleObjectModuleAccessor* a, u64 p1) { return AM(a)->get_area_index_from_id(p1); }
+u32 AreaModule__get_area_contact_count_impl(BattleObjectModuleAccessor* a, u64 p1) { return AM(a)->get_area_contact_count(p1); }
+void* AreaModule__get_area_contact_log_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2) { return AM(a)->get_area_contact_log(p1, p2); }
+u32 AreaModule__get_area_contact_target_id_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2) { return AM(a)->get_area_contact_target_id(p1, p2); }
+void AreaModule__erase_wind_impl(BattleObjectModuleAccessor* a, u64 p1) { AM(a)->erase_wind(p1); }
+void AreaModule__add_wind_area_2nd_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2, u64 p3, u64 p4) { AM(a)->add_wind_area_2nd(p1, p2, p3, p4); }
+void AreaModule__add_wind_area_2nd_rad_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2, u64 p3) { AM(a)->add_wind_area_2nd_rad(p1, p2, p3); }
+void AreaModule__sleep_impl(BattleObjectModuleAccessor* a, bool p1) { AM(a)->sleep(p1); }
+bool AreaModule__is_sleep_impl(BattleObjectModuleAccessor* a) { return AM(a)->is_sleep(); }
+bool AreaModule__is_water_impl(BattleObjectModuleAccessor* a) { return AM(a)->is_water(); }
+u32 AreaModule__get_water_task_id_impl(BattleObjectModuleAccessor* a) { return AM(a)->get_water_task_id(); }
+f32 AreaModule__get_water_surface_y_impl(BattleObjectModuleAccessor* a) { return AM(a)->get_water_surface_y(); }
+void* AreaModule__test_water_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2) { return AM(a)->test_water(p1, p2); }
+
 } // namespace app::lua_bind

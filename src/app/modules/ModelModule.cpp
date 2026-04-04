@@ -1,40 +1,39 @@
 #include "app/BattleObjectModuleAccessor.h"
-#define MM(a) (a->model_module)
-#define TEAM_MODULE(a) MM(a)
-#define VT(m) (*reinterpret_cast<void***>(m))
+#include "app/modules/ModelModule.h"
+#define MM(a) static_cast<ModelModule*>((a)->model_module)
+
 namespace app::lua_bind {
-u32 ModelModule__rotation_order_impl(BattleObjectModuleAccessor* a) { auto* m=MM(a); return reinterpret_cast<u32(*)(void*)>(VT(m)[0xE8/8])(m); }
-void* ModelModule__scale_impl(BattleObjectModuleAccessor* a) { auto* m=MM(a); return reinterpret_cast<void*(*)(void*)>(VT(m)[0xF0/8])(m); }
-f32 ModelModule__scale_z_impl(BattleObjectModuleAccessor* a) { auto* m=MM(a); return reinterpret_cast<f32(*)(void*)>(VT(m)[0x100/8])(m); }
-void* ModelModule__joint_global_position_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,bool p3) { auto* m=MM(a); return reinterpret_cast<void*(*)(void*,u64,u64,bool)>(VT(m)[0x150/8])(m,p1,p2,p3); }
-void* ModelModule__joint_global_position_with_offset_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,u64 p3,bool p4) { auto* m=MM(a); return reinterpret_cast<void*(*)(void*,u64,u64,u64,bool)>(VT(m)[0x158/8])(m,p1,p2,p3,p4); }
-void* ModelModule__joint_global_offset_from_top_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=a->model_module; return reinterpret_cast<void*(*)(void*,u64,u64)>(VT(m)[0x170/8])(m,p1,p2); }
-void* ModelModule__joint_global_rotation_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,bool p3) { auto* m=MM(a); return reinterpret_cast<void*(*)(void*,u64,u64,bool)>(VT(m)[0x180/8])(m,p1,p2,p3); }
-void* ModelModule__joint_global_axis_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,bool p3) { auto* m=MM(a); return reinterpret_cast<void*(*)(void*,u64,u64,bool)>(VT(m)[0x188/8])(m,p1,p2,p3); }
-void ModelModule__clear_joint_srt_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=MM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x1B0/8])(m,p1); }
-void* ModelModule__joint_rotate_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=a->model_module; return reinterpret_cast<void*(*)(void*,u64,u64)>(VT(m)[0x1b8/8])(m,p1,p2); }
-bool ModelModule__is_visible_impl(BattleObjectModuleAccessor* a) { auto* m=MM(a); return reinterpret_cast<bool(*)(void*)>(VT(m)[0x1C8/8])(m); }
-void ModelModule__set_alpha_impl(BattleObjectModuleAccessor* a) { auto* m=a->model_module; reinterpret_cast<void(*)(void*)>(VT(m)[0x1f0/8])(m); }
-void ModelModule__set_color_rgb_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=MM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x1F8/8])(m,p1); }
-void ModelModule__enable_gold_eye_impl(BattleObjectModuleAccessor* a) { auto* m=MM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x358/8])(m); }
-void ModelModule__disable_gold_eye_impl(BattleObjectModuleAccessor* a) { auto* m=MM(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x360/8])(m); }
-// Additional ModelModule dispatchers
-void ModelModule__set_rotation_order_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=MM(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0xe0/8])(m,p1); }
-void ModelModule__set_scale_impl(BattleObjectModuleAccessor* a) { auto* m=a->model_module; reinterpret_cast<void(*)(void*)>(VT(m)[0xf8/8])(m); }
-void ModelModule__set_scale_z_impl(BattleObjectModuleAccessor* a) { auto* m=a->model_module; reinterpret_cast<void(*)(void*)>(VT(m)[0x108/8])(m); }
-void ModelModule__set_temporary_scale_z_impl(BattleObjectModuleAccessor* a) { auto* m=a->model_module; reinterpret_cast<void(*)(void*)>(VT(m)[0x110/8])(m); }
-// Auto-generated named dispatchers
-void* ModelModule__top_joint_global_position_from_joint_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,u64 p3) { auto* m=TEAM_MODULE(a); return reinterpret_cast<void*(*)(void*,u64,u64,u64)>(VT(m)[0x178/8])(m,p1,p2,p3); }
-void ModelModule__set_joint_srt_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,u64 p3,u64 p4) { auto* m=TEAM_MODULE(a); reinterpret_cast<void(*)(void*,u64,u64,u64,u64)>(VT(m)[0x190/8])(m,p1,p2,p3,p4); }
-void ModelModule__set_joint_scale_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { auto* m=TEAM_MODULE(a); reinterpret_cast<void(*)(void*,u64,u64)>(VT(m)[0x198/8])(m,p1,p2); }
-void ModelModule__set_joint_rotate_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,u64 p3,u64 p4) { auto* m=TEAM_MODULE(a); reinterpret_cast<void(*)(void*,u64,u64,u64,u64)>(VT(m)[0x1a0/8])(m,p1,p2,p3,p4); }
-void ModelModule__set_visibility_impl(BattleObjectModuleAccessor* a,bool p1) { auto* m=TEAM_MODULE(a); reinterpret_cast<void(*)(void*,bool)>(VT(m)[0x1c0/8])(m,p1); }
-void ModelModule__set_mesh_visibility_impl(BattleObjectModuleAccessor* a,u64 p1,bool p2) { auto* m=TEAM_MODULE(a); reinterpret_cast<void(*)(void*,u64,bool)>(VT(m)[0x1d0/8])(m,p1,p2); }
-void ModelModule__set_emmisive_scale_impl(BattleObjectModuleAccessor* a) { auto* m=TEAM_MODULE(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x258/8])(m); }
-void ModelModule__set_render_offset_position_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=TEAM_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x2d8/8])(m,p1); }
-void ModelModule__set_depth_offset_impl(BattleObjectModuleAccessor* a) { auto* m=TEAM_MODULE(a); reinterpret_cast<void(*)(void*)>(VT(m)[0x2e8/8])(m); }
-void ModelModule__set_depth_stencil_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=TEAM_MODULE(a); reinterpret_cast<void(*)(void*,u64)>(VT(m)[0x2f0/8])(m,p1); }
-void* ModelModule__virtual_joint_tra_impl(BattleObjectModuleAccessor* a,u64 p1) { auto* m=TEAM_MODULE(a); return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x328/8])(m,p1); }
-// Multi-bool dispatchers (auto-generated)
-void ModelModule__set_joint_translate_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,bool p3,bool p4) { auto* m=a->model_module; reinterpret_cast<void(*)(void*,u64,u64,bool,bool)>(VT(m)[0x1a8/8])(m,p1,p2,p3,p4); }
+
+void ModelModule__set_rotation_order_impl(BattleObjectModuleAccessor* a, u64 p1) { MM(a)->set_rotation_order(p1); }
+u32 ModelModule__rotation_order_impl(BattleObjectModuleAccessor* a) { return MM(a)->rotation_order(); }
+void* ModelModule__scale_impl(BattleObjectModuleAccessor* a) { return MM(a)->scale(); }
+void ModelModule__set_scale_impl(BattleObjectModuleAccessor* a) { MM(a)->set_scale(); }
+f32 ModelModule__scale_z_impl(BattleObjectModuleAccessor* a) { return MM(a)->scale_z(); }
+void ModelModule__set_scale_z_impl(BattleObjectModuleAccessor* a) { MM(a)->set_scale_z(); }
+void ModelModule__set_temporary_scale_z_impl(BattleObjectModuleAccessor* a) { MM(a)->set_temporary_scale_z(); }
+void* ModelModule__joint_global_position_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2, bool p3) { return MM(a)->joint_global_position(p1, p2, p3); }
+void* ModelModule__joint_global_position_with_offset_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2, u64 p3, bool p4) { return MM(a)->joint_global_position_with_offset(p1, p2, p3, p4); }
+void* ModelModule__joint_global_offset_from_top_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2) { return MM(a)->joint_global_offset_from_top(p1, p2); }
+void* ModelModule__top_joint_global_position_from_joint_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2, u64 p3) { return MM(a)->top_joint_global_position_from_joint(p1, p2, p3); }
+void* ModelModule__joint_global_rotation_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2, bool p3) { return MM(a)->joint_global_rotation(p1, p2, p3); }
+void* ModelModule__joint_global_axis_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2, bool p3) { return MM(a)->joint_global_axis(p1, p2, p3); }
+void ModelModule__set_joint_srt_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2, u64 p3, u64 p4) { MM(a)->set_joint_srt(p1, p2, p3, p4); }
+void ModelModule__set_joint_scale_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2) { MM(a)->set_joint_scale(p1, p2); }
+void ModelModule__set_joint_rotate_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2, u64 p3, u64 p4) { MM(a)->set_joint_rotate(p1, p2, p3, p4); }
+void ModelModule__set_joint_translate_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2, bool p3, bool p4) { MM(a)->set_joint_translate(p1, p2, p3, p4); }
+void ModelModule__clear_joint_srt_impl(BattleObjectModuleAccessor* a, u64 p1) { MM(a)->clear_joint_srt(p1); }
+void* ModelModule__joint_rotate_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2) { return MM(a)->joint_rotate(p1, p2); }
+void ModelModule__set_visibility_impl(BattleObjectModuleAccessor* a, bool p1) { MM(a)->set_visibility(p1); }
+bool ModelModule__is_visible_impl(BattleObjectModuleAccessor* a) { return MM(a)->is_visible(); }
+void ModelModule__set_mesh_visibility_impl(BattleObjectModuleAccessor* a, u64 p1, bool p2) { MM(a)->set_mesh_visibility(p1, p2); }
+void ModelModule__set_alpha_impl(BattleObjectModuleAccessor* a) { MM(a)->set_alpha(); }
+void ModelModule__set_color_rgb_impl(BattleObjectModuleAccessor* a, u64 p1) { MM(a)->set_color_rgb(p1); }
+void ModelModule__set_emmisive_scale_impl(BattleObjectModuleAccessor* a) { MM(a)->set_emmisive_scale(); }
+void ModelModule__set_render_offset_position_impl(BattleObjectModuleAccessor* a, u64 p1) { MM(a)->set_render_offset_position(p1); }
+void ModelModule__set_depth_offset_impl(BattleObjectModuleAccessor* a) { MM(a)->set_depth_offset(); }
+void ModelModule__set_depth_stencil_impl(BattleObjectModuleAccessor* a, u64 p1) { MM(a)->set_depth_stencil(p1); }
+void* ModelModule__virtual_joint_tra_impl(BattleObjectModuleAccessor* a, u64 p1) { return MM(a)->virtual_joint_tra(p1); }
+void ModelModule__enable_gold_eye_impl(BattleObjectModuleAccessor* a) { MM(a)->enable_gold_eye(); }
+void ModelModule__disable_gold_eye_impl(BattleObjectModuleAccessor* a) { MM(a)->disable_gold_eye(); }
+
 } // namespace app::lua_bind
