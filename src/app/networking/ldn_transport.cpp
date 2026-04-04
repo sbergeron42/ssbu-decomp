@@ -294,3 +294,34 @@
 // The triple-send pattern compensates for UDP packet loss without
 // implementing a full reliability protocol.
 // =========================================================================
+
+// =============================================================================
+// Compiled LDN transport functions
+// =============================================================================
+
+extern u64 FUN_71000b2850(long);
+
+// FUN_710017f1d0 — Get LDN session flag byte
+// Address: 0x710017f1d0 | Size: 16 bytes
+// Returns byte at session+0x1735.
+
+u8 FUN_710017f1d0(long param_1)
+{
+    return *(u8 *)(param_1 + 0x1735);
+}
+
+// FUN_7100172880 — Check if LDN transport has pending data
+// Address: 0x7100172880 | Size: 32 bytes
+// Returns 1 if short at +0x28 is non-zero, otherwise forwards to
+// FUN_71000b2850 for a deeper transport-level check.
+
+u64 FUN_7100172880(long param_1)
+{
+    u64 uVar1;
+
+    if (*(s16 *)(param_1 + 0x28) != 0) {
+        return 1;
+    }
+    uVar1 = FUN_71000b2850(param_1 + 8);
+    return uVar1;
+}
