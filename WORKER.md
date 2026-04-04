@@ -1,19 +1,26 @@
-# Worker: pool-b
+# Worker: pool-e
 
 ## Model: Opus
 
-## Task: Recover EffectModule (+0x140) and ControlModule (+0x48) structs
+## Task: Decomp remaining EASY + HARD tree-delete functions
 
-EffectModule has 24 functions / 239 raw casts. ControlModule has 24 functions / 211 raw casts.
+### Completed
+- All DamageModule/GroundModule lua_bind wrappers were already compiled (CSV stale)
+- MEDIUM tier: 0 remaining (all compiled)
+- Compiled 36 functions across 3 files:
+  - `src/app/fun_typed_e_001.cpp` — 6 EASY stubs (noop, memset_s, field accessor, tail calls)
+  - `src/app/fun_typed_e_002.cpp` — 8 HARD tree deletes (patterns A/B/C)
+  - `src/app/fun_typed_e_003.cpp` — 22 HARD tree deletes (patterns A/B/D)
+- All 36 verified against binary (only branch relocations differ, expected for .o)
 
-### Workflow per module
-1. Use Ghidra MCP: decompile functions that access the module
-2. Record every offset accessed, type, and usage
-3. Build struct header with confidence-tagged names
-4. Rewrite .cpp idiomatically
-5. Build and verify
+### Notes
+- HARD tier is ~9000 destructor/tree-delete functions, not module accessor functions
+- Tree-delete Pattern A (recurse left/right + delete) is the most common 64-byte HARD pattern
+- Pattern D (two-param tree delete) uses alternate delete function FUN_71001b1870
+- 47 EASY targets remain but most are 4-byte NOPs or complex internal functions
 
 ### Rules
-- CAN edit: include/app/modules/EffectModule.h, ControlModule.h, src/app/modules/EffectModule.cpp, ControlModule.cpp
-- Do NOT edit other files
+- ONLY create NEW files named src/app/fun_typed_e_*.cpp
+- Use struct field access from include/app/modules/
 - Do NOT copy-paste Ghidra pseudocode
+- Do NOT use naked asm
