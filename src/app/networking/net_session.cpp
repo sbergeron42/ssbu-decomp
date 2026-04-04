@@ -44,6 +44,15 @@ extern u64  FUN_71000bae40(long *);
 extern u32  FUN_71000bae50(long *);
 extern u32  FUN_710013c780(u64, u32);
 
+extern u64  FUN_71001516f0(void);
+extern u64  PTR_DAT_71052a3c80;
+extern void FUN_71000b6560(u32 *, long, int);
+extern void FUN_71001627a0(u32 *, u64);
+extern void FUN_7100157000(u32 *, u64 *, u64, u64);
+extern void FUN_71001644e0(u32 *, u64, u64, u64);
+extern void FUN_71000b4820(u64, int);
+extern void FUN_71001572a0(u32 *, u64 *);
+
 namespace nn { namespace os {
     u64 GetSystemTick(void);
     u64 ConvertToTimeSpan(u64);
@@ -584,4 +593,149 @@ void FUN_710016d550(long *param_1, void *param_2)
     uVar2 = FUN_710013c780(uVar3, uVar2);
     local_48 = ((u64)uVar2 << 32) | (local_48 & 0xFFFFFFFF);
     memcpy(param_2, &local_48, 0x18);
+}
+
+// =============================================================================
+// FUN_71001657b0 — Cleanup transport sub-objects
+// Address: 0x71001657b0 | Size: 1248 bytes
+//
+// Calls vtable[0x48] on the session, then tears down two sub-objects
+// at param_1[9] and param_1[10] via FUN_7100130920/FUN_71001308d0.
+// NOTE: Ghidra decompilation may be incomplete for 1248-byte function.
+// =============================================================================
+
+void FUN_71001657b0(long *param_1)
+{
+    long lVar1;
+
+    (*(void (**)(void))(*param_1 + 0x48))();
+    if (param_1[10] != 0) {
+        FUN_71001308d0((u64)param_1[10]);
+        param_1[10] = 0;
+    }
+    lVar1 = param_1[9];
+    if (lVar1 != 0) {
+        FUN_7100130920((u64)lVar1);
+        FUN_71001308d0((u64)lVar1);
+        param_1[9] = 0;
+    }
+}
+
+// =============================================================================
+// FUN_710016e380 — Validate session parameters
+// Address: 0x710016e380 | Size: 960 bytes
+//
+// Validates multiple fields of a session config struct at param_2:
+//   +0xC2: must be < 9 (max players?)
+//   +0x104: must be in range [0x10, 0x40] (packet size?)
+//   +0x28C: must be < 0x31 and match a bitmask (transport mode?)
+//   +0x288: must be < 0x169 (timeout?)
+//   +0x70: checked via FUN_710017f1b0 OR +0xB8 must be non-null
+// Sets error 0x10c07 on validation failure, 0 on success.
+// =============================================================================
+
+extern u64 FUN_710017f1b0(u64);
+
+// =============================================================================
+// FUN_71001615b0 — Initialize transport layer
+// Address: 0x71001615b0 | Size: 576 bytes
+//
+// Multi-step transport initialization with ErrorResultVariant error chaining.
+// Checks if transport is already initialized (returns 0x10c08 if so).
+// Then: adjusts buffer size, sets up send/receive streams via vtable calls,
+// initializes sub-objects, and marks transport as active.
+// =============================================================================
+
+void FUN_71001615b0(u64 param_1, u64 *param_2, int param_3, u64 param_4)
+{
+    u64 uVar1;
+    u32 *result;
+    u32 local_70[4];
+    u32 local_60[4];
+    u32 local_50[4];
+    u32 local_38[2];
+
+    result = local_70;
+    uVar1 = FUN_71001516f0();
+    if (((uVar1 & 1) == 0) && (*(char *)((long)param_2 + 0x72) == '\0')) {
+        local_50[0] = 0;
+        *(u64 *)((u64)local_50 | 4) = 0;
+        local_60[0] = 0;
+        *(u32 *)((u64)local_50 | 4) = local_60[0];
+        FUN_71000b6560(local_60, *(long *)&PTR_DAT_71052a3c80,
+                       param_3 - *(int *)(*(long *)&PTR_DAT_71052a3c80 + 0xc));
+        FUN_71000bcf30(local_50, local_60);
+        if (local_50[0] == 0) {
+            FUN_71001627a0(local_60, param_2[0x15]);
+            FUN_71000bcf30(local_50, local_60);
+            (*(void (**)(u32 *, long *, u64, long, u64))(*(long *)(long)param_2[0xc] + 0x78))
+                (local_60, (long *)param_2[0xc], param_4,
+                 *(long *)(param_2[0x15] + 0x20) + 8,
+                 *(u64 *)(param_2[0x15] + 0x10));
+            FUN_71000bcf30(local_50, local_60);
+            (*(void (**)(u32 *, long *, u64, long, u64, u64))(*(long *)(long)param_2[0xd] + 0x78))
+                (local_60, (long *)param_2[0xd], param_4,
+                 *(long *)(param_2[0x15] + 0x18) + 8,
+                 *(u64 *)(param_2[0x15] + 8), param_2[0xc]);
+            FUN_71000bcf30(local_50, local_60);
+            FUN_7100157000(local_60, param_2 + 2, param_2[0xc], param_2[0xd]);
+            FUN_71000bcf30(local_50, local_60);
+            if (param_2[0x14] != 0) {
+                FUN_71001644e0(local_60, param_2[0x14], param_2[0xc], param_2[0xd]);
+                FUN_71000bcf30(local_50, local_60);
+            }
+            FUN_71000b4820(param_2[0x11], 0);
+            *(u32 *)((long)param_2 + 0xc4) = 0;
+            param_2[0x17] = *param_2;
+            *(u16 *)((long)param_2 + 0x72) = 1;
+            local_60[0] = 0;
+            *(u64 *)((u64)local_60 | 4) = 0;
+            local_70[0] = 0;
+            *(u32 *)((u64)local_60 | 4) = local_70[0];
+            FUN_71000bcf30((u32 *)((long)param_2 + 0x74), local_60);
+            FUN_71001572a0(local_60, param_2 + 2);
+            if (local_60[0] == 0) {
+                local_70[0] = 0;
+                *(u64 *)((u64)local_70 | 4) = 0;
+                local_38[0] = 0;
+                *(u32 *)((u64)local_70 | 4) = local_38[0];
+            }
+            else {
+                result = local_60;
+            }
+            goto LAB_done;
+        }
+    }
+    else {
+        local_50[0] = 0x10c08;
+        *(u64 *)((u64)local_50 | 4) = 0;
+        local_60[0] = 0;
+        *(u32 *)((u64)local_50 | 4) = local_60[0];
+    }
+    result = local_50;
+LAB_done:
+    FUN_71000bce50(param_1, result);
+}
+
+void FUN_710016e380(u64 param_1, long param_2)
+{
+    u64 uVar1;
+    u32 local_38[4];
+    u32 local_28[2];
+
+    if ((((*(u16 *)(param_2 + 0xc2) < 9) && (*(u8 *)(param_2 + 0x104) - 0x10 < 0x31)) &&
+        (*(u16 *)(param_2 + 0x28c) < 0x31)) &&
+       ((((1L << ((u64)*(u16 *)(param_2 + 0x28c) & 0x3f) & 0x1111000000843ULL) != 0 &&
+         (*(u32 *)(param_2 + 0x288) < 0x169)) &&
+        ((uVar1 = FUN_710017f1b0(*(u64 *)(param_2 + 0x70)), (uVar1 & 1) != 0 ||
+         (*(long *)(param_2 + 0xb8) != 0)))))) {
+        local_38[0] = 0;
+    }
+    else {
+        local_38[0] = 0x10c07;
+    }
+    *(u64 *)((u64)local_38 | 4) = 0;
+    local_28[0] = 0;
+    *(u32 *)((u64)local_38 | 4) = local_28[0];
+    FUN_71000bce50(param_1, local_38);
 }
