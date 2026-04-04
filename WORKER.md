@@ -1,26 +1,21 @@
-# Worker: pool-c
+# Worker: pool-e
 
 ## Model: Opus
 
-## Task: Decomp FighterInformation, FighterManager, BattleObjectWorld field-access thunks
+## Task: Types-first HARD decomp — ShieldModule + DamageModule + HitModule functions
 
-### Status: In progress
+Decomp HARD-tier functions that access ShieldModule (+0x100), DamageModule (+0xA8), or HitModule (+0xB0).
 
-### Completed
-- 11 FighterInformation bool-field read functions (rabbit_cap, reflector, superleaf, etc.)
-- 4 FighterManager field access functions (is_discretion_final_enabled, is_ready_go, set_cursor_whole, is_result_mode)
-- 2 BattleObjectWorld bool-field read functions (is_move, is_disable_reverse)
-- **17 functions total, all byte-verified against binary**
+### Approach
+1. python tools/next_batch.py --tier HARD --limit 30
+2. Filter to functions touching your modules via Ghidra
+3. Write idiomatic C++ using struct dispatch
+4. Build and verify
 
-### Notes
-- Work/Status module thunks already done in modules/WorkModule.cpp and modules/StatusModule.cpp
-- WorkModule.cpp has ~16 functions with wrong param types (u64 instead of s32,s32,s32 per CSV mangled names)
-- HARD tier from next_batch.py contains only destructors/utilities, no module accessor functions
-- CSV function sizes are inflated (include alignment padding) â€” actual sizes are 8-12 bytes for field reads
-
-### Output
-- src/app/fun_typed_c_001.cpp
+### Output: src/app/fun_typed_e_004.cpp onward (continue numbering)
 
 ### Rules
-- ONLY create NEW files named src/app/fun_typed_c_*.cpp
-- Do NOT copy-paste Ghidra pseudocode
+- Use struct field access, no raw offsets
+- No Ghidra paste, no naked asm
+- 3-attempt limit
+- ONLY create src/app/fun_typed_e_*.cpp
