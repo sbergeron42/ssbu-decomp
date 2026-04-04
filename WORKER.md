@@ -1,26 +1,23 @@
-# Worker: pool-a
+# Worker: pool-d
 
-## Model: Opus
+## Model: Sonnet
 
-## Task: Fix non-matching functions + find new post-processing patterns
+## Task: Mop up remaining ~800 MEDIUM-tier functions
 
-4,621 non-matching functions remain. Analyze the most common patterns and either fix them manually or build new post-processing tools.
+~800 MEDIUM-tier functions remain uncompiled. Finish them off.
 
-### Approach
-1. Run python tools/analyze_regalloc.py to categorize all non-matching by divergence type
-2. For the largest unfixed categories, determine if a post-processor can handle them
-3. Build new tools/fix_*.py scripts for automatable patterns
-4. Manually fix functions where type swaps or barriers work
-5. Add new tools to build.bat post-processing pipeline
+### Efficiency rules (MANDATORY)
+- Build once: cmd /c build.bat 2>&1 | tee /tmp/build.txt then grep the file
+- Find targets: python tools/next_batch.py --tier MEDIUM --limit 50
+- Compare bytes: python tools/compare_bytes.py FUNC_NAME
+- Save Ghidra results to /tmp/ghidra_results.txt
+- 3-attempt limit per function, then skip or naked asm
+- Do NOT edit tools/ or fix infrastructure — report issues and move on
 
-### Priority
-- Focus on patterns that affect 50+ functions (biggest bang for buck)
-- Existing tools already handle: prologue scheduling, epilogue swap, movz/orr, return width, x8 dispatch
-- Look for: scratch register choice, store ordering, branch layout, frame size
+### Output
+- Create src/app/fun_med_final_d_001.cpp onward
+- Use struct headers from include/app/
 
 ### Rules
-- CAN create/edit files in tools/
-- CAN edit build.bat to add post-processing steps
-- Do NOT edit source files (except to test fixes, then revert)
-- Do NOT modify data/functions.csv
-- Test thoroughly before committing
+- ONLY create NEW files named src/app/fun_med_final_d_*.cpp
+- Do NOT edit existing files
