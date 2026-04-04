@@ -7,11 +7,23 @@
 
 extern u64 PTR_DAT_71052a3dc8;    // Primary transport manager global
 extern u8  PTR_DAT_71052a56e8;    // Session vtable base
+extern u8  PTR_DAT_71052a3df0;    // Spectator/observer manager global
+extern u8  PTR_DAT_71052a56a0;    // Secondary session manager global
 
 // ---- External functions -----------------------------------------------------
 
 extern void FUN_71001308d0(u64);
+extern void FUN_7100130920(u64);
+extern void FUN_71001902d0(void);
+extern void FUN_71001904d0(u64);
+extern void FUN_71000bce50(u64, u32 *);
 extern void FUN_710015e410(long *);
+
+namespace nn { namespace err {
+    struct ErrorResultVariant;
+    void ErrorResultVariant_ctor(ErrorResultVariant *);
+    void ErrorResultVariant_assign(ErrorResultVariant *, u32 *);
+}}
 extern void FUN_710015e530(void);
 extern u64  FUN_7100162480(u64);
 extern u64  FUN_7100161fa0(u64);
@@ -301,4 +313,104 @@ void FUN_7100193590(u64 param_1, long *param_2)
     local_30 = 0x80000000000ULL;
     local_28 = 0;
     (*(void (**)(long *, u64 *))(*param_2 + 0x28))(param_2, &local_30);
+}
+
+// =============================================================================
+// FUN_7100190a90 — Test if peer bit is set in connection mask
+// Address: 0x7100190a90 | Size: 96 bytes
+//
+// Checks whether the bit corresponding to peer_index is set in the
+// connection bitmask at param_1+200. Companion to FUN_7100193120 which
+// sets bits.
+// =============================================================================
+
+bool FUN_7100190a90(long param_1, u8 param_2)
+{
+    u32 uVar1;
+    u16 uVar2;
+
+    if (0x1f < param_2) {
+        return false;
+    }
+    if (param_2 != 0) {
+        uVar2 = 0;
+        uVar1 = 1;
+        do {
+            uVar2 = uVar2 + 1;
+            uVar1 = uVar1 << 1;
+        } while (uVar2 < param_2);
+        return (*(u32 *)(param_1 + 200) & uVar1) != 0;
+    }
+    return (*(u32 *)(param_1 + 200) & 1) != 0;
+}
+
+// =============================================================================
+// FUN_710019b8b0 — Check if session is in state 5 and not flagged
+// Address: 0x710019b8b0 | Size: 96 bytes
+//
+// Returns true if session state (+0x48) == 5 and flag (+0xb8) == 0.
+// Used to check if a session is in a specific ready state.
+// =============================================================================
+
+u32 FUN_710019b8b0(long param_1)
+{
+    if ((*(int *)(param_1 + 0x48) == 5) && (*(char *)(param_1 + 0xb8) == '\0')) {
+        return 1;
+    }
+    return 0;
+}
+
+// =============================================================================
+// FUN_7100192e90 — Construct error result based on session mode
+// Address: 0x7100192e90 | Size: 112 bytes
+//
+// If session mode (param_2+0xb0) == 1, returns success (0).
+// Otherwise returns error 0x6c50.
+// =============================================================================
+
+void FUN_7100192e90(u64 param_1, long param_2)
+{
+    u32 local_38[4];
+    u32 local_28[2];
+
+    if (*(int *)(param_2 + 0xb0) == 1) {
+        local_38[0] = 0;
+    }
+    else {
+        local_38[0] = 0x6c50;
+    }
+    nn::err::ErrorResultVariant_ctor((nn::err::ErrorResultVariant *)((u64)local_38 | 4));
+    local_28[0] = 0;
+    nn::err::ErrorResultVariant_assign(
+        (nn::err::ErrorResultVariant *)((u64)local_38 | 4), local_28);
+    FUN_71000bce50((u64)local_38, (u32 *)param_1);
+}
+
+// =============================================================================
+// FUN_7100190270 — Teardown session manager globals
+// Address: 0x7100190270 | Size: 96 bytes
+//
+// Cleans up two global session manager pointers:
+//   1. PTR_DAT_71052a3df0 — spectator/observer manager
+//   2. PTR_DAT_71052a56a0 — secondary session manager
+// =============================================================================
+
+void FUN_7100190270(void)
+{
+    u8 *puVar1;
+    long lVar2;
+
+    puVar1 = &PTR_DAT_71052a3df0;
+    if (*(long *)&PTR_DAT_71052a3df0 != 0) {
+        FUN_71001902d0();
+        FUN_71001904d0(*(u64 *)puVar1);
+        *(u64 *)puVar1 = 0;
+    }
+    puVar1 = &PTR_DAT_71052a56a0;
+    lVar2 = *(long *)&PTR_DAT_71052a56a0;
+    if (lVar2 != 0) {
+        FUN_7100130920((u64)lVar2);
+        FUN_71001308d0((u64)lVar2);
+        *(u64 *)puVar1 = 0;
+    }
 }

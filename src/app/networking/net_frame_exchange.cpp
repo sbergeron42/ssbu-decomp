@@ -1002,3 +1002,337 @@ void FUN_710012ba00(int *param_1, long param_2, u8 *param_3, void *param_4, u32 
 // fun_batch_*.cpp files. All confirmed matching 100%.
 // See src/docs/networking.md for their documented roles in the frame exchange.
 
+// FUN_710012cea0 — already compiled in fun_easy_004.cpp (100% match)
+
+extern u16 FUN_710012cea0(long);
+
+// =============================================================================
+// FUN_710012ed20 — Frame state condition check
+// Address: 0x710012ed20 | Size: 744 bytes
+//
+// Validates whether the received frame data meets all configured conditions
+// before applying it to the game state. Checks include:
+//   - Frame range validation (vtable[0x28], vtable[0x30])
+//   - Player ID matching (vtable[0x10])
+//   - Match type comparison (FUN_710012cea0)
+//   - Online connection check (vtable[0x38])
+//   - Duplicate frame detection (vtable[0x20] == vtable[0x30])
+//   - Per-channel value matching against allowed value lists
+//
+// Returns true (1) if all conditions pass, false (0) if any check fails.
+// =============================================================================
+
+// =============================================================================
+// FUN_710012cf80 — Get channel value by index
+// Address: 0x710012cf80 | Size: 128 bytes
+//
+// Reads a u32 value from the per-channel data array in the frame state struct.
+// Channel index (param_3) must be 0..5. Output written to *param_4.
+// =============================================================================
+
+void FUN_710012cf80(u64 param_1, long param_2, u8 param_3, u32 *param_4)
+{
+    u32 local_38[4];
+    u32 local_28[2];
+
+    if ((param_4 == (u32 *)0) || (5 < param_3)) {
+        local_38[0] = 0x10c07;
+    }
+    else {
+        *param_4 = *(u32 *)(param_2 + (u64)param_3 * 4 + 0x20);
+        local_38[0] = 0;
+    }
+    nn::err::ErrorResultVariant_ctor((nn::err::ErrorResultVariant *)((u64)local_38 | 4));
+    local_28[0] = 0;
+    nn::err::ErrorResultVariant_assign(
+        (nn::err::ErrorResultVariant *)((u64)local_38 | 4), local_28);
+    FUN_71000bce50((void *)param_1, local_38);
+}
+
+u64 FUN_710012ed20(long param_1, long *param_2)
+{
+    u16 uVar1;
+    bool bVar2;
+    u16 uVar3;
+    s16 sVar4;
+    s16 sVar5;
+    int iVar6;
+    int iVar7;
+    u64 uVar8;
+    u32 uVar9;
+    long lVar10;
+    long lVar11;
+    u32 *puVar12;
+    u64 uVar13;
+    u32 *puVar14;
+    long lVar15;
+    int local_60[4];
+    u32 local_44;
+
+    iVar6 = (**(int (**)(long *))(*param_2 + 0x10))(param_2);
+    uVar9 = *(u32 *)(param_1 + 0x260);
+    if (((uVar9 >> 4 & 1) == 0) || (*(int *)(param_1 + 0x20) == iVar6)) {
+        if (((uVar9 & 1) != 0) &&
+           ((uVar1 = *(u16 *)(param_1 + 600), uVar1 != 0xffff && (*(s16 *)(param_1 + 0x256) != -1))
+           )) {
+            uVar3 = (**(u16 (**)(long *))(*param_2 + 0x28))(param_2);
+            if (uVar3 < uVar1) {
+                return 0;
+            }
+            uVar1 = *(u16 *)(param_1 + 0x256);
+            uVar3 = (**(u16 (**)(long *))(*param_2 + 0x28))(param_2);
+            if (uVar1 < uVar3) {
+                return 0;
+            }
+            uVar9 = *(u32 *)(param_1 + 0x260);
+        }
+        if ((((uVar9 >> 1 & 1) != 0) && (uVar1 = *(u16 *)(param_1 + 0x25c), uVar1 != 0xffff)) &&
+           (*(s16 *)(param_1 + 0x25a) != -1)) {
+            uVar3 = (**(u16 (**)(long *))(*param_2 + 0x30))(param_2);
+            if (uVar3 < uVar1) {
+                return 0;
+            }
+            uVar1 = *(u16 *)(param_1 + 0x25a);
+            uVar3 = (**(u16 (**)(long *))(*param_2 + 0x30))(param_2);
+            if (uVar1 < uVar3) {
+                return 0;
+            }
+            uVar9 = *(u32 *)(param_1 + 0x260);
+        }
+        if ((((uVar9 >> 5 & 1) == 0) ||
+            (iVar6 = *(int *)(param_1 + 0x24), iVar7 = (int)FUN_710012cea0((long)param_2), iVar6 == iVar7)) &&
+           ((*(char *)(param_1 + 0x25e) == '\0' ||
+            (uVar8 = (**(u64 (**)(long *))(*param_2 + 0x38))(param_2), (uVar8 & 1) != 0)))) {
+            if (*(char *)(param_1 + 0x25f) != '\0') {
+                sVar4 = (**(s16 (**)(long *))(*param_2 + 0x20))(param_2);
+                sVar5 = (**(s16 (**)(long *))(*param_2 + 0x30))(param_2);
+                if (sVar4 == sVar5) {
+                    return 0;
+                }
+            }
+            uVar8 = 0;
+            puVar14 = (u32 *)(param_1 + 0x34);
+            lVar15 = param_1 + 0x28;
+            do {
+                if ((*(u32 *)(param_1 + 0x260) & (0x40 << (u64)((u32)uVar8 & 0x1f))) != 0) {
+                    if (*(char *)(param_1 + uVar8 + 0x250) == '\0') {
+                        lVar11 = param_1 + uVar8 * 4;
+                        if (*(int *)(lVar11 + 0x208) != 0) {
+                            local_44 = 0;
+                            FUN_710012cf80((u64)local_60, (long)param_2, (u8)(uVar8 & 0xff), &local_44);
+                            if (local_60[0] != 0) {
+                                return 0;
+                            }
+                            uVar9 = *(u32 *)(lVar11 + 0x208);
+                            uVar13 = (u64)uVar9;
+                            if (uVar9 == 0) {
+                                return 0;
+                            }
+                            if (uVar13 - 1 < 3) {
+                                lVar11 = 0;
+                                bVar2 = false;
+                            }
+                            else {
+                                lVar11 = 0;
+                                bVar2 = false;
+                                puVar12 = puVar14;
+                                do {
+                                    lVar11 = lVar11 + 4;
+                                    bVar2 = (bool)(bVar2 | local_44 == puVar12[-3] | local_44 == puVar12[-2] |
+                                                   local_44 == puVar12[-1] | local_44 == *puVar12);
+                                    puVar12 = puVar12 + 4;
+                                } while (uVar13 - (uVar13 & 3) != (u64)lVar11);
+                            }
+                            if ((uVar9 & 3) != 0) {
+                                lVar10 = -(u64)(uVar13 & 3);
+                                puVar12 = (u32 *)(lVar15 + lVar11 * 4);
+                                do {
+                                    lVar10 = lVar10 + 1;
+                                    bVar2 = (bool)(bVar2 | local_44 == *puVar12);
+                                    puVar12 = puVar12 + 1;
+                                } while (lVar10 != 0);
+                            }
+                            if (!bVar2) {
+                                return 0;
+                            }
+                        }
+                    }
+                    else {
+                        local_44 = 0;
+                        FUN_710012cf80((u64)local_60, (long)param_2, (u8)(uVar8 & 0xff), &local_44);
+                        if (local_60[0] != 0) {
+                            return 0;
+                        }
+                        lVar11 = param_1 + uVar8 * 4;
+                        if (local_44 < *(u32 *)(lVar11 + 0x220)) {
+                            return 0;
+                        }
+                        if (*(u32 *)(lVar11 + 0x238) < local_44) {
+                            return 0;
+                        }
+                    }
+                }
+                uVar8 = uVar8 + 1;
+                puVar14 = puVar14 + 0x14;
+                lVar15 = lVar15 + 0x50;
+                if (5 < uVar8) {
+                    return 1;
+                }
+            } while (true);
+        }
+    }
+    return 0;
+}
+
+// =============================================================================
+// Frame state slot management functions
+//
+// The frame state struct has 6 "slots" (channels) at stride 0x50, starting
+// at offset +0x28. Each slot can have:
+//   - A single match value (+0x28 + slot*0x50)
+//   - A min/max range (+0x220/+0x238 + slot*4)
+//   - A mode flag (+0x250 + slot): 0=match-value, 1=range
+//   - An entry count (+0x208 + slot*4)
+//
+// Dirty bits at +0x260 track which slots changed (bits 6..11 for slots 0..5).
+// =============================================================================
+
+extern void FUN_710014f0b0(void);
+extern void FUN_710014f150(void);
+extern u8 PTR_DAT_71052a4ba0;
+extern u8 PTR_DAT_71052a4870;
+
+// FUN_710012ebe0 — Set slot to match single value
+// Address: 0x710012ebe0 | Size: 160 bytes
+
+void FUN_710012ebe0(u64 param_1, long param_2, u32 param_3, u32 param_4)
+{
+    u32 local_38[4];
+    u32 local_28[2];
+
+    if (param_3 < 6) {
+        *(u32 *)(param_2 + (u64)param_3 * 0x50 + 0x28) = param_4;
+        *(u32 *)(param_2 + (u64)param_3 * 4 + 0x208) = 1;
+        *(u8 *)(param_2 + (u64)param_3 + 0x250) = 0;
+        *(u32 *)(param_2 + 0x260) = *(u32 *)(param_2 + 0x260) | (1 << (u64)(param_3 + 6 & 0x1f));
+        local_38[0] = 0;
+    }
+    else {
+        local_38[0] = 0x10c07;
+    }
+    nn::err::ErrorResultVariant_ctor((nn::err::ErrorResultVariant *)((u64)local_38 | 4));
+    local_28[0] = 0;
+    nn::err::ErrorResultVariant_assign(
+        (nn::err::ErrorResultVariant *)((u64)local_38 | 4), local_28);
+    FUN_71000bce50((void *)param_1, local_38);
+}
+
+// FUN_710012ec80 — Set slot to match value range [min, max]
+// Address: 0x710012ec80 | Size: 160 bytes
+
+void FUN_710012ec80(u64 param_1, long param_2, u32 param_3, u32 param_4, u32 param_5)
+{
+    long lVar1;
+    u32 local_38[4];
+    u32 local_28[2];
+
+    if ((param_3 < 6) && (param_4 <= param_5)) {
+        lVar1 = param_2 + (u64)param_3 * 4;
+        *(u32 *)(lVar1 + 0x220) = param_4;
+        *(u32 *)(lVar1 + 0x238) = param_5;
+        *(u8 *)(param_2 + (u64)param_3 + 0x250) = 1;
+        *(u32 *)(param_2 + 0x260) = *(u32 *)(param_2 + 0x260) | (1 << (u64)(param_3 + 6 & 0x1f));
+        local_38[0] = 0;
+    }
+    else {
+        local_38[0] = 0x10c07;
+    }
+    nn::err::ErrorResultVariant_ctor((nn::err::ErrorResultVariant *)((u64)local_38 | 4));
+    local_28[0] = 0;
+    nn::err::ErrorResultVariant_assign(
+        (nn::err::ErrorResultVariant *)((u64)local_38 | 4), local_28);
+    FUN_71000bce50((void *)param_1, local_38);
+}
+
+// FUN_710012ea10 — Reset all 6 frame state slots to defaults
+// Address: 0x710012ea10 | Size: 272 bytes
+//
+// Clears all slot data, sets frame ranges to 0xFFFF (no filter),
+// sets both bool flags to true, and resets the dirty bitmask.
+// Final field at +0xc is set to 100 (default tick count).
+
+void FUN_710012ea10(long param_1)
+{
+    FUN_710014f0b0();
+    *(u64 *)(param_1 + 0x20) = 0;
+    *(u64 *)(param_1 + 0x256) = 0xffffffffffffffffULL;
+    *(u16 *)(param_1 + 0x25e) = 0x101;
+    *(u32 *)(param_1 + 0x260) = 0;
+    // Slot 0
+    memset((void *)(param_1 + 0x28), 0, 0x50);
+    *(u32 *)(param_1 + 0x208) = 0;
+    *(u32 *)(param_1 + 0x220) = 0;
+    *(u32 *)(param_1 + 0x238) = 0;
+    *(u8 *)(param_1 + 0x250) = 0;
+    // Slot 1
+    memset((void *)(param_1 + 0x78), 0, 0x50);
+    *(u32 *)(param_1 + 0x20c) = 0;
+    *(u32 *)(param_1 + 0x224) = 0;
+    *(u32 *)(param_1 + 0x23c) = 0;
+    *(u8 *)(param_1 + 0x251) = 0;
+    // Slot 2
+    memset((void *)(param_1 + 200), 0, 0x50);
+    *(u32 *)(param_1 + 0x210) = 0;
+    *(u32 *)(param_1 + 0x228) = 0;
+    *(u32 *)(param_1 + 0x240) = 0;
+    *(u8 *)(param_1 + 0x252) = 0;
+    // Slot 3
+    memset((void *)(param_1 + 0x118), 0, 0x50);
+    *(u32 *)(param_1 + 0x214) = 0;
+    *(u32 *)(param_1 + 0x22c) = 0;
+    *(u32 *)(param_1 + 0x244) = 0;
+    *(u8 *)(param_1 + 0x253) = 0;
+    // Slot 4
+    memset((void *)(param_1 + 0x168), 0, 0x50);
+    *(u32 *)(param_1 + 0x218) = 0;
+    *(u32 *)(param_1 + 0x230) = 0;
+    *(u32 *)(param_1 + 0x248) = 0;
+    *(u8 *)(param_1 + 0x254) = 0;
+    // Slot 5
+    memset((void *)(param_1 + 0x1b8), 0, 0x50);
+    *(u32 *)(param_1 + 0x21c) = 0;
+    *(u32 *)(param_1 + 0x234) = 0;
+    *(u32 *)(param_1 + 0x24c) = 0;
+    *(u8 *)(param_1 + 0x255) = 0;
+    // Default tick count
+    *(u32 *)(param_1 + 0xc) = 100;
+}
+
+// FUN_710012fbb0 — Frame data sub-object constructor
+// Address: 0x710012fbb0 | Size: 128 bytes
+// Initializes a small frame data object with multiple vtable pointers.
+
+void FUN_710012fbb0(long *param_1)
+{
+    u8 *puVar1;
+    u8 *puVar2;
+
+    FUN_710014f150();
+    puVar1 = &PTR_DAT_71052a4ba0 + 0x10;
+    puVar2 = &PTR_DAT_71052a4870 + 0x10;
+    param_1[2] = (long)(&PTR_DAT_71052a4ba0 + 0x50);
+    param_1[3] = (long)puVar2;
+    *param_1 = (long)puVar1;
+    *(u64 *)((long)param_1 + 0x34) = 0;
+    param_1[0xc] = 0;
+    *(u32 *)((long)param_1 + 0x3c) = 0;
+    param_1[8] = 0;
+    param_1[4] = (long)param_1 + 0x34;
+    param_1[5] = 0x28;
+    *(u16 *)(param_1 + 9) = 0;
+    *(u64 *)((long)param_1 + 0x4a) = 0;
+    *(u64 *)((long)param_1 + 0x52) = 0;
+    *(u16 *)((long)param_1 + 0x5a) = 0;
+    *(u8 *)((long)param_1 + 0x5c) = 0;
+    *(u32 *)(param_1 + 6) = 0;
+}

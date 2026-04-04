@@ -294,3 +294,140 @@
 // The triple-send pattern compensates for UDP packet loss without
 // implementing a full reliability protocol.
 // =========================================================================
+
+// =============================================================================
+// Compiled LDN transport functions
+// =============================================================================
+
+extern u64 FUN_71000b2850(long);
+
+// FUN_710017f1d0 — Get LDN session flag byte
+// Address: 0x710017f1d0 | Size: 16 bytes
+// Returns byte at session+0x1735.
+
+u8 FUN_710017f1d0(long param_1)
+{
+    return *(u8 *)(param_1 + 0x1735);
+}
+
+// FUN_7100172880 — Check if LDN transport has pending data
+// Address: 0x7100172880 | Size: 32 bytes
+// Returns 1 if short at +0x28 is non-zero, otherwise forwards to
+// FUN_71000b2850 for a deeper transport-level check.
+
+u64 FUN_7100172880(long param_1)
+{
+    u64 uVar1;
+
+    if (*(s16 *)(param_1 + 0x28) != 0) {
+        return 1;
+    }
+    uVar1 = FUN_71000b2850(param_1 + 8);
+    return uVar1;
+}
+
+// FUN_710017dcc0 — Cleanup three optional sub-objects via vtable dispatch
+// Address: 0x710017dcc0 | Size: 96 bytes
+// Calls vtable[0x10] (destructor) on up to 3 sub-objects at +0x300/+0x308/+0x310
+// if they are non-null.
+
+void FUN_710017dcc0(long param_1)
+{
+    if (*(long **)(param_1 + 0x310) != (long *)0) {
+        (**(void (**)())(* *(long **)(param_1 + 0x310) + 0x10))();
+    }
+    if (*(long **)(param_1 + 0x308) != (long *)0) {
+        (**(void (**)())(* *(long **)(param_1 + 0x308) + 0x10))();
+    }
+    if (*(long **)(param_1 + 0x300) != (long *)0) {
+        (**(void (**)())(* *(long **)(param_1 + 0x300) + 0x10))();
+    }
+}
+
+// FUN_7100177d40 — Initialize LDN message handler
+// Address: 0x7100177d40 | Size: 80 bytes
+// Sets vtable from PTR_DAT_71052a5280, stores parent ref at +3,
+// zeros out fields, and initializes sub-object at +9 via FUN_71000b4050.
+
+extern void FUN_710013cff0(void);
+extern void FUN_71000b4050(long *);
+extern u8 PTR_DAT_71052a5280;
+
+void FUN_7100177d40(long *param_1, long param_2)
+{
+    u8 *puVar1;
+
+    FUN_710013cff0();
+    puVar1 = &PTR_DAT_71052a5280;
+    param_1[5] = 0;
+    param_1[3] = param_2;
+    param_1[4] = 0;
+    *(u32 *)(param_1 + 6) = 0;
+    param_1[7] = 0;
+    *(u8 *)(param_1 + 8) = 0;
+    *param_1 = (long)(puVar1 + 0x10);
+    FUN_71000b4050(param_1 + 9);
+}
+
+// =============================================================================
+// Small transport helper functions — trivial getters/setters/cleanup
+// =============================================================================
+
+// FUN_71001561f0 — Init keepalive sender (timeout=1000ms, enabled)
+// Address: 0x71001561f0 | Size: 32 bytes
+
+void FUN_71001561f0(u32 *param_1)
+{
+    *param_1 = 1000;
+    *(u8 *)(param_1 + 1) = 1;
+}
+
+// FUN_7100185d40 — Clear two u64 fields (zero 16 bytes at +0x58/+0x60)
+// Address: 0x7100185d40 | Size: 16 bytes
+
+void FUN_7100185d40(long param_1)
+{
+    *(u64 *)(param_1 + 0x58) = 0;
+    *(u64 *)(param_1 + 0x60) = 0;
+}
+
+// FUN_71001545b0 — Clear transport flag at +0x368
+// Address: 0x71001545b0 | Size: 16 bytes
+
+void FUN_71001545b0(long param_1)
+{
+    if (*(char *)(param_1 + 0x368) != '\0') {
+        *(u8 *)(param_1 + 0x368) = 0;
+    }
+}
+
+// FUN_710015e370 — Reset transport profile counters
+// Address: 0x710015e370 | Size: 32 bytes
+
+void FUN_710015e370(long param_1)
+{
+    *(u32 *)(param_1 + 0xc) = 0;
+    *(u16 *)(param_1 + 0x10) = 0;
+    *(u8 *)(param_1 + 0x12) = 1;
+}
+
+// FUN_71001acd10 — Set max RTT value in session and global config
+// Address: 0x71001acd10 | Size: 32 bytes
+
+extern u8 PTR_DAT_71052a3bd0;
+
+void FUN_71001acd10(long param_1, u16 param_2)
+{
+    *(u16 *)(param_1 + 0x30) = param_2;
+    *(u16 *)(*(long *)&PTR_DAT_71052a3bd0 + 0x104) = param_2;
+}
+
+// FUN_71001acd30 — Set max relay count (forced even) in session and global config
+// Address: 0x71001acd30 | Size: 32 bytes
+
+void FUN_71001acd30(long param_1, u16 param_2)
+{
+    u16 val = param_2 & 0xfffe;
+    *(u16 *)(param_1 + 0x32) = val;
+    *(u16 *)(*(long *)&PTR_DAT_71052a3bd0 + 0x106) = val;
+}
