@@ -368,3 +368,66 @@ void FUN_7100177d40(long *param_1, long param_2)
     *param_1 = (long)(puVar1 + 0x10);
     FUN_71000b4050(param_1 + 9);
 }
+
+// =============================================================================
+// Small transport helper functions — trivial getters/setters/cleanup
+// =============================================================================
+
+// FUN_71001561f0 — Init keepalive sender (timeout=1000ms, enabled)
+// Address: 0x71001561f0 | Size: 32 bytes
+
+void FUN_71001561f0(u32 *param_1)
+{
+    *param_1 = 1000;
+    *(u8 *)(param_1 + 1) = 1;
+}
+
+// FUN_7100185d40 — Clear two u64 fields (zero 16 bytes at +0x58/+0x60)
+// Address: 0x7100185d40 | Size: 16 bytes
+
+void FUN_7100185d40(long param_1)
+{
+    *(u64 *)(param_1 + 0x58) = 0;
+    *(u64 *)(param_1 + 0x60) = 0;
+}
+
+// FUN_71001545b0 — Clear transport flag at +0x368
+// Address: 0x71001545b0 | Size: 16 bytes
+
+void FUN_71001545b0(long param_1)
+{
+    if (*(char *)(param_1 + 0x368) != '\0') {
+        *(u8 *)(param_1 + 0x368) = 0;
+    }
+}
+
+// FUN_710015e370 — Reset transport profile counters
+// Address: 0x710015e370 | Size: 32 bytes
+
+void FUN_710015e370(long param_1)
+{
+    *(u32 *)(param_1 + 0xc) = 0;
+    *(u16 *)(param_1 + 0x10) = 0;
+    *(u8 *)(param_1 + 0x12) = 1;
+}
+
+// FUN_71001acd10 — Set max RTT value in session and global config
+// Address: 0x71001acd10 | Size: 32 bytes
+
+extern u8 PTR_DAT_71052a3bd0;
+
+void FUN_71001acd10(long param_1, u16 param_2)
+{
+    *(u16 *)(param_1 + 0x30) = param_2;
+    *(u16 *)(*(long *)&PTR_DAT_71052a3bd0 + 0x104) = param_2;
+}
+
+// FUN_71001acd30 — Set max relay count (forced even) in session and global config
+// Address: 0x71001acd30 | Size: 32 bytes
+
+void FUN_71001acd30(long param_1, u16 param_2)
+{
+    u16 val = param_2 & 0xfffe;
+    *(u16 *)(param_1 + 0x32) = val;
+    *(u16 *)(*(long *)&PTR_DAT_71052a3bd0 + 0x106) = val;
+}
