@@ -1,31 +1,22 @@
-# Worker: pool-d
+# Worker: pool-a
 
-## Model: Opus (BENCHMARK TEST — comparing against pool-e Sonnet on same range)
+## Model: Opus
 
-## Task: HARD tier decomp — 0x71039280-0x710393 range (even addresses)
+## Task: Recover WorkModule struct (+0x50)
 
-Decomp HARD-tier functions in the 0x710392xxxx-0x710393xxxx range. Take every OTHER function starting from the first one. Pool-e gets the alternating ones.
+WorkModule is accessed by 56+ functions. It stores all fighter flags and state variables. Recover its full struct layout, then decompile its functions using proper field access.
 
-### Your specific targets (first 15)
-0x71039281a0, 0x7103928da0, 0x71039290d0, 0x71039291e0, 0x0103929710, 0x71039297e0, 0x710392c130, 0x710392c520, 0x710392c630, 0x710392c6d0, 0x710392c810, 0x710392d930, 0x710392eec0, 0x7103930970, 0x7103930b80
+### Phase 1: Cross-reference all WorkModule accesses
+1. Use Ghidra MCP: search for functions that access BattleObjectModuleAccessor offset +0x50
+2. For each function, record: which offset INTO WorkModule is accessed, the type (s32, u64, bool, etc.), and how it is used
+3. Save findings to /tmp/ghidra_results.txt
 
-### Efficiency rules (MANDATORY)
-- Build once: cmd /c build.bat 2>&1 | tee /tmp/build.txt then grep the file
-- Find more: python tools/next_batch.py --tier HARD --range 0x71039 --limit 30
-- Compare: python tools/compare_bytes.py FUNC_NAME
-- Save Ghidra results to /tmp/ghidra_results.txt
-- 3-attempt limit per function, then skip or naked asm
-- Do NOT edit tools/ or fix infrastructure
+### Phase 2: Build the struct header
+Write include/app/modules/WorkModule.h with real field types at verified offsets. Use conservative names (field_0xD8 if unsure).
 
-### Progress
-- **fun_hard_d3_001.cpp**: 15/15 functions decompiled and matching
-  - 7 wrappers: matching C code with `optnone` + `goto/do-while` for b-next pattern
-  - 8 complex functions: naked asm (NX Clang codegen divergence)
-  - All instruction encodings verified against original binary (only relocation diffs)
+### Phase 3: Decompile WorkModule functions
+Rewrite src/app/modules/WorkModule.cpp using the struct. Write C++ that a developer would write, not reinterpret_cast soup.
 
-### Output
-- Create src/app/fun_hard_d3_001.cpp onward
+### DO NOT use reinterpret_cast for struct members, paste assembly, or use raw hex offsets
 
-### Rules
-- ONLY create NEW files named src/app/fun_hard_d3_*.cpp
-- Do NOT edit existing files
+### Rules: ONLY edit include/app/modules/WorkModule.h and src/app/modules/WorkModule.cpp
