@@ -1,10 +1,10 @@
-# Worker: pool-a
+# Worker: pool-b
 
 ## Model: Opus
 
-## Task: jemalloc 5.1.0 decomp — lower half (arena, extent, base, bin, bitmap, ctl internals)
+## Task: jemalloc 5.1.0 decomp — upper half (ctl, stats, tcache, tsd, mutex)
 
-Match 68 HARD-tier jemalloc functions against upstream source (lib/jemalloc/).
+Match 69 HARD-tier jemalloc functions against upstream source (lib/jemalloc/).
 
 ### Upstream Reference
 - jemalloc 5.1.0 (tag `5.1.0`, commit `61efbda7098de6fe64c362d309824864308c36d4`)
@@ -13,7 +13,7 @@ Match 68 HARD-tier jemalloc functions against upstream source (lib/jemalloc/).
 - Version string at 0x710426ddf8, config: `percpu_arena:percpu,dirty_decay_ms:1`
 
 ### Address Range
-0x71039278b0 — 0x71039494f0 (68 functions)
+0x71039498e0 — 0x710395f6d0 (69 functions)
 
 ### Approach
 1. For each target address, decompile in Ghidra
@@ -23,21 +23,20 @@ Match 68 HARD-tier jemalloc functions against upstream source (lib/jemalloc/).
 5. If a function doesn't match upstream exactly, note the Nintendo delta
 
 ### Key jemalloc source files (likely matches for this range)
-- `src/arena.c` — arena management
-- `src/extent.c` — extent allocation/deallocation
-- `src/base.c` — base allocation
-- `src/bin.c` — bin/slab management
-- `src/ctl.c` — mallctl interface
-- `src/large.c` — large allocation
-- `src/sz.c` — size class utilities
+- `src/ctl.c` — mallctl interface (ctl_bymib, ctl handlers)
+- `src/stats.c` — stats_print, stats formatting
+- `src/tcache.c` — thread cache
+- `src/tsd.c` — thread-specific data
+- `src/mutex.c` — mutex wrappers
+- `src/prof.c` — profiling
 
-### Output: src/lib/jemalloc_a_001.cpp onward
+### Output: src/lib/jemalloc_b_001.cpp onward
 
 ### Rules
 - Use upstream jemalloc field names and types — these are KNOWN, not inferred
 - Every function gets a `// jemalloc 5.1.0: file.c:line` provenance comment
 - Note any Nintendo-specific deltas from upstream
 - 3-attempt limit per function
-- ONLY create src/lib/jemalloc_a_*.cpp
+- ONLY create src/lib/jemalloc_b_*.cpp
 - Save Ghidra results to /tmp/ghidra_results.txt
 - Build once with tee, grep the file
