@@ -76,14 +76,14 @@ s64 FUN_710392fd70(s64 param_1) {
 
 // 0x7103933680 — get low bit of byte from sub-call (48B)
 u8 FUN_7103933680(u64 param_1) {
-    u8 *pbVar1 = FUN_71039336b0(param_1);
-    return *pbVar1 & 1;
+    u8 *flags = FUN_71039336b0(param_1);
+    return *flags & 1;
 }
 
 // 0x7103933ed0 — call with flag=1, return low bit (48B)
 u32 FUN_7103933ed0(u64 param_1) {
-    u32 uVar1 = FUN_7103932240(param_1, 1);
-    return uVar1 & 1;
+    u32 result = FUN_7103932240(param_1, 1);
+    return result & 1;
 }
 
 // 0x71039340a0 — four-arg wrapper adding extra arg 1 (64B)
@@ -118,8 +118,8 @@ s32 FUN_7103936c70(u64 param_1, u64 param_2) {
 
 // 0x7103938830 — call + pthread_mutex_unlock (64B)
 s32 FUN_7103938830(u64 param_1, s64 param_2) {
-    u64 uVar2 = FUN_7103938870_2(param_1);
-    FUN_71039388d0(uVar2, param_2 + 0x60);
+    u64 arena = FUN_7103938870_2(param_1);
+    FUN_71039388d0(arena, param_2 + 0x60);
     return pthread_mutex_unlock((void *)(param_2 + 0x40));
 }
 
@@ -155,15 +155,15 @@ s32 FUN_710393dd80(s64 param_1) {
 
 // 0x710393f300 — call + store at +0x60 (64B)
 void FUN_710393f300(u64 param_1, s64 param_2) {
-    u64 uVar1 = FUN_7103938870_2(param_1);
-    FUN_7103938980(uVar1, param_2 + 0x60);
+    u64 arena = FUN_7103938870_2(param_1);
+    FUN_7103938980(arena, param_2 + 0x60);
 }
 
 // 0x710393fa40 — sum two calls minus 0x10000 (64B)
 s64 FUN_710393fa40(u64 param_1) {
-    s64 lVar1 = FUN_710393cfe0(param_1);
-    s64 lVar2 = FUN_710393ca80(param_1);
-    return lVar1 + lVar2 - 0x10000;
+    s64 allocated = FUN_710393cfe0(param_1);
+    s64 committed = FUN_710393ca80(param_1);
+    return allocated + committed - 0x10000;
 }
 
 // 0x7103940230 — wrapper (48B)
@@ -173,8 +173,8 @@ void FUN_7103940230(u64 param_1, u64 param_2) {
 
 // 0x7103940260 — call with two args, return low bit (48B)
 u32 FUN_7103940260(u64 param_1, u64 param_2) {
-    u32 uVar1 = FUN_7103945dc0(param_1, param_2);
-    return uVar1 & 1;
+    u32 result = FUN_7103945dc0(param_1, param_2);
+    return result & 1;
 }
 
 // 0x7103940a20 — mask low bit: x & ~1 (64B)
@@ -199,14 +199,14 @@ void FUN_7103942300(u64 param_1) {
 
 // 0x7103942b40 — call with 1 + mask low bit (64B)
 u32 FUN_7103942b40(u64 param_1, u64 param_2) {
-    u32 uVar1 = FUN_7103942b80(param_1, param_2, 1);
-    return uVar1 & 1;
+    u32 result = FUN_7103942b80(param_1, param_2, 1);
+    return result & 1;
 }
 
 // 0x7103943300 — call with 0 + mask low bit (64B)
 u32 FUN_7103943300(u64 param_1, u64 param_2) {
-    u32 uVar1 = FUN_7103942b80(param_1, param_2, 0);
-    return uVar1 & 1;
+    u32 result = FUN_7103942b80(param_1, param_2, 0);
+    return result & 1;
 }
 
 // 0x7103944630 — wrapper (48B)
@@ -226,15 +226,15 @@ s32 FUN_7103944740(s64 param_1) {
 
 // 0x7103945370 — call + pthread_mutex_unlock (64B)
 s32 FUN_7103945370(u64 param_1, s64 param_2) {
-    u64 uVar2 = FUN_7103945510(param_1);
-    FUN_7103945570(uVar2, param_2 + 0x60);
+    u64 arena = FUN_7103945510(param_1);
+    FUN_7103945570(arena, param_2 + 0x60);
     return pthread_mutex_unlock((void *)(param_2 + 0x40));
 }
 
 // 0x71039455e0 — call + store at +0x60 (64B)
 void FUN_71039455e0(u64 param_1, s64 param_2) {
-    u64 uVar1 = FUN_7103945510(param_1);
-    FUN_71039456a0(uVar1, param_2 + 0x60);
+    u64 arena = FUN_7103945510(param_1);
+    FUN_71039456a0(arena, param_2 + 0x60);
 }
 
 // 0x71039456e0 — pthread_mutex_trylock wrapper (48B)
@@ -247,10 +247,10 @@ void FUN_7103945900(u64 param_1, u64 param_2, u64 param_3, u64 param_4) {
     FUN_7103945940(param_1, param_2, param_3, param_4, 0);
 }
 
-// 0x7103945f80 — call + left shift 3 (48B)
+// 0x7103945f80 — call + left shift 3 (multiply by 8 for pointer stride) (48B)
 s64 FUN_7103945f80(u64 param_1) {
-    s64 lVar1 = FUN_7103945fb0(param_1);
-    return lVar1 << 3;
+    s64 count = FUN_7103945fb0(param_1);
+    return count << 3;
 }
 
 // 0x7103949930 — pthread_mutex_trylock wrapper (48B)

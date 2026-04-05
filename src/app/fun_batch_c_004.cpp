@@ -1,15 +1,10 @@
-// Batch C - 004: MEDIUM FUN_* batch decompilation (0x7102 range)
+// Batch C - 004: 0x7102 range — in_x8/in_x10 register vtable dispatchers
 // Functions: 40
+// These functions receive a hidden object pointer in AArch64 register x8
+// (and optionally a value in x10) that are not C++ parameters.
+// The register asm("x8") capture is the only way to represent this in C++.
 
-#include <stdint.h>
-typedef uint8_t u8;
-typedef uint16_t u16;
-typedef uint32_t u32;
-typedef uint64_t u64;
-typedef int8_t s8;
-typedef int16_t s16;
-typedef int32_t s32;
-typedef int64_t s64;
+#include "types.h"
 
 // 0x710206a770
 u32 FUN_710206a770(s64 *param_1, s64 param_2)

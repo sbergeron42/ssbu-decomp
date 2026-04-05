@@ -96,9 +96,9 @@ u16 FUN_71000408d0(s64 param_1) {
 
 // 0x71000408f0
 s64 FUN_71000408f0(s64 param_1) {
-    s64 lVar1 = *(s64*)(param_1 + 0x10);
-    if (lVar1 != 0) {
-        return lVar1 + (u64)*(u32*)(lVar1 + 0x10);
+    s64 node = *(s64*)(param_1 + 0x10);
+    if (node != 0) {
+        return node + (u64)*(u32*)(node + 0x10);
     }
     return 0;
 }
@@ -113,9 +113,9 @@ u16 FUN_7100040960(s64 param_1) {
 
 // 0x7100040980
 s64 FUN_7100040980(s64 param_1) {
-    s64 lVar1 = *(s64*)(param_1 + 0x18);
-    if (lVar1 != 0) {
-        return lVar1 + (u64)*(u32*)(lVar1 + 8);
+    s64 node = *(s64*)(param_1 + 0x18);
+    if (node != 0) {
+        return node + (u64)*(u32*)(node + 8);
     }
     return 0;
 }
@@ -158,9 +158,9 @@ s64 FUN_7100046e30(s64 param_1, int param_2, int param_3, int param_4, int param
 
 // 0x7100054150
 s64 FUN_7100054150(s64 param_1, s64 param_2) {
-    s64 lVar1 = *(s64*)(*(s64*)(param_2 + 200) + 0x38);
-    if (lVar1 != 0) {
-        return lVar1 + (u64)*(u32*)(param_1 + 0x30);
+    s64 base = *(s64*)(*(s64*)(param_2 + 200) + 0x38);
+    if (base != 0) {
+        return base + (u64)*(u32*)(param_1 + 0x30);
     }
     return 0;
 }
