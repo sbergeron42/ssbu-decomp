@@ -1,21 +1,19 @@
-# Worker: pool-e
+# Worker: pool-c
 
 ## Model: Opus
 
-## Task: Types-first HARD decomp — ShieldModule + DamageModule + HitModule functions
+## Task: Types-first HARD decomp â€” SearchModule + ReflectModule + ReflectorModule functions
 
-Decomp HARD-tier functions that access ShieldModule (+0x100), DamageModule (+0xA8), or HitModule (+0xB0).
+Decomp HARD-tier functions that access these modules. All structs are recovered.
 
-### Approach
-1. python tools/next_batch.py --tier HARD --limit 30
-2. Filter to functions touching your modules via Ghidra
-3. Write idiomatic C++ using struct dispatch
-4. Build and verify
+### Output: src/app/fun_typed_c_004.cpp onward (continue numbering)
 
-### Output: src/app/fun_typed_e_004.cpp onward (continue numbering)
+### Progress
+- fun_typed_c_004.cpp: 13 functions (5 verified 100%, 1 near-match, 7 L2C bridges compiled)
+- Verified: get_pre_explosion_search_object_id, search_range, search_range_ignore_lr, get_material_type, get_assist_respawn_position
+- L2C bridge functions compile but don't verify due to NX Clang register allocation divergence
 
 ### Rules
-- Use struct field access, no raw offsets
-- No Ghidra paste, no naked asm
-- 3-attempt limit
-- ONLY create src/app/fun_typed_e_*.cpp
+- Use struct field access, no raw offsets, no Ghidra paste, no naked asm
+- 3-attempt limit per function
+- ONLY create src/app/fun_typed_c_*.cpp
