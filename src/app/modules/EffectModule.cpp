@@ -37,8 +37,16 @@ void EffectModule__detach_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { EF
 void EffectModule__end_kind_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { EF(a)->end_kind(p1,p2); }
 
 // -- after image --
-void EffectModule__req_after_image_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2, u64 p3, u64 p4, u32 p5, u64 p6, u64 p7, u32 p8, u64 p9, u64 p10, u64 p11, u64 p12, bool p13, bool p14, s32 p15, s32 p16, s32 p17) { EF(a)->req_after_image(p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15,p16,p17); }
-void EffectModule__req_after_image_no_parent_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2, u32 p3, u64 p4, u64 p5, u32 p6, u64 p7, u64 p8, u64 p9, u64 p10, bool p11, bool p12, s32 p13, s32 p14, s32 p15) { EF(a)->req_after_image_no_parent(p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15); }
+// 7102017900 -- vtable[35] dispatch, tail call with stack arg passthrough
+void EffectModule__req_after_image_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2, u64 p3, u64 p4, u32 p5, u64 p6, u64 p7, u32 p8, u64 p9, u64 p10, u64 p11, u64 p12, f32 p13, u8 p14, u8 p15, f32 p16, s32 p17, s32 p18, s32 p19) {
+    auto* m = EF(a);
+    reinterpret_cast<void(*)(EffectModule*, u64, u64, u64, u64, u32, u64, u64, u32, u64, u64, u64, u64, f32, u8, u8, f32, s32, s32, s32)>(m->_vt[35])(m, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17, p18, p19);
+}
+// 7102017950 -- vtable[37] dispatch, tail call with stack arg passthrough
+void EffectModule__req_after_image_no_parent_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2, u32 p3, u64 p4, u64 p5, u32 p6, u64 p7, u64 p8, u64 p9, u64 p10, f32 p11, u8 p12, u8 p13, f32 p14, s32 p15, s32 p16, s32 p17) {
+    auto* m = EF(a);
+    reinterpret_cast<void(*)(EffectModule*, u64, u64, u32, u64, u64, u32, u64, u64, u64, u64, f32, u8, u8, f32, s32, s32, s32)>(m->_vt[37])(m, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17);
+}
 void EffectModule__clear_all_after_image_impl(BattleObjectModuleAccessor* a,u64 p1) { EF(a)->clear_all_after_image(p1); }
 void EffectModule__remove_after_image_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { EF(a)->remove_after_image(p1,p2); }
 void EffectModule__remove_all_after_image_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { EF(a)->remove_all_after_image(p1,p2); }
@@ -139,21 +147,13 @@ void EffectModule__req_2d_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,u64 p
     reinterpret_cast<void(*)(EffectModule*,u64,u64,u64,u64,u32,u32,u32)>(m->_vt[13])(m,p1,p2,p3,p4,static_cast<u32>(-1),1u,0u);
 }
 
-// 71020179d0 -- get_local_matrix: prologue/epilogue, vtable+0x148
+// 71020179d0 -- get_local_matrix: vtable[41] dispatch (blr, not tail call)
+void* EffectModule__get_local_matrix_impl(BattleObjectModuleAccessor* a, u64 p1) {
+    void* result = EF(a)->get_local_matrix(p1);
 #ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
-void* EffectModule__get_local_matrix_impl(BattleObjectModuleAccessor* /*a*/, u64 /*p1*/) {
-    asm(
-        "stp x29, x30, [sp, #-0x10]!\n"
-        "mov x29, sp\n"
-        "ldr x0, [x0, #0x140]\n"
-        "ldr x8, [x0]\n"
-        "ldr x8, [x8, #0x148]\n"
-        "blr x8\n"
-        "ldp x29, x30, [sp], #0x10\n"
-        "ret\n"
-    );
-}
+    asm("" : "+r"(result));
 #endif
+    return result;
+}
 
 } // namespace app::lua_bind

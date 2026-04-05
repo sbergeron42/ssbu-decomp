@@ -8,6 +8,10 @@ namespace app::lua_bind {
 // 7101fca0b0 -- 19 instructions (calls, branches, tbz, cset)
 extern "C" void* FUN_71003ac560(u32);
 bool BattleObjectManager__is_active_find_battle_object_impl(BattleObjectManager* mgr, u32 id) {
+#ifdef MATCHING_HACK_NX_CLANG
+    // Force prologue scheduling: mov w0,w1 must come after stp/add x29
+    asm("" : "+r"(id));
+#endif
     auto* obj = reinterpret_cast<u8*>(FUN_71003ac560(id));
     if (!obj) return false;
     auto fn = reinterpret_cast<bool(*)(void*)>(*reinterpret_cast<void***>(obj)[0]);

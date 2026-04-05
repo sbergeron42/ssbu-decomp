@@ -106,15 +106,9 @@ void FighterMotionModuleImpl__change_motion_inherit_frame_kirby_copy_impl(Battle
 }
 
 // 71020aa100 -- ldr module; hardcode w3=1,w2=0; b same target as above
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
 void FighterMotionModuleImpl__change_motion_inherit_frame_keep_rate_kirby_copy_impl(BattleObjectModuleAccessor* a, u64 hash) {
-    asm("ldr x0, [x0, #0x88]\n"
-        "orr w3, wzr, #1\n"
-        "mov w2, wzr\n"
-        "b FUN_71006e27f0\n");
+    FUN_71006e27f0(a->motion_module, hash, 0, 1);
 }
-#endif
 
 // 71020aa110 -- reads frame/rate via vtable, adjusts frame param, delegates to change_motion
 #ifdef MATCHING_HACK_NX_CLANG
