@@ -1,4 +1,5 @@
 #include "types.h"
+#include "app/BattleObjectModuleAccessor.h"
 
 // MEDIUM-tier FUN_* functions — mixed 0x7100-0x7101 range, batch d5-010
 // Pool-d worker: auto-generated from Ghidra decompilation
@@ -95,20 +96,20 @@ void FUN_7101ea50e8(void)
 
 // ---- Vtable dispatchers --------------------------------------------------
 
-// 0x71013292d0 — vtable +0x108 via *(param_2+0x50), const 0x2100000c, return ~result&1
-u32 FUN_71013292d0(u64 param_1, s64 param_2)
+// 0x71013292d0 — WorkModule vtable +0x108, const 0x2100000c, return ~result&1
+u32 FUN_71013292d0(u64 param_1, app::BattleObjectModuleAccessor* acc)
 {
-    s64 *obj = *(s64 **)(param_2 + 0x50);
-    u32 uVar1 = (*(u32(**)(s64 *, u32))(*obj + 0x108))(obj, 0x2100000c);
-    return ~uVar1 & 1;
+    s64 *work = reinterpret_cast<s64*>(acc->work_module);
+    u32 flag = (*(u32(**)(s64*, u32))(*work + 0x108))(work, 0x2100000c);
+    return ~flag & 1;
 }
 
 // 0x7101329690 — same pattern as FUN_71013292d0
-u32 FUN_7101329690(u64 param_1, s64 param_2)
+u32 FUN_7101329690(u64 param_1, app::BattleObjectModuleAccessor* acc)
 {
-    s64 *obj = *(s64 **)(param_2 + 0x50);
-    u32 uVar1 = (*(u32(**)(s64 *, u32))(*obj + 0x108))(obj, 0x2100000c);
-    return ~uVar1 & 1;
+    s64 *work = reinterpret_cast<s64*>(acc->work_module);
+    u32 flag = (*(u32(**)(s64*, u32))(*work + 0x108))(work, 0x2100000c);
+    return ~flag & 1;
 }
 
 // 0x7101f9509c — vtable +0x30, passes param_1 and &DAT_7105326b90

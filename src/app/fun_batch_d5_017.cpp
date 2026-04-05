@@ -1,4 +1,5 @@
 #include "types.h"
+#include "app/BattleObjectModuleAccessor.h"
 
 // MEDIUM-tier FUN_* functions — 0x7100-0x7101 range, batch d5-017
 // Pool-d worker: auto-generated from Ghidra decompilation
@@ -139,20 +140,20 @@ FUN_71003b21a0_ret FUN_71003b21a0(void)
 
 // ---- Vtable dispatchers (192 bytes) -----------------------------------------
 
-// 0x7101658c00 — double-deref vtable +0x110 via *(param_2+0xd8), return iVar1==3
-bool FUN_7101658c00(u64 param_1, s64 param_2)
+// 0x7101658c00 — TeamModule vtable +0x110, return result==3
+bool FUN_7101658c00(u64 param_1, app::BattleObjectModuleAccessor* acc)
 {
-    s64 *obj = *(s64**)(param_2 + 0xd8);
-    s32 iVar1 = (*(s32(**)())(*obj + 0x110))();
-    return iVar1 == 3;
+    s64 *team = reinterpret_cast<s64*>(acc->team_module);
+    s32 result = (*(s32(**)())(*team + 0x110))();
+    return result == 3;
 }
 
-// 0x710165c990 — same structure, return iVar1==5
-bool FUN_710165c990(u64 param_1, s64 param_2)
+// 0x710165c990 — TeamModule vtable +0x110, return result==5
+bool FUN_710165c990(u64 param_1, app::BattleObjectModuleAccessor* acc)
 {
-    s64 *obj = *(s64**)(param_2 + 0xd8);
-    s32 iVar1 = (*(s32(**)())(*obj + 0x110))();
-    return iVar1 == 5;
+    s64 *team = reinterpret_cast<s64*>(acc->team_module);
+    s32 result = (*(s32(**)())(*team + 0x110))();
+    return result == 5;
 }
 
 // ---- in_x10 vtable wrappers (192 bytes) ------------------------------------

@@ -1,4 +1,5 @@
 #include "types.h"
+#include "app/BattleObjectModuleAccessor.h"
 
 // MEDIUM-tier FUN_* functions — mixed 0x7100-0x7101 range, batch d5-014
 // Pool-d worker: auto-generated from Ghidra decompilation
@@ -66,26 +67,26 @@ u64 FUN_7100a2c9d0(void)
 
 // ---- Vtable dispatchers --------------------------------------------------
 
-// 0x710165d960 — double-deref vtable +0x98 via *(param_2+0xe8), const 0x10000012, return==0
-bool FUN_710165d960(u64 param_1, s64 param_2)
+// 0x710165d960 — double-deref vtable +0x98 via accessor->pad_0xE8, const 0x10000012, return==0
+bool FUN_710165d960(u64 param_1, app::BattleObjectModuleAccessor* acc)
 {
-    s64 *obj = *(s64 **)(param_2 + 0xe8);
-    s32 iVar1 = (*(s32(**)(s64 *, u32))(*obj + 0x98))(obj, 0x10000012);
-    return iVar1 == 0;
+    s64 *mod = reinterpret_cast<s64*>(acc->pad_0xE8);
+    s32 result = (*(s32(**)(s64*, u32))(*mod + 0x98))(mod, 0x10000012);
+    return result == 0;
 }
 
-// 0x71006c4410 — triple vtable dispatch: check bit, then two more calls with hash constants
-void FUN_71006c4410(u64 param_1, s64 param_2)
+// 0x71006c4410 — triple vtable dispatch: check WorkModule flag, then ControlModule call
+void FUN_71006c4410(u64 param_1, app::BattleObjectModuleAccessor* acc)
 {
     FUN_7100404f60();
-    s64 *obj = *(s64 **)(param_2 + 0x50);
-    u64 uVar3 = (*(u64(**)(s64 *, u32))(*obj + 0x108))(obj, 0x20000098);
-    if ((uVar3 & 1) != 0) {
+    s64 *work = reinterpret_cast<s64*>(acc->work_module);
+    u64 flag = (*(u64(**)(s64*, u32))(*work + 0x108))(work, 0x20000098);
+    if ((flag & 1) != 0) {
         return;
     }
-    s64 *plVar1 = *(s64 **)(param_2 + 0x48);
-    u32 uVar2 = (*(u32(**)(s64 *, u64, u64))(*obj + 0x250))(obj, 0x6e5ec7051ULL, 0x1edca940c7ULL);
-    (*(void(**)(s64 *, u32, s32))(*plVar1 + 0x308))(plVar1, uVar2, 1);
+    s64 *ctrl = reinterpret_cast<s64*>(acc->fighter_control_module);
+    u32 hash = (*(u32(**)(s64*, u64, u64))(*work + 0x250))(work, 0x6e5ec7051ULL, 0x1edca940c7ULL);
+    (*(void(**)(s64*, u32, s32))(*ctrl + 0x308))(ctrl, hash, 1);
 }
 
 // ---- Misc wrappers -------------------------------------------------------

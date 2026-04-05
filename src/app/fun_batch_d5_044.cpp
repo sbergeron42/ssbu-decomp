@@ -122,7 +122,7 @@ u32 FUN_7100254940(s64 param_1, u32 param_2) {
 }
 
 // 0x7101326d90 — FighterSpiritsSupportSkill::instance (WorkModule dispatch)
-void FUN_7101326d90(void *param_1) {
-    auto *m = *reinterpret_cast<void**>(reinterpret_cast<u8*>(param_1) + 0x50);
-    reinterpret_cast<void(*)(void*, s64)>((*reinterpret_cast<void***>(m))[0xb0/8])(m, 0x1000007f);
+void FUN_7101326d90(app::BattleObjectModuleAccessor* acc) {
+    void* work = acc->work_module;
+    reinterpret_cast<void(*)(void*, s64)>((*reinterpret_cast<void***>(work))[0xb0/8])(work, 0x1000007f);
 }
