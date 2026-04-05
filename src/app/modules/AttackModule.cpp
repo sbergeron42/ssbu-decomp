@@ -291,36 +291,20 @@ void AttackModule__set_lr_check_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2
 void AttackModule__resume_catch_absolute_damage_impl(BattleObjectModuleAccessor* a) { AT(a)->resume_catch_absolute_damage(); }
 void* AttackModule__init_attack_pos_impl(BattleObjectModuleAccessor* a,u64 p1) asm("_ZN3app8lua_bind34AttackModule__init_attack_pos_implEPNS_26BattleObjectModuleAccessorE");
 void* AttackModule__init_attack_pos_impl(BattleObjectModuleAccessor* a,u64 p1) { return AT(a)->init_attack_pos(p1); }
-// 7101fd04f0 -- speed_impl: vtable[59] -- non-leaf (NX Clang frame)
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
+// 7101fd04f0 -- speed: vtable[59], non-leaf (NX Clang frame, no TCO)
 void* AttackModule__speed_impl(BattleObjectModuleAccessor* a) {
-    asm("stp x29, x30, [sp, #-0x10]!\n"
-        "mov x29, sp\n"
-        "ldr x0, [x0, #0xa0]\n"
-        "ldr x8, [x0]\n"
-        "ldr x8, [x8, #0x1d8]\n"
-        "blr x8\n"
-        "ldp x29, x30, [sp], #0x10\n"
-        "ret\n");
-}
-#else
-void* AttackModule__speed_impl(BattleObjectModuleAccessor* a) { return AT(a)->speed(); }
-#endif
-// 7101fd0930 -- attack_part_speed_impl: vtable[148] -- non-leaf (NX Clang frame)
+    void* r = AT(a)->speed();
 #ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
-void* AttackModule__attack_part_speed_impl(BattleObjectModuleAccessor* a, u64 p1) {
-    asm("stp x29, x30, [sp, #-0x10]!\n"
-        "mov x29, sp\n"
-        "ldr x0, [x0, #0xa0]\n"
-        "ldr x8, [x0]\n"
-        "ldr x8, [x8, #0x4a0]\n"
-        "blr x8\n"
-        "ldp x29, x30, [sp], #0x10\n"
-        "ret\n");
-}
-#else
-void* AttackModule__attack_part_speed_impl(BattleObjectModuleAccessor* a, u64 p1) { return AT(a)->attack_part_speed(p1); }
+    asm volatile("" : "+r"(r));
 #endif
+    return r;
+}
+// 7101fd0930 -- attack_part_speed: vtable[148], non-leaf (NX Clang frame, no TCO)
+void* AttackModule__attack_part_speed_impl(BattleObjectModuleAccessor* a, u64 p1) {
+    void* r = AT(a)->attack_part_speed(p1);
+#ifdef MATCHING_HACK_NX_CLANG
+    asm volatile("" : "+r"(r));
+#endif
+    return r;
+}
 } // namespace app::lua_bind

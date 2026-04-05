@@ -104,56 +104,17 @@ void* StatusModule__status_kind_que_from_script_impl(BattleObjectModuleAccessor*
 }
 
 // 71020877c0 -- is_situation_changed: compare situation_kind vs prev_situation_kind
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
-bool StatusModule__is_situation_changed_impl(BattleObjectModuleAccessor* a) {
-    asm("stp x20, x19, [sp, #-0x20]!\n"
-        "stp x29, x30, [sp, #0x10]\n"
-        "add x29, sp, #0x10\n"
-        "ldr x19, [x0, #0x40]\n"
-        "ldr x8, [x19]\n"
-        "ldr x8, [x8, #0x168]\n"
-        "mov x0, x19\n"
-        "blr x8\n"
-        "ldr x8, [x19]\n"
-        "ldr x8, [x8, #0x170]\n"
-        "mov w20, w0\n"
-        "mov x0, x19\n"
-        "blr x8\n"
-        "ldp x29, x30, [sp, #0x10]\n"
-        "cmp w20, w0\n"
-        "cset w0, ne\n"
-        "ldp x20, x19, [sp], #0x20\n"
-        "ret\n");
-}
-#else
 bool StatusModule__is_situation_changed_impl(BattleObjectModuleAccessor* a) {
     auto* m = get_status(a);
     s32 cur  = m->vtbl->SituationKind(m);
     s32 prev = m->vtbl->PrevSituationKind(m);
     return cur != prev;
 }
-#endif
 
-// 7102087860 -- init_settings: tail call vtable[0x1c8/8] w/ 10 params, masks bool p5
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
-void StatusModule__init_settings_impl(BattleObjectModuleAccessor* a, s32 p1, s32 p2, u32 p3, s32 p4, bool p5, s32 p6, s32 p7, s32 p8, s32 p9) {
-    asm("ldr x0, [x0, #0x40]\n"
-        "ldr x10, [x0]\n"
-        "ldr w8, [sp]\n"
-        "ldr w9, [sp, #0x8]\n"
-        "and w5, w5, #0x1\n"
-        "ldr x10, [x10, #0x1c8]\n"
-        "str w9, [sp, #0x8]\n"
-        "str w8, [sp]\n"
-        "br x10\n");
-}
-#else
+// 7102087860 -- init_settings: tail call vtable[57] w/ 10 params
 void StatusModule__init_settings_impl(BattleObjectModuleAccessor* a, s32 p1, s32 p2, u32 p3, s32 p4, bool p5, s32 p6, s32 p7, s32 p8, s32 p9) {
     auto* m = get_status(a);
     m->vtbl->InitSettings(m, p1, p2, p3, p4, p5, p6, p7, p8, p9);
 }
-#endif
 
 } // namespace app::lua_bind
