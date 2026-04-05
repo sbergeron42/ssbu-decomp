@@ -26,291 +26,291 @@ namespace nn { namespace os {
 
 // ---- Functions ---------------------------------------------------------------
 
-// 0x7100078b00 — doubly-linked list splice: insert param_1+0x38 node after param_2+0x48
-void FUN_7100078b00(s64 param_1, s64 param_2)
+// 0x7100078b00 — doubly-linked list splice: insert self+0x38 node after target+0x48
+void FUN_7100078b00(s64 self, s64 target)
 {
-    s64 *plVar1;
-    s64 *plVar2;
-    s64 lVar3;
+    s64 *src_node;
+    s64 *dst_node;
+    s64 prev_head;
 
-    plVar2 = (s64 *)(param_2 + 0x48);
-    lVar3 = *plVar2;
-    plVar1 = (s64 *)(param_1 + 0x38);
-    *plVar2 = *plVar1;
-    *(s64 **)(lVar3 + 8) = plVar1;
-    *(s64 **)(*plVar1 + 8) = plVar2;
-    *plVar1 = lVar3;
+    dst_node = (s64 *)(target + 0x48);
+    prev_head = *dst_node;
+    src_node = (s64 *)(self + 0x38);
+    *dst_node = *src_node;
+    *(s64 **)(prev_head + 8) = src_node;
+    *(s64 **)(*src_node + 8) = dst_node;
+    *src_node = prev_head;
 }
 
 // 0x71000887d0 — cycling counter: advance slot index modulo 2 or 3 (based on flag)
-u64 FUN_71000887d0(s64 param_1, s32 param_2)
+u64 FUN_71000887d0(s64 self, s32 mode)
 {
-    s32 iVar1;
-    u32 uVar2;
-    s32 iVar3;
-    s32 iVar4;
+    s32 next_index;
+    u32 slot_index;
+    s32 quotient;
+    s32 num_slots;
 
-    if (param_2 == 2) {
-        if ((*(s8 *)(param_1 + 9) == '\0') && (*(s8 *)(param_1 + 10) == '\0')) {
+    if (mode == 2) {
+        if ((*(s8 *)(self + 9) == '\0') && (*(s8 *)(self + 10) == '\0')) {
             return 0;
         }
     }
-    else if (param_2 != 1) {
+    else if (mode != 1) {
         return 0;
     }
-    *(u16 *)(param_1 + 9) = 0;
-    iVar1 = *(s32 *)(param_1 + 0x30) + 1;
-    iVar4 = 2;
-    if (*(s8 *)(*(s64 *)(*(s64 *)(param_1 + 0x78) + 0x20) + 0x36) != '\0') {
-        iVar4 = 3;
+    *(u16 *)(self + 9) = 0;
+    next_index = *(s32 *)(self + 0x30) + 1;
+    num_slots = 2;
+    if (*(s8 *)(*(s64 *)(*(s64 *)(self + 0x78) + 0x20) + 0x36) != '\0') {
+        num_slots = 3;
     }
-    iVar3 = iVar1 / iVar4;
-    uVar2 = iVar1 - iVar3 * iVar4;
-    *(u32 *)(param_1 + 0x30) = uVar2;
-    *(u64 *)(param_1 + 0xc0) = param_1 + (u64)uVar2 * 0x58 + 200;
+    quotient = next_index / num_slots;
+    slot_index = next_index - quotient * num_slots;
+    *(u32 *)(self + 0x30) = slot_index;
+    *(u64 *)(self + 0xc0) = self + (u64)slot_index * 0x58 + 200;
     return 1;
 }
 
-// 0x710008d670 — bulk memcpy: copy up to 11 channel buffers from param_2 to puVar1 array
-void FUN_710008d670(u64 param_1, s64 param_2)
+// 0x710008d670 — bulk memcpy: copy up to 11 channel buffers from source to dest_bufs array
+void FUN_710008d670(u64 unused, s64 source)
 {
-    u64 n;
-    u64 *puVar1;
+    u64 copy_size;
+    u64 *dest_bufs;
 
-    if (*(s8 *)(*(s64 *)(param_2 + 0xa0) + 0x752) == '\0') {
-        puVar1 = *(u64 **)(param_2 + 0xc0);
-        n = (u64)((s64)*(s32 *)(param_2 + 0x28) << 4);
-        memcpy((void *)puVar1[0], *(void **)(param_2 + 0x1d0), n);
-        memcpy((void *)puVar1[1], *(void **)(param_2 + 0x1d8), n);
-        memcpy((void *)puVar1[2], *(void **)(param_2 + 0x1e0), n);
-        memcpy((void *)puVar1[4], *(void **)(param_2 + 0x1f0), n);
-        memcpy((void *)puVar1[3], *(void **)(param_2 + 0x1e8), n);
-        memcpy((void *)puVar1[5], *(void **)(param_2 + 0x1f8), n);
-        if ((void *)puVar1[6] != (void *)0x0) {
-            memcpy((void *)puVar1[6], *(void **)(param_2 + 0x200), n);
-            memcpy((void *)puVar1[7], *(void **)(param_2 + 0x208), n);
+    if (*(s8 *)(*(s64 *)(source + 0xa0) + 0x752) == '\0') {
+        dest_bufs = *(u64 **)(source + 0xc0);
+        copy_size = (u64)((s64)*(s32 *)(source + 0x28) << 4);
+        memcpy((void *)dest_bufs[0], *(void **)(source + 0x1d0), copy_size);
+        memcpy((void *)dest_bufs[1], *(void **)(source + 0x1d8), copy_size);
+        memcpy((void *)dest_bufs[2], *(void **)(source + 0x1e0), copy_size);
+        memcpy((void *)dest_bufs[4], *(void **)(source + 0x1f0), copy_size);
+        memcpy((void *)dest_bufs[3], *(void **)(source + 0x1e8), copy_size);
+        memcpy((void *)dest_bufs[5], *(void **)(source + 0x1f8), copy_size);
+        if ((void *)dest_bufs[6] != (void *)0x0) {
+            memcpy((void *)dest_bufs[6], *(void **)(source + 0x200), copy_size);
+            memcpy((void *)dest_bufs[7], *(void **)(source + 0x208), copy_size);
         }
-        if ((void *)puVar1[8] != (void *)0x0) {
-            memcpy((void *)puVar1[8], *(void **)(param_2 + 0x210), n);
-            memcpy((void *)puVar1[9], *(void **)(param_2 + 0x218), n);
-            memcpy((void *)puVar1[10], *(void **)(param_2 + 0x220), n);
+        if ((void *)dest_bufs[8] != (void *)0x0) {
+            memcpy((void *)dest_bufs[8], *(void **)(source + 0x210), copy_size);
+            memcpy((void *)dest_bufs[9], *(void **)(source + 0x218), copy_size);
+            memcpy((void *)dest_bufs[10], *(void **)(source + 0x220), copy_size);
         }
     }
 }
 
 // 0x71000af810 — indexed lookup: PTR_DAT_71052a3bc0 base + packed byte index * 0xa8
-s64 FUN_71000af810(s64 param_1)
+s64 FUN_71000af810(s64 self)
 {
     return *PTR_DAT_71052a3bc0 +
-           ((u64)*(u8 *)(param_1 + 9) + (u64)*(u8 *)(param_1 + 8) * 4 +
-           (u64)*(u8 *)(param_1 + 10) * 0x10) * 0xa8;
+           ((u64)*(u8 *)(self + 9) + (u64)*(u8 *)(self + 8) * 4 +
+           (u64)*(u8 *)(self + 10) * 0x10) * 0xa8;
 }
 
 // 0x71000b1b50 — double-indexed lookup: table DAT_7104492890 → array at PTR_DAT_71052a3c18
-u64 FUN_71000b1b50(s32 param_1)
+u64 FUN_71000b1b50(s32 type_id)
 {
-    if ((u32)(param_1 - 2) < 0x19) {
+    if ((u32)(type_id - 2) < 0x19) {
         return *(u64 *)(PTR_DAT_71052a3c18 +
-               *(s64 *)(&DAT_7104492890 + (s64)(s32)((u32)param_1 - 2) * 8) * 8);
+               *(s64 *)(&DAT_7104492890 + (s64)(s32)((u32)type_id - 2) * 8) * 8);
     }
     return *(u64 *)(PTR_DAT_71052a3c18 + 200);
 }
 
 // 0x71000b1bb0 — write indexed u32 from DAT_7104492960 to *(u32*)PTR_DAT_71052a3c10
-void FUN_71000b1bb0(s32 param_1)
+void FUN_71000b1bb0(s32 type_id)
 {
-    if ((u32)(param_1 - 2) < 0x19) {
+    if ((u32)(type_id - 2) < 0x19) {
         *(u32 *)PTR_DAT_71052a3c10 =
-            *(u32 *)(&DAT_7104492960 + (s64)(s32)((u32)param_1 - 2) * 4);
+            *(u32 *)(&DAT_7104492960 + (s64)(s32)((u32)type_id - 2) * 4);
         return;
     }
     *(u32 *)PTR_DAT_71052a3c10 = 0x19;
 }
 
 // 0x71000bb050 — count UTF-8 characters in string within bounds, handling multi-byte sequences
-u32 FUN_71000bb050(s64 param_1)
+u32 FUN_71000bb050(s64 self)
 {
-    u32 uVar1;
-    u32 uVar2;
-    u8 bVar3;
-    u32 uVar4;
-    u8 *pbVar5;
-    u8 *pbVar6;
-    u32 uVar7;
-    u32 uVar8;
+    u32 final_count;
+    u32 byte_length;
+    u8 cur_byte;
+    u32 char_count;
+    u8 *str_base;
+    u8 *cursor;
+    u32 seq_len;
+    u32 advance;
 
-    pbVar5 = *(u8 **)(param_1 + 8);
-    if (pbVar5 == (u8 *)0x0) {
+    str_base = *(u8 **)(self + 8);
+    if (str_base == (u8 *)0x0) {
         return 0;
     }
-    uVar2 = *(u32 *)(param_1 + 0x14);
-    if (uVar2 != 0) {
-        if (*(s32 *)(param_1 + 0x18) != 1) {
-            uVar4 = 0;
-            if (*(s32 *)(param_1 + 0x18) == 2) {
-                uVar4 = uVar2 >> 1;
+    byte_length = *(u32 *)(self + 0x14);
+    if (byte_length != 0) {
+        if (*(s32 *)(self + 0x18) != 1) {
+            char_count = 0;
+            if (*(s32 *)(self + 0x18) == 2) {
+                char_count = byte_length >> 1;
             }
-            return uVar4;
+            return char_count;
         }
-        uVar4 = 0;
-        pbVar6 = pbVar5;
+        char_count = 0;
+        cursor = str_base;
         while (true) {
-            bVar3 = *pbVar6;
-            if (bVar3 == 0) {
-                return uVar4;
+            cur_byte = *cursor;
+            if (cur_byte == 0) {
+                return char_count;
             }
-            if ((s64)(u64)uVar2 <= (s64)pbVar6 - (s64)pbVar5) break;
-            if ((s8)bVar3 < '\0') {
-                uVar8 = (u32)(s8)bVar3;
-                if (uVar8 + 0x3e < 0x1e) {
-                    uVar7 = 2;
+            if ((s64)(u64)byte_length <= (s64)cursor - (s64)str_base) break;
+            if ((s8)cur_byte < '\0') {
+                advance = (u32)(s8)cur_byte;
+                if (advance + 0x3e < 0x1e) {
+                    seq_len = 2;
                 }
-                else if ((uVar8 & 0xfffffff0) == 0xffffffe0) {
-                    uVar7 = 3;
+                else if ((advance & 0xfffffff0) == 0xffffffe0) {
+                    seq_len = 3;
                 }
-                else if ((uVar8 & 0xfffffff8) == 0xfffffff0) {
-                    uVar7 = 4;
+                else if ((advance & 0xfffffff8) == 0xfffffff0) {
+                    seq_len = 4;
                 }
                 else {
-                    uVar7 = 5;
-                    if (((uVar8 & 0xfffffffc) != 0xfffffff8) && (uVar7 = 6, (bVar3 & 0xfe) != 0xfc)) {
-                        uVar7 = 0;
+                    seq_len = 5;
+                    if (((advance & 0xfffffffc) != 0xfffffff8) && (seq_len = 6, (cur_byte & 0xfe) != 0xfc)) {
+                        seq_len = 0;
                     }
                 }
             }
             else {
-                uVar7 = 1;
+                seq_len = 1;
             }
-            uVar8 = uVar7;
-            if (uVar7 == 0) {
-                uVar8 = 1;
+            advance = seq_len;
+            if (seq_len == 0) {
+                advance = 1;
             }
-            uVar1 = uVar4;
-            if (uVar7 != 0) {
-                uVar1 = uVar4 + 1;
+            final_count = char_count;
+            if (seq_len != 0) {
+                final_count = char_count + 1;
             }
-            uVar4 = uVar4 + 1;
-            pbVar6 = pbVar6 + uVar8;
-            if (uVar7 == 0) {
-                return uVar1;
+            char_count = char_count + 1;
+            cursor = cursor + advance;
+            if (seq_len == 0) {
+                return final_count;
             }
         }
-        return uVar4;
+        return char_count;
     }
     return 0;
 }
 
 // 0x71000bed20 — init s64* struct: zero [2], store PTR_DAT_71052a3d28+0x10 as vtable
-void FUN_71000bed20(s64 *param_1)
+void FUN_71000bed20(s64 *self)
 {
-    u8 *puVar1;
+    u8 *vtable_base;
 
-    puVar1 = PTR_DAT_71052a3d28;
-    param_1[2] = 0;
-    *param_1 = (s64)(puVar1 + 0x10);
+    vtable_base = PTR_DAT_71052a3d28;
+    self[2] = 0;
+    *self = (s64)(vtable_base + 0x10);
 }
 
 // 0x71000bf2f0 — validate: check magic+flag at +8/+0xc, then range-check field +0x5e8
-u8 FUN_71000bf2f0(s64 param_1)
+u8 FUN_71000bf2f0(s64 self)
 {
-    if ((*(s32 *)(param_1 + 8) == 0x32ab9864) && ((*(u8 *)(param_1 + 0xc) & 0x7f) == 4)) {
-        return (u32)(*(s32 *)(param_1 + 0x5e8)) - 0x20U < 0x5a1;
+    if ((*(s32 *)(self + 8) == 0x32ab9864) && ((*(u8 *)(self + 0xc) & 0x7f) == 4)) {
+        return (u32)(*(s32 *)(self + 0x5e8)) - 0x20U < 0x5a1;
     }
     return 0;
 }
 
-// 0x71000c4d40 — vtable call +0x28 on *(param_1+0x50): return null on failure, 1 on success
-s64 *FUN_71000c4d40(s64 param_1)
+// 0x71000c4d40 — vtable call +0x28 on *(self+0x50): return null on failure, 1 on success
+s64 *FUN_71000c4d40(s64 self)
 {
-    s64 *plVar1;
-    u64 uVar2;
+    s64 *obj;
+    u64 result;
 
-    plVar1 = *(s64 **)(param_1 + 0x50);
-    if (plVar1 != (s64 *)0x0) {
-        uVar2 = (*(u64(**)(void))(*plVar1 + 0x28))();
-        if ((uVar2 & 1) == 0) {
+    obj = *(s64 **)(self + 0x50);
+    if (obj != (s64 *)0x0) {
+        result = (*(u64(**)(void))(*obj + 0x28))();
+        if ((result & 1) == 0) {
             return (s64 *)0x0;
         }
-        plVar1 = (s64 *)0x1;
-        *(u64 *)(param_1 + 0xc0) = 0;
+        obj = (s64 *)0x1;
+        *(u64 *)(self + 0xc0) = 0;
     }
-    return plVar1;
+    return obj;
 }
 
 // 0x71000cf5c0 — init s64* struct: zero fields, store PTR_DAT_71052a3ee8+0x10 as vtable
-void FUN_71000cf5c0(s64 *param_1)
+void FUN_71000cf5c0(s64 *self)
 {
-    u8 *puVar1;
+    u8 *vtable_base;
 
-    puVar1 = PTR_DAT_71052a3ee8;
-    *(u32 *)(param_1 + 1) = 0;
-    *(u8 *)((s64)param_1 + 0xc) = 0;
-    param_1[2] = 0;
-    *param_1 = (s64)(puVar1 + 0x10);
-    *(u32 *)(param_1 + 3) = 0;
+    vtable_base = PTR_DAT_71052a3ee8;
+    *(u32 *)(self + 1) = 0;
+    *(u8 *)((s64)self + 0xc) = 0;
+    self[2] = 0;
+    *self = (s64)(vtable_base + 0x10);
+    *(u32 *)(self + 3) = 0;
 }
 
-// 0x71000e4340 — map param_1: 0→1, 1→2, else→0
-s32 FUN_71000e4340(s32 param_1)
+// 0x71000e4340 — map input: 0->1, 1->2, else->0
+s32 FUN_71000e4340(s32 input)
 {
-    s32 iVar1;
+    s32 mapped;
 
-    iVar1 = (u32)(param_1 == 1) << 1;
-    if (param_1 == 0) {
-        iVar1 = 1;
+    mapped = (u32)(input == 1) << 1;
+    if (input == 0) {
+        mapped = 1;
     }
-    return iVar1;
+    return mapped;
 }
 
-// 0x71000ee650 — count valid linked-list entries matching param_2 across four dispatch paths
-s32 FUN_71000ee650(s64 param_1, s32 param_2)
+// 0x71000ee650 — count valid linked-list entries matching category across four dispatch paths
+s32 FUN_71000ee650(s64 self, s32 category)
 {
-    s32 iVar1;
-    s64 lVar2;
-    s32 *piVar3;
-    s32 *piVar4;
+    s32 count;
+    s64 data;
+    s32 *list_end;
+    s32 *entry;
 
-    lVar2 = *(s64 *)(param_1 + 0x2d8);
-    if (lVar2 == 0 || *PTR_DAT_71052a4080 == 0) {
+    data = *(s64 *)(self + 0x2d8);
+    if (data == 0 || *PTR_DAT_71052a4080 == 0) {
         return 0;
     }
-    piVar4 = (s32 *)(lVar2 + 0x10);
-    if (*piVar4 != param_2) {
-        if (*(s32 *)(lVar2 + 0x658) != param_2) {
-            if (*(s32 *)(lVar2 + 0xca0) == param_2) {
-                piVar3 = (s32 *)(lVar2 + 0xca8);
-                piVar4 = *(s32 **)(lVar2 + 0xcb0);
-                if (piVar4 == piVar3) {
+    entry = (s32 *)(data + 0x10);
+    if (*entry != category) {
+        if (*(s32 *)(data + 0x658) != category) {
+            if (*(s32 *)(data + 0xca0) == category) {
+                list_end = (s32 *)(data + 0xca8);
+                entry = *(s32 **)(data + 0xcb0);
+                if (entry == list_end) {
                     return 0;
                 }
             }
             else {
-                if (*(s32 *)(lVar2 + 0x12e8) != param_2) {
+                if (*(s32 *)(data + 0x12e8) != category) {
                     return 0;
                 }
-                piVar3 = (s32 *)(lVar2 + 0x12f0);
-                piVar4 = *(s32 **)(lVar2 + 0x12f8);
-                if (piVar4 == piVar3) {
+                list_end = (s32 *)(data + 0x12f0);
+                entry = *(s32 **)(data + 0x12f8);
+                if (entry == list_end) {
                     return 0;
                 }
             }
             goto LAB_71000ee6a4;
         }
-        piVar4 = (s32 *)(lVar2 + 0x658);
+        entry = (s32 *)(data + 0x658);
     }
-    piVar3 = piVar4 + 2;
-    piVar4 = *(s32 **)(piVar4 + 4);
-    if (piVar4 == piVar3) {
+    list_end = entry + 2;
+    entry = *(s32 **)(entry + 4);
+    if (entry == list_end) {
         return 0;
     }
 LAB_71000ee6a4:
-    iVar1 = 0;
+    count = 0;
     do {
-        if (((*(s64 *)(piVar4 + 4) != 0) && (*(s64 *)(piVar4 + 4) == *(s64 *)(piVar4 + 6))) &&
-           (0 < *(s16 *)((s64)piVar4 + 0x22))) {
-            iVar1 = iVar1 + 1;
+        if (((*(s64 *)(entry + 4) != 0) && (*(s64 *)(entry + 4) == *(s64 *)(entry + 6))) &&
+           (0 < *(s16 *)((s64)entry + 0x22))) {
+            count = count + 1;
         }
-        piVar4 = *(s32 **)(piVar4 + 2);
-    } while (piVar4 != piVar3);
-    return iVar1;
+        entry = *(s32 **)(entry + 2);
+    } while (entry != list_end);
+    return count;
 }
