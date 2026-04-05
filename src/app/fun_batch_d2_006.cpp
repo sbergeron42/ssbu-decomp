@@ -36,8 +36,10 @@ extern u8 PTR_LAB_7105230af0[];
 
 // ---- Functions ---------------------------------------------------------------
 
-// 0x71035da3d0 -- type-dispatch: read/copy typed value from source ptr (592 bytes)
-void FUN_71035da3d0(u32 param_1, s64 *param_2, u64 *param_3)
+// 0x71035da3d0 -- type-dispatch: read/copy variant value from source into dest (592 bytes)
+// Types: 0,1,18=u32  2=u8  3=u64  4,10=u64+u32  5,6,7=u64x2  8=u64x8(matrix)
+//   9=heap buffer(move)  11,13,16,17=ref-counted  12=vector(move)  14=ref+iterator  15=struct(56B)
+void FUN_71035da3d0(u32 type_tag, s64 *param_2, u64 *param_3)
 {
     s64 lVar1;
     u64 *puVar2;
@@ -50,8 +52,8 @@ void FUN_71035da3d0(u32 param_1, s64 *param_2, u64 *param_3)
     u64 *puVar9;
     u64 *puVar10;
 
-    switch (param_1) {
-    case 0: case 1: case 0x12:
+    switch (type_tag) {
+    case 0: case 1: case 0x12: // u32
         *(u32 *)param_3 = *(u32 *)*param_2;
         break;
     case 2:
@@ -184,8 +186,11 @@ LAB_71035da528:
     return;
 }
 
-// 0x71035da620 -- type-dispatch: write typed value into dest via FUN_710356ba40 (800 bytes)
-void FUN_71035da620(u32 param_1, s64 *param_2, u64 *param_3)
+// 0x71035da620 -- type-dispatch: write variant value into dest, freeing old value first (800 bytes)
+// Calls FUN_710356ba40 to destroy the old value at *param_2+8, then copies param_3 into it.
+// For types 9/12 (heap/vector): performs move semantics (zeroes source after copy).
+// For types 11,13,14,16,17 (polymorphic): sets vtable ptr then copies payload.
+void FUN_71035da620(u32 type_tag, s64 *param_2, u64 *param_3)
 {
     u32 uVar1;
     s64 lVar2;
@@ -193,7 +198,7 @@ void FUN_71035da620(u32 param_1, s64 *param_2, u64 *param_3)
     u64 uVar4;
     u64 uVar5;
 
-    switch (param_1) {
+    switch (type_tag) {
     case 0: case 1: case 0x12:
         uVar1 = *(u32 *)*param_2;
         FUN_710356ba40(uVar1 ^ (s32)uVar1 >> 0x1f, (u64 *)(*param_2 + 8));
@@ -332,15 +337,17 @@ void FUN_71035da620(u32 param_1, s64 *param_2, u64 *param_3)
     return;
 }
 
-// 0x71035e7a50 -- type-dispatch: assign observable typed value (272 bytes)
-void FUN_71035e7a50(u32 param_1, s64 *param_2, s64 param_3)
+// 0x71035e7a50 -- type-dispatch: assign observable variant value (272 bytes)
+// Type 0: copy vtable+payload from source
+// Type 1: move ref-counted handle from source (with refcount validation)
+void FUN_71035e7a50(u32 type_tag, s64 *param_2, s64 param_3)
 {
     u32 uVar1;
     s64 lVar2;
     u64 *puVar3;
     s64 lVar4;
 
-    switch (param_1) {
+    switch (type_tag) {
     case 0:
         uVar1 = *(u32 *)*param_2;
         FUN_71035e8fc0(uVar1 ^ (s32)uVar1 >> 0x1f, (u32 *)(*param_2 + 2));
@@ -383,15 +390,16 @@ void FUN_71035e7a50(u32 param_1, s64 *param_2, s64 param_3)
     return;
 }
 
-// 0x71035e99f0 -- type-dispatch: assign observable typed value variant B (1472 bytes)
-void FUN_71035e99f0(u32 param_1, s64 *param_2, s64 param_3)
+// 0x71035e99f0 -- type-dispatch: assign observable variant value (alternate destroyer) (1472 bytes)
+// Same structure as FUN_71035e7a50 but uses FUN_71035993e0 instead of FUN_71035e8fc0 for cleanup.
+void FUN_71035e99f0(u32 type_tag, s64 *param_2, s64 param_3)
 {
     u32 uVar1;
     s64 lVar2;
     u64 *puVar3;
     s64 lVar4;
 
-    switch (param_1) {
+    switch (type_tag) {
     case 0:
         uVar1 = *(u32 *)*param_2;
         FUN_71035993e0(uVar1 ^ (s32)uVar1 >> 0x1f, (u32 *)(*param_2 + 2));

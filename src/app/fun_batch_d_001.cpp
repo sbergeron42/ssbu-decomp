@@ -107,38 +107,47 @@ void FUN_7103351390(u64 *param_1)
 }
 
 // 0x710313ed70 -- battle object lookup with static singleton fallback (240 bytes)
+// Looks up a BattleObject by ID stored at param_2+0x28. If the object is invalid or
+// uninitialized, falls back to a lazily-initialized static singleton.
+// Then checks if the object's attack module (vtable index at +0xa0) reports a hit
+// for the given attack ID (param_2+0x1c). Returns 0 if hit found, 1 otherwise.
 u64 FUN_710313ed70(u64 param_1, s64 param_2)
 {
-    s32 iVar1;
-    u64 *puVar2;
-    u64 uVar3;
-    s64 lVar4;
+    s32 guard_result;
+    u64 *battle_obj;
+    u64 is_dead;
+    s64 attack_result;
 
     if (*(s32 *)(param_2 + 0x24) == 0) {
-        puVar2 = (u64 *)get_battle_object_from_id(*(u32 *)(param_2 + 0x28));
-        if ((puVar2 == nullptr) || (*(u8 *)((s64)puVar2 + 0x3a) < 4)) {
+        battle_obj = (u64 *)get_battle_object_from_id(*(u32 *)(param_2 + 0x28));
+        if ((battle_obj == nullptr) || (*(u8 *)((s64)battle_obj + 0x3a) < 4)) {
+            // Lazily initialize static singleton if needed
             if (((*(u64 *)DAT_71052b6100 & 1) == 0) &&
-                (iVar1 = __cxa_guard_acquire((u64 *)DAT_71052b6100), iVar1 != 0)) {
+                (guard_result = __cxa_guard_acquire((u64 *)DAT_71052b6100), guard_result != 0)) {
                 FUN_71003a9ab0(DAT_71052b60f0, 0);
                 *(u8 **)DAT_71052b60f0 = PTR_LAB_7104f61078;
                 __cxa_guard_release((u64 *)DAT_71052b6100);
             }
-            puVar2 = *(u64 **)DAT_71052b60f8;
+            battle_obj = *(u64 **)DAT_71052b60f8;
             if (*(u64 **)DAT_71052b60f8 == nullptr) {
                 return 1;
             }
         }
-        uVar3 = (**(u64 (**)(u64 *))puVar2)(puVar2);
-        if (((((uVar3 & 1) == 0) && (3 < *(u8 *)((s64)puVar2 + 0x3a))) &&
-            (lVar4 = (*(s64 (**)(u64 *, u64, u64))(*(s64 *)(puVar2[4] + 0xa0) + 0x1e8))(*(u64 **)(puVar2[4] + 0xa0), (u64)(u32)(*(u32 *)(param_2 + 0x1c)), 0), lVar4 != 0)) &&
-           (*(s8 *)(lVar4 + 0x67) == '\0')) {
+        // Check if object is alive via vtable call, then query attack module
+        is_dead = (**(u64 (**)(u64 *))battle_obj)(battle_obj);
+        if (((((is_dead & 1) == 0) && (3 < *(u8 *)((s64)battle_obj + 0x3a))) &&
+            (attack_result = (*(s64 (**)(u64 *, u64, u64))(*(s64 *)(battle_obj[4] + 0xa0) + 0x1e8))(*(u64 **)(battle_obj[4] + 0xa0), (u64)(u32)(*(u32 *)(param_2 + 0x1c)), 0), attack_result != 0)) &&
+           (*(s8 *)(attack_result + 0x67) == '\0')) {
             return 0;
         }
     }
     return 1;
 }
 
-// 0x710316a140 -- tree walk then nested flag set (960 bytes)
+// 0x710316a140 -- linked list traversal + conditional flag set on fighter (960 bytes)
+// Walks a linked list at param_1+0x50, searching by param_2.
+// If found and various game-state conditions are met (FighterManager active,
+// not in specific mode), sets a flag byte at a nested offset.
 void FUN_710316a140(s64 param_1, u64 param_2)
 {
     s64 *plVar1;
@@ -164,7 +173,9 @@ LAB_710316a198:
     }
 }
 
-// 0x71032f5a00 -- insertion sort on ulong array by low 40 bits (172 bytes)
+// 0x71032f5a00 -- small-array sort by Hash40 key (low 40 bits of u64) (172 bytes)
+// Handles arrays of 0-5 elements with specialized sort networks,
+// then falls back to insertion sort for larger arrays (with early-exit after 8 swaps).
 u8 FUN_71032f5a00(u64 *param_1, u64 *param_2)
 {
     u8 bVar1;
@@ -341,7 +352,9 @@ LAB_71032f5c08:
     return 1;
 }
 
-// 0x7103341230 -- insertion sort on ulong array by 0xff0000ffffffffff mask (1308 bytes)
+// 0x7103341230 -- small-array sort by Hash40 key (0xff0000ffffffffff mask of u64) (1308 bytes)
+// Same algorithm as FUN_71032f5a00 but uses a different key mask that includes
+// the high byte (category/type field) along with the low 40 bits.
 u8 FUN_7103341230(u64 *param_1, u64 *param_2)
 {
     u8 bVar1;
@@ -518,143 +531,146 @@ LAB_7103341438:
     return 1;
 }
 
-// 0x71033949b0 -- build FNV-1a hash for unmapped_head_* names (768 bytes)
+// 0x71033949b0 -- Hash40 builder for "mnu_header_*" menu section names (768 bytes)
+// Writes packed string into Hash40 struct {u32 hash, u32 len, char str[]},
+// then computes hash = multiply-xor over the string bytes.
+// Switch key: ((param_2 >> 24) & 0x7f) - 2
 void FUN_71033949b0(u32 *param_1, u32 param_2)
 {
-    u32 uVar1;
-    u8 *pbVar2;
-    u32 uVar3;
+    u32 hash;
+    u8 *str_ptr;
+    u32 ch;
 
-    uVar1 = 0x811c9dc5;
+    hash = 0x811c9dc5;
     switch ((s32)(((param_2 & 0x7f000000) + 0xfe000000) >> 0x18)) {
-    case 0:
+    case 0: // "mnu_header_melee"
         *(u8 *)(param_1 + 6) = 0;
-        param_1[4] = 0x6d5f7265;
-        param_1[5] = 0x65656c65;
+        param_1[4] = 0x6d5f7265; // "er_m"
+        param_1[5] = 0x65656c65; // "elee"
         param_1[0] = 0;
-        param_1[1] = 0x10;
-        param_1[2] = 0x5f756e6d;
-        param_1[3] = 0x64616568;
-        uVar3 = 0x6d;
-        pbVar2 = (u8 *)((s64)param_1 + 9);
+        param_1[1] = 0x10;       // length = 16
+        param_1[2] = 0x5f756e6d; // "mnu_"
+        param_1[3] = 0x64616568; // "head"
+        ch = 0x6d; // 'm'
+        str_ptr = (u8 *)((s64)param_1 + 9);
         do {
-            uVar1 = uVar1 * 0x89 ^ uVar3;
-            uVar3 = (u32)*pbVar2;
-            pbVar2 = pbVar2 + 1;
-        } while (uVar3 != 0);
+            hash = hash * 0x89 ^ ch;
+            ch = (u32)*str_ptr;
+            str_ptr = str_ptr + 1;
+        } while (ch != 0);
         break;
-    case 1:
+    case 1: // "mnu_header_spirits"
         *(u8 *)((s64)param_1 + 0x1a) = 0;
         param_1[0] = 0;
-        param_1[1] = 0x12;
-        param_1[2] = 0x5f756e6d;
-        param_1[3] = 0x64616568;
-        *(u16 *)(param_1 + 6) = 0x7374;
-        uVar3 = 0x6d;
-        param_1[4] = 0x735f7265;
-        param_1[5] = 0x69726970;
-        pbVar2 = (u8 *)((s64)param_1 + 9);
+        param_1[1] = 0x12;       // length = 18
+        param_1[2] = 0x5f756e6d; // "mnu_"
+        param_1[3] = 0x64616568; // "head"
+        *(u16 *)(param_1 + 6) = 0x7374; // "ts"
+        ch = 0x6d; // 'm'
+        param_1[4] = 0x735f7265; // "er_s"
+        param_1[5] = 0x69726970; // "piri"
+        str_ptr = (u8 *)((s64)param_1 + 9);
         do {
-            uVar1 = uVar1 * 0x89 ^ uVar3;
-            uVar3 = (u32)*pbVar2;
-            pbVar2 = pbVar2 + 1;
-        } while (uVar3 != 0);
+            hash = hash * 0x89 ^ ch;
+            ch = (u32)*str_ptr;
+            str_ptr = str_ptr + 1;
+        } while (ch != 0);
         break;
-    case 2:
+    case 2: // "mnu_header_other"
         *(u8 *)(param_1 + 6) = 0;
-        param_1[4] = 0x6f5f7265;
-        param_1[5] = 0x72656874;
+        param_1[4] = 0x6f5f7265; // "er_o"
+        param_1[5] = 0x72656874; // "ther"
         param_1[0] = 0;
-        param_1[1] = 0x10;
-        param_1[2] = 0x5f756e6d;
-        param_1[3] = 0x64616568;
-        uVar3 = 0x6d;
-        pbVar2 = (u8 *)((s64)param_1 + 9);
+        param_1[1] = 0x10;       // length = 16
+        param_1[2] = 0x5f756e6d; // "mnu_"
+        param_1[3] = 0x64616568; // "head"
+        ch = 0x6d; // 'm'
+        str_ptr = (u8 *)((s64)param_1 + 9);
         do {
-            uVar1 = uVar1 * 0x89 ^ uVar3;
-            uVar3 = (u32)*pbVar2;
-            pbVar2 = pbVar2 + 1;
-        } while (uVar3 != 0);
+            hash = hash * 0x89 ^ ch;
+            ch = (u32)*str_ptr;
+            str_ptr = str_ptr + 1;
+        } while (ch != 0);
         break;
-    case 3:
+    case 3: // "mnu_header_collection"
         param_1[0] = 0;
-        param_1[1] = 0x15;
-        param_1[2] = 0x5f756e6d;
-        param_1[3] = 0x64616568;
-        param_1[4] = 0x635f7265;
-        param_1[5] = 0x656c6c6f;
-        *(u16 *)(param_1 + 6) = 0x7463;
-        *(u32 *)((s64)param_1 + 0x1a) = 0x6e6f69;
-        uVar3 = 0x6d;
-        pbVar2 = (u8 *)((s64)param_1 + 9);
+        param_1[1] = 0x15;       // length = 21
+        param_1[2] = 0x5f756e6d; // "mnu_"
+        param_1[3] = 0x64616568; // "head"
+        param_1[4] = 0x635f7265; // "er_c"
+        param_1[5] = 0x656c6c6f; // "olle"
+        *(u16 *)(param_1 + 6) = 0x7463; // "ct"
+        *(u32 *)((s64)param_1 + 0x1a) = 0x6e6f69; // "ion\0"
+        ch = 0x6d; // 'm'
+        str_ptr = (u8 *)((s64)param_1 + 9);
         do {
-            uVar1 = uVar1 * 0x89 ^ uVar3;
-            uVar3 = (u32)*pbVar2;
-            pbVar2 = pbVar2 + 1;
-        } while (uVar3 != 0);
+            hash = hash * 0x89 ^ ch;
+            ch = (u32)*str_ptr;
+            str_ptr = str_ptr + 1;
+        } while (ch != 0);
         break;
-    case 4:
+    case 4: // "mnu_header_option"
         param_1[0] = 0;
-        param_1[1] = 0x11;
-        param_1[2] = 0x5f756e6d;
-        param_1[3] = 0x64616568;
-        param_1[4] = 0x6f5f7265;
-        param_1[5] = 0x6f697470;
-        *(u16 *)(param_1 + 6) = 0x6e;
-        uVar3 = 0x6d;
-        pbVar2 = (u8 *)((s64)param_1 + 9);
+        param_1[1] = 0x11;       // length = 17
+        param_1[2] = 0x5f756e6d; // "mnu_"
+        param_1[3] = 0x64616568; // "head"
+        param_1[4] = 0x6f5f7265; // "er_o"
+        param_1[5] = 0x6f697470; // "ptio"
+        *(u16 *)(param_1 + 6) = 0x6e; // "n\0"
+        ch = 0x6d; // 'm'
+        str_ptr = (u8 *)((s64)param_1 + 9);
         do {
-            uVar1 = uVar1 * 0x89 ^ uVar3;
-            uVar3 = (u32)*pbVar2;
-            pbVar2 = pbVar2 + 1;
-        } while (uVar3 != 0);
+            hash = hash * 0x89 ^ ch;
+            ch = (u32)*str_ptr;
+            str_ptr = str_ptr + 1;
+        } while (ch != 0);
         break;
-    case 5:
+    case 5: // "mnu_header_online"
         param_1[0] = 0;
-        param_1[1] = 0x11;
-        param_1[2] = 0x5f756e6d;
-        param_1[3] = 0x64616568;
-        param_1[4] = 0x6f5f7265;
-        param_1[5] = 0x6e696c6e;
-        *(u16 *)(param_1 + 6) = 0x65;
-        uVar3 = 0x6d;
-        pbVar2 = (u8 *)((s64)param_1 + 9);
+        param_1[1] = 0x11;       // length = 17
+        param_1[2] = 0x5f756e6d; // "mnu_"
+        param_1[3] = 0x64616568; // "head"
+        param_1[4] = 0x6f5f7265; // "er_o"
+        param_1[5] = 0x6e696c6e; // "nlin"
+        *(u16 *)(param_1 + 6) = 0x65; // "e\0"
+        ch = 0x6d; // 'm'
+        str_ptr = (u8 *)((s64)param_1 + 9);
         do {
-            uVar1 = uVar1 * 0x89 ^ uVar3;
-            uVar3 = (u32)*pbVar2;
-            pbVar2 = pbVar2 + 1;
-        } while (uVar3 != 0);
+            hash = hash * 0x89 ^ ch;
+            ch = (u32)*str_ptr;
+            str_ptr = str_ptr + 1;
+        } while (ch != 0);
         break;
-    case 6:
+    case 6: // "mnu_header_help"
         param_1[0] = 0;
-        param_1[1] = 0xf;
-        param_1[2] = 0x5f756e6d;
-        param_1[3] = 0x64616568;
-        uVar3 = 0x6d;
-        param_1[4] = 0x685f7265;
-        param_1[5] = 0x706c65;
-        pbVar2 = (u8 *)((s64)param_1 + 9);
+        param_1[1] = 0xf;        // length = 15
+        param_1[2] = 0x5f756e6d; // "mnu_"
+        param_1[3] = 0x64616568; // "head"
+        ch = 0x6d; // 'm'
+        param_1[4] = 0x685f7265; // "er_h"
+        param_1[5] = 0x706c65;   // "elp\0"
+        str_ptr = (u8 *)((s64)param_1 + 9);
         do {
-            uVar1 = uVar1 * 0x89 ^ uVar3;
-            uVar3 = (u32)*pbVar2;
-            pbVar2 = pbVar2 + 1;
-        } while (uVar3 != 0);
+            hash = hash * 0x89 ^ ch;
+            ch = (u32)*str_ptr;
+            str_ptr = str_ptr + 1;
+        } while (ch != 0);
         break;
-    default:
+    default: // "mnu_header_melee" (fallback)
         *(u8 *)(param_1 + 6) = 0;
-        param_1[4] = 0x6d5f7265;
-        param_1[5] = 0x65656c65;
+        param_1[4] = 0x6d5f7265; // "er_m"
+        param_1[5] = 0x65656c65; // "elee"
         param_1[0] = 0;
-        param_1[1] = 0x10;
-        param_1[2] = 0x5f756e6d;
-        param_1[3] = 0x64616568;
-        uVar3 = 0x6d;
-        pbVar2 = (u8 *)((s64)param_1 + 9);
+        param_1[1] = 0x10;       // length = 16
+        param_1[2] = 0x5f756e6d; // "mnu_"
+        param_1[3] = 0x64616568; // "head"
+        ch = 0x6d; // 'm'
+        str_ptr = (u8 *)((s64)param_1 + 9);
         do {
-            uVar1 = uVar1 * 0x89 ^ uVar3;
-            uVar3 = (u32)*pbVar2;
-            pbVar2 = pbVar2 + 1;
-        } while (uVar3 != 0);
+            hash = hash * 0x89 ^ ch;
+            ch = (u32)*str_ptr;
+            str_ptr = str_ptr + 1;
+        } while (ch != 0);
     }
-    *param_1 = uVar1;
+    *param_1 = hash;
 }
