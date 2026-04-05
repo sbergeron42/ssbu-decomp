@@ -335,32 +335,44 @@ void FighterManager__get_beat_point_diff_from_top_impl(FighterManager* mgr, u64 
 }
 
 // 7102141450 -- set_final_fear_face: reads/writes data+0x160, calls external
-extern "C" void FUN_7100674d80(void*, s32, s32);
-void FighterManager__set_final_fear_face_impl(FighterManager* mgr, s32 entry_id, s32 enable) {
+extern "C" void FUN_7100674d80(void*, u64, s32);
+void FighterManager__set_final_fear_face_impl(FighterManager* mgr, u64 raw_entry_id, s32 enable) {
     auto* d = mgr->data;
+    u64 entry_id = raw_entry_id & 0xFFFFFFFF;
     if (d->fear_face_entry_id >= 1) {
-        FUN_7100674d80(d, -1, 0);
+        FUN_7100674d80(d, (u32)-1, 0);
         d->fear_face_entry_id = 0;
     }
-    s32 flag = (enable >= 1) ? 1 : 0;
-    FUN_7100674d80(d, entry_id, flag);
+#ifdef MATCHING_HACK_NX_CLANG
+    if (enable >= 1) {
+        void* arg0 = d; u64 arg1 = entry_id;
+        asm volatile("" : "+r"(arg0), "+r"(arg1));
+        FUN_7100674d80(arg0, arg1, 1);
+    } else {
+        void* arg0 = d; u64 arg1 = entry_id;
+        asm volatile("" : "+r"(arg0), "+r"(arg1));
+        FUN_7100674d80(arg0, arg1, 0);
+    }
+#else
+    FUN_7100674d80(d, entry_id, enable >= 1 ? 1 : 0);
+#endif
     d->fear_face_entry_id = enable;
 }
 
 // 71021414d0 -- start_finalbg: search list for id, load SIMD const + global, call external
-extern "C" void FUN_710260a560(void*, void*, void*);
+extern "C" void FUN_710260a560(void*, u32, void*);
 void FighterManager__start_finalbg_impl(FighterManager* mgr, u32 id) {
     auto* d = mgr->data;
-    auto* ptr1 = *reinterpret_cast<u8**>(d->finalbg_ptr);
-    auto* ptr2 = *reinterpret_cast<u8**>(ptr1);
-    u32* begin = *reinterpret_cast<u32**>(ptr2);
-    u32* end = *reinterpret_cast<u32**>(reinterpret_cast<u8*>(ptr2) + 0x8);
-    for (u32* it = begin; it != end; it += 2) {
-        if (*it == id) {
+    auto* obj = *reinterpret_cast<u8**>(d->finalbg_ptr);
+    u64* begin = *reinterpret_cast<u64**>(obj);
+    u64* end = *reinterpret_cast<u64**>(obj + 0x8);
+    for (u64* it = begin; it != end; it++) {
+        if (*reinterpret_cast<u32*>(it) == id) {
+            if (it == end) break;
             u8 buf[16];
             *reinterpret_cast<__uint128_t*>(buf) = *reinterpret_cast<__uint128_t*>(DAT_7104464700);
-            FUN_710260a560(*reinterpret_cast<void**>(DAT_71053299d8), nullptr, buf);
-            ptr2[0x18] = 1;
+            FUN_710260a560(*reinterpret_cast<void**>(DAT_71053299d8), id, buf);
+            obj[0x18] = 1;
             return;
         }
     }

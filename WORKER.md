@@ -1,42 +1,53 @@
-# Worker: pool-b
+# Worker: pool-d
 
 ## Model: Opus
 
-## Task: jemalloc 5.1.0 decomp — upper half (ctl, stats, tcache, tsd, mutex)
+## Task: Re-decomp non-matching module functions (Tier 1 + naked asm stubs)
 
-Match 69 HARD-tier jemalloc functions against upstream source (lib/jemalloc/).
+Replace bad-quality non-matching code with clean struct-based C++ using the recovered module headers.
 
-### Upstream Reference
-- jemalloc 5.1.0 (tag `5.1.0`, commit `61efbda7098de6fe64c362d309824864308c36d4`)
-- Nintendo's build: `5.1.0-2-g97d9c2105f87d2490f707a4daecc3baac5c170ed` (2 private patches on top)
-- Upstream source cloned at `lib/jemalloc/` in the main repo
-- Version string at 0x710426ddf8, config: `percpu_arena:percpu,dirty_decay_ms:1`
+### Tier 1 Targets (16 N-quality functions with module names)
+These are decomped but bytes don't match. Rewrite from scratch using Ghidra + struct headers.
 
-### Address Range
-0x71039498e0 — 0x710395f6d0 (69 functions)
+| Address | Function | Size |
+|---------|----------|------|
+| 0x7102141200 | FighterManager__set_cursor_whole_impl | 16B |
+| 0x7102141450 | FighterManager__set_final_fear_face_impl | 128B |
+| 0x71021414d0 | FighterManager__start_finalbg_impl | 144B |
+| 0x7102141560 | FighterManager__exit_finalbg_impl | 64B |
+| 0x7102029270 | GroundModule__set_shape_safe_pos_impl | 368B |
+| 0x71020293e0 | GroundModule__get_touch_normal_x_consider_gravity_impl | 736B |
+| 0x71020296c0 | GroundModule__ray_check_hit_pos_target_impl | 48B |
+| 0x71020296f0 | GroundModule__ray_check_hit_pos_normal_no_culling_impl | 528B |
+| 0x710202a6e0 | GroundModule__ray_check_hit_normal_impl | 560B |
+| 0x7102043ea0 | KineticModule__is_suspend_energy_impl | 432B |
+| 0x7102044050 | KineticModule__enable_energy_impl | 176B |
+| 0x7102044100 | KineticModule__suspend_energy_impl | 176B |
+| 0x7102048a60 | LinkModule__get_parent_have_item_visibility_impl | 48B |
+| 0x7102048a90 | LinkModule__get_parent_attach_item_visibility_impl | 432B |
+| 0x71020ad720 | FighterStopModuleImpl__is_damage_stop_impl | 192B |
+| 0x71020ad7e0 | FighterStopModuleImpl__get_damage_stop_frame_impl | 176B |
+
+### Tier 2 Targets: Naked ASM stubs to replace with real C++
+Priority files (most naked stubs):
+- `src/app/modules/ItemCameraModuleImpl.cpp` — 8 naked functions
+- `src/app/modules/StatusModule.cpp` — 2 naked functions
+- `src/app/modules/AttackModule.cpp` — 2 naked functions
+- `src/app/modules/ItemDamageModuleImpl.cpp` — 1 naked function
+- `src/app/modules/FighterWorkModuleImpl.cpp` — 1 naked function
+
+For each naked function: decompile in Ghidra, write clean C++ using struct headers, remove the asm block.
 
 ### Approach
-1. For each target address, decompile in Ghidra
-2. Match the decompiled code against the upstream jemalloc 5.1.0 source in `lib/jemalloc/src/`
-3. Write C that matches the upstream source, adapted for the NX build config
-4. Add a comment on each function: `// jemalloc 5.1.0: <source_file>.c:<line_number>`
-5. If a function doesn't match upstream exactly, note the Nintendo delta
+1. For Tier 1: find the existing bad code in src/, delete it, rewrite using Ghidra + struct headers
+2. For Tier 2: find the naked asm block, decompile in Ghidra, replace with C++
+3. Build and verify after each batch
 
-### Key jemalloc source files (likely matches for this range)
-- `src/ctl.c` — mallctl interface (ctl_bymib, ctl handlers)
-- `src/stats.c` — stats_print, stats formatting
-- `src/tcache.c` — thread cache
-- `src/tsd.c` — thread-specific data
-- `src/mutex.c` — mutex wrappers
-- `src/prof.c` — profiling
-
-### Output: src/lib/jemalloc_b_001.cpp onward
+### Output: Edit existing files listed above + src/app/fun_redecomp_d_*.cpp for new files if needed
 
 ### Rules
-- Use upstream jemalloc field names and types — these are KNOWN, not inferred
-- Every function gets a `// jemalloc 5.1.0: file.c:line` provenance comment
-- Note any Nintendo-specific deltas from upstream
+- Use struct field access from include/app/modules/ — all 41 module structs are recovered
+- No raw offsets, no Ghidra paste, no naked asm
 - 3-attempt limit per function
-- ONLY create src/lib/jemalloc_b_*.cpp
+- CAN edit: src/app/modules/ItemCameraModuleImpl.cpp, src/app/modules/StatusModule.cpp, src/app/modules/AttackModule.cpp, src/app/modules/ItemDamageModuleImpl.cpp, src/app/modules/FighterWorkModuleImpl.cpp, and Tier 1 source files
 - Save Ghidra results to /tmp/ghidra_results.txt
-- Build once with tee, grep the file
