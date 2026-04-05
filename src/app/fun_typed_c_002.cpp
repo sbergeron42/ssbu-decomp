@@ -31,6 +31,20 @@ extern "C" void FUN_7101f314f0(void*);
 extern "C" void FUN_7101f35910(void*);
 extern "C" void FUN_7101f43ae0(void*);
 extern "C" void FUN_71037a2400(void*);
+// Pattern D2/D3/H utility functions
+extern "C" void FUN_71001af8a0(void*);
+extern "C" void FUN_71001b1870(void*);
+extern "C" void FUN_71001b4910(void*);
+extern "C" void FUN_71001b78a0(void*);
+extern "C" void FUN_71015336e0(void*);
+extern "C" void FUN_7101711810(void*, void*);
+// Pattern F cleanup functions
+extern "C" void FUN_71039c2140(void*);
+extern "C" void FUN_7101473f30(void*);
+extern "C" void FUN_710146bd70(void*);
+extern "C" void FUN_7101468040(void*);
+extern "C" void FUN_710148ff30(void*);
+extern "C" void FUN_71014a44c0(void*);
 
 // Vtable symbols — hidden visibility to get ADRP+ADD (not GOT)
 #define VTABLE_EXTERN(name) extern "C" __attribute__((visibility("hidden"))) char name[]
@@ -68,6 +82,28 @@ VTABLE_EXTERN(PTR_LAB_71050b2ff0);
 VTABLE_EXTERN(PTR_LAB_71050b3090);
 VTABLE_EXTERN(PTR_LAB_71050b3358);
 VTABLE_EXTERN(PTR_LAB_71052404c0);
+// Pattern G vtables
+VTABLE_EXTERN(PTR_FUN_7104f6d4c0);
+VTABLE_EXTERN(PTR_FUN_7105063a70);
+// Pattern F vtables
+VTABLE_EXTERN(PTR_FUN_7105067018);
+VTABLE_EXTERN(PTR_FUN_71050670f8);
+VTABLE_EXTERN(PTR_FUN_7105067130);
+VTABLE_EXTERN(PTR_FUN_71050674e8);
+VTABLE_EXTERN(PTR_FUN_7105068e70);
+VTABLE_EXTERN(PTR_LAB_7105067800);
+VTABLE_EXTERN(PTR_LAB_7105067a20);
+VTABLE_EXTERN(PTR_LAB_7105067da0);
+VTABLE_EXTERN(PTR_LAB_71050686c0);
+VTABLE_EXTERN(PTR_LAB_7105068ee8);
+// Pattern H vtables
+VTABLE_EXTERN(PTR_FUN_710509c190);
+VTABLE_EXTERN(PTR_FUN_710509c210);
+VTABLE_EXTERN(PTR_FUN_710509c230);
+VTABLE_EXTERN(PTR_FUN_710509c2e8);
+VTABLE_EXTERN(PTR_FUN_710509c3e8);
+VTABLE_EXTERN(PTR_FUN_710509c638);
+VTABLE_EXTERN(PTR_LAB_710509bc08);
 
 // ============================================================
 // Destructor Pattern: sub at +0x50, inner cleanup at sub+0x8,
@@ -623,3 +659,175 @@ void FUN_710171cff0(void** self) {
 
 // --- sub at [1] for 7101cd2cc0 (96B, has extra cleanup) ---
 // Skipping 7101cd2cc0 as it's 96B and may have a different structure
+
+// ============================================================
+// Pattern D2: Binary tree recursive delete with 2 params (64 bytes)
+// Check 2nd param for null; recurse left/right; tail-call FUN_71001b1870
+// ============================================================
+
+// 0x7101710390
+void FUN_7101710390(void* ctx, void** node) {
+    if (!node) return;
+    FUN_7101710390(ctx, static_cast<void**>(node[0]));
+    FUN_7101710390(ctx, static_cast<void**>(node[1]));
+    FUN_71001b1870(node);
+}
+
+// 0x7101713160
+void FUN_7101713160(void* ctx, void** node) {
+    if (!node) return;
+    FUN_7101713160(ctx, static_cast<void**>(node[0]));
+    FUN_7101713160(ctx, static_cast<void**>(node[1]));
+    FUN_71001b1870(node);
+}
+
+// ============================================================
+// Pattern D3: Tree delete with extra cleanup before free
+// ============================================================
+
+// 0x71015336a0 (64 bytes, 1 param, cleanup at node+5)
+void FUN_71015336a0(void** node) {
+    if (!node) return;
+    FUN_71015336a0(static_cast<void**>(node[0]));
+    FUN_71015336a0(static_cast<void**>(node[1]));
+    FUN_71015336e0(&node[5]);
+    FUN_710392e590(node);
+}
+
+// 0x710170e0f0 (96 bytes, 2 params, cleanup + sub-vtable set + free)
+void FUN_710170e0f0(void* ctx, void** node) {
+    if (!node) return;
+    FUN_710170e0f0(ctx, static_cast<void**>(node[0]));
+    FUN_710170e0f0(ctx, static_cast<void**>(node[1]));
+    FUN_71001b78a0(&node[9]);
+    node[4] = PTR_LAB_710509bc08;
+    FUN_71001b4910(&node[4]);
+    FUN_71001b1870(node);
+}
+
+// ============================================================
+// Pattern G: Linked list walk destructor
+// Set vtable, walk linked list freeing nodes, null+free cleanup field
+// ============================================================
+
+// 0x71013aad40 (88 bytes, base dtor, list at [3], cleanup [1])
+void FUN_71013aad40(void** self) {
+    self[0] = PTR_FUN_7105063a70;
+    void** node = static_cast<void**>(self[3]);
+    while (node) {
+        void** next = static_cast<void**>(node[0]);
+        FUN_710392e590(node);
+        node = next;
+    }
+    void* sub = self[1];
+    self[1] = nullptr;
+    if (!sub) return;
+    FUN_710392e590(sub);
+}
+
+// 0x71013aada0 (84 bytes, deleting dtor, list at [3], cleanup [1], free self)
+void FUN_71013aada0(void** self) {
+    self[0] = PTR_FUN_7105063a70;
+    void** node = static_cast<void**>(self[3]);
+    while (node) {
+        void** next = static_cast<void**>(node[0]);
+        FUN_710392e590(node);
+        node = next;
+    }
+    void* sub = self[1];
+    self[1] = nullptr;
+    if (sub) {
+        FUN_710392e590(sub);
+    }
+    FUN_710392e590(self);
+}
+
+// 0x7101611e90 (88 bytes, base dtor, list at [4], cleanup [2])
+void FUN_7101611e90(void** self) {
+    self[0] = PTR_FUN_7104f6d4c0;
+    void** node = static_cast<void**>(self[4]);
+    while (node) {
+        void** next = static_cast<void**>(node[0]);
+        FUN_710392e590(node);
+        node = next;
+    }
+    void* sub = self[2];
+    self[2] = nullptr;
+    if (!sub) return;
+    FUN_710392e590(sub);
+}
+
+// ============================================================
+// Pattern F: shared_ptr destructor
+// Set 2 vtable ptrs, null+cleanup inner field, tail-call ~__shared_weak_count
+// ============================================================
+
+// 0x7101461660
+void FUN_7101461660(void** self) {
+    void* sub = self[5];
+    self[0] = PTR_FUN_71050674e8;
+    self[3] = PTR_LAB_7105067da0;
+    self[5] = nullptr;
+    if (sub) {
+        FUN_7101473f30(sub);
+        FUN_710392e590(sub);
+    }
+    FUN_71039c2140(self);
+}
+
+// 0x71014621e0
+void FUN_71014621e0(void** self) {
+    void* sub = self[5];
+    self[0] = PTR_FUN_7105067130;
+    self[3] = PTR_LAB_7105067a20;
+    self[5] = nullptr;
+    if (sub) {
+        FUN_710146bd70(sub);
+        FUN_710392e590(sub);
+    }
+    FUN_71039c2140(self);
+}
+
+// 0x71014622c0
+void FUN_71014622c0(void** self) {
+    void* sub = self[5];
+    self[0] = PTR_FUN_71050670f8;
+    self[3] = PTR_LAB_7105067800;
+    self[5] = nullptr;
+    if (sub) {
+        FUN_7101468040(sub);
+        FUN_710392e590(sub);
+    }
+    FUN_71039c2140(self);
+}
+
+// 0x7101462580
+void FUN_7101462580(void** self) {
+    void* sub = self[5];
+    self[0] = PTR_FUN_7105067018;
+    self[3] = PTR_LAB_71050686c0;
+    self[5] = nullptr;
+    if (sub) {
+        FUN_710148ff30(sub);
+        FUN_710392e590(sub);
+    }
+    FUN_71039c2140(self);
+}
+
+// 0x71014a3780 (field at [4], adjacent vtable2+zero merged into STP)
+void FUN_71014a3780(void** self) {
+    void* sub = self[4];
+    self[0] = PTR_FUN_7105068e70;
+    self[3] = PTR_LAB_7105068ee8;
+    self[4] = nullptr;
+    if (sub) {
+        FUN_71014a44c0((char*)sub + 8);
+        FUN_710392e590(sub);
+    }
+    FUN_71039c2140(self);
+}
+
+// NOTE: Pattern H (multi-sub-vtable destructors) not included — code logic is
+// correct but upstream Clang 8 hoists ADRP+ADD before stp x29,x30 in prologue.
+// Needs fix_prologue_sched.py enhancement to move stp x29,x30+add x29 pair
+// before ADRP+ADD sequences. Affects ~20 functions in 0x710171* range.
