@@ -7,12 +7,12 @@ extern "C" void FUN_7102496ed0();
 extern "C" void FUN_7102a63350(u32 *, u32 *, u32 *, u32 *);
 extern "C" void FUN_7102a63500(u32 *, u32 *, u32 *, u32 *, u32 *);
 
-// 0x7102ff82b0
+// 0x7102ff82b0 — vtable[0] call, return inverted low bit
 u64 FUN_7102ff82b0(u64 *param_1)
 {
-    u32 uVar1;
-    uVar1 = (**(u32 (**)(void))(*param_1))();
-    return ~uVar1 & 1;
+    u32 result;
+    result = (**(u32 (**)(void))(*param_1))();
+    return ~result & 1;
 }
 
 // 0x71024bb34c
@@ -35,7 +35,9 @@ u64 FUN_71029cceb8(s64 *param_1, u32 param_2)
     return 1;
 }
 
-// 0x71024a7d30
+// 0x71024a7d30 — Set flag byte in array-of-structs (stride 0x40) by index
+// Each struct has a state byte at +0x00 and a param byte at +0x01
+// Valid state transitions: state < 8 and state is in {1, 6, 7} (bitmask 0xC2)
 void FUN_71024a7d30(s64 param_1, u32 param_2, u8 param_3)
 {
     switch(param_2) {
@@ -166,7 +168,11 @@ void FUN_71024a7d30(s64 param_1, u32 param_2, u8 param_3)
     }
 }
 
-// 0x71025c6520
+// 0x71025c6520 — Compute custom hash of "mnu_spirits_sort_XX" by sort-type index
+// Writes string as u32 words at param_1[2..6], then hashes it (FNV-like: seed 0x811c9dc5, mul 0x89)
+// String suffixes: 0→"_01", 1→"_00", 2→"_02", 3→"_18", 4→"_03", 5→"_04", 6→"_05", 7→"_06",
+//   8→"_07", 9→"_08", 10→"_09", 11→"_10", 12→"_11", 13→"_12", 14→"_13", 15→"_14",
+//   16→"_15", 17→"_16", 18→"_17", 19→"_19", 20→"_22", 21→"_24", 22→"_21"
 void FUN_71025c6520(u32 *param_1, u32 param_2)
 {
     u32 uVar1;
@@ -596,7 +602,9 @@ void FUN_71025c6520(u32 *param_1, u32 param_2)
     *param_1 = uVar1;
 }
 
-// 0x7102a63620
+// 0x7102a63620 — Partial insertion sort for u32 pairs (key-value at stride 2)
+// Handles small arrays (0-5 elements) with specialized swaps, then falls back
+// to bounded insertion sort (max 8 swaps before bailing)
 bool FUN_7102a63620(u32 *param_1, u32 *param_2)
 {
     u32 *puVar1;

@@ -254,13 +254,13 @@ u64 FUN_71021e1290(app::Fighter *param_1, s64 param_2, bool param_3)
 // 0x71021e1690
 u32 FUN_71021e1690(s64 param_1, s64 param_2)
 {
-    s64 lVar1;
+    s64 base;
     u64 in_x10;
     *(u64 *)(param_2 + 0x10) = in_x10;
-    lVar1 = *(s64 *)(param_1 + 0xc0);
-    *(u64 *)(lVar1 + 0x2f8) = 0;
-    *(u64 *)(lVar1 + 0x2f0) = 0;
-    *(u64 *)(lVar1 + 0x2e0) = *(u64 *)(lVar1 + 0x2d8);
+    base = *(s64 *)(param_1 + 0xc0);
+    *(u64 *)(base + 0x2f8) = 0;
+    *(u64 *)(base + 0x2f0) = 0;
+    *(u64 *)(base + 0x2e0) = *(u64 *)(base + 0x2d8);
     FUN_710069b6c0(param_1, 0x59);
     return 0;
 }
@@ -291,8 +291,8 @@ u32 FUN_71021f72f0(void)
 // 0x71021fabc4
 u32 FUN_71021fabc4(s64 param_1)
 {
-    s64 *plVar1 = *(s64 **)(param_1 + 0x208);
-    (**(void (**)())(*plVar1 + 0xc8))();
+    s64 *module = *(s64 **)(param_1 + 0x208);
+    (**(void (**)())(*module + 0xc8))();
     return 0;
 }
 
@@ -336,9 +336,9 @@ u32 FUN_71021ff230(lua_State *param_1)
 // 0x71022004e0
 u32 FUN_71022004e0(s64 param_1)
 {
-    s64 *plVar1;
-    plVar1 = *(s64 **)(*(s64 *)(*(s64 *)(*(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0) + 0x190) + 0x220) + 0x100);
-    (**(void (**)(s64 *, s32))(*plVar1 + 0x130))(plVar1, 4);
+    s64 *module;
+    module = *(s64 **)(*(s64 *)(*(s64 *)(*(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0) + 0x190) + 0x220) + 0x100);
+    (**(void (**)(s64 *, s32))(*module + 0x130))(module, 4);
     return 0;
 }
 
@@ -367,9 +367,9 @@ u32 FUN_7102208d00(lua_State *param_1)
 // 0x7102208df0
 u32 FUN_7102208df0(s64 param_1)
 {
-    s64 *plVar1;
-    plVar1 = *(s64 **)(*(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0) + 0x78);
-    (**(void (**)(s64 *, s32))(*plVar1 + 0x330))(plVar1, 1);
+    s64 *module;
+    module = *(s64 **)(*(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0) + 0x78);
+    (**(void (**)(s64 *, s32))(*module + 0x330))(module, 1);
     return 0;
 }
 

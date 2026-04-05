@@ -48,11 +48,11 @@ u64 FUN_710261d790(u32 param_1)
 // 0x7102c5ea20
 u64 FUN_7102c5ea20(s64 param_1)
 {
-    s64 *plVar1;
-    s64 *plVar2;
-    plVar2 = *(s64 **)(param_1 + 0x70);
-    for (plVar1 = *(s64 **)(param_1 + 0x68); plVar1 != plVar2; plVar1 = plVar1 + 1) {
-        if (*plVar1 != 0) {
+    s64 *iter;
+    s64 *end;
+    end = *(s64 **)(param_1 + 0x70);
+    for (iter = *(s64 **)(param_1 + 0x68); iter != end; iter = iter + 1) {
+        if (*iter != 0) {
             FUN_710313e970();
         }
     }
@@ -134,31 +134,31 @@ u64 FUN_7102a65b80(u64 param_1)
 // 0x7102220920
 u32 FUN_7102220920(s64 param_1)
 {
-    s64 *plVar1;
-    s64 lVar2;
-    plVar1 = *(s64 **)(*(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0) + 0x68);
-    lVar2 = (**(s64 (**)(s64 *, s64))(*plVar1 + 0x60))(plVar1, 2);
-    *(u8 *)(lVar2 + 0x30) = 0;
+    s64 *module;
+    s64 entry;
+    module = *(s64 **)(*(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0) + 0x68);
+    entry = (**(s64 (**)(s64 *, s64))(*module + 0x60))(module, 2);
+    *(u8 *)(entry + 0x30) = 0;
     return 0;
 }
 
 // 0x7102224040
 u32 FUN_7102224040(s64 param_1)
 {
-    s64 *plVar1;
-    plVar1 = *(s64 **)(*(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0) + 0x68);
-    plVar1 = (s64 *)(**(s64 (**)(s64 *, s64))(*plVar1 + 0x60))(plVar1, 4);
-    (**(void (**)(void))(*plVar1 + 0x48))();
+    s64 *module;
+    module = *(s64 **)(*(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0) + 0x68);
+    module = (s64 *)(**(s64 (**)(s64 *, s64))(*module + 0x60))(module, 4);
+    (**(void (**)(void))(*module + 0x48))();
     return 0;
 }
 
 // 0x7102220a40
 u32 FUN_7102220a40(s64 param_1)
 {
-    s64 *plVar1;
-    plVar1 = *(s64 **)(*(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0) + 0x68);
-    plVar1 = (s64 *)(**(s64 (**)(s64 *, s64))(*plVar1 + 0x60))(plVar1, 2);
-    (**(void (**)(void))(*plVar1 + 0x48))();
+    s64 *module;
+    module = *(s64 **)(*(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0) + 0x68);
+    module = (s64 *)(**(s64 (**)(s64 *, s64))(*module + 0x60))(module, 2);
+    (**(void (**)(void))(*module + 0x48))();
     return 0;
 }
 
@@ -166,42 +166,42 @@ u32 FUN_7102220a40(s64 param_1)
 s64 *FUN_7102ff0bf0(s64 param_1, u32 param_2, s64 *param_3, s64 *param_4)
 {
     s64 lVar1;
-    s64 *plVar2;
+    s64 *pentry;
     s64 *plVar3;
 
-    plVar2 = (s64 *)0;
+    pentry = (s64 *)0;
     switch(param_2) {
     case 0:
-        plVar2 = *(s64 **)(param_1 + 0x28);
-        if (plVar2 == (s64 *)(param_1 + 0x28)) return (s64 *)0;
-        if (plVar2 == (s64 *)0) return (s64 *)0;
+        pentry = *(s64 **)(param_1 + 0x28);
+        if (pentry == (s64 *)(param_1 + 0x28)) return (s64 *)0;
+        if (pentry == (s64 *)0) return (s64 *)0;
         plVar3 = *(s64 **)(param_1 + 0x30);
         lVar1 = *plVar3;
-        plVar2 = (s64 *)plVar3[1];
-        *plVar2 = lVar1;
-        *(s64 **)(lVar1 + 8) = plVar2;
+        pentry = (s64 *)plVar3[1];
+        *pentry = lVar1;
+        *(s64 **)(lVar1 + 8) = pentry;
         *(s64 *)(param_1 + 0x20) = *(s64 *)(param_1 + 0x20) - 1;
         break;
     case 1:
-        plVar2 = *(s64 **)(param_1 + 0x88);
-        if (plVar2 == (s64 *)(param_1 + 0x88)) return (s64 *)0;
-        if (plVar2 == (s64 *)0) return (s64 *)0;
+        pentry = *(s64 **)(param_1 + 0x88);
+        if (pentry == (s64 *)(param_1 + 0x88)) return (s64 *)0;
+        if (pentry == (s64 *)0) return (s64 *)0;
         plVar3 = *(s64 **)(param_1 + 0x90);
         lVar1 = *plVar3;
-        plVar2 = (s64 *)plVar3[1];
-        *plVar2 = lVar1;
-        *(s64 **)(lVar1 + 8) = plVar2;
+        pentry = (s64 *)plVar3[1];
+        *pentry = lVar1;
+        *(s64 **)(lVar1 + 8) = pentry;
         *(s64 *)(param_1 + 0x80) = *(s64 *)(param_1 + 0x80) - 1;
         break;
     case 2:
-        plVar2 = *(s64 **)(param_1 + 0xe8);
-        if (plVar2 == (s64 *)(param_1 + 0xe8)) return (s64 *)0;
-        if (plVar2 == (s64 *)0) return (s64 *)0;
+        pentry = *(s64 **)(param_1 + 0xe8);
+        if (pentry == (s64 *)(param_1 + 0xe8)) return (s64 *)0;
+        if (pentry == (s64 *)0) return (s64 *)0;
         plVar3 = *(s64 **)(param_1 + 0xf0);
         lVar1 = *plVar3;
-        plVar2 = (s64 *)plVar3[1];
-        *plVar2 = lVar1;
-        *(s64 **)(lVar1 + 8) = plVar2;
+        pentry = (s64 *)plVar3[1];
+        *pentry = lVar1;
+        *(s64 **)(lVar1 + 8) = pentry;
         *(s64 *)(param_1 + 0xe0) = *(s64 *)(param_1 + 0xe0) - 1;
         break;
     case 3:
@@ -209,21 +209,21 @@ s64 *FUN_7102ff0bf0(s64 param_1, u32 param_2, s64 *param_3, s64 *param_4)
         if (*(s64 *)(param_1 + 0x148) == 0) return (s64 *)0;
         plVar3 = *(s64 **)(param_1 + 0x150);
         lVar1 = *plVar3;
-        plVar2 = (s64 *)plVar3[1];
-        *plVar2 = lVar1;
-        *(s64 **)(lVar1 + 8) = plVar2;
+        pentry = (s64 *)plVar3[1];
+        *pentry = lVar1;
+        *(s64 **)(lVar1 + 8) = pentry;
         *(s64 *)(param_1 + 0x140) = *(s64 *)(param_1 + 0x140) - 1;
         break;
     default:
-        return plVar2;
+        return pentry;
     case 5:
         if (*(s64 *)(param_1 + 0x208) == param_1 + 0x208) return (s64 *)0;
         if (*(s64 *)(param_1 + 0x208) == 0) return (s64 *)0;
         plVar3 = *(s64 **)(param_1 + 0x210);
         lVar1 = *plVar3;
-        plVar2 = (s64 *)plVar3[1];
-        *plVar2 = lVar1;
-        *(s64 **)(lVar1 + 8) = plVar2;
+        pentry = (s64 *)plVar3[1];
+        *pentry = lVar1;
+        *(s64 **)(lVar1 + 8) = pentry;
         *(s64 *)(param_1 + 0x200) = *(s64 *)(param_1 + 0x200) - 1;
         break;
     case 6:
@@ -231,9 +231,9 @@ s64 *FUN_7102ff0bf0(s64 param_1, u32 param_2, s64 *param_3, s64 *param_4)
         if (*(s64 *)(param_1 + 0x1a8) == 0) return (s64 *)0;
         plVar3 = *(s64 **)(param_1 + 0x1b0);
         lVar1 = *plVar3;
-        plVar2 = (s64 *)plVar3[1];
-        *plVar2 = lVar1;
-        *(s64 **)(lVar1 + 8) = plVar2;
+        pentry = (s64 *)plVar3[1];
+        *pentry = lVar1;
+        *(s64 **)(lVar1 + 8) = pentry;
         *(s64 *)(param_1 + 0x1a0) = *(s64 *)(param_1 + 0x1a0) - 1;
         break;
     case 7:
@@ -241,9 +241,9 @@ s64 *FUN_7102ff0bf0(s64 param_1, u32 param_2, s64 *param_3, s64 *param_4)
         if (*(s64 *)(param_1 + 0x268) == 0) return (s64 *)0;
         plVar3 = *(s64 **)(param_1 + 0x270);
         lVar1 = *plVar3;
-        plVar2 = (s64 *)plVar3[1];
-        *plVar2 = lVar1;
-        *(s64 **)(lVar1 + 8) = plVar2;
+        pentry = (s64 *)plVar3[1];
+        *pentry = lVar1;
+        *(s64 **)(lVar1 + 8) = pentry;
         *(s64 *)(param_1 + 0x260) = *(s64 *)(param_1 + 0x260) - 1;
     }
     *plVar3 = 0;
@@ -254,10 +254,10 @@ s64 *FUN_7102ff0bf0(s64 param_1, u32 param_2, s64 *param_3, s64 *param_4)
     plVar3[5] = lVar1;
     plVar3[7] = *param_3;
     *(u8 *)((s64)plVar3 + 0x41) = 1;
-    plVar2 = plVar3 - 1;
-    (**(void (**)(s64 *))(*plVar2 + 0x40))(plVar2);
+    pentry = plVar3 - 1;
+    (**(void (**)(s64 *))(*pentry + 0x40))(pentry);
     *(u8 *)((s64)plVar3 + 0x41) = 0;
-    (**(void (**)(s64 *))(*plVar2 + 0x48))(plVar2);
+    (**(void (**)(s64 *))(*pentry + 0x48))(pentry);
     *(u8 *)((s64)plVar3 + 8) = 1;
-    return plVar2;
+    return pentry;
 }
