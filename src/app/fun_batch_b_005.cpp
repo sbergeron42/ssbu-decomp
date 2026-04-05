@@ -16,7 +16,7 @@ extern u8 DAT_7104866c2e;
 extern u8 DAT_710446fbe0 __attribute__((visibility("hidden")));
 extern u8 PTR_LAB_71050b0530 __attribute__((visibility("hidden")));
 
-// 0x7101cc4bc0
+// 0x7101cc4bc0 -- color table lookup by index
 u64 FUN_7101cc4bc0(u32 param_1)
 {
   if (param_1 < 4) {
@@ -25,75 +25,75 @@ u64 FUN_7101cc4bc0(u32 param_1)
   return 0x58ffff0000000000ULL;
 }
 
-// 0x7101cd5f40
+// 0x7101cd5f40 -- online match state check (hash-based fighter ID comparison)
 u8 FUN_7101cd5f40(s64 param_1)
 {
-  u8 bVar1;
-  u64 uVar2;
-  s32 iVar3;
-  u64 uVar4;
+  u8 result;
+  u64 local_hash;
+  s32 sub_state;
+  u64 fighter_hash;
 
   switch(*(u32 *)(param_1 + 0x208)) {
   case 0:
-    iVar3 = *(s32 *)(param_1 + 0x20c);
+    sub_state = *(s32 *)(param_1 + 0x20c);
     break;
   case 1:
-    uVar4 = *(u64 *)(param_1 + 0x210);
-    if ((uVar4 & 0xff00000000000000ULL) == 0xc100000000000000ULL && (uVar4 & 0xffffffffffULL) != 0) {
-      uVar2 = FUN_7103262bf0(*(u64 *)(*(s64 *)(DAT_710532e730 + 8) + 0x168), 0x14ca4126b0ULL);
-      if ((uVar2 & 0xff00000000000000ULL) == 0xc100000000000000ULL && (uVar2 & 0xffffffffffULL) != 0) {
-        if (((uVar2 ^ uVar4) & 0xffffffffffULL) != 0) {
+    fighter_hash = *(u64 *)(param_1 + 0x210);
+    if ((fighter_hash & 0xff00000000000000ULL) == 0xc100000000000000ULL && (fighter_hash & 0xffffffffffULL) != 0) {
+      local_hash = FUN_7103262bf0(*(u64 *)(*(s64 *)(DAT_710532e730 + 8) + 0x168), 0x14ca4126b0ULL);
+      if ((local_hash & 0xff00000000000000ULL) == 0xc100000000000000ULL && (local_hash & 0xffffffffffULL) != 0) {
+        if (((local_hash ^ fighter_hash) & 0xffffffffffULL) != 0) {
           return true;
         }
       }
-      else if ((uVar2 & 0xffffffffffULL) == 0 || (uVar2 & 0xff00000000000000ULL) != 0xc100000000000000ULL) {
+      else if ((local_hash & 0xffffffffffULL) == 0 || (local_hash & 0xff00000000000000ULL) != 0xc100000000000000ULL) {
         return true;
       }
     }
     if (*(s32 *)(param_1 + 0x21c) != 0) {
       return true;
     }
-    iVar3 = *(s32 *)(param_1 + 0x220);
+    sub_state = *(s32 *)(param_1 + 0x220);
     break;
   case 2:
-    uVar4 = *(u64 *)(param_1 + 0x228);
-    if ((uVar4 & 0xff00000000000000ULL) == 0xc100000000000000ULL && (uVar4 & 0xffffffffffULL) != 0) {
-      uVar2 = FUN_7103262bf0(*(u64 *)(*(s64 *)(DAT_710532e730 + 8) + 0x168), 0x14ca4126b0ULL);
-      if ((uVar2 & 0xff00000000000000ULL) == 0xc100000000000000ULL && (uVar2 & 0xffffffffffULL) != 0) {
-        if (((uVar2 ^ uVar4) & 0xffffffffffULL) != 0) {
+    fighter_hash = *(u64 *)(param_1 + 0x228);
+    if ((fighter_hash & 0xff00000000000000ULL) == 0xc100000000000000ULL && (fighter_hash & 0xffffffffffULL) != 0) {
+      local_hash = FUN_7103262bf0(*(u64 *)(*(s64 *)(DAT_710532e730 + 8) + 0x168), 0x14ca4126b0ULL);
+      if ((local_hash & 0xff00000000000000ULL) == 0xc100000000000000ULL && (local_hash & 0xffffffffffULL) != 0) {
+        if (((local_hash ^ fighter_hash) & 0xffffffffffULL) != 0) {
           return true;
         }
       }
-      else if ((uVar2 & 0xffffffffffULL) == 0 || (uVar2 & 0xff00000000000000ULL) != 0xc100000000000000ULL) {
+      else if ((local_hash & 0xffffffffffULL) == 0 || (local_hash & 0xff00000000000000ULL) != 0xc100000000000000ULL) {
         return true;
       }
     }
     if (*(s32 *)(param_1 + 0x234) != 0) {
       return true;
     }
-    iVar3 = *(s32 *)(param_1 + 0x238);
+    sub_state = *(s32 *)(param_1 + 0x238);
     break;
   case 3:
-    iVar3 = *(s32 *)(param_1 + 0x240);
+    sub_state = *(s32 *)(param_1 + 0x240);
     break;
   case 4:
     if (*(s32 *)(param_1 + 0x244) != 0) {
       return true;
     }
-    bVar1 = (u8)(*(s32 *)(param_1 + 0x248) == 1);
+    result = (u8)(*(s32 *)(param_1 + 0x248) == 1);
     goto LAB_7101cd6094;
   case 5:
-    iVar3 = *(s32 *)(param_1 + 0x24c);
+    sub_state = *(s32 *)(param_1 + 0x24c);
     break;
   default:
     return false;
   }
-  bVar1 = (u8)(iVar3 == 0);
+  result = (u8)(sub_state == 0);
 LAB_7101cd6094:
-  return !bVar1;
+  return !result;
 }
 
-// 0x7101dd8440
+// 0x7101dd8440 -- spirit board UI animation dispatch
 void FUN_7101dd8440(s64 param_1, char param_2)
 {
   switch(param_2) {
@@ -138,7 +138,7 @@ switchD_7101dd8460_caseD_8:
   }
 }
 
-// 0x7101e027f0
+// 0x7101e027f0 -- construct iterator pair from vtable + field
 void FUN_7101e027f0(s64 param_1, u64 *param_2)
 {
   *param_2 = (u64)&PTR_LAB_71050b0530;
@@ -146,10 +146,10 @@ void FUN_7101e027f0(s64 param_1, u64 *param_2)
   return;
 }
 
-// 0x7101e57dc0
+// 0x7101e57dc0 -- help camera mel string dispatch
 void FUN_7101e57dc0(s64 param_1, u32 param_2)
 {
-  s64 lVar1;
+  s64 anim_node;
 
   switch(param_2) {
   case 0:
@@ -174,24 +174,24 @@ void FUN_7101e57dc0(s64 param_1, u32 param_2)
     FUN_7103779b70(param_1, "cam_menu_etc_help_item_list");
     return;
   case 0xffffffff:
-    lVar1 = *(s64 *)(*(s64 *)(param_1 + 8) + 0x10);
-    if (lVar1 != 0) {
-      FUN_71037a22f0(lVar1, &DAT_7104866c2e);
+    anim_node = *(s64 *)(*(s64 *)(param_1 + 8) + 0x10);
+    if (anim_node != 0) {
+      FUN_71037a22f0(anim_node, &DAT_7104866c2e);
       return;
     }
   }
   return;
 }
 
-// 0x710116a3d0
+// 0x710116a3d0 -- check if status kind is in battle-active set
 u32 FUN_710116a3d0(s64 param_1)
 {
-  u32 uVar1;
-  u32 uVar2;
+  u32 status_kind;
+  u32 result;
 
-  uVar1 = (*(u32(*)(void))(*(s64*)(*(s64*)(*(s64*)(param_1 + 0x20) + 0x40)) + 0x110))();
-  uVar2 = 0;
-  switch(uVar1) {
+  status_kind = (*(u32(*)(void))(*(s64*)(*(s64*)(*(s64*)(param_1 + 0x20) + 0x40)) + 0x110))();
+  result = 0;
+  switch(status_kind) {
   case 0:
   case 1:
   case 3:
@@ -226,12 +226,12 @@ u32 FUN_710116a3d0(s64 param_1)
   case 0x11e:
   case 0x149:
   case 0x14c:
-    uVar2 = 1;
+    result = 1;
   }
-  return uVar2;
+  return result;
 }
 
-// 0x71013c92b4
+// 0x71013c92b4 -- abort stub
 [[noreturn]] void FUN_71013c92b4()
 {
   abort();

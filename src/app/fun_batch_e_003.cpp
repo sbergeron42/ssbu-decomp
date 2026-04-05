@@ -32,40 +32,37 @@ extern void FUN_7100195180(s64);
 
 // ---- Functions --------------------------------------------------------------
 
-// 0x710025afa0 -- wrapper: FUN_710025afd0(param_1+0x20, param_2, &local_18) & 1
+// 0x710025afa0 -- wrapper: FUN_710025afd0(param_1+0x20, param_2, &out) & 1
 u32 FUN_710025afa0(s64 param_1, u64 param_2, u64 param_3)
 {
-    u32 uVar1;
-    u64 local_18;
+    u32 result;
+    u64 out = param_3;
 
-    local_18 = param_3;
-    uVar1 = FUN_710025afd0(param_1 + 0x20, param_2, &local_18);
-    return uVar1 & 1;
+    result = FUN_710025afd0(param_1 + 0x20, param_2, &out);
+    return result & 1;
 }
 
-// 0x710025ceb0 -- wrapper: FUN_710025cee0(param_1+0x20, param_2, &local_14) & 1
+// 0x710025ceb0 -- wrapper: FUN_710025cee0(param_1+0x20, param_2, &out) & 1
 u32 FUN_710025ceb0(s64 param_1, u64 param_2, u32 param_3)
 {
-    u32 uVar1;
-    u32 local_14;
+    u32 result;
+    u32 out = param_3;
 
-    local_14 = param_3;
-    uVar1 = FUN_710025cee0(param_1 + 0x20, param_2, &local_14);
-    return uVar1 & 1;
+    result = FUN_710025cee0(param_1 + 0x20, param_2, &out);
+    return result & 1;
 }
 
-// 0x710026f260 -- wrapper: FUN_710026f290(param_1+0x28, param_2, &local_18) & 1
+// 0x710026f260 -- wrapper: FUN_710026f290(param_1+0x28, param_2, &out) & 1
 u32 FUN_710026f260(s64 param_1, u64 param_2, u64 param_3)
 {
-    u32 uVar1;
-    u64 local_18;
+    u32 result;
+    u64 out = param_3;
 
-    local_18 = param_3;
-    uVar1 = FUN_710026f290(param_1 + 0x28, param_2, &local_18);
-    return uVar1 & 1;
+    result = FUN_710026f290(param_1 + 0x28, param_2, &out);
+    return result & 1;
 }
 
-// 0x71002b3830 -- two-call destructor then null out
+// 0x71002b3830 -- teardown + null out handle
 void FUN_71002b3830(u64 *param_1)
 {
     FUN_71002b7df0(*param_1);
@@ -73,7 +70,7 @@ void FUN_71002b3830(u64 *param_1)
     *param_1 = 0;
 }
 
-// 0x71002b41a0 -- two-call destructor then null out
+// 0x71002b41a0 -- teardown + null out handle
 void FUN_71002b41a0(u64 *param_1)
 {
     FUN_71002ba4d0(*param_1);
@@ -81,7 +78,7 @@ void FUN_71002b41a0(u64 *param_1)
     *param_1 = 0;
 }
 
-// 0x71002b4ae0 -- two-call destructor then null out
+// 0x71002b4ae0 -- teardown + null out handle
 void FUN_71002b4ae0(u64 *param_1)
 {
     FUN_71002c1480(*param_1);
@@ -89,13 +86,13 @@ void FUN_71002b4ae0(u64 *param_1)
     *param_1 = 0;
 }
 
-// 0x7100cec330 -- nested vtable call, return bool
+// 0x7100cec330 -- check if status kind is not 0x1ea/0x1eb
 bool FUN_7100cec330(u64 param_1, s64 param_2)
 {
-    u32 uVar1;
+    u32 status_kind;
 
-    uVar1 = (*(u32 (**)())(*(s64 *)(*(s64 *)(*(s64 *)(param_2 + 0x20) + 0x40)) + 0x110))();
-    return (uVar1 & 0xfffffffe) != 0x1ea;
+    status_kind = (*(u32 (**)())(*(s64 *)(*(s64 *)(*(s64 *)(param_2 + 0x20) + 0x40)) + 0x110))();
+    return (status_kind & 0xfffffffe) != 0x1ea;
 }
 
 // 0x710065f938 -- abort stub
@@ -119,12 +116,12 @@ void FUN_710065fae0(void)
 // 0x710049f5b8 -- vtable call at offset 0x20, return != -1
 bool FUN_710049f5b8(s64 param_1, u64 param_2, u64 param_3)
 {
-    s64 *plVar1;
-    s32 iVar1;
+    s64 *obj;
+    s32 result;
 
-    plVar1 = *(s64 **)(param_1 + 8);
-    iVar1 = (*(s32 (*)(s64 *, u64))(*plVar1 + 0x20))(plVar1, param_3 & 0xffffffffff);
-    return iVar1 != -1;
+    obj = *(s64 **)(param_1 + 8);
+    result = (*(s32 (*)(s64 *, u64))(*obj + 0x20))(obj, param_3 & 0xffffffffff);
+    return result != -1;
 }
 
 // 0x7100125cc0 -- store fields at param_1 + 0x134c/0x1350/0x1361
@@ -150,15 +147,15 @@ void FUN_7100129550(s64 param_1)
     *(u8 *)(param_1 + 0x1348) = 1;
 }
 
-// 0x7100179480 -- alloc 0xab0-byte object + init
+// 0x7100179480 -- alloc 0xab0-byte object
 s64 FUN_7100179480(void)
 {
-    u64 uVar1;
-    s64 lVar2;
+    u64 heap_id;
+    s64 obj;
 
-    uVar1 = FUN_71000b1b90();
-    lVar2 = FUN_7100130810(0xab0, uVar1);
-    if (lVar2 != 0) {
+    heap_id = FUN_71000b1b90();
+    obj = FUN_7100130810(0xab0, heap_id);
+    if (obj != 0) {
     }
-    return lVar2;
+    return obj;
 }

@@ -60,32 +60,32 @@ extern u32  DAT_71044723d8;
 
 // ---- Functions --------------------------------------------------------------
 
-// 0x7100154200 -- zero fields with stack-allocated intermediate
+// 0x7100154200 -- init object fields with stack-allocated intermediate
 void FUN_7100154200(s64 param_1)
 {
-    u8 auStack_38[24];
+    u8 temp[24];
 
     *(u64 *)(param_1 + 0x10) = 0;
-    FUN_71000b1900(auStack_38);
-    FUN_71000b1910(param_1 + 0x18, auStack_38);
+    FUN_71000b1900(temp);
+    FUN_71000b1910(param_1 + 0x18, temp);
     *(u16 *)(param_1 + 0x2c) = 0;
     *(u64 *)(param_1 + 8) = 0;
 }
 
 // 0x71001ce780 -- strcpy "Encryption Error" if buffer large enough
-u64 FUN_71001ce780(u64 param_1, u64 param_2, char *param_3, u64 param_4)
+u64 FUN_71001ce780(u64 param_1, u64 param_2, char *buf, u64 buf_size)
 {
-    u64 sVar1;
+    u64 len;
 
-    sVar1 = strlen("Encryption Error");
-    if (sVar1 < param_4) {
-        strcpy(param_3, "Encryption Error");
+    len = strlen("Encryption Error");
+    if (len < buf_size) {
+        strcpy(buf, "Encryption Error");
         return 1;
     }
     return 0;
 }
 
-// 0x71001e0910 -- language table lookup via handle
+// 0x71001e0910 -- return language code
 u16 FUN_71001e0910(void)
 {
     u32 *puVar1;
@@ -93,29 +93,28 @@ u16 FUN_71001e0910(void)
     return DAT_71052b4278;
 }
 
-// 0x71001e1710 -- conditional field assign
+// 0x71001e1710 -- conditional field assign or error
 void FUN_71001e1710(u64 param_1, s64 param_2, u64 param_3)
 {
-    u32 local_18;
-    u32 local_14;
+    u32 status;
 
     if (*(s64 *)(param_2 + 0x80) != 0) {
-        local_18 = 0x8001000e;
-        FUN_71001b4200(param_1, &local_18);
+        status = 0x8001000e;
+        FUN_71001b4200(param_1, &status);
         return;
     }
     *(u64 *)(param_2 + 0x80) = param_3;
-    local_14 = 0x10001;
-    FUN_71001b4200(param_1, &local_14);
+    status = 0x10001;
+    FUN_71001b4200(param_1, &status);
 }
 
-// 0x71004f6590 -- empty CXA guard, return byte
+// 0x71004f6590 -- guarded global init, return byte
 u8 FUN_71004f6590(void)
 {
-    s32 iVar1;
+    s32 acquired;
 
     if (((DAT_71052b82e0 & 1) == 0) &&
-        (iVar1 = __cxa_guard_acquire((s64 *)&DAT_71052b82e0), iVar1 != 0)) {
+        (acquired = __cxa_guard_acquire((s64 *)&DAT_71052b82e0), acquired != 0)) {
         __cxa_guard_release((s64 *)&DAT_71052b82e0);
     }
     return DAT_71052b82f0;
@@ -133,16 +132,16 @@ void FUN_710065f65c(void)
     abort();
 }
 
-// 0x710049f570 -- double vtable dereference chain
+// 0x710049f570 -- double vtable dereference, return inverted bit 0
 u32 FUN_710049f570(s64 param_1)
 {
-    s64 *plVar2;
-    u32 uVar1;
+    s64 *inner;
+    u32 result;
 
-    plVar2 = *(s64 **)(*(s64 *)(param_1 + 0x10) + 0x38);
-    plVar2 = (s64 *)(*(s64 (*)(s64 *, s32))(*plVar2 + 0x10))(plVar2, 0);
-    uVar1 = (*(u32 (**)())(*plVar2 + 0x78))();
-    return ~uVar1 & 1;
+    inner = *(s64 **)(*(s64 *)(param_1 + 0x10) + 0x38);
+    inner = (s64 *)(*(s64 (*)(s64 *, s32))(*inner + 0x10))(inner, 0);
+    result = (*(u32 (**)())(*inner + 0x78))();
+    return ~result & 1;
 }
 
 // 0x710065fa1c -- abort stub
@@ -157,14 +156,14 @@ void FUN_710065f610(void)
     abort();
 }
 
-// 0x7100f574d0 -- nested vtable call + bit test
+// 0x7100f574d0 -- status kind range check with bitmask
 u32 FUN_7100f574d0(u64 param_1, s64 param_2)
 {
-    u32 uVar1;
+    u32 status_kind;
 
-    uVar1 = (*(u32 (**)())(*(s64 *)(*(s64 *)(*(s64 *)(param_2 + 0x20) + 0x40)) + 0x110))();
-    if ((u32)(uVar1 - 0x3c) < 5) {
-        return 0xcU >> ((u64)(u32)((uVar1 - 0x3c) & 0x1f)) & 1;
+    status_kind = (*(u32 (**)())(*(s64 *)(*(s64 *)(*(s64 *)(param_2 + 0x20) + 0x40)) + 0x110))();
+    if ((u32)(status_kind - 0x3c) < 5) {
+        return (u32)(0xcU >> ((u64)(u32)((status_kind - 0x3c) & 0x1f))) & 1;
     }
     return 1;
 }
@@ -172,12 +171,12 @@ u32 FUN_7100f574d0(u64 param_1, s64 param_2)
 // 0x71001daf50 -- conditional field dereference returning u32
 u32 FUN_71001daf50(s64 param_1)
 {
-    s64 lVar1;
+    s64 node;
 
-    lVar1 = FUN_71001dacc0(param_1 + 8);
-    if (*(s64 *)(lVar1 + 0x10) != 0) {
-        lVar1 = FUN_71001dacc0(param_1 + 8);
-        return *(u32 *)(*(s64 *)(lVar1 + 8) + 0x24);
+    node = FUN_71001dacc0(param_1 + 8);
+    if (*(s64 *)(node + 0x10) != 0) {
+        node = FUN_71001dacc0(param_1 + 8);
+        return *(u32 *)(*(s64 *)(node + 8) + 0x24);
     }
     return 0;
 }
@@ -185,12 +184,12 @@ u32 FUN_71001daf50(s64 param_1)
 // 0x71001dafa0 -- conditional field dereference returning u16
 u16 FUN_71001dafa0(s64 param_1)
 {
-    s64 lVar1;
+    s64 node;
 
-    lVar1 = FUN_71001dacc0(param_1 + 8);
-    if (*(s64 *)(lVar1 + 0x10) != 0) {
-        lVar1 = FUN_71001dacc0(param_1 + 8);
-        return *(u16 *)(*(s64 *)(lVar1 + 8) + 0x28);
+    node = FUN_71001dacc0(param_1 + 8);
+    if (*(s64 *)(node + 0x10) != 0) {
+        node = FUN_71001dacc0(param_1 + 8);
+        return *(u16 *)(*(s64 *)(node + 8) + 0x28);
     }
     return 0;
 }
@@ -209,37 +208,37 @@ u64 FUN_71001e0070(s64 param_1, u64 param_2)
 // 0x7100186580 -- vtable ptr + list head init
 void FUN_7100186580(s64 *param_1)
 {
-    u8 *puVar1;
+    u8 *vtable_base;
 
     FUN_71000baa20();
-    puVar1 = PTR_DAT_71052a5538;
+    vtable_base = PTR_DAT_71052a5538;
     param_1[0xb] = 0;
     param_1[0xc] = 0x2710;
     *(u32 *)((s64)param_1 + 0x7c) = 0;
     param_1[0xd] = 0;
     param_1[0xe] = 0;
-    *param_1 = (s64)(puVar1 + 0x10);
+    *param_1 = (s64)(vtable_base + 0x10);
     *(u16 *)(param_1 + 0xf) = 0;
 }
 
 // 0x71001aea80 -- clock delta calculation
 s64 FUN_71001aea80(s64 *param_1)
 {
-    s64 lVar1;
-    s64 *plVar2;
-    s64 lVar3;
-    s64 local_18;
+    s64 elapsed;
+    s64 *freq_ptr;
+    s64 delta;
+    s64 now;
 
     if ((char)param_1[1] != '\0') {
-        local_18 = 0;
-        FUN_71000bb5d0(&local_18);
-        lVar3 = local_18 - *param_1;
-        plVar2 = FUN_71000bb680();
-        lVar1 = 0;
-        if (*plVar2 != 0) {
-            lVar1 = lVar3 / *plVar2;
+        now = 0;
+        FUN_71000bb5d0(&now);
+        delta = now - *param_1;
+        freq_ptr = FUN_71000bb680();
+        elapsed = 0;
+        if (*freq_ptr != 0) {
+            elapsed = delta / *freq_ptr;
         }
-        return lVar1;
+        return elapsed;
     }
     return -1;
 }
@@ -247,40 +246,40 @@ s64 FUN_71001aea80(s64 *param_1)
 // 0x71001b4510 -- aligned alloc via custom or system allocator
 u64 *FUN_71001b4510(s64 param_1)
 {
-    u64 *puVar1;
+    u64 *ptr;
 
     if (*(void (**)())PTR_DAT_71052a5818 == nullptr) {
-        puVar1 = (u64 *)malloc((u64)((param_1 + 0x17) & ~(s64)7));
+        ptr = (u64 *)malloc((u64)((param_1 + 0x17) & ~(s64)7));
     } else {
-        puVar1 = (u64 *)(*(u64 (**)())PTR_DAT_71052a5818)();
+        ptr = (u64 *)(*(u64 (**)())PTR_DAT_71052a5818)();
     }
-    *puVar1 = *(u64 *)PTR_DAT_71052a5820;
-    return puVar1 + 2;
+    *ptr = *(u64 *)PTR_DAT_71052a5820;
+    return ptr + 2;
 }
 
 // 0x7100181380 -- mutex-locked vtable call
 u32 FUN_7100181380(s64 param_1)
 {
-    u32 uVar1;
+    u32 result;
 
     nn::os::LockMutex((nn::os::MutexType *)(param_1 + 0x2e0));
-    uVar1 = (*(u32 (**)())(*(s64 *)(*(s64 *)(param_1 + 0x308)) + 0x48))();
+    result = (*(u32 (**)())(*(s64 *)(*(s64 *)(param_1 + 0x308)) + 0x48))();
     nn::os::UnlockMutex((nn::os::MutexType *)(param_1 + 0x2e0));
-    return uVar1;
+    return result;
 }
 
 // 0x7100179620 -- allocator with extra init param
 s64 FUN_7100179620(void)
 {
-    u64 uVar1;
-    s64 lVar2;
-    u64 uVar3;
+    u64 heap_id;
+    s64 obj;
+    u64 init_param;
 
-    uVar3 = *(u64 *)PTR_DAT_71052a50b0;
-    uVar1 = FUN_71000b1b90();
-    lVar2 = FUN_7100130810(0x1b8, uVar1);
-    if (lVar2 != 0) {
-        FUN_7100179c70(lVar2, uVar3);
+    init_param = *(u64 *)PTR_DAT_71052a50b0;
+    heap_id = FUN_71000b1b90();
+    obj = FUN_7100130810(0x1b8, heap_id);
+    if (obj != 0) {
+        FUN_7100179c70(obj, init_param);
     }
-    return lVar2;
+    return obj;
 }
