@@ -74,11 +74,12 @@ This repo supports parallel decomp work via git worktrees. Multiple Claude Code 
 2. **Use struct field access, not raw offsets.** Write `acc->camera_module` not `*reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x60)`. If the struct header exists, use it.
 3. **Do NOT paste assembly into C functions.** `__attribute__((naked))` with inline asm is a last resort after 3 failed matching attempts, not a first approach. It inflates progress metrics without recovering source.
 4. **Decompile module-by-module, not random addresses.** Understand the module's struct layout first, then decomp its functions. Each function you decomp should reveal new field information for the struct.
-5. **Use confidence-tagged field names in struct headers.** Signal what you know vs what you're guessing:
-   - `situation_kind`  — `[confirmed: lua_bind API name]` — from Lua API, community research, or SDK headers
-   - `field_0xE0_s32`  — `[inferred: read as s32 by 12 functions]` — AI's best guess from usage patterns
+5. **Document derivation chains for every struct field name.** Every named field must include HOW the name was derived, traceable back to binary evidence:
+   - `situation_kind`  — `// +0xD8 [derived: situation_kind_impl (.dynsym) reads this as s32]`
+   - `field_0xE0_s32`  — `// +0xE0 [inferred: bitmask pattern in 12 functions, no proven name]`
    - `unk_0xE4[0x5C]`  — unknown padding, honest gap
    - NEVER label an inferred field name as if it were confirmed. Wrong names that look authoritative mislead the community.
+   - The derivation chain should be enough for someone to verify the name by checking the referenced function in Ghidra.
 
 ### Worker Efficiency Rules
 1. **NEVER rebuild just to re-parse output** — run `cmd /c build.bat 2>&1 | tee /tmp/build.txt` once, then grep the saved file. One build, not ten.

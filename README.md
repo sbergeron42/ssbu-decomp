@@ -24,6 +24,22 @@ Compiled  [##############                          ]  14,410 / 39,635  (36.36%)
 > **7,689 functions verified byte-identical** against the real 13.0.4 binary.
 > 55.3% match rate on verified functions. Autonomous multi-agent orchestrator operational.
 
+## Naming Provenance
+
+This project's naming comes from sources with different confidence levels:
+
+| Source | Count | Evidence |
+|--------|------:|----------|
+| Binary .dynsym exports | 4,888 | **Ground truth** — mangled C++ symbols in the ELF |
+| Vtable method names | ~800 | Derived from .dynsym names via decompilation + byte-match |
+| Module accessor offsets | 41 | Structural — verified by byte-matching |
+| Community Ghidra labels | ~10,191 | Human-assigned during RE, ported from 13.0.1 — no formal provenance |
+| Struct field names | ~260 | Inferred from function behavior — offsets verified, names are best guesses |
+
+Struct headers use derivation comments to show how each field name was determined.
+Fields tagged `[derived: ...]` trace back to binary-proven function names.
+Fields tagged `[inferred: ...]` are usage-pattern guesses — verify before building on them.
+
 ## Build Info
 
 | Property | Value |
