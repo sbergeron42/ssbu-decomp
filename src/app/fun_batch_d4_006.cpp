@@ -1,64 +1,53 @@
 #include "types.h"
 
-// MEDIUM-tier FUN_* functions — 0x7100 address range, batch d4-006
-// Pool-d worker: auto-generated from Ghidra decompilation
-// Includes: scene inits, vtable dispatchers, static inits, loop dispatchers
-
 // ---- External declarations -----------------------------------------------
 
 [[noreturn]] extern "C" void abort();
 extern "C" s32  __cxa_guard_acquire(u64 *);
 extern "C" void __cxa_guard_release(u64 *);
 
-// Vtable/PTR data
 extern u8 PTR_PTR_FUN_71050b5898;
 extern u8 PTR_PTR_FUN_71050b8608;
 extern u8 PTR__Module_7104f61810;
 
-// Scene data fields — MeleeScene (0x7100422720)
+// MeleeScene data (0x7100422720)
 extern u64        DAT_7105326b80;
 extern const char *DAT_7105326b88;
 extern u64        DAT_7105326b90;
 extern u64        DAT_7105326b98;
 extern u64        DAT_7105326ba0;
-extern u64        DAT_71053267b0;  // guard
+extern u64        DAT_71053267b0;
 
-// Scene data fields — StaffRollScene (0x7100428010)
+// StaffRollScene data (0x7100428010)
 extern u64        DAT_7105327d48;
 extern const char *DAT_7105327d50;
 extern u64        DAT_7105327d58;
 extern u64        DAT_7105327d60;
 extern u64        DAT_7105327d68;
-extern u64        DAT_7105327d70;  // guard
+extern u64        DAT_7105327d70;
 
-// Static-init data (FUN_7100489c00)
-extern u64 DAT_71052b6950;  // guard
-extern u8  DAT_71052b6960;  // data
-
-// Static-init data (FUN_7100489e60)
-extern u64 DAT_71052b5f18;  // guard
-extern u64 DAT_71052b5a08;  // stores vtable pointer
-
-// Static-init data (FUN_710048a790)
-extern u64 DAT_71052b6218;  // guard
+// Static-init guards and data
+extern u64 DAT_71052b6950;
+extern u8  DAT_71052b6960;
+extern u64 DAT_71052b5f18;
+extern u64 DAT_71052b5a08;
+extern u64 DAT_71052b6218;
 extern u64 DAT_71052b5da0;
 extern u64 DAT_71052b5da8;
-
-// Static-init data (FUN_710049f630)
-extern u64 DAT_71052b6a38;  // guard
+extern u64 DAT_71052b6a38;
 extern u64 DAT_71052b6a40;
 extern u64 DAT_71052b6a48;
 
 // ---- Functions ---------------------------------------------------------------
 
-// 0x7100422720 — scene init: MeleeScene registration
+// 0x7100422720 — MeleeScene registration: set name, guard-init, store vtable
 void FUN_7100422720()
 {
-    s32 iVar1;
+    s32 acquired;
 
     DAT_7105326b80 = 0;
     DAT_7105326b88 = "MeleeScene";
-    if (((DAT_71053267b0 & 1) == 0) && (iVar1 = __cxa_guard_acquire(&DAT_71053267b0), iVar1 != 0)) {
+    if (((DAT_71053267b0 & 1) == 0) && (acquired = __cxa_guard_acquire(&DAT_71053267b0), acquired != 0)) {
         __cxa_guard_release(&DAT_71053267b0);
     }
     DAT_7105326b98 = 0;
@@ -66,14 +55,14 @@ void FUN_7100422720()
     DAT_7105326b90 = (u64)&PTR_PTR_FUN_71050b5898;
 }
 
-// 0x7100428010 — scene init: StaffRollScene registration
+// 0x7100428010 — StaffRollScene registration: set name, guard-init, store vtable
 void FUN_7100428010()
 {
-    s32 iVar1;
+    s32 acquired;
 
     DAT_7105327d48 = 0;
     DAT_7105327d50 = "StaffRollScene";
-    if (((DAT_7105327d70 & 1) == 0) && (iVar1 = __cxa_guard_acquire(&DAT_7105327d70), iVar1 != 0)) {
+    if (((DAT_7105327d70 & 1) == 0) && (acquired = __cxa_guard_acquire(&DAT_7105327d70), acquired != 0)) {
         __cxa_guard_release(&DAT_7105327d70);
     }
     DAT_7105327d60 = 0;
@@ -81,84 +70,87 @@ void FUN_7100428010()
     DAT_7105327d58 = (u64)&PTR_PTR_FUN_71050b8608;
 }
 
-// 0x71004523d8 — vtable dispatch: call vtable[0x248], return XOR 1
-u32 FUN_71004523d8(s64 *param_1)
+// 0x71004523d8 — Calls vtable[0x248], returns inverted bit 0
+u32 FUN_71004523d8(s64 *this_ptr)
 {
-    u32 uVar1;
+    u32 result;
 
-    uVar1 = (**(u32 (**)())(*param_1 + 0x248))();
-    return (uVar1 ^ 1) & 1;
+    result = (**(u32 (**)())(*this_ptr + 0x248))();
+    return (result ^ 1) & 1;
 }
 
-// 0x710047a040 — loop: iterate linked entries, dispatch vtable[0x18] if active and unlinked
-void FUN_710047a040(s64 param_1, u32 param_2)
+// 0x710047a040 — Iterates entry list in reverse, dispatches vtable[0x18] on active/unlinked entries
+// Entries at stride 0x18 from base+0x30 down to base+0x18; count at +0x20
+// Each entry slot: [0]=ptr to entry obj, [+0xc]=filter mask
+// Entry obj: vtable at [0], active flag at byte[0x30], linked flag at byte[0x31]
+void FUN_710047a040(s64 list, u32 filter_mask)
 {
-    s32 iVar1;
-    s64 *plVar2;
-    s64 lVar3;
-    s64 *plVar4;
+    s32 num_entries;
+    s64 *entry;
+    s64 remaining;
+    s64 *slot;
 
-    if (*(u8 *)(param_1 + 0x1bc) == '\0') {
-        iVar1 = *(s32 *)(param_1 + 0x20);
-        if (param_2 == 0xffffffff) {
-            if (0 < iVar1) {
-                lVar3 = (s64)iVar1 + 1;
-                plVar4 = (s64 *)(param_1 + (s64)iVar1 * 0x18 + 0x18);
+    if (*(u8 *)(list + 0x1bc) == '\0') {
+        num_entries = *(s32 *)(list + 0x20);
+        if (filter_mask == 0xffffffff) {
+            if (0 < num_entries) {
+                remaining = (s64)num_entries + 1;
+                slot = (s64 *)(list + (s64)num_entries * 0x18 + 0x18);
                 do {
-                    plVar2 = (s64 *)*plVar4;
-                    if (((u8)plVar2[6] != '\0') && (*(u8 *)((s64)plVar2 + 0x31) == '\0')) {
-                        (**(void (**)(s64 *, u64))(*plVar2 + 0x18))(plVar2, *(u64 *)(param_1 + 8));
+                    entry = (s64 *)*slot;
+                    if (((u8)entry[6] != '\0') && (*(u8 *)((s64)entry + 0x31) == '\0')) {
+                        (**(void (**)(s64 *, u64))(*entry + 0x18))(entry, *(u64 *)(list + 8));
                     }
-                    lVar3 = lVar3 + -1;
-                    plVar4 = plVar4 + -3;
-                } while (1 < lVar3);
+                    remaining = remaining + -1;
+                    slot = slot + -3;
+                } while (1 < remaining);
             }
         }
-        else if (0 < iVar1) {
-            lVar3 = (s64)iVar1 + 1;
-            plVar4 = (s64 *)(param_1 + (s64)iVar1 * 0x18 + 0x18);
+        else if (0 < num_entries) {
+            remaining = (s64)num_entries + 1;
+            slot = (s64 *)(list + (s64)num_entries * 0x18 + 0x18);
             do {
-                if ((((*(u32 *)((s64)plVar4 + 0xc) & param_2) != 0) &&
-                    (plVar2 = (s64 *)*plVar4, (u8)plVar2[6] != '\0')) &&
-                   (*(u8 *)((s64)plVar2 + 0x31) == '\0')) {
-                    (**(void (**)(s64 *, u64))(*plVar2 + 0x18))(plVar2, *(u64 *)(param_1 + 8));
+                if ((((*(u32 *)((s64)slot + 0xc) & filter_mask) != 0) &&
+                    (entry = (s64 *)*slot, (u8)entry[6] != '\0')) &&
+                   (*(u8 *)((s64)entry + 0x31) == '\0')) {
+                    (**(void (**)(s64 *, u64))(*entry + 0x18))(entry, *(u64 *)(list + 8));
                 }
-                lVar3 = lVar3 + -1;
-                plVar4 = plVar4 + -3;
-            } while (1 < lVar3);
+                remaining = remaining + -1;
+                slot = slot + -3;
+            } while (1 < remaining);
         }
     }
 }
 
-// 0x7100489c00 — static init: empty guard, return pointer to data
+// 0x7100489c00 — Static init: empty guard body, returns &DAT_71052b6960
 u8 *FUN_7100489c00()
 {
-    s32 iVar1;
+    s32 acquired;
 
-    if (((DAT_71052b6950 & 1) == 0) && (iVar1 = __cxa_guard_acquire(&DAT_71052b6950), iVar1 != 0)) {
+    if (((DAT_71052b6950 & 1) == 0) && (acquired = __cxa_guard_acquire(&DAT_71052b6950), acquired != 0)) {
         __cxa_guard_release(&DAT_71052b6950);
     }
     return &DAT_71052b6960;
 }
 
-// 0x7100489e60 — static init: set module vtable pointer, return pointer
+// 0x7100489e60 — Static init: stores module vtable pointer, returns &DAT_71052b5a08
 u64 *FUN_7100489e60()
 {
-    s32 iVar1;
+    s32 acquired;
 
-    if (((DAT_71052b5f18 & 1) == 0) && (iVar1 = __cxa_guard_acquire(&DAT_71052b5f18), iVar1 != 0)) {
+    if (((DAT_71052b5f18 & 1) == 0) && (acquired = __cxa_guard_acquire(&DAT_71052b5f18), acquired != 0)) {
         DAT_71052b5a08 = (u64)&PTR__Module_7104f61810;
         __cxa_guard_release(&DAT_71052b5f18);
     }
     return &DAT_71052b5a08;
 }
 
-// 0x710048a790 — static init: set -1 sentinel + 0, return pointer
+// 0x710048a790 — Static init: stores {-1, 0} sentinel pair, returns pointer
 u64 *FUN_710048a790()
 {
-    s32 iVar1;
+    s32 acquired;
 
-    if (((DAT_71052b6218 & 1) == 0) && (iVar1 = __cxa_guard_acquire(&DAT_71052b6218), iVar1 != 0)) {
+    if (((DAT_71052b6218 & 1) == 0) && (acquired = __cxa_guard_acquire(&DAT_71052b6218), acquired != 0)) {
         DAT_71052b5da0 = 0xffffffffffffffff;
         DAT_71052b5da8 = 0;
         __cxa_guard_release(&DAT_71052b6218);
@@ -166,57 +158,58 @@ u64 *FUN_710048a790()
     return &DAT_71052b5da0;
 }
 
-// 0x710049d9d0 — vtable dispatch: call vtable[0x280], mask 40 bits, return != 0
-u8 FUN_710049d9d0(s64 *param_1)
+// 0x710049d9d0 — Calls vtable[0x280], returns whether lower 40 bits are nonzero
+u8 FUN_710049d9d0(s64 *this_ptr)
 {
-    u64 uVar1;
+    u64 result;
 
-    uVar1 = (**(u64 (**)())(*param_1 + 0x280))();
-    return (uVar1 & 0xffffffffff) != 0;
+    result = (**(u64 (**)())(*this_ptr + 0x280))();
+    return (result & 0xffffffffff) != 0;
 }
 
-// 0x710049f550 — vtable chain: deref +0x10+0x38, call vtable[0x10] then vtable[0x78], return NOT(bit0)
-u32 FUN_710049f550(s64 param_1)
+// 0x710049f550 — Chains: deref +0x10→+0x38, call vtable[0x10](0), then vtable[0x78], return NOT(bit0)
+u32 FUN_710049f550(s64 this_ptr)
 {
-    u32 uVar1;
-    s64 *plVar2;
+    u32 result;
+    s64 *inner;
 
-    plVar2 = *(s64 **)(*(s64 *)(param_1 + 0x10) + 0x38);
-    plVar2 = (s64 *)(**(u64 (**)(s64 *, s32))(*plVar2 + 0x10))(plVar2, 0);
-    uVar1 = (**(u32 (**)())(*plVar2 + 0x78))();
-    return ~uVar1 & 1;
+    inner = *(s64 **)(*(s64 *)(this_ptr + 0x10) + 0x38);
+    inner = (s64 *)(**(u64 (**)(s64 *, s32))(*inner + 0x10))(inner, 0);
+    result = (**(u32 (**)())(*inner + 0x78))();
+    return ~result & 1;
 }
 
-// 0x710049f598 — vtable dispatch: call vtable[0x20] with 40-bit param, return != -1
-u8 FUN_710049f598(s64 param_1, u64 param_2, u64 param_3)
+// 0x710049f598 — Calls vtable[0x20] on sub-object at +0x8, with 40-bit masked param, returns != -1
+u8 FUN_710049f598(s64 this_ptr, u64 param_2, u64 hash40)
 {
-    s32 iVar1;
+    s32 index;
 
-    iVar1 = (**(s32 (**)(s64 *, u64))(**(s64 **)(param_1 + 8) + 0x20))
-                (*(s64 **)(param_1 + 8), param_3 & 0xffffffffff);
-    return iVar1 != -1;
+    index = (**(s32 (**)(s64 *, u64))(**(s64 **)(this_ptr + 8) + 0x20))
+                (*(s64 **)(this_ptr + 8), hash40 & 0xffffffffff);
+    return index != -1;
 }
-// 0x710049f630 — conditional static init + vtable lookup
-u64 FUN_710049f630(s64 param_1, u64 param_2)
-{
-    s32 iVar1;
-    u64 uVar2;
-    s64 lVar3;
 
-    lVar3 = *(s64 *)(param_1 + 0x18);
-    if (lVar3 == 0) {
-        if (((DAT_71052b6a38 & 1) == 0) && (iVar1 = __cxa_guard_acquire(&DAT_71052b6a38), iVar1 != 0)) {
+// 0x710049f630 — Looks up entry by index in array at sub+0x88, calls vtable[0x60] if active
+u64 FUN_710049f630(s64 this_ptr, u64 index)
+{
+    s32 acquired;
+    u64 result;
+    s64 sub;
+
+    sub = *(s64 *)(this_ptr + 0x18);
+    if (sub == 0) {
+        if (((DAT_71052b6a38 & 1) == 0) && (acquired = __cxa_guard_acquire(&DAT_71052b6a38), acquired != 0)) {
             DAT_71052b6a40 = 0;
             DAT_71052b6a48 = 0;
             __cxa_guard_release(&DAT_71052b6a38);
         }
         return DAT_71052b6a40;
     }
-    if (((param_2 & 0xffffffff) < (u64)((*(s64 *)(lVar3 + 0x90) - *(s64 *)(lVar3 + 0x88)) >> 3)) &&
-       (lVar3 = *(s64 *)(*(s64 *)(lVar3 + 0x88) + (s64)(param_2 & 0xffffffff) * 8),
-       *(u8 *)(lVar3 + 0x88) != '\0')) {
-        uVar2 = (**(u64 (**)())(**(s64 **)(lVar3 + 0x70) + 0x60))();
-        return uVar2;
+    if (((index & 0xffffffff) < (u64)((*(s64 *)(sub + 0x90) - *(s64 *)(sub + 0x88)) >> 3)) &&
+       (sub = *(s64 *)(*(s64 *)(sub + 0x88) + (s64)(index & 0xffffffff) * 8),
+       *(u8 *)(sub + 0x88) != '\0')) {
+        result = (**(u64 (**)())(**(s64 **)(sub + 0x70) + 0x60))();
+        return result;
     }
     return 0;
 }
