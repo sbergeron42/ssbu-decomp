@@ -6,11 +6,11 @@ This file exists only as a quick overview. If it conflicts with WORKER.md, WORKE
 
 | Pool | Model | Task | File Territory | Status |
 |------|-------|------|----------------|--------|
-| pool-a | Opus | jemalloc 5.1.0 lower half (68 funcs) | src/lib/jemalloc_a_*.cpp | assigned |
-| pool-b | Opus | jemalloc 5.1.0 upper half (69 funcs) | src/lib/jemalloc_b_*.cpp | assigned |
-| pool-c | Opus | Re-decomp Tier 1+2 (ItemKinetic/FighterMgr/MotionModule) | edit existing + src/app/fun_redecomp_c_*.cpp | assigned |
-| pool-d | Opus | Re-decomp Tier 1+2 (ItemCamera/Status/Attack/GroundModule) | edit existing + src/app/fun_redecomp_d_*.cpp | assigned |
-| pool-e | Opus | UI/CSS (20) + AI/L2CValue (10) showcase | src/app/fun_typed_e_*.cpp | assigned |
+| pool-a | Opus | Rewrite Ghidra-paste batch_c files | fun_batch_c_010 through c_017 | assigned |
+| pool-b | Opus | Rewrite Ghidra-paste batch_d + d2 files | fun_batch_d_001, fun_batch_d2_001-008 | assigned |
+| pool-c | Opus | Rewrite Ghidra-paste batch_d3 + d4 lower files | fun_batch_d3_001-008, fun_batch_d4_001-010 | assigned |
+| pool-d | Opus | Rewrite Ghidra-paste batch_d4 upper files | fun_batch_d4_011 through d4_026 | assigned |
+| pool-e | Opus | Rewrite Ghidra-paste batch_b + d5 files | fun_batch_b_001-005, fun_batch_d5_042-054 | assigned |
 
 ## Rules
 - **Update WORKER.md in the pool's worktree when assigning work** — that's the only file that matters
