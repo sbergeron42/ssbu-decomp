@@ -1,21 +1,19 @@
-# Worker: pool-e
+# Worker: pool-b
 
 ## Model: Opus
 
-## Task: Types-first HARD decomp — ShieldModule + DamageModule + HitModule functions
+## Task: Fix compare_bytes.py regex bug + types-first HARD decomp
 
-Decomp HARD-tier functions that access ShieldModule (+0x100), DamageModule (+0xA8), or HitModule (+0xB0).
+### Phase 1 (quick): Fix the regex bug in tools/compare_bytes.py
+The regex that extracts addresses from mangled function names fails when the name ends in hex chars and the signature starts with f (float param). Fix and test.
 
-### Approach
-1. python tools/next_batch.py --tier HARD --limit 30
-2. Filter to functions touching your modules via Ghidra
-3. Write idiomatic C++ using struct dispatch
-4. Build and verify
+### Phase 2: Types-first HARD decomp — CaptureModule + CatchModule + GrabModule functions
+Decomp HARD-tier functions accessing these modules.
 
-### Output: src/app/fun_typed_e_004.cpp onward (continue numbering)
+### Output: src/app/fun_typed_b_002.cpp onward
 
 ### Rules
-- Use struct field access, no raw offsets
-- No Ghidra paste, no naked asm
-- 3-attempt limit
-- ONLY create src/app/fun_typed_e_*.cpp
+- Phase 1: CAN edit tools/compare_bytes.py only
+- Phase 2: ONLY create src/app/fun_typed_b_*.cpp
+- Use struct field access, no raw offsets, no Ghidra paste, no naked asm
+- 3-attempt limit per function
