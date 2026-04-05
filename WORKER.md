@@ -1,16 +1,16 @@
-# Worker: pool-a
+# Worker: pool-b
 
 ## Model: Opus
 
-## Task: Rewrite Ghidra-paste files (round 2) — batch_c remaining + batch_d2 remaining
+## Task: Rewrite Ghidra-paste files (round 2) — batch_d series
 
 ### Target Files
-- `src/app/fun_batch_c_017.cpp` — 2 funcs, 592 paste (densest remaining)
-- `src/app/fun_batch_c_014.cpp` — 8 funcs, 50 paste
-- `src/app/fun_batch_d2_002.cpp` — 2 funcs, 296 paste, 36 module offsets
-- `src/app/fun_batch_d2_007.cpp` — 2 funcs, 231 paste, 30 module offsets
-- `src/app/fun_batch_d2_004.cpp` — 5 funcs, 80 paste
-- `src/app/fun_batch_test.cpp` — 14 funcs, 165 paste
+- `src/app/fun_batch_d_002.cpp` — 23 funcs, 57 paste, 8 module offsets
+- `src/app/fun_batch_d_015.cpp` — 26 funcs, 54 paste, 18 module offsets
+- `src/app/fun_batch_d_016.cpp` — 19 funcs, 56 paste
+- `src/app/fun_batch_d_012.cpp` — 37 funcs, 42 paste, 21 module offsets
+- `src/app/fun_batch_d_005.cpp` — 12 funcs, 34 paste, 7 module offsets
+- `src/app/fun_batch_d_008.cpp` — 48 funcs, 33 paste, 8 module offsets
 
 ### Workflow (per function)
 1. Read the function — identify which module it accesses via offset (check BattleObjectModuleAccessor.h)
@@ -40,5 +40,5 @@ python tools/compare_bytes.py FUN_7102xxxxxx
 ```
 
 ### Rules
-- CAN ONLY edit: fun_batch_c_014.cpp, fun_batch_c_017.cpp, fun_batch_d2_002.cpp, fun_batch_d2_004.cpp, fun_batch_d2_007.cpp, fun_batch_test.cpp
+- CAN ONLY edit: fun_batch_d_002.cpp, fun_batch_d_005.cpp, fun_batch_d_008.cpp, fun_batch_d_012.cpp, fun_batch_d_015.cpp, fun_batch_d_016.cpp
 - 3-attempt limit per function, then move on
