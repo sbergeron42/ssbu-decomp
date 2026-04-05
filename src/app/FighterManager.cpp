@@ -128,65 +128,27 @@ u64 FighterManager__get_entry_id_impl(FighterManager* mgr, s32 n) {
 }
 
 // 7102140ee0 -- get_entry_no: count non-null entries before index (unrolled cinc)
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
 u32 FighterManager__get_entry_no_impl(FighterManager* mgr, u32 entry_id) {
-    asm("cbz w1, 1f\n"
-        "ldr x8, [x0]\n"
-        // Slot 0
-        "ldr x10, [x8, #0x20]\n"
-        "and x9, x1, #0xffffffff\n"
-        "cmp x10, #0\n"
-        "cset w0, ne\n"
-        "cmp x9, #1\n"
-        "b.eq 0f\n"
-        // Slot 1
-        "ldr x10, [x8, #0x28]\n"
-        "cmp x10, #0\n"
-        "cinc w0, w0, ne\n"
-        "cmp x9, #2\n"
-        "b.eq 0f\n"
-        // Slot 2
-        "ldr x10, [x8, #0x30]\n"
-        "cmp x10, #0\n"
-        "cinc w0, w0, ne\n"
-        "cmp x9, #3\n"
-        "b.eq 0f\n"
-        // Slot 3
-        "ldr x10, [x8, #0x38]\n"
-        "cmp x10, #0\n"
-        "cinc w0, w0, ne\n"
-        "cmp x9, #4\n"
-        "b.eq 0f\n"
-        // Slot 4
-        "ldr x10, [x8, #0x40]\n"
-        "cmp x10, #0\n"
-        "cinc w0, w0, ne\n"
-        "cmp x9, #5\n"
-        "b.eq 0f\n"
-        // Slot 5
-        "ldr x10, [x8, #0x48]\n"
-        "cmp x10, #0\n"
-        "cinc w0, w0, ne\n"
-        "cmp x9, #6\n"
-        "b.eq 0f\n"
-        // Slot 6
-        "ldr x10, [x8, #0x50]\n"
-        "cmp x10, #0\n"
-        "cinc w0, w0, ne\n"
-        "cmp x9, #7\n"
-        "b.eq 0f\n"
-        // Slot 7
-        "ldr x8, [x8, #0x58]\n"
-        "cmp x8, #0\n"
-        "cinc w0, w0, ne\n"
-        "0:\n"
-        "ret\n"
-        "1:\n"
-        "mov w0, wzr\n"
-        "ret\n");
+    if (entry_id == 0) return 0;
+    auto* d = mgr->data;
+    u64 id = static_cast<u32>(entry_id);  // zero-extend to match original `and x9,x1,#0xffffffff`
+    u32 count = d->entries[0] != nullptr;
+    if (id == 1) return count;
+    count += d->entries[1] != nullptr;
+    if (id == 2) return count;
+    count += d->entries[2] != nullptr;
+    if (id == 3) return count;
+    count += d->entries[3] != nullptr;
+    if (id == 4) return count;
+    count += d->entries[4] != nullptr;
+    if (id == 5) return count;
+    count += d->entries[5] != nullptr;
+    if (id == 6) return count;
+    count += d->entries[6] != nullptr;
+    if (id == 7) return count;
+    count += d->entries[7] != nullptr;
+    return count;
 }
-#endif
 
 // 7102141010 -- is_homerun_versus: static init guard + mode check
 #ifdef MATCHING_HACK_NX_CLANG

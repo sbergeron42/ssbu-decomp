@@ -147,21 +147,13 @@ void EffectModule__req_2d_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2,u64 p
     reinterpret_cast<void(*)(EffectModule*,u64,u64,u64,u64,u32,u32,u32)>(m->_vt[13])(m,p1,p2,p3,p4,static_cast<u32>(-1),1u,0u);
 }
 
-// 71020179d0 -- get_local_matrix: prologue/epilogue, vtable+0x148
+// 71020179d0 -- get_local_matrix: vtable[41] dispatch (blr, not tail call)
+void* EffectModule__get_local_matrix_impl(BattleObjectModuleAccessor* a, u64 p1) {
+    void* result = EF(a)->get_local_matrix(p1);
 #ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
-void* EffectModule__get_local_matrix_impl(BattleObjectModuleAccessor* /*a*/, u64 /*p1*/) {
-    asm(
-        "stp x29, x30, [sp, #-0x10]!\n"
-        "mov x29, sp\n"
-        "ldr x0, [x0, #0x140]\n"
-        "ldr x8, [x0]\n"
-        "ldr x8, [x8, #0x148]\n"
-        "blr x8\n"
-        "ldp x29, x30, [sp], #0x10\n"
-        "ret\n"
-    );
-}
+    asm("" : "+r"(result));
 #endif
+    return result;
+}
 
 } // namespace app::lua_bind
