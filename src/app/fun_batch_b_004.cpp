@@ -11,7 +11,7 @@ extern "C" void FUN_710326f0f0(s64 *, s32, s32, s32, s32, s32, s32);
 extern "C" void FUN_710392e590(...);
 extern "C" void FUN_7101c08b50(u8 *, u8 *, u8 *, u8 *, u8 *);
 
-// 0x7101bbbf80
+// 0x7101bbbf80 -- training CPU behavior mel string dispatch
 void FUN_7101bbbf80(s64 param_1, u32 param_2, u64 param_3)
 {
   switch(param_2) {
@@ -42,11 +42,11 @@ void FUN_7101bbbf80(s64 param_1, u32 param_2, u64 param_3)
   }
 }
 
-// 0x7101bcbe40
+// 0x7101bcbe40 -- mock battle state mel string dispatch
 void FUN_7101bcbe40(s64 param_1, s32 param_2)
 {
-  s64 lVar1;
-  u32 local_14;
+  s64 anim_list;
+  u32 zero;
 
   if ((u32)(param_2 - 1) < 0xb) {
     param_1 = param_1 + 0x2e0;
@@ -83,23 +83,23 @@ void FUN_7101bcbe40(s64 param_1, s32 param_2)
       return;
     }
   }
-  lVar1 = *(s64 *)(*(s64 *)(param_1 + 0x2e8) + 0x10);
-  if (lVar1 != 0) {
-    local_14 = 0;
-    FUN_71037a1cc0(lVar1, &local_14, 0, 0);
+  anim_list = *(s64 *)(*(s64 *)(param_1 + 0x2e8) + 0x10);
+  if (anim_list != 0) {
+    zero = 0;
+    FUN_71037a1cc0(anim_list, &zero, 0, 0);
   }
   return;
 }
 
-// 0x7101c043c0
+// 0x7101c043c0 -- setting value getter by option index
 u32 FUN_7101c043c0(s64 param_1, s64 param_2, u8 param_3)
 {
-  u16 uVar1;
-  u64 uVar2;
-  u32 uVar3;
-  s32 iVar4;
-  s64 local_38;
-  s64 local_30;
+  u16 frame_count;
+  u64 list_size;
+  u32 minutes;
+  s32 count;
+  s64 list_begin;
+  s64 list_end;
 
   switch(param_3) {
   case 2:
@@ -148,21 +148,21 @@ u32 FUN_7101c043c0(s64 param_1, s64 param_2, u8 param_3)
     return (u32)*(u8 *)(param_1 + 0x17);
   case 0x1b:
     if (*(s32 *)(param_2 + 4) == 0) {
-      FUN_710326f0f0(&local_38, 0, 1, 1, 0, 0, 1);
-      uVar2 = local_30 - local_38;
-      if (local_38 != 0) {
-        local_30 = local_38;
+      FUN_710326f0f0(&list_begin, 0, 1, 1, 0, 0, 1);
+      list_size = list_end - list_begin;
+      if (list_begin != 0) {
+        list_end = list_begin;
         FUN_710392e590();
       }
-      iVar4 = (s32)(uVar2 >> 3);
-      if (iVar4 < 0) {
-        iVar4 = iVar4 + 1;
+      count = (s32)(list_size >> 3);
+      if (count < 0) {
+        count = count + 1;
       }
-      iVar4 = iVar4 >> 1;
-      if (iVar4 < 2) {
-        iVar4 = 1;
+      count = count >> 1;
+      if (count < 2) {
+        count = 1;
       }
-      return iVar4 - 1;
+      return count - 1;
     }
     return *(s32 *)(param_2 + 4) - 1;
   case 0x1c:
@@ -172,32 +172,32 @@ u32 FUN_7101c043c0(s64 param_1, s64 param_2, u8 param_3)
   case 0x1e:
     return (u32)*(u8 *)(param_2 + 2);
   }
-  uVar1 = *(u16 *)(param_1 + 4);
-  if (0x5cc < (u32)((uVar1 - 1 >> 2) & 0x3fff)) {
+  frame_count = *(u16 *)(param_1 + 4);
+  if (0x5cc < (u32)((frame_count - 1 >> 2) & 0x3fff)) {
     return 0x65;
   }
-  if (0x3b < uVar1) {
-    uVar3 = uVar1 / 0x3c;
-    if ((u32)uVar1 != (uVar3 * 0x3c & 0xfffc)) {
-      uVar3 = uVar1 / 0x3c + 1;
+  if (0x3b < frame_count) {
+    minutes = frame_count / 0x3c;
+    if ((u32)frame_count != (minutes * 0x3c & 0xfffc)) {
+      minutes = frame_count / 0x3c + 1;
     }
-    if (2 < uVar3) {
-      uVar3 = 3;
+    if (2 < minutes) {
+      minutes = 3;
     }
-    return (uVar1 / 0x3c + uVar3) - 2;
+    return (frame_count / 0x3c + minutes) - 2;
   }
   return 0;
 }
 
-// 0x7101c045a0
+// 0x7101c045a0 -- max value per setting option index
 s32 FUN_7101c045a0(u8 param_1)
 {
-  u64 uVar1;
-  s32 iVar2;
-  s64 local_38;
-  s64 local_30;
+  u64 list_size;
+  s32 count;
+  s64 list_begin;
+  s64 list_end;
 
-  iVar2 = 4;
+  count = 4;
   switch(param_1) {
   case 0:
     goto switchD_7101c045c8_caseD_0;
@@ -222,9 +222,9 @@ s32 FUN_7101c045a0(u8 param_1)
   case 0xb:
     return 8;
   default:
-    iVar2 = 0;
+    count = 0;
 switchD_7101c045c8_caseD_0:
-    return iVar2;
+    return count;
   case 0xe:
     return 2;
   case 0xf:
@@ -243,21 +243,21 @@ switchD_7101c045c8_caseD_0:
   case 0x18:
     return 2;
   case 0x1b:
-    FUN_710326f0f0(&local_38, 0, 1, 1, 0, 0, 1);
-    uVar1 = local_30 - local_38;
-    if (local_38 != 0) {
-      local_30 = local_38;
+    FUN_710326f0f0(&list_begin, 0, 1, 1, 0, 0, 1);
+    list_size = list_end - list_begin;
+    if (list_begin != 0) {
+      list_end = list_begin;
       FUN_710392e590();
     }
-    iVar2 = (s32)(uVar1 >> 3);
-    if (iVar2 < 0) {
-      iVar2 = iVar2 + 1;
+    count = (s32)(list_size >> 3);
+    if (count < 0) {
+      count = count + 1;
     }
-    iVar2 = iVar2 >> 1;
-    if (iVar2 < 2) {
-      iVar2 = 1;
+    count = count >> 1;
+    if (count < 2) {
+      count = 1;
     }
-    return iVar2;
+    return count;
   case 0x1c:
   case 0x1d:
   case 0x1e:
@@ -265,173 +265,173 @@ switchD_7101c045c8_caseD_0:
   }
 }
 
-// 0x7101c08ce0
-u8 FUN_7101c08ce0(u8 *param_1, u8 *param_2)
+// 0x7101c08ce0 -- partial insertion sort (small-array optimization)
+u8 FUN_7101c08ce0(u8 *first, u8 *last)
 {
-  u8 bVar1;
-  u8 bVar2;
-  s64 lVar3;
-  u8 bVar4;
-  u8 *pbVar5;
-  u8 bVar6;
-  u8 *pbVar7;
-  s64 lVar8;
-  s32 iVar9;
-  s64 lVar10;
+  u8 a;
+  u8 b;
+  s64 cursor;
+  u8 pivot;
+  u8 *dst;
+  u8 c;
+  u8 *iter;
+  s64 idx;
+  s32 swap_count;
+  s64 pos;
 
-  switch((s64)param_2 - (s64)param_1) {
+  switch((s64)last - (s64)first) {
   case 0:
   case 1:
     return true;
   case 2:
-    bVar6 = *param_1;
-    if (bVar6 <= param_2[-1]) {
+    c = *first;
+    if (c <= last[-1]) {
       return true;
     }
-    *param_1 = param_2[-1];
+    *first = last[-1];
 LAB_7101c08f14:
-    param_2[-1] = bVar6;
+    last[-1] = c;
     return true;
   case 3:
-    bVar1 = param_1[1];
-    bVar6 = *param_1;
-    bVar2 = param_2[-1];
-    if (bVar1 < bVar6) {
-      if (bVar2 < bVar1) {
-        *param_1 = bVar2;
+    a = first[1];
+    c = *first;
+    b = last[-1];
+    if (a < c) {
+      if (b < a) {
+        *first = b;
       }
       else {
-        *param_1 = bVar1;
-        param_1[1] = bVar6;
-        if (bVar6 <= param_2[-1]) {
+        *first = a;
+        first[1] = c;
+        if (c <= last[-1]) {
           return true;
         }
-        param_1[1] = param_2[-1];
+        first[1] = last[-1];
       }
       goto LAB_7101c08f14;
     }
-    if (bVar1 <= bVar2) {
+    if (a <= b) {
       return true;
     }
-    param_1[1] = bVar2;
-    param_2[-1] = bVar1;
-    bVar1 = param_1[1];
-    bVar6 = *param_1;
-    if (bVar6 <= bVar1) {
+    first[1] = b;
+    last[-1] = a;
+    a = first[1];
+    c = *first;
+    if (c <= a) {
       return true;
     }
     goto LAB_7101c08f80;
   case 4:
     break;
   case 5:
-    FUN_7101c08b50(param_1, param_1 + 1, param_1 + 2, param_1 + 3, param_2 + -1);
+    FUN_7101c08b50(first, first + 1, first + 2, first + 3, last + -1);
     return true;
   default:
-    bVar1 = param_1[1];
-    bVar6 = *param_1;
-    bVar2 = param_1[2];
-    bVar4 = bVar2;
-    if (bVar1 < bVar6) {
-      if (bVar2 < bVar1) {
-        *param_1 = bVar2;
+    a = first[1];
+    c = *first;
+    b = first[2];
+    pivot = b;
+    if (a < c) {
+      if (b < a) {
+        *first = b;
       }
       else {
-        *param_1 = bVar1;
-        param_1[1] = bVar6;
-        if (bVar6 <= bVar2) goto LAB_7101c08e64;
-        param_1[1] = bVar2;
+        *first = a;
+        first[1] = c;
+        if (c <= b) goto LAB_7101c08e64;
+        first[1] = b;
       }
-      param_1[2] = bVar6;
-      bVar4 = bVar6;
+      first[2] = c;
+      pivot = c;
     }
-    else if (bVar2 < bVar1) {
-      param_1[1] = bVar2;
-      param_1[2] = bVar1;
-      bVar4 = bVar1;
-      if (bVar2 < bVar6) {
-        *param_1 = bVar2;
-        param_1[1] = bVar6;
+    else if (b < a) {
+      first[1] = b;
+      first[2] = a;
+      pivot = a;
+      if (b < c) {
+        *first = b;
+        first[1] = c;
       }
     }
 LAB_7101c08e64:
-    if (param_1 + 3 == param_2) {
+    if (first + 3 == last) {
       return true;
     }
-    lVar8 = 0;
-    iVar9 = 0;
-    pbVar7 = param_1 + 3;
+    idx = 0;
+    swap_count = 0;
+    iter = first + 3;
     do {
-      bVar1 = *pbVar7;
-      lVar3 = lVar8;
-      if (bVar1 < bVar4) {
+      a = *iter;
+      cursor = idx;
+      if (a < pivot) {
         do {
-          lVar10 = lVar3;
-          param_1[lVar10 + 3] = bVar4;
-          pbVar5 = param_1;
-          if (lVar10 == -2) goto LAB_7101c08ec8;
-          bVar4 = param_1[lVar10 + 1];
-          lVar3 = lVar10 + -1;
-        } while (bVar1 < bVar4);
-        pbVar5 = param_1 + lVar10 + 2;
+          pos = cursor;
+          first[pos + 3] = pivot;
+          dst = first;
+          if (pos == -2) goto LAB_7101c08ec8;
+          pivot = first[pos + 1];
+          cursor = pos + -1;
+        } while (a < pivot);
+        dst = first + pos + 2;
 LAB_7101c08ec8:
-        iVar9 = iVar9 + 1;
-        *pbVar5 = bVar1;
-        if (iVar9 == 8) {
-          return (u8)(pbVar7 + 1 == param_2);
+        swap_count = swap_count + 1;
+        *dst = a;
+        if (swap_count == 8) {
+          return (u8)(iter + 1 == last);
         }
       }
-      if (pbVar7 + 1 == param_2) {
+      if (iter + 1 == last) {
         return true;
       }
-      bVar4 = *pbVar7;
-      lVar8 = lVar8 + 1;
-      pbVar7 = pbVar7 + 1;
+      pivot = *iter;
+      idx = idx + 1;
+      iter = iter + 1;
     } while( true );
   }
-  bVar1 = param_1[1];
-  bVar6 = *param_1;
-  bVar2 = param_1[2];
-  bVar4 = bVar2;
-  if (bVar1 < bVar6) {
-    if (bVar2 < bVar1) {
-      *param_1 = bVar2;
+  a = first[1];
+  c = *first;
+  b = first[2];
+  pivot = b;
+  if (a < c) {
+    if (b < a) {
+      *first = b;
     }
     else {
-      *param_1 = bVar1;
-      param_1[1] = bVar6;
-      if (bVar6 <= bVar2) goto LAB_7101c08f48;
-      param_1[1] = bVar2;
+      *first = a;
+      first[1] = c;
+      if (c <= b) goto LAB_7101c08f48;
+      first[1] = b;
     }
-    param_1[2] = bVar6;
-    bVar4 = bVar6;
+    first[2] = c;
+    pivot = c;
   }
-  else if (bVar2 < bVar1) {
-    param_1[1] = bVar2;
-    param_1[2] = bVar1;
-    bVar4 = bVar1;
-    if (bVar2 < bVar6) {
-      *param_1 = bVar2;
-      param_1[1] = bVar6;
+  else if (b < a) {
+    first[1] = b;
+    first[2] = a;
+    pivot = a;
+    if (b < c) {
+      *first = b;
+      first[1] = c;
     }
   }
 LAB_7101c08f48:
-  if (bVar4 <= param_2[-1]) {
+  if (pivot <= last[-1]) {
     return true;
   }
-  param_1[2] = param_2[-1];
-  param_2[-1] = bVar4;
-  bVar1 = param_1[2];
-  if (param_1[1] <= bVar1) {
+  first[2] = last[-1];
+  last[-1] = pivot;
+  a = first[2];
+  if (first[1] <= a) {
     return true;
   }
-  param_1[2] = param_1[1];
-  bVar6 = *param_1;
-  param_1[1] = bVar1;
-  if (bVar6 <= bVar1) {
+  first[2] = first[1];
+  c = *first;
+  first[1] = a;
+  if (c <= a) {
     return true;
   }
 LAB_7101c08f80:
-  *param_1 = bVar1;
-  param_1[1] = bVar6;
+  *first = a;
+  first[1] = c;
   return true;
 }

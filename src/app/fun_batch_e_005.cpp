@@ -51,7 +51,7 @@ void FUN_71001e59e0(s64 param_1, u32 param_2)
     *(u8 *)(param_1 + 0x69) = 0;
 }
 
-// 0x71001f3690 -- conditional init then dispatch
+// 0x71001f3690 -- conditional init then read name
 void FUN_71001f3690(u64 param_1, s64 param_2)
 {
     if (*(char *)(param_2 + 0x69) == '\0') {
@@ -60,125 +60,123 @@ void FUN_71001f3690(u64 param_1, s64 param_2)
     FUN_71001b0ab0(param_1, (const char *)*(u64 *)(param_2 + 0x60));
 }
 
-// 0x7100251110 -- wrapper: FUN_7100251150(param_1+0x140, ...) & 1
+// 0x7100251110 -- wrapper: FUN_7100251150(+0x140, ...) & 1
 u32 FUN_7100251110(s64 param_1, u64 param_2, u64 param_3, u64 param_4, u64 param_5)
 {
-    u32 uVar1;
-    u64 local_18;
+    u32 result;
+    u64 out = param_3;
 
-    local_18 = param_3;
-    uVar1 = FUN_7100251150(param_1 + 0x140, param_2, param_5, &local_18, param_4);
-    return uVar1 & 1;
+    result = FUN_7100251150(param_1 + 0x140, param_2, param_5, &out, param_4);
+    return result & 1;
 }
 
-// 0x7100251380 -- wrapper: FUN_71002513c0(param_1+0x140, ...) & 1
+// 0x7100251380 -- wrapper: FUN_71002513c0(+0x140, ...) & 1
 u32 FUN_7100251380(s64 param_1, u64 param_2, u64 param_3, u64 param_4, u64 param_5)
 {
-    u32 uVar1;
-    u64 local_18;
+    u32 result;
+    u64 out = param_3;
 
-    local_18 = param_3;
-    uVar1 = FUN_71002513c0(param_1 + 0x140, param_2, param_5, &local_18, param_4);
-    return uVar1 & 1;
+    result = FUN_71002513c0(param_1 + 0x140, param_2, param_5, &out, param_4);
+    return result & 1;
 }
 
 // 0x710026d730 -- build local args, call FUN_710026d770(+0x28) & 1
 u32 FUN_710026d730(s64 param_1, u64 param_2, u16 param_3, u8 param_4)
 {
-    u32 uVar1;
-    u8  local_18[4];
-    u16 local_14[2];
+    u32 result;
+    u8  flag[4];
+    u16 value[2];
 
-    local_18[0] = param_4 & 1;
-    local_14[0] = param_3;
-    uVar1 = FUN_710026d770(param_1 + 0x28, param_2, local_14, local_18);
-    return uVar1 & 1;
+    flag[0] = param_4 & 1;
+    value[0] = param_3;
+    result = FUN_710026d770(param_1 + 0x28, param_2, value, flag);
+    return result & 1;
 }
 
 // 0x71002b3e80 -- endian/swap helper
 u64 FUN_71002b3e80(u64 param_1)
 {
-    s32 iVar1;
-    u64 uVar2;
-    u64 uVar3;
+    s32 byte_order;
+    u64 encoded;
+    u64 swapped;
 
-    iVar1 = FUN_71002babe0();
-    if (iVar1 == 1) {
+    byte_order = FUN_71002babe0();
+    if (byte_order == 1) {
         return param_1 & 0xffffffff;
     }
-    uVar2 = FUN_71002babd0((u32)param_1);
-    uVar3 = FUN_71002babf0(uVar2, 1);
-    return uVar3;
+    encoded = FUN_71002babd0((u32)param_1);
+    swapped = FUN_71002babf0(encoded, 1);
+    return swapped;
 }
 
-// 0x7100254160 -- copy byte field, conditional copy via FUN_710170de70
-s64 FUN_7100254160(s64 param_1, s64 param_2)
+// 0x7100254160 -- copy byte field + conditional deep copy
+s64 FUN_7100254160(s64 dst, s64 src)
 {
-    *(u8 *)(param_1 + 8) = *(u8 *)(param_2 + 8);
-    if (param_1 != param_2) {
-        FUN_710170de70(param_1 + 0x10, *(u64 *)(param_2 + 0x10), param_2 + 0x18);
+    *(u8 *)(dst + 8) = *(u8 *)(src + 8);
+    if (dst != src) {
+        FUN_710170de70(dst + 0x10, *(u64 *)(src + 0x10), src + 0x18);
     }
-    return param_1;
+    return dst;
 }
 
-// 0x7100261490 -- copy fields, conditional copy via FUN_710170f2a0
-s64 FUN_7100261490(s64 param_1, s64 param_2)
+// 0x7100261490 -- copy fields + conditional deep copy
+s64 FUN_7100261490(s64 dst, s64 src)
 {
-    *(u8 *)(param_1 + 8) = *(u8 *)(param_2 + 8);
-    *(u32 *)(param_1 + 0xc) = *(u32 *)(param_2 + 0xc);
-    *(u32 *)(param_1 + 0x10) = *(u32 *)(param_2 + 0x10);
-    if (param_1 != param_2) {
-        FUN_710170f2a0(param_1 + 0x18, *(u64 *)(param_2 + 0x18), *(u64 *)(param_2 + 0x20));
+    *(u8 *)(dst + 8) = *(u8 *)(src + 8);
+    *(u32 *)(dst + 0xc) = *(u32 *)(src + 0xc);
+    *(u32 *)(dst + 0x10) = *(u32 *)(src + 0x10);
+    if (dst != src) {
+        FUN_710170f2a0(dst + 0x18, *(u64 *)(src + 0x18), *(u64 *)(src + 0x20));
     }
-    return param_1;
+    return dst;
 }
 
-// 0x710028af20 -- copy byte fields, conditional copy via FUN_710170d890
-s64 FUN_710028af20(s64 param_1, s64 param_2)
+// 0x710028af20 -- copy byte fields + conditional deep copy
+s64 FUN_710028af20(s64 dst, s64 src)
 {
-    *(u8 *)(param_1 + 8) = *(u8 *)(param_2 + 8);
-    *(u8 *)(param_1 + 9) = *(u8 *)(param_2 + 9);
-    if (param_1 != param_2) {
-        FUN_710170d890(param_1 + 0x10, *(u64 *)(param_2 + 0x10), *(u64 *)(param_2 + 0x18));
+    *(u8 *)(dst + 8) = *(u8 *)(src + 8);
+    *(u8 *)(dst + 9) = *(u8 *)(src + 9);
+    if (dst != src) {
+        FUN_710170d890(dst + 0x10, *(u64 *)(src + 0x10), *(u64 *)(src + 0x18));
     }
-    return param_1;
+    return dst;
 }
 
-// 0x7100213040 -- vtable call at offset 0x18 with 8 args, return 1
+// 0x7100213040 -- vtable dispatch with 8 args, return 1
 u64 FUN_7100213040(s64 param_1, s64 param_2, u64 param_3, u64 param_4, u64 param_5)
 {
-    s64 *plVar1 = *(s64 **)(param_1 + 0x10);
-    (*(void (*)(s64 *, s64, s32, s32, u8, u64, s32, u64))(*plVar1 + 0x18))
-        (plVar1, param_2, 1, 0, *(u8 *)(param_2 + 0x42), param_3, 0, param_5);
+    s64 *handler = *(s64 **)(param_1 + 0x10);
+    (*(void (*)(s64 *, s64, s32, s32, u8, u64, s32, u64))(*handler + 0x18))
+        (handler, param_2, 1, 0, *(u8 *)(param_2 + 0x42), param_3, 0, param_5);
     return 1;
 }
 
 // 0x71002134a0 -- identical to FUN_7100213040 (different address)
 u64 FUN_71002134a0(s64 param_1, s64 param_2, u64 param_3, u64 param_4, u64 param_5)
 {
-    s64 *plVar1 = *(s64 **)(param_1 + 0x10);
-    (*(void (*)(s64 *, s64, s32, s32, u8, u64, s32, u64))(*plVar1 + 0x18))
-        (plVar1, param_2, 1, 0, *(u8 *)(param_2 + 0x42), param_3, 0, param_5);
+    s64 *handler = *(s64 **)(param_1 + 0x10);
+    (*(void (*)(s64 *, s64, s32, s32, u8, u64, s32, u64))(*handler + 0x18))
+        (handler, param_2, 1, 0, *(u8 *)(param_2 + 0x42), param_3, 0, param_5);
     return 1;
 }
 
 // 0x7100223fa0 -- fill buffer with random bytes
-u64 FUN_7100223fa0(u64 param_1, u8 *param_2, s64 param_3)
+u64 FUN_7100223fa0(u64 param_1, u8 *buf, s64 count)
 {
-    u8 uVar1;
+    u8 byte;
 
-    if (param_3 != 0) {
+    if (count != 0) {
         do {
-            uVar1 = FUN_71001b34a0(0xff);
-            param_3--;
-            *param_2 = uVar1;
-            param_2++;
-        } while (param_3 != 0);
+            byte = FUN_71001b34a0(0xff);
+            count--;
+            *buf = byte;
+            buf++;
+        } while (count != 0);
     }
     return 0;
 }
 
-// 0x71001b2f70 -- conditional update via FUN_71001b47e0
+// 0x71001b2f70 -- copy inner pointer via FUN_71001b47e0
 s64 FUN_71001b2f70(s64 param_1, s64 param_2)
 {
     if (param_1 != param_2) {
