@@ -80,12 +80,12 @@ u8 *FUN_71032dbcf0(s64 param_1, s32 param_2)
 // 0x71032de4e0 -- slot lookup by int key, returns int* pointer into struct (1472 bytes)
 s32 *FUN_71032de4e0(s64 param_1, s32 param_2)
 {
-    s32 *piVar1;
+    s32 *slot;
 
     if (param_2 != -1) {
         if (*(s32 *)(param_1 + 0xa30) == param_2) return (s32 *)(param_1 + 0xce8);
         if (*(s32 *)(param_1 + 0xe30) == param_2) {
-            piVar1 = (s32 *)(param_1 + 0xe30);
+            slot = (s32 *)(param_1 + 0xe30);
         } else {
             if (*(s32 *)(param_1 + 0x1230) == param_2) return (s32 *)(param_1 + 0x14e8);
             if (*(s32 *)(param_1 + 0x1630) == param_2) return (s32 *)(param_1 + 0x18e8);
@@ -99,8 +99,8 @@ s32 *FUN_71032de4e0(s64 param_1, s32 param_2)
             if (*(s32 *)(param_1 + 0x3630) == param_2) return (s32 *)(param_1 + 0x38e8);
             if (*(s32 *)(param_1 + 0x3a30) == param_2) return (s32 *)(param_1 + 0x3ce8);
             if (*(s32 *)(param_1 + 0x3e30) == param_2) return (s32 *)(param_1 + 0x40e8);
-            piVar1 = (s32 *)(param_1 + 0x4230);
-            if (*piVar1 != param_2) {
+            slot = (s32 *)(param_1 + 0x4230);
+            if (*slot != param_2) {
                 if (*(s32 *)(param_1 + 0x4630) == param_2) return (s32 *)(param_1 + 0x48e8);
                 if (*(s32 *)(param_1 + 0x4a30) == param_2) return (s32 *)(param_1 + 0x4ce8);
                 if (*(s32 *)(param_1 + 0x4e30) == param_2) return (s32 *)(param_1 + 0x50e8);
@@ -116,44 +116,44 @@ s32 *FUN_71032de4e0(s64 param_1, s32 param_2)
                 if (*(s32 *)(param_1 + 0x7630) == param_2) return (s32 *)(param_1 + 0x78e8);
                 if (*(s32 *)(param_1 + 0x7a30) == param_2) return (s32 *)(param_1 + 0x7ce8);
                 if (*(s32 *)(param_1 + 0x7e30) == param_2) return (s32 *)(param_1 + 0x80e8);
-                piVar1 = (s32 *)(param_1 + 0x8230);
-                if (*piVar1 != param_2) { piVar1 = (s32 *)(param_1 + 0x8630); }
-                if (*piVar1 != param_2) { piVar1 = (s32 *)(param_1 + 0x8a30); }
-                if (*piVar1 != param_2) { piVar1 = (s32 *)(param_1 + 0x8e30); }
-                if (*piVar1 != param_2) { piVar1 = (s32 *)(param_1 + 0x9230); }
-                if (*piVar1 != param_2) { piVar1 = (s32 *)(param_1 + 0x9630); }
-                if (*piVar1 != param_2) { piVar1 = (s32 *)(param_1 + 0x9a30); }
-                if (*piVar1 != param_2) { piVar1 = (s32 *)(param_1 + 0x9e30); }
-                if (*piVar1 != param_2) { piVar1 = (s32 *)(param_1 + 0xa230); }
-                if (*piVar1 != param_2) { piVar1 = (s32 *)(param_1 + 0xa630); }
-                if (*piVar1 != param_2) { piVar1 = (s32 *)(param_1 + 0xaa30); }
-                if (*piVar1 != param_2) { piVar1 = (s32 *)(param_1 + 0xae30); }
-                if (*piVar1 != param_2) { piVar1 = (s32 *)(param_1 + 0xb230); }
-                if (*piVar1 != param_2) { piVar1 = (s32 *)(param_1 + 0xb630); }
-                if (*piVar1 != param_2) { piVar1 = (s32 *)(param_1 + 0xba30); }
-                if (*piVar1 != param_2) { piVar1 = (s32 *)(param_1 + 0xbe30); }
-                if (*piVar1 != param_2) { piVar1 = (s32 *)(param_1 + 0xc230); }
-                if (*piVar1 != param_2) { piVar1 = (s32 *)(param_1 + 0xc630); }
-                if (*piVar1 != param_2) { piVar1 = (s32 *)(param_1 + 0xca30); }
-                if (*piVar1 != param_2) { piVar1 = (s32 *)(param_1 + 0xce30); }
-                if (*piVar1 != param_2) { piVar1 = (s32 *)(param_1 + 0xd230); }
-                if (*piVar1 != param_2) { piVar1 = (s32 *)(param_1 + 0xd630); }
-                if (*piVar1 != param_2) { piVar1 = (s32 *)(param_1 + 0xda30); }
-                if (*piVar1 != param_2) { piVar1 = (s32 *)(param_1 + 0xde30); }
-                if (*piVar1 != param_2) { piVar1 = (s32 *)(param_1 + 0xe230); }
-                if (*piVar1 != param_2) { piVar1 = (s32 *)(param_1 + 0xe630); }
-                if (*piVar1 != param_2) { piVar1 = (s32 *)(param_1 + 0xea30); }
-                if (*piVar1 != param_2) { piVar1 = (s32 *)(param_1 + 0xee30); }
-                if (*piVar1 != param_2) { piVar1 = (s32 *)(param_1 + 0xf230); }
-                if (*piVar1 != param_2) { piVar1 = (s32 *)(param_1 + 0xf630); }
-                if (*piVar1 != param_2) { piVar1 = (s32 *)(param_1 + 0xfa30); }
-                if (*piVar1 != param_2) { piVar1 = (s32 *)(param_1 + 0xfe30); }
-                if (*piVar1 != param_2) { piVar1 = (s32 *)(param_1 + 0x10230); }
-                if (*piVar1 != param_2) { piVar1 = (s32 *)(param_1 + 0x10630); }
-                if (*piVar1 != param_2) goto LAB_71032dea90;
+                slot = (s32 *)(param_1 + 0x8230);
+                if (*slot != param_2) { slot = (s32 *)(param_1 + 0x8630); }
+                if (*slot != param_2) { slot = (s32 *)(param_1 + 0x8a30); }
+                if (*slot != param_2) { slot = (s32 *)(param_1 + 0x8e30); }
+                if (*slot != param_2) { slot = (s32 *)(param_1 + 0x9230); }
+                if (*slot != param_2) { slot = (s32 *)(param_1 + 0x9630); }
+                if (*slot != param_2) { slot = (s32 *)(param_1 + 0x9a30); }
+                if (*slot != param_2) { slot = (s32 *)(param_1 + 0x9e30); }
+                if (*slot != param_2) { slot = (s32 *)(param_1 + 0xa230); }
+                if (*slot != param_2) { slot = (s32 *)(param_1 + 0xa630); }
+                if (*slot != param_2) { slot = (s32 *)(param_1 + 0xaa30); }
+                if (*slot != param_2) { slot = (s32 *)(param_1 + 0xae30); }
+                if (*slot != param_2) { slot = (s32 *)(param_1 + 0xb230); }
+                if (*slot != param_2) { slot = (s32 *)(param_1 + 0xb630); }
+                if (*slot != param_2) { slot = (s32 *)(param_1 + 0xba30); }
+                if (*slot != param_2) { slot = (s32 *)(param_1 + 0xbe30); }
+                if (*slot != param_2) { slot = (s32 *)(param_1 + 0xc230); }
+                if (*slot != param_2) { slot = (s32 *)(param_1 + 0xc630); }
+                if (*slot != param_2) { slot = (s32 *)(param_1 + 0xca30); }
+                if (*slot != param_2) { slot = (s32 *)(param_1 + 0xce30); }
+                if (*slot != param_2) { slot = (s32 *)(param_1 + 0xd230); }
+                if (*slot != param_2) { slot = (s32 *)(param_1 + 0xd630); }
+                if (*slot != param_2) { slot = (s32 *)(param_1 + 0xda30); }
+                if (*slot != param_2) { slot = (s32 *)(param_1 + 0xde30); }
+                if (*slot != param_2) { slot = (s32 *)(param_1 + 0xe230); }
+                if (*slot != param_2) { slot = (s32 *)(param_1 + 0xe630); }
+                if (*slot != param_2) { slot = (s32 *)(param_1 + 0xea30); }
+                if (*slot != param_2) { slot = (s32 *)(param_1 + 0xee30); }
+                if (*slot != param_2) { slot = (s32 *)(param_1 + 0xf230); }
+                if (*slot != param_2) { slot = (s32 *)(param_1 + 0xf630); }
+                if (*slot != param_2) { slot = (s32 *)(param_1 + 0xfa30); }
+                if (*slot != param_2) { slot = (s32 *)(param_1 + 0xfe30); }
+                if (*slot != param_2) { slot = (s32 *)(param_1 + 0x10230); }
+                if (*slot != param_2) { slot = (s32 *)(param_1 + 0x10630); }
+                if (*slot != param_2) goto LAB_71032dea90;
             }
         }
-        return piVar1 + 0xae;
+        return slot + 0xae;
     }
 LAB_71032dea90:
     return (s32 *)(param_1 + 0x8d8);

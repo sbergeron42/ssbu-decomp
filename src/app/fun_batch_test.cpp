@@ -14,45 +14,45 @@ extern u8 PTR_LAB_7105065888 __attribute__((visibility("hidden")));
 // 0x710022b510
 u32 FUN_710022b510(s64 param_1)
 {
-  s64 lVar1;
-  s64 lVar2;
-  u32 uVar3;
+  s64 stream;
+  s64 offset;
+  u32 value;
 
-  lVar1 = *(s64 *)(param_1 + 0x10);
-  lVar2 = *(s64 *)(param_1 + 0x18);
-  if ((u64)(*(s64 *)(lVar1 + 0x18) - lVar2) < 4) {
+  stream = *(s64 *)(param_1 + 0x10);
+  offset = *(s64 *)(param_1 + 0x18);
+  if ((u64)(*(s64 *)(stream + 0x18) - offset) < 4) {
     *(u8 *)(param_1 + 8) = 1;
     return 0;
   }
-  s64 base = *(s64 *)(lVar1 + 0x10) + *(s64 *)(lVar1 + 0x28);
+  s64 base = *(s64 *)(stream + 0x10) + *(s64 *)(stream + 0x28);
 #ifdef MATCHING_HACK_NX_CLANG
   asm("" : "+r"(base));
 #endif
-  uVar3 = *(u32 *)(base + lVar2);
-  *(s64 *)(param_1 + 0x18) = lVar2 + 4;
-  return uVar3;
+  value = *(u32 *)(base + offset);
+  *(s64 *)(param_1 + 0x18) = offset + 4;
+  return value;
 }
 
 // 0x710022e510
 u32 FUN_710022e510(s64 param_1)
 {
-  s64 lVar1;
-  s64 lVar2;
-  u32 uVar3;
+  s64 stream;
+  s64 offset;
+  u32 value;
 
-  lVar1 = *(s64 *)(param_1 + 0x10);
-  lVar2 = *(s64 *)(param_1 + 0x18);
-  if ((u64)(*(s64 *)(lVar1 + 0x18) - lVar2) < 4) {
+  stream = *(s64 *)(param_1 + 0x10);
+  offset = *(s64 *)(param_1 + 0x18);
+  if ((u64)(*(s64 *)(stream + 0x18) - offset) < 4) {
     *(u8 *)(param_1 + 8) = 1;
     return 0;
   }
-  s64 base = *(s64 *)(lVar1 + 0x10) + *(s64 *)(lVar1 + 0x28);
+  s64 base = *(s64 *)(stream + 0x10) + *(s64 *)(stream + 0x28);
 #ifdef MATCHING_HACK_NX_CLANG
   asm("" : "+r"(base));
 #endif
-  uVar3 = *(u32 *)(base + lVar2);
-  *(s64 *)(param_1 + 0x18) = lVar2 + 4;
-  return uVar3;
+  value = *(u32 *)(base + offset);
+  *(s64 *)(param_1 + 0x18) = offset + 4;
+  return value;
 }
 
 // 0x71004794b0
@@ -317,16 +317,16 @@ u8 FUN_710138b0d0(s64 param_1)
 // 0x710138b6c0
 u8 FUN_710138b6c0(s64 param_1)
 {
-  s64 lVar1;
-  s64 lVar2;
+  s64 inner;
+  s64 base_offset;
 
   if (*(s64 **)(param_1 + 8) != nullptr) {
-    lVar2 = **(s64 **)(param_1 + 8);
-    lVar1 = lVar2 + 0x3d0;
-    if (*(char *)(lVar2 + 0xd3a) != '\0') {
-      lVar1 = lVar2 + 0xa00;
+    inner = **(s64 **)(param_1 + 8);
+    base_offset = inner + 0x3d0;
+    if (*(char *)(inner + 0xd3a) != '\0') {
+      base_offset = inner + 0xa00;
     }
-    return *(char *)(lVar1 + 0x10) != '\0';
+    return *(char *)(base_offset + 0x10) != '\0';
   }
   return false;
 }
@@ -370,13 +370,13 @@ u8 FUN_710138c510(s64 param_1)
 // 0x710139e5b0
 void FUN_710139e5b0(s64 param_1, u64 param_2)
 {
-  u8 *puVar1;
+  u8 *entry;
 
   if ((*(char *)(param_1 + 0x10) != '\0') && ((param_2 & 0xff0000ffffffffff) != 0xd900001e3d9517e5))
   {
-    puVar1 = *(u8 **)(0x17c0 + *(s64 *)(param_1 + 0x50));
-    *(u64 *)(puVar1 + 8) = param_2;
-    *puVar1 = 1;
+    entry = *(u8 **)(0x17c0 + *(s64 *)(param_1 + 0x50));
+    *(u64 *)(entry + 8) = param_2;
+    *entry = 1;
   }
   return;
 }
@@ -392,15 +392,16 @@ void FUN_710141a920(s64 param_1, u64 *param_2)
 // 0x7101429540
 u64 FUN_7101429540(s32 *param_1, s32 *param_2)
 {
-  s32 iVar1;
-  s64 lVar2;
-  u64 uVar3;
-  s64 lVar4;
-  s32 iVar5;
-  s32 *piVar6;
-  s32 iVar7;
-  s64 lVar8;
-  s32 *piVar9;
+  s32 val_a;
+  s64 scan_offset;
+  u64 result;
+  s64 prev_offset;
+  s32 val_b;
+  s32 *next;
+  s32 val_c;
+  s64 write_offset;
+  s32 *scan;
+  s32 move_count;
 
   switch(((s64)param_2 - (s64)param_1) >> 2) {
   case 0:
@@ -415,11 +416,11 @@ LAB_7101429604:
     }
     break;
   case 3:
-    iVar5 = param_1[1];
-    iVar1 = param_2[-1];
-    if ((*param_1 == 7) && (iVar5 != 7)) {
-      if (iVar5 != 7 || iVar1 == iVar5) {
-        *param_1 = iVar5;
+    val_b = param_1[1];
+    val_a = param_2[-1];
+    if ((*param_1 == 7) && (val_b != 7)) {
+      if (val_b != 7 || val_a == val_b) {
+        *param_1 = val_b;
         param_1[1] = 7;
         if (param_2[-1] != 7) {
           param_1[1] = param_2[-1];
@@ -428,62 +429,62 @@ LAB_7101429604:
         }
         return 1;
       }
-      *param_1 = iVar1;
+      *param_1 = val_a;
       goto LAB_7101429604;
     }
-    if (iVar5 != 7 || iVar1 == iVar5) {
+    if (val_b != 7 || val_a == val_b) {
       return 1;
     }
-    param_1[1] = iVar1;
+    param_1[1] = val_a;
     param_2[-1] = 7;
     if (*param_1 != 7) {
       return 1;
     }
-    iVar5 = param_1[1];
-    if (iVar5 == 7) {
+    val_b = param_1[1];
+    if (val_b == 7) {
       return 1;
     }
     goto LAB_7101429880;
   case 4:
-    iVar5 = param_1[1];
-    iVar1 = param_1[2];
-    if ((*param_1 == 7) && (iVar5 != 7)) {
-      if (iVar5 != 7 || iVar1 == iVar5) {
-        *param_1 = iVar5;
+    val_b = param_1[1];
+    val_a = param_1[2];
+    if ((*param_1 == 7) && (val_b != 7)) {
+      if (val_b != 7 || val_a == val_b) {
+        *param_1 = val_b;
         param_1[1] = 7;
-        iVar7 = 7;
-        if (iVar1 == 7) goto LAB_7101429820;
-        param_1[1] = iVar1;
+        val_c = 7;
+        if (val_a == 7) goto LAB_7101429820;
+        param_1[1] = val_a;
       }
       else {
-        *param_1 = iVar1;
+        *param_1 = val_a;
       }
       param_1[2] = 7;
-      iVar7 = 7;
+      val_c = 7;
     }
     else {
-      iVar7 = iVar1;
-      if (iVar5 == 7 && iVar1 != iVar5) {
-        param_1[1] = iVar1;
+      val_c = val_a;
+      if (val_b == 7 && val_a != val_b) {
+        param_1[1] = val_a;
         param_1[2] = 7;
-        iVar7 = 7;
-        if ((*param_1 == 7) && (iVar1 != 7)) {
-          *param_1 = iVar1;
+        val_c = 7;
+        if ((*param_1 == 7) && (val_a != 7)) {
+          *param_1 = val_a;
           param_1[1] = 7;
-          iVar7 = 7;
+          val_c = 7;
         }
       }
     }
 LAB_7101429820:
-    if ((iVar7 == 7) && (param_2[-1] != 7)) {
+    if ((val_c == 7) && (param_2[-1] != 7)) {
       param_1[2] = param_2[-1];
       param_2[-1] = 7;
-      if ((param_1[1] == 7) && (iVar5 = param_1[2], iVar5 != 7)) {
-        param_1[1] = iVar5;
+      if ((param_1[1] == 7) && (val_b = param_1[2], val_b != 7)) {
+        param_1[1] = val_b;
         param_1[2] = 7;
-        if ((*param_1 == 7) && (iVar5 != 7)) {
+        if ((*param_1 == 7) && (val_b != 7)) {
 LAB_7101429880:
-          *param_1 = iVar5;
+          *param_1 = val_b;
           param_1[1] = 7;
           return 1;
         }
@@ -494,72 +495,72 @@ LAB_7101429880:
     FUN_7101429330(param_1, param_1 + 1, param_1 + 2, param_1 + 3, param_2 + -1);
     return 1;
   default:
-    iVar5 = param_1[1];
-    iVar1 = param_1[2];
-    if ((*param_1 == 7) && (iVar5 != 7)) {
-      if (iVar5 != 7 || iVar1 == iVar5) {
-        *param_1 = iVar5;
+    val_b = param_1[1];
+    val_a = param_1[2];
+    if ((*param_1 == 7) && (val_b != 7)) {
+      if (val_b != 7 || val_a == val_b) {
+        *param_1 = val_b;
         param_1[1] = 7;
-        iVar7 = 7;
-        if (iVar1 == 7) goto LAB_7101429744;
-        param_1[1] = iVar1;
+        val_c = 7;
+        if (val_a == 7) goto LAB_7101429744;
+        param_1[1] = val_a;
       }
       else {
-        *param_1 = iVar1;
+        *param_1 = val_a;
       }
       param_1[2] = 7;
-      iVar7 = 7;
+      val_c = 7;
     }
     else {
-      iVar7 = iVar1;
-      if (iVar5 == 7 && iVar1 != iVar5) {
-        param_1[1] = iVar1;
+      val_c = val_a;
+      if (val_b == 7 && val_a != val_b) {
+        param_1[1] = val_a;
         param_1[2] = 7;
-        iVar7 = 7;
-        if ((*param_1 == 7) && (iVar1 != 7)) {
-          *param_1 = iVar1;
+        val_c = 7;
+        if ((*param_1 == 7) && (val_a != 7)) {
+          *param_1 = val_a;
           param_1[1] = 7;
-          iVar7 = 7;
+          val_c = 7;
         }
       }
     }
 LAB_7101429744:
-    piVar6 = param_1 + 3;
-    if (piVar6 == param_2) {
+    next = param_1 + 3;
+    if (next == param_2) {
       return 1;
     }
-    lVar4 = 0;
-    iVar5 = 0;
-    if (iVar7 == 7) goto LAB_710142977c;
+    scan_offset = 0;
+    val_b = 0;
+    if (val_c == 7) goto LAB_710142977c;
     do {
       do {
         do {
-          piVar9 = piVar6 + 1;
-          if (piVar9 == param_2) {
+          scan = next + 1;
+          if (scan == param_2) {
             return 1;
           }
-          iVar7 = *piVar6;
-          lVar4 = lVar4 + 4;
-          piVar6 = piVar9;
-        } while (iVar7 != 7);
+          val_c = *next;
+          scan_offset = scan_offset + 4;
+          next = scan;
+        } while (val_c != 7);
 LAB_710142977c:
-        iVar1 = *piVar6;
-        lVar2 = lVar4;
-      } while (iVar1 == iVar7);
+        val_a = *next;
+        prev_offset = scan_offset;
+      } while (val_a == val_c);
       do {
-        lVar8 = lVar2;
-        *(u32 *)((s64)param_1 + lVar8 + 0xc) = 7;
-        piVar9 = param_1;
-        if (lVar8 == -8) goto LAB_71014297c0;
-        iVar7 = *(s32 *)((s64)param_1 + lVar8 + 4);
-        lVar2 = lVar8 + -4;
-      } while (iVar7 == 7 && iVar1 != iVar7);
-      piVar9 = (s32 *)((s64)param_1 + lVar8 + 8);
+        write_offset = prev_offset;
+        *(u32 *)((s64)param_1 + write_offset + 0xc) = 7;
+        scan = param_1;
+        if (write_offset == -8) goto LAB_71014297c0;
+        val_c = *(s32 *)((s64)param_1 + write_offset + 4);
+        prev_offset = write_offset + -4;
+      } while (val_c == 7 && val_a != val_c);
+      scan = (s32 *)((s64)param_1 + write_offset + 8);
 LAB_71014297c0:
-      iVar5 = iVar5 + 1;
-      *piVar9 = iVar1;
-      if (iVar5 == 8) {
-        return (u64)(piVar6 + 1 == param_2);
+      val_b = val_b + 1;
+      *scan = val_a;
+      if (val_b == 8) {
+        return (u64)(next + 1 == param_2);
       }
     } while( true );
   }
