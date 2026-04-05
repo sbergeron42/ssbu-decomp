@@ -73,6 +73,36 @@ u32 FUN_71015c2a70(u64 L) {
     return *(u8*)(e + 0x152);
 }
 
+// 0x71015c1fc0 (28 bytes) — set_effect_sync_visibility_default
+// Pointer chain + bool store at +0x29B
+void FUN_71015c1fc0(u64 L, u32 val) {
+    u64 a = *(u64*)(L - 8);
+    u64 b = *(u64*)(a + 0x1A0);
+    u64 c = *(u64*)(b + 0x190);
+    u64 d = *(u64*)(c + 0x220);
+    *(u8*)(d + 0x29B) = (u8)(val & 1);
+}
+
+// 0x71015c2060 (28 bytes) — enable_lost_flashing
+// Pointer chain + bool store at +0x29F
+void FUN_71015c2060(u64 L, u32 val) {
+    u64 a = *(u64*)(L - 8);
+    u64 b = *(u64*)(a + 0x1A0);
+    u64 c = *(u64*)(b + 0x190);
+    u64 d = *(u64*)(c + 0x220);
+    *(u8*)(d + 0x29F) = (u8)(val & 1);
+}
+
+// 0x71015c2750 (24 bytes) — set_throw_power_speed_mul
+// Pointer chain + float store at +0x294
+void FUN_71015c2750(u64 L, float val) {
+    u64 a = *(u64*)(L - 8);
+    u64 b = *(u64*)(a + 0x1A0);
+    u64 c = *(u64*)(b + 0x190);
+    u64 d = *(u64*)(c + 0x220);
+    *(float*)(d + 0x294) = val;
+}
+
 // 0x71015c8ed0 (8 bytes) — create_weapon
 // Tail-calls FUN_71015c8ee0(p1, p2, -1)
 extern "C" void FUN_71015c8ee0(void*, void*, u32);
