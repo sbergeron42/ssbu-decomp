@@ -2,6 +2,7 @@
 
 // Batch decompiled via Ghidra MCP -- pool-b, batch 002
 // Range: 0x7101000000 -- 0x7101FFFFFF
+// Rewritten: pool-e — meaningful names, sort annotations
 
 // Forward declarations
 extern "C" void FUN_71016ec6a0(s32*, s32*, s32*, s32*, s32*);
@@ -18,332 +19,342 @@ extern u8 PTR_LAB_7105065118 __attribute__((visibility("hidden")));
 extern u8 PTR_LAB_7105078920 __attribute__((visibility("hidden")));
 
 // 0x710140f9b0
-void FUN_710140f9b0(s64 param_1, u64 *param_2)
+void FUN_710140f9b0(s64 src, u64 *out)
 {
-  *param_2 = (u64)&PTR_LAB_7105065310;
-  param_2[1] = *(u64 *)(param_1 + 8);
+  *out = (u64)&PTR_LAB_7105065310;
+  out[1] = *(u64 *)(src + 8);
   return;
 }
 
 // 0x710140faa0
-void FUN_710140faa0(s64 param_1, u64 *param_2)
+void FUN_710140faa0(s64 src, u64 *out)
 {
-  *param_2 = (u64)&PTR_LAB_71050652c8;
-  param_2[1] = *(u64 *)(param_1 + 8);
+  *out = (u64)&PTR_LAB_71050652c8;
+  out[1] = *(u64 *)(src + 8);
   return;
 }
 
 // 0x710140fba0
-void FUN_710140fba0(s64 param_1, u64 *param_2)
+void FUN_710140fba0(s64 src, u64 *out)
 {
-  *param_2 = (u64)&PTR_LAB_7105065280;
-  param_2[1] = *(u64 *)(param_1 + 8);
+  *out = (u64)&PTR_LAB_7105065280;
+  out[1] = *(u64 *)(src + 8);
   return;
 }
 
 // 0x710140fd30
-void FUN_710140fd30(s64 param_1, u64 *param_2)
+void FUN_710140fd30(s64 src, u64 *out)
 {
-  *param_2 = (u64)&PTR_LAB_7105065238;
-  param_2[1] = *(u64 *)(param_1 + 8);
+  *out = (u64)&PTR_LAB_7105065238;
+  out[1] = *(u64 *)(src + 8);
   return;
 }
 
 // 0x710140fe40
-void FUN_710140fe40(s64 param_1, u64 *param_2)
+void FUN_710140fe40(s64 src, u64 *out)
 {
-  *param_2 = (u64)&PTR_LAB_71050651f0;
-  param_2[1] = *(u64 *)(param_1 + 8);
+  *out = (u64)&PTR_LAB_71050651f0;
+  out[1] = *(u64 *)(src + 8);
   return;
 }
 
 // 0x710140ff70
-void FUN_710140ff70(s64 param_1, u64 *param_2)
+void FUN_710140ff70(s64 src, u64 *out)
 {
-  *param_2 = (u64)&PTR_LAB_71050651a8;
-  param_2[1] = *(u64 *)(param_1 + 8);
+  *out = (u64)&PTR_LAB_71050651a8;
+  out[1] = *(u64 *)(src + 8);
   return;
 }
 
 // 0x7101410100
-void FUN_7101410100(s64 param_1, u64 *param_2)
+void FUN_7101410100(s64 src, u64 *out)
 {
-  *param_2 = (u64)&PTR_LAB_7105065160;
-  param_2[1] = *(u64 *)(param_1 + 8);
+  *out = (u64)&PTR_LAB_7105065160;
+  out[1] = *(u64 *)(src + 8);
   return;
 }
 
 // 0x7101410210
-void FUN_7101410210(s64 param_1, u64 *param_2)
+void FUN_7101410210(s64 src, u64 *out)
 {
-  *param_2 = (u64)&PTR_LAB_7105065118;
-  param_2[1] = *(u64 *)(param_1 + 8);
+  *out = (u64)&PTR_LAB_7105065118;
+  out[1] = *(u64 *)(src + 8);
   return;
 }
 
 // 0x7101434010
-void FUN_7101434010(s64 param_1, u32 param_2, u32 param_3)
+// Remaps fighter IDs to canonical values, stores ID + color at struct offsets, sets active flags
+void FUN_7101434010(s64 self, u32 fighter_id, u32 color)
 {
-  u32 uVar1;
+  u32 canonical_id;
 
-  uVar1 = 0x6e;
-  switch(param_2) {
+  canonical_id = 0x6e;
+  switch(fighter_id) {
   case 0x24:
   case 0x6f:
-    uVar1 = 0x24;
+    canonical_id = 0x24;
     break;
   case 0x25:
   case 0x70:
-    uVar1 = 0x25;
+    canonical_id = 0x25;
     break;
   case 0x26:
   case 0x71:
-    uVar1 = 0x26;
+    canonical_id = 0x26;
     break;
   default:
-    uVar1 = param_2;
+    canonical_id = fighter_id;
     break;
   case 0x4b:
   case 0x4c:
     break;
   case 0x72:
-    uVar1 = 0x72;
+    canonical_id = 0x72;
   }
-  *(u32 *)(param_1 + 0x170) = uVar1;
-  *(u32 *)(param_1 + 0x174) = param_3 & 0xff;
-  *(u8 *)(param_1 + 0x168) = 1;
-  *(u8 *)(param_1 + 0x16a) = 1;
+  *(u32 *)(self + 0x170) = canonical_id;
+  *(u32 *)(self + 0x174) = color & 0xff;
+  *(u8 *)(self + 0x168) = 1;
+  *(u8 *)(self + 0x16a) = 1;
   return;
 }
 
 // 0x7101648bc0
-void FUN_7101648bc0(s64 param_1, u64 *param_2)
+// Initializes a triple: vtable + two u64 fields from source
+void FUN_7101648bc0(s64 src, u64 *out)
 {
-  u64 uVar1;
+  u64 field2;
 
-  *param_2 = (u64)&PTR_LAB_7105078920;
-  uVar1 = *(u64 *)(param_1 + 0x10);
-  param_2[1] = *(u64 *)(param_1 + 8);
-  param_2[2] = uVar1;
+  *out = (u64)&PTR_LAB_7105078920;
+  field2 = *(u64 *)(src + 0x10);
+  out[1] = *(u64 *)(src + 8);
+  out[2] = field2;
   return;
 }
 
 // 0x71016ec830
-u8 FUN_71016ec830(s32 *param_1, s32 *param_2)
+// Insertion sort (s32) with small-array specialization (cases 2–5).
+// Direct s32 comparison (no key mask). Bails after 8 insertions.
+u8 FUN_71016ec830(s32 *first, s32 *last)
 {
-  s32 iVar1;
-  s32 iVar2;
-  s64 lVar3;
-  s32 iVar4;
-  s32 *piVar5;
-  s32 iVar6;
-  s32 *piVar7;
-  s64 lVar8;
-  s64 lVar9;
+  s32 elem2;
+  s32 elem3;
+  s64 shift_pos;
+  s32 last_sorted;
+  s32 *dst;
+  s32 elem;
+  s32 *cur;
+  s64 offset;
+  s64 pos;
 
-  switch(((s64)param_2 - (s64)param_1) >> 2) {
+  switch(((s64)last - (s64)first) >> 2) {
   case 0:
   case 1:
     break;
   case 2:
-    iVar6 = *param_1;
-    if (iVar6 <= param_2[-1]) {
+    elem = *first;
+    if (elem <= last[-1]) {
       return true;
     }
-    *param_1 = param_2[-1];
+    *first = last[-1];
 LAB_71016eca4c:
-    param_2[-1] = iVar6;
+    last[-1] = elem;
     return true;
   case 3:
-    iVar6 = *param_1;
-    iVar1 = param_1[1];
-    iVar2 = param_2[-1];
-    if (iVar1 < iVar6) {
-      if (iVar2 < iVar1) {
-        *param_1 = iVar2;
+    elem = *first;
+    elem2 = first[1];
+    elem3 = last[-1];
+    if (elem2 < elem) {
+      if (elem3 < elem2) {
+        *first = elem3;
       }
       else {
-        *param_1 = iVar1;
-        param_1[1] = iVar6;
-        if (iVar6 <= param_2[-1]) {
+        *first = elem2;
+        first[1] = elem;
+        if (elem <= last[-1]) {
           return true;
         }
-        param_1[1] = param_2[-1];
+        first[1] = last[-1];
       }
       goto LAB_71016eca4c;
     }
-    if (iVar1 <= iVar2) {
+    if (elem2 <= elem3) {
       return true;
     }
-    param_1[1] = iVar2;
-    param_2[-1] = iVar1;
-    iVar6 = *param_1;
-    if (param_1[1] < iVar6) {
-      *param_1 = param_1[1];
-      param_1[1] = iVar6;
+    first[1] = elem3;
+    last[-1] = elem2;
+    elem = *first;
+    if (first[1] < elem) {
+      *first = first[1];
+      first[1] = elem;
       return true;
     }
     break;
   case 4:
-    iVar6 = *param_1;
-    iVar1 = param_1[1];
-    iVar2 = param_1[2];
-    iVar4 = iVar2;
-    if (iVar1 < iVar6) {
-      if (iVar2 < iVar1) {
-        *param_1 = iVar2;
+    elem = *first;
+    elem2 = first[1];
+    elem3 = first[2];
+    last_sorted = elem3;
+    if (elem2 < elem) {
+      if (elem3 < elem2) {
+        *first = elem3;
       }
       else {
-        *param_1 = iVar1;
-        param_1[1] = iVar6;
-        if (iVar6 <= iVar2) goto LAB_71016eca7c;
-        param_1[1] = iVar2;
+        *first = elem2;
+        first[1] = elem;
+        if (elem <= elem3) goto LAB_71016eca7c;
+        first[1] = elem3;
       }
-      param_1[2] = iVar6;
-      iVar4 = iVar6;
+      first[2] = elem;
+      last_sorted = elem;
     }
-    else if (iVar2 < iVar1) {
-      param_1[1] = iVar2;
-      param_1[2] = iVar1;
-      iVar4 = iVar1;
-      if (iVar2 < iVar6) {
-        *param_1 = iVar2;
-        param_1[1] = iVar6;
+    else if (elem3 < elem2) {
+      first[1] = elem3;
+      first[2] = elem2;
+      last_sorted = elem2;
+      if (elem3 < elem) {
+        *first = elem3;
+        first[1] = elem;
       }
     }
 LAB_71016eca7c:
-    if (iVar4 <= param_2[-1]) {
+    if (last_sorted <= last[-1]) {
       return true;
     }
-    param_1[2] = param_2[-1];
-    param_2[-1] = iVar4;
-    iVar6 = param_1[1];
-    iVar1 = param_1[2];
-    if (iVar6 <= iVar1) {
+    first[2] = last[-1];
+    last[-1] = last_sorted;
+    elem = first[1];
+    elem2 = first[2];
+    if (elem <= elem2) {
       return true;
     }
-    iVar2 = *param_1;
-    param_1[1] = iVar1;
-    param_1[2] = iVar6;
-    if (iVar1 < iVar2) {
-      *param_1 = iVar1;
-      param_1[1] = iVar2;
+    elem3 = *first;
+    first[1] = elem2;
+    first[2] = elem;
+    if (elem2 < elem3) {
+      *first = elem2;
+      first[1] = elem3;
       return true;
     }
     break;
   case 5:
-    FUN_71016ec6a0(param_1, param_1 + 1, param_1 + 2, param_1 + 3, param_2 + -1);
+    FUN_71016ec6a0(first, first + 1, first + 2, first + 3, last - 1);
     return true;
   default:
-    iVar6 = *param_1;
-    iVar1 = param_1[1];
-    iVar2 = param_1[2];
-    iVar4 = iVar2;
-    if (iVar1 < iVar6) {
-      if (iVar2 < iVar1) {
-        *param_1 = iVar2;
+    // Sort first 3 elements, then insertion-sort the rest
+    elem = *first;
+    elem2 = first[1];
+    elem3 = first[2];
+    last_sorted = elem3;
+    if (elem2 < elem) {
+      if (elem3 < elem2) {
+        *first = elem3;
       }
       else {
-        *param_1 = iVar1;
-        param_1[1] = iVar6;
-        if (iVar6 <= iVar2) goto LAB_71016ec9a0;
-        param_1[1] = iVar2;
+        *first = elem2;
+        first[1] = elem;
+        if (elem <= elem3) goto LAB_71016ec9a0;
+        first[1] = elem3;
       }
-      param_1[2] = iVar6;
-      iVar4 = iVar6;
+      first[2] = elem;
+      last_sorted = elem;
     }
-    else if (iVar2 < iVar1) {
-      param_1[1] = iVar2;
-      param_1[2] = iVar1;
-      iVar4 = iVar1;
-      if (iVar2 < iVar6) {
-        *param_1 = iVar2;
-        param_1[1] = iVar6;
+    else if (elem3 < elem2) {
+      first[1] = elem3;
+      first[2] = elem2;
+      last_sorted = elem2;
+      if (elem3 < elem) {
+        *first = elem3;
+        first[1] = elem;
       }
     }
 LAB_71016ec9a0:
-    if (param_1 + 3 == param_2) {
+    if (first + 3 == last) {
       return true;
     }
-    lVar8 = 0;
-    iVar6 = 0;
-    piVar7 = param_1 + 3;
+    offset = 0;
+    elem = 0;
+    cur = first + 3;
     do {
-      iVar1 = *piVar7;
-      lVar3 = lVar8;
-      if (iVar1 < iVar4) {
+      elem2 = *cur;
+      pos = offset;
+      if (elem2 < last_sorted) {
+        // Shift elements right to insert current
         do {
-          lVar9 = lVar3;
-          *(s32 *)((s64)param_1 + lVar9 + 0xc) = iVar4;
-          piVar5 = param_1;
-          if (lVar9 == -8) goto LAB_71016eca04;
-          iVar4 = *(s32 *)((s64)param_1 + lVar9 + 4);
-          lVar3 = lVar9 + -4;
-        } while (iVar1 < iVar4);
-        piVar5 = (s32 *)((s64)param_1 + lVar9 + 8);
+          shift_pos = pos;
+          *(s32 *)((s64)first + shift_pos + 0xc) = last_sorted;
+          dst = first;
+          if (shift_pos == -8) goto LAB_71016eca04;
+          last_sorted = *(s32 *)((s64)first + shift_pos + 4);
+          pos = shift_pos + -4;
+        } while (elem2 < last_sorted);
+        dst = (s32 *)((s64)first + shift_pos + 8);
 LAB_71016eca04:
-        iVar6 = iVar6 + 1;
-        *piVar5 = iVar1;
-        if (iVar6 == 8) {
-          return (u8)(piVar7 + 1 == param_2);
+        elem = elem + 1;
+        *dst = elem2;
+        if (elem == 8) {
+          return (u8)(cur + 1 == last);
         }
       }
-      if (piVar7 + 1 == param_2) {
+      if (cur + 1 == last) {
         return true;
       }
-      iVar4 = *piVar7;
-      lVar8 = lVar8 + 4;
-      piVar7 = piVar7 + 1;
+      last_sorted = *cur;
+      offset = offset + 4;
+      cur = cur + 1;
     } while( true );
   }
   return true;
 }
 
 // 0x710177e0f0
-void FUN_710177e0f0(u16 *param_1, s32 param_2, s32 param_3, s32 *param_4, u32 param_5, u32 param_6,
-                   s64 param_7)
+// Filters slot IDs into a result list based on bitmask and slot-value checks.
+// Iterates 4 columns per row; skips slots whose value array contains certain matches.
+void FUN_710177e0f0(u16 *bitmask, s32 row, s32 col_start, s32 *slot_values, u32 check_secondary,
+                   u32 force_include, s64 result_list)
 {
-  u32 uVar1;
-  u32 uVar2;
-  s32 iVar3;
+  u32 slot_id;
+  u32 bit;
+  s32 col;
 
-  iVar3 = 0;
+  col = 0;
   do {
-    if ((param_2 * 4 - param_3) + iVar3 != 0) {
-      uVar1 = param_2 * 4 + iVar3;
-      switch(uVar1) {
+    if ((row * 4 - col_start) + col != 0) {
+      slot_id = row * 4 + col;
+      // Skip certain slot IDs if any of the 8 slot_values match a forbidden value
+      switch(slot_id) {
       case 9:
-        if ((*param_4 == 2) ||
-           ((((param_4[1] == 2 || (param_4[2] == 2)) ||
-             ((param_4[3] == 2 || (((param_4[4] == 2 || (param_4[5] == 2)) || (param_4[6] == 2))))))\
-            || (param_4[7] == 2)))) goto LAB_710177e2f4;
+        if ((*slot_values == 2) ||
+           ((((slot_values[1] == 2 || (slot_values[2] == 2)) ||
+             ((slot_values[3] == 2 || (((slot_values[4] == 2 || (slot_values[5] == 2)) || (slot_values[6] == 2))))))\
+            || (slot_values[7] == 2)))) goto next_col;
         break;
       case 0xb:
-        if ((((*param_4 == 3) || (param_4[1] == 3)) ||
-            ((param_4[2] == 3 || (((param_4[3] == 3 || (param_4[4] == 3)) || (param_4[5] == 3))))))\
-           || ((param_4[6] == 3 || (param_4[7] == 3)))) goto LAB_710177e2f4;
+        if ((((*slot_values == 3) || (slot_values[1] == 3)) ||
+            ((slot_values[2] == 3 || (((slot_values[3] == 3 || (slot_values[4] == 3)) || (slot_values[5] == 3))))))\
+           || ((slot_values[6] == 3 || (slot_values[7] == 3)))) goto next_col;
         break;
       case 0xc:
-        if ((*param_4 == 6) ||
-           ((((((param_4[1] == 6 || (param_4[2] == 6)) || (param_4[3] == 6)) ||
-              ((param_4[4] == 6 || (param_4[5] == 6)))) || (param_4[6] == 6)) || (param_4[7] == 6)))\
-           ) goto LAB_710177e2f4;
+        if ((*slot_values == 6) ||
+           ((((((slot_values[1] == 6 || (slot_values[2] == 6)) || (slot_values[3] == 6)) ||
+              ((slot_values[4] == 6 || (slot_values[5] == 6)))) || (slot_values[6] == 6)) || (slot_values[7] == 6)))\
+           ) goto next_col;
         break;
       case 0xe:
-        if ((((*param_4 == 7) || (param_4[1] == 7)) || (param_4[2] == 7)) ||
-           (((param_4[3] == 7 || (param_4[4] == 7)) ||
-            ((param_4[5] == 7 || ((param_4[6] == 7 || (param_4[7] == 7)))))))) goto LAB_710177e2f4;
+        if ((((*slot_values == 7) || (slot_values[1] == 7)) || (slot_values[2] == 7)) ||
+           (((slot_values[3] == 7 || (slot_values[4] == 7)) ||
+            ((slot_values[5] == 7 || ((slot_values[6] == 7 || (slot_values[7] == 7)))))))) goto next_col;
       }
-      if (((param_6 & 1) != 0) ||
-         ((uVar2 = 1 << (u64)(uVar1 & 0x1f), (uVar2 & *param_1) == 0 &&
-          (((param_5 & 1) == 0 || ((uVar2 & param_1[1]) == 0)))))) {
-        *(u32 *)(*(s64 *)(param_7 + 0x10) + *(s64 *)(param_7 + 0x18) * 4) = uVar1;
-        *(s64 *)(param_7 + 0x18) = *(s64 *)(param_7 + 0x18) + 1;
+      // Include slot if force_include is set, or if bitmask permits it
+      if (((force_include & 1) != 0) ||
+         ((bit = 1 << (u64)(slot_id & 0x1f), (bit & *bitmask) == 0 &&
+          (((check_secondary & 1) == 0 || ((bit & bitmask[1]) == 0)))))) {
+        *(u32 *)(*(s64 *)(result_list + 0x10) + *(s64 *)(result_list + 0x18) * 4) = slot_id;
+        *(s64 *)(result_list + 0x18) = *(s64 *)(result_list + 0x18) + 1;
       }
     }
-LAB_710177e2f4:
-    iVar3 = iVar3 + 1;
-    if (iVar3 == 4) {
+next_col:
+    col = col + 1;
+    if (col == 4) {
       return;
     }
   } while( true );

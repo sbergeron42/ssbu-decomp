@@ -2,12 +2,7 @@
 
 // MEDIUM-tier FUN_* functions — batch d5-054
 // Pool-d worker: 0x71039* medium-size functions (jemalloc/arena, 80-256B)
-// FUN_7103929a70 FUN_710392ba00 FUN_710392bbe0 FUN_710392bc30 FUN_710392ea70
-// FUN_7103930920 FUN_7103931640 FUN_71039327d0 FUN_7103932820 FUN_7103934650
-// FUN_7103934870 FUN_7103936c20 FUN_71039394e0 FUN_7103939530 FUN_71039401e0
-// FUN_71039409d0 FUN_7103943b50 FUN_71039458b0 FUN_7103946f70 FUN_7103952dc0
-// FUN_7103953a60 FUN_7103953e20 FUN_7103953f60 FUN_7103953fb0 FUN_7103958760
-// FUN_710395a6a0 FUN_710395b640 FUN_710395bf00 FUN_710395bf50 FUN_710395f590
+// Rewritten: pool-e — meaningful param names
 
 extern "C" {
     __attribute__((noreturn)) void abort(void);
@@ -62,242 +57,242 @@ extern void   FUN_710395ed30(u8 *);
 extern void *DAT_7106dd3f80;
 extern void *DAT_7106dd3f60;
 
-// Forward declarations (defined later in this file or externally called)
-void FUN_710392bc30(u64 param_1, u64 param_2, u64 param_3, u8 param_4);
-void FUN_710395bf50(u64 param_1, u64 param_2, u64 param_3, u8 param_4);
-extern void FUN_710395f620(u8 *param_1);
+// Forward declarations
+void FUN_710392bc30(u64 arena, u64 bin, u64 slab, u8 flag);
+void FUN_710395bf50(u64 arena, u64 bin, u64 slab, u8 flag);
+extern void FUN_710395f620(u8 *state);
 
-// ---- 0x71039* medium functions ----
+// ---- 0x71039* jemalloc medium functions ----
 
 // 0x7103929a70 — init mutex + call + unlock (80B)
 u8 FUN_7103929a70(void) {
     FUN_71039292b0(0, &DAT_7106dd3f80);
-    u8 bVar1 = FUN_7103929ac0();
+    u8 result = FUN_7103929ac0();
     FUN_71039293e0(0, (s64)&DAT_7106dd3f80);
-    return bVar1 & 1;
+    return result & 1;
 }
 
 // 0x710392ba00 — stack-alloc call + second call (80B)
-void FUN_710392ba00(u64 param_1, u64 param_2) {
-    u8 auStack_1a8[384];
-    u64 local_28 = param_2;
-    u64 uVar1;
-    FUN_710392ba50(param_1, auStack_1a8);
-    uVar1 = *(u64 *)auStack_1a8;  // just read result slot
-    FUN_710392bab0(param_1, uVar1, local_28);
+void FUN_710392ba00(u64 arena, u64 config) {
+    u8 buf[384];
+    u64 saved_config = config;
+    u64 result;
+    FUN_710392ba50(arena, buf);
+    result = *(u64 *)buf;
+    FUN_710392bab0(arena, result, saved_config);
 }
 
 // 0x710392bbe0 — call bc30 + mask (80B)
-void FUN_710392bbe0(u64 param_1, u64 param_2, u64 param_3, u8 param_4) {
-    u64 uVar1;
-    FUN_710392bc30(param_1, param_2, param_3, param_4 & 1);
-    uVar1 = *(u64 *)&param_3; // placeholder — compiler will optimize
-    FUN_710392bc80(uVar1);
+void FUN_710392bbe0(u64 arena, u64 bin, u64 slab, u8 flag) {
+    u64 result;
+    FUN_710392bc30(arena, bin, slab, flag & 1);
+    result = *(u64 *)&slab;
+    FUN_710392bc80(result);
 }
 
-// 0x710392bc30 — conditional set mode param (80B)
-void FUN_710392bc30(u64 param_1, u64 param_2, u64 param_3, u8 param_4) {
-    u32 uVar1 = 0;
-    if ((param_4 & 1) == 0) {
-        uVar1 = 2;
+// 0x710392bc30 — conditional set mode (80B)
+void FUN_710392bc30(u64 arena, u64 bin, u64 slab, u8 flag) {
+    u32 mode = 0;
+    if ((flag & 1) == 0) {
+        mode = 2;
     }
-    FUN_7103929830(param_3, uVar1);
+    FUN_7103929830(slab, mode);
 }
 
 // 0x710392ea70 — call bc30 + c0f0 (80B)
-void FUN_710392ea70(u64 param_1, u64 param_2, u64 param_3, u8 param_4) {
-    u64 uVar1;
-    FUN_710392bc30(param_1, param_2, param_3, param_4 & 1);
-    uVar1 = *(u64 *)&param_3;
-    FUN_710392c0f0(uVar1);
+void FUN_710392ea70(u64 arena, u64 bin, u64 slab, u8 flag) {
+    u64 result;
+    FUN_710392bc30(arena, bin, slab, flag & 1);
+    result = *(u64 *)&slab;
+    FUN_710392c0f0(result);
 }
 
 // 0x7103930920 — shift/pass sub-result (80B)
-void FUN_7103930920(u64 param_1, u64 param_2, u64 param_3) {
-    u64 uVar1 = FUN_7103930160(param_3);
-    FUN_7103930970(param_2, uVar1 >> 0x10);
+void FUN_7103930920(u64 arena, u64 dst, u64 src) {
+    u64 raw = FUN_7103930160(src);
+    FUN_7103930970(dst, raw >> 0x10);
 }
 
-// 0x7103931640 — conditional set mode param (80B)
-void FUN_7103931640(u64 param_1, u64 param_2, u64 param_3, u8 param_4) {
-    u32 uVar1 = 0;
-    if ((param_4 & 1) == 0) {
-        uVar1 = 2;
+// 0x7103931640 — conditional set mode (80B)
+void FUN_7103931640(u64 arena, u64 bin, u64 slab, u8 flag) {
+    u32 mode = 0;
+    if ((flag & 1) == 0) {
+        mode = 2;
     }
-    FUN_71039316d0(param_3, uVar1);
+    FUN_71039316d0(slab, mode);
 }
 
-// 0x71039327d0 — three-way compare via two sub-calls (80B)
-s32 FUN_71039327d0(u64 param_1, u64 param_2) {
-    u64 uVar1 = FUN_7103932890(param_1);
-    u64 uVar2 = FUN_7103932890(param_2);
-    return (u32)(uVar2 < uVar1) - (u32)(uVar1 < uVar2);
+// 0x71039327d0 — three-way compare (80B)
+s32 FUN_71039327d0(u64 a, u64 b) {
+    u64 key_a = FUN_7103932890(a);
+    u64 key_b = FUN_7103932890(b);
+    return (u32)(key_b < key_a) - (u32)(key_a < key_b);
 }
 
-// 0x7103932820 — three-way compare via two sub-calls (80B)
-s32 FUN_7103932820(u64 param_1, u64 param_2) {
-    u64 uVar1 = FUN_7103932870(param_1);
-    u64 uVar2 = FUN_7103932870(param_2);
-    return (u32)(uVar2 < uVar1) - (u32)(uVar1 < uVar2);
+// 0x7103932820 — three-way compare (80B)
+s32 FUN_7103932820(u64 a, u64 b) {
+    u64 key_a = FUN_7103932870(a);
+    u64 key_b = FUN_7103932870(b);
+    return (u32)(key_b < key_a) - (u32)(key_a < key_b);
 }
 
 // 0x7103934650 — stack-alloc call + second call (80B)
-void FUN_7103934650(u64 param_1, u64 param_2) {
-    u8 auStack_1a8[384];
-    u64 local_28 = param_2;
-    u64 uVar1;
-    FUN_7103934770(param_1, auStack_1a8);
-    uVar1 = *(u64 *)auStack_1a8;
-    FUN_71039347d0(param_1, uVar1, local_28);
+void FUN_7103934650(u64 arena, u64 config) {
+    u8 buf[384];
+    u64 saved_config = config;
+    u64 result;
+    FUN_7103934770(arena, buf);
+    result = *(u64 *)buf;
+    FUN_71039347d0(arena, result, saved_config);
 }
 
 // 0x7103934870 — call 1640 + mask (80B)
-void FUN_7103934870(u64 param_1, u64 param_2, u64 param_3, u8 param_4) {
-    FUN_7103931640(param_1, param_2, param_3, param_4 & 1);
-    FUN_71039348c0(param_3);
+void FUN_7103934870(u64 arena, u64 bin, u64 slab, u8 flag) {
+    FUN_7103931640(arena, bin, slab, flag & 1);
+    FUN_71039348c0(slab);
 }
 
-// 0x7103936c20 — three-way compare via two sub-calls (80B)
-s32 FUN_7103936c20(u64 param_1, u64 param_2) {
-    u64 uVar1 = FUN_7103936cb0(param_1);
-    u64 uVar2 = FUN_7103936cb0(param_2);
-    return (u32)(uVar2 < uVar1) - (u32)(uVar1 < uVar2);
+// 0x7103936c20 — three-way compare (80B)
+s32 FUN_7103936c20(u64 a, u64 b) {
+    u64 key_a = FUN_7103936cb0(a);
+    u64 key_b = FUN_7103936cb0(b);
+    return (u32)(key_b < key_a) - (u32)(key_a < key_b);
 }
 
-// 0x71039394e0 — three-way compare via two sub-calls (80B)
-s32 FUN_71039394e0(u64 param_1, u64 param_2) {
-    u64 uVar1 = FUN_71039395a0(param_1);
-    u64 uVar2 = FUN_71039395a0(param_2);
-    return (u32)(uVar2 < uVar1) - (u32)(uVar1 < uVar2);
+// 0x71039394e0 — three-way compare (80B)
+s32 FUN_71039394e0(u64 a, u64 b) {
+    u64 key_a = FUN_71039395a0(a);
+    u64 key_b = FUN_71039395a0(b);
+    return (u32)(key_b < key_a) - (u32)(key_a < key_b);
 }
 
-// 0x7103939530 — three-way compare via two sub-calls (80B)
-s32 FUN_7103939530(u64 param_1, u64 param_2) {
-    u64 uVar1 = FUN_7103939580(param_1);
-    u64 uVar2 = FUN_7103939580(param_2);
-    return (u32)(uVar2 < uVar1) - (u32)(uVar1 < uVar2);
+// 0x7103939530 — three-way compare (80B)
+s32 FUN_7103939530(u64 a, u64 b) {
+    u64 key_a = FUN_7103939580(a);
+    u64 key_b = FUN_7103939580(b);
+    return (u32)(key_b < key_a) - (u32)(key_a < key_b);
 }
 
 // 0x71039401e0 — call two params, return 0 (80B)
-u64 FUN_71039401e0(u64 param_1, u64 param_2, u64 param_3, u64 param_4) {
-    FUN_710393ede0(param_2, param_4);
+u64 FUN_71039401e0(u64 unused1, u64 src, u64 unused3, u64 dst) {
+    FUN_710393ede0(src, dst);
     return 0;
 }
 
-// 0x71039409d0 — conditional set mode param (80B)
-void FUN_71039409d0(u64 param_1, u64 param_2, u64 param_3, u8 param_4) {
-    u32 uVar1 = 0;
-    if ((param_4 & 1) == 0) {
-        uVar1 = 2;
+// 0x71039409d0 — conditional set mode (80B)
+void FUN_71039409d0(u64 arena, u64 bin, u64 slab, u8 flag) {
+    u32 mode = 0;
+    if ((flag & 1) == 0) {
+        mode = 2;
     }
-    FUN_710393dc80(param_3, uVar1);
+    FUN_710393dc80(slab, mode);
 }
 
 // 0x7103943b50 — call with 6 args adding 0 (80B)
-u32 FUN_7103943b50(u64 param_1, u64 param_2, u64 param_3, u64 param_4, u64 param_5) {
-    u32 uVar1 = FUN_710393ea90(param_1, param_2, param_3, param_4, param_5, 0);
-    return uVar1 & 1;
+u32 FUN_7103943b50(u64 arena, u64 bin, u64 slab, u64 extent, u64 npages) {
+    u32 result = FUN_710393ea90(arena, bin, slab, extent, npages, 0);
+    return result & 1;
 }
 
 // 0x71039458b0 — call + set flags (80B)
-u64 FUN_71039458b0(s64 param_1, u64 param_2) {
-    FUN_7103945810(param_1);
-    FUN_7103944130(param_1 + 8, param_2, 3);
-    return 0; // placeholder for return
+u64 FUN_71039458b0(s64 self, u64 value) {
+    FUN_7103945810(self);
+    FUN_7103944130(self + 8, value, 3);
+    return 0;
 }
 
 // 0x7103946f70 — call + mutex_unlock on globals (80B)
-s32 FUN_7103946f70(u64 param_1) {
-    u64 uVar2 = FUN_7103946fc0(param_1);
-    FUN_7103947020(uVar2, &DAT_7106dd3f80);
+s32 FUN_7103946f70(u64 tsd) {
+    u64 arena = FUN_7103946fc0(tsd);
+    FUN_7103947020(arena, &DAT_7106dd3f80);
     return pthread_mutex_unlock((void *)&DAT_7106dd3f60);
 }
 
-// 0x7103952dc0 — conditional set mode param (80B)
-void FUN_7103952dc0(u64 param_1, u64 param_2, u64 param_3, u8 param_4) {
-    u32 uVar1 = 0;
-    if ((param_4 & 1) == 0) {
-        uVar1 = 2;
+// 0x7103952dc0 — conditional set mode (80B)
+void FUN_7103952dc0(u64 arena, u64 bin, u64 slab, u8 flag) {
+    u32 mode = 0;
+    if ((flag & 1) == 0) {
+        mode = 2;
     }
-    FUN_7103951d40(param_3, uVar1);
+    FUN_7103951d40(slab, mode);
 }
 
 // 0x7103953a60 — stack-alloc call + second call (80B)
-void FUN_7103953a60(u64 param_1, u64 param_2) {
-    u8 auStack_1a8[384];
-    u64 local_28 = param_2;
-    u64 uVar1;
-    FUN_7103952a90(param_1, auStack_1a8);
-    uVar1 = *(u64 *)auStack_1a8;
-    FUN_7103953d80(param_1, uVar1, local_28);
+void FUN_7103953a60(u64 arena, u64 config) {
+    u8 buf[384];
+    u64 saved_config = config;
+    u64 result;
+    FUN_7103952a90(arena, buf);
+    result = *(u64 *)buf;
+    FUN_7103953d80(arena, result, saved_config);
 }
 
 // 0x7103953e20 — call 52dc + mask (80B)
-void FUN_7103953e20(u64 param_1, u64 param_2, u64 param_3, u8 param_4) {
-    FUN_7103952dc0(param_1, param_2, param_3, param_4 & 1);
-    FUN_7103952e10(param_3);
+void FUN_7103953e20(u64 arena, u64 bin, u64 slab, u8 flag) {
+    FUN_7103952dc0(arena, bin, slab, flag & 1);
+    FUN_7103952e10(slab);
 }
 
 // 0x7103953f60 — two-call with sub-result (80B)
-void FUN_7103953f60(u64 param_1, u64 param_2) {
-    u64 uVar1 = FUN_71039526e0(param_2);
-    FUN_7103953b10(param_1, uVar1, param_2, 1);
+void FUN_7103953f60(u64 arena, u64 extent) {
+    u64 key = FUN_71039526e0(extent);
+    FUN_7103953b10(arena, key, extent, 1);
 }
 
 // 0x7103953fb0 — two-call with sub-result (80B)
-void FUN_7103953fb0(u64 param_1, u64 param_2) {
-    u64 uVar1 = FUN_71039526e0(param_2);
-    FUN_7103953c10(param_1, uVar1, param_2);
+void FUN_7103953fb0(u64 arena, u64 extent) {
+    u64 key = FUN_71039526e0(extent);
+    FUN_7103953c10(arena, key, extent);
 }
 
 // 0x7103958760 — call 3c00 + pass shifted (80B)
-void FUN_7103958760(u64 param_1, u64 param_2, s64 param_3) {
-    u64 uVar1 = FUN_7103943c00();
-    FUN_7103945900(param_1, uVar1, (u64)(param_3 << 3), 0x40);
+void FUN_7103958760(u64 arena, u64 bin, s64 count) {
+    u64 base = FUN_7103943c00();
+    FUN_7103945900(arena, base, (u64)(count << 3), 0x40);
 }
 
 // 0x710395a6a0 — 5-arg wrapper adding 0,0,0 (80B)
-void FUN_710395a6a0(u64 param_1, u64 param_2, u64 param_3, u32 param_4, u64 param_5) {
-    FUN_710395a780(param_1, param_2, param_3, param_4, param_5, 0, 0, 0);
+void FUN_710395a6a0(u64 arena, u64 bin, u64 slab, u32 npages, u64 extent) {
+    FUN_710395a780(arena, bin, slab, npages, extent, 0, 0, 0);
 }
 
 // 0x710395b640 — stack-alloc call + second call (80B)
-void FUN_710395b640(u64 param_1, u64 param_2) {
-    u8 auStack_1a8[384];
-    u64 local_28 = param_2;
-    u64 uVar1;
-    FUN_710395bd70(param_1, auStack_1a8);
-    uVar1 = *(u64 *)auStack_1a8;
-    FUN_710395bdd0(param_1, uVar1, local_28);
+void FUN_710395b640(u64 arena, u64 config) {
+    u8 buf[384];
+    u64 saved_config = config;
+    u64 result;
+    FUN_710395bd70(arena, buf);
+    result = *(u64 *)buf;
+    FUN_710395bdd0(arena, result, saved_config);
 }
 
 // 0x710395bf00 — call bf50 + mask (80B)
-void FUN_710395bf00(u64 param_1, u64 param_2, u64 param_3, u8 param_4) {
-    FUN_710395bf50(param_1, param_2, param_3, param_4 & 1);
-    FUN_710395bfa0(param_3);
+void FUN_710395bf00(u64 arena, u64 bin, u64 slab, u8 flag) {
+    FUN_710395bf50(arena, bin, slab, flag & 1);
+    FUN_710395bfa0(slab);
 }
 
-// 0x710395bf50 — conditional set mode param (80B)
-void FUN_710395bf50(u64 param_1, u64 param_2, u64 param_3, u8 param_4) {
-    u32 uVar1 = 0;
-    if ((param_4 & 1) == 0) {
-        uVar1 = 2;
+// 0x710395bf50 — conditional set mode (80B)
+void FUN_710395bf50(u64 arena, u64 bin, u64 slab, u8 flag) {
+    u32 mode = 0;
+    if ((flag & 1) == 0) {
+        mode = 2;
     }
-    FUN_710395bd00(param_3, uVar1);
+    FUN_710395bd00(slab, mode);
 }
 
 // 0x710395f590 — state machine with switch (144B)
-void FUN_710395f590(u8 *param_1) {
-    switch (*param_1) {
+void FUN_710395f590(u8 *state) {
+    switch (*state) {
     case 2:
     case 4:
-        FUN_710395ee40(param_1);
+        FUN_710395ee40(state);
         // fallthrough
     case 0:
     case 1:
-        FUN_710395f620(param_1);
-        *param_1 = 3;
-        FUN_710395ed30(param_1);
+        FUN_710395f620(state);
+        *state = 3;
+        FUN_710395ed30(state);
         break;
     case 3:
         break;
@@ -307,4 +302,3 @@ void FUN_710395f590(u8 *param_1) {
         abort();
     }
 }
-
