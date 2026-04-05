@@ -1,23 +1,19 @@
-# Worker: pool-a
+# Worker: pool-b
 
 ## Model: Opus
 
-## Task: Types-first HARD decomp — AbsorberModule + AreaModule + ArticleModule functions
+## Task: Fix compare_bytes.py regex bug + types-first HARD decomp
 
-Decomp HARD-tier functions that access these modules. All structs are recovered in include/app/modules/.
+### Phase 1 (quick): Fix the regex bug in tools/compare_bytes.py
+The regex that extracts addresses from mangled function names fails when the name ends in hex chars and the signature starts with f (float param). Fix and test.
 
-### Approach
-1. python tools/next_batch.py --tier HARD --limit 30
-2. Filter to functions touching your modules via Ghidra
-3. Write idiomatic C++ using struct dispatch — write code a developer would write
-4. Build and verify
-5. Use confidence-tagged derivation chains on any new struct fields discovered
+### Phase 2: Types-first HARD decomp — CaptureModule + CatchModule + GrabModule functions
+Decomp HARD-tier functions accessing these modules.
 
-### Output: src/app/fun_typed_a_002.cpp onward
+### Output: src/app/fun_typed_b_002.cpp onward
 
 ### Rules
+- Phase 1: CAN edit tools/compare_bytes.py only
+- Phase 2: ONLY create src/app/fun_typed_b_*.cpp
 - Use struct field access, no raw offsets, no Ghidra paste, no naked asm
 - 3-attempt limit per function
-- ONLY create src/app/fun_typed_a_*.cpp
-- Save Ghidra results to /tmp/ghidra_results.txt
-- Build once with tee, grep the file

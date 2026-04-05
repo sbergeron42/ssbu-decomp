@@ -113,7 +113,13 @@ def main():
     # Find original address from CSV
     if addr is None:
         # Try to extract from function name
-        m = re.search(r'([0-9a-f]{5,8})E?[A-Z]', mangled)
+        # Prefer namespaced match: _<hex>E<type> (Itanium ABI with E delimiter)
+        m = re.search(r'_([0-9a-f]{3,8})E[a-zA-Z]', mangled)
+        if not m:
+            # Fallback: last _<hex><letter> (non-namespaced, take rightmost match)
+            all_m = list(re.finditer(r'_([0-9a-f]{3,8})[a-zA-Z]', mangled))
+            if all_m:
+                m = all_m[-1]
         if m:
             addr = 0x7100000000 + int(m.group(1), 16)
 
