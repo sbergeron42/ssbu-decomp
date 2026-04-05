@@ -1,18 +1,19 @@
-# Worker: pool-a
+# Worker: pool-b
 
 ## Model: Opus
 
-## Task: Rewrite Ghidra-paste batch_c files with struct access
+## Task: Rewrite Ghidra-paste batch_d + batch_d2 files with struct access
 
 Replace raw Ghidra decompiler output with clean C++ using recovered module struct headers.
 
-### Target Files (highest paste density in batch_c series)
-- `src/app/fun_batch_c_016.cpp` — 7 funcs, heavy module accessor paste
-- `src/app/fun_batch_c_017.cpp` — 2 funcs, densest paste in project (592 indicators)
-- `src/app/fun_batch_c_012.cpp` — 40 funcs, mixed paste
-- `src/app/fun_batch_c_013.cpp` — 29 funcs
-- `src/app/fun_batch_c_015.cpp` — 9 funcs, 19 module offset patterns
-- `src/app/fun_batch_c_010.cpp` — 34 funcs, partially cleaned (has BattleObjectModuleAccessor include)
+### Target Files (highest paste density)
+- `src/app/fun_batch_d_001.cpp` — 11 funcs, 441 paste score
+- `src/app/fun_batch_d2_001.cpp` — 3 funcs, 400 paste
+- `src/app/fun_batch_d2_002.cpp` — 2 funcs, 296 paste
+- `src/app/fun_batch_d2_007.cpp` — 2 funcs, 231 paste
+- `src/app/fun_batch_d2_008.cpp` — 1 func, 525 paste (dense)
+- `src/app/fun_batch_d2_005.cpp` — 7 funcs, 156 paste
+- `src/app/fun_batch_d2_006.cpp` — 4 funcs, 297 paste
 
 ### Workflow (per function)
 1. Read the function — identify which module it accesses via offset (check BattleObjectModuleAccessor.h)
@@ -49,6 +50,6 @@ python tools/compare_bytes.py FUN_7102xxxxxx
 
 ### Rules
 - Use struct field access from include/app/modules/
-- CAN ONLY edit: fun_batch_c_010.cpp through fun_batch_c_017.cpp
+- CAN ONLY edit: fun_batch_d_001.cpp, fun_batch_d2_001.cpp through fun_batch_d2_008.cpp
 - 3-attempt limit per function, then move on
 - Save Ghidra results to /tmp/ghidra_results.txt
