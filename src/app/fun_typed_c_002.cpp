@@ -45,6 +45,8 @@ extern "C" void FUN_710146bd70(void*);
 extern "C" void FUN_7101468040(void*);
 extern "C" void FUN_710148ff30(void*);
 extern "C" void FUN_71014a44c0(void*);
+extern "C" void FUN_7101ce1520(void*);
+extern "C" void FUN_71032d6180(void*);
 
 // Vtable symbols — hidden visibility to get ADRP+ADD (not GOT)
 #define VTABLE_EXTERN(name) extern "C" __attribute__((visibility("hidden"))) char name[]
@@ -96,6 +98,9 @@ VTABLE_EXTERN(PTR_LAB_7105067a20);
 VTABLE_EXTERN(PTR_LAB_7105067da0);
 VTABLE_EXTERN(PTR_LAB_71050686c0);
 VTABLE_EXTERN(PTR_LAB_7105068ee8);
+// Additional Pattern E vtables
+VTABLE_EXTERN(PTR_LAB_71050adb00);
+VTABLE_EXTERN(PTR_FUN_71050ad470);
 // Pattern H vtables
 VTABLE_EXTERN(PTR_FUN_710509c190);
 VTABLE_EXTERN(PTR_FUN_710509c210);
@@ -825,6 +830,80 @@ void FUN_71014a3780(void** self) {
         FUN_710392e590(sub);
     }
     FUN_71039c2140(self);
+}
+
+// ============================================================
+// Pattern E continued: vtable dtor variants
+// ============================================================
+
+// 0x7101cd2cc0 (Pattern E, STP for vtable+zero at [0]/[1])
+void FUN_7101cd2cc0(void** self) {
+    void* sub = self[1];
+    self[0] = PTR_LAB_71050ad3b0;
+    self[1] = nullptr;
+    if (sub) {
+        FUN_7101cd2ae0(sub);
+        FUN_710392e590(sub);
+    }
+    FUN_710392e590(self);
+}
+
+// 0x7101d10fd0 (Pattern E variant, inner tree deletes before freeing sub)
+void FUN_7101d10fd0(void** self) {
+    void* sub = self[1];
+    self[0] = PTR_LAB_71050adb00;
+    self[1] = nullptr;
+    if (sub) {
+        void** s = static_cast<void**>(sub);
+        FUN_7101d11020(static_cast<void**>(s[0x8d]));
+        FUN_7101d11020(static_cast<void**>(s[0x8a]));
+        FUN_710392e590(sub);
+    }
+    FUN_710392e590(self);
+}
+
+// 0x7101ce7ce0 (Pattern E, field at [4], tail-call FUN_71032d6180)
+void FUN_7101ce7ce0(void** self) {
+    void* sub = self[4];
+    self[0] = PTR_FUN_71050ad470;
+    self[4] = nullptr;
+    if (sub) {
+        FUN_7101ce1520(sub);
+        FUN_710392e590(sub);
+    }
+    FUN_71032d6180(self);
+}
+
+// 0x7101ce7d30 (deleting variant: call parent dtor + free self)
+void FUN_7101ce7d30(void** self) {
+    void* sub = self[4];
+    self[0] = PTR_FUN_71050ad470;
+    self[4] = nullptr;
+    if (sub) {
+        FUN_7101ce1520(sub);
+        FUN_710392e590(sub);
+    }
+    FUN_71032d6180(self);
+    FUN_710392e590(self);
+}
+
+// ============================================================
+// Pattern G continued: linked list walk destructors
+// ============================================================
+
+// 0x71033bff10 (base dtor, same pattern as FUN_7101611e90)
+void FUN_71033bff10(void** self) {
+    self[0] = PTR_FUN_7104f6d4c0;
+    void** node = static_cast<void**>(self[4]);
+    while (node) {
+        void** next = static_cast<void**>(node[0]);
+        FUN_710392e590(node);
+        node = next;
+    }
+    void* sub = self[2];
+    self[2] = nullptr;
+    if (!sub) return;
+    FUN_710392e590(sub);
 }
 
 // NOTE: Pattern H (multi-sub-vtable destructors) not included — code logic is
