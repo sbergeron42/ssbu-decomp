@@ -41,6 +41,71 @@ void FUN_71015c3060(void* p1, int p2) {
     FUN_710160e690(p1, p2, 1);
 }
 
+// 0x71015bfa40 (28 bytes) — set_life_type
+// Same chain as get_pre_explosion_search_object_id but stores w1 at +0x118
+void FUN_71015bfa40(u64 L, u32 val) {
+    u64 a = *(u64*)(L - 8);
+    u64 b = *(u64*)(a + 0x1A0);
+    u64 c = *(u64*)(b + 0x190);
+    u64 d = *(u64*)(c + 0x220);
+    u64 e = *(u64*)(d + 0x90);
+    *(u32*)(e + 0x118) = val;
+}
+
+// 0x71015c1dd0 (24 bytes) — variation
+// Pointer chain: *(L-8)+0x1A0 → +0x190 → +0x220 → +0x258 (u32)
+u32 FUN_71015c1dd0(u64 L) {
+    u64 a = *(u64*)(L - 8);
+    u64 b = *(u64*)(a + 0x1A0);
+    u64 c = *(u64*)(b + 0x190);
+    u64 d = *(u64*)(c + 0x220);
+    return *(u32*)(d + 0x258);
+}
+
+// 0x71015c2a70 (28 bytes) — is_force_flashing
+// Pointer chain: *(L-8)+0x1A0 → +0x190 → +0x220 → +0x90 → +0x152 (u8)
+u32 FUN_71015c2a70(u64 L) {
+    u64 a = *(u64*)(L - 8);
+    u64 b = *(u64*)(a + 0x1A0);
+    u64 c = *(u64*)(b + 0x190);
+    u64 d = *(u64*)(c + 0x220);
+    u64 e = *(u64*)(d + 0x90);
+    return *(u8*)(e + 0x152);
+}
+
+// 0x71015c8ed0 (8 bytes) — create_weapon
+// Tail-calls FUN_71015c8ee0(p1, p2, -1)
+extern "C" void FUN_71015c8ee0(void*, void*, u32);
+void FUN_71015c8ed0(void* p1, void* p2) {
+    FUN_71015c8ee0(p1, p2, 0xFFFFFFFF);
+}
+
+// 0x71015ce860 (8 bytes) — item_generate_position_nearest
+// Tail-calls FUN_710160e690(p1, p2, 0)
+void FUN_71015ce860(void* p1, int p2) {
+    FUN_710160e690(p1, p2, 0);
+}
+
+// 0x71015cf3c0 (4 bytes) — get_module_accessor
+// Pure forwarding tail call to FUN_710160e2a0
+extern "C" void* FUN_710160e2a0(void*);
+void* FUN_71015cf3c0(void* p) {
+    return FUN_710160e2a0(p);
+}
+
+// 0x71016459c0 (4 bytes) — revert_camera
+// Pure forwarding tail call to FUN_710160dea0
+extern "C" void FUN_710160dea0(void*);
+void FUN_71016459c0(void* p) {
+    FUN_710160dea0(p);
+}
+
+// 0x710164c450 (4 bytes) — revert_camera (variant)
+// Same target as above
+void FUN_710164c450(void* p) {
+    FUN_710160dea0(p);
+}
+
 // 0x71015cbc30 (16 bytes) — is_pickel_block
 // Returns (p != null) ? (*(u8*)(p + 0xC7) & 1) : 0
 u64 FUN_71015cbc30(u64 p) {
