@@ -1,8 +1,11 @@
 #include "types.h"
+#include "app/BattleObjectModuleAccessor.h"
 
 // MEDIUM-tier FUN_* functions -- 0x71033-0x71035 address range, batch d-016
-// Pool-d worker: auto-generated from Ghidra decompilation
-// Pattern: double-deref vtable calls and small wrappers
+// Rewritten from Ghidra paste to use BattleObjectModuleAccessor struct fields
+// Pattern: lua_bind-style functions where param_2+0x20 holds accessor pointer
+
+using app::BattleObjectModuleAccessor;
 
 // ---- External declarations -----------------------------------------------
 
@@ -15,6 +18,10 @@ extern void  FUN_710348cc70(u64);
 
 // External data
 extern s64 DAT_710532e7c8;
+
+// ---- Helper: extract accessor from lua context param_2 --------------------
+// param_2+0x20 holds a BattleObjectModuleAccessor*
+#define ACC(p) reinterpret_cast<BattleObjectModuleAccessor*>(*(s64*)((p) + 0x20))
 
 // ---- Functions ---------------------------------------------------------------
 
@@ -38,117 +45,125 @@ u64 FUN_7103366ac0(void)
     return 0;
 }
 
-// Helper macro for the double-deref vtable call pattern:
-// *(long **)(*(long *)(param_2 + 0x20) + 0x40) -> vtable[0x110] -> call()
-// Returns the int result.
-// Used by many small 48-byte bool-returning functions in this range.
-
-// 0x71033c94c0 -- double-deref vtable[0x110], return result != 5 (48 bytes)
+// 0x71033c94c0 -- status_module vtable[0x110](this) != 5 (48 bytes)
 u8 FUN_71033c94c0(u64 param_1, s64 param_2)
 {
-    s64 *plVar1 = *(s64**)(*(s64*)(param_2 + 0x20) + 0x40);
-    s32 iVar1 = (*(s32(*)())(*(s64*)(*plVar1 + 0x110)))();
-    return (u8)(iVar1 != 5);
+    auto* acc = ACC(param_2);
+    s64* status_mod = static_cast<s64*>(acc->status_module);
+    s32 status_kind = (*(s32(*)(s64*))(*(s64*)(*status_mod + 0x110)))(status_mod);
+    return (u8)(status_kind != 5);
 }
 
-// 0x71033ec8c0 -- double-deref vtable[0x110], return 2 < (iVar1 - 3) (64 bytes)
+// 0x71033ec8c0 -- status_module vtable[0x110](), 2 < (result - 3) (64 bytes)
 u8 FUN_71033ec8c0(u64 param_1, s64 param_2)
 {
-    s64 *plVar1 = *(s64**)(*(s64*)(param_2 + 0x20) + 0x40);
-    s32 iVar1 = (*(s32(*)())(*(s64*)(*plVar1 + 0x110)))();
-    return (u8)(2 < (u32)(iVar1 - 3));
+    auto* acc = ACC(param_2);
+    s64* status_mod = static_cast<s64*>(acc->status_module);
+    s32 status_kind = (*(s32(*)(s64*))(*(s64*)(*status_mod + 0x110)))(status_mod);
+    return (u8)(2 < (u32)(status_kind - 3));
 }
 
-// 0x71033f34a0 -- double-deref vtable[0x110], return (iVar1 - 1) < 6 (48 bytes)
+// 0x71033f34a0 -- status_module vtable[0x110](), (result - 1) < 6 (48 bytes)
 u8 FUN_71033f34a0(u64 param_1, s64 param_2)
 {
-    s64 *plVar1 = *(s64**)(*(s64*)(param_2 + 0x20) + 0x40);
-    s32 iVar1 = (*(s32(*)())(*(s64*)(*plVar1 + 0x110)))();
-    return (u8)((u32)(iVar1 - 1) < 6);
+    auto* acc = ACC(param_2);
+    s64* status_mod = static_cast<s64*>(acc->status_module);
+    s32 status_kind = (*(s32(*)(s64*))(*(s64*)(*status_mod + 0x110)))(status_mod);
+    return (u8)((u32)(status_kind - 1) < 6);
 }
 
-// 0x71033f34d0 -- double-deref vtable[0x110], return 5 < (iVar1 - 1) (48 bytes)
+// 0x71033f34d0 -- status_module vtable[0x110](), 5 < (result - 1) (48 bytes)
 u8 FUN_71033f34d0(u64 param_1, s64 param_2)
 {
-    s64 *plVar1 = *(s64**)(*(s64*)(param_2 + 0x20) + 0x40);
-    s32 iVar1 = (*(s32(*)())(*(s64*)(*plVar1 + 0x110)))();
-    return (u8)(5 < (u32)(iVar1 - 1));
+    auto* acc = ACC(param_2);
+    s64* status_mod = static_cast<s64*>(acc->status_module);
+    s32 status_kind = (*(s32(*)(s64*))(*(s64*)(*status_mod + 0x110)))(status_mod);
+    return (u8)(5 < (u32)(status_kind - 1));
 }
 
-// 0x71033fbf00 -- double-deref vtable[0x110], return result == 1 (48 bytes)
+// 0x71033fbf00 -- status_module vtable[0x110]() == 1 (48 bytes)
 u8 FUN_71033fbf00(u64 param_1, s64 param_2)
 {
-    s64 *plVar1 = *(s64**)(*(s64*)(param_2 + 0x20) + 0x40);
-    s32 iVar1 = (*(s32(*)())(*(s64*)(*plVar1 + 0x110)))();
-    return (u8)(iVar1 == 1);
+    auto* acc = ACC(param_2);
+    s64* status_mod = static_cast<s64*>(acc->status_module);
+    s32 status_kind = (*(s32(*)(s64*))(*(s64*)(*status_mod + 0x110)))(status_mod);
+    return (u8)(status_kind == 1);
 }
 
-// 0x71034298d0 -- get inner ptr at +0x50, vtable[0x110](ptr, 0x2000000e), return 1 (48 bytes)
+// 0x71034298d0 -- work_module vtable[0x110](ptr, 0x2000000e), return 1 (48 bytes)
 u64 FUN_71034298d0(u64 param_1, s64 param_2)
 {
-    s64 *plVar1 = *(s64**)(*(s64*)(param_2 + 0x20) + 0x50);
-    (*(void(*)(s64*, u32))(*(s64*)(*plVar1 + 0x110)))(plVar1, 0x2000000e);
+    auto* acc = ACC(param_2);
+    s64* work_mod = static_cast<s64*>(acc->work_module);
+    (*(void(*)(s64*, u32))(*(s64*)(*work_mod + 0x110)))(work_mod, 0x2000000e);
     return 1;
 }
 
-// 0x71034336f0 -- double-deref vtable[0x110], return result != 1 (48 bytes)
+// 0x71034336f0 -- status_module vtable[0x110]() != 1 (48 bytes)
 u8 FUN_71034336f0(u64 param_1, s64 param_2)
 {
-    s64 *plVar1 = *(s64**)(*(s64*)(param_2 + 0x20) + 0x40);
-    s32 iVar1 = (*(s32(*)())(*(s64*)(*plVar1 + 0x110)))();
-    return (u8)(iVar1 != 1);
+    auto* acc = ACC(param_2);
+    s64* status_mod = static_cast<s64*>(acc->status_module);
+    s32 status_kind = (*(s32(*)(s64*))(*(s64*)(*status_mod + 0x110)))(status_mod);
+    return (u8)(status_kind != 1);
 }
 
-// 0x710346c7f0 -- double-deref vtable[0x110], return result != 1 (48 bytes)
+// 0x710346c7f0 -- status_module vtable[0x110]() != 1 (48 bytes)
 u8 FUN_710346c7f0(u64 param_1, s64 param_2)
 {
-    s64 *plVar1 = *(s64**)(*(s64*)(param_2 + 0x20) + 0x40);
-    s32 iVar1 = (*(s32(*)())(*(s64*)(*plVar1 + 0x110)))();
-    return (u8)(iVar1 != 1);
+    auto* acc = ACC(param_2);
+    s64* status_mod = static_cast<s64*>(acc->status_module);
+    s32 status_kind = (*(s32(*)(s64*))(*(s64*)(*status_mod + 0x110)))(status_mod);
+    return (u8)(status_kind != 1);
 }
 
 // 0x710347d410 -- wrapper: FUN_710347cff0(param_2), return 0 (32 bytes)
 u32 FUN_710347d410(u64 param_1, u64 param_2) { FUN_710347cff0(param_2); return 0; }
 
-// 0x710348c480 -- double-deref vtable[0x110], return result != 1 (48 bytes)
+// 0x710348c480 -- status_module vtable[0x110]() != 1 (48 bytes)
 u8 FUN_710348c480(u64 param_1, s64 param_2)
 {
-    s64 *plVar1 = *(s64**)(*(s64*)(param_2 + 0x20) + 0x40);
-    s32 iVar1 = (*(s32(*)())(*(s64*)(*plVar1 + 0x110)))();
-    return (u8)(iVar1 != 1);
+    auto* acc = ACC(param_2);
+    s64* status_mod = static_cast<s64*>(acc->status_module);
+    s32 status_kind = (*(s32(*)(s64*))(*(s64*)(*status_mod + 0x110)))(status_mod);
+    return (u8)(status_kind != 1);
 }
 
 // 0x710348cc50 -- wrapper: FUN_710348cc70(param_2), return 1 (32 bytes)
 u64 FUN_710348cc50(u64 param_1, u64 param_2) { FUN_710348cc70(param_2); return 1; }
 
-// 0x710349d810 -- get inner ptr at +0xd0, vtable[0x78](ptr, 10), return ~result & 1 (48 bytes)
+// 0x710349d810 -- link_module vtable[0x78](ptr, 10), return ~result & 1 (48 bytes)
 u64 FUN_710349d810(u64 param_1, s64 param_2)
 {
-    s64 *plVar2 = *(s64**)(*(s64*)(param_2 + 0x20) + 0xd0);
-    u32 uVar1 = (*(u32(*)(s64*, s32))(*(s64*)(*plVar2 + 0x78)))(plVar2, 10);
-    return ~uVar1 & 1;
+    auto* acc = ACC(param_2);
+    s64* link_mod = static_cast<s64*>(acc->link_module);
+    u32 result = (*(u32(*)(s64*, s32))(*(s64*)(*link_mod + 0x78)))(link_mod, 10);
+    return ~result & 1;
 }
 
-// 0x71034d3ae0 -- double-deref vtable[0x110], return (iVar1 - 4) < 3 (48 bytes)
+// 0x71034d3ae0 -- status_module vtable[0x110](), (result - 4) < 3 (48 bytes)
 u8 FUN_71034d3ae0(u64 param_1, s64 param_2)
 {
-    s64 *plVar1 = *(s64**)(*(s64*)(param_2 + 0x20) + 0x40);
-    s32 iVar1 = (*(s32(*)())(*(s64*)(*plVar1 + 0x110)))();
-    return (u8)((u32)(iVar1 - 4) < 3);
+    auto* acc = ACC(param_2);
+    s64* status_mod = static_cast<s64*>(acc->status_module);
+    s32 status_kind = (*(s32(*)(s64*))(*(s64*)(*status_mod + 0x110)))(status_mod);
+    return (u8)((u32)(status_kind - 4) < 3);
 }
 
-// 0x7103517a60 -- double-deref vtable[0x110], return result != 7 (64 bytes)
+// 0x7103517a60 -- status_module vtable[0x110]() != 7 (64 bytes)
 u8 FUN_7103517a60(u64 param_1, s64 param_2)
 {
-    s64 *plVar1 = *(s64**)(*(s64*)(param_2 + 0x20) + 0x40);
-    s32 iVar1 = (*(s32(*)())(*(s64*)(*plVar1 + 0x110)))();
-    return (u8)(iVar1 != 7);
+    auto* acc = ACC(param_2);
+    s64* status_mod = static_cast<s64*>(acc->status_module);
+    s32 status_kind = (*(s32(*)(s64*))(*(s64*)(*status_mod + 0x110)))(status_mod);
+    return (u8)(status_kind != 7);
 }
 
-// 0x71035343b0 -- double-deref vtable[0x110], return result != 1 (48 bytes)
+// 0x71035343b0 -- status_module vtable[0x110]() != 1 (48 bytes)
 u8 FUN_71035343b0(u64 param_1, s64 param_2)
 {
-    s64 *plVar1 = *(s64**)(*(s64*)(param_2 + 0x20) + 0x40);
-    s32 iVar1 = (*(s32(*)())(*(s64*)(*plVar1 + 0x110)))();
-    return (u8)(iVar1 != 1);
+    auto* acc = ACC(param_2);
+    s64* status_mod = static_cast<s64*>(acc->status_module);
+    s32 status_kind = (*(s32(*)(s64*))(*(s64*)(*status_mod + 0x110)))(status_mod);
+    return (u8)(status_kind != 1);
 }

@@ -1,7 +1,7 @@
 #include "types.h"
 
 // MEDIUM-tier FUN_* functions -- 0x71037d-0x71038 address range, batch d-015
-// Pool-d worker: auto-generated from Ghidra decompilation
+// Rewritten: renamed Ghidra variables (lVar1 → result)
 
 // ---- External declarations -----------------------------------------------
 
@@ -21,130 +21,130 @@ extern u8 PTR_VirtualFreeHook_71052a7a70[];
 
 // ---- Functions ---------------------------------------------------------------
 
-// 0x71037d1920 -- vtable call at *param_1+0xc0, return result + 0x20 (32 bytes)
+// 0x71037d1920 -- vtable[0xc0]() + 0x20 (32 bytes)
 s64 FUN_71037d1920(s64 *param_1)
 {
-    s64 lVar1 = (*(s64(*)())(*(s64*)(*param_1 + 0xc0)))();
-    return lVar1 + 0x20;
+    s64 result = (*(s64(*)())(*(s64*)(*param_1 + 0xc0)))();
+    return result + 0x20;
 }
 
-// 0x71037d1940 -- vtable call at *param_1+0xc0, return result + 0x230 (32 bytes)
+// 0x71037d1940 -- vtable[0xc0]() + 0x230 (32 bytes)
 s64 FUN_71037d1940(s64 *param_1)
 {
-    s64 lVar1 = (*(s64(*)())(*(s64*)(*param_1 + 0xc0)))();
-    return lVar1 + 0x230;
+    s64 result = (*(s64(*)())(*(s64*)(*param_1 + 0xc0)))();
+    return result + 0x230;
 }
 
-// 0x71037d1960 -- vtable call at *param_1+0xc0, return result + 0x338 (32 bytes)
+// 0x71037d1960 -- vtable[0xc0]() + 0x338 (32 bytes)
 s64 FUN_71037d1960(s64 *param_1)
 {
-    s64 lVar1 = (*(s64(*)())(*(s64*)(*param_1 + 0xc0)))();
-    return lVar1 + 0x338;
+    s64 result = (*(s64(*)())(*(s64*)(*param_1 + 0xc0)))();
+    return result + 0x338;
 }
 
-// 0x71037d3b80 -- vtable call at *param_1+0xc0, return result + 0x20 (32 bytes)
+// 0x71037d3b80 -- vtable[0xc0]() + 0x20 (32 bytes)
 s64 FUN_71037d3b80(s64 *param_1)
 {
-    s64 lVar1 = (*(s64(*)())(*(s64*)(*param_1 + 0xc0)))();
-    return lVar1 + 0x20;
+    s64 result = (*(s64(*)())(*(s64*)(*param_1 + 0xc0)))();
+    return result + 0x20;
 }
 
-// 0x71037d3ba0 -- vtable call at *param_1+0xc0, return result + 0x230 (32 bytes)
+// 0x71037d3ba0 -- vtable[0xc0]() + 0x230 (32 bytes)
 s64 FUN_71037d3ba0(s64 *param_1)
 {
-    s64 lVar1 = (*(s64(*)())(*(s64*)(*param_1 + 0xc0)))();
-    return lVar1 + 0x230;
+    s64 result = (*(s64(*)())(*(s64*)(*param_1 + 0xc0)))();
+    return result + 0x230;
 }
 
-// 0x71037d3bc0 -- vtable call at *param_1+0xc0, return result + 0x338 (32 bytes)
+// 0x71037d3bc0 -- vtable[0xc0]() + 0x338 (32 bytes)
 s64 FUN_71037d3bc0(s64 *param_1)
 {
-    s64 lVar1 = (*(s64(*)())(*(s64*)(*param_1 + 0xc0)))();
-    return lVar1 + 0x338;
+    s64 result = (*(s64(*)())(*(s64*)(*param_1 + 0xc0)))();
+    return result + 0x338;
 }
 
-// 0x71037d5430 -- vtable call at *param_1+0xc0, return result + 0x20 (32 bytes)
+// 0x71037d5430 -- vtable[0xc0]() + 0x20 (32 bytes)
 s64 FUN_71037d5430(s64 *param_1)
 {
-    s64 lVar1 = (*(s64(*)())(*(s64*)(*param_1 + 0xc0)))();
-    return lVar1 + 0x20;
+    s64 result = (*(s64(*)())(*(s64*)(*param_1 + 0xc0)))();
+    return result + 0x20;
 }
 
-// 0x71037d5450 -- vtable call at *param_1+0xc0, return result + 0x230 (32 bytes)
+// 0x71037d5450 -- vtable[0xc0]() + 0x230 (32 bytes)
 s64 FUN_71037d5450(s64 *param_1)
 {
-    s64 lVar1 = (*(s64(*)())(*(s64*)(*param_1 + 0xc0)))();
-    return lVar1 + 0x230;
+    s64 result = (*(s64(*)())(*(s64*)(*param_1 + 0xc0)))();
+    return result + 0x230;
 }
 
-// 0x71037d5470 -- vtable call at *param_1+0xc0, return result + 0x338 (32 bytes)
+// 0x71037d5470 -- vtable[0xc0]() + 0x338 (32 bytes)
 s64 FUN_71037d5470(s64 *param_1)
 {
-    s64 lVar1 = (*(s64(*)())(*(s64*)(*param_1 + 0xc0)))();
-    return lVar1 + 0x338;
+    s64 result = (*(s64(*)())(*(s64*)(*param_1 + 0xc0)))();
+    return result + 0x338;
 }
 
-// 0x71037d6e70 -- vtable call at *param_1+0xc0, return result + 0x20 (32 bytes)
+// 0x71037d6e70 -- vtable[0xc0]() + 0x20 (32 bytes)
 s64 FUN_71037d6e70(s64 *param_1)
 {
-    s64 lVar1 = (*(s64(*)())(*(s64*)(*param_1 + 0xc0)))();
-    return lVar1 + 0x20;
+    s64 result = (*(s64(*)())(*(s64*)(*param_1 + 0xc0)))();
+    return result + 0x20;
 }
 
-// 0x71037d6e90 -- vtable call at *param_1+0xc0, return result + 0x230 (32 bytes)
+// 0x71037d6e90 -- vtable[0xc0]() + 0x230 (32 bytes)
 s64 FUN_71037d6e90(s64 *param_1)
 {
-    s64 lVar1 = (*(s64(*)())(*(s64*)(*param_1 + 0xc0)))();
-    return lVar1 + 0x230;
+    s64 result = (*(s64(*)())(*(s64*)(*param_1 + 0xc0)))();
+    return result + 0x230;
 }
 
-// 0x71037d6eb0 -- vtable call at *param_1+0xc0, return result + 0x338 (32 bytes)
+// 0x71037d6eb0 -- vtable[0xc0]() + 0x338 (32 bytes)
 s64 FUN_71037d6eb0(s64 *param_1)
 {
-    s64 lVar1 = (*(s64(*)())(*(s64*)(*param_1 + 0xc0)))();
-    return lVar1 + 0x338;
+    s64 result = (*(s64(*)())(*(s64*)(*param_1 + 0xc0)))();
+    return result + 0x338;
 }
 
-// 0x71037d8890 -- vtable call at *param_1+0xc0, return result + 0x20 (32 bytes)
+// 0x71037d8890 -- vtable[0xc0]() + 0x20 (32 bytes)
 s64 FUN_71037d8890(s64 *param_1)
 {
-    s64 lVar1 = (*(s64(*)())(*(s64*)(*param_1 + 0xc0)))();
-    return lVar1 + 0x20;
+    s64 result = (*(s64(*)())(*(s64*)(*param_1 + 0xc0)))();
+    return result + 0x20;
 }
 
-// 0x71037d88b0 -- vtable call at *param_1+0xc0, return result + 0x230 (32 bytes)
+// 0x71037d88b0 -- vtable[0xc0]() + 0x230 (32 bytes)
 s64 FUN_71037d88b0(s64 *param_1)
 {
-    s64 lVar1 = (*(s64(*)())(*(s64*)(*param_1 + 0xc0)))();
-    return lVar1 + 0x230;
+    s64 result = (*(s64(*)())(*(s64*)(*param_1 + 0xc0)))();
+    return result + 0x230;
 }
 
-// 0x71037d88d0 -- vtable call at *param_1+0xc0, return result + 0x338 (32 bytes)
+// 0x71037d88d0 -- vtable[0xc0]() + 0x338 (32 bytes)
 s64 FUN_71037d88d0(s64 *param_1)
 {
-    s64 lVar1 = (*(s64(*)())(*(s64*)(*param_1 + 0xc0)))();
-    return lVar1 + 0x338;
+    s64 result = (*(s64(*)())(*(s64*)(*param_1 + 0xc0)))();
+    return result + 0x338;
 }
 
-// 0x71037da290 -- vtable call at *param_1+0xc0, return result + 0x20 (32 bytes)
+// 0x71037da290 -- vtable[0xc0]() + 0x20 (32 bytes)
 s64 FUN_71037da290(s64 *param_1)
 {
-    s64 lVar1 = (*(s64(*)())(*(s64*)(*param_1 + 0xc0)))();
-    return lVar1 + 0x20;
+    s64 result = (*(s64(*)())(*(s64*)(*param_1 + 0xc0)))();
+    return result + 0x20;
 }
 
-// 0x71037da2b0 -- vtable call at *param_1+0xc0, return result + 0x230 (32 bytes)
+// 0x71037da2b0 -- vtable[0xc0]() + 0x230 (32 bytes)
 s64 FUN_71037da2b0(s64 *param_1)
 {
-    s64 lVar1 = (*(s64(*)())(*(s64*)(*param_1 + 0xc0)))();
-    return lVar1 + 0x230;
+    s64 result = (*(s64(*)())(*(s64*)(*param_1 + 0xc0)))();
+    return result + 0x230;
 }
 
-// 0x71037da2d0 -- vtable call at *param_1+0xc0, return result + 0x338 (32 bytes)
+// 0x71037da2d0 -- vtable[0xc0]() + 0x338 (32 bytes)
 s64 FUN_71037da2d0(s64 *param_1)
 {
-    s64 lVar1 = (*(s64(*)())(*(s64*)(*param_1 + 0xc0)))();
-    return lVar1 + 0x338;
+    s64 result = (*(s64(*)())(*(s64*)(*param_1 + 0xc0)))();
+    return result + 0x338;
 }
 
 // 0x71037dc3b0 -- call helper, conditional VirtualFreeHook, then free (64 bytes)

@@ -94,8 +94,9 @@ u64 FUN_71037b73a0(s64 param_1) { return *(u32*)(param_1 + 0x408); }
 // 0x71037b73c0 -- stack pop: decrement counter, return indexed element (48 bytes)
 u64 FUN_71037b73c0(s64 *param_1)
 {
-    *(s32*)(param_1 + 0x81) = (s32)param_1[0x81] + -1;
-    return *(u32*)(*param_1 + (s64)(s32)param_1[0x81] * 4);
+    s32 count = (s32)param_1[0x81] + -1;
+    *(s32*)(param_1 + 0x81) = count;
+    return *(u32*)(*param_1 + (s64)count * 4);
 }
 
 // 0x71037b7970 -- set bit 3 of *(u32*)(p+8) (32 bytes)
@@ -132,17 +133,17 @@ u8 FUN_71037b89c0(s64 param_1) { return *(u8*)(param_1 + 8) >> 2 & 1; }
 // 0x71037b89e0 -- append param_2 to *(p+0x18)[count++] at +0x40 (48 bytes)
 void FUN_71037b89e0(s64 param_1, u64 param_2)
 {
-    s32 iVar1 = *(s32*)(param_1 + 0x40);
-    *(s32*)(param_1 + 0x40) = iVar1 + 1;
-    *(u64*)(*(s64*)(param_1 + 0x18) + (s64)iVar1 * 8) = param_2;
+    s32 idx = *(s32*)(param_1 + 0x40);
+    *(s32*)(param_1 + 0x40) = idx + 1;
+    *(u64*)(*(s64*)(param_1 + 0x18) + (s64)idx * 8) = param_2;
 }
 
 // 0x71037b8a10 -- append param_2 to *(p+0x20)[count++] at +0x3c (48 bytes)
 void FUN_71037b8a10(s64 param_1, u64 param_2)
 {
-    s32 iVar1 = *(s32*)(param_1 + 0x3c);
-    *(s32*)(param_1 + 0x3c) = iVar1 + 1;
-    *(u64*)(*(s64*)(param_1 + 0x20) + (s64)iVar1 * 8) = param_2;
+    s32 idx = *(s32*)(param_1 + 0x3c);
+    *(s32*)(param_1 + 0x3c) = idx + 1;
+    *(u64*)(*(s64*)(param_1 + 0x20) + (s64)idx * 8) = param_2;
 }
 
 // 0x71037b8a40 -- return *(u64*)(p+0x68) (32 bytes)
