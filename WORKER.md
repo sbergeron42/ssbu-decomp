@@ -1,19 +1,19 @@
-# Worker: pool-b
+# Worker: pool-c
 
 ## Model: Opus
 
-## Task: Fix compare_bytes.py regex bug + types-first HARD decomp
+## Task: Types-first HARD decomp â€” SearchModule + ReflectModule + ReflectorModule functions
 
-### Phase 1 (quick): Fix the regex bug in tools/compare_bytes.py
-The regex that extracts addresses from mangled function names fails when the name ends in hex chars and the signature starts with f (float param). Fix and test.
+Decomp HARD-tier functions that access these modules. All structs are recovered.
 
-### Phase 2: Types-first HARD decomp — CaptureModule + CatchModule + GrabModule functions
-Decomp HARD-tier functions accessing these modules.
+### Output: src/app/fun_typed_c_004.cpp onward (continue numbering)
 
-### Output: src/app/fun_typed_b_002.cpp onward
+### Progress
+- fun_typed_c_004.cpp: 13 functions (5 verified 100%, 1 near-match, 7 L2C bridges compiled)
+- Verified: get_pre_explosion_search_object_id, search_range, search_range_ignore_lr, get_material_type, get_assist_respawn_position
+- L2C bridge functions compile but don't verify due to NX Clang register allocation divergence
 
 ### Rules
-- Phase 1: CAN edit tools/compare_bytes.py only
-- Phase 2: ONLY create src/app/fun_typed_b_*.cpp
 - Use struct field access, no raw offsets, no Ghidra paste, no naked asm
 - 3-attempt limit per function
+- ONLY create src/app/fun_typed_c_*.cpp
