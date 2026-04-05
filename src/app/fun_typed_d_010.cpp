@@ -18,92 +18,92 @@ namespace app::lua_bind {
 
 // ======================= WorkModule =======================
 
-// count_down_int: CSV=(acc,s32,s32,s32), build=(acc,u64,u64)
-void* WorkModule__count_down_int_fix(BattleObjectModuleAccessor* a, s32 p1, s32 p2, s32 p3)
+// count_down_int: CSV=(acc,s32,s32,s32), ABI passthrough (p3 unused)
+void* WorkModule__count_down_int_fix(BattleObjectModuleAccessor* a, s32 p1, s32 p2)
     asm("_ZN3app8lua_bind31WorkModule__count_down_int_implEPNS_26BattleObjectModuleAccessorEiii");
-void* WorkModule__count_down_int_fix(BattleObjectModuleAccessor* a, s32 p1, s32 p2, s32 p3) {
+void* WorkModule__count_down_int_fix(BattleObjectModuleAccessor* a, s32 p1, s32 p2) {
     auto* m = WM(a);
-    return reinterpret_cast<void*(*)(void*, u64, u64)>(VT(m)[0xf8/8])(m, p1, p2);
+    return reinterpret_cast<void*(*)(void*, s32, s32)>(VT(m)[0xf8/8])(m, p1, p2);
 }
 
-// div_int: CSV=(acc,s32,s32,s32), build=(acc,u64,u64)
-void* WorkModule__div_int_fix(BattleObjectModuleAccessor* a, s32 p1, s32 p2, s32 p3)
+// div_int: CSV=(acc,s32,s32,s32), ABI passthrough (p3 unused)
+void* WorkModule__div_int_fix(BattleObjectModuleAccessor* a, s32 p1, s32 p2)
     asm("_ZN3app8lua_bind24WorkModule__div_int_implEPNS_26BattleObjectModuleAccessorEiii");
-void* WorkModule__div_int_fix(BattleObjectModuleAccessor* a, s32 p1, s32 p2, s32 p3) {
+void* WorkModule__div_int_fix(BattleObjectModuleAccessor* a, s32 p1, s32 p2) {
     auto* m = WM(a);
-    return reinterpret_cast<void*(*)(void*, u64, u64)>(VT(m)[0xf0/8])(m, p1, p2);
+    return reinterpret_cast<void*(*)(void*, s32, s32)>(VT(m)[0xf0/8])(m, p1, p2);
 }
 
-// mul_int: CSV=(acc,s32,s32,s32), build=(acc,u64,u64)
-void* WorkModule__mul_int_fix(BattleObjectModuleAccessor* a, s32 p1, s32 p2, s32 p3)
+// mul_int: CSV=(acc,s32,s32,s32), ABI passthrough (p3 unused)
+void* WorkModule__mul_int_fix(BattleObjectModuleAccessor* a, s32 p1, s32 p2)
     asm("_ZN3app8lua_bind24WorkModule__mul_int_implEPNS_26BattleObjectModuleAccessorEiii");
-void* WorkModule__mul_int_fix(BattleObjectModuleAccessor* a, s32 p1, s32 p2, s32 p3) {
+void* WorkModule__mul_int_fix(BattleObjectModuleAccessor* a, s32 p1, s32 p2) {
     auto* m = WM(a);
-    return reinterpret_cast<void*(*)(void*, u64, u64)>(VT(m)[0xe8/8])(m, p1, p2);
+    return reinterpret_cast<void*(*)(void*, s32, s32)>(VT(m)[0xe8/8])(m, p1, p2);
 }
 
-// sub_int: CSV=(acc,s32,s32,s32), build=(acc,u64,u64)
-void* WorkModule__sub_int_fix(BattleObjectModuleAccessor* a, s32 p1, s32 p2, s32 p3)
+// sub_int: CSV=(acc,s32,s32,s32), ABI passthrough (p3 unused)
+void* WorkModule__sub_int_fix(BattleObjectModuleAccessor* a, s32 p1, s32 p2)
     asm("_ZN3app8lua_bind24WorkModule__sub_int_implEPNS_26BattleObjectModuleAccessorEiii");
-void* WorkModule__sub_int_fix(BattleObjectModuleAccessor* a, s32 p1, s32 p2, s32 p3) {
+void* WorkModule__sub_int_fix(BattleObjectModuleAccessor* a, s32 p1, s32 p2) {
     auto* m = WM(a);
-    return reinterpret_cast<void*(*)(void*, u64, u64)>(VT(m)[0xe0/8])(m, p1, p2);
+    return reinterpret_cast<void*(*)(void*, s32, s32)>(VT(m)[0xe0/8])(m, p1, p2);
 }
 
-// set_int: CSV=(acc,s32,s32,s32), build=(acc,u64,u64)
-void WorkModule__set_int_fix(BattleObjectModuleAccessor* a, s32 p1, s32 p2, s32 p3)
+// set_int: CSV=(acc,s32,s32,s32), ABI passthrough (p3 unused)
+void WorkModule__set_int_fix(BattleObjectModuleAccessor* a, s32 p1, s32 p2)
     asm("_ZN3app8lua_bind24WorkModule__set_int_implEPNS_26BattleObjectModuleAccessorEiii");
-void WorkModule__set_int_fix(BattleObjectModuleAccessor* a, s32 p1, s32 p2, s32 p3) {
+void WorkModule__set_int_fix(BattleObjectModuleAccessor* a, s32 p1, s32 p2) {
     auto* m = WM(a);
-    reinterpret_cast<void(*)(void*, u64, u64)>(VT(m)[0xa0/8])(m, p1, p2);
+    reinterpret_cast<void(*)(void*, s32, s32)>(VT(m)[0xa0/8])(m, p1, p2);
 }
 
-// set_int64: CSV=(acc,s32,s64,s32), build=(acc,u64,u64)
-void WorkModule__set_int64_fix(BattleObjectModuleAccessor* a, s32 p1, s64 p2, s32 p3)
+// set_int64: CSV=(acc,s32,s64,s32), ABI passthrough (p3 unused)
+void WorkModule__set_int64_fix(BattleObjectModuleAccessor* a, s32 p1, s64 p2)
     asm("_ZN3app8lua_bind26WorkModule__set_int64_implEPNS_26BattleObjectModuleAccessorEixi");
-void WorkModule__set_int64_fix(BattleObjectModuleAccessor* a, s32 p1, s64 p2, s32 p3) {
+void WorkModule__set_int64_fix(BattleObjectModuleAccessor* a, s32 p1, s64 p2) {
     auto* m = WM(a);
-    reinterpret_cast<void(*)(void*, u64, u64)>(VT(m)[0xb8/8])(m, p1, p2);
+    reinterpret_cast<void(*)(void*, s32, s64)>(VT(m)[0xb8/8])(m, p1, p2);
 }
 
-// get_param_int: CSV=(acc,s32,s32,s32), build=(acc,u64,u64)
-void* WorkModule__get_param_int_fix(BattleObjectModuleAccessor* a, s32 p1, s32 p2, s32 p3)
+// get_param_int: CSV=(acc,s32,s32,s32), ABI passthrough (p3 unused)
+void* WorkModule__get_param_int_fix(BattleObjectModuleAccessor* a, s32 p1, s32 p2)
     asm("_ZN3app8lua_bind30WorkModule__get_param_int_implEPNS_26BattleObjectModuleAccessorEiii");
-void* WorkModule__get_param_int_fix(BattleObjectModuleAccessor* a, s32 p1, s32 p2, s32 p3) {
+void* WorkModule__get_param_int_fix(BattleObjectModuleAccessor* a, s32 p1, s32 p2) {
     auto* m = WM(a);
-    return reinterpret_cast<void*(*)(void*, u64, u64)>(VT(m)[0x248/8])(m, p1, p2);
+    return reinterpret_cast<void*(*)(void*, s32, s32)>(VT(m)[0x248/8])(m, p1, p2);
 }
 
-// get_param_int64: CSV=(acc,s32,s32,s32), build=(acc,u64,u64)
-void* WorkModule__get_param_int64_fix(BattleObjectModuleAccessor* a, s32 p1, s32 p2, s32 p3)
+// get_param_int64: CSV=(acc,s32,s32,s32), ABI passthrough (p3 unused)
+void* WorkModule__get_param_int64_fix(BattleObjectModuleAccessor* a, s32 p1, s32 p2)
     asm("_ZN3app8lua_bind32WorkModule__get_param_int64_implEPNS_26BattleObjectModuleAccessorEiii");
-void* WorkModule__get_param_int64_fix(BattleObjectModuleAccessor* a, s32 p1, s32 p2, s32 p3) {
+void* WorkModule__get_param_int64_fix(BattleObjectModuleAccessor* a, s32 p1, s32 p2) {
     auto* m = WM(a);
-    return reinterpret_cast<void*(*)(void*, u64, u64)>(VT(m)[0x258/8])(m, p1, p2);
+    return reinterpret_cast<void*(*)(void*, s32, s32)>(VT(m)[0x258/8])(m, p1, p2);
 }
 
-// get_param_float: CSV=(acc,s32,s32,s32), build=(acc,u64,u64)
-void* WorkModule__get_param_float_fix(BattleObjectModuleAccessor* a, s32 p1, s32 p2, s32 p3)
+// get_param_float: CSV=(acc,s32,s32,s32), ABI passthrough (p3 unused)
+void* WorkModule__get_param_float_fix(BattleObjectModuleAccessor* a, s32 p1, s32 p2)
     asm("_ZN3app8lua_bind32WorkModule__get_param_float_implEPNS_26BattleObjectModuleAccessorEiii");
-void* WorkModule__get_param_float_fix(BattleObjectModuleAccessor* a, s32 p1, s32 p2, s32 p3) {
+void* WorkModule__get_param_float_fix(BattleObjectModuleAccessor* a, s32 p1, s32 p2) {
     auto* m = WM(a);
-    return reinterpret_cast<void*(*)(void*, u64, u64)>(VT(m)[0x268/8])(m, p1, p2);
+    return reinterpret_cast<void*(*)(void*, s32, s32)>(VT(m)[0x268/8])(m, p1, p2);
 }
 
-// set_customize_no: CSV=(acc,s32,s32,s32), build=(acc,u64,u64)
-void WorkModule__set_customize_no_fix(BattleObjectModuleAccessor* a, s32 p1, s32 p2, s32 p3)
+// set_customize_no: CSV=(acc,s32,s32,s32), ABI passthrough (p3 unused)
+void WorkModule__set_customize_no_fix(BattleObjectModuleAccessor* a, s32 p1, s32 p2)
     asm("_ZN3app8lua_bind33WorkModule__set_customize_no_implEPNS_26BattleObjectModuleAccessorEiii");
-void WorkModule__set_customize_no_fix(BattleObjectModuleAccessor* a, s32 p1, s32 p2, s32 p3) {
+void WorkModule__set_customize_no_fix(BattleObjectModuleAccessor* a, s32 p1, s32 p2) {
     auto* m = WM(a);
-    reinterpret_cast<void(*)(void*, u64, u64)>(VT(m)[0x278/8])(m, p1, p2);
+    reinterpret_cast<void(*)(void*, s32, s32)>(VT(m)[0x278/8])(m, p1, p2);
 }
 
-// enable_transition_term_group_impl_2: CSV=(acc,s32), build=(acc,u64)
+// enable_transition_term_group_impl_2: CSV=(acc,s32), ABI passthrough
 void WorkModule__enable_transition_term_group_impl_2_fix(BattleObjectModuleAccessor* a, s32 group)
     asm("_ZN3app8lua_bind47WorkModule__enable_transition_term_group_impl_2EPNS_26BattleObjectModuleAccessorEi");
 void WorkModule__enable_transition_term_group_impl_2_fix(BattleObjectModuleAccessor* a, s32 group) {
     auto* m = WM(a);
-    reinterpret_cast<void(*)(void*, u64)>(VT(m)[0x148/8])(m, group);
+    reinterpret_cast<void(*)(void*, s32)>(VT(m)[0x148/8])(m, group);
 }
 
 // NOTE: WorkModule v0x1a0, v0x1b0, v0x1c0, v0x200 already in fun_typed_d_006.cpp
@@ -264,11 +264,11 @@ void ArticleModule__set_rate_fix(BattleObjectModuleAccessor* a, u64 p1, bool p2)
     AR(a)->set_rate(p1);
 }
 
-// set_visibility_whole: CSV=(acc,u64,u64,bool) [yyb], build=(acc,u64,bool,u64) [yby]
-void ArticleModule__set_visibility_whole_fix(BattleObjectModuleAccessor* a, u64 p1, u64 p2, bool p3)
+// set_visibility_whole: CSV=(acc,u64,u64,bool) [yyb], ABI: p2 masked to bool
+void ArticleModule__set_visibility_whole_fix(BattleObjectModuleAccessor* a, u64 p1, bool p2, u64 p3)
     asm("_ZN3app8lua_bind40ArticleModule__set_visibility_whole_implEPNS_26BattleObjectModuleAccessorEyyb");
-void ArticleModule__set_visibility_whole_fix(BattleObjectModuleAccessor* a, u64 p1, u64 p2, bool p3) {
-    AR(a)->set_visibility_whole(p1, p3, p2);  // reorder: yby→yyb
+void ArticleModule__set_visibility_whole_fix(BattleObjectModuleAccessor* a, u64 p1, bool p2, u64 p3) {
+    AR(a)->set_visibility_whole(p1, p2, p3);
 }
 
 // ======================= StatusModule =======================
@@ -299,10 +299,10 @@ void* StopModule__get_other_stop_fix(BattleObjectModuleAccessor* a, u64 p1) {
     return reinterpret_cast<void*(*)(void*,u64)>(VT(m)[0x58/8])(m, p1);
 }
 
-// set_link_stop: CSV=(acc,u64,u64,bool), build=(acc,bool,bool)
-void StopModule__set_link_stop_fix(BattleObjectModuleAccessor* a, u64 p1, u64 p2, bool p3)
+// set_link_stop: CSV=(acc,u64,u64,bool), ABI: p1,p2 masked to bool
+void StopModule__set_link_stop_fix(BattleObjectModuleAccessor* a, bool p1, bool p2)
     asm("_ZN3app8lua_bind30StopModule__set_link_stop_implEPNS_26BattleObjectModuleAccessorEyyb");
-void StopModule__set_link_stop_fix(BattleObjectModuleAccessor* a, u64 p1, u64 p2, bool p3) {
+void StopModule__set_link_stop_fix(BattleObjectModuleAccessor* a, bool p1, bool p2) {
     auto* m = STP(a);
     reinterpret_cast<void(*)(void*,bool,bool)>(VT(m)[0x80/8])(m, p1, p2);
 }
@@ -315,12 +315,12 @@ void StopModule__set_other_stop_fix(BattleObjectModuleAccessor* a, u64 p1, u64 p
     reinterpret_cast<void(*)(void*,u64,u64)>(VT(m)[0x50/8])(m, p1, p2);
 }
 
-// set_special_stop: CSV=(acc,u64,bool), build=(acc,bool)
-void StopModule__set_special_stop_fix(BattleObjectModuleAccessor* a, u64 p1, bool p2)
+// set_special_stop: CSV=(acc,u64,bool), ABI: bool in x1
+void StopModule__set_special_stop_fix(BattleObjectModuleAccessor* a, bool p1)
     asm("_ZN3app8lua_bind33StopModule__set_special_stop_implEPNS_26BattleObjectModuleAccessorEyb");
-void StopModule__set_special_stop_fix(BattleObjectModuleAccessor* a, u64 p1, bool p2) {
+void StopModule__set_special_stop_fix(BattleObjectModuleAccessor* a, bool p1) {
     auto* m = STP(a);
-    reinterpret_cast<void(*)(void*,bool)>(VT(m)[0xe0/8])(m, p2);
+    reinterpret_cast<void(*)(void*,bool)>(VT(m)[0xe0/8])(m, p1);
 }
 
 } // namespace app::lua_bind

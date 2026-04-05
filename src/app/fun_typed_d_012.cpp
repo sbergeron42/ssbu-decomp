@@ -19,25 +19,25 @@ namespace app::lua_bind {
 
 // ======================= GroundModule =======================
 
-// attach_ground: CSV=(acc,u64,bool), build=(acc,bool)
-void* GroundModule__attach_ground_fix(BattleObjectModuleAccessor* a, u64 p1, bool p2)
+// attach_ground: CSV=(acc,u64,bool), actual ABI puts bool in x1
+void* GroundModule__attach_ground_fix(BattleObjectModuleAccessor* a, bool p1)
     asm("_ZN3app8lua_bind32GroundModule__attach_ground_implEPNS_26BattleObjectModuleAccessorEyb");
-void* GroundModule__attach_ground_fix(BattleObjectModuleAccessor* a, u64 p1, bool p2) {
-    return _GM(a)->attach_ground(p2);
+void* GroundModule__attach_ground_fix(BattleObjectModuleAccessor* a, bool p1) {
+    return _GM(a)->attach_ground(p1);
 }
 
-// set_attach_ground: CSV=(acc,u64,bool), build=(acc,bool)
-void GroundModule__set_attach_ground_fix(BattleObjectModuleAccessor* a, u64 p1, bool p2)
+// set_attach_ground: CSV=(acc,u64,bool), actual ABI puts bool in x1
+void GroundModule__set_attach_ground_fix(BattleObjectModuleAccessor* a, bool p1)
     asm("_ZN3app8lua_bind36GroundModule__set_attach_ground_implEPNS_26BattleObjectModuleAccessorEyb");
-void GroundModule__set_attach_ground_fix(BattleObjectModuleAccessor* a, u64 p1, bool p2) {
-    _GM(a)->set_attach_ground(p2);
+void GroundModule__set_attach_ground_fix(BattleObjectModuleAccessor* a, bool p1) {
+    _GM(a)->set_attach_ground(p1);
 }
 
-// set_keep_distant_cliff: CSV=(acc,u64,bool), build=(acc,bool)
-void GroundModule__set_keep_distant_cliff_fix(BattleObjectModuleAccessor* a, u64 p1, bool p2)
+// set_keep_distant_cliff: CSV=(acc,u64,bool), actual ABI puts bool in x1
+void GroundModule__set_keep_distant_cliff_fix(BattleObjectModuleAccessor* a, bool p1)
     asm("_ZN3app8lua_bind41GroundModule__set_keep_distant_cliff_implEPNS_26BattleObjectModuleAccessorEyb");
-void GroundModule__set_keep_distant_cliff_fix(BattleObjectModuleAccessor* a, u64 p1, bool p2) {
-    _GM(a)->set_keep_distant_cliff(p2);
+void GroundModule__set_keep_distant_cliff_fix(BattleObjectModuleAccessor* a, bool p1) {
+    _GM(a)->set_keep_distant_cliff(p1);
 }
 
 // can_entry_cliff_hang_data: CSV=no extra params, build=(u64,u64)

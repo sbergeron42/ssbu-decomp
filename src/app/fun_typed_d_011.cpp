@@ -164,18 +164,18 @@ void ColorBlendModule__set_main_color_fix(BattleObjectModuleAccessor* a, u64 p1,
     CB(a)->set_main_color(p1, p2, p3, p4);
 }
 
-// set_shadow_bloom: CSV=(acc,u64,bool), build=(acc,bool)
-void ColorBlendModule__set_shadow_bloom_fix(BattleObjectModuleAccessor* a, u64 p1, bool p2)
+// set_shadow_bloom: CSV=(acc,u64,bool), ABI: bool in x1
+void ColorBlendModule__set_shadow_bloom_fix(BattleObjectModuleAccessor* a, bool p1)
     asm("_ZN3app8lua_bind39ColorBlendModule__set_shadow_bloom_implEPNS_26BattleObjectModuleAccessorEyb");
-void ColorBlendModule__set_shadow_bloom_fix(BattleObjectModuleAccessor* a, u64 p1, bool p2) {
-    CB(a)->set_shadow_bloom(p2);
+void ColorBlendModule__set_shadow_bloom_fix(BattleObjectModuleAccessor* a, bool p1) {
+    CB(a)->set_shadow_bloom(p1);
 }
 
-// set_status: CSV=(acc,u64,bool), build=(acc,bool)
-void ColorBlendModule__set_status_fix(BattleObjectModuleAccessor* a, u64 p1, bool p2)
+// set_status: CSV=(acc,u64,bool), ABI: bool in x1
+void ColorBlendModule__set_status_fix(BattleObjectModuleAccessor* a, bool p1)
     asm("_ZN3app8lua_bind33ColorBlendModule__set_status_implEPNS_26BattleObjectModuleAccessorEyb");
-void ColorBlendModule__set_status_fix(BattleObjectModuleAccessor* a, u64 p1, bool p2) {
-    CB(a)->set_status(p2);
+void ColorBlendModule__set_status_fix(BattleObjectModuleAccessor* a, bool p1) {
+    CB(a)->set_status(p1);
 }
 
 // ======================= DamageModule =======================
@@ -311,12 +311,12 @@ void* MotionAnimcmdModule__change_script_motion_line_single_fix(BattleObjectModu
     return reinterpret_cast<void*(*)(void*,u64,u64,u64)>(VT(m)[0x80/8])(m, p1, p2, p3);
 }
 
-// change_script_motion_partial_lines: CSV=(acc,u64,u64,bool,bool), build=(acc,u64,bool,bool)
-void* MotionAnimcmdModule__change_script_motion_partial_lines_fix(BattleObjectModuleAccessor* a, u64 p1, u64 p2, bool p3, bool p4)
+// change_script_motion_partial_lines: CSV=(acc,u64,u64,bool,bool), ABI: bools in w2,w3
+void* MotionAnimcmdModule__change_script_motion_partial_lines_fix(BattleObjectModuleAccessor* a, u64 p1, bool p2, bool p3)
     asm("_ZN3app8lua_bind60MotionAnimcmdModule__change_script_motion_partial_lines_implEPNS_26BattleObjectModuleAccessorEyybb");
-void* MotionAnimcmdModule__change_script_motion_partial_lines_fix(BattleObjectModuleAccessor* a, u64 p1, u64 p2, bool p3, bool p4) {
+void* MotionAnimcmdModule__change_script_motion_partial_lines_fix(BattleObjectModuleAccessor* a, u64 p1, bool p2, bool p3) {
     auto* m = a->motion_animcmd_module;
-    return reinterpret_cast<void*(*)(void*,u64,bool,bool)>(VT(m)[0x70/8])(m, p1, p3, p4);
+    return reinterpret_cast<void*(*)(void*,u64,bool,bool)>(VT(m)[0x70/8])(m, p1, p2, p3);
 }
 
 // ======================= PostureModule =======================
