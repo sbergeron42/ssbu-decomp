@@ -1,55 +1,21 @@
-# Worker: pool-a
+# Worker: pool-b
 
 ## Model: Opus
 
-## Task: Add derivation chains to all struct field names in existing headers
+## Task: Types-first HARD decomp — LinkModule + PhysicsModule functions
 
-The 18+ recovered module headers have field names but no derivation comments showing HOW each name was determined. Add them.
+Decomp HARD-tier functions that access LinkModule (+0xD0) or PhysicsModule (+0x80).
 
-### What to add
-For each named field in a struct header, add a derivation comment:
+### Approach
+1. python tools/next_batch.py --tier HARD --limit 30
+2. Filter to functions touching your modules via Ghidra
+3. Write idiomatic C++ using struct dispatch
+4. Build and verify
 
-Instead of:
-    s32 situation_kind;  // +0xD8
-
-Write:
-    s32 situation_kind;  // +0xD8 [derived: situation_kind_impl (.dynsym) reads this as s32]
-
-Or for inferred names:
-    u32 status_flags;    // +0xE0 [inferred: bitmask pattern in 12 functions, no proven name]
-
-### Files to update
-All headers in include/app/:
-- include/app/modules/StatusModule.h
-- include/app/modules/WorkModule.h
-- include/app/modules/GroundModule.h
-- include/app/modules/PostureModule.h
-- include/app/modules/MotionModule.h
-- include/app/modules/AttackModule.h
-- include/app/modules/DamageModule.h
-- include/app/modules/KineticModule.h
-- include/app/modules/EffectModule.h
-- include/app/modules/ControlModule.h
-- include/app/modules/SoundModule.h
-- include/app/modules/CameraModule.h
-- include/app/modules/LinkModule.h
-- include/app/modules/PhysicsModule.h
-- include/app/modules/ComboModule.h
-- include/app/modules/HitModule.h
-- include/app/modules/ShieldModule.h
-- include/app/FighterManager.h
-- include/app/FighterInformation.h
-- include/app/FighterEntry.h
-- All other headers with named fields
-
-### How to derive
-- Vtable methods: [derived: METHOD_NAME_impl (.dynsym) dispatches through this slot]
-- Data fields: use Ghidra MCP to find which .dynsym-proven function reads/writes the offset
-- If no proven function references the field: [inferred: REASON]
-- If truly unknown: leave as unk_0xXX
+### Output: src/app/fun_typed_b_001.cpp onward
 
 ### Rules
-- ONLY edit include/app/ headers (comments only, no code changes)
-- Do NOT change any field types, offsets, or names
-- Do NOT edit .cpp files
-- This is comment-only work — zero compilation impact
+- Use struct field access, no raw offsets
+- No Ghidra paste, no naked asm
+- 3-attempt limit
+- ONLY create src/app/fun_typed_b_*.cpp
