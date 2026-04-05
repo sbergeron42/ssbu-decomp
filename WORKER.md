@@ -5,16 +5,15 @@
 ## Task: Destructor/cleanup pattern decomp + WorkModule/StatusModule internals
 
 ### Completed
-- **34 verified functions** in `src/app/fun_typed_c_002.cpp` across 8 patterns:
+- **69 verified functions** in `src/app/fun_typed_c_002.cpp` across 8 patterns:
   - Pattern B (7): sub at +0x50, inner cleanup at sub+8, tail-call parent dtor
   - Pattern C (4): sub at +0x50, direct cleanup call, tail-call parent dtor
   - Pattern A (5): sub at +0x8, stp vtable+zero, cleanup, tail-call delete self
-  - Pattern D (6): Binary tree recursive delete (left, right, free)
-  - Pattern D2 (2): Tree delete with 2 params (ctx passthrough)
-  - Pattern D3 (2): Tree delete with extra cleanup (1-param and 2-param variants)
-  - Pattern G (3): Linked list walk destructor (walk list, free nodes, null+free field)
+  - Pattern D (22): Binary tree recursive delete (1-param and 2-param variants, with/without cleanup)
+  - Pattern E (22+4=26): Simple vtable dtor + cleanup + free/tail-call self
   - Pattern F (5): shared_ptr destructor (2 vtables, cleanup inner, tail-call ~__shared_weak_count)
-- **22 Pattern E destructors** (simple vtable dtor + cleanup + delete self)
+  - Pattern G (4): Linked list walk destructor (walk list, free nodes, null+free field)
+  - Pattern misc (1): Pattern E variant with inner tree deletes
 - **17 thunks** in `src/app/fun_typed_c_001.cpp` (FighterInformation/FighterManager/BattleObjectWorld)
 
 ### Key findings
