@@ -6,6 +6,7 @@ namespace app {
 // PhysicsModule — accessed at BattleObjectModuleAccessor+0x80
 // Handles rope/swing physics, 2nd-order simulation (chain/hair), IK, and collision.
 // Vtable layout recovered from lua_bind dispatcher analysis (offsets 0x60–0x3d8).
+// All method names derived from .dynsym lua_bind::PhysicsModule__*_impl dispatcher analysis.
 struct PhysicsModule {
     void** _vt;
 

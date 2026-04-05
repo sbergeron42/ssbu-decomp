@@ -6,6 +6,7 @@ namespace app {
 // ShadowModule — accessed at BattleObjectModuleAccessor+0x180
 // Manages shadow rendering beneath battle objects.
 // Vtable layout recovered from lua_bind dispatcher analysis (offsets 0x48-0x78).
+// All method names derived from .dynsym lua_bind::ShadowModule__*_impl dispatcher analysis.
 struct ShadowModule {
     void** _vt;
 

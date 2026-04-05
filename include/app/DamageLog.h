@@ -4,6 +4,8 @@
 
 namespace app {
 
+// DamageLog — layout recovered from Ghidra decompilation of damage log functions.
+// Positional field names (pos0-pos3) are inferred from sequential access patterns, not .dynsym symbols.
 struct DamageLog {
     float field_0x00;       // +0x00
     s32 field_0x04;         // +0x04

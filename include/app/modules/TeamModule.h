@@ -6,6 +6,7 @@ namespace app {
 // TeamModule — accessed at BattleObjectModuleAccessor+0xD8
 // Manages team assignment and hit-team relationships for battle objects.
 // Vtable layout recovered from lua_bind dispatcher analysis (offsets 0x50-0xd8).
+// All method names derived from .dynsym lua_bind::TeamModule__*_impl dispatcher analysis.
 struct TeamModule {
     void** _vt;
 

@@ -6,6 +6,7 @@ namespace app {
 // SlowModule — accessed at BattleObjectModuleAccessor+0x170
 // Manages slow-motion effects (hitstop slow, special slow, whole-game slow).
 // Vtable layout recovered from lua_bind dispatcher analysis (offsets 0x58-0xe0).
+// All method names derived from .dynsym lua_bind::SlowModule__*_impl dispatcher analysis.
 struct SlowModule {
     void** _vt;
 

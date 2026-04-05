@@ -5,6 +5,7 @@ namespace app {
 
 // AbsorberModule virtual dispatch wrapper
 // Vtable entries recovered from lua_bind dispatcher analysis
+// All method names derived from .dynsym lua_bind::AbsorberModule__*_impl dispatcher analysis.
 // Module accessed via BattleObjectModuleAccessor +0x110
 struct AbsorberModule {
     void** _vt;

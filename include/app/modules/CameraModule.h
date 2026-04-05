@@ -7,6 +7,7 @@ namespace app {
 // CameraModule -- accessed at BattleObjectModuleAccessor+0x60
 // Handles camera control, clipping, quake effects, and zoom.
 // Vtable layout recovered from lua_bind dispatchers (offsets 0x70-0x238).
+// All named method names derived from .dynsym lua_bind::CameraModule__*_impl functions.
 struct CameraModule {
     // Base class entries (indices 0-13, offsets 0x00-0x68)
     virtual ~CameraModule();                                                        // 0x00, 0x08

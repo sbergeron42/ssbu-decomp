@@ -57,6 +57,7 @@ namespace app {
 //   0x268 get_param_float(s32 hash1, s32 hash2) -> f32
 //   0x278 set_customize_no(s32 p1, s32 p2)
 //   0x280 calc_param(bool p1, bool p2)  [FighterWorkModuleImpl]
+// All vtable method names derived from .dynsym lua_bind::WorkModule__*_impl dispatcher analysis.
 
 struct WorkModule;
 

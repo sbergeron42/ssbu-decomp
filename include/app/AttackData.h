@@ -4,14 +4,16 @@
 
 namespace app {
 
+// AttackData — layout recovered from Ghidra decompilation of attack setup functions.
+// Field names are inferred from positional patterns and usage context, not .dynsym symbols.
 struct AttackData {
-    float hitbox0_x;        // +0x00 (sub-table 0)
-    float hitbox0_y;        // +0x04
-    u32 hitbox0_kind;       // +0x08
+    float hitbox0_x;        // +0x00 [inferred: first hitbox X position, sub-table 0 pattern in attack setup]
+    float hitbox0_y;        // +0x04 [inferred: first hitbox Y position]
+    u32 hitbox0_kind;       // +0x08 [inferred: first hitbox type/kind enum]
     u8 pad_0x0c[4];         // +0x0c
-    float hitbox1_x;        // +0x10 (sub-table 1)
-    float hitbox1_y;        // +0x14
-    u32 hitbox1_kind;       // +0x18
+    float hitbox1_x;        // +0x10 [inferred: second hitbox X position, sub-table 1 pattern]
+    float hitbox1_y;        // +0x14 [inferred: second hitbox Y position]
+    u32 hitbox1_kind;       // +0x18 [inferred: second hitbox type/kind enum]
     u8 pad_0x1c[4];         // +0x1c
     float field_0x20;       // +0x20
     float field_0x24;       // +0x24
@@ -62,8 +64,8 @@ struct AttackData {
     u8 flag_0x81;           // +0x81 (bool)
     u8 pad_0x82[6];         // +0x82
     s64 field_0x88;         // +0x88
-    float sub_x;            // +0x90 (sub-table)
-    float sub_y;            // +0x94
+    float sub_x;            // +0x90 [inferred: sub-table position X, same pattern as hitbox0/1]
+    float sub_y;            // +0x94 [inferred: sub-table position Y]
     u8 pad_0x98[8];         // +0x98
     s32 field_0xa0;         // +0xa0
     u8 flag_0xa4;           // +0xa4 (bool)

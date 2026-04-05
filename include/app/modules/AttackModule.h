@@ -5,6 +5,7 @@ namespace app {
 
 // AttackModule virtual dispatch wrapper
 // Vtable entries recovered from lua_bind dispatcher analysis
+// All method names derived from .dynsym lua_bind::AttackModule__*_impl functions.
 // Module accessed via BattleObjectModuleAccessor +0xA0
 struct AttackModule {
     void** _vt;

@@ -48,53 +48,55 @@ struct InkPaintModule;
 
 // BattleObjectModuleAccessor — first param to most lua_bind functions
 // Offsets verified from Ghidra analysis of SSBU 13.0.4
+// Each module pointer is proven by the corresponding lua_bind::MODULE__*_impl (.dynsym)
+// functions, which load the module pointer from accessor+OFFSET before vtable dispatch.
 struct BattleObjectModuleAccessor {
     u8 pad_0x00[0x38];
-    void* posture_module;               // +0x38
-    void* status_module;                // +0x40
-    void* fighter_control_module;       // +0x48
-    void* work_module;                  // +0x50
-    void* ground_module;                // +0x58
-    void* camera_module;                // +0x60
-    void* item_kinetic_module;          // +0x68
-    void* color_blend_module;           // +0x70
-    void* model_module;                 // +0x78
-    void* physics_module;              // +0x80
-    void* motion_module;                // +0x88
-    void* stop_module;                  // +0x90
-    void* article_module;               // +0x98
-    void* attack_module;                // +0xA0
-    void* damage_module;                // +0xA8
-    void* hit_module;                   // +0xB0
-    void* combo_module;                 // +0xB8
-    void* fighter_area_module;          // +0xC0
-    void* item_module;                  // +0xC8
-    void* link_module;                  // +0xD0
-    void* team_module;                  // +0xD8
-    void* search_module;                // +0xE0
-    void* pad_0xE8;                     // +0xE8 (unknown)
-    void* turn_module;                  // +0xF0
-    void* reflect_module;              // +0xF8
-    void* shield_module;                // +0x100
-    void* reflector_module;             // +0x108
-    void* absorber_module;              // +0x110
-    void* jostle_module;                // +0x118
-    void* catch_module;                 // +0x120
-    void* cancel_module;                // +0x128
-    void* pad_0x130;                    // +0x130 (unknown)
-    void* capture_module;               // +0x138
-    void* effect_module;                // +0x140
-    void* sound_module;                 // +0x148
-    void* visibility_module;            // +0x150
-    void* grab_module;                  // +0x158
-    void* pad_0x160;                    // +0x160 (unknown)
-    void* shake_module;                 // +0x168
-    void* slow_module;                  // +0x170
-    void* pad_0x178;                    // +0x178 (unknown)
-    void* shadow_module;                // +0x180
-    void* motion_animcmd_module;        // +0x188
-    void* pad_0x190;                    // +0x190 (unknown)
-    void* ink_paint_module;             // +0x198
+    void* posture_module;               // +0x38 [derived: PostureModule__*_impl (.dynsym) loads from accessor+0x38]
+    void* status_module;                // +0x40 [derived: StatusModule__*_impl (.dynsym) loads from accessor+0x40]
+    void* fighter_control_module;       // +0x48 [derived: ControlModule__*_impl (.dynsym) loads from accessor+0x48]
+    void* work_module;                  // +0x50 [derived: WorkModule__*_impl (.dynsym) loads from accessor+0x50]
+    void* ground_module;                // +0x58 [derived: GroundModule__*_impl (.dynsym) loads from accessor+0x58]
+    void* camera_module;                // +0x60 [derived: CameraModule__*_impl (.dynsym) loads from accessor+0x60]
+    void* item_kinetic_module;          // +0x68 [derived: KineticModule__*_impl (.dynsym) loads from accessor+0x68]
+    void* color_blend_module;           // +0x70 [derived: ColorBlendModule__*_impl (.dynsym) loads from accessor+0x70]
+    void* model_module;                 // +0x78 [derived: ModelModule__*_impl (.dynsym) loads from accessor+0x78]
+    void* physics_module;              // +0x80 [derived: PhysicsModule__*_impl (.dynsym) loads from accessor+0x80]
+    void* motion_module;                // +0x88 [derived: MotionModule__*_impl (.dynsym) loads from accessor+0x88]
+    void* stop_module;                  // +0x90 [derived: StopModule__*_impl (.dynsym) loads from accessor+0x90]
+    void* article_module;               // +0x98 [derived: ArticleModule__*_impl (.dynsym) loads from accessor+0x98]
+    void* attack_module;                // +0xA0 [derived: AttackModule__*_impl (.dynsym) loads from accessor+0xA0]
+    void* damage_module;                // +0xA8 [derived: DamageModule__*_impl (.dynsym) loads from accessor+0xA8]
+    void* hit_module;                   // +0xB0 [derived: HitModule__*_impl (.dynsym) loads from accessor+0xB0]
+    void* combo_module;                 // +0xB8 [derived: ComboModule__*_impl (.dynsym) loads from accessor+0xB8]
+    void* fighter_area_module;          // +0xC0 [derived: AreaModule__*_impl (.dynsym) loads from accessor+0xC0]
+    void* item_module;                  // +0xC8 [derived: ItemModule__*_impl (.dynsym) loads from accessor+0xC8]
+    void* link_module;                  // +0xD0 [derived: LinkModule__*_impl (.dynsym) loads from accessor+0xD0]
+    void* team_module;                  // +0xD8 [derived: TeamModule__*_impl (.dynsym) loads from accessor+0xD8]
+    void* search_module;                // +0xE0 [derived: SearchModule__*_impl (.dynsym) loads from accessor+0xE0]
+    void* pad_0xE8;                     // +0xE8 (unknown — no .dynsym function loads from this offset)
+    void* turn_module;                  // +0xF0 [derived: TurnModule__*_impl (.dynsym) loads from accessor+0xF0]
+    void* reflect_module;              // +0xF8 [derived: ReflectModule__*_impl (.dynsym) loads from accessor+0xF8]
+    void* shield_module;                // +0x100 [derived: ShieldModule__*_impl (.dynsym) loads from accessor+0x100]
+    void* reflector_module;             // +0x108 [derived: ReflectorModule__*_impl (.dynsym) loads from accessor+0x108]
+    void* absorber_module;              // +0x110 [derived: AbsorberModule__*_impl (.dynsym) loads from accessor+0x110]
+    void* jostle_module;                // +0x118 [derived: JostleModule__*_impl (.dynsym) loads from accessor+0x118]
+    void* catch_module;                 // +0x120 [derived: CatchModule__*_impl (.dynsym) loads from accessor+0x120]
+    void* cancel_module;                // +0x128 [derived: CancelModule__*_impl (.dynsym) loads from accessor+0x128]
+    void* pad_0x130;                    // +0x130 (unknown — no .dynsym function loads from this offset)
+    void* capture_module;               // +0x138 [derived: CaptureModule__*_impl (.dynsym) loads from accessor+0x138]
+    void* effect_module;                // +0x140 [derived: EffectModule__*_impl (.dynsym) loads from accessor+0x140]
+    void* sound_module;                 // +0x148 [derived: SoundModule__*_impl (.dynsym) loads from accessor+0x148]
+    void* visibility_module;            // +0x150 [derived: VisibilityModule__*_impl (.dynsym) loads from accessor+0x150]
+    void* grab_module;                  // +0x158 [derived: GrabModule__*_impl (.dynsym) loads from accessor+0x158]
+    void* pad_0x160;                    // +0x160 (unknown — no .dynsym function loads from this offset)
+    void* shake_module;                 // +0x168 [derived: ShakeModule__*_impl (.dynsym) loads from accessor+0x168]
+    void* slow_module;                  // +0x170 [derived: SlowModule__*_impl (.dynsym) loads from accessor+0x170]
+    void* pad_0x178;                    // +0x178 (unknown — no .dynsym function loads from this offset)
+    void* shadow_module;                // +0x180 [derived: ShadowModule__*_impl (.dynsym) loads from accessor+0x180]
+    void* motion_animcmd_module;        // +0x188 [derived: MotionAnimcmdModule__*_impl (.dynsym) loads from accessor+0x188]
+    void* pad_0x190;                    // +0x190 (unknown — no .dynsym function loads from this offset)
+    void* ink_paint_module;             // +0x198 [derived: InkPaintModule__*_impl (.dynsym) loads from accessor+0x198]
 };
 
 } // namespace app

@@ -41,5 +41,6 @@
 //   0x2D8 is_critical_hit() → bool
 
 namespace app {
+// All vtable method names derived from .dynsym lua_bind::DamageModule__*_impl dispatcher analysis.
 struct DamageModule;
 } // namespace app

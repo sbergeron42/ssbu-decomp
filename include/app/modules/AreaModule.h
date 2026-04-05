@@ -5,6 +5,7 @@ namespace app {
 
 // AreaModule virtual dispatch wrapper
 // Vtable entries recovered from lua_bind dispatcher analysis
+// All method names derived from .dynsym lua_bind::AreaModule__*_impl dispatcher analysis.
 // Module accessed via BattleObjectModuleAccessor +0xC0 (fighter_area_module, polymorphic)
 struct AreaModule {
     void** _vt;

@@ -7,6 +7,7 @@ namespace app {
 // SoundModule -- accessed at BattleObjectModuleAccessor+0x148
 // Handles sound effects, BGM, voice playback, and audio parameters.
 // Vtable layout recovered from lua_bind dispatchers (offsets 0xa0-0x2d8).
+// All named method names derived from .dynsym lua_bind::SoundModule__*_impl functions.
 struct SoundModule {
     // Base class entries (indices 0-19, offsets 0x00-0x98)
     virtual ~SoundModule();                                                         // 0x00, 0x08

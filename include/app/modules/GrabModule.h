@@ -5,6 +5,7 @@ namespace app {
 
 // GrabModule virtual dispatch wrapper
 // Vtable entries recovered from lua_bind dispatcher analysis
+// All method names derived from .dynsym lua_bind::GrabModule__*_impl dispatcher analysis.
 // Module accessed via BattleObjectModuleAccessor +0x158
 struct GrabModule {
     void** _vt;

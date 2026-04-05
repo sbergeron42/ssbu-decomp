@@ -6,6 +6,7 @@ namespace app {
 // StopModule — accessed at BattleObjectModuleAccessor+0x90
 // Manages hitstop, item stop, and other stop effects during combat.
 // Vtable layout recovered from lua_bind dispatcher analysis (offsets 0x48-0xe8).
+// All method names derived from .dynsym lua_bind::StopModule__*_impl dispatcher analysis.
 struct StopModule {
     void** _vt;
 

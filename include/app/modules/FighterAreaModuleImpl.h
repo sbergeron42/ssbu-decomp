@@ -18,6 +18,7 @@ struct FighterAreaModuleData {
 struct BattleObjectModuleAccessor;
 
 namespace lua_bind {
+// All function names derived from .dynsym lua_bind::FighterAreaModuleImpl__*_impl dispatcher analysis.
 
 void FighterAreaModuleImpl__enable_fix_jostle_area_impl(BattleObjectModuleAccessor* accessor, float x, float y);
 void FighterAreaModuleImpl__enable_fix_jostle_area_xy_impl(BattleObjectModuleAccessor* accessor, float x, float y, float w, float h);

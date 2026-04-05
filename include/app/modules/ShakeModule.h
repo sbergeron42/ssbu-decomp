@@ -6,6 +6,7 @@ namespace app {
 // ShakeModule — accessed at BattleObjectModuleAccessor+0x168
 // Manages screen/object shake effects (hitstop rumble, camera shake).
 // Vtable layout recovered from lua_bind dispatcher analysis (offsets 0x50-0xb8).
+// All method names derived from .dynsym lua_bind::ShakeModule__*_impl dispatcher analysis.
 struct ShakeModule {
     void** _vt;
 

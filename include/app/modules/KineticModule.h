@@ -36,5 +36,6 @@
 //   0x168 sleep(bool)
 
 namespace app {
+// All vtable method names derived from .dynsym lua_bind::KineticModule__*_impl dispatcher analysis.
 struct KineticModule;
 } // namespace app

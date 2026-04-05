@@ -5,6 +5,7 @@ namespace app {
 
 // InkPaintModule virtual dispatch wrapper
 // Vtable entries recovered from lua_bind dispatcher analysis
+// All method names derived from .dynsym lua_bind::InkPaintModule__*_impl dispatcher analysis.
 // Module accessed via BattleObjectModuleAccessor +0x198
 struct InkPaintModule {
     void** _vt;

@@ -6,6 +6,7 @@ namespace app {
 // MotionAnimcmdModule — accessed at BattleObjectModuleAccessor+0x188
 // Manages animation command (animcmd) script execution for motion lines.
 // Vtable layout recovered from lua_bind dispatcher analysis (offsets 0x58-0xd0).
+// All method names derived from .dynsym lua_bind::MotionAnimcmdModule__*_impl dispatcher analysis.
 struct MotionAnimcmdModule {
     void** _vt;
 

@@ -5,6 +5,7 @@ namespace app {
 
 // CancelModule virtual dispatch wrapper
 // Vtable entries recovered from lua_bind dispatcher analysis
+// All method names derived from .dynsym lua_bind::CancelModule__*_impl dispatcher analysis.
 // Module accessed via BattleObjectModuleAccessor +0x128
 struct CancelModule {
     void** _vt;

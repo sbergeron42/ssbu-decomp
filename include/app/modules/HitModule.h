@@ -6,6 +6,7 @@ namespace app {
 // HitModule — accessed at BattleObjectModuleAccessor+0xB0
 // Handles hitbox/hurtbox status, invincibility, XLU (intangibility), and hit logging.
 // Vtable layout recovered from lua_bind dispatchers.
+// All method names derived from .dynsym lua_bind::HitModule__*_impl dispatcher analysis.
 struct HitModule {
     void** _vt;
 

@@ -5,6 +5,7 @@ namespace app {
 
 // ControlModule virtual dispatch wrapper
 // Vtable entries recovered from lua_bind dispatcher analysis
+// All method names derived from .dynsym lua_bind::ControlModule__*_impl dispatcher analysis.
 // Module accessed via BattleObjectModuleAccessor +0x48 (fighter_control_module)
 // FighterControlModuleImpl is the concrete subclass with additional field accesses
 struct ControlModule {

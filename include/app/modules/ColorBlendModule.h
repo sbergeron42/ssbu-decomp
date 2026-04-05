@@ -5,6 +5,7 @@ namespace app {
 
 // ColorBlendModule virtual dispatch wrapper
 // Vtable entries recovered from lua_bind dispatcher analysis
+// All method names derived from .dynsym lua_bind::ColorBlendModule__*_impl dispatcher analysis.
 // Module accessed via BattleObjectModuleAccessor +0x70
 struct ColorBlendModule {
     void** _vt;

@@ -7,6 +7,7 @@ namespace app {
 // Handles shield state, shield properties (size/life/speed/attack multipliers),
 // hop/turn/front behavior, team, and target filtering.
 // Vtable layout recovered from lua_bind dispatchers.
+// All method names derived from .dynsym lua_bind::ShieldModule__*_impl dispatcher analysis.
 struct ShieldModule {
     void** _vt;
 

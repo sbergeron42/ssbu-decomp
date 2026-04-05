@@ -7,6 +7,7 @@ namespace app {
 // GroundModule — accessed at BattleObjectModuleAccessor+0x58
 // Handles ground collision, surfaces, cliffs, and raycasting.
 // Vtable layout recovered from lua_bind dispatchers (offsets 0x80–0x818).
+// All named method names derived from .dynsym lua_bind::GroundModule__*_impl functions.
 struct GroundModule {
     // Base class entries (indices 0–15, offsets 0x00–0x78)
     virtual ~GroundModule();                                                       // 0x00, 0x08

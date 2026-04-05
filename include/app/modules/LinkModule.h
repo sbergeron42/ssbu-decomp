@@ -6,6 +6,7 @@ namespace app {
 // LinkModule — accessed at BattleObjectModuleAccessor+0xD0
 // Manages parent-child linking between battle objects (items, projectiles, fighters).
 // Vtable layout recovered from lua_bind dispatcher analysis (offsets 0x48–0x520).
+// All method names derived from .dynsym lua_bind::LinkModule__*_impl dispatcher analysis.
 struct LinkModule {
     void** _vt;
 

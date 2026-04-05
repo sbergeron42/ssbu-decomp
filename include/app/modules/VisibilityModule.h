@@ -6,6 +6,7 @@ namespace app {
 // VisibilityModule — accessed at BattleObjectModuleAccessor+0x150
 // Manages mesh/model visibility, material animation priority, and visibility modes.
 // Vtable layout recovered from lua_bind dispatcher analysis (offsets 0x50-0x118).
+// All method names derived from .dynsym lua_bind::VisibilityModule__*_impl dispatcher analysis.
 struct VisibilityModule {
     void** _vt;
 

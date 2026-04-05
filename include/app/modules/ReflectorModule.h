@@ -6,6 +6,7 @@ namespace app {
 // ReflectorModule — accessed at BattleObjectModuleAccessor+0x108
 // Manages reflector hitboxes (shield reflectors on fighters/items).
 // Vtable layout recovered from lua_bind dispatcher analysis (offsets 0x50-0x1d0).
+// All method names derived from .dynsym lua_bind::ReflectorModule__*_impl dispatcher analysis.
 struct ReflectorModule {
     void** _vt;
 

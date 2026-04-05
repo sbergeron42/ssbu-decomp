@@ -5,6 +5,7 @@ namespace app {
 
 // EffectModule virtual dispatch wrapper
 // Vtable entries recovered from lua_bind dispatcher analysis
+// All method names derived from .dynsym lua_bind::EffectModule__*_impl dispatcher analysis.
 // Module accessed via BattleObjectModuleAccessor +0x140
 struct EffectModule {
     void** _vt;

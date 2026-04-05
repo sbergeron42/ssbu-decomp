@@ -6,6 +6,7 @@ namespace app {
 // TurnModule — accessed at BattleObjectModuleAccessor+0xF0
 // Manages turn-around logic for battle objects (facing direction changes).
 // Vtable layout recovered from lua_bind dispatcher analysis (offsets 0x48-0x98).
+// All method names derived from .dynsym lua_bind::TurnModule__*_impl dispatcher analysis.
 struct TurnModule {
     void** _vt;
 

@@ -4,6 +4,8 @@
 
 namespace app {
 
+// DamageInfo — layout recovered from Ghidra decompilation of damage processing functions.
+// Positional field names (pos0, pos1) are inferred from access patterns, not .dynsym symbols.
 struct DamageInfo {
     float field_0x00;       // +0x00
     float field_0x04;       // +0x04

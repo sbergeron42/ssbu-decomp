@@ -6,6 +6,7 @@ namespace app {
 // ReflectModule — accessed at BattleObjectModuleAccessor+0xF8
 // Manages projectile reflection properties (attack/speed/life multipliers).
 // Vtable layout recovered from lua_bind dispatcher analysis (offsets 0x50-0xe0).
+// All method names derived from .dynsym lua_bind::ReflectModule__*_impl dispatcher analysis.
 struct ReflectModule {
     void** _vt;
 

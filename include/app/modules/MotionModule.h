@@ -5,6 +5,7 @@ namespace app {
 
 // MotionModule virtual dispatch wrapper
 // Vtable entries recovered from lua_bind dispatcher analysis
+// All method names derived from .dynsym lua_bind::MotionModule__*_impl functions.
 // Module accessed via BattleObjectModuleAccessor +0x88
 struct MotionModule {
     void** _vt;

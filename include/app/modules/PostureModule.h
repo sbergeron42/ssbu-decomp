@@ -7,6 +7,7 @@ namespace app {
 // PostureModule — accessed at BattleObjectModuleAccessor+0x38
 // Handles position, rotation, scale, and direction of battle objects.
 // Vtable layout recovered from lua_bind dispatchers (offsets 0x58–0x180).
+// All named method names derived from .dynsym lua_bind::PostureModule__*_impl functions.
 struct PostureModule {
     // Base class entries (indices 0–10, offsets 0x00–0x50)
     virtual ~PostureModule();                              // 0x00, 0x08

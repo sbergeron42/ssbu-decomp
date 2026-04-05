@@ -6,6 +6,7 @@ namespace app {
 // SearchModule — accessed at BattleObjectModuleAccessor+0xE0
 // Manages search/grab hitbox areas for detecting opponents.
 // Vtable layout recovered from lua_bind dispatcher analysis (offsets 0x50-0x128).
+// All method names derived from .dynsym lua_bind::SearchModule__*_impl dispatcher analysis.
 struct SearchModule {
     void** _vt;
 

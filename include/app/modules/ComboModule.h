@@ -6,6 +6,7 @@ namespace app {
 // ComboModule — accessed at BattleObjectModuleAccessor+0xB8
 // Handles combo tracking and input validation.
 // Vtable layout recovered from lua_bind dispatchers.
+// All method names derived from .dynsym lua_bind::ComboModule__*_impl dispatcher analysis.
 struct ComboModule {
     void** _vt;
 
