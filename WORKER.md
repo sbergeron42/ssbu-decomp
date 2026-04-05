@@ -1,50 +1,55 @@
-# Worker: pool-c
+# Worker: pool-b
 
 ## Model: Opus
 
-## Task: Re-decomp non-matching module functions (Tier 1 + naked asm stubs)
+## Task: Rewrite Ghidra-paste batch_d + batch_d2 files with struct access
 
-Replace bad-quality non-matching code with clean struct-based C++ using the recovered module headers.
+Replace raw Ghidra decompiler output with clean C++ using recovered module struct headers.
 
-### Tier 1 Targets (15 N-quality functions with module names)
-These are decomped but bytes don't match. Rewrite from scratch using Ghidra + struct headers.
+### Target Files (highest paste density)
+- `src/app/fun_batch_d_001.cpp` — 11 funcs, 441 paste score
+- `src/app/fun_batch_d2_001.cpp` — 3 funcs, 400 paste
+- `src/app/fun_batch_d2_002.cpp` — 2 funcs, 296 paste
+- `src/app/fun_batch_d2_007.cpp` — 2 funcs, 231 paste
+- `src/app/fun_batch_d2_008.cpp` — 1 func, 525 paste (dense)
+- `src/app/fun_batch_d2_005.cpp` — 7 funcs, 156 paste
+- `src/app/fun_batch_d2_006.cpp` — 4 funcs, 297 paste
 
-| Address | Function | Size |
-|---------|----------|------|
-| 0x7102092c10 | ArticleModule__add_motion_partial_impl | 48B |
-| 0x71031485f0 | ~GimmickAttackModule | 80B |
-| 0x7101fca0b0 | BattleObjectManager__is_active_find_battle_object_impl | 76B |
-| 0x7101fca200 | BattleObjectWorld__scale_z_impl | 24B |
-| 0x7102000e80 | ControlModule__reset_down_stand_fb_kind_impl | 416B |
-| 0x71020aebd0 | FighterControlModuleImpl__delete_command_impl | 64B |
-| 0x71020d1b20 | ItemDamageModuleImpl__damage_log_value_float_impl | 160B |
-| 0x71020d1bc0 | ItemDamageModuleImpl__damage_log_value_int_impl | 720B |
-| 0x7102017900 | EffectModule__req_after_image_impl | 80B |
-| 0x7102017950 | EffectModule__req_after_image_no_parent_impl | 80B |
-| 0x71020c9d60 | FighterInformation__hit_point_impl | 64B |
-| 0x71020c9e90 | FighterInformation__suicide_count_impl | 80B |
-| 0x7102140490 | FighterManager__get_fighter_entry_impl | 240B |
-| 0x7102140f90 | FighterManager__get_fighter_entry_impl (lua_bind) | 28B |
-| 0x7102140fc0 | FighterManager__get_fighter_information_impl (lua_bind) | 32B |
+### Workflow (per function)
+1. Read the function — identify which module it accesses via offset (check BattleObjectModuleAccessor.h)
+2. Rewrite using the module's struct definition (e.g., `acc->status_module` not `*(param_1 + 0x40)`)
+3. Replace Ghidra variable names (uVar1, lVar2) with meaningful names
+4. Compile the single file: see Quick Reference below
+5. Run `python tools/compare_bytes.py <FUN_name>` to check match
+6. If it matches → great. If close but not matching → commit anyway (better source is the goal)
+7. Move to the next function. Do NOT spend more than 3 attempts on matching.
 
-### Tier 2 Targets: Naked ASM stubs to replace with real C++
-Priority files (most naked stubs):
-- `src/app/modules/ItemKineticModuleImpl.cpp` — 16 naked functions
-- `src/app/FighterManager.cpp` — 9 naked functions
-- `src/app/modules/FighterMotionModuleImpl.cpp` — 8 naked functions
+### Goal
+Replace unreadable code with readable code. Both matching AND non-matching rewrites are improvements over Ghidra paste. Do NOT obsess over flipping N→M.
 
-For each naked function: decompile in Ghidra, write clean C++ using struct headers, remove the asm block.
+### DO NOT
+- Run full build.bat until end of session
+- Attempt functions with .inst, naked asm, or SIMD
+- Spend time on verify_local.py during iteration
+- Use sleep-polling loops for builds — use run_in_background if needed
 
-### Approach
-1. For Tier 1: find the existing bad code in src/, delete it, rewrite using Ghidra + struct headers
-2. For Tier 2: find the naked asm block, decompile in Ghidra, replace with C++
-3. Build and verify after each batch
+### Quick Reference
+```
+# Single-file compile (use this during iteration, NOT full build):
+/c/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -Ilib/NintendoSDK/include -Ilib/NintendoSDK/include/stubs -c src/app/FILE.cpp -o build/FILE.o
 
-### Output: Edit existing files listed above + src/app/fun_redecomp_c_*.cpp for new files if needed
+# Compare bytes (takes FUNCTION NAME, not address):
+python tools/compare_bytes.py FUN_7102xxxxxx
+
+# Module offset cheat sheet (BattleObjectModuleAccessor):
+# +0x38 posture, +0x40 status, +0x48 control, +0x50 work, +0x58 ground
+# +0x60 camera, +0x68 kinetic, +0x88 motion, +0xA0 attack, +0xA8 damage
+# +0xC0 area, +0x140 effect, +0x148 sound
+# Full list: include/app/BattleObjectModuleAccessor.h
+```
 
 ### Rules
-- Use struct field access from include/app/modules/ — all 41 module structs are recovered
-- No raw offsets, no Ghidra paste, no naked asm
-- 3-attempt limit per function
-- CAN edit: src/app/modules/ItemKineticModuleImpl.cpp, src/app/FighterManager.cpp, src/app/modules/FighterMotionModuleImpl.cpp, and Tier 1 source files
+- Use struct field access from include/app/modules/
+- CAN ONLY edit: fun_batch_d_001.cpp, fun_batch_d2_001.cpp through fun_batch_d2_008.cpp
+- 3-attempt limit per function, then move on
 - Save Ghidra results to /tmp/ghidra_results.txt
