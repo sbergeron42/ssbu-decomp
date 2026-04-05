@@ -109,6 +109,7 @@ VTABLE_EXTERN(PTR_FUN_710509c2e8);
 VTABLE_EXTERN(PTR_FUN_710509c3e8);
 VTABLE_EXTERN(PTR_FUN_710509c638);
 VTABLE_EXTERN(PTR_LAB_710509bc08);
+VTABLE_EXTERN(PTR_LAB_710509cce0);
 
 // ============================================================
 // Destructor Pattern: sub at +0x50, inner cleanup at sub+0x8,
@@ -830,6 +831,20 @@ void FUN_71014a3780(void** self) {
         FUN_710392e590(sub);
     }
     FUN_71039c2140(self);
+}
+
+// 0x710171d680 (92 bytes, 2 params, tree delete + vtable set + conditional field free)
+void FUN_710171d680(void* ctx, void** node) {
+    if (!node) return;
+    FUN_710171d680(ctx, static_cast<void**>(node[0]));
+    FUN_710171d680(ctx, static_cast<void**>(node[1]));
+    void* sub = node[8];
+    node[5] = PTR_LAB_710509cce0;
+    if (sub) {
+        node[9] = sub;
+        FUN_71001b1870(sub);
+    }
+    FUN_71001b1870(node);
 }
 
 // ============================================================
