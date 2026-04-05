@@ -23,7 +23,9 @@ struct GrabModule {
     void* center_pos(u64 p1) { return ((void*(*)(GrabModule*,u64))_vt[0x98/8])(this,p1); }
     void* node(u64 p1) { return ((void*(*)(GrabModule*,u64))_vt[0xA8/8])(this,p1); }
     void set_power_up() { ((void(*)(GrabModule*))_vt[0xb0/8])(this); }
+    void set_size_mul() { ((void(*)(GrabModule*))_vt[0xb8/8])(this); }
     void set_scale_2nd() { ((void(*)(GrabModule*))_vt[0xc0/8])(this); }
+    void sleep(bool p1) { ((void(*)(GrabModule*,bool))_vt[0xe0/8])(this,p1); }
     void relocate(u64 p1) { ((void(*)(GrabModule*,u64))_vt[0xF0/8])(this,p1); }
     void set_check_front(bool p1) { ((void(*)(GrabModule*,bool))_vt[0xF8/8])(this,p1); }
     void set_rebound(bool p1) { ((void(*)(GrabModule*,bool))_vt[0x100/8])(this,p1); }
