@@ -1,8 +1,8 @@
-# Worker: pool-d
+# Worker: pool-e
 
 ## Model: Opus
 
-## Task: jemalloc 5.1.0 decomp — continue lower range
+## Task: jemalloc 5.1.0 decomp — continue upper range
 
 Continue matching jemalloc functions against upstream source at `lib/jemalloc/`.
 
@@ -11,7 +11,7 @@ Continue matching jemalloc functions against upstream source at `lib/jemalloc/`.
 - Every function gets `// jemalloc 5.1.0: file.c:line` provenance comment
 
 ### Address Range
-0x7103920000 — 0x7103940000 (functions NOT already compiled — check build/ for existing .o files)
+0x7103940000 — 0x7103960000 (functions NOT already compiled — check build/ for existing .o files)
 
 ### Approach
 1. Decompile in Ghidra, match against upstream jemalloc source
@@ -26,6 +26,6 @@ python tools/compare_bytes.py FUN_name
 ```
 
 ### Rules
-- ONLY create src/lib/jemalloc_d_*.cpp
+- ONLY create src/lib/jemalloc_e_*.cpp
 - Use upstream jemalloc field names — provably correct
 - 3-attempt limit per function
