@@ -1,12 +1,10 @@
 // Batch C - 012: KineticModule energy flag operations
-// All 40 functions: navigate BattleObject → accessor → item_kinetic_module,
-// call get_energy(index) via vtable+0x60, then set/clear flags on KineticEnergy entry.
-// One function (FUN_7102222240) dispatches clear_speed via energy vtable+0x48.
+// All 40 functions: navigate BattleObject → accessor → KineticModule → get_energy(index),
+// then set/clear flags on KineticEnergy entry, or call clear_speed.
 
 #include "types.h"
 #include "app/BattleObjectModuleAccessor.h"
-
-#define VT(m) (*reinterpret_cast<void***>(m))
+#include "app/modules/KineticModule.h"
 
 // 0x7102208730
 // KineticModule: disable energy 0xC
@@ -17,11 +15,11 @@ u32 FUN_7102208730(s64 param_1)
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
     // +0x68 → item_kinetic_module [derived: KineticModule__*_impl (.dynsym) loads from accessor+0x68]
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
     // vtable+0x60 → get_energy [derived: KineticModule__get_energy_impl at 0x7102043970]
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s64)>(VT(kinetic)[0x60/8])(kinetic, 0xc);
-    // +0x30 → enabled [derived: KineticEnergy struct in KineticEnergy.cpp, field at +0x30]
-    *(u8 *)(entry + 0x30) = 0;
+    app::KineticEnergy *energy = kinetic->get_energy(0xc);
+    // +0x30 → enabled [derived: KineticEnergy enable_impl/unable_impl at 0x71020f6560/0x71020f6570]
+    energy->enabled = 0;
     return 0;
 }
 
@@ -29,16 +27,12 @@ u32 FUN_7102208730(s64 param_1)
 // KineticModule: disable energy 0xD
 u32 FUN_7102208770(s64 param_1)
 {
-    // param_1-8 → BattleObject, +0x1a0 → accessor [derived: .dynsym ctors]
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    // +0x68 → item_kinetic_module [derived: KineticModule__*_impl .dynsym]
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
-    // vtable+0x60 → get_energy [derived: get_energy_impl 0x7102043970]
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s64)>(VT(kinetic)[0x60/8])(kinetic, 0xd);
-    // +0x30 → enabled [derived: KineticEnergy +0x30]
-    *(u8 *)(entry + 0x30) = 0;
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
+    app::KineticEnergy *energy = kinetic->get_energy(0xd);
+    energy->enabled = 0;
     return 0;
 }
 
@@ -49,10 +43,9 @@ u32 FUN_7102208810(s64 param_1)
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s64)>(VT(kinetic)[0x60/8])(kinetic, 0xc);
-    // +0x30 → enabled [derived: KineticEnergy +0x30]
-    *(u8 *)(entry + 0x30) = 1;
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
+    app::KineticEnergy *energy = kinetic->get_energy(0xc);
+    energy->enabled = 1;
     return 0;
 }
 
@@ -63,10 +56,9 @@ u32 FUN_7102208850(s64 param_1)
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s64)>(VT(kinetic)[0x60/8])(kinetic, 0xd);
-    // +0x30 → enabled [derived: KineticEnergy +0x30]
-    *(u8 *)(entry + 0x30) = 1;
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
+    app::KineticEnergy *energy = kinetic->get_energy(0xd);
+    energy->enabled = 1;
     return 0;
 }
 
@@ -77,11 +69,9 @@ u32 FUN_710221c620(s64 param_1)
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
-    // note: index passed as s32 (not s64) for energy 0
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s32)>(VT(kinetic)[0x60/8])(kinetic, 0);
-    // +0x30 → enabled [derived: KineticEnergy +0x30]
-    *(u8 *)(entry + 0x30) = 1;
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
+    app::KineticEnergy *energy = kinetic->get_energy(0);
+    energy->enabled = 1;
     return 0;
 }
 
@@ -92,11 +82,10 @@ u32 FUN_710221c700(s64 param_1)
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
-    // note: index passed as s32 for energy 0
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s32)>(VT(kinetic)[0x60/8])(kinetic, 0);
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
+    app::KineticEnergy *energy = kinetic->get_energy(0);
     // +0x31 → field_0x31_u8 [inferred: set/cleared alongside enabled in 40+ functions, likely update flag]
-    *(u8 *)(entry + 0x31) = 1;
+    energy->field_0x31_u8 = 1;
     return 0;
 }
 
@@ -107,10 +96,9 @@ u32 FUN_710221e780(s64 param_1)
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s64)>(VT(kinetic)[0x60/8])(kinetic, 1);
-    // +0x30 → enabled [derived: KineticEnergy +0x30]
-    *(u8 *)(entry + 0x30) = 0;
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
+    app::KineticEnergy *energy = kinetic->get_energy(1);
+    energy->enabled = 0;
     return 0;
 }
 
@@ -121,10 +109,9 @@ u32 FUN_710221e860(s64 param_1)
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s64)>(VT(kinetic)[0x60/8])(kinetic, 1);
-    // +0x31 → field_0x31_u8 [inferred: update flag alongside enabled]
-    *(u8 *)(entry + 0x31) = 0;
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
+    app::KineticEnergy *energy = kinetic->get_energy(1);
+    energy->field_0x31_u8 = 0;
     return 0;
 }
 
@@ -135,10 +122,9 @@ u32 FUN_71022208e0(s64 param_1)
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s64)>(VT(kinetic)[0x60/8])(kinetic, 2);
-    // +0x30 → enabled [derived: KineticEnergy +0x30]
-    *(u8 *)(entry + 0x30) = 1;
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
+    app::KineticEnergy *energy = kinetic->get_energy(2);
+    energy->enabled = 1;
     return 0;
 }
 
@@ -149,10 +135,9 @@ u32 FUN_71022209c0(s64 param_1)
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s64)>(VT(kinetic)[0x60/8])(kinetic, 2);
-    // +0x31 → field_0x31_u8 [inferred: update flag alongside enabled]
-    *(u8 *)(entry + 0x31) = 1;
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
+    app::KineticEnergy *energy = kinetic->get_energy(2);
+    energy->field_0x31_u8 = 1;
     return 0;
 }
 
@@ -163,10 +148,9 @@ u32 FUN_7102220a00(s64 param_1)
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s64)>(VT(kinetic)[0x60/8])(kinetic, 2);
-    // +0x31 → field_0x31_u8 [inferred: update flag alongside enabled]
-    *(u8 *)(entry + 0x31) = 0;
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
+    app::KineticEnergy *energy = kinetic->get_energy(2);
+    energy->field_0x31_u8 = 0;
     return 0;
 }
 
@@ -177,10 +161,9 @@ u32 FUN_71022220e0(s64 param_1)
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s64)>(VT(kinetic)[0x60/8])(kinetic, 3);
-    // +0x30 → enabled [derived: KineticEnergy +0x30]
-    *(u8 *)(entry + 0x30) = 1;
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
+    app::KineticEnergy *energy = kinetic->get_energy(3);
+    energy->enabled = 1;
     return 0;
 }
 
@@ -191,10 +174,9 @@ u32 FUN_71022221c0(s64 param_1)
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s64)>(VT(kinetic)[0x60/8])(kinetic, 3);
-    // +0x31 → field_0x31_u8 [inferred: update flag alongside enabled]
-    *(u8 *)(entry + 0x31) = 1;
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
+    app::KineticEnergy *energy = kinetic->get_energy(3);
+    energy->field_0x31_u8 = 1;
     return 0;
 }
 
@@ -205,10 +187,9 @@ u32 FUN_7102222200(s64 param_1)
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s64)>(VT(kinetic)[0x60/8])(kinetic, 3);
-    // +0x31 → field_0x31_u8 [inferred: update flag alongside enabled]
-    *(u8 *)(entry + 0x31) = 0;
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
+    app::KineticEnergy *energy = kinetic->get_energy(3);
+    energy->field_0x31_u8 = 0;
     return 0;
 }
 
@@ -219,11 +200,11 @@ u32 FUN_7102222240(s64 param_1)
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
     // vtable+0x60 → get_energy, returns KineticEnergy*
-    s64 *energy = (s64 *)reinterpret_cast<s64 (*)(s64*, s64)>(VT(kinetic)[0x60/8])(kinetic, 3);
+    app::KineticEnergy *energy = kinetic->get_energy(3);
     // vtable+0x48 → clear_speed [derived: KineticEnergy__clear_speed_impl at 0x71020f64e0]
-    reinterpret_cast<void(*)()>(VT(energy)[0x48/8])();
+    energy->clear_speed();
     return 0;
 }
 
@@ -234,10 +215,9 @@ u32 FUN_7102223ee0(s64 param_1)
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s64)>(VT(kinetic)[0x60/8])(kinetic, 4);
-    // +0x30 → enabled [derived: KineticEnergy +0x30]
-    *(u8 *)(entry + 0x30) = 1;
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
+    app::KineticEnergy *energy = kinetic->get_energy(4);
+    energy->enabled = 1;
     return 0;
 }
 
@@ -248,10 +228,9 @@ u32 FUN_7102223fc0(s64 param_1)
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s64)>(VT(kinetic)[0x60/8])(kinetic, 4);
-    // +0x31 → field_0x31_u8 [inferred: update flag alongside enabled]
-    *(u8 *)(entry + 0x31) = 1;
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
+    app::KineticEnergy *energy = kinetic->get_energy(4);
+    energy->field_0x31_u8 = 1;
     return 0;
 }
 
@@ -262,10 +241,9 @@ u32 FUN_7102224000(s64 param_1)
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s64)>(VT(kinetic)[0x60/8])(kinetic, 4);
-    // +0x31 → field_0x31_u8 [inferred: update flag alongside enabled]
-    *(u8 *)(entry + 0x31) = 0;
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
+    app::KineticEnergy *energy = kinetic->get_energy(4);
+    energy->field_0x31_u8 = 0;
     return 0;
 }
 
@@ -276,10 +254,9 @@ u32 FUN_7102225ae0(s64 param_1)
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s64)>(VT(kinetic)[0x60/8])(kinetic, 5);
-    // +0x30 → enabled [derived: KineticEnergy +0x30]
-    *(u8 *)(entry + 0x30) = 1;
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
+    app::KineticEnergy *energy = kinetic->get_energy(5);
+    energy->enabled = 1;
     return 0;
 }
 
@@ -290,10 +267,9 @@ u32 FUN_7102225bc0(s64 param_1)
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s64)>(VT(kinetic)[0x60/8])(kinetic, 5);
-    // +0x31 → field_0x31_u8 [inferred: update flag alongside enabled]
-    *(u8 *)(entry + 0x31) = 1;
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
+    app::KineticEnergy *energy = kinetic->get_energy(5);
+    energy->field_0x31_u8 = 1;
     return 0;
 }
 
@@ -304,10 +280,9 @@ u32 FUN_7102227c00(s64 param_1)
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s64)>(VT(kinetic)[0x60/8])(kinetic, 6);
-    // +0x30 → enabled [derived: KineticEnergy +0x30]
-    *(u8 *)(entry + 0x30) = 1;
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
+    app::KineticEnergy *energy = kinetic->get_energy(6);
+    energy->enabled = 1;
     return 0;
 }
 
@@ -318,10 +293,9 @@ u32 FUN_7102227ce0(s64 param_1)
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s64)>(VT(kinetic)[0x60/8])(kinetic, 6);
-    // +0x31 → field_0x31_u8 [inferred: update flag alongside enabled]
-    *(u8 *)(entry + 0x31) = 1;
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
+    app::KineticEnergy *energy = kinetic->get_energy(6);
+    energy->field_0x31_u8 = 1;
     return 0;
 }
 
@@ -332,10 +306,9 @@ u32 FUN_7102227d20(s64 param_1)
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s64)>(VT(kinetic)[0x60/8])(kinetic, 6);
-    // +0x31 → field_0x31_u8 [inferred: update flag alongside enabled]
-    *(u8 *)(entry + 0x31) = 0;
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
+    app::KineticEnergy *energy = kinetic->get_energy(6);
+    energy->field_0x31_u8 = 0;
     return 0;
 }
 
@@ -346,10 +319,9 @@ u32 FUN_7102229da0(s64 param_1)
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s64)>(VT(kinetic)[0x60/8])(kinetic, 7);
-    // +0x30 → enabled [derived: KineticEnergy +0x30]
-    *(u8 *)(entry + 0x30) = 1;
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
+    app::KineticEnergy *energy = kinetic->get_energy(7);
+    energy->enabled = 1;
     return 0;
 }
 
@@ -360,10 +332,9 @@ u32 FUN_7102229e80(s64 param_1)
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s64)>(VT(kinetic)[0x60/8])(kinetic, 7);
-    // +0x31 → field_0x31_u8 [inferred: update flag alongside enabled]
-    *(u8 *)(entry + 0x31) = 1;
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
+    app::KineticEnergy *energy = kinetic->get_energy(7);
+    energy->field_0x31_u8 = 1;
     return 0;
 }
 
@@ -374,10 +345,9 @@ u32 FUN_7102229ec0(s64 param_1)
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s64)>(VT(kinetic)[0x60/8])(kinetic, 7);
-    // +0x31 → field_0x31_u8 [inferred: update flag alongside enabled]
-    *(u8 *)(entry + 0x31) = 0;
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
+    app::KineticEnergy *energy = kinetic->get_energy(7);
+    energy->field_0x31_u8 = 0;
     return 0;
 }
 
@@ -388,10 +358,9 @@ u32 FUN_710222bde0(s64 param_1)
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s64)>(VT(kinetic)[0x60/8])(kinetic, 9);
-    // +0x30 → enabled [derived: KineticEnergy +0x30]
-    *(u8 *)(entry + 0x30) = 1;
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
+    app::KineticEnergy *energy = kinetic->get_energy(9);
+    energy->enabled = 1;
     return 0;
 }
 
@@ -402,10 +371,9 @@ u32 FUN_710222bec0(s64 param_1)
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s64)>(VT(kinetic)[0x60/8])(kinetic, 9);
-    // +0x31 → field_0x31_u8 [inferred: update flag alongside enabled]
-    *(u8 *)(entry + 0x31) = 1;
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
+    app::KineticEnergy *energy = kinetic->get_energy(9);
+    energy->field_0x31_u8 = 1;
     return 0;
 }
 
@@ -416,10 +384,9 @@ u32 FUN_710222bf00(s64 param_1)
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s64)>(VT(kinetic)[0x60/8])(kinetic, 9);
-    // +0x31 → field_0x31_u8 [inferred: update flag alongside enabled]
-    *(u8 *)(entry + 0x31) = 0;
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
+    app::KineticEnergy *energy = kinetic->get_energy(9);
+    energy->field_0x31_u8 = 0;
     return 0;
 }
 
@@ -430,10 +397,9 @@ u32 FUN_710222cd00(s64 param_1)
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s64)>(VT(kinetic)[0x60/8])(kinetic, 0xa);
-    // +0x30 → enabled [derived: KineticEnergy +0x30]
-    *(u8 *)(entry + 0x30) = 1;
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
+    app::KineticEnergy *energy = kinetic->get_energy(0xa);
+    energy->enabled = 1;
     return 0;
 }
 
@@ -444,10 +410,9 @@ u32 FUN_710222cde0(s64 param_1)
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s64)>(VT(kinetic)[0x60/8])(kinetic, 0xa);
-    // +0x31 → field_0x31_u8 [inferred: update flag alongside enabled]
-    *(u8 *)(entry + 0x31) = 1;
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
+    app::KineticEnergy *energy = kinetic->get_energy(0xa);
+    energy->field_0x31_u8 = 1;
     return 0;
 }
 
@@ -458,10 +423,9 @@ u32 FUN_710222ce20(s64 param_1)
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s64)>(VT(kinetic)[0x60/8])(kinetic, 0xa);
-    // +0x31 → field_0x31_u8 [inferred: update flag alongside enabled]
-    *(u8 *)(entry + 0x31) = 0;
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
+    app::KineticEnergy *energy = kinetic->get_energy(0xa);
+    energy->field_0x31_u8 = 0;
     return 0;
 }
 
@@ -472,10 +436,9 @@ u32 FUN_710222dc20(s64 param_1)
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s64)>(VT(kinetic)[0x60/8])(kinetic, 8);
-    // +0x30 → enabled [derived: KineticEnergy +0x30]
-    *(u8 *)(entry + 0x30) = 1;
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
+    app::KineticEnergy *energy = kinetic->get_energy(8);
+    energy->enabled = 1;
     return 0;
 }
 
@@ -486,10 +449,9 @@ u32 FUN_710222dd00(s64 param_1)
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s64)>(VT(kinetic)[0x60/8])(kinetic, 8);
-    // +0x31 → field_0x31_u8 [inferred: update flag alongside enabled]
-    *(u8 *)(entry + 0x31) = 1;
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
+    app::KineticEnergy *energy = kinetic->get_energy(8);
+    energy->field_0x31_u8 = 1;
     return 0;
 }
 
@@ -500,10 +462,9 @@ u32 FUN_710222dd40(s64 param_1)
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s64)>(VT(kinetic)[0x60/8])(kinetic, 8);
-    // +0x31 → field_0x31_u8 [inferred: update flag alongside enabled]
-    *(u8 *)(entry + 0x31) = 0;
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
+    app::KineticEnergy *energy = kinetic->get_energy(8);
+    energy->field_0x31_u8 = 0;
     return 0;
 }
 
@@ -514,10 +475,9 @@ u32 FUN_710222fa90(s64 param_1)
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s64)>(VT(kinetic)[0x60/8])(kinetic, 0xb);
-    // +0x30 → enabled [derived: KineticEnergy +0x30]
-    *(u8 *)(entry + 0x30) = 1;
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
+    app::KineticEnergy *energy = kinetic->get_energy(0xb);
+    energy->enabled = 1;
     return 0;
 }
 
@@ -528,10 +488,9 @@ u32 FUN_710222fb70(s64 param_1)
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s64)>(VT(kinetic)[0x60/8])(kinetic, 0xb);
-    // +0x31 → field_0x31_u8 [inferred: update flag alongside enabled]
-    *(u8 *)(entry + 0x31) = 1;
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
+    app::KineticEnergy *energy = kinetic->get_energy(0xb);
+    energy->field_0x31_u8 = 1;
     return 0;
 }
 
@@ -542,10 +501,9 @@ u32 FUN_7102230c40(s64 param_1)
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s64)>(VT(kinetic)[0x60/8])(kinetic, 0xc);
-    // +0x30 → enabled [derived: KineticEnergy +0x30]
-    *(u8 *)(entry + 0x30) = 1;
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
+    app::KineticEnergy *energy = kinetic->get_energy(0xc);
+    energy->enabled = 1;
     return 0;
 }
 
@@ -556,10 +514,9 @@ u32 FUN_7102230d20(s64 param_1)
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s64)>(VT(kinetic)[0x60/8])(kinetic, 0xc);
-    // +0x31 → field_0x31_u8 [inferred: update flag alongside enabled]
-    *(u8 *)(entry + 0x31) = 1;
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
+    app::KineticEnergy *energy = kinetic->get_energy(0xc);
+    energy->field_0x31_u8 = 1;
     return 0;
 }
 
@@ -570,9 +527,8 @@ u32 FUN_7102230d60(s64 param_1)
     app::BattleObjectModuleAccessor *acc =
         reinterpret_cast<app::BattleObjectModuleAccessor*>(
             *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    s64 *kinetic = reinterpret_cast<s64*>(acc->item_kinetic_module);
-    s64 entry = reinterpret_cast<s64 (*)(s64*, s64)>(VT(kinetic)[0x60/8])(kinetic, 0xc);
-    // +0x31 → field_0x31_u8 [inferred: update flag alongside enabled]
-    *(u8 *)(entry + 0x31) = 0;
+    app::KineticModule *kinetic = static_cast<app::KineticModule*>(acc->item_kinetic_module);
+    app::KineticEnergy *energy = kinetic->get_energy(0xc);
+    energy->field_0x31_u8 = 0;
     return 0;
 }
