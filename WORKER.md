@@ -1,34 +1,25 @@
-# Worker: pool-e
+# Worker: pool-c
 
 ## Model: Opus
 
-## Task: Resource service decomp — engine init + main_loop helpers
+## Task: Resource service — large functions from Ghidra exports
 
-Decomp the engine initialization chain and main_loop related functions.
+The mega-functions can't be decompiled via MCP, but Ghidra exports exist as .txt files.
 
 ### Target Functions
-- `FUN_710373e080` — 10,240 bytes (early init, before resource service)
-- `FUN_7103740880` — 1,936 bytes
-- `FUN_71037569c0` — 1,920 bytes
-- `start_prepo_report` (0x710375f650) — if not taken by pool-d
-- Any remaining functions in 0x710373e000–0x7103745000
+- `FUN_710374d270` — 8,432 bytes (called from main_loop)
+- `FUN_7103757290` — 7,056 bytes (Mii renderer or resource related — identify first)
+- `FUN_7103758f50` — 5,520 bytes
 
-### Type Headers Available
-- `include/resource/ResServiceNX.h` — ResServiceNX struct
-- `include/resource/LoadedArc.h` — ARC archive structures
-- `include/resource/containers.h` — CppVector, ResList, ListNode, LoadInfo
+### Available Ghidra Exports
+Check the project root for .txt files:
+- `FUN_710374f360.txt` (already exists — 2,627 lines of decompiled C)
+- Other exports may be in asm/ directory
 
-### Key Context
-- main_loop is at 0x7103747270 (24,576 bytes) — DO NOT attempt this function, it's too large for one session
-- Focus on the helper functions that main_loop calls
-- FUN_710373e080 may be early engine init (before resource service)
+If a function doesn't have a Ghidra export, try decompiling via MCP first. If MCP fails, decompile from raw disassembly (use llvm-objdump).
 
-### Approach
-1. Decompile in Ghidra, identify what each function initializes or manages
-2. Map to resource service structs where applicable
-3. Write C++ using the headers
-
-### Output: src/resource/engine_init.cpp
+### Headers
+- `include/resource/ResServiceNX.h`, `include/resource/LoadedArc.h`, `include/resource/containers.h`
 
 ### Quick Reference
 ```
@@ -38,7 +29,7 @@ python tools/compare_bytes.py FUN_name
 ```
 
 ### Rules
-- CAN create: src/resource/engine_init.cpp, and edit include/resource/*.h if needed
-- Use ARCropolis field names with [derived: ARCropolis] provenance
+- Output: src/resource/res_large_funcs.cpp
+- Use resource headers with derivation chains
 - 3-attempt limit per function
-- Do NOT attempt main_loop (0x7103747270) — too large
+- If a function is NOT resource-related (graphics, Mii, etc.), document what it is and skip
