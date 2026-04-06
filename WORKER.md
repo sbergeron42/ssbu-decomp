@@ -2,19 +2,28 @@
 
 ## Model: Opus
 
-## Task: Resource service — medium functions + inflate chain
+## Task: Resource service — directory_file_read (0x71039a4040, 11,408 bytes)
 
-### Target Functions
-- `FUN_7103753fc0` — 1,344 bytes (singleton init)
-- `FUN_7103755cb0` — 2,448 bytes (friends profile init)
-- `deal_with_inputs?` (0x710375ea70) — 2,576 bytes
-- `inflate` (0x710002c1f0) — 5,936 bytes (zlib core inflate function)
-- `zlib_unencode` (0x71000281d0) — 576 bytes
+This is ARCropolis hook point #3: `inflate_dir_file`. ARCropolis replaces this entire function to handle directory file decompression for modded content.
 
-The `inflate` function is the zlib decompression core used by ResInflateThread. It's open-source (zlib), so match against known zlib source like we did with jemalloc.
+### Function Details
+- Address: 0x71039a4040
+- Size: 11,408 bytes
+- ARCropolis hook name: `inflate_dir_file` / `directory_file_read`
+
+### Key Context
+- Handles decompression of directory-level file entries from the ARC archive
+- Uses zlib or zstd depending on FileData.flags (bit 0 = compressed, bit 1 = use_zstd)
+- Accesses LoadedArc tables: folder_offsets, file_infos, file_info_to_datas, file_datas
+- Global: DAT_7105331f28 = ResServiceNX singleton, DAT_7105331f20 = FilesystemInfo
 
 ### Headers
 - `include/resource/ResServiceNX.h`, `include/resource/LoadedArc.h`, `include/resource/containers.h`
+
+### Derivation Chains (MANDATORY)
+- `[derived: ARCropolis inflate_dir_file hook]` — function purpose
+- `[derived: smash-arc FileData/DirectoryOffset]` — ARC struct fields
+- `[inferred:]` for any fields not in community sources
 
 ### Quick Reference
 ```
@@ -23,15 +32,8 @@ The `inflate` function is the zlib decompression core used by ResInflateThread. 
 python tools/compare_bytes.py FUN_name
 ```
 
-### Derivation Chains (MANDATORY)
-Every function and every struct field MUST have provenance:
-- For zlib: `// zlib 1.2.11: inflate.c:1234` — exact upstream file and line
-- For resource funcs: `[derived: ARCropolis field_name]` or `[inferred: pattern description]`
-- For SDK functions: `[derived: nn::prepo/friends/account SDK call]`
-- Any offset like `+0x10`, `+0x68` MUST get a confidence tag — no bare offsets
-
 ### Rules
-- Output: src/resource/res_medium_funcs.cpp (resource), src/lib/zlib_inflate.cpp (zlib)
-- For zlib: use upstream source with `// zlib: inflate.c:line` provenance
-- For resource funcs: use resource headers with derivation chains
-- 3-attempt limit per function
+- Output: src/resource/res_inflate.cpp
+- This is a large function — focus on getting the structure right with correct types
+- 3-attempt limit per section
+- Do NOT use naked asm
