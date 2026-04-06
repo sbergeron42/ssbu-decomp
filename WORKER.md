@@ -1,38 +1,34 @@
-# Worker: pool-e
+# Worker: pool-a
 
 ## Model: Opus
 
-## Task: Replace VT calls with named methods — ReflectModule functions
+## Task: jemalloc 5.1.0 decomp — small+medium functions (lower range)
 
-`include/app/modules/ReflectModule.h` already has 17 vtable methods.
+Continue matching jemalloc functions against upstream source at `lib/jemalloc/`.
+Focus on functions <=256 bytes in the lower half of the jemalloc range.
 
-### Target Files
-- `src/app/fun_batch_e3_025.cpp` — ReflectModule functions ONLY (accessor+0xf8)
-  NOTE: Pool D is editing this same file for PostureModule functions. You handle ONLY the ReflectModule ones.
+### Upstream Reference
+- jemalloc 5.1.0, upstream source at `lib/jemalloc/src/`
+- Nintendo config: `percpu_arena:percpu,dirty_decay_ms:1`
+- Every function gets `// jemalloc 5.1.0: file.c:line` provenance comment
 
-### MANDATORY Example
-**BEFORE:**
-```cpp
-void** mod = reinterpret_cast<void**>(acc->reflect_module);
-reinterpret_cast<u64(*)(void**)>(VT(mod)[0x80 / 8])(mod);
-```
-**AFTER:**
-```cpp
-// [derived: ReflectModule__method_impl (.dynsym) -> slot 16 (0x80/8)]
-ReflectModule* reflect = static_cast<ReflectModule*>(acc->reflect_module);
-reflect->method_name();
-```
+### Address Range
+0x7103920000 — 0x7103940000 (lower half of remaining uncompiled)
 
-Look up slot in `include/app/modules/ReflectModule.h`. If missing, add with [inferred:] tag.
+### Approach
+1. Decompile in Ghidra, match against upstream jemalloc source
+2. Write C matching upstream, note any Nintendo deltas
+3. Use `lib/jemalloc/src/` as reference — field names are KNOWN, not inferred
 
 ### Quick Reference
 ```
-/c/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -Ilib/NintendoSDK/include -Ilib/NintendoSDK/include/stubs -c src/app/FILE.cpp -o build/FILE.o
+/c/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -Ilib/NintendoSDK/include -Ilib/NintendoSDK/include/stubs -c src/lib/FILE.cpp -o build/FILE.o
 
 python tools/compare_bytes.py FUN_name
 ```
 
 ### Rules
-- CAN edit: fun_batch_e3_025.cpp (ReflectModule functions ONLY), ReflectModule.h (if slots missing)
-- Use existing header methods. Add missing slots with [inferred:] tag
+- ONLY create src/lib/jemalloc_a2_*.cpp
+- Use upstream jemalloc field names — provably correct
 - 3-attempt limit per function
+- Save Ghidra results to /tmp/ghidra_results.txt
