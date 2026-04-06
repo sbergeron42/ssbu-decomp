@@ -48,18 +48,21 @@ s64 FUN_710395eb50(s64 param_1) { return param_1 + 3; }
 s64 FUN_710395eba0(s64 param_1) { return param_1 + 1; }
 
 // 0x710395ee90 -- return param_1 + 0x28 (32 bytes)
+// +0x28 [inferred: sub-object/field address, returned as pointer]
 s64 FUN_710395ee90(s64 param_1) { return param_1 + 0x28; }
 
 // 0x710395eee0 -- return param_1 + 2 (32 bytes)
 s64 FUN_710395eee0(s64 param_1) { return param_1 + 2; }
 
 // 0x710395ef30 -- return param_1 + 8 (32 bytes)
+// +0x08 [inferred: sub-object/field address, returned as pointer]
 s64 FUN_710395ef30(s64 param_1) { return param_1 + 8; }
 
 // 0x710395f440 -- return param_1 == 0 (32 bytes)
 u8 FUN_710395f440(s64 param_1) { return (u8)(param_1 == 0); }
 
 // 0x710395f4b0 -- return param_1 + 0x1800 (32 bytes)
+// +0x1800 [inferred: large embedded sub-object, seen in multiple container classes]
 s64 FUN_710395f4b0(s64 param_1) { return param_1 + 0x1800; }
 
 // 0x710395fab0 -- return *param_1 == 0 (32 bytes)
@@ -81,9 +84,11 @@ void FUN_710392feb0(u64 *param_1) { *param_1 = 0; }
 u64 FUN_71039302e0(u64 param_1) { return param_1; }
 
 // 0x7103932870 -- return *(u64*)(p+8) (32 bytes)
+// +0x08 [inferred: u64 field, read and returned]
 u64 FUN_7103932870(s64 param_1) { return *(u64*)(param_1 + 8); }
 
 // 0x7103932b40 -- return param_1 + 0x40 (32 bytes)
+// +0x40 [inferred: sub-object/field address, returned as pointer]
 s64 FUN_7103932b40(s64 param_1) { return param_1 + 0x40; }
 
 // 0x7103935f80 -- no-op (32 bytes)
@@ -93,6 +98,7 @@ void FUN_7103935f80(void) { return; }
 u64 FUN_7103938910(u64 param_1) { return param_1; }
 
 // 0x7103939580 -- return *(u64*)(p+8) (32 bytes)
+// +0x08 [inferred: u64 field, read and returned]
 u64 FUN_7103939580(s64 param_1) { return *(u64*)(param_1 + 8); }
 
 // 0x710393c150 -- zero out u64 field (32 bytes)
@@ -108,6 +114,7 @@ u64 FUN_7103944830(u64 param_1) { return param_1; }
 void FUN_7103944a40(void) { return; }
 
 // 0x7103944cf0 -- return *(u64*)(p+8) (32 bytes)
+// +0x08 [inferred: u64 field, read and returned]
 u64 FUN_7103944cf0(s64 param_1) { return *(u64*)(param_1 + 8); }
 
 // 0x7103946080 -- zero out u64 field (32 bytes)
@@ -138,6 +145,7 @@ void FUN_710395d1c0(void) { nn::os::sched_getcpu(); }
 void FUN_710395fbe0(void) { nn::os::GetCurrentThread(); }
 
 // 0x710395fb80 — store GetCurrentThread() result to global (32 bytes)
+// DAT_7106dd40b8 [inferred: global pointer, stores current thread handle]
 u32 FUN_710395fb80(void) { *(void**)DAT_7106dd40b8 = nn::os::GetCurrentThread(); }
 
 // 0x7103929470 — wrapper: call FUN_71039295c0() (32 bytes)

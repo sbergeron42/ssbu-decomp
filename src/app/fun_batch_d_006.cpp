@@ -148,6 +148,8 @@ u64 *FUN_71037a02a0(void)
 }
 
 // 0x710335c478 -- vtable dispatch at 0x268, return 0
+// obj [inferred: vtable-bearing object, large vtable]
+//   vtable+0x268 [inferred: virtual method slot 0x4D, no-arg dispatch]
 u32 FUN_710335c478(s64 *obj)
 {
     (*(void(*)())(*(s64 *)(*obj + 0x268)))();
@@ -155,6 +157,8 @@ u32 FUN_710335c478(s64 *obj)
 }
 
 // 0x71031d04b0 -- vtable dispatch at 0x20, return 1
+// obj [inferred: vtable-bearing object]
+//   vtable+0x20 [inferred: virtual method slot 4, no-arg dispatch]
 u64 FUN_71031d04b0(s64 *obj)
 {
     (*(void(*)())(*(s64 *)(*obj + 0x20)))();
@@ -162,6 +166,8 @@ u64 FUN_71031d04b0(s64 *obj)
 }
 
 // 0x7103360268 -- vtable dispatch at 8, return 0
+// obj [inferred: vtable-bearing object]
+//   vtable+0x08 [inferred: virtual method slot 1, no-arg dispatch]
 u32 FUN_7103360268(s64 *obj)
 {
     (*(void(*)())(*(s64 *)(*obj + 8)))();
@@ -169,6 +175,8 @@ u32 FUN_7103360268(s64 *obj)
 }
 
 // 0x7103365d08 -- vtable dispatch at 8, return 0
+// obj [inferred: vtable-bearing object, same pattern as FUN_7103360268]
+//   vtable+0x08 [inferred: virtual method slot 1, no-arg dispatch]
 u32 FUN_7103365d08(s64 *obj)
 {
     (*(void(*)())(*(s64 *)(*obj + 8)))();
@@ -176,11 +184,20 @@ u32 FUN_7103365d08(s64 *obj)
 }
 
 // 0x71033f1cc0 -- ground_module vtable[0x2d0/8] with flag=1, set byte at +0x90
+// param_2 [inferred: lua context struct]
+//   +0x20 [derived: BattleObjectModuleAccessor pointer, standard lua_bind pattern]
+//   acc->ground_module (+0x58) [derived: GroundModule__*_impl (.dynsym) loads from accessor+0x58]
+//   vtable+0x2d0 [inferred: GroundModule virtual method slot 0x5A, takes (self, u32)]
+//   +0x90 [inferred: u8 flag on lua context, set to 1 after ground module call]
 void FUN_71033f1cc0(u64 param_1, s64 param_2)
 {
+    // +0x20 [derived: accessor pointer from lua context]
     auto* acc = ACC(param_2);
+    // +0x58 [derived: ground_module per GroundModule__*_impl (.dynsym)]
     s64 *ground_mod = static_cast<s64*>(acc->ground_module);
+    // vtable+0x2d0 [inferred: GroundModule virtual method, arg=1]
     (*(void(*)(s64*, u32))(*(s64*)(*ground_mod + 0x2d0)))(ground_mod, 1);
+    // +0x90 [inferred: u8 flag on lua context]
     *(u8*)(param_2 + 0x90) = 1;
 }
 
