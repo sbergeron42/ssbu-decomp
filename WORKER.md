@@ -1,45 +1,34 @@
-# Worker: pool-c
+# Worker: pool-a
 
 ## Model: Opus
 
-## Task: VT method replacement — last 4 batch files with VT(mod)[slot]
+## Task: jemalloc 5.1.0 decomp — small+medium functions (lower range)
 
-Replace remaining `VT(mod)[slot]` patterns with named vtable method calls.
-All module headers already have vtable methods defined.
+Continue matching jemalloc functions against upstream source at `lib/jemalloc/`.
+Focus on functions <=256 bytes in the lower half of the jemalloc range.
 
-### Target Files
-- `src/app/fun_batch_c2_017.cpp` — mixed module VT calls
-- `src/app/fun_batch_e3_001.cpp` — mixed module VT calls
-- `src/app/fun_batch_e3_004.cpp` — mixed module VT calls
-- `src/app/fun_batch_e3_005.cpp` — mixed module VT calls
+### Upstream Reference
+- jemalloc 5.1.0, upstream source at `lib/jemalloc/src/`
+- Nintendo config: `percpu_arena:percpu,dirty_decay_ms:1`
+- Every function gets `// jemalloc 5.1.0: file.c:line` provenance comment
+
+### Address Range
+0x7103920000 — 0x7103940000 (lower half of remaining uncompiled)
 
 ### Approach
-1. For each VT(mod)[slot] call, identify the module (check which accessor offset loads it)
-2. Look up slot in the module's header (include/app/modules/*.h)
-3. Replace with `mod->method_name(args)` + `[derived:]` comment
-4. If slot not in header, add it with `[inferred:]` tag
-
-### Example
-**BEFORE:**
-```cpp
-void** mod = reinterpret_cast<void**>(acc->motion_module);
-reinterpret_cast<void(*)(void**, u64)>(VT(mod)[0xf0 / 8])(mod, p1);
-```
-**AFTER:**
-```cpp
-// [derived: MotionModule__change_motion_inherit_frame_keep_rate_impl (.dynsym) -> slot 30]
-MotionModule* mod = static_cast<MotionModule*>(acc->motion_module);
-mod->change_motion_inherit_frame_keep_rate(p1);
-```
+1. Decompile in Ghidra, match against upstream jemalloc source
+2. Write C matching upstream, note any Nintendo deltas
+3. Use `lib/jemalloc/src/` as reference — field names are KNOWN, not inferred
 
 ### Quick Reference
 ```
-/c/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -Ilib/NintendoSDK/include -Ilib/NintendoSDK/include/stubs -c src/app/FILE.cpp -o build/FILE.o
+/c/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -Ilib/NintendoSDK/include -Ilib/NintendoSDK/include/stubs -c src/lib/FILE.cpp -o build/FILE.o
 
 python tools/compare_bytes.py FUN_name
 ```
 
 ### Rules
-- CAN edit: fun_batch_c2_017.cpp, fun_batch_e3_001.cpp, fun_batch_e3_004.cpp, fun_batch_e3_005.cpp
-- CAN add missing vtable entries to module headers with [inferred:] tags
+- ONLY create src/lib/jemalloc_a2_*.cpp
+- Use upstream jemalloc field names — provably correct
 - 3-attempt limit per function
+- Save Ghidra results to /tmp/ghidra_results.txt
