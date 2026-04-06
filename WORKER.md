@@ -2,39 +2,75 @@
 
 ## Model: Opus
 
-## Task: Rewrite Ghidra-paste files (round 3) — batch_e + batch_c + batch_d remaining
+## Task: Struct access rewrite with derivation chains — batch_d_012 + batch_d_015
 
-### Target Files
-- `src/app/fun_batch_e_002.cpp` — 5 funcs, 24 paste
-- `src/app/fun_batch_e3_004.cpp` — 15 funcs, 13 paste
-- `src/app/fun_batch_e2_012.cpp` — 24 funcs, 12 paste
-- `src/app/fun_batch_c_002.cpp` — 30 funcs, 16 paste
-- `src/app/fun_batch_d_010.cpp` — 36 funcs, 13 paste
-- `src/app/fun_batch_d_014.cpp` — 19 funcs, 12 paste
+### Target Files (2 files, ~63 functions with module access)
+- `src/app/fun_batch_d_012.cpp` — 37 funcs, 16 module dereferences
+- `src/app/fun_batch_d_015.cpp` — 26 funcs, 18 module dereferences
 
-### Workflow
-1. Identify module access via offset → rewrite with struct field access
-2. Replace Ghidra variable names with meaningful names
-3. Single-file compile, compare_bytes, move on. 3-attempt limit.
+These files already have shallow variable renames from a previous round. Your job is to ADD struct field access and derivation chain comments. Do NOT just rename more variables.
 
-### Goal
-Readable code > matching. Commit improvements even if non-matching.
+### MANDATORY Before/After Example
 
-### DO NOT
-- Run full build.bat until end of session
-- Attempt functions with .inst, naked asm, or SIMD
-- Use sleep-polling loops — use run_in_background
+**BEFORE (this is what the code looks like now — DO NOT submit work that looks like this):**
+```cpp
+// 0x7102208730
+u32 FUN_7102208730(s64 param_1)
+{
+    s64 *module;
+    s64 entry;
+    module = *(s64 **)(*(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0) + 0x68);
+    entry = (**(s64 (**)(s64 *, s64))(*module + 0x60))(module, 0xc);
+    *(u8 *)(entry + 0x30) = 0;
+    return 0;
+}
+```
+
+**AFTER (this is what "done" looks like — struct access + derivation chains):**
+```cpp
+// 0x7102208730
+// KineticModule flag clear for energy index 0xc
+u32 FUN_7102208730(s64 param_1)
+{
+    // param_1-8 → BattleObject, +0x1a0 → accessor [derived: BattleObject layout in .dynsym ctors]
+    app::BattleObjectModuleAccessor *acc =
+        reinterpret_cast<app::BattleObjectModuleAccessor*>(
+            *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
+    // +0x68 → kinetic_module [derived: KineticModule__*_impl (.dynsym) loads from accessor+0x68]
+    KineticModule *kinetic = reinterpret_cast<KineticModule*>(acc->kinetic_module);
+    // vtable+0x60 → get_energy_entry [inferred: index-based lookup, returns energy struct]
+    s64 energy = reinterpret_cast<s64 (*)(KineticModule*, s64)>(
+        VT(kinetic)[0x60/8])(kinetic, 0xc);
+    // +0x30 → enabled flag [inferred: set to 0/1 across 40 functions in this file]
+    *(u8 *)(energy + 0x30) = 0;
+    return 0;
+}
+```
+
+**Key differences:**
+1. `acc->kinetic_module` instead of `*(ptr + 0x68)` — uses the struct header
+2. Every offset has a `[derived:]` or `[inferred:]` comment explaining HOW the name was determined
+3. Function has a one-line description of what it does
+4. Confidence levels: `[derived: ...]` = proven from binary evidence, `[inferred: ...]` = pattern-based guess
+
+### Confidence Tags (REQUIRED on every named field)
+- `[derived: <evidence>]` — name proven from .dynsym, xref, or verified function
+- `[inferred: <pattern>]` — name guessed from usage pattern, not proven
+- `[unknown]` — offset is used but no name can be determined; use `field_0xNN` naming
+
+### What is NOT acceptable
+- Renaming `uVar1` → `result` WITHOUT replacing raw offsets with struct access
+- Adding struct access WITHOUT derivation comments
+- Guessing field names without tagging confidence level
 
 ### Quick Reference
 ```
 /c/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -Ilib/NintendoSDK/include -Ilib/NintendoSDK/include/stubs -c src/app/FILE.cpp -o build/FILE.o
 
 python tools/compare_bytes.py FUN_name  # NOT address
-
-# +0x38 posture, +0x40 status, +0x48 control, +0x50 work, +0x58 ground
-# +0x60 camera, +0x68 kinetic, +0x88 motion, +0xA0 attack, +0xA8 damage
-# +0xC0 area, +0x140 effect, +0x148 sound
 ```
 
 ### Rules
-- CAN ONLY edit: fun_batch_e_002.cpp, fun_batch_e2_012.cpp, fun_batch_e3_004.cpp, fun_batch_c_002.cpp, fun_batch_d_010.cpp, fun_batch_d_014.cpp
+- CAN ONLY edit: fun_batch_d_012.cpp, fun_batch_d_015.cpp
+- Must `#include "app/BattleObjectModuleAccessor.h"` and use the struct
+- 3-attempt limit per function for matching, but derivation comments are required regardless
