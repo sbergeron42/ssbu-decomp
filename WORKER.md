@@ -1,52 +1,54 @@
-# Worker: pool-b
+# Worker: pool-d
 
 ## Model: Opus
 
-## Task: Resource service decomp — game_ldn_initialize area
+## Task: Resource service decomp — small functions (<1,000 bytes)
 
-### Verified Matches
-- **FUN_7103741520** (1,136 bytes) — Language detection — **VERIFIED MATCH** (101/117 instructions, 16 diffs are BL relocations only)
-  - Source: `src/resource/game_init.cpp`
+Decomp the smaller resource service helper functions using the ARCropolis type headers.
 
-### Ghidra Exports Available (in `asm/`)
-- **game_ldn_initialize** (22,464 bytes, 4517 lines) — Full game init
-- **FUN_7103747270** (~22K bytes, 3947 lines) — Post-init continuation
-- **FUN_710374f360** (19,552 bytes) — ResServiceNX init — cached at `/tmp/res_service_init.txt`
+### Target Functions
+- `GlobalParameter` (0x7103756640) — 896 bytes (already named)
+- `FUN_7103754ef0` — 624 bytes
+- `FUN_7103755a50` — 608 bytes
+- `FUN_7103754c70` — 480 bytes
+- `FUN_710375f480` — 464 bytes
+- `FUN_710375db40` — 3,888 bytes
+- `FUN_710375f650` — 3,840 bytes
+- `deal_with_inputs?` (0x710375ea70) — 2,576 bytes
+- Plus any remaining small functions in 0x710373e000–0x7103760000
 
-### Structure of game_ldn_initialize (from Ghidra export)
-1. nn::oe (Initialize, SetPerformanceConfiguration x2, SetFocusHandlingMode, DisableRecording)
-2. FUN_7103747220 — vtable-based swap (module initializer pattern)
-3. nn::oe::GetNotificationMessageEvent, GetOperationMode
-4. nn::os::InitializeEvent + SignalEvent
-5. FUN_710353d000 — thread creation (priority=5, stack=0x40000)
-6. **FUN_7103741520** — language detection → DAT_710523c00c (DECOMPED)
-7. **FUN_710374f360** — ResServiceNX init (param_1)
-8. FUN_710353e760 — language string setup
-9. FUN_71035481d0 x5 — recursive spinlock init on 5 global objects
-10. NIFM network init (je_aligned_alloc + nn::nifm::Initialize + error handling)
-11. Account system (0x7320 byte struct, ListAllUsers loop, GetNickname, TryOpenPreselectedUser)
-12. HID controller manager (10 npad slots, nn::hid::InitializeNpad, SetSupportedNpadStyleSet(0x3f))
-13. 8x FUN_7103666880(ptr, 0..7) — controller objects (0xd0 + 0x30 + 0x340 bytes each)
-14. Vibration device init loop (GetVibrationDeviceHandles, InitializeVibrationDevice)
-15. TouchScreen init (0x2B8 byte struct, nn::hid::InitializeTouchScreen)
-16. SixAxisSensor init (0x340 byte struct, GetSixAxisSensorHandles, StartSixAxisSensor)
-17. More input managers stored to globals
-18. nn::prepo::Initialize
-19. Resource hash table binary search + mutex poll loops (region/language lookup)
-20. nn::vi::Initialize, OpenDefaultDisplay, CreateLayer, GetNativeWindow
-21. Shader loading (6x FUN_710358eed0 + FUN_710353d480 for render/shader/bin/*.*)
-22. 13x FUN_7103720ad0 — module init calls
-23. nn::ro::Initialize (final)
+### Type Headers Available
+- `include/resource/ResServiceNX.h` — ResServiceNX struct
+- `include/resource/LoadedArc.h` — ARC archive structures
+- `include/resource/containers.h` — CppVector, ResList, ListNode, LoadInfo
 
-### SDK Headers Modified
-- `lib/NintendoSDK/include/nn/settings.h` — Added Language_SimplifiedChinese/TraditionalChinese, operator==(LanguageCode, Language)
-- `include/resource/LoadedArc.h` — Added PathInformation struct
+### Approach
+1. Start with the smallest functions — these are likely helpers/accessors that reveal struct patterns
+2. Decompile in Ghidra, identify which resource structs they access
+3. Write C++ using the resource headers
+4. Use insights from small functions to help understand larger ones
 
-### Cached Ghidra Decompilations (in /tmp/ghidra_results.txt)
-- FUN_7103741010 (ring buffer logging), FUN_7103741260/1330/1410 (time conversion)
-- FUN_7103740880 (scene/resource manager tick), FUN_710374d270 (scene loading)
-- FUN_710353d480 (hash40 lookup), FUN_710353e980 (file swap), FUN_710353eb70 (file release)
-- FUN_710353cf40 (TLS helper), FUN_7103666880 (controller init)
+### Completed
+- `FUN_7103754c70` (480 bytes) — `get_desired_language`: 80% match (prologue sched + reloc only)
+  Maps nn::settings::LanguageCode → Language via linear scan of 17 entries. Default: English.
+
+### Range Analysis
+The 0x710373e000–0x7103760000 range is NOT exclusively resource-service code. It contains:
+- **Language/locale utilities**: FUN_7103754c70 (done), FUN_7103741520 (game language mapper)
+- **Date/time bitfield packers**: FUN_7103741160/1260/1330/1410 (nn::time SDK)
+- **Web/UI helpers**: FUN_7103755160/5270 (nn::web SDK, offline HTML pages)
+- **Friends/account**: FUN_7103755a50, GlobalParameter (nn::friends, nn::account)
+- **Mii database**: FUN_7103758e20, FUN_7103757140
+- **Font/glyph loading**: FUN_710375f650 (3840 bytes, very complex)
+- **Game loop/input**: FUN_710375ea70 (2576 bytes, vtable-heavy)
+- **Engine init**: FUN_7103753fc0 (singleton init with exclusive monitors)
+- **ResServiceNX init**: FUN_710374f360 (19,552 bytes — too large)
+
+Only FUN_710375f650 and FUN_710374f360 directly operate on ResServiceNX fields.
+Most "small" functions need engine types (nu::*, cross2app) or have matching challenges
+(prologue scheduling, switch tables, bitfield instruction selection).
+
+### Output: src/resource/res_helpers.cpp
 
 ### Quick Reference
 ```
@@ -56,6 +58,6 @@ python tools/compare_bytes.py FUN_name
 ```
 
 ### Rules
-- CAN create: src/resource/*.cpp, and edit include/resource/*.h if needed
+- CAN create: src/resource/res_helpers.cpp, and edit include/resource/*.h if needed
 - Use ARCropolis field names with [derived: ARCropolis] provenance
-- 3-attempt limit per sub-section
+- 3-attempt limit per function
