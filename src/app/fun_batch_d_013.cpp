@@ -1,7 +1,7 @@
 #include "types.h"
 
 // MEDIUM-tier FUN_* functions -- mixed address range, batch d-013
-// Pool-d worker: auto-generated from Ghidra decompilation
+// Rewritten from Ghidra paste with meaningful names
 
 // ---- External declarations -----------------------------------------------
 
@@ -46,11 +46,11 @@ namespace nn { namespace nfp {
 
 // ---- Functions ---------------------------------------------------------------
 
-// 0x71033011cc -- wrapper: FUN_7103300dd0() (36 bytes)
+// 0x71033011cc -- wrapper: FUN_7103300dd0()
 u64 FUN_71033011cc(void) { return FUN_7103300dd0(); }
 
-// 0x71033646c0 -- vtable call at +0x10, return 0 (48 bytes)
-u32 FUN_71033646c0(s64 *param_1)
+// 0x71033646c0 -- vtable dispatch via x8 at +0x10, return 0
+u32 FUN_71033646c0(s64 *obj)
 {
     register s64 *in_x8 asm("x8");
     asm volatile("" : "+r"(in_x8));
@@ -58,50 +58,50 @@ u32 FUN_71033646c0(s64 *param_1)
     return 0;
 }
 
-// 0x71033669a0 -- wrapper: FUN_71032e5640(global), return 0 (32 bytes)
+// 0x71033669a0 -- wrapper: FUN_71032e5640(global), return 0
 u64 FUN_71033669a0(void) { FUN_71032e5640(DAT_710532e7c8); return 0; }
 
-// 0x7103366b00 -- wrapper: FUN_71032e5560(*(global+8)), return 0 (48 bytes)
+// 0x7103366b00 -- wrapper: FUN_71032e5560(*(global+8)), return 0
 u64 FUN_7103366b00(void) { FUN_71032e5560(*(u64*)(DAT_710532e7c8 + 8)); return 0; }
 
-// 0x7103367c40 -- store param_1 at p2+0x10, vtable call through nested globals (48 bytes)
-u64 FUN_7103367c40(u64 param_1, s64 param_2)
+// 0x7103367c40 -- store value at ctx+0x10, call through nested globals
+u64 FUN_7103367c40(u64 value, s64 ctx)
 {
-    *(u64*)(param_2 + 0x10) = param_1;
+    *(u64*)(ctx + 0x10) = value;
     FUN_7101af9320(*(u64*)(*(s64*)(*(s64*)(DAT_710532e840 + 8) + 0xb8) + 0x80));
     return 0;
 }
 
-// 0x7103342850 -- clear u16 then memset large region (48 bytes)
-void FUN_7103342850(u16 *param_1)
+// 0x7103342850 -- clear u16 then memset 0x2041e8-byte region
+void FUN_7103342850(u16 *data)
 {
-    *param_1 = 0;
-    memset(param_1 + 4, 0, 0x2041e8);
+    *data = 0;
+    memset(data + 4, 0, 0x2041e8);
 }
 
-// 0x71036b3db0 -- conditional: check string then update field (64 bytes)
+// 0x71036b3db0 -- check string field, update entry if non-empty
 void FUN_71036b3db0(s64 param_1, u64 param_2)
 {
-    s64 lVar1 = *(s64*)(param_1 + 0x158);
-    if (*(char*)(*(s64*)(lVar1 + 0x18)) != '\0') {
-        FUN_71036b58b0(lVar1);
-        *(u64*)(lVar1 + 0xd8) = param_2;
+    s64 entry = *(s64*)(param_1 + 0x158);
+    if (*(char*)(*(s64*)(entry + 0x18)) != '\0') {
+        FUN_71036b58b0(entry);
+        *(u64*)(entry + 0xd8) = param_2;
     }
 }
 
-// 0x7103762200 -- conditional copy of two u32 fields via pointer (64 bytes)
+// 0x7103762200 -- conditional copy of two u32 fields to dest
 void FUN_7103762200(s64 param_1, s64 *param_2)
 {
     FUN_710007db90();
     if (*(char*)(param_1 + 0x5c) == '\0') {
-        s64 lVar2 = *param_2;
-        u32 uVar1 = *(u32*)(param_1 + 0x54);
-        *(u32*)(lVar2 + 0xc) = *(u32*)(param_1 + 0x50);
-        *(u32*)(lVar2 + 0x10) = uVar1;
+        s64 dest = *param_2;
+        u32 field_54 = *(u32*)(param_1 + 0x54);
+        *(u32*)(dest + 0xc) = *(u32*)(param_1 + 0x50);
+        *(u32*)(dest + 0x10) = field_54;
     }
 }
 
-// 0x7103720640 -- conditional reset of 0xffffff (64 bytes)
+// 0x7103720640 -- reset color to 0xffffff if changed
 void FUN_7103720640(s64 param_1)
 {
     if (*(s32*)(param_1 + 0x10) != 0xffffff) {
@@ -110,16 +110,16 @@ void FUN_7103720640(s64 param_1)
     }
 }
 
-// 0x7103720de0 -- wrapper: FUN_71037223f0(param_2 + 0xc) (32 bytes)
+// 0x7103720de0 -- wrapper: FUN_71037223f0(param_2 + 0xc)
 u64 FUN_7103720de0(u64 param_1, s64 param_2) { return FUN_71037223f0(param_2 + 0xc); }
 
-// 0x7103720e00 -- wrapper: FUN_7103721ea0(param_2+0xc, byte at +0x158) (48 bytes)
+// 0x7103720e00 -- wrapper: FUN_7103721ea0(param_2+0xc, byte at +0x158)
 u64 FUN_7103720e00(u64 param_1, s64 param_2)
 {
     return FUN_7103721ea0(param_2 + 0xc, *(u8*)(param_2 + 0x158)) & 0xFFFFFFFF;
 }
 
-// 0x7103720ee0 -- wrapper: FUN_71037228b0 with three u64 fields (48 bytes)
+// 0x7103720ee0 -- wrapper: FUN_71037228b0 with three u64 fields
 u64 FUN_7103720ee0(u64 param_1, s64 param_2)
 {
     return FUN_71037228b0(param_2 + 0xc,
@@ -128,84 +128,84 @@ u64 FUN_7103720ee0(u64 param_1, s64 param_2)
                           *(u64*)(param_2 + 0x120)) & 0xFFFFFFFF;
 }
 
-// 0x71037153d8 -- call function pointer with no args (24 bytes)
-u64 FUN_71037153d8(u32 (*param_1)()) { return param_1(); }
+// 0x71037153d8 -- call function pointer, return result
+u64 FUN_71037153d8(u32 (*func)()) { return func(); }
 
-// 0x71037162f0 -- nn::nfp::StartDetection (32 bytes)
-u64 FUN_71037162f0(s64 param_1) { return nn::nfp::StartDetection((nn::nfp::DeviceHandle*)(param_1 + 0x84)); }
+// 0x71037162f0 -- nn::nfp::StartDetection wrapper
+u64 FUN_71037162f0(s64 self) { return nn::nfp::StartDetection((nn::nfp::DeviceHandle*)(self + 0x84)); }
 
-// 0x7103716310 -- nn::nfp::StopDetection (32 bytes)
-u64 FUN_7103716310(s64 param_1) { return nn::nfp::StopDetection((nn::nfp::DeviceHandle*)(param_1 + 0x84)); }
+// 0x7103716310 -- nn::nfp::StopDetection wrapper
+u64 FUN_7103716310(s64 self) { return nn::nfp::StopDetection((nn::nfp::DeviceHandle*)(self + 0x84)); }
 
-// 0x7103716330 -- nn::nfp::Mount with mode 0 (32 bytes)
-u64 FUN_7103716330(s64 param_1) { return nn::nfp::Mount((nn::nfp::DeviceHandle*)(param_1 + 0x84), 0); }
+// 0x7103716330 -- nn::nfp::Mount with mode 0
+u64 FUN_7103716330(s64 self) { return nn::nfp::Mount((nn::nfp::DeviceHandle*)(self + 0x84), 0); }
 
-// 0x7103716350 -- nn::nfp::Unmount (32 bytes)
-u64 FUN_7103716350(s64 param_1) { return nn::nfp::Unmount((nn::nfp::DeviceHandle*)(param_1 + 0x84)); }
+// 0x7103716350 -- nn::nfp::Unmount wrapper
+u64 FUN_7103716350(s64 self) { return nn::nfp::Unmount((nn::nfp::DeviceHandle*)(self + 0x84)); }
 
-// 0x71037164a0 -- nn::nfp::OpenApplicationArea (48 bytes)
-u64 FUN_71037164a0(s64 param_1, u32 param_2)
+// 0x71037164a0 -- nn::nfp::OpenApplicationArea wrapper
+u64 FUN_71037164a0(s64 self, u32 area_id)
 {
-    return nn::nfp::OpenApplicationArea((nn::nfp::DeviceHandle*)(param_1 + 0x84), param_2) & 0xFFFFFFFF;
+    return nn::nfp::OpenApplicationArea((nn::nfp::DeviceHandle*)(self + 0x84), area_id) & 0xFFFFFFFF;
 }
 
-// 0x7103716720 -- nn::nfp::GetApplicationArea (64 bytes)
-u64 FUN_7103716720(s64 param_1, void *param_2, u64 *param_3, u64 param_4)
+// 0x7103716720 -- nn::nfp::GetApplicationArea wrapper
+u64 FUN_7103716720(s64 self, void *buf, u64 *out_size, u64 buf_size)
 {
-    return nn::nfp::GetApplicationArea(param_2, param_3, (nn::nfp::DeviceHandle*)(param_1 + 0x84), param_4) & 0xFFFFFFFF;
+    return nn::nfp::GetApplicationArea(buf, out_size, (nn::nfp::DeviceHandle*)(self + 0x84), buf_size) & 0xFFFFFFFF;
 }
 
-// 0x7103716b20 -- nn::nfp::Flush (32 bytes)
-u64 FUN_7103716b20(s64 param_1) { return nn::nfp::Flush((nn::nfp::DeviceHandle*)(param_1 + 0x84)); }
+// 0x7103716b20 -- nn::nfp::Flush wrapper
+u64 FUN_7103716b20(s64 self) { return nn::nfp::Flush((nn::nfp::DeviceHandle*)(self + 0x84)); }
 
-// 0x7103716b40 -- nn::nfp::Restore (32 bytes)
-u64 FUN_7103716b40(s64 param_1) { return nn::nfp::Restore((nn::nfp::DeviceHandle*)(param_1 + 0x84)); }
+// 0x7103716b40 -- nn::nfp::Restore wrapper
+u64 FUN_7103716b40(s64 self) { return nn::nfp::Restore((nn::nfp::DeviceHandle*)(self + 0x84)); }
 
-// 0x7103716b60 -- nn::nfp::CreateApplicationArea (48 bytes)
-u64 FUN_7103716b60(s64 param_1, nn::nfp::ApplicationAreaCreateInfo *param_2)
+// 0x7103716b60 -- nn::nfp::CreateApplicationArea wrapper
+u64 FUN_7103716b60(s64 self, nn::nfp::ApplicationAreaCreateInfo *info)
 {
-    return nn::nfp::CreateApplicationArea((nn::nfp::DeviceHandle*)(param_1 + 0x84), param_2) & 0xFFFFFFFF;
+    return nn::nfp::CreateApplicationArea((nn::nfp::DeviceHandle*)(self + 0x84), info) & 0xFFFFFFFF;
 }
 
-// 0x71037aeb30 -- store two u32 params to array (48 bytes)
-void FUN_71037aeb30(u32 param_1, u32 param_2, u32 *param_3)
+// 0x71037aeb30 -- store two u32 values to output array
+void FUN_71037aeb30(u32 x, u32 y, u32 *out)
 {
-    *param_3 = param_1;
-    param_3[1] = param_2;
+    *out = x;
+    out[1] = y;
 }
 
-// 0x71037aedd0 -- 2D float dot product (64 bytes)
-float FUN_71037aedd0(float *param_1, float *param_2)
+// 0x71037aedd0 -- 2D float dot product
+float FUN_71037aedd0(float *a, float *b)
 {
-    return *param_1 * *param_2 + param_1[1] * param_2[1];
+    return a[0] * b[0] + a[1] * b[1];
 }
 
-// 0x71037aeed0 -- store two u32 params to array (48 bytes)
-void FUN_71037aeed0(u32 param_1, u32 param_2, u32 *param_3)
+// 0x71037aeed0 -- store two u32 values to output array
+void FUN_71037aeed0(u32 x, u32 y, u32 *out)
 {
-    *param_3 = param_1;
-    param_3[1] = param_2;
+    *out = x;
+    out[1] = y;
 }
 
-// 0x71037aef00 -- sqrtf(x^2 + y^2), result discarded (64 bytes)
-void FUN_71037aef00(float *param_1) { sqrtf(*param_1 * *param_1 + param_1[1] * param_1[1]); }
+// 0x71037aef00 -- compute 2D vector magnitude (result unused)
+void FUN_71037aef00(float *vec) { sqrtf(vec[0] * vec[0] + vec[1] * vec[1]); }
 
-// 0x71037aef40 -- clear two u32 fields (32 bytes)
-void FUN_71037aef40(u32 *param_1) { *param_1 = 0; param_1[1] = 0; }
+// 0x71037aef40 -- zero two u32 fields
+void FUN_71037aef40(u32 *out) { *out = 0; out[1] = 0; }
 
-// 0x71037af290 -- call FUN_71037aeec0 at +0 and +8 (48 bytes)
+// 0x71037af290 -- call FUN_71037aeec0 on two consecutive 8-byte fields
 void FUN_71037af290(s64 param_1)
 {
     FUN_71037aeec0(param_1);
     FUN_71037aeec0(param_1 + 8);
 }
 
-// 0x71037af320 -- call FUN_71037aeec0 then FUN_71037af350 at +8 (48 bytes)
+// 0x71037af320 -- call FUN_71037aeec0 at +0, FUN_71037af350 at +8
 void FUN_71037af320(s64 param_1)
 {
     FUN_71037aeec0(param_1);
     FUN_71037af350(param_1 + 8);
 }
 
-// 0x71037af510 -- return *(u32*)(p+8) (32 bytes)
+// 0x71037af510 -- return u32 at +8
 u64 FUN_71037af510(s64 param_1) { return *(u32*)(param_1 + 8); }

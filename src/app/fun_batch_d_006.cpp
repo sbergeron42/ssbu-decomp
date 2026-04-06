@@ -1,7 +1,10 @@
 #include "types.h"
+#include "app/BattleObjectModuleAccessor.h"
 
 // MEDIUM-tier FUN_* functions -- 0x7103 address range, batch d-006
-// Pool-d worker: auto-generated from Ghidra decompilation
+// Rewritten from Ghidra paste with meaningful names and struct field access
+
+using app::BattleObjectModuleAccessor;
 
 // ---- External declarations -----------------------------------------------
 
@@ -10,7 +13,7 @@ extern "C" {
     void __cxa_guard_release(u64*);
 }
 
-// External data -- guard symbols shared across multiple functions
+// Static init guard data -- shared across multiple lazy-init singletons
 extern u8 DAT_710593aa98[];
 extern u8 DAT_710593aaa0[];
 extern u8 DAT_710593aaa8[];
@@ -34,17 +37,20 @@ extern u8 DAT_710593abd0[];
 extern u8 DAT_710593ac40[];
 extern u8 DAT_710593ac48[];
 
+// ---- Helper: extract accessor from lua context ----------------------------
+#define ACC(p) reinterpret_cast<BattleObjectModuleAccessor*>(*(s64*)((p) + 0x20))
+
 // ---- Functions ---------------------------------------------------------------
 
-// 0x7103789780 -- two-level guard init, returns &DAT_710593aab0 (336 bytes)
+// 0x7103789780 -- static init: two-level guard, returns &DAT_710593aab0
 u64 *FUN_7103789780(void)
 {
-    s32 iVar1;
+    s32 acquired;
 
     if (((*(u64*)DAT_710593aa98 & 1) == 0) &&
-        (iVar1 = __cxa_guard_acquire((u64*)DAT_710593aa98), iVar1 != 0)) {
+        (acquired = __cxa_guard_acquire((u64*)DAT_710593aa98), acquired != 0)) {
         if (((*(u64*)DAT_710593aaa0 & 1) == 0) &&
-            (iVar1 = __cxa_guard_acquire((u64*)DAT_710593aaa0), iVar1 != 0)) {
+            (acquired = __cxa_guard_acquire((u64*)DAT_710593aaa0), acquired != 0)) {
             *(u64*)DAT_710593aaa8 = 0;
             __cxa_guard_release((u64*)DAT_710593aaa0);
         }
@@ -54,15 +60,15 @@ u64 *FUN_7103789780(void)
     return (u64*)DAT_710593aab0;
 }
 
-// 0x71037a2e00 -- two-level guard init (cross-segment inner guard), returns &DAT_710593ac58 (272 bytes)
+// 0x71037a2e00 -- static init: two-level guard (cross-segment inner), returns &DAT_710593ac58
 u64 *FUN_71037a2e00(void)
 {
-    s32 iVar1;
+    s32 acquired;
 
     if (((*(u64*)DAT_710593ac50 & 1) == 0) &&
-        (iVar1 = __cxa_guard_acquire((u64*)DAT_710593ac50), iVar1 != 0)) {
+        (acquired = __cxa_guard_acquire((u64*)DAT_710593ac50), acquired != 0)) {
         if (((*(u64*)DAT_710532e740 & 1) == 0) &&
-            (iVar1 = __cxa_guard_acquire((u64*)DAT_710532e740), iVar1 != 0)) {
+            (acquired = __cxa_guard_acquire((u64*)DAT_710532e740), acquired != 0)) {
             *(u64*)DAT_710532e748 = 0;
             __cxa_guard_release((u64*)DAT_710532e740);
         }
@@ -72,17 +78,17 @@ u64 *FUN_71037a2e00(void)
     return (u64*)DAT_710593ac58;
 }
 
-// 0x7103791420 -- triple-nested guard init, returns &DAT_710593ab20 (288 bytes)
+// 0x7103791420 -- static init: triple-nested guard, returns &DAT_710593ab20
 u64 *FUN_7103791420(void)
 {
-    s32 iVar1;
+    s32 acquired;
 
     if (((*(u64*)DAT_710593ab18 & 1) == 0) &&
-        (iVar1 = __cxa_guard_acquire((u64*)DAT_710593ab18), iVar1 != 0)) {
+        (acquired = __cxa_guard_acquire((u64*)DAT_710593ab18), acquired != 0)) {
         if (((*(u64*)DAT_710593aa98 & 1) == 0) &&
-            (iVar1 = __cxa_guard_acquire((u64*)DAT_710593aa98), iVar1 != 0)) {
+            (acquired = __cxa_guard_acquire((u64*)DAT_710593aa98), acquired != 0)) {
             if (((*(u64*)DAT_710593aaa0 & 1) == 0) &&
-                (iVar1 = __cxa_guard_acquire((u64*)DAT_710593aaa0), iVar1 != 0)) {
+                (acquired = __cxa_guard_acquire((u64*)DAT_710593aaa0), acquired != 0)) {
                 *(u64*)DAT_710593aaa8 = 0;
                 __cxa_guard_release((u64*)DAT_710593aaa0);
             }
@@ -95,17 +101,17 @@ u64 *FUN_7103791420(void)
     return (u64*)DAT_710593ab20;
 }
 
-// 0x710379b910 -- triple-nested guard init, returns &DAT_710593abd0 (288 bytes)
+// 0x710379b910 -- static init: triple-nested guard, returns &DAT_710593abd0
 u64 *FUN_710379b910(void)
 {
-    s32 iVar1;
+    s32 acquired;
 
     if (((*(u64*)DAT_710593abc8 & 1) == 0) &&
-        (iVar1 = __cxa_guard_acquire((u64*)DAT_710593abc8), iVar1 != 0)) {
+        (acquired = __cxa_guard_acquire((u64*)DAT_710593abc8), acquired != 0)) {
         if (((*(u64*)DAT_710593aa98 & 1) == 0) &&
-            (iVar1 = __cxa_guard_acquire((u64*)DAT_710593aa98), iVar1 != 0)) {
+            (acquired = __cxa_guard_acquire((u64*)DAT_710593aa98), acquired != 0)) {
             if (((*(u64*)DAT_710593aaa0 & 1) == 0) &&
-                (iVar1 = __cxa_guard_acquire((u64*)DAT_710593aaa0), iVar1 != 0)) {
+                (acquired = __cxa_guard_acquire((u64*)DAT_710593aaa0), acquired != 0)) {
                 *(u64*)DAT_710593aaa8 = 0;
                 __cxa_guard_release((u64*)DAT_710593aaa0);
             }
@@ -118,17 +124,17 @@ u64 *FUN_710379b910(void)
     return (u64*)DAT_710593abd0;
 }
 
-// 0x71037a02a0 -- triple-nested guard init, returns &DAT_710593ac48 (352 bytes)
+// 0x71037a02a0 -- static init: triple-nested guard, returns &DAT_710593ac48
 u64 *FUN_71037a02a0(void)
 {
-    s32 iVar1;
+    s32 acquired;
 
     if (((*(u64*)DAT_710593ac40 & 1) == 0) &&
-        (iVar1 = __cxa_guard_acquire((u64*)DAT_710593ac40), iVar1 != 0)) {
+        (acquired = __cxa_guard_acquire((u64*)DAT_710593ac40), acquired != 0)) {
         if (((*(u64*)DAT_710593aa98 & 1) == 0) &&
-            (iVar1 = __cxa_guard_acquire((u64*)DAT_710593aa98), iVar1 != 0)) {
+            (acquired = __cxa_guard_acquire((u64*)DAT_710593aa98), acquired != 0)) {
             if (((*(u64*)DAT_710593aaa0 & 1) == 0) &&
-                (iVar1 = __cxa_guard_acquire((u64*)DAT_710593aaa0), iVar1 != 0)) {
+                (acquired = __cxa_guard_acquire((u64*)DAT_710593aaa0), acquired != 0)) {
                 *(u64*)DAT_710593aaa8 = 0;
                 __cxa_guard_release((u64*)DAT_710593aaa0);
             }
@@ -141,91 +147,92 @@ u64 *FUN_71037a02a0(void)
     return (u64*)DAT_710593ac48;
 }
 
-// 0x710335c478 -- vtable call at 0x268 (no args), return 0 (32 bytes)
-u32 FUN_710335c478(s64 *param_1)
+// 0x710335c478 -- vtable dispatch at 0x268, return 0
+u32 FUN_710335c478(s64 *obj)
 {
-    (*(void(*)())(*(s64 *)(*param_1 + 0x268)))();
+    (*(void(*)())(*(s64 *)(*obj + 0x268)))();
     return 0;
 }
 
-// 0x71031d04b0 -- vtable call at 0x20 (no args), return 1 (320 bytes)
-u64 FUN_71031d04b0(s64 *param_1)
+// 0x71031d04b0 -- vtable dispatch at 0x20, return 1
+u64 FUN_71031d04b0(s64 *obj)
 {
-    (*(void(*)())(*(s64 *)(*param_1 + 0x20)))();
+    (*(void(*)())(*(s64 *)(*obj + 0x20)))();
     return 1;
 }
 
-// 0x7103360268 -- vtable call at 8 (no args), return 0 (32 bytes)
-u32 FUN_7103360268(s64 *param_1)
+// 0x7103360268 -- vtable dispatch at 8, return 0
+u32 FUN_7103360268(s64 *obj)
 {
-    (*(void(*)())(*(s64 *)(*param_1 + 8)))();
+    (*(void(*)())(*(s64 *)(*obj + 8)))();
     return 0;
 }
 
-// 0x7103365d08 -- vtable call at 8 (no args), return 0 (32 bytes)
-u32 FUN_7103365d08(s64 *param_1)
+// 0x7103365d08 -- vtable dispatch at 8, return 0
+u32 FUN_7103365d08(s64 *obj)
 {
-    (*(void(*)())(*(s64 *)(*param_1 + 8)))();
+    (*(void(*)())(*(s64 *)(*obj + 8)))();
     return 0;
 }
 
-// 0x71033f1cc0 -- vtable call at 0x2d0 with flag=1, set byte field (336 bytes)
+// 0x71033f1cc0 -- ground_module vtable[0x2d0/8] with flag=1, set byte at +0x90
 void FUN_71033f1cc0(u64 param_1, s64 param_2)
 {
-    s64 *plVar1 = *(s64**)(*(s64*)(param_2 + 0x20) + 0x58);
-    (*(void(*)(s64*, u32))(*plVar1 + 0x2d0))(plVar1, 1);
+    auto* acc = ACC(param_2);
+    s64 *ground_mod = static_cast<s64*>(acc->ground_module);
+    (*(void(*)(s64*, u32))(*(s64*)(*ground_mod + 0x2d0)))(ground_mod, 1);
     *(u8*)(param_2 + 0x90) = 1;
 }
 
-// 0x71037f1d50 -- switch on param_2: bool tests on param_1 vs param_3 (320 bytes)
-u8 FUN_71037f1d50(u32 param_1, u32 param_2, s32 param_3)
+// 0x71037f1d50 -- region/group collision check: bool tests on kind vs sub_kind
+u8 FUN_71037f1d50(u32 kind, u32 group, s32 sub_kind)
 {
-    switch (param_2) {
+    switch (group) {
     case 1: case 2: case 3: case 4:
     case 5: case 6: case 7: case 8:
         break;
     case 9: case 10: case 0xb: case 0xc:
     case 0xd: case 0xe: case 0xf: case 0x10:
-        return (u8)(param_1 == 5 || (param_1 | 2) == 6);
+        return (u8)(kind == 5 || (kind | 2) == 6);
     case 0x11: case 0x12: case 0x13: case 0x14:
     case 0x15: case 0x16: case 0x17: case 0x18:
-        return (u8)(param_3 == 0x11 && (param_1 == 0xd || (param_1 | 1) == 0xf));
+        return (u8)(sub_kind == 0x11 && (kind == 0xd || (kind | 1) == 0xf));
     default:
         return 0;
     case 0x21: case 0x22: case 0x23: case 0x24:
     case 0x25: case 0x26: case 0x27: case 0x28:
-        return (u8)(param_1 - 10 < 3);
+        return (u8)(kind - 10 < 3);
     case 0x29: case 0x2a: case 0x2b: case 0x2c:
     case 0x2d: case 0x2e: case 0x2f: case 0x30:
-        return (u8)((param_1 | 1) == 0x11);
+        return (u8)((kind | 1) == 0x11);
     case 0x31: case 0x32: case 0x33: case 0x34:
     case 0x35: case 0x36: case 0x37: case 0x38:
-        return (u8)(param_1 - 7 < 3);
+        return (u8)(kind - 7 < 3);
     case 0x41: case 0x42: case 0x43: case 0x44:
     case 0x45: case 0x46: case 0x47: case 0x48:
-        return (u8)(param_1 == 0x14 && param_3 == 0x11);
+        return (u8)(kind == 0x14 && sub_kind == 0x11);
     case 0x49: case 0x4a: case 0x4b: case 0x4c:
     case 0x4d: case 0x4e: case 0x4f: case 0x50:
-        return (u8)(param_1 == 0x15 && param_3 == 0x11);
+        return (u8)(kind == 0x15 && sub_kind == 0x11);
     }
-    if (param_3 == 0xf) {
-        return (u8)(param_1 == 2);
+    if (sub_kind == 0xf) {
+        return (u8)(kind == 2);
     }
-    if (param_3 == 0x10) {
-        return (u8)(param_1 == 1);
+    if (sub_kind == 0x10) {
+        return (u8)(kind == 1);
     }
-    if (param_3 != 0x11) {
+    if (sub_kind != 0x11) {
         return 0;
     }
-    return (u8)(param_1 == 0 || param_1 == 3);
+    return (u8)(kind == 0 || kind == 3);
 }
 
-// 0x71037ccf40 -- large switch: return component count for param type (288 bytes)
-u64 FUN_71037ccf40(s32 param_1)
+// 0x71037ccf40 -- param type → component count lookup
+u64 FUN_71037ccf40(s32 param_type)
 {
-    u64 uVar1 = 0;
-    if (param_1 < 0x332) {
-        switch (param_1) {
+    u64 count = 0;
+    if (param_type < 0x332) {
+        switch (param_type) {
         case 0x100: case 0x101: case 0x102: case 0x103:
             return 1;
         case 0x104: case 0x105: case 0x106: case 0x107:
@@ -267,7 +274,7 @@ u64 FUN_71037ccf40(s32 param_1)
         case 0x144:
             return 4;
         default:
-            switch (param_1) {
+            switch (param_type) {
             case 0x200: case 0x201: case 0x202: case 0x203:
                 return 2;
             case 0x204: case 0x205: case 0x206: case 0x207:
@@ -309,13 +316,13 @@ u64 FUN_71037ccf40(s32 param_1)
             case 0x234:
                 return 8;
             default:
-                if ((u32)(param_1 - 800) < 2) {
+                if ((u32)(param_type - 800) < 2) {
                     return 2;
                 }
             }
         }
     } else {
-        switch (param_1) {
+        switch (param_type) {
         case 0x400: case 0x401: case 0x402: case 0x403:
         case 0x405:
         case 0x440: case 0x442:
@@ -393,18 +400,18 @@ u64 FUN_71037ccf40(s32 param_1)
         case 0x4ec: case 0x4ed:
             return 2;
         case 0x432: case 0x433: case 0x434:
-            uVar1 = 0x10;
+            count = 0x10;
             break;
         case 0x435:
             return 8;
         default:
-            if ((u32)(param_1 - 0x332) < 3) {
+            if ((u32)(param_type - 0x332) < 3) {
                 return 0xc;
             }
-            if (param_1 == 0x344) {
+            if (param_type == 0x344) {
                 return 4;
             }
         }
     }
-    return uVar1;
+    return count;
 }
