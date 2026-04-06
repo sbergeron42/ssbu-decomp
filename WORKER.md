@@ -1,14 +1,14 @@
-# Worker: pool-d
+# Worker: pool-a
 
 ## Model: Opus
 
-## Task: Struct access rewrite with derivation chains — batch_e3_023 + batch_e3_025
+## Task: Struct access rewrite with derivation chains — batch_c_012 + batch_c_013
 
-### Target Files (2 files, ~60 functions with heavy module access)
-- `src/app/fun_batch_e3_023.cpp` — 33 funcs, 25 module dereferences
-- `src/app/fun_batch_e3_025.cpp` — 27 funcs, 26 module dereferences
+### Target Files (2 files, ~69 functions with heavy module access)
+- `src/app/fun_batch_c_012.cpp` — 40 funcs, 41 module dereferences
+- `src/app/fun_batch_c_013.cpp` — 29 funcs, 39 module dereferences
 
-These files may still have raw Ghidra paste. Your job is to replace raw offsets with struct field access AND add derivation chain comments.
+These files already have shallow variable renames from a previous round. Your job is to ADD struct field access and derivation chain comments. Do NOT just rename more variables.
 
 ### MANDATORY Before/After Example
 
@@ -71,6 +71,6 @@ python tools/compare_bytes.py FUN_name  # NOT address
 ```
 
 ### Rules
-- CAN ONLY edit: fun_batch_e3_023.cpp, fun_batch_e3_025.cpp
+- CAN ONLY edit: fun_batch_c_012.cpp, fun_batch_c_013.cpp
 - Must `#include "app/BattleObjectModuleAccessor.h"` and use the struct
 - 3-attempt limit per function for matching, but derivation comments are required regardless
