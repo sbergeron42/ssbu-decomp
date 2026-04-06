@@ -1,12 +1,12 @@
-# Worker: pool-a
+# Worker: pool-b
 
 ## Model: Opus
 
-## Task: Struct access rewrite with derivation chains — batch_c_012 + batch_c_013
+## Task: Struct access rewrite with derivation chains — batch_d4_013 + batch_d4_017
 
-### Target Files (2 files, ~69 functions with heavy module access)
-- `src/app/fun_batch_c_012.cpp` — 40 funcs, 41 module dereferences
-- `src/app/fun_batch_c_013.cpp` — 29 funcs, 39 module dereferences
+### Target Files (2 files, ~38 functions with heavy module access)
+- `src/app/fun_batch_d4_013.cpp` — 25 funcs, 42 module dereferences
+- `src/app/fun_batch_d4_017.cpp` — 13 funcs, 31 module dereferences
 
 These files already have shallow variable renames from a previous round. Your job is to ADD struct field access and derivation chain comments. Do NOT just rename more variables.
 
@@ -71,6 +71,6 @@ python tools/compare_bytes.py FUN_name  # NOT address
 ```
 
 ### Rules
-- CAN ONLY edit: fun_batch_c_012.cpp, fun_batch_c_013.cpp
+- CAN ONLY edit: fun_batch_d4_013.cpp, fun_batch_d4_017.cpp
 - Must `#include "app/BattleObjectModuleAccessor.h"` and use the struct
 - 3-attempt limit per function for matching, but derivation comments are required regardless

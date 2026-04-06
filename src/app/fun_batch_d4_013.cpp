@@ -1,8 +1,8 @@
 #include "types.h"
 
 // MEDIUM-tier FUN_* functions — mixed 0x7100 ranges, batch d4-013
-// Pool-d worker: auto-generated from Ghidra decompilation
 // Includes: binary search, date/time calcs, init helpers, comparison, vtable calls
+// Key derivations: FUN_7100358c20 from is_sp_u_available (.dynsym), FUN_710033ba50 from stage manager
 
 // ---- External declarations -----------------------------------------------
 
@@ -56,6 +56,9 @@ extern s64 *DAT_71052b60e8;     // base object pointer for FUN_710033ba50
 // ---- Functions ---------------------------------------------------------------
 
 // 0x710003a790 — return sum of two sub-object sizes
+// self [unknown: container with two sub-objects]
+//   +0x08 [unknown: sub-object A pointer, passed to FUN_7100039590 (size query)]
+//   +0x20 [unknown: sub-object B pointer, passed to FUN_71000399e0 (size query)]
 s64 FUN_710003a790(s64 self)
 {
     s64 size_a;
@@ -66,7 +69,10 @@ s64 FUN_710003a790(s64 self)
     return size_b + size_a;
 }
 
-// 0x71000cf1d0 — set entry flag and store callback result (small-addr DAT pattern)
+// 0x71000cf1d0 — set entry flag and store callback result
+// self [unknown: large struct, likely a resource/asset object]
+//   +0x1850 [unknown: initialized flag (u8), set to 1]
+//   +0x1858 [unknown: stored result from FUN_71000bb5d0 callback]
 void FUN_71000cf1d0(s64 self)
 {
     u64 callback_result;
@@ -77,7 +83,8 @@ void FUN_71000cf1d0(s64 self)
     *(u64 *)(self + 0x1858) = callback_result;
 }
 
-// 0x71000f4d30 — init vtable pointer from global (PTR_DAT + 0x10)
+// 0x71000f4d30 — init vtable pointer from global (PTR_DAT_71052a4220 + 0x10)
+// [inferred: constructor — sets vtable after calling static init FUN_7100187f50]
 void FUN_71000f4d30(s64 *self)
 {
     FUN_7100187f50();
@@ -85,6 +92,18 @@ void FUN_71000f4d30(s64 *self)
 }
 
 // 0x710007bdc0 — binary search: find glyph ID in font cmap table
+// font [unknown: font resource struct]
+//   +0x18 [unknown: cmap data base pointer — node offsets are relative to this]
+//   +0x20 [unknown: cmap index pointer]
+//     +0x14 [unknown: root node offset (u32) — 0 = empty table]
+//   +0x80 [unknown: exclusion count (s32) — number of excluded codepoint ranges]
+//   +0x84 [unknown: start of exclusion range array (u32 pairs, start at +0x84, end at +0xC4)]
+// node struct (at cmap_data + offset):
+//   +0x00 [unknown: range_start (u32)]
+//   +0x04 [unknown: range_end (u32)]
+//   +0x08 [unknown: format (s16) — 0=linear, 1=direct, 2=binary search]
+//   +0x0C [unknown: child/next node offset (u32)]
+//   +0x10 [unknown: glyph data start (format 1: u16 array, format 2: u32+u16 pairs)]
 u32 FUN_710007bdc0(s64 font, u32 codepoint)
 {
     s64 base;
@@ -161,6 +180,17 @@ u32 FUN_710007bdc0(s64 font, u32 codepoint)
 }
 
 // 0x7100130f30 — allocate and init a stream/socket object
+// Returns null if aligned size <= 0x128
+// self [unknown: stream buffer/socket struct — large, at least 0x108 bytes + variable tail]
+//   +0x00 [unknown: vtable — set to PTR_DAT_71052a4bd8 + 0x10]
+//   +0xD4 [unknown: state field (u32), cleared to 0]
+//   +0xD8..+0x107 [unknown: linked list nodes at +0xD8, +0xE0, +0xF0, +0x100]
+//   +0xEC [unknown: read offset (u32), cleared to 0]
+//   +0x104 [unknown: write offset (u32), cleared to 0]
+//   +0x88 [unknown: mode field (s32) — mode==1 uses internal buffer at +0x108]
+//   +0x30 [unknown: data pointer for mode!=1]
+//   +0x38 [unknown: capacity — set to size-0x128]
+//   self+0x90..+0xD0 [unknown: lock at +0x90 — used if flags&1 set]
 s64 *FUN_7100130f30(s64 *self, u64 size, u64 context, u32 flags)
 {
     s32 mode;
@@ -218,7 +248,8 @@ s64 *FUN_7100130f30(s64 *self, u64 size, u64 context, u32 flags)
     return (s64 *)0x0;
 }
 
-// 0x7100179500 — create RPC session object (type 0x118)
+// 0x7100179500 — create RPC session object (size 0x118)
+// [inferred: nn::nifm or nn::ldn RPC session — alloc via FUN_71000b1b90 + FUN_7100130810, then init]
 s64 FUN_7100179500(void)
 {
     u64 allocator;
@@ -232,7 +263,7 @@ s64 FUN_7100179500(void)
     return session;
 }
 
-// 0x7100179b30 — create RPC session object (type 0xb8)
+// 0x7100179b30 — create RPC session object (size 0xB8)
 s64 FUN_7100179b30(void)
 {
     u64 allocator;
@@ -246,7 +277,7 @@ s64 FUN_7100179b30(void)
     return session;
 }
 
-// 0x7100194390 — create RPC session object (type 0xf0)
+// 0x7100194390 — create RPC session object (size 0xF0)
 s64 FUN_7100194390(void)
 {
     u64 allocator;
@@ -260,7 +291,7 @@ s64 FUN_7100194390(void)
     return session;
 }
 
-// 0x7100194790 — create RPC session object (type 0x1130)
+// 0x7100194790 — create RPC session object (size 0x1130)
 s64 FUN_7100194790(void)
 {
     u64 allocator;
@@ -275,6 +306,16 @@ s64 FUN_7100194790(void)
 }
 
 // 0x71001ae0d0 — zero-fill transport struct fields
+// transport [unknown: network transport descriptor, ~0x50 bytes]
+//   +0x00 [unknown: field 0 (u64)]
+//   +0x08 [unknown: field 1 (u64)]
+//   +0x18 [unknown: callback/handle — initialized via FUN_71000bb5d0, then cleared]
+//   +0x20 [unknown: field 4 (u64)]
+//   +0x30 [unknown: field 6 (u64)]
+//   +0x38 [unknown: field 7a (u32)]
+//   +0x2C [unknown: field 5b (u32)]
+//   +0x40 [unknown: field 8 (u64)]
+//   +0x48 [unknown: field 9 (u32)]
 void FUN_71001ae0d0(u64 *transport)
 {
     *transport = 0;
@@ -291,6 +332,15 @@ void FUN_71001ae0d0(u64 *transport)
 }
 
 // 0x71001b0960 — convert packed date/time fields to Unix timestamp
+// [inferred: nn::time packed format — single u64 encodes year/month/day/hour/min/sec]
+// Bit layout of *packed_time:
+//   [5:0]   seconds
+//   [11:6]  minutes
+//   [16:12] hours
+//   [21:17] day
+//   [25:22] month (1-12)
+//   [39:26] year (14-bit, offset by 2001 or 2000 depending on month)
+// Returns 0 if value matches sentinel at **PTR_DAT_71052a3f30
 s64 FUN_71001b0960(u64 *packed_time)
 {
     u32 year;
@@ -342,6 +392,10 @@ s64 FUN_71001b0960(u64 *packed_time)
 }
 
 // 0x71001b0f80 — compute NTP offset with calendar correction
+// config [unknown: time configuration struct]
+//   +0x00 [unknown: flags word — bits [22:16] checked for 0x720000 (region/timezone selector)]
+// Returns seconds offset: 0x15FDE20 (23,060,000s ~267 days) or 0x1600530 if region match
+// [inferred: calendar system epoch adjustment for different game regions]
 u64 FUN_71001b0f80(u32 *config)
 {
     s32 base_offset;
@@ -364,6 +418,11 @@ u64 FUN_71001b0f80(u32 *config)
 }
 
 // 0x71001c04e0 — network state machine: set connection phase from event code
+// self [unknown: network connection controller]
+//   +0xB0 [unknown: triple-deref to vtable — *(*(*(self+0xB0)+0x10))+0x48 calls is_ready check]
+//   +0xC0 [unknown: connection_phase (s32) — 0=idle, 1..6=active phases]
+// Event mapping: 0→return 1, 4→phase 1, 5→phase 2, 6→phase 3, 7→phase 4, 8→phase 5, 9→phase 6
+// Guard: phase must be 0 (idle) AND is_ready must return false before setting new phase
 u64 FUN_71001c04e0(s64 self, u32 event_code)
 {
     u64 result;
@@ -440,6 +499,11 @@ u64 FUN_71001c04e0(s64 self, u32 event_code)
 }
 
 // 0x71001c5010 — decompress range into output field
+// range [unknown: buffer descriptor struct]
+//   +0x10 [unknown: base data pointer]
+//   +0x18 [unknown: output size field — written with decompressed size on success]
+//   +0x20 [unknown: total data length]
+//   +0x28 [unknown: consumed offset — subtracted from length, added to base for remaining data]
 void FUN_71001c5010(u32 codec, s64 range, u64 dst_capacity)
 {
     s32 err;
@@ -456,7 +520,8 @@ void FUN_71001c5010(u32 codec, s64 range, u64 dst_capacity)
     *(u64 *)(range + 0x18) = out_size;
 }
 
-// 0x71001e1830 — build and dispatch error result with code 0x800300d2
+// 0x71001e1830 — build and dispatch error result with code 0x800300D2
+// [inferred: nn::Result error 0x800300D2 — fixed error code for a specific network failure condition]
 void FUN_71001e1830(u64 context, u32 tag)
 {
     u32 error_code;
@@ -468,6 +533,10 @@ void FUN_71001e1830(u64 context, u32 tag)
 }
 
 // 0x71001ecde0 — set connection mode field, clear flag if needed
+// self [unknown: connection/session object]
+//   +0x10 [unknown: mode field (u32) — set from param]
+//   +0x68 [unknown: initialized flag (s8) — if 0, calls FUN_71001f2180 to init first]
+//   +0x69 [unknown: pending flag (u8) — cleared after mode change]
 void FUN_71001ecde0(s64 self, u32 mode)
 {
     if (*(s8 *)(self + 0x68) == '\0') {
@@ -478,6 +547,10 @@ void FUN_71001ecde0(s64 self, u32 mode)
 }
 
 // 0x710021a4f0 — compare two objects by timestamp then ID then flag
+// a, b [unknown: timestamped message/event objects]
+//   FUN_71001beb00(obj) [inferred: returns timestamp for ordering]
+//   +0x88 [unknown: sequence_id (u32) — secondary sort key after timestamp]
+//   +0x90 [unknown: priority (u8) — tertiary sort key when timestamp and id match]
 u8 FUN_710021a4f0(s64 a, s64 b)
 {
     s64 time_a;
@@ -504,7 +577,10 @@ u8 FUN_710021a4f0(s64 a, s64 b)
     return 0;
 }
 
-// 0x71002263c0 — write 8 u64 fields from array into small-addr offsets
+// 0x71002263c0 — write 8 u64 fields from array into self
+// self [unknown: network frame/buffer struct]
+//   +0x10C0..+0x10F8 [unknown: 8 u64 fields (128 bytes), bulk-written from src array]
+//   [inferred: likely a replay/rollback frame snapshot — writes exactly 8 u64 values]
 void FUN_71002263c0(s64 self, u64 *src)
 {
     u64 val0;
@@ -528,6 +604,13 @@ void FUN_71002263c0(s64 self, u64 *src)
 }
 
 // 0x7100227510 — pop next pending frame from queue
+// queue [unknown: frame queue struct]
+//   +0x11 [unknown: flags byte — bit 1 selects between two dequeue paths]
+//   +0x88 [unknown: queue handle/context — passed to FUN_7100228xxx family]
+// Path A (bit 1 clear): pop immediately via FUN_71002282f0(0), consume via FUN_71002282c0
+// Path B (bit 1 set): poll until count==0, skip non-type-8 frames (freeing them)
+//   frame+0x01 [unknown: type byte — 0x08 means valid frame]
+//   frame+0x08 [unknown: sub-resource pointer — freed via FUN_7100228130 on skip]
 s64 FUN_7100227510(s64 queue)
 {
     s32 count;
@@ -558,6 +641,7 @@ s64 FUN_7100227510(s64 queue)
 }
 
 // 0x7100230c10 — check condition and delegate on failure
+// [inferred: readiness gate — returns 1 if ready, else delegates to FUN_7100230a20 and returns 0]
 u64 FUN_7100230c10(u64 context)
 {
     u64 ready;
@@ -570,25 +654,33 @@ u64 FUN_7100230c10(u64 context)
     return 0;
 }
 
-// 0x71002b41f0 — forward call to sub-object's cleanup
+// 0x71002b41f0 — forward cleanup to sub-object at *self
+// self+0x00 → sub-object pointer [unknown: forwarded to FUN_71002ba5e0]
 void FUN_71002b41f0(u64 *self)
 {
     FUN_71002ba5e0(*self);
 }
 
-// 0x71002b4b30 — forward call to sub-object's teardown
+// 0x71002b4b30 — forward teardown to sub-object at *self
+// self+0x00 → sub-object pointer [unknown: forwarded to FUN_71002c1d20]
 void FUN_71002b4b30(u64 *self)
 {
     FUN_71002c1d20(*self);
 }
 
-// 0x71002b8ca0 — stub (no-op)
+// 0x71002b8ca0 — stub (no-op, likely a vtable placeholder)
 void FUN_71002b8ca0(void)
 {
     return;
 }
 
 // 0x710033ba50 — look up stage/world object pointer by region slot index
+// DAT_71052b60e8 [unknown: global stage/world manager pointer — deref gives world data]
+// World data struct [unknown: contains 94 region slot pointers]
+//   +0x728 [unknown: slot 0 base offset]
+//   stride 0x50 per slot (0x728, 0x778, 0x7C8, ... up to slot 0x5D)
+//   +0x6E8 [unknown: fallback/default region — returned when slot is null or index out of range]
+// [inferred: stage region lookup — 94 slots (0..0x5D) maps to same count as FUN_710068d530's table]
 s64 FUN_710033ba50(u32 slot_index)
 {
     s64 slot_ptr;
@@ -986,7 +1078,24 @@ LAB_710033baac:
     return slot_ptr;
 }
 
-// 0x7100358c20 — check if move/attack is executable given state flags
+// 0x7100358c20 — check if special move is executable given current action state
+// [derived: called from is_sp_u_available (.dynsym) and is_sp_u_weaken_available (.dynsym)]
+// state = *(void**)(BattleObject + 0x168) [derived: is_sp_u_available decompilation]
+// state struct [unknown: action/move state — contains current action, flags, and sub-state bits]
+//   +0x28 [unknown: current_action (u32) — switch dispatch key, 30+ recognized actions]
+//   +0x58 [unknown: state_flags (u32)]
+//     bit 4:  [unknown: blocks actions 0x25, 0x52, 0x56, 0x57]
+//     bit 10: [unknown: attack_locked — checked when flags&1 for availability]
+//     bit 12: [unknown: override mode — when set, early return with attack_locked check]
+//     bit 13: [unknown: blocks action 0x40's normal path]
+//   +0x68 [unknown: sub_state_bits (u8) — per-action enable/disable bits]
+//     bit 0: actions 0x1C, 0x29 (blocks if set)
+//     bit 1: actions 0x31, 0x4B (blocks if set), 0x40 (enables if set), 0x5A (blocks if set)
+//     bit 2: actions 0x22, 0x38 (requires set), 0x27, 0x3A (blocks if set), 0x2D, 0x5C
+//     bit 3: actions 0x2B, 0x30, 0x46, 0x54 (allows if clear), 0x37 (blocks if set)
+//     bit 7: action 0x53 (enables if set)
+//   +0x74 [unknown: sub_action_id (s32) — checked == 0x10 in action 0x40]
+//   +0xCC [unknown: override_count (s16) — checked != 0 in action 0x40]
 u32 FUN_7100358c20(s64 state, u32 flags)
 {
     u32 state_flags;
