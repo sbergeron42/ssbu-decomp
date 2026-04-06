@@ -1,45 +1,34 @@
-# Worker: pool-c
+# Worker: pool-e
 
 ## Model: Opus
 
-## Task: Resource service decomp — medium functions (1,000–14,000 bytes)
+## Task: Resource service decomp — engine init + main_loop helpers
 
-Decomp the mid-size resource service functions using the ARCropolis type headers.
+Decomp the engine initialization chain and main_loop related functions.
 
 ### Target Functions
-- `FUN_710375a630` — 13,584 bytes
-- `FUN_710374d270` — 8,432 bytes (called from main_loop)
-- `FUN_7103757290` — 7,056 bytes
-- `FUN_7103758f50` — 5,520 bytes
-- `FUN_7103755cb0` — 2,448 bytes
-- `set_format` (0x7103755390) — 1,728 bytes (already named)
-- `FUN_7103753fc0` — 1,344 bytes
-- `FUN_7103741520` — 1,136 bytes
+- `FUN_710373e080` — 10,240 bytes (early init, before resource service)
+- `FUN_7103740880` — 1,936 bytes
+- `FUN_71037569c0` — 1,920 bytes
+- `start_prepo_report` (0x710375f650) — if not taken by pool-d
+- Any remaining functions in 0x710373e000–0x7103745000
 
 ### Type Headers Available
 - `include/resource/ResServiceNX.h` — ResServiceNX struct
 - `include/resource/LoadedArc.h` — ARC archive structures
 - `include/resource/containers.h` — CppVector, ResList, ListNode, LoadInfo
 
-### Results
-- `FUN_7103741520` (get_language_index) — **VERIFIED MATCH** (100% modulo relocations)
-- `set_format` (0x7103755390) — **COMPILED**, body matches, prologue divergence (NX Clang fork)
-- `FUN_7103753fc0` — SKIPPED: compiler-generated singleton init, not resource service
-- `FUN_7103755cb0` — SKIPPED: 100 unrolled memcpy for nn::friends::Profile init
-- `FUN_7103758f50` — SKIPPED: graphics rendering setup with exclusive monitors
-- `FUN_7103757290` — SKIPPED: Mii renderer init (nn::mii::Database)
-- `FUN_710374d270` — SKIPPED: graphics rendering update loop
-- `FUN_710375a630` — SKIPPED: massive singleton init (13,584 bytes)
-
-**Note:** 6/8 assigned targets were not resource service functions — they were selected by address proximity, not module affinity. Only get_language_index and set_format are resource-service related.
+### Key Context
+- main_loop is at 0x7103747270 (24,576 bytes) — DO NOT attempt this function, it's too large for one session
+- Focus on the helper functions that main_loop calls
+- FUN_710373e080 may be early engine init (before resource service)
 
 ### Approach
-1. Decompile each function in Ghidra
-2. Identify which ResServiceNX/FilesystemInfo/LoadedArc fields it accesses
-3. Write C++ using the resource headers
-4. Start with smaller functions and work up
+1. Decompile in Ghidra, identify what each function initializes or manages
+2. Map to resource service structs where applicable
+3. Write C++ using the headers
 
-### Output: src/resource/res_service_funcs.cpp
+### Output: src/resource/engine_init.cpp
 
 ### Quick Reference
 ```
@@ -49,6 +38,7 @@ python tools/compare_bytes.py FUN_name
 ```
 
 ### Rules
-- CAN create: src/resource/res_service_funcs.cpp, and edit include/resource/*.h if needed
+- CAN create: src/resource/engine_init.cpp, and edit include/resource/*.h if needed
 - Use ARCropolis field names with [derived: ARCropolis] provenance
 - 3-attempt limit per function
+- Do NOT attempt main_loop (0x7103747270) — too large
