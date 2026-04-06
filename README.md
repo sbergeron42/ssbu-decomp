@@ -12,13 +12,13 @@ Targeting the final version: **patch 13.0.4**.
 |----------|------:|------------|
 | **Total functions** | 39,635 | |
 | Verified byte-identical | 8,388 | 21.16% |
-| Compiled (non-matching) | 6,895 | 17.40% |
-| **Total decompiled** | **15,283** | **38.56%** |
-| Undecompiled | 24,352 | 61.44% |
+| Compiled (non-matching) | 6,899 | 17.41% |
+| **Total decompiled** | **15,287** | **38.57%** |
+| Undecompiled | 24,348 | 61.43% |
 
 ```
 Verified  [########                                ]  8,388 / 39,635  (21.16%)
-Compiled  [###############                         ]  15,283 / 39,635  (38.56%)
+Compiled  [###############                         ]  15,287 / 39,635  (38.57%)
 ```
 
 > **8,388 functions verified byte-identical** against the real 13.0.4 binary.
