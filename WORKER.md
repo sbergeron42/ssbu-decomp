@@ -1,33 +1,29 @@
-# Worker: pool-d
+# Worker: pool-e
 
 ## Model: Opus
 
-## Task: Build PostureModule vtable struct + replace VT calls
+## Task: Replace VT calls with named methods — ReflectModule functions
 
-### Phase 1: Build PostureModule vtable struct
-`include/app/modules/PostureModule.h` currently has NO vtable methods.
-`src/app/fun_batch_e3_025.cpp` has 20 PostureModule functions (accessor+0x38).
+`include/app/modules/ReflectModule.h` already has 17 vtable methods.
 
-1. Read the file and catalog every VT(mod)[slot] call with signature
-2. Search Ghidra for PostureModule__*_impl to get .dynsym names
-3. Add method wrappers to PostureModule.h with derivation chains
+### Target Files
+- `src/app/fun_batch_e3_025.cpp` — ReflectModule functions ONLY (accessor+0xf8)
+  NOTE: Pool D is editing this same file for PostureModule functions. You handle ONLY the ReflectModule ones.
 
-### Phase 2: Replace VT calls
+### MANDATORY Example
 **BEFORE:**
 ```cpp
-void** mod = reinterpret_cast<void**>(acc->posture_module);
-reinterpret_cast<u64(*)(void**)>(VT(mod)[0x80/8])(mod);
+void** mod = reinterpret_cast<void**>(acc->reflect_module);
+reinterpret_cast<u64(*)(void**)>(VT(mod)[0x80 / 8])(mod);
 ```
 **AFTER:**
 ```cpp
-// [derived: PostureModule__pos_impl (.dynsym) -> slot 16 (0x80/8)]
-PostureModule* posture = static_cast<PostureModule*>(acc->posture_module);
-posture->pos();
+// [derived: ReflectModule__method_impl (.dynsym) -> slot 16 (0x80/8)]
+ReflectModule* reflect = static_cast<ReflectModule*>(acc->reflect_module);
+reflect->method_name();
 ```
 
-### Target Files
-- `include/app/modules/PostureModule.h` (add vtable methods)
-- `src/app/fun_batch_e3_025.cpp` (PostureModule VT calls ONLY — ReflectModule is pool-e territory)
+Look up slot in `include/app/modules/ReflectModule.h`. If missing, add with [inferred:] tag.
 
 ### Quick Reference
 ```
@@ -37,6 +33,6 @@ python tools/compare_bytes.py FUN_name
 ```
 
 ### Rules
-- CAN edit: PostureModule.h, fun_batch_e3_025.cpp (PostureModule functions ONLY)
-- Every new vtable entry MUST have [derived:] or [inferred:] tag
+- CAN edit: fun_batch_e3_025.cpp (ReflectModule functions ONLY), ReflectModule.h (if slots missing)
+- Use existing header methods. Add missing slots with [inferred:] tag
 - 3-attempt limit per function
