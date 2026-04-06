@@ -1,29 +1,36 @@
-# Worker: pool-e
+# Worker: pool-c
 
 ## Model: Opus
 
-## Task: Replace VT calls with named methods — ReflectModule functions
+## Task: VT method replacement — last 4 batch files with VT(mod)[slot]
 
-`include/app/modules/ReflectModule.h` already has 17 vtable methods.
+Replace remaining `VT(mod)[slot]` patterns with named vtable method calls.
+All module headers already have vtable methods defined.
 
 ### Target Files
-- `src/app/fun_batch_e3_025.cpp` — ReflectModule functions ONLY (accessor+0xf8)
-  NOTE: Pool D is editing this same file for PostureModule functions. You handle ONLY the ReflectModule ones.
+- `src/app/fun_batch_c2_017.cpp` — mixed module VT calls
+- `src/app/fun_batch_e3_001.cpp` — mixed module VT calls
+- `src/app/fun_batch_e3_004.cpp` — mixed module VT calls
+- `src/app/fun_batch_e3_005.cpp` — mixed module VT calls
 
-### MANDATORY Example
+### Approach
+1. For each VT(mod)[slot] call, identify the module (check which accessor offset loads it)
+2. Look up slot in the module's header (include/app/modules/*.h)
+3. Replace with `mod->method_name(args)` + `[derived:]` comment
+4. If slot not in header, add it with `[inferred:]` tag
+
+### Example
 **BEFORE:**
 ```cpp
-void** mod = reinterpret_cast<void**>(acc->reflect_module);
-reinterpret_cast<u64(*)(void**)>(VT(mod)[0x80 / 8])(mod);
+void** mod = reinterpret_cast<void**>(acc->motion_module);
+reinterpret_cast<void(*)(void**, u64)>(VT(mod)[0xf0 / 8])(mod, p1);
 ```
 **AFTER:**
 ```cpp
-// [derived: ReflectModule__method_impl (.dynsym) -> slot 16 (0x80/8)]
-ReflectModule* reflect = static_cast<ReflectModule*>(acc->reflect_module);
-reflect->method_name();
+// [derived: MotionModule__change_motion_inherit_frame_keep_rate_impl (.dynsym) -> slot 30]
+MotionModule* mod = static_cast<MotionModule*>(acc->motion_module);
+mod->change_motion_inherit_frame_keep_rate(p1);
 ```
-
-Look up slot in `include/app/modules/ReflectModule.h`. If missing, add with [inferred:] tag.
 
 ### Quick Reference
 ```
@@ -33,6 +40,6 @@ python tools/compare_bytes.py FUN_name
 ```
 
 ### Rules
-- CAN edit: fun_batch_e3_025.cpp (ReflectModule functions ONLY), ReflectModule.h (if slots missing)
-- Use existing header methods. Add missing slots with [inferred:] tag
+- CAN edit: fun_batch_c2_017.cpp, fun_batch_e3_001.cpp, fun_batch_e3_004.cpp, fun_batch_e3_005.cpp
+- CAN add missing vtable entries to module headers with [inferred:] tags
 - 3-attempt limit per function
