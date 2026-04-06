@@ -1,36 +1,32 @@
-# Worker: pool-a
+# Worker: pool-b
 
 ## Model: Opus
 
-## Task: Replace VT(mod)[slot] with named vtable methods — MotionModule files
+## Task: Replace VT(mod)[slot] with named vtable methods — MotionModule + MotionAnimcmd
 
-The MotionModule header at `include/app/modules/MotionModule.h` already has 128 named vtable methods.
-Replace every `reinterpret_cast<...>(VT(mod)[slot])(mod, ...)` with `mod->method_name(args)`.
+Headers already have named vtable methods:
+- `include/app/modules/MotionModule.h` — 128 methods
+- `include/app/modules/MotionAnimcmdModule.h` — 15 methods
 
 ### Target Files
-- `src/app/fun_batch_e3_021.cpp` — 26 MotionModule functions
-- `src/app/fun_batch_e3_022.cpp` — 42 MotionModule functions
+- `src/app/fun_batch_e3_023.cpp` — 20 MotionModule + 13 MotionAnimcmdModule functions
 
 ### MANDATORY Example
-
-**BEFORE (reinterpret_cast slop):**
+**BEFORE:**
 ```cpp
-void FUN_710205cb70(app::BattleObjectModuleAccessor* acc, u64 p1) {
+void FUN_...(app::BattleObjectModuleAccessor* acc, u64 p1) {
     void** mod = reinterpret_cast<void**>(acc->motion_module);
     reinterpret_cast<void(*)(void**, u64)>(VT(mod)[0xf0 / 8])(mod, p1);
 }
 ```
-
-**AFTER (clean named method call):**
+**AFTER:**
 ```cpp
 // [derived: MotionModule__change_motion_inherit_frame_keep_rate_impl (.dynsym) -> slot 30 (0xf0/8)]
-void FUN_710205cb70(app::BattleObjectModuleAccessor* acc, u64 hash) {
+void FUN_...(app::BattleObjectModuleAccessor* acc, u64 hash) {
     MotionModule* mod = static_cast<MotionModule*>(acc->motion_module);
     mod->change_motion_inherit_frame_keep_rate(hash);
 }
 ```
-
-**How to map:** slot = byte_offset / 8, look up in MotionModule.h, use method name.
 
 ### Quick Reference
 ```
@@ -40,7 +36,7 @@ python tools/compare_bytes.py FUN_name
 ```
 
 ### Rules
-- CAN ONLY edit: fun_batch_e3_021.cpp, fun_batch_e3_022.cpp
-- Must #include "app/modules/MotionModule.h" and use its method wrappers
-- If a vtable slot is NOT in the header, add it with [inferred:] tag
+- CAN ONLY edit: fun_batch_e3_023.cpp
+- Use MotionModule.h and MotionAnimcmdModule.h method wrappers
+- If slot NOT in header, add with [inferred:] tag
 - 3-attempt limit per function
