@@ -102,9 +102,9 @@ u64 FUN_7102149f10(u64 param_1)
     asm volatile("" : "+r"(acc), "+r"(in_x10));
     *(u64 *)(param_1 + 0x10) = in_x10;
     void *mod = *(void **)(acc + 0x50);
-    s32 iVar1 = reinterpret_cast<s32 (*)(void *, u32)>(VT(mod)[0x98 / 8])(mod, 0x10000000);
-    if (iVar1 <= 7) {
-        (&DAT_71052c10d0)[(s64)iVar1 * 0x110] = 0;
+    s32 index = reinterpret_cast<s32 (*)(void *, u32)>(VT(mod)[0x98 / 8])(mod, 0x10000000);
+    if (index <= 7) {
+        (&DAT_71052c10d0)[(s64)index * 0x110] = 0;
     }
     return 0;
 }
@@ -117,9 +117,9 @@ u64 FUN_7102182150(u64 param_1)
     asm volatile("" : "+r"(acc), "+r"(in_x10));
     *(u64 *)(param_1 + 0x10) = in_x10;
     void *mod = *(void **)(acc + 0x50);
-    s32 iVar1 = reinterpret_cast<s32 (*)(void *, u32)>(VT(mod)[0x98 / 8])(mod, 0x10000000);
-    if (iVar1 <= 7) {
-        (&DAT_71052c10d0)[(s64)iVar1 * 0x110] = 0;
+    s32 index = reinterpret_cast<s32 (*)(void *, u32)>(VT(mod)[0x98 / 8])(mod, 0x10000000);
+    if (index <= 7) {
+        (&DAT_71052c10d0)[(s64)index * 0x110] = 0;
     }
     return 0;
 }

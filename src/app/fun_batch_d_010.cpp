@@ -1,7 +1,8 @@
 #include "types.h"
 
-// MEDIUM-tier FUN_* functions -- 0x71039 address range, batch d-010
-// Pool-d worker: auto-generated from Ghidra decompilation
+// Batch D - 010: bitfield accessors, identity functions, small helpers (0x71039 range)
+
+#define VT(m) (*reinterpret_cast<void***>(m))
 
 // ---- External declarations -----------------------------------------------
 
@@ -163,11 +164,11 @@ u64 FUN_710392f020(void)
     return FUN_710392f0d0(DAT_7106dd3f1e, 0) & 1;
 }
 
-// 0x71039737f0 -- vtable call at 0x70 on nested field, return 0 (48 bytes)
+// 0x71039737f0 -- call fn_ptr at +0x70 of nested field with +0x90 as this (48 bytes)
 u32 FUN_71039737f0(s64 param_1)
 {
-    s64 lVar1 = *(s64*)(*(s64*)(param_1 + 8) + 0x18);
-    (*(void(*)(s64))(*(s64*)(lVar1 + 0x70)))(lVar1 + 0x90);
+    s64 inner = *(s64 *)(*(s64 *)(param_1 + 8) + 0x18);
+    reinterpret_cast<void (*)(s64)>(*(s64 *)(inner + 0x70))(inner + 0x90);
     return 0;
 }
 
@@ -178,11 +179,11 @@ u64 FUN_7103978f20(s64 param_1, s64 param_2, u64 param_3)
     return 0;
 }
 
-// 0x710397c090 -- store u32 at +0x84, vtable call at +0x40, return 0 (48 bytes)
+// 0x710397c090 -- store u32 at +0x84, vtable[0x40/8] with field at +0x7c, return 0 (48 bytes)
 u32 FUN_710397c090(u32 param_1, s64 *param_2)
 {
-    *(u32*)((s64)param_2 + 0x84) = param_1;
-    (*(void(*)(u32))(*(s64*)(*(s64*)param_2 + 0x40)))(*(u32*)((s64)param_2 + 0x7c));
+    *(u32 *)((s64)param_2 + 0x84) = param_1;
+    reinterpret_cast<void (*)(u32)>(VT(param_2)[0x40 / 8])(*(u32 *)((s64)param_2 + 0x7c));
     return 0;
 }
 
