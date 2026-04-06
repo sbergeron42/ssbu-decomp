@@ -1,76 +1,43 @@
-# Worker: pool-e
+# Worker: pool-c
 
 ## Model: Opus
 
-## Task: Struct access rewrite with derivation chains — batch_d_012 + batch_d_015
+## Task: Build KineticModule vtable struct + replace VT calls
 
-### Target Files (2 files, ~63 functions with module access)
-- `src/app/fun_batch_d_012.cpp` — 37 funcs, 16 module dereferences
-- `src/app/fun_batch_d_015.cpp` — 26 funcs, 18 module dereferences
+### Phase 1: Build KineticModule vtable struct
+`include/app/modules/KineticModule.h` currently has NO vtable methods.
+`src/app/fun_batch_c_012.cpp` and `fun_batch_c_013.cpp` have 69 functions that call vtable methods on KineticModule (accessor+0x68).
 
-These files already have shallow variable renames from a previous round. Your job is to ADD struct field access and derivation chain comments. Do NOT just rename more variables.
+1. Read both files and catalog every VT(mod)[slot] call with its argument signature
+2. Cross-reference slot indices with .dynsym: search Ghidra for KineticModule__*_impl
+3. Add method wrappers to KineticModule.h with derivation chains
 
-### MANDATORY Before/After Example
-
-**BEFORE (this is what the code looks like now — DO NOT submit work that looks like this):**
+### Phase 2: Replace VT calls with method names
+**BEFORE:**
 ```cpp
-// 0x7102208730
-u32 FUN_7102208730(s64 param_1)
-{
-    s64 *module;
-    s64 entry;
-    module = *(s64 **)(*(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0) + 0x68);
-    entry = (**(s64 (**)(s64 *, s64))(*module + 0x60))(module, 0xc);
-    *(u8 *)(entry + 0x30) = 0;
-    return 0;
-}
+void** mod = reinterpret_cast<void**>(acc->item_kinetic_module);
+(*reinterpret_cast<s64(*)(void**, s64)>(VT(mod)[0x60/8]))(mod, 0xc);
+```
+**AFTER:**
+```cpp
+// [derived: KineticModule__get_energy_impl (.dynsym) -> slot 12 (0x60/8)]
+KineticModule* kinetic = static_cast<KineticModule*>(acc->item_kinetic_module);
+kinetic->get_energy(0xc);
 ```
 
-**AFTER (this is what "done" looks like — struct access + derivation chains):**
-```cpp
-// 0x7102208730
-// KineticModule flag clear for energy index 0xc
-u32 FUN_7102208730(s64 param_1)
-{
-    // param_1-8 → BattleObject, +0x1a0 → accessor [derived: BattleObject layout in .dynsym ctors]
-    app::BattleObjectModuleAccessor *acc =
-        reinterpret_cast<app::BattleObjectModuleAccessor*>(
-            *(s64 *)(*(s64 *)(param_1 - 8) + 0x1a0));
-    // +0x68 → kinetic_module [derived: KineticModule__*_impl (.dynsym) loads from accessor+0x68]
-    KineticModule *kinetic = reinterpret_cast<KineticModule*>(acc->kinetic_module);
-    // vtable+0x60 → get_energy_entry [inferred: index-based lookup, returns energy struct]
-    s64 energy = reinterpret_cast<s64 (*)(KineticModule*, s64)>(
-        VT(kinetic)[0x60/8])(kinetic, 0xc);
-    // +0x30 → enabled flag [inferred: set to 0/1 across 40 functions in this file]
-    *(u8 *)(energy + 0x30) = 0;
-    return 0;
-}
-```
-
-**Key differences:**
-1. `acc->kinetic_module` instead of `*(ptr + 0x68)` — uses the struct header
-2. Every offset has a `[derived:]` or `[inferred:]` comment explaining HOW the name was determined
-3. Function has a one-line description of what it does
-4. Confidence levels: `[derived: ...]` = proven from binary evidence, `[inferred: ...]` = pattern-based guess
-
-### Confidence Tags (REQUIRED on every named field)
-- `[derived: <evidence>]` — name proven from .dynsym, xref, or verified function
-- `[inferred: <pattern>]` — name guessed from usage pattern, not proven
-- `[unknown]` — offset is used but no name can be determined; use `field_0xNN` naming
-
-### What is NOT acceptable
-- Renaming `uVar1` → `result` WITHOUT replacing raw offsets with struct access
-- Adding struct access WITHOUT derivation comments
-- Guessing field names without tagging confidence level
+### Target Files
+- `include/app/modules/KineticModule.h` (add vtable methods)
+- `src/app/fun_batch_c_012.cpp` (replace VT calls)
+- `src/app/fun_batch_c_013.cpp` (replace VT calls)
 
 ### Quick Reference
 ```
 /c/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -Ilib/NintendoSDK/include -Ilib/NintendoSDK/include/stubs -c src/app/FILE.cpp -o build/FILE.o
 
-python tools/compare_bytes.py FUN_name  # NOT address
+python tools/compare_bytes.py FUN_name
 ```
 
 ### Rules
-- CAN ONLY edit: fun_batch_d_012.cpp, fun_batch_d_015.cpp
-- Must `#include "app/BattleObjectModuleAccessor.h"` and use the struct
-- 3-attempt limit per function for matching, but derivation comments are required regardless
+- CAN edit: KineticModule.h, fun_batch_c_012.cpp, fun_batch_c_013.cpp
+- Every new vtable entry MUST have [derived:] or [inferred:] tag
+- 3-attempt limit per function
