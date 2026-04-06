@@ -183,4 +183,11 @@ struct LoadedArc {
     LoadedSearchSection* loaded_file_system_search; // +0x118
 };
 
+// PathInformation — wrapper for the parsed ARC and search section
+// [derived: ARCropolis PathInformation = { arc, search }]
+struct PathInformation {
+    LoadedArc* arc;                         // +0x00
+    LoadedSearchSection* search;            // +0x08
+};
+
 } // namespace resource
