@@ -90,23 +90,56 @@ struct FileNX {
     u32 unk4;                        // +0x234
 };
 
-// C2ResourceServiceNX — main resource service object
+// LoadedData wrapper — holds arc and search pointers
+// [derived: Ghidra 13.0.1 decompilation, allocated at 0x18 bytes in init]
+struct LoadedDataWrapper {
+    void* arc;                       // +0x00 — LoadedArc*
+    void* search;                    // +0x08 — LoadedFsSearch*
+    void* unk;                       // +0x10
+};
+
+// Loaded filesystem search table
+// [derived: Ghidra 13.0.1 decompilation, allocated at 0x38 bytes in init]
+struct LoadedFsSearch {
+    void* header;                    // +0x00 — FsSearchHeader*
+    void* body;                      // +0x08 — FsSearchBody*
+    void* file_path_to_idx;          // +0x10 — HashToIndex*
+    void* path_to_idx;               // +0x18 — HashToIndex*
+    void* idx_to_group;              // +0x20 — HashGroup*
+    void* path_group;                // +0x28 — HashGroup*
+    void* idx_to_path_group_idx;     // +0x30 — u32*
+};
+
+// LoadedTables — container for all loaded resource tables
+// [derived: Ghidra 13.0.1 decompilation, allocated at 0x88 bytes in init]
+struct LoadedTables {
+    u8 data[0x70];                   // +0x00 — various fields
+    void* loaded_data;               // +0x70 — LoadedDataWrapper* (holds arc + search)
+    u8 rest[0x10];                   // +0x78 — remaining fields
+};
+
+// C2ResourceServiceNX — main resource service object (ResServiceState in Ghidra)
 // [derived: ARCropolis ResServiceNX, init at FUN_710374f360 (19,552 bytes)]
+// [corrected: Ghidra 13.0.1 decompilation resolves types and field names]
 // Thread names: "ResUpdateThread", "ResLoadingThread", "ResInflateThread"
+// Allocated size: 0x250 (592 bytes) via je_aligned_alloc
 struct ResServiceNX {
-    void* mutex;                     // +0x000 — nn::os::MutexType*
-    void* res_update_event;          // +0x008 — nn::os::EventType*
-    void* unk1;                      // +0x010
-    void* io_swap_event;             // +0x018 — nn::os::EventType*
-    void* unk2;                      // +0x020
-    void* semaphore1;                // +0x028 — nn::os::SemaphoreType*
-    void* semaphore2;                // +0x030
-    void* res_update_thread;         // +0x038 — nn::os::ThreadType*
-    void* res_loading_thread;        // +0x040 — nn::os::ThreadType*
-    void* res_inflate_thread;        // +0x048 — nn::os::ThreadType*
-    void* unk3;                      // +0x050
-    ResList res_lists[5];            // +0x058 — each 0x18 bytes, load request queues
-    FilesystemInfo* filesystem_info; // +0x0D0
+    void* mutex;                     // +0x000 — std::recursive_mutex* [corrected: was MutexType*]
+    void* res_update_event;          // +0x008 — EventType* "update_performed" [derived: Ghidra]
+    void* unk_event1;                // +0x010 — EventType* [derived: Ghidra init with 0]
+    void* io_swap_event;             // +0x018 — EventType* [derived: ARCropolis + Ghidra match]
+    void* unk_event2;                // +0x020 — EventType* [derived: Ghidra init with 0]
+    void* semaphore1;                // +0x028 — SemaphoreType* init(2,2) [derived: Ghidra]
+    void* semaphore2;                // +0x030 — SemaphoreType* init(1,1) [derived: Ghidra]
+    void* res_update_thread;         // +0x038 — 8-byte alloc, zeroed [derived: Ghidra + ARCropolis]
+    void* res_loading_thread;        // +0x040 — 8-byte alloc, zeroed
+    void* res_inflate_thread;        // +0x048 — 8-byte alloc, zeroed
+    void* task_dispatch;             // +0x050 — 0x90-byte dispatch object [derived: Ghidra]
+    CppVector<u32> queues[4];        // +0x058 — 4 queues, NOT 5 ResList [corrected: Ghidra]
+    void* unk_ptr_b8;               // +0x0B8 — null initially [derived: Ghidra]
+    void* queue_head;                // +0x0C0 — self-referencing linked list [derived: Ghidra]
+    void* queue_tail;                // +0x0C8 — points to queue_head [derived: Ghidra]
+    LoadedTables* loaded_tables;     // +0x0D0 — 0x88-byte LoadedTables [derived: Ghidra]
     u32 region_idx;                  // +0x0D8
     u32 language_idx;                // +0x0DC
     u32 unk4;                        // +0x0E0
@@ -114,7 +147,7 @@ struct ResServiceNX {
     bool is_loader_thread_running;   // +0x0E6
     u8 unk5;                         // +0x0E7
     char data_arc_string[256];       // +0x0E8
-    void* unk6;                      // +0x1E8
+    void* unk6;                      // +0x1E8 — short field, checked != 0 before ARC open
     FileNX** data_arc_filenx;        // +0x1F0
     u64 buffer_size;                 // +0x1F8
     u8* buffer_array[2];             // +0x200
@@ -130,6 +163,7 @@ struct ResServiceNX {
     u32 processing_dir_idx_single;   // +0x23C
     u32 current_index;               // +0x240
     u32 current_dir_index;           // +0x244
+    u8 pad[8];                       // +0x248 — pad to 0x250
 };
 
 } // namespace resource
