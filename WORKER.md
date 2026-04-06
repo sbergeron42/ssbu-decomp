@@ -1,32 +1,34 @@
-# Worker: pool-b
+# Worker: pool-c
 
 ## Model: Opus
 
-## Task: Replace VT(mod)[slot] with named vtable methods — MotionModule + MotionAnimcmd
+## Task: Build KineticModule vtable struct + replace VT calls
 
-Headers already have named vtable methods:
-- `include/app/modules/MotionModule.h` — 128 methods
-- `include/app/modules/MotionAnimcmdModule.h` — 15 methods
+### Phase 1: Build KineticModule vtable struct
+`include/app/modules/KineticModule.h` currently has NO vtable methods.
+`src/app/fun_batch_c_012.cpp` and `fun_batch_c_013.cpp` have 69 functions that call vtable methods on KineticModule (accessor+0x68).
 
-### Target Files
-- `src/app/fun_batch_e3_023.cpp` — 20 MotionModule + 13 MotionAnimcmdModule functions
+1. Read both files and catalog every VT(mod)[slot] call with its argument signature
+2. Cross-reference slot indices with .dynsym: search Ghidra for KineticModule__*_impl
+3. Add method wrappers to KineticModule.h with derivation chains
 
-### MANDATORY Example
+### Phase 2: Replace VT calls with method names
 **BEFORE:**
 ```cpp
-void FUN_...(app::BattleObjectModuleAccessor* acc, u64 p1) {
-    void** mod = reinterpret_cast<void**>(acc->motion_module);
-    reinterpret_cast<void(*)(void**, u64)>(VT(mod)[0xf0 / 8])(mod, p1);
-}
+void** mod = reinterpret_cast<void**>(acc->item_kinetic_module);
+(*reinterpret_cast<s64(*)(void**, s64)>(VT(mod)[0x60/8]))(mod, 0xc);
 ```
 **AFTER:**
 ```cpp
-// [derived: MotionModule__change_motion_inherit_frame_keep_rate_impl (.dynsym) -> slot 30 (0xf0/8)]
-void FUN_...(app::BattleObjectModuleAccessor* acc, u64 hash) {
-    MotionModule* mod = static_cast<MotionModule*>(acc->motion_module);
-    mod->change_motion_inherit_frame_keep_rate(hash);
-}
+// [derived: KineticModule__get_energy_impl (.dynsym) -> slot 12 (0x60/8)]
+KineticModule* kinetic = static_cast<KineticModule*>(acc->item_kinetic_module);
+kinetic->get_energy(0xc);
 ```
+
+### Target Files
+- `include/app/modules/KineticModule.h` (add vtable methods)
+- `src/app/fun_batch_c_012.cpp` (replace VT calls)
+- `src/app/fun_batch_c_013.cpp` (replace VT calls)
 
 ### Quick Reference
 ```
@@ -36,7 +38,6 @@ python tools/compare_bytes.py FUN_name
 ```
 
 ### Rules
-- CAN ONLY edit: fun_batch_e3_023.cpp
-- Use MotionModule.h and MotionAnimcmdModule.h method wrappers
-- If slot NOT in header, add with [inferred:] tag
+- CAN edit: KineticModule.h, fun_batch_c_012.cpp, fun_batch_c_013.cpp
+- Every new vtable entry MUST have [derived:] or [inferred:] tag
 - 3-attempt limit per function
