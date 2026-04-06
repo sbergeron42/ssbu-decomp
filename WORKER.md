@@ -1,11 +1,11 @@
-# Worker: pool-a
+# Worker: pool-b
 
 ## Model: Opus
 
-## Task: jemalloc 5.1.0 decomp — small+medium functions (lower range)
+## Task: jemalloc 5.1.0 decomp — small+medium functions (upper range)
 
 Continue matching jemalloc functions against upstream source at `lib/jemalloc/`.
-Focus on functions <=256 bytes in the lower half of the jemalloc range.
+Focus on functions <=256 bytes in the upper half of the jemalloc range.
 
 ### Upstream Reference
 - jemalloc 5.1.0, upstream source at `lib/jemalloc/src/`
@@ -13,7 +13,7 @@ Focus on functions <=256 bytes in the lower half of the jemalloc range.
 - Every function gets `// jemalloc 5.1.0: file.c:line` provenance comment
 
 ### Address Range
-0x7103920000 — 0x7103940000 (lower half of remaining uncompiled)
+0x7103940000 — 0x7103960000 (upper half of remaining uncompiled)
 
 ### Approach
 1. Decompile in Ghidra, match against upstream jemalloc source
@@ -28,7 +28,7 @@ python tools/compare_bytes.py FUN_name
 ```
 
 ### Rules
-- ONLY create src/lib/jemalloc_a2_*.cpp
+- ONLY create src/lib/jemalloc_b2_*.cpp
 - Use upstream jemalloc field names — provably correct
 - 3-attempt limit per function
 - Save Ghidra results to /tmp/ghidra_results.txt
