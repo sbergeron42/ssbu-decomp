@@ -2,33 +2,40 @@
 
 ## Model: Opus
 
-## Task: jemalloc 5.1.0 decomp — continue upper range (round 3)
+## Task: Resource service — filesystem utility functions (0x710353xxxx range)
 
-Continue matching jemalloc functions against upstream source at `lib/jemalloc/`.
-Pick up where the previous round left off.
+Decomp the filesystem utility functions that support the resource loading pipeline. These are called by the main processing loop and handle file lookup, path resolution, and loaded-data management.
 
-### Upstream Reference
-- jemalloc 5.1.0, upstream source at `lib/jemalloc/src/`
-- Every function gets `// jemalloc 5.1.0: file.c:line` provenance comment
+### Target Functions
+Scan the 0x710353xxxx range for uncompiled functions related to:
+- File path/hash lookup
+- LoadedArc table access
+- FilesystemInfo operations
+- LoadedData/LoadedDirectory state management
 
-### Address Range
-0x7103940000 — 0x7103960000 (skip functions already in build/*.o)
+Start with the smallest functions and work up. Use Ghidra to identify which ones access resource service structs.
+
+### Known Targets
+- `FUN_710353d5e0` (384B) — copy_filepath_vector_from_loaded_directory (if not done by pool-c)
+- `FUN_710353a8f0` (1,280B) — filesystem entry scanner/resolver (if not done by pool-c)
+- Any other uncompiled functions in 0x710353xxxx that access LoadedArc/FilesystemInfo
+
+### Headers
+- `include/resource/ResServiceNX.h`, `include/resource/LoadedArc.h`, `include/resource/containers.h`
+
+### Derivation Chains (MANDATORY)
+- `[derived: ARCropolis field_name]` or `[derived: smash-arc field_name]` for known fields
+- `[inferred:]` for fields identified from decompilation patterns
+- Any offset `+0xNN` MUST get a confidence tag
 
 ### Quick Reference
 ```
-/c/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -Ilib/NintendoSDK/include -Ilib/NintendoSDK/include/stubs -c src/lib/FILE.cpp -o build/FILE.o
+/c/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -Ilib/NintendoSDK/include -Ilib/NintendoSDK/include/stubs -c src/resource/FILE.cpp -o build/FILE.o
 
 python tools/compare_bytes.py FUN_name
 ```
 
-### Derivation Chains (MANDATORY)
-Every function and every struct field MUST have provenance:
-- `// jemalloc 5.1.0: arena.c:1234` — exact upstream source file and line
-- `[derived: jemalloc 5.1.0 upstream]` — for fields matching upstream exactly
-- `[inferred: Nintendo delta, not in upstream 5.1.0]` — for any Nintendo-specific modifications
-- If a function doesn't match upstream, document WHAT differs and WHY
-
 ### Rules
-- ONLY create src/lib/jemalloc_e2_*.cpp
-- Use upstream jemalloc field names
+- Output: src/resource/res_filesystem_utils.cpp
 - 3-attempt limit per function
+- Do NOT use naked asm
