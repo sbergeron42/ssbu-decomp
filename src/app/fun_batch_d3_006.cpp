@@ -41,34 +41,34 @@ void FUN_71001aeb00(s64 *param_1)
 // 0x71001a8b40 — flag/channel check: vtable at +0xc8, bit-pattern match (128 bytes)
 bool FUN_71001a8b40(s64 *param_1, s64 param_2)
 {
-    u8 bVar1;
-    u32 uVar2;
-    u64 uVar3;
+    u8 filter_flags;
+    u32 channel_mask;
+    u64 channel_value;
 
-    uVar3 = (*(u64 (**)())(*(s64 *)param_1 + 0xc8))();
-    if ((uVar3 & 1) != 0) {
+    channel_value = (*(u64 (**)())(*(s64 *)param_1 + 0xc8))();
+    if ((channel_value & 1) != 0) {
         return true;
     }
-    bVar1 = *(u8 *)(param_2 + 0x31);
-    if ((bVar1 >> 1 & 1) != 0) {
-        if ((bVar1 & 1) == 0) {
+    filter_flags = *(u8 *)(param_2 + 0x31);
+    if ((filter_flags >> 1 & 1) != 0) {
+        if ((filter_flags & 1) == 0) {
             return false;
         }
-        uVar3 = FUN_7100157cf0(param_2);
-        if (uVar3 >> 0x20 != 0) {
+        channel_value = FUN_7100157cf0(param_2);
+        if (channel_value >> 0x20 != 0) {
             return false;
         }
         if ((s32)param_1[0x22] != 0) {
-            uVar2 = (u32)FUN_7100157cf0(param_2);
-            return (uVar2 & (*(u32 *)(param_1 + 0x22) ^ 0xffffffffu)) != 0;
+            channel_mask = (u32)FUN_7100157cf0(param_2);
+            return (channel_mask & (*(u32 *)(param_1 + 0x22) ^ 0xffffffffu)) != 0;
         }
         return true;
     }
-    if ((bVar1 & 1) == 0) {
+    if ((filter_flags & 1) == 0) {
         return false;
     }
-    uVar3 = FUN_7100157cf0(param_2);
-    if (uVar3 >> 0x20 != 0) {
+    channel_value = FUN_7100157cf0(param_2);
+    if (channel_value >> 0x20 != 0) {
         return false;
     }
     return (s32)param_1[0x22] == 0;
@@ -83,11 +83,11 @@ void FUN_710015d240(s64 param_1, u32 param_2)
 // 0x71001e0670 — delegate: FUN_71001f5750 on +0x18 sub-object, copy byte out (96 bytes)
 u64 FUN_71001e0670(s64 param_1, u32 param_2, u8 *param_3)
 {
-    u64 uVar1;
+    u64 success;
 
-    uVar1 = FUN_71001f5750(*(s64 *)(param_1 + 0x18) + 0xf0, param_1, param_2,
+    success = FUN_71001f5750(*(s64 *)(param_1 + 0x18) + 0xf0, param_1, param_2,
                            (u8 *)(param_1 + 0x20));
-    if ((uVar1 & 1) != 0) {
+    if ((success & 1) != 0) {
         if (param_3 != (u8 *)0x0) {
             *param_3 = *(u8 *)(param_1 + 0x20);
         }
@@ -151,15 +151,15 @@ u64 FUN_71002134e0(s64 param_1, s64 param_2, u64 param_3, u64 param_4, u64 param
 // 0x71002275e0 — bool check: flag at +0x21, queue empty checks at +0x80/+0x88 (80 bytes)
 bool FUN_71002275e0(s64 param_1)
 {
-    s32 iVar1;
+    s32 is_empty;
 
     if (*(s8 *)(param_1 + 0x21) == '\0') {
         return false;
     }
-    iVar1 = FUN_7100228310(*(u64 *)(param_1 + 0x80));
-    if (iVar1 != 0) {
-        iVar1 = FUN_7100228310(*(u64 *)(param_1 + 0x88));
-        if (iVar1 != 0) {
+    is_empty = FUN_7100228310(*(u64 *)(param_1 + 0x80));
+    if (is_empty != 0) {
+        is_empty = FUN_7100228310(*(u64 *)(param_1 + 0x88));
+        if (is_empty != 0) {
             return *(s64 *)(param_1 + 0x78) != 0;
         }
         return true;

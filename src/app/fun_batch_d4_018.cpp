@@ -237,23 +237,23 @@ u8 *FUN_710064b730(u32 param_1)
 // 0x71006d5560 — conditional offset: return param_1+0x60 or param_1+0x10
 s64 FUN_71006d5560(s64 param_1)
 {
-    s64 lVar1;
+    s64 result;
 
-    lVar1 = param_1 + 0x60;
+    result = param_1 + 0x60;
     if (*(s32 *)(param_1 + 0x70) < 1) {
-        lVar1 = param_1 + 0x10;
+        result = param_1 + 0x10;
     }
-    return lVar1;
+    return result;
 }
 
 // 0x71008b75a0 — singleton guard: init vtable ptr, store &DAT at param_2+0x318
 void FUN_71008b75a0(u64 param_1, s64 param_2)
 {
-    s32 iVar1;
+    s32 acquired;
 
     if ((DAT_71052bb470 & 1) == 0) {
-        iVar1 = __cxa_guard_acquire(&DAT_71052bb470);
-        if (iVar1 != 0) {
+        acquired = __cxa_guard_acquire(&DAT_71052bb470);
+        if (acquired != 0) {
             DAT_71052bb478 = (u64)&PTR_LAB_7104f98f40;
             __cxa_guard_release(&DAT_71052bb470);
         }
@@ -264,11 +264,11 @@ void FUN_71008b75a0(u64 param_1, s64 param_2)
 // 0x7100903c10 — singleton guard: init vtable ptr, store &DAT at param_2+0x318
 void FUN_7100903c10(u64 param_1, s64 param_2)
 {
-    s32 iVar1;
+    s32 acquired;
 
     if ((DAT_71052bb4d0 & 1) == 0) {
-        iVar1 = __cxa_guard_acquire(&DAT_71052bb4d0);
-        if (iVar1 != 0) {
+        acquired = __cxa_guard_acquire(&DAT_71052bb4d0);
+        if (acquired != 0) {
             DAT_71052bb4d8 = (u64)&PTR_LAB_7104fa0118;
             __cxa_guard_release(&DAT_71052bb4d0);
         }
@@ -279,11 +279,11 @@ void FUN_7100903c10(u64 param_1, s64 param_2)
 // 0x7100a615e0 — singleton guard: init vtable ptr, store &DAT at param_2+0x318
 void FUN_7100a615e0(u64 param_1, s64 param_2)
 {
-    s32 iVar1;
+    s32 acquired;
 
     if ((DAT_71052c1b80 & 1) == 0) {
-        iVar1 = __cxa_guard_acquire(&DAT_71052c1b80);
-        if (iVar1 != 0) {
+        acquired = __cxa_guard_acquire(&DAT_71052c1b80);
+        if (acquired != 0) {
             DAT_71052c1b88 = (u64)&PTR_LAB_7105056140;
             __cxa_guard_release(&DAT_71052c1b80);
         }
@@ -294,11 +294,11 @@ void FUN_7100a615e0(u64 param_1, s64 param_2)
 // 0x7100aa64a0 — singleton guard: init vtable ptr, store &DAT at param_2+0x318
 void FUN_7100aa64a0(u64 param_1, s64 param_2)
 {
-    s32 iVar1;
+    s32 acquired;
 
     if ((DAT_71052bb660 & 1) == 0) {
-        iVar1 = __cxa_guard_acquire(&DAT_71052bb660);
-        if (iVar1 != 0) {
+        acquired = __cxa_guard_acquire(&DAT_71052bb660);
+        if (acquired != 0) {
             DAT_71052bb668 = (u64)&PTR_LAB_7104fbbb68;
             __cxa_guard_release(&DAT_71052bb660);
         }
@@ -309,11 +309,11 @@ void FUN_7100aa64a0(u64 param_1, s64 param_2)
 // 0x7100b0abf0 — singleton guard: init vtable ptr, store &DAT at param_2+0x318, set +0xe8=6
 void FUN_7100b0abf0(u64 param_1, s64 param_2)
 {
-    s32 iVar1;
+    s32 acquired;
 
     if ((DAT_71052bb698 & 1) == 0) {
-        iVar1 = __cxa_guard_acquire(&DAT_71052bb698);
-        if (iVar1 != 0) {
+        acquired = __cxa_guard_acquire(&DAT_71052bb698);
+        if (acquired != 0) {
             DAT_71052bb6a0 = (u64)&PTR_LAB_7104fc40b0;
             __cxa_guard_release(&DAT_71052bb698);
         }
@@ -325,11 +325,11 @@ void FUN_7100b0abf0(u64 param_1, s64 param_2)
 // 0x7100be3740 — singleton guard: init vtable ptr, store &DAT at param_2+0x318
 void FUN_7100be3740(u64 param_1, s64 param_2)
 {
-    s32 iVar1;
+    s32 acquired;
 
     if ((DAT_71052c0d50 & 1) == 0) {
-        iVar1 = __cxa_guard_acquire(&DAT_71052c0d50);
-        if (iVar1 != 0) {
+        acquired = __cxa_guard_acquire(&DAT_71052c0d50);
+        if (acquired != 0) {
             DAT_71052c0d58 = (u64)&PTR_LAB_7104fd2e98;
             __cxa_guard_release(&DAT_71052c0d50);
         }
@@ -340,11 +340,11 @@ void FUN_7100be3740(u64 param_1, s64 param_2)
 // 0x7100c28080 — singleton guard: init vtable ptr, store &DAT at param_2+0x318
 void FUN_7100c28080(u64 param_1, s64 param_2)
 {
-    s32 iVar1;
+    s32 acquired;
 
     if ((DAT_71052c0d80 & 1) == 0) {
-        iVar1 = __cxa_guard_acquire(&DAT_71052c0d80);
-        if (iVar1 != 0) {
+        acquired = __cxa_guard_acquire(&DAT_71052c0d80);
+        if (acquired != 0) {
             DAT_71052c0d88 = (u64)&PTR_LAB_7104fd7690;
             __cxa_guard_release(&DAT_71052c0d80);
         }
@@ -355,11 +355,11 @@ void FUN_7100c28080(u64 param_1, s64 param_2)
 // 0x7100c72fd0 — singleton guard: init vtable ptr, store &DAT at param_2+0x318
 void FUN_7100c72fd0(u64 param_1, s64 param_2)
 {
-    s32 iVar1;
+    s32 acquired;
 
     if ((DAT_71052c0d90 & 1) == 0) {
-        iVar1 = __cxa_guard_acquire(&DAT_71052c0d90);
-        if (iVar1 != 0) {
+        acquired = __cxa_guard_acquire(&DAT_71052c0d90);
+        if (acquired != 0) {
             DAT_71052c0d98 = (u64)&PTR_LAB_7104fddbe0;
             __cxa_guard_release(&DAT_71052c0d90);
         }
@@ -370,11 +370,11 @@ void FUN_7100c72fd0(u64 param_1, s64 param_2)
 // 0x7100ca0c70 — singleton guard: init vtable ptr, store &DAT at param_2+0x318
 void FUN_7100ca0c70(u64 param_1, s64 param_2)
 {
-    s32 iVar1;
+    s32 acquired;
 
     if ((DAT_71052c0da0 & 1) == 0) {
-        iVar1 = __cxa_guard_acquire(&DAT_71052c0da0);
-        if (iVar1 != 0) {
+        acquired = __cxa_guard_acquire(&DAT_71052c0da0);
+        if (acquired != 0) {
             DAT_71052c0da8 = (u64)&PTR_LAB_7104fe19f8;
             __cxa_guard_release(&DAT_71052c0da0);
         }
@@ -385,11 +385,11 @@ void FUN_7100ca0c70(u64 param_1, s64 param_2)
 // 0x7100cc8da0 — singleton guard: init vtable ptr, store &DAT at param_2+0x318
 void FUN_7100cc8da0(u64 param_1, s64 param_2)
 {
-    s32 iVar1;
+    s32 acquired;
 
     if ((DAT_71052c0dd0 & 1) == 0) {
-        iVar1 = __cxa_guard_acquire(&DAT_71052c0dd0);
-        if (iVar1 != 0) {
+        acquired = __cxa_guard_acquire(&DAT_71052c0dd0);
+        if (acquired != 0) {
             DAT_71052c0dd8 = (u64)&PTR_LAB_7104fe5858;
             __cxa_guard_release(&DAT_71052c0dd0);
         }
@@ -400,11 +400,11 @@ void FUN_7100cc8da0(u64 param_1, s64 param_2)
 // 0x7100d12b10 — singleton guard: init vtable ptr, store &DAT at param_2+0x318, set +0xe8=6
 void FUN_7100d12b10(u64 param_1, s64 param_2)
 {
-    s32 iVar1;
+    s32 acquired;
 
     if ((DAT_71052c0df8 & 1) == 0) {
-        iVar1 = __cxa_guard_acquire(&DAT_71052c0df8);
-        if (iVar1 != 0) {
+        acquired = __cxa_guard_acquire(&DAT_71052c0df8);
+        if (acquired != 0) {
             DAT_71052c0e00 = (u64)&PTR_LAB_7104febb20;
             __cxa_guard_release(&DAT_71052c0df8);
         }
@@ -416,11 +416,11 @@ void FUN_7100d12b10(u64 param_1, s64 param_2)
 // 0x7100dba7a0 — singleton guard: init vtable ptr, store &DAT at param_2+0x318
 void FUN_7100dba7a0(u64 param_1, s64 param_2)
 {
-    s32 iVar1;
+    s32 acquired;
 
     if ((DAT_71052c0e58 & 1) == 0) {
-        iVar1 = __cxa_guard_acquire(&DAT_71052c0e58);
-        if (iVar1 != 0) {
+        acquired = __cxa_guard_acquire(&DAT_71052c0e58);
+        if (acquired != 0) {
             DAT_71052c0e60 = (u64)&PTR_LAB_7104ffa720;
             __cxa_guard_release(&DAT_71052c0e58);
         }
@@ -431,11 +431,11 @@ void FUN_7100dba7a0(u64 param_1, s64 param_2)
 // 0x7100e5e630 — singleton guard: init vtable ptr, store &DAT at param_2+0x318
 void FUN_7100e5e630(u64 param_1, s64 param_2)
 {
-    s32 iVar1;
+    s32 acquired;
 
     if ((DAT_71052c0f28 & 1) == 0) {
-        iVar1 = __cxa_guard_acquire(&DAT_71052c0f28);
-        if (iVar1 != 0) {
+        acquired = __cxa_guard_acquire(&DAT_71052c0f28);
+        if (acquired != 0) {
             DAT_71052c0f30 = (u64)&PTR_LAB_71050055c0;
             __cxa_guard_release(&DAT_71052c0f28);
         }
@@ -446,11 +446,11 @@ void FUN_7100e5e630(u64 param_1, s64 param_2)
 // 0x7100e88c30 — singleton guard: init vtable ptr, store &DAT at param_2+0x318
 void FUN_7100e88c30(u64 param_1, s64 param_2)
 {
-    s32 iVar1;
+    s32 acquired;
 
     if ((DAT_71052c0f38 & 1) == 0) {
-        iVar1 = __cxa_guard_acquire(&DAT_71052c0f38);
-        if (iVar1 != 0) {
+        acquired = __cxa_guard_acquire(&DAT_71052c0f38);
+        if (acquired != 0) {
             DAT_71052c0f40 = (u64)&PTR_LAB_71050092d8;
             __cxa_guard_release(&DAT_71052c0f38);
         }
@@ -461,11 +461,11 @@ void FUN_7100e88c30(u64 param_1, s64 param_2)
 // 0x7100f2a4b0 — singleton guard: init vtable ptr, store &DAT at param_2+0x318
 void FUN_7100f2a4b0(u64 param_1, s64 param_2)
 {
-    s32 iVar1;
+    s32 acquired;
 
     if ((DAT_71052c0f58 & 1) == 0) {
-        iVar1 = __cxa_guard_acquire(&DAT_71052c0f58);
-        if (iVar1 != 0) {
+        acquired = __cxa_guard_acquire(&DAT_71052c0f58);
+        if (acquired != 0) {
             DAT_71052c0f60 = (u64)&PTR_LAB_7105012f38;
             __cxa_guard_release(&DAT_71052c0f58);
         }
@@ -476,11 +476,11 @@ void FUN_7100f2a4b0(u64 param_1, s64 param_2)
 // 0x7100f51310 — singleton guard: init vtable ptr, store &DAT at param_2+0x318
 void FUN_7100f51310(u64 param_1, s64 param_2)
 {
-    s32 iVar1;
+    s32 acquired;
 
     if ((DAT_71052c0f68 & 1) == 0) {
-        iVar1 = __cxa_guard_acquire(&DAT_71052c0f68);
-        if (iVar1 != 0) {
+        acquired = __cxa_guard_acquire(&DAT_71052c0f68);
+        if (acquired != 0) {
             DAT_71052c0f70 = (u64)&PTR_LAB_71050152c0;
             __cxa_guard_release(&DAT_71052c0f68);
         }
@@ -491,11 +491,11 @@ void FUN_7100f51310(u64 param_1, s64 param_2)
 // 0x7100fb59a0 — singleton guard: init vtable ptr, store &DAT at param_2+0x318
 void FUN_7100fb59a0(u64 param_1, s64 param_2)
 {
-    s32 iVar1;
+    s32 acquired;
 
     if ((DAT_71052c0fc0 & 1) == 0) {
-        iVar1 = __cxa_guard_acquire(&DAT_71052c0fc0);
-        if (iVar1 != 0) {
+        acquired = __cxa_guard_acquire(&DAT_71052c0fc0);
+        if (acquired != 0) {
             DAT_71052c0fc8 = (u64)&PTR_LAB_710501d5c0;
             __cxa_guard_release(&DAT_71052c0fc0);
         }
@@ -572,11 +572,11 @@ u64 FUN_7100fb6710(s32 param_1)
 // 0x710107dae0 — singleton guard: init vtable ptr, store &DAT at param_2+0x318, set +0xe8=7
 void FUN_710107dae0(u64 param_1, s64 param_2)
 {
-    s32 iVar1;
+    s32 acquired;
 
     if ((DAT_71052c1918 & 1) == 0) {
-        iVar1 = __cxa_guard_acquire(&DAT_71052c1918);
-        if (iVar1 != 0) {
+        acquired = __cxa_guard_acquire(&DAT_71052c1918);
+        if (acquired != 0) {
             DAT_71052c1920 = (u64)&PTR_LAB_710502ca60;
             __cxa_guard_release(&DAT_71052c1918);
         }

@@ -19,12 +19,12 @@ extern u8 DAT_71045497f0;
 // 0x71002f0f70 — motion-type state remapper: translate param_2 motion ID by active motion type
 s32 FUN_71002f0f70(s64 *param_1, s32 param_2)
 {
-    u32 uVar1;
-    s32 iVar2;
-    u8 bVar3;
-    s32 iVar4;
-    s32 iVar5;
-    s32 iVar6;
+    u32 offset;
+    s32 mapped_id;
+    u8 is_alternate;
+    s32 default_id;
+    s32 motion_id;
+    s32 remap_base;
 
     switch(*(u32 *)(*param_1 + 0xc04)) {
     case 0x1c:
@@ -35,32 +35,32 @@ s32 FUN_71002f0f70(s64 *param_1, s32 param_2)
     default:
         switch(param_2) {
         case 0x6038:
-            iVar5 = *(s32 *)(param_1[1] + 0x238);
-            if (iVar5 == 0) {
+            motion_id = *(s32 *)(param_1[1] + 0x238);
+            if (motion_id == 0) {
                 return 0x6038;
             }
-            iVar6 = 0x6049;
+            remap_base = 0x6049;
             break;
         case 0x6039:
-            iVar5 = *(s32 *)(param_1[1] + 0x23c);
-            if (iVar5 == 0) {
+            motion_id = *(s32 *)(param_1[1] + 0x23c);
+            if (motion_id == 0) {
                 return 0x6039;
             }
-            iVar6 = 0x604a;
+            remap_base = 0x604a;
             break;
         case 0x603a:
-            iVar5 = *(s32 *)(param_1[1] + 0x240);
-            if (iVar5 == 0) {
+            motion_id = *(s32 *)(param_1[1] + 0x240);
+            if (motion_id == 0) {
                 return 0x603a;
             }
-            iVar6 = 0x604b;
+            remap_base = 0x604b;
             break;
         case 0x603b:
-            iVar5 = *(s32 *)(param_1[1] + 0x244);
-            if (iVar5 == 0) {
+            motion_id = *(s32 *)(param_1[1] + 0x244);
+            if (motion_id == 0) {
                 return 0x603b;
             }
-            iVar6 = 0x604c;
+            remap_base = 0x604c;
             break;
         case 0x603c:
         case 0x603d:
@@ -74,37 +74,37 @@ s32 FUN_71002f0f70(s64 *param_1, s32 param_2)
         case 0x6045:
             return param_2;
         case 0x6046:
-            iVar5 = *(s32 *)(param_1[1] + 0x238);
-            if (iVar5 == 0) {
+            motion_id = *(s32 *)(param_1[1] + 0x238);
+            if (motion_id == 0) {
                 return 0x6046;
             }
-            iVar6 = 0x604d;
+            remap_base = 0x604d;
             break;
         case 0x6047:
-            iVar5 = *(s32 *)(param_1[1] + 0x23c);
-            if (iVar5 == 0) {
+            motion_id = *(s32 *)(param_1[1] + 0x23c);
+            if (motion_id == 0) {
                 return 0x6047;
             }
-            iVar6 = 0x604e;
+            remap_base = 0x604e;
             break;
         case 0x6048:
-            iVar5 = *(s32 *)(param_1[1] + 0x240);
-            if (iVar5 == 0) {
+            motion_id = *(s32 *)(param_1[1] + 0x240);
+            if (motion_id == 0) {
                 return 0x6048;
             }
-            iVar6 = 0x604f;
+            remap_base = 0x604f;
             break;
         case 0x6049:
-            iVar5 = *(s32 *)(param_1[1] + 0x244);
-            if (iVar5 == 0) {
+            motion_id = *(s32 *)(param_1[1] + 0x244);
+            if (motion_id == 0) {
                 return 0x6049;
             }
-            iVar6 = 0x6050;
+            remap_base = 0x6050;
             break;
         default:
             return param_2;
         }
-        return iVar6 + iVar5 * 8;
+        return remap_base + motion_id * 8;
     case 0x21:
         if ((*(u8 *)(param_1[1] + 0x68) >> 1 & 1) == 0) {
             return param_2;
@@ -115,29 +115,29 @@ s32 FUN_71002f0f70(s64 *param_1, s32 param_2)
         if ((*(u8 *)(param_1[1] + 0x68) & 1) == 0) {
             return param_2;
         }
-        goto LAB_71002f1040;
+        goto remap_alternate;
     case 0x34:
         if ((*(u8 *)(param_1[1] + 0x68) & 1) == 0) {
             return param_2;
         }
-LAB_71002f1040:
-        iVar4 = 0x6051;
-        iVar5 = 0x6038;
-        bVar3 = param_2 == 0x6046;
-        iVar6 = 0x6055;
-        goto LAB_71002f1140;
+remap_alternate:
+        default_id = 0x6051;
+        motion_id = 0x6038;
+        is_alternate = param_2 == 0x6046;
+        remap_base = 0x6055;
+        goto select_result;
     case 0x3c:
     case 0x3d:
-        iVar5 = param_2 + -0x20;
+        motion_id = param_2 + -0x20;
         if (3 < param_2 - 0x6071U) {
-            iVar5 = param_2;
+            motion_id = param_2;
         }
-        return iVar5;
+        return motion_id;
     case 0x53:
-        iVar5 = 0x6051;
+        motion_id = 0x6051;
         switch(param_2) {
         case 0x6101:
-            goto switchD_71002f1000_caseD_603c;
+            goto passthrough;
         case 0x6102:
             return 0x6052;
         case 0x6103:
@@ -163,22 +163,22 @@ LAB_71002f1040:
             return param_2;
         }
     case 0x55:
-        uVar1 = param_2 - 0x6121;
-        if (0x15 < uVar1) {
+        offset = param_2 - 0x6121;
+        if (0x15 < offset) {
             return param_2;
         }
-        iVar5 = param_2;
-        if ((0x3f00ffU >> (u64)(uVar1 & 0x1f) & 1) == 0) {
-switchD_71002f1000_caseD_603c:
-            return iVar5;
+        motion_id = param_2;
+        if ((0x3f00ffU >> (u64)(offset & 0x1f) & 1) == 0) {
+passthrough:
+            return motion_id;
         }
-        return *(s32 *)(&DAT_71045378d0 + (s64)(s32)uVar1 * 4);
+        return *(s32 *)(&DAT_71045378d0 + (s64)(s32)offset * 4);
     case 0x56:
-        iVar5 = 0x6141;
-        iVar6 = 0x6151;
-        goto LAB_71002f1138;
+        motion_id = 0x6141;
+        remap_base = 0x6151;
+        goto setup_alternate;
     case 0x57:
-        iVar5 = 0x6051;
+        motion_id = 0x6051;
         switch(param_2) {
         case 0x6161:
             return 0x6053;
@@ -200,7 +200,7 @@ switchD_71002f1000_caseD_603c:
         case 0x6170:
             return param_2;
         case 0x6171:
-            goto switchD_71002f1000_caseD_603c;
+            goto passthrough;
         case 0x6172:
             return 0x6052;
         case 0x6173:
@@ -217,51 +217,51 @@ switchD_71002f1000_caseD_603c:
             return param_2;
         }
     case 0x58:
-        iVar5 = 0x6181;
-        iVar6 = 0x6191;
-LAB_71002f1138:
-        iVar4 = 0x6052;
-        bVar3 = param_2 == iVar6;
-        iVar6 = 0x6056;
-        goto LAB_71002f1140;
+        motion_id = 0x6181;
+        remap_base = 0x6191;
+setup_alternate:
+        default_id = 0x6052;
+        is_alternate = param_2 == remap_base;
+        remap_base = 0x6056;
+        goto select_result;
     case 0x5c:
-        iVar5 = param_2 + -0x1b0;
+        motion_id = param_2 + -0x1b0;
         if (0xf < param_2 - 0x6201U) {
-            iVar5 = param_2;
+            motion_id = param_2;
         }
-        return iVar5;
+        return motion_id;
     }
-    iVar4 = 0x6054;
-    iVar5 = 0x603b;
-    bVar3 = param_2 == 0x6049;
-    iVar6 = 0x6058;
-LAB_71002f1140:
-    iVar2 = param_2;
-    if (bVar3) {
-        iVar2 = iVar6;
+    default_id = 0x6054;
+    motion_id = 0x603b;
+    is_alternate = param_2 == 0x6049;
+    remap_base = 0x6058;
+select_result:
+    mapped_id = param_2;
+    if (is_alternate) {
+        mapped_id = remap_base;
     }
-    if (param_2 != iVar5) {
-        iVar4 = iVar2;
+    if (param_2 != motion_id) {
+        default_id = mapped_id;
     }
-    return iVar4;
+    return default_id;
 }
 
 // 0x71002f14e0 — inverse state remapper: translate param_2 base motion ID by type
 s32 FUN_71002f14e0(u32 param_1, s32 param_2)
 {
-    s32 iVar1;
-    s32 iVar2;
-    s32 iVar3;
+    s32 result;
+    s32 mapped_id;
+    s32 alternate_id;
 
-    iVar2 = param_2;
+    mapped_id = param_2;
     switch(param_1) {
     case 0x3c:
     case 0x3d:
-        iVar2 = param_2 + 0x20;
+        mapped_id = param_2 + 0x20;
         if (3 < param_2 - 0x6051U) {
-            iVar2 = param_2;
+            mapped_id = param_2;
         }
-        return iVar2;
+        return mapped_id;
     case 0x53:
         if (param_2 - 0x6051U < 4) {
             return *(s32 *)(&DAT_71044692f0 + (s64)(s32)(param_2 - 0x6051U) * 4);
@@ -273,58 +273,58 @@ s32 FUN_71002f14e0(u32 param_1, s32 param_2)
         }
         break;
     case 0x56:
-        iVar2 = 0x6141;
-        iVar3 = 0x6151;
-        goto LAB_71002f15d0;
+        mapped_id = 0x6141;
+        alternate_id = 0x6151;
+        goto select_inverse;
     case 0x57:
         if (param_2 - 0x6051U < 9) {
             return *(s32 *)(&DAT_7104538d70 + (s64)(s32)(param_2 - 0x6051U) * 4);
         }
         break;
     case 0x58:
-        iVar2 = 0x6181;
-        iVar3 = 0x6191;
-LAB_71002f15d0:
-        iVar1 = param_2;
+        mapped_id = 0x6181;
+        alternate_id = 0x6191;
+select_inverse:
+        result = param_2;
         if (param_2 == 0x6056) {
-            iVar1 = iVar3;
+            result = alternate_id;
         }
         if (param_2 != 0x6052) {
-            iVar2 = iVar1;
+            mapped_id = result;
         }
-        return iVar2;
+        return mapped_id;
     case 0x5c:
-        iVar2 = param_2 + 0x1b0;
+        mapped_id = param_2 + 0x1b0;
         if (0xf < param_2 - 0x6051U) {
-            iVar2 = param_2;
+            mapped_id = param_2;
         }
     }
-    return iVar2;
+    return mapped_id;
 }
 
 // 0x71002f2820 — inverse state remapper variant: translate param_1 by motion type param_2
 s32 FUN_71002f2820(s32 param_1, u32 param_2)
 {
-    s32 iVar1;
-    u8 *puVar2;
-    u32 uVar3;
+    s32 result;
+    u8 *table;
+    u32 index;
 
-    uVar3 = param_1 - 0x6091;
-    if (uVar3 < 4) {
-        puVar2 = &DAT_7104467f70;
-LAB_71002f2838:
-        iVar1 = *(s32 *)(puVar2 + (s64)(s32)uVar3 * 4);
+    index = param_1 - 0x6091;
+    if (index < 4) {
+        table = &DAT_7104467f70;
+lookup_table:
+        result = *(s32 *)(table + (s64)(s32)index * 4);
     }
     else {
-        iVar1 = param_1;
+        result = param_1;
         switch(param_2) {
         case 0x3c:
         case 0x3d:
-            iVar1 = param_1 + -0x20;
+            result = param_1 + -0x20;
             if (3 < param_1 - 0x6071U) {
-                iVar1 = param_1;
+                result = param_1;
             }
-            return iVar1;
+            return result;
         case 0x3e:
         case 0x3f:
         case 0x40:
@@ -352,7 +352,7 @@ LAB_71002f2838:
         case 0x5b:
             break;
         case 0x53:
-            iVar1 = 0x6051;
+            result = 0x6051;
             switch(param_1) {
             case 0x6101:
                 break;
@@ -381,15 +381,15 @@ LAB_71002f2838:
                 return param_1;
             }
         case 0x55:
-            uVar3 = param_1 - 0x6121;
-            if (0x15 < uVar3) {
+            index = param_1 - 0x6121;
+            if (0x15 < index) {
                 return param_1;
             }
-            if ((0x3f00ffU >> (u64)(uVar3 & 0x1f) & 1) == 0) {
+            if ((0x3f00ffU >> (u64)(index & 0x1f) & 1) == 0) {
                 return param_1;
             }
-            puVar2 = &DAT_71045378d0;
-            goto LAB_71002f2838;
+            table = &DAT_71045378d0;
+            goto lookup_table;
         case 0x56:
             if (param_1 == 0x6141) {
                 return 0x6052;
@@ -399,7 +399,7 @@ LAB_71002f2838:
             }
             break;
         case 0x57:
-            iVar1 = 0x6051;
+            result = 0x6051;
             switch(param_1) {
             case 0x6161:
                 return 0x6053;
@@ -446,227 +446,227 @@ LAB_71002f2838:
             }
             break;
         case 0x5c:
-            iVar1 = param_1 + -0x1b0;
+            result = param_1 + -0x1b0;
             if (0xf < param_1 - 0x6201U) {
-                iVar1 = param_1;
+                result = param_1;
             }
-            return iVar1;
+            return result;
         default:
             return param_1;
         }
     }
-    return iVar1;
+    return result;
 }
 
 // 0x71002f46a0 — set motion bit: update bitmask at +0x180 based on active motion type
 void FUN_71002f46a0(s64 param_1, s32 param_2)
 {
-    u8 bVar1;
-    s32 iVar2;
-    u32 uVar3;
-    s32 iVar5;
-    u64 uVar4;
+    u8 out_of_range;
+    s32 mapped_id;
+    u32 index;
+    s32 motion_id;
+    u64 shift;
 
-    iVar5 = param_2;
+    motion_id = param_2;
     switch(*(u32 *)(*(s64 *)(param_1 + 8) + 0x28)) {
     case 0x3c:
     case 0x3d:
-        iVar5 = param_2 + -0x20;
-        bVar1 = 3 < param_2 - 0x6071U;
-        goto LAB_71002f4794;
+        motion_id = param_2 + -0x20;
+        out_of_range = 3 < param_2 - 0x6071U;
+        goto set_check_range;
     case 0x53:
-        iVar2 = 0x6051;
+        mapped_id = 0x6051;
         switch(param_2) {
         case 0x6101:
             break;
         case 0x6102:
-switchD_71002f4700_caseD_6102:
-            iVar2 = 0x6052;
+set_map_6052:
+            mapped_id = 0x6052;
             break;
         default:
-            goto switchD_71002f46c4_caseD_3e;
+            goto set_compute_index;
         case 0x6111:
-switchD_71002f4700_caseD_6111:
-            iVar2 = 0x6053;
+set_map_6053:
+            mapped_id = 0x6053;
             break;
         case 0x6112:
-switchD_71002f4700_caseD_6112:
-            iVar2 = 0x6054;
+set_map_6054:
+            mapped_id = 0x6054;
         }
-        goto switchD_71002f4700_caseD_6101;
+        goto set_compute_shift;
     case 0x55:
-        uVar3 = param_2 - 0x6121;
-        if ((uVar3 < 0x16) && ((0x3f00ffU >> (u64)(uVar3 & 0x1f) & 1) != 0)) {
-            iVar5 = *(s32 *)(&DAT_71045378d0 + (s64)(s32)uVar3 * 4);
+        index = param_2 - 0x6121;
+        if ((index < 0x16) && ((0x3f00ffU >> (u64)(index & 0x1f) & 1) != 0)) {
+            motion_id = *(s32 *)(&DAT_71045378d0 + (s64)(s32)index * 4);
         }
         break;
     case 0x57:
-        iVar2 = 0x6051;
+        mapped_id = 0x6051;
         switch(param_2) {
         case 0x6161:
-            goto switchD_71002f4700_caseD_6111;
+            goto set_map_6053;
         case 0x6162:
-            goto switchD_71002f4700_caseD_6112;
+            goto set_map_6054;
         default:
-            goto switchD_71002f46c4_caseD_3e;
+            goto set_compute_index;
         case 0x6171:
             break;
         case 0x6172:
-            goto switchD_71002f4700_caseD_6102;
+            goto set_map_6052;
         case 0x6173:
-            iVar2 = 0x6055;
+            mapped_id = 0x6055;
             break;
         case 0x6174:
-switchD_71002f4758_caseD_6174:
-            iVar2 = 0x6056;
+set_map_6056:
+            mapped_id = 0x6056;
             break;
         case 0x6175:
-            iVar2 = 0x6057;
+            mapped_id = 0x6057;
             break;
         case 0x6176:
-            iVar2 = 0x6058;
+            mapped_id = 0x6058;
             break;
         case 0x6177:
-            iVar2 = 0x6059;
+            mapped_id = 0x6059;
         }
-        goto switchD_71002f4700_caseD_6101;
+        goto set_compute_shift;
     case 0x58:
-        if (param_2 == 0x6181) goto switchD_71002f4700_caseD_6102;
-        if (param_2 == 0x6191) goto switchD_71002f4758_caseD_6174;
+        if (param_2 == 0x6181) goto set_map_6052;
+        if (param_2 == 0x6191) goto set_map_6056;
         break;
     case 0x5c:
-        iVar5 = param_2 + -0x1b0;
-        bVar1 = 0xf < param_2 - 0x6201U;
-LAB_71002f4794:
-        if (bVar1) {
-            iVar5 = param_2;
+        motion_id = param_2 + -0x1b0;
+        out_of_range = 0xf < param_2 - 0x6201U;
+set_check_range:
+        if (out_of_range) {
+            motion_id = param_2;
         }
     }
-switchD_71002f46c4_caseD_3e:
-    uVar3 = iVar5 - 0x6031;
-    if (0xe < uVar3) {
-        if (iVar5 - 0x6041U < 0xf) {
-            uVar3 = iVar5 - 0x6034;
+set_compute_index:
+    index = motion_id - 0x6031;
+    if (0xe < index) {
+        if (motion_id - 0x6041U < 0xf) {
+            index = motion_id - 0x6034;
         }
         else {
-            iVar2 = iVar5;
-            if (0x17 < iVar5 - 0x6051U) {
-                uVar4 = 0;
-                goto LAB_71002f4818;
+            mapped_id = motion_id;
+            if (0x17 < motion_id - 0x6051U) {
+                shift = 0;
+                goto set_apply_mask;
             }
-switchD_71002f4700_caseD_6101:
-            uVar3 = iVar2 - 0x603b;
+set_compute_shift:
+            index = mapped_id - 0x603b;
         }
     }
-    uVar4 = (u64)(s32)uVar3;
-LAB_71002f4818:
-    *(u64 *)(param_1 + 0x180) = *(u64 *)(param_1 + 0x180) | 1L << (uVar4 & 0x3f);
+    shift = (u64)(s32)index;
+set_apply_mask:
+    *(u64 *)(param_1 + 0x180) = *(u64 *)(param_1 + 0x180) | 1L << (shift & 0x3f);
 }
 
 // 0x71002f5770 — clear motion bit: clear bitmask at +0x180 based on active motion type
 void FUN_71002f5770(s64 param_1, s32 param_2)
 {
-    u8 bVar1;
-    s32 iVar2;
-    u32 uVar3;
-    s32 iVar5;
-    u64 uVar4;
+    u8 out_of_range;
+    s32 mapped_id;
+    u32 index;
+    s32 motion_id;
+    u64 shift;
 
-    iVar5 = param_2;
+    motion_id = param_2;
     switch(*(u32 *)(*(s64 *)(param_1 + 8) + 0x28)) {
     case 0x3c:
     case 0x3d:
-        iVar5 = param_2 + -0x20;
-        bVar1 = 3 < param_2 - 0x6071U;
-        goto LAB_71002f5864;
+        motion_id = param_2 + -0x20;
+        out_of_range = 3 < param_2 - 0x6071U;
+        goto clr_check_range;
     case 0x53:
-        iVar2 = 0x6051;
+        mapped_id = 0x6051;
         switch(param_2) {
         case 0x6101:
             break;
         case 0x6102:
-switchD_71002f57d0_caseD_6102:
-            iVar2 = 0x6052;
+clr_map_6052:
+            mapped_id = 0x6052;
             break;
         default:
-            goto switchD_71002f5794_caseD_3e;
+            goto clr_compute_index;
         case 0x6111:
-switchD_71002f57d0_caseD_6111:
-            iVar2 = 0x6053;
+clr_map_6053:
+            mapped_id = 0x6053;
             break;
         case 0x6112:
-switchD_71002f57d0_caseD_6112:
-            iVar2 = 0x6054;
+clr_map_6054:
+            mapped_id = 0x6054;
         }
-        goto switchD_71002f57d0_caseD_6101;
+        goto clr_compute_shift;
     case 0x55:
-        uVar3 = param_2 - 0x6121;
-        if ((uVar3 < 0x16) && ((0x3f00ffU >> (u64)(uVar3 & 0x1f) & 1) != 0)) {
-            iVar5 = *(s32 *)(&DAT_71045378d0 + (s64)(s32)uVar3 * 4);
+        index = param_2 - 0x6121;
+        if ((index < 0x16) && ((0x3f00ffU >> (u64)(index & 0x1f) & 1) != 0)) {
+            motion_id = *(s32 *)(&DAT_71045378d0 + (s64)(s32)index * 4);
         }
         break;
     case 0x57:
-        iVar2 = 0x6051;
+        mapped_id = 0x6051;
         switch(param_2) {
         case 0x6161:
-            goto switchD_71002f57d0_caseD_6111;
+            goto clr_map_6053;
         case 0x6162:
-            goto switchD_71002f57d0_caseD_6112;
+            goto clr_map_6054;
         default:
-            goto switchD_71002f5794_caseD_3e;
+            goto clr_compute_index;
         case 0x6171:
             break;
         case 0x6172:
-            goto switchD_71002f57d0_caseD_6102;
+            goto clr_map_6052;
         case 0x6173:
-            iVar2 = 0x6055;
+            mapped_id = 0x6055;
             break;
         case 0x6174:
-switchD_71002f5828_caseD_6174:
-            iVar2 = 0x6056;
+clr_map_6056:
+            mapped_id = 0x6056;
             break;
         case 0x6175:
-            iVar2 = 0x6057;
+            mapped_id = 0x6057;
             break;
         case 0x6176:
-            iVar2 = 0x6058;
+            mapped_id = 0x6058;
             break;
         case 0x6177:
-            iVar2 = 0x6059;
+            mapped_id = 0x6059;
         }
-        goto switchD_71002f57d0_caseD_6101;
+        goto clr_compute_shift;
     case 0x58:
-        if (param_2 == 0x6181) goto switchD_71002f57d0_caseD_6102;
-        if (param_2 == 0x6191) goto switchD_71002f5828_caseD_6174;
+        if (param_2 == 0x6181) goto clr_map_6052;
+        if (param_2 == 0x6191) goto clr_map_6056;
         break;
     case 0x5c:
-        iVar5 = param_2 + -0x1b0;
-        bVar1 = 0xf < param_2 - 0x6201U;
-LAB_71002f5864:
-        if (bVar1) {
-            iVar5 = param_2;
+        motion_id = param_2 + -0x1b0;
+        out_of_range = 0xf < param_2 - 0x6201U;
+clr_check_range:
+        if (out_of_range) {
+            motion_id = param_2;
         }
     }
-switchD_71002f5794_caseD_3e:
-    uVar3 = iVar5 - 0x6031;
-    if (0xe < uVar3) {
-        if (iVar5 - 0x6041U < 0xf) {
-            uVar3 = iVar5 - 0x6034;
+clr_compute_index:
+    index = motion_id - 0x6031;
+    if (0xe < index) {
+        if (motion_id - 0x6041U < 0xf) {
+            index = motion_id - 0x6034;
         }
         else {
-            iVar2 = iVar5;
-            if (0x17 < iVar5 - 0x6051U) {
-                uVar4 = 0;
-                goto LAB_71002f58e8;
+            mapped_id = motion_id;
+            if (0x17 < motion_id - 0x6051U) {
+                shift = 0;
+                goto clr_apply_mask;
             }
-switchD_71002f57d0_caseD_6101:
-            uVar3 = iVar2 - 0x603b;
+clr_compute_shift:
+            index = mapped_id - 0x603b;
         }
     }
-    uVar4 = (u64)(s32)uVar3;
-LAB_71002f58e8:
+    shift = (u64)(s32)index;
+clr_apply_mask:
     *(u64 *)(param_1 + 0x180) =
-         *(u64 *)(param_1 + 0x180) & (1L << (uVar4 & 0x3f) ^ 0xffffffffffffffffU);
+         *(u64 *)(param_1 + 0x180) & (1L << (shift & 0x3f) ^ 0xffffffffffffffffU);
 }
 
 // 0x7100314d50 — is-grounded-flag: return true if param_1 matches a known grounded motion ID

@@ -31,14 +31,14 @@ extern s64  FUN_7100154fa0(u64, u32);
 // 0x7100104ce0 — ctor: parent init, clear fields, set vtable (112 bytes)
 void FUN_7100104ce0(s64 *param_1)
 {
-    u64 uVar1;
+    u64 vtable_base;
 
     FUN_710013d270();
     param_1[0x14] = 0;
-    uVar1 = PTR_DAT_71052a4490;
+    vtable_base = PTR_DAT_71052a4490;
     *(u32 *)(param_1 + 0x17) = 0;
     param_1[0x18] = 0;
-    *param_1 = (s64)(uVar1 + 0x10);
+    *param_1 = (s64)(vtable_base + 0x10);
     *(u8 *)(param_1 + 0x19) = 0;
     param_1[0x1a] = 0;
 }
@@ -53,12 +53,12 @@ void FUN_710010a650(s64 *param_1)
 // 0x710010f170 — ctor: parent init, set vtable + secondary ptr (64 bytes)
 void FUN_710010f170(s64 *param_1)
 {
-    u64 uVar1;
+    u64 vtable_base;
 
     FUN_71000bed00();
-    uVar1 = PTR_DAT_71052a4740;
-    *param_1 = (s64)(uVar1 + 0x10);
-    param_1[3] = (s64)(uVar1 + 0x60);
+    vtable_base = PTR_DAT_71052a4740;
+    *param_1 = (s64)(vtable_base + 0x10);
+    param_1[3] = (s64)(vtable_base + 0x60);
 }
 
 // 0x7100106240 — ctor: parent init, set vtable (48 bytes)
@@ -71,16 +71,16 @@ void FUN_7100106240(s64 *param_1)
 // 0x7100107800 — ctor: parent init, clear 5 fields, set vtable + clear more (96 bytes)
 void FUN_7100107800(s64 *param_1)
 {
-    u64 uVar1;
+    u64 vtable_base;
 
     FUN_71001424e0();
-    uVar1 = PTR_DAT_71052a4570;
+    vtable_base = PTR_DAT_71052a4570;
     param_1[0x2d] = 0;
     param_1[0x29] = 0;
     param_1[0x2a] = 0;
     param_1[0x2b] = 0;
     param_1[0x2c] = 0;
-    *param_1 = (s64)(uVar1 + 0x10);
+    *param_1 = (s64)(vtable_base + 0x10);
     *(u32 *)(param_1 + 0x30) = 0;
     *(u16 *)((s64)param_1 + 0x184) = 0;
     param_1[0x31] = 0;
@@ -99,7 +99,7 @@ void FUN_71001353c0(u32 *param_1, s32 param_2, s64 param_3)
 // 0x7100135500 — bit util: return index of Nth set bit, or 0xffffffff (96 bytes)
 u32 FUN_7100135500(u32 param_1, s32 param_2)
 {
-    u32 uVar1;
+    u32 popcount;
 
     if (param_1 == 0) {
         return 0xffffffff;
@@ -108,12 +108,12 @@ u32 FUN_7100135500(u32 param_1, s32 param_2)
     do {
         param_2 = param_2 - 1;
         if (param_2 < 2) {
-            uVar1 = (param_1 & -param_1) - 1;
-            uVar1 = uVar1 - (uVar1 >> 1 & 0x55555555);
-            uVar1 = (uVar1 >> 2 & 0x33333333) + (uVar1 & 0x33333333);
-            uVar1 = (uVar1 + (uVar1 >> 4)) & 0xf0f0f0f;
-            uVar1 = uVar1 + (uVar1 >> 8);
-            return (uVar1 + (uVar1 >> 0x10)) & 0x3f;
+            popcount = (param_1 & -param_1) - 1;
+            popcount = popcount - (popcount >> 1 & 0x55555555);
+            popcount = (popcount >> 2 & 0x33333333) + (popcount & 0x33333333);
+            popcount = (popcount + (popcount >> 4)) & 0xf0f0f0f;
+            popcount = popcount + (popcount >> 8);
+            return (popcount + (popcount >> 0x10)) & 0x3f;
         }
         param_1 = (param_1 - 1) & param_1;
     } while (param_1 != 0);
@@ -123,22 +123,22 @@ u32 FUN_7100135500(u32 param_1, s32 param_2)
 // 0x71001476b0 — flag-or: check two pointer fields, OR FUN_71000b4990 results (64 bytes)
 u32 FUN_71001476b0(s64 param_1)
 {
-    u32 uVar1;
-    u32 uVar2;
-    s64 lVar3;
+    u32 flags;
+    u32 flags2;
+    s64 second_ptr;
 
     if (*(s64 *)(param_1 + 0x20) == 0) {
-        uVar1 = 0;
-        lVar3 = *(s64 *)(param_1 + 0x30);
+        flags = 0;
+        second_ptr = *(s64 *)(param_1 + 0x30);
     } else {
-        uVar1 = FUN_71000b4990();
-        lVar3 = *(s64 *)(param_1 + 0x30);
+        flags = FUN_71000b4990();
+        second_ptr = *(s64 *)(param_1 + 0x30);
     }
-    if (lVar3 != 0) {
-        uVar2 = FUN_71000b4990();
-        uVar1 = uVar1 | uVar2;
+    if (second_ptr != 0) {
+        flags2 = FUN_71000b4990();
+        flags = flags | flags2;
     }
-    return uVar1 & 1;
+    return flags & 1;
 }
 
 // 0x7100149290 — indexed store: write int at computed offset, optionally store global (64 bytes)
@@ -153,18 +153,18 @@ void FUN_7100149290(s64 param_1, s32 param_2)
 // 0x7100150720 — linked-list search: find param_2 at +0x20, return flag at +0x2e (80 bytes)
 bool FUN_7100150720(s64 param_1, s64 param_2)
 {
-    s64 lVar1;
+    s64 node;
 
-    lVar1 = *(s64 *)(param_1 + 0x10);
-    if (lVar1 == param_1 + 8) {
+    node = *(s64 *)(param_1 + 0x10);
+    if (node == param_1 + 8) {
         return false;
     }
     do {
-        if (*(s64 *)(lVar1 + 0x20) == param_2) {
-            return *(s8 *)(lVar1 + 0x2e) != '\0';
+        if (*(s64 *)(node + 0x20) == param_2) {
+            return *(s8 *)(node + 0x2e) != '\0';
         }
-        lVar1 = *(s64 *)(lVar1 + 8);
-    } while (lVar1 != param_1 + 8);
+        node = *(s64 *)(node + 8);
+    } while (node != param_1 + 8);
     return false;
 }
 
@@ -186,18 +186,18 @@ u64 FUN_7100153200(u64 param_1, u8 param_2)
 // 0x7100153dc0 — bool wrapper: FUN_7100154fa0(+0x38, +0xdc) == 0 (64 bytes)
 bool FUN_7100153dc0(s64 param_1)
 {
-    s64 lVar1;
+    s64 result;
 
-    lVar1 = FUN_7100154fa0(*(u64 *)(param_1 + 0x38), *(u32 *)(param_1 + 0xdc));
-    return lVar1 == 0;
+    result = FUN_7100154fa0(*(u64 *)(param_1 + 0x38), *(u32 *)(param_1 + 0xdc));
+    return result == 0;
 }
 
 // 0x7100154360 — init: clear +0x10, init stack buf, copy to +0x18 (48 bytes)
 void FUN_7100154360(s64 param_1)
 {
-    u8 auStack_38[24];
+    u8 init_buf[24];
 
     *(u64 *)(param_1 + 0x10) = 0;
-    FUN_71000b1900(auStack_38);
-    FUN_71000b1910(param_1 + 0x18, auStack_38);
+    FUN_71000b1900(init_buf);
+    FUN_71000b1910(param_1 + 0x18, init_buf);
 }
