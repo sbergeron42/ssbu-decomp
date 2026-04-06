@@ -28,6 +28,26 @@ Decomp the smaller resource service helper functions using the ARCropolis type h
 3. Write C++ using the resource headers
 4. Use insights from small functions to help understand larger ones
 
+### Completed
+- `FUN_7103754c70` (480 bytes) — `get_desired_language`: 80% match (prologue sched + reloc only)
+  Maps nn::settings::LanguageCode → Language via linear scan of 17 entries. Default: English.
+
+### Range Analysis
+The 0x710373e000–0x7103760000 range is NOT exclusively resource-service code. It contains:
+- **Language/locale utilities**: FUN_7103754c70 (done), FUN_7103741520 (game language mapper)
+- **Date/time bitfield packers**: FUN_7103741160/1260/1330/1410 (nn::time SDK)
+- **Web/UI helpers**: FUN_7103755160/5270 (nn::web SDK, offline HTML pages)
+- **Friends/account**: FUN_7103755a50, GlobalParameter (nn::friends, nn::account)
+- **Mii database**: FUN_7103758e20, FUN_7103757140
+- **Font/glyph loading**: FUN_710375f650 (3840 bytes, very complex)
+- **Game loop/input**: FUN_710375ea70 (2576 bytes, vtable-heavy)
+- **Engine init**: FUN_7103753fc0 (singleton init with exclusive monitors)
+- **ResServiceNX init**: FUN_710374f360 (19,552 bytes — too large)
+
+Only FUN_710375f650 and FUN_710374f360 directly operate on ResServiceNX fields.
+Most "small" functions need engine types (nu::*, cross2app) or have matching challenges
+(prologue scheduling, switch tables, bitfield instruction selection).
+
 ### Output: src/resource/res_helpers.cpp
 
 ### Quick Reference
