@@ -1,17 +1,17 @@
-# Worker: pool-b
+# Worker: pool-c
 
 ## Model: Opus
 
-## Task: Resource service — medium functions + inflate chain
+## Task: Resource service — actual ResServiceNX functions (identified by pool-c previous round)
+
+These are real resource service functions found by module affinity analysis, NOT address proximity.
 
 ### Target Functions
-- `FUN_7103753fc0` — 1,344 bytes (singleton init)
-- `FUN_7103755cb0` — 2,448 bytes (friends profile init)
-- `deal_with_inputs?` (0x710375ea70) — 2,576 bytes
-- `inflate` (0x710002c1f0) — 5,936 bytes (zlib core inflate function)
-- `zlib_unencode` (0x71000281d0) — 576 bytes
-
-The `inflate` function is the zlib decompression core used by ResInflateThread. It's open-source (zlib), so match against known zlib source like we did with jemalloc.
+- `FUN_71037c3db0` (368 bytes) — ResServiceNX singleton path resolution wrapper
+- `FUN_71037c4010` (1,344 bytes) — ResServiceNX singleton path resolution (4 params)
+- `FUN_71037c5ff0` (2,288 bytes) — ResServiceNX singleton constructor
+- `FUN_710353d5e0` (384 bytes) — copy_filepath_vector_from_loaded_directory
+- `FUN_710353a8f0` (1,280 bytes) — filesystem entry scanner/resolver
 
 ### Headers
 - `include/resource/ResServiceNX.h`, `include/resource/LoadedArc.h`, `include/resource/containers.h`
@@ -25,13 +25,14 @@ python tools/compare_bytes.py FUN_name
 
 ### Derivation Chains (MANDATORY)
 Every function and every struct field MUST have provenance:
-- For zlib: `// zlib 1.2.11: inflate.c:1234` — exact upstream file and line
-- For resource funcs: `[derived: ARCropolis field_name]` or `[inferred: pattern description]`
-- For SDK functions: `[derived: nn::prepo/friends/account SDK call]`
-- Any offset like `+0x10`, `+0x68` MUST get a confidence tag — no bare offsets
+- `[derived: ARCropolis field_name]` — field name from ARCropolis community RE
+- `[derived: smash-arc field_name]` — field from smash-arc ARC format library
+- `[inferred: pattern description]` — field name guessed from usage
+- `[unknown]` — offset used but no name determinable, use `field_0xNN`
+- Any offset like `+0x10`, `+0x68` appearing in code MUST get a confidence tag
 
 ### Rules
-- Output: src/resource/res_medium_funcs.cpp (resource), src/lib/zlib_inflate.cpp (zlib)
-- For zlib: use upstream source with `// zlib: inflate.c:line` provenance
-- For resource funcs: use resource headers with derivation chains
+- Output: src/resource/res_filesystem.cpp
+- Use resource headers with derivation chains as above
 - 3-attempt limit per function
+- These functions may reveal new struct fields — add them to the headers with proper tags
