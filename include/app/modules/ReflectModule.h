@@ -14,9 +14,11 @@ struct ReflectModule {
     void reset_info() { ((void(*)(ReflectModule*))_vt[0x50/8])(this); }
 
     // -- Object/team identity (0x58-0x70) --
-    u32 object_id() { return ((u32(*)(ReflectModule*))_vt[0x58/8])(this); }
+    // [inferred: returns u64 to preserve tail-call in lua_bind wrapper; underlying value is object ID]
+    u64 object_id() { return ((u64(*)(ReflectModule*))_vt[0x58/8])(this); }
     void set_object_id(u64 p1) { ((void(*)(ReflectModule*,u64))_vt[0x60/8])(this,p1); }
-    u32 team_no() { return ((u32(*)(ReflectModule*))_vt[0x68/8])(this); }
+    // [inferred: returns u64 to preserve tail-call in lua_bind wrapper; underlying value is team number]
+    u64 team_no() { return ((u64(*)(ReflectModule*))_vt[0x68/8])(this); }
     void set_team_no(u64 p1) { ((void(*)(ReflectModule*,u64))_vt[0x70/8])(this,p1); }
 
     // -- Multipliers (0x78-0xa0) --

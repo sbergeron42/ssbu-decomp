@@ -1,5 +1,6 @@
 #include "types.h"
 #include "app/BattleObjectModuleAccessor.h"
+#include "app/modules/ReflectModule.h"
 
 // MEDIUM-tier FUN_* functions — 0x7102 address range, batch e3-025
 // PostureModule 0x710206af80–0x710206b120, ReflectModule 0x710206ed10–0x710206ed80
@@ -185,73 +186,65 @@ void FUN_710206b120(u64 a, u64 p1) {
 // ---- ReflectModule (accessor+0xf8) ----------------------------------------
 
 // 0x710206ed10 (16 bytes) — void, 0 int args, vtable[0x50]
-// ReflectModule no-arg dispatch via vtable slot 0x50/8 = 10
+// [derived: ReflectModule__reset_info_impl (.dynsym) -> slot 10 (0x50/8)]
 void FUN_710206ed10(u64 a) {
-    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(a);
-    // +0xf8 → reflect_module [derived: ReflectModule__*_impl (.dynsym) loads from accessor+0xf8]
-    u64 mod = reinterpret_cast<u64>(acc->reflect_module);
-    (**(void(**)(u64))(*(u64*)mod + 0x50))(mod);
+    app::ReflectModule* reflect = static_cast<app::ReflectModule*>(
+        reinterpret_cast<app::BattleObjectModuleAccessor*>(a)->reflect_module);
+    reflect->reset_info();
 }
 
 // 0x710206ed20 (16 bytes) — u64 return, 0 int args, vtable[0x58]
-// ReflectModule u64 query via vtable slot 0x58/8 = 11
+// [derived: ReflectModule__object_id_impl (.dynsym) -> slot 11 (0x58/8)]
 u64 FUN_710206ed20(u64 a) {
-    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(a);
-    // +0xf8 → reflect_module [derived: ReflectModule__*_impl (.dynsym) loads from accessor+0xf8]
-    u64 mod = reinterpret_cast<u64>(acc->reflect_module);
-    return (**(u64(**)(u64))(*(u64*)mod + 0x58))(mod);
+    app::ReflectModule* reflect = static_cast<app::ReflectModule*>(
+        reinterpret_cast<app::BattleObjectModuleAccessor*>(a)->reflect_module);
+    return reflect->object_id();
 }
 
 // 0x710206ed30 (16 bytes) — void, 1 int arg (hash), vtable[0x60]
-// ReflectModule dispatch with hash arg via vtable slot 0x60/8 = 12
+// [derived: ReflectModule__set_object_id_impl (.dynsym) -> slot 12 (0x60/8)]
 void FUN_710206ed30(u64 a, u64 p1) {
-    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(a);
-    // +0xf8 → reflect_module [derived: ReflectModule__*_impl (.dynsym) loads from accessor+0xf8]
-    u64 mod = reinterpret_cast<u64>(acc->reflect_module);
-    (**(void(**)(u64,u64))(*(u64*)mod + 0x60))(mod, p1);
+    app::ReflectModule* reflect = static_cast<app::ReflectModule*>(
+        reinterpret_cast<app::BattleObjectModuleAccessor*>(a)->reflect_module);
+    reflect->set_object_id(p1);
 }
 
 // 0x710206ed40 (16 bytes) — u64 return, 0 int args, vtable[0x68]
-// ReflectModule u64 query via vtable slot 0x68/8 = 13
+// [derived: ReflectModule__team_no_impl (.dynsym) -> slot 13 (0x68/8)]
 u64 FUN_710206ed40(u64 a) {
-    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(a);
-    // +0xf8 → reflect_module [derived: ReflectModule__*_impl (.dynsym) loads from accessor+0xf8]
-    u64 mod = reinterpret_cast<u64>(acc->reflect_module);
-    return (**(u64(**)(u64))(*(u64*)mod + 0x68))(mod);
+    app::ReflectModule* reflect = static_cast<app::ReflectModule*>(
+        reinterpret_cast<app::BattleObjectModuleAccessor*>(a)->reflect_module);
+    return reflect->team_no();
 }
 
 // 0x710206ed50 (16 bytes) — void, 1 int arg, vtable[0x70]
-// ReflectModule dispatch with int arg via vtable slot 0x70/8 = 14
+// [derived: ReflectModule__set_team_no_impl (.dynsym) -> slot 14 (0x70/8)]
 void FUN_710206ed50(u64 a, u64 p1) {
-    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(a);
-    // +0xf8 → reflect_module [derived: ReflectModule__*_impl (.dynsym) loads from accessor+0xf8]
-    u64 mod = reinterpret_cast<u64>(acc->reflect_module);
-    (**(void(**)(u64,u64))(*(u64*)mod + 0x70))(mod, p1);
+    app::ReflectModule* reflect = static_cast<app::ReflectModule*>(
+        reinterpret_cast<app::BattleObjectModuleAccessor*>(a)->reflect_module);
+    reflect->set_team_no(p1);
 }
 
 // 0x710206ed60 (16 bytes) — float return, 0 int args, vtable[0x78]
-// ReflectModule float query via vtable slot 0x78/8 = 15
+// [derived: ReflectModule__attack_mul_impl (.dynsym) -> slot 15 (0x78/8)]
 float FUN_710206ed60(u64 a) {
-    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(a);
-    // +0xf8 → reflect_module [derived: ReflectModule__*_impl (.dynsym) loads from accessor+0xf8]
-    u64 mod = reinterpret_cast<u64>(acc->reflect_module);
-    return (**(float(**)(u64))(*(u64*)mod + 0x78))(mod);
+    app::ReflectModule* reflect = static_cast<app::ReflectModule*>(
+        reinterpret_cast<app::BattleObjectModuleAccessor*>(a)->reflect_module);
+    return reflect->attack_mul();
 }
 
 // 0x710206ed70 (16 bytes) — void, 0 int args (float via SIMD), vtable[0x80]
-// ReflectModule no-arg dispatch via vtable slot 0x80/8 = 16
+// [derived: ReflectModule__set_attack_mul_impl (.dynsym) -> slot 16 (0x80/8)]
 void FUN_710206ed70(u64 a) {
-    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(a);
-    // +0xf8 → reflect_module [derived: ReflectModule__*_impl (.dynsym) loads from accessor+0xf8]
-    u64 mod = reinterpret_cast<u64>(acc->reflect_module);
-    (**(void(**)(u64))(*(u64*)mod + 0x80))(mod);
+    app::ReflectModule* reflect = static_cast<app::ReflectModule*>(
+        reinterpret_cast<app::BattleObjectModuleAccessor*>(a)->reflect_module);
+    reflect->set_attack_mul();
 }
 
 // 0x710206ed80 (16 bytes) — float return, 0 int args, vtable[0x88]
-// ReflectModule float query via vtable slot 0x88/8 = 17
+// [derived: ReflectModule__speed_mul_impl (.dynsym) -> slot 17 (0x88/8)]
 float FUN_710206ed80(u64 a) {
-    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(a);
-    // +0xf8 → reflect_module [derived: ReflectModule__*_impl (.dynsym) loads from accessor+0xf8]
-    u64 mod = reinterpret_cast<u64>(acc->reflect_module);
-    return (**(float(**)(u64))(*(u64*)mod + 0x88))(mod);
+    app::ReflectModule* reflect = static_cast<app::ReflectModule*>(
+        reinterpret_cast<app::BattleObjectModuleAccessor*>(a)->reflect_module);
+    return reflect->speed_mul();
 }
