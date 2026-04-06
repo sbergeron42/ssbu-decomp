@@ -1,5 +1,6 @@
 #include "types.h"
 #include "app/BattleObjectModuleAccessor.h"
+#include "app/modules/PostureModule.h"
 
 // MEDIUM-tier FUN_* functions — 0x7102 address range, batch e3-025
 // PostureModule 0x710206af80–0x710206b120, ReflectModule 0x710206ed10–0x710206ed80
@@ -8,178 +9,163 @@ extern "C" u64 FUN_71038f4000(u64, int, int);
 
 // ---- PostureModule (accessor+0x38) — rot_x/y/z component extractors -------
 
-// 0x710206af80 (36 bytes) — float return (rot.x), vtable[0xd8]
-// PostureModule rot() → extract x-component: blr + ldr s0,[x0]
+// 0x710206af80 (36 bytes) — PostureModule__rot_x_impl (.dynsym)
+// Calls rot() → extract x-component of rotation vector
 float FUN_710206af80(u64 a) {
-    // +0x38 → posture_module [derived: PostureModule__*_impl (.dynsym) loads from accessor+0x38]
-    // Note: inline cast required — local acc variable shifts prologue scheduling in non-leaf functions
-    u64 mod = reinterpret_cast<u64>(reinterpret_cast<app::BattleObjectModuleAccessor*>(a)->posture_module);
-    u64 rot = (**(u64(**)(u64))(*(u64*)mod + 0xd8))(mod);
-    return *(float*)rot;
+    // [derived: PostureModule__rot_impl (.dynsym) → slot 27 (0xd8/8), returns f32*]
+    app::PostureModule* posture = static_cast<app::PostureModule*>(
+        reinterpret_cast<app::BattleObjectModuleAccessor*>(a)->posture_module);
+    f32* rot = posture->rot();
+    return rot[0];
 }
 
-// 0x710206afb0 (36 bytes) — float return (rot.y), vtable[0xd8]
-// PostureModule rot() → extract y-component: blr + ldr s0,[x0,#4]
+// 0x710206afb0 (36 bytes) — PostureModule__rot_y_impl (.dynsym)
+// Calls rot() → extract y-component of rotation vector
 float FUN_710206afb0(u64 a) {
-    // +0x38 → posture_module [derived: PostureModule__*_impl (.dynsym) loads from accessor+0x38]
-    u64 mod = reinterpret_cast<u64>(reinterpret_cast<app::BattleObjectModuleAccessor*>(a)->posture_module);
-    u64 rot = (**(u64(**)(u64))(*(u64*)mod + 0xd8))(mod);
-    return *((float*)rot + 1);
+    app::PostureModule* posture = static_cast<app::PostureModule*>(
+        reinterpret_cast<app::BattleObjectModuleAccessor*>(a)->posture_module);
+    f32* rot = posture->rot();
+    return rot[1];
 }
 
-// 0x710206afe0 (36 bytes) — float return (rot.z), vtable[0xd8]
-// PostureModule rot() → extract z-component: blr + ldr s0,[x0,#8]
+// 0x710206afe0 (36 bytes) — PostureModule__rot_z_impl (.dynsym)
+// Calls rot() → extract z-component of rotation vector
 float FUN_710206afe0(u64 a) {
-    // +0x38 → posture_module [derived: PostureModule__*_impl (.dynsym) loads from accessor+0x38]
-    u64 mod = reinterpret_cast<u64>(reinterpret_cast<app::BattleObjectModuleAccessor*>(a)->posture_module);
-    u64 rot = (**(u64(**)(u64))(*(u64*)mod + 0xd8))(mod);
-    return *((float*)rot + 2);
+    app::PostureModule* posture = static_cast<app::PostureModule*>(
+        reinterpret_cast<app::BattleObjectModuleAccessor*>(a)->posture_module);
+    f32* rot = posture->rot();
+    return rot[2];
 }
 
 // ---- PostureModule (accessor+0x38) — continued ----------------------------
 
-// 0x710206b010 (16 bytes) — void, 2 int args, vtable[0xe0]
-// PostureModule dispatch with 2 args via vtable slot 0xe0/8 = 28
+// 0x710206b010 (16 bytes) — PostureModule__set_rot_impl (.dynsym)
+// [derived: set_rot → slot 28 (0xe0/8)]
 void FUN_710206b010(u64 a, u64 p1, u64 p2) {
-    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(a);
-    // +0x38 → posture_module [derived: PostureModule__*_impl (.dynsym) loads from accessor+0x38]
-    u64 mod = reinterpret_cast<u64>(acc->posture_module);
-    (**(void(**)(u64,u64,u64))(*(u64*)mod + 0xe0))(mod, p1, p2);
+    app::PostureModule* posture = static_cast<app::PostureModule*>(
+        reinterpret_cast<app::BattleObjectModuleAccessor*>(a)->posture_module);
+    posture->set_rot(p1, p2);
 }
 
-// 0x710206b020 (16 bytes) — void, 0 int args, vtable[0xe8]
-// PostureModule no-arg dispatch via vtable slot 0xe8/8 = 29
+// 0x710206b020 (16 bytes) — PostureModule__init_rot_y_lr_impl (.dynsym)
+// [derived: init_rot_y_lr → slot 29 (0xe8/8)]
 void FUN_710206b020(u64 a) {
-    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(a);
-    // +0x38 → posture_module [derived: PostureModule__*_impl (.dynsym) loads from accessor+0x38]
-    u64 mod = reinterpret_cast<u64>(acc->posture_module);
-    (**(void(**)(u64))(*(u64*)mod + 0xe8))(mod);
+    app::PostureModule* posture = static_cast<app::PostureModule*>(
+        reinterpret_cast<app::BattleObjectModuleAccessor*>(a)->posture_module);
+    posture->init_rot_y_lr();
 }
 
-// 0x710206b030 (16 bytes) — bool return, 0 int args, vtable[0xf0]
-// PostureModule bool query via vtable slot 0xf0/8 = 30
-u32 FUN_710206b030(u64 a) {
-    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(a);
-    // +0x38 → posture_module [derived: PostureModule__*_impl (.dynsym) loads from accessor+0x38]
-    u64 mod = reinterpret_cast<u64>(acc->posture_module);
-    return (**(u32(**)(u64))(*(u64*)mod + 0xf0))(mod);
+// 0x710206b030 (16 bytes) — PostureModule__is_rot_y_lr_different_inner_lr_impl (.dynsym)
+// [derived: is_rot_y_lr_different_inner_lr → slot 30 (0xf0/8)]
+bool FUN_710206b030(u64 a) {
+    app::PostureModule* posture = static_cast<app::PostureModule*>(
+        reinterpret_cast<app::BattleObjectModuleAccessor*>(a)->posture_module);
+    return posture->is_rot_y_lr_different_inner_lr();
 }
 
-// 0x710206b040 (16 bytes) — float return, 0 int args, vtable[0xf8]
-// PostureModule float query via vtable slot 0xf8/8 = 31
+// 0x710206b040 (16 bytes) — PostureModule__rot_y_lr_impl (.dynsym)
+// [derived: rot_y_lr → slot 31 (0xf8/8)]
 float FUN_710206b040(u64 a) {
-    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(a);
-    // +0x38 → posture_module [derived: PostureModule__*_impl (.dynsym) loads from accessor+0x38]
-    u64 mod = reinterpret_cast<u64>(acc->posture_module);
-    return (**(float(**)(u64))(*(u64*)mod + 0xf8))(mod);
+    app::PostureModule* posture = static_cast<app::PostureModule*>(
+        reinterpret_cast<app::BattleObjectModuleAccessor*>(a)->posture_module);
+    return posture->rot_y_lr();
 }
 
-// 0x710206b050 (16 bytes) — void, 0 int args, vtable[0x100]
-// PostureModule no-arg dispatch via vtable slot 0x100/8 = 32
+// 0x710206b050 (16 bytes) — PostureModule__update_rot_y_lr_impl (.dynsym)
+// [derived: update_rot_y_lr → slot 32 (0x100/8)]
 void FUN_710206b050(u64 a) {
-    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(a);
-    // +0x38 → posture_module [derived: PostureModule__*_impl (.dynsym) loads from accessor+0x38]
-    u64 mod = reinterpret_cast<u64>(acc->posture_module);
-    (**(void(**)(u64))(*(u64*)mod + 0x100))(mod);
+    app::PostureModule* posture = static_cast<app::PostureModule*>(
+        reinterpret_cast<app::BattleObjectModuleAccessor*>(a)->posture_module);
+    posture->update_rot_y_lr();
 }
 
-// 0x710206b060 (16 bytes) — void, 0 int args, vtable[0x108]
-// PostureModule no-arg dispatch via vtable slot 0x108/8 = 33
+// 0x710206b060 (16 bytes) — PostureModule__reverse_rot_y_lr_impl (.dynsym)
+// [derived: reverse_rot_y_lr → slot 33 (0x108/8)]
 void FUN_710206b060(u64 a) {
-    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(a);
-    // +0x38 → posture_module [derived: PostureModule__*_impl (.dynsym) loads from accessor+0x38]
-    u64 mod = reinterpret_cast<u64>(acc->posture_module);
-    (**(void(**)(u64))(*(u64*)mod + 0x108))(mod);
+    app::PostureModule* posture = static_cast<app::PostureModule*>(
+        reinterpret_cast<app::BattleObjectModuleAccessor*>(a)->posture_module);
+    posture->reverse_rot_y_lr();
 }
 
-// 0x710206b070 (16 bytes) — float return, 0 int args, vtable[0x110]
-// PostureModule float query via vtable slot 0x110/8 = 34
+// 0x710206b070 (16 bytes) — PostureModule__base_scale_impl (.dynsym)
+// [derived: base_scale → slot 34 (0x110/8)]
 float FUN_710206b070(u64 a) {
-    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(a);
-    // +0x38 → posture_module [derived: PostureModule__*_impl (.dynsym) loads from accessor+0x38]
-    u64 mod = reinterpret_cast<u64>(acc->posture_module);
-    return (**(float(**)(u64))(*(u64*)mod + 0x110))(mod);
+    app::PostureModule* posture = static_cast<app::PostureModule*>(
+        reinterpret_cast<app::BattleObjectModuleAccessor*>(a)->posture_module);
+    return posture->base_scale();
 }
 
-// 0x710206b080 (16 bytes) — float return, 0 int args, vtable[0x118]
-// PostureModule float query via vtable slot 0x118/8 = 35
-float FUN_710206b080(u64 a) {
-    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(a);
-    // +0x38 → posture_module [derived: PostureModule__*_impl (.dynsym) loads from accessor+0x38]
-    u64 mod = reinterpret_cast<u64>(acc->posture_module);
-    return (**(float(**)(u64))(*(u64*)mod + 0x118))(mod);
+// 0x710206b080 (16 bytes) — PostureModule__scale_impl (.dynsym)
+// [derived: scale → slot 35 (0x118/8)]
+// scale() returns void* in vtable; tail call passes return through regardless of type
+void* FUN_710206b080(u64 a) {
+    app::PostureModule* posture = static_cast<app::PostureModule*>(
+        reinterpret_cast<app::BattleObjectModuleAccessor*>(a)->posture_module);
+    return posture->scale();
 }
 
-// 0x710206b090 (20 bytes) — void, p1=bool, vtable[0x120]
-// PostureModule bool setter via vtable slot 0x120/8 = 36
+// 0x710206b090 (20 bytes) — PostureModule__set_scale_impl (.dynsym)
+// [derived: set_scale → slot 36 (0x120/8)]
 void FUN_710206b090(u64 a, u32 p1) {
-    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(a);
-    // +0x38 → posture_module [derived: PostureModule__*_impl (.dynsym) loads from accessor+0x38]
-    u64 mod = reinterpret_cast<u64>(acc->posture_module);
-    (**(void(**)(u64,u32))(*(u64*)mod + 0x120))(mod, p1 & 1);
+    app::PostureModule* posture = static_cast<app::PostureModule*>(
+        reinterpret_cast<app::BattleObjectModuleAccessor*>(a)->posture_module);
+    posture->set_scale(p1 & 1);
 }
 
-// 0x710206b0b0 (16 bytes) — void, 0 int args (hash via other regs), vtable[0x130]
-// PostureModule no-arg dispatch via vtable slot 0x130/8 = 38
+// 0x710206b0b0 (16 bytes) — PostureModule__set_scale_status_impl (.dynsym)
+// [derived: set_scale_status → slot 38 (0x130/8)]
 void FUN_710206b0b0(u64 a) {
-    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(a);
-    // +0x38 → posture_module [derived: PostureModule__*_impl (.dynsym) loads from accessor+0x38]
-    u64 mod = reinterpret_cast<u64>(acc->posture_module);
-    (**(void(**)(u64))(*(u64*)mod + 0x130))(mod);
+    app::PostureModule* posture = static_cast<app::PostureModule*>(
+        reinterpret_cast<app::BattleObjectModuleAccessor*>(a)->posture_module);
+    posture->set_scale_status();
 }
 
-// 0x710206b0c0 (16 bytes) — void, 0 int args, vtable[0x138]
-// PostureModule no-arg dispatch via vtable slot 0x138/8 = 39
+// 0x710206b0c0 (16 bytes) — PostureModule__init_scale_impl (.dynsym)
+// [derived: init_scale → slot 39 (0x138/8)]
 void FUN_710206b0c0(u64 a) {
-    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(a);
-    // +0x38 → posture_module [derived: PostureModule__*_impl (.dynsym) loads from accessor+0x38]
-    u64 mod = reinterpret_cast<u64>(acc->posture_module);
-    (**(void(**)(u64))(*(u64*)mod + 0x138))(mod);
+    app::PostureModule* posture = static_cast<app::PostureModule*>(
+        reinterpret_cast<app::BattleObjectModuleAccessor*>(a)->posture_module);
+    posture->init_scale();
 }
 
-// 0x710206b0d0 (16 bytes) — float return, 0 int args, vtable[0x140]
-// PostureModule float query via vtable slot 0x140/8 = 40
+// 0x710206b0d0 (16 bytes) — PostureModule__owner_scale_impl (.dynsym)
+// [derived: owner_scale → slot 40 (0x140/8)]
 float FUN_710206b0d0(u64 a) {
-    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(a);
-    // +0x38 → posture_module [derived: PostureModule__*_impl (.dynsym) loads from accessor+0x38]
-    u64 mod = reinterpret_cast<u64>(acc->posture_module);
-    return (**(float(**)(u64))(*(u64*)mod + 0x140))(mod);
+    app::PostureModule* posture = static_cast<app::PostureModule*>(
+        reinterpret_cast<app::BattleObjectModuleAccessor*>(a)->posture_module);
+    return posture->owner_scale();
 }
 
-// 0x710206b0e0 (16 bytes) — void, 0 int args, vtable[0x148]
-// PostureModule no-arg dispatch via vtable slot 0x148/8 = 41
+// 0x710206b0e0 (16 bytes) — PostureModule__set_owner_scale_impl (.dynsym)
+// [derived: set_owner_scale → slot 41 (0x148/8)]
 void FUN_710206b0e0(u64 a) {
-    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(a);
-    // +0x38 → posture_module [derived: PostureModule__*_impl (.dynsym) loads from accessor+0x38]
-    u64 mod = reinterpret_cast<u64>(acc->posture_module);
-    (**(void(**)(u64))(*(u64*)mod + 0x148))(mod);
+    app::PostureModule* posture = static_cast<app::PostureModule*>(
+        reinterpret_cast<app::BattleObjectModuleAccessor*>(a)->posture_module);
+    posture->set_owner_scale();
 }
 
-// 0x710206b0f0 (20 bytes) — void, p1=bool, vtable[0x150]
-// PostureModule bool setter via vtable slot 0x150/8 = 42
+// 0x710206b0f0 (20 bytes) — PostureModule__set_link_scale_impl (.dynsym)
+// [derived: set_link_scale → slot 42 (0x150/8)]
 void FUN_710206b0f0(u64 a, u32 p1) {
-    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(a);
-    // +0x38 → posture_module [derived: PostureModule__*_impl (.dynsym) loads from accessor+0x38]
-    u64 mod = reinterpret_cast<u64>(acc->posture_module);
-    (**(void(**)(u64,u32))(*(u64*)mod + 0x150))(mod, p1 & 1);
+    app::PostureModule* posture = static_cast<app::PostureModule*>(
+        reinterpret_cast<app::BattleObjectModuleAccessor*>(a)->posture_module);
+    posture->set_link_scale(p1 & 1);
 }
 
-// 0x710206b110 (16 bytes) — void, 0 int args, vtable[0x178]
-// PostureModule no-arg dispatch via vtable slot 0x178/8 = 47
+// 0x710206b110 (16 bytes) — PostureModule__set_stick_lr_impl (.dynsym)
+// [derived: set_stick_lr → slot 47 (0x178/8)]
 void FUN_710206b110(u64 a) {
-    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(a);
-    // +0x38 → posture_module [derived: PostureModule__*_impl (.dynsym) loads from accessor+0x38]
-    u64 mod = reinterpret_cast<u64>(acc->posture_module);
-    (**(void(**)(u64))(*(u64*)mod + 0x178))(mod);
+    app::PostureModule* posture = static_cast<app::PostureModule*>(
+        reinterpret_cast<app::BattleObjectModuleAccessor*>(a)->posture_module);
+    posture->set_stick_lr();
 }
 
-// 0x710206b120 (16 bytes) — void, 1 int arg, vtable[0x180]
-// PostureModule dispatch with int arg via vtable slot 0x180/8 = 48
+// 0x710206b120 (16 bytes) — PostureModule__set_sync_constraint_joint_impl (.dynsym)
+// [derived: set_sync_constraint_joint → slot 48 (0x180/8)]
 void FUN_710206b120(u64 a, u64 p1) {
-    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(a);
-    // +0x38 → posture_module [derived: PostureModule__*_impl (.dynsym) loads from accessor+0x38]
-    u64 mod = reinterpret_cast<u64>(acc->posture_module);
-    (**(void(**)(u64,u64))(*(u64*)mod + 0x180))(mod, p1);
+    app::PostureModule* posture = static_cast<app::PostureModule*>(
+        reinterpret_cast<app::BattleObjectModuleAccessor*>(a)->posture_module);
+    posture->set_sync_constraint_joint(p1);
 }
 
 // ---- ReflectModule (accessor+0xf8) ----------------------------------------
