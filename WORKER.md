@@ -28,6 +28,22 @@ If a function doesn't have a Ghidra export, try decompiling via MCP first. If MC
 python tools/compare_bytes.py FUN_name
 ```
 
+### Results
+- FUN_710374d270 — **SKIP**: scene/render update loop (5 object vectors via DAT_710593aa90)
+- FUN_7103757290 — **SKIP**: Mii renderer init (nn::mii::Database, MiiModelRenderer)
+- FUN_7103758f50 — **SKIP**: Mii model creation (0x388-byte alloc, 4 render passes)
+- **Replacement targets found**: FixedString<512> utilities at 0x71037c3f20/4550/4630
+  - Struct: char data[514] + u16 length at +0x202
+  - Functions throw std::out_of_range (requires -fexceptions)
+  - Loop bodies match structurally; NX Clang divergences: post-index load, AND mask
+
+### Additional resource service functions identified (future targets)
+- FUN_71037c3db0 (368 bytes) — ResServiceNX singleton path resolution wrapper
+- FUN_71037c4010 (1,344 bytes) — ResServiceNX singleton path resolution (4 params)
+- FUN_71037c5ff0 (2,288 bytes) — ResServiceNX singleton constructor
+- FUN_710353d5e0 (384 bytes) — copy_filepath_vector_from_loaded_directory
+- FUN_710353a8f0 (1,280 bytes) — filesystem entry scanner/resolver
+
 ### Rules
 - Output: src/resource/res_large_funcs.cpp
 - Use resource headers with derivation chains

@@ -1,0 +1,20 @@
+#pragma once
+namespace std {
+class exception {
+public:
+    exception() noexcept;
+    virtual ~exception() noexcept;
+    virtual const char* what() const noexcept;
+};
+class logic_error : public exception {
+    const char* __msg_;  // +0x08 — message string pointer [derived: sizeof=0x10 from __cxa_allocate_exception(0x10)]
+public:
+    explicit logic_error(const char*);
+    ~logic_error() noexcept override;
+};
+class out_of_range : public logic_error {
+public:
+    explicit out_of_range(const char*);
+    ~out_of_range() noexcept override;
+};
+}
