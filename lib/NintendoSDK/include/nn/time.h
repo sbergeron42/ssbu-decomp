@@ -80,7 +80,5 @@ bool IsValidDate(int year, int month, int day);
 int GetDayOfWeek(int year, int month, int day);
 CalendarTime ToCalendarTimeInUtc(const PosixTime&);
 PosixTime ToPosixTimeFromUtc(const CalendarTime&);
-int IsValidDate(int year, int month, int day);
-int GetDayOfWeek(int year, int month, int day);
 }  // namespace time
 }  // namespace nn
