@@ -21,6 +21,13 @@ Pick up where the previous round left off.
 python tools/compare_bytes.py FUN_name
 ```
 
+### Derivation Chains (MANDATORY)
+Every function and every struct field MUST have provenance:
+- `// jemalloc 5.1.0: arena.c:1234` — exact upstream source file and line
+- `[derived: jemalloc 5.1.0 upstream]` — for fields matching upstream exactly
+- `[inferred: Nintendo delta, not in upstream 5.1.0]` — for any Nintendo-specific modifications
+- If a function doesn't match upstream, document WHAT differs and WHY
+
 ### Rules
 - ONLY create src/lib/jemalloc_e2_*.cpp
 - Use upstream jemalloc field names
