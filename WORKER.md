@@ -1,54 +1,45 @@
-# Worker: pool-d
+# Worker: pool-c
 
 ## Model: Opus
 
-## Task: Resource service decomp — small functions (<1,000 bytes)
+## Task: Resource service decomp — medium functions (1,000–14,000 bytes)
 
-Decomp the smaller resource service helper functions using the ARCropolis type headers.
+Decomp the mid-size resource service functions using the ARCropolis type headers.
 
 ### Target Functions
-- `GlobalParameter` (0x7103756640) — 896 bytes (already named)
-- `FUN_7103754ef0` — 624 bytes
-- `FUN_7103755a50` — 608 bytes
-- `FUN_7103754c70` — 480 bytes
-- `FUN_710375f480` — 464 bytes
-- `FUN_710375db40` — 3,888 bytes
-- `FUN_710375f650` — 3,840 bytes
-- `deal_with_inputs?` (0x710375ea70) — 2,576 bytes
-- Plus any remaining small functions in 0x710373e000–0x7103760000
+- `FUN_710375a630` — 13,584 bytes
+- `FUN_710374d270` — 8,432 bytes (called from main_loop)
+- `FUN_7103757290` — 7,056 bytes
+- `FUN_7103758f50` — 5,520 bytes
+- `FUN_7103755cb0` — 2,448 bytes
+- `set_format` (0x7103755390) — 1,728 bytes (already named)
+- `FUN_7103753fc0` — 1,344 bytes
+- `FUN_7103741520` — 1,136 bytes
 
 ### Type Headers Available
 - `include/resource/ResServiceNX.h` — ResServiceNX struct
 - `include/resource/LoadedArc.h` — ARC archive structures
 - `include/resource/containers.h` — CppVector, ResList, ListNode, LoadInfo
 
+### Results
+- `FUN_7103741520` (get_language_index) — **VERIFIED MATCH** (100% modulo relocations)
+- `set_format` (0x7103755390) — **COMPILED**, body matches, prologue divergence (NX Clang fork)
+- `FUN_7103753fc0` — SKIPPED: compiler-generated singleton init, not resource service
+- `FUN_7103755cb0` — SKIPPED: 100 unrolled memcpy for nn::friends::Profile init
+- `FUN_7103758f50` — SKIPPED: graphics rendering setup with exclusive monitors
+- `FUN_7103757290` — SKIPPED: Mii renderer init (nn::mii::Database)
+- `FUN_710374d270` — SKIPPED: graphics rendering update loop
+- `FUN_710375a630` — SKIPPED: massive singleton init (13,584 bytes)
+
+**Note:** 6/8 assigned targets were not resource service functions — they were selected by address proximity, not module affinity. Only get_language_index and set_format are resource-service related.
+
 ### Approach
-1. Start with the smallest functions — these are likely helpers/accessors that reveal struct patterns
-2. Decompile in Ghidra, identify which resource structs they access
+1. Decompile each function in Ghidra
+2. Identify which ResServiceNX/FilesystemInfo/LoadedArc fields it accesses
 3. Write C++ using the resource headers
-4. Use insights from small functions to help understand larger ones
+4. Start with smaller functions and work up
 
-### Completed
-- `FUN_7103754c70` (480 bytes) — `get_desired_language`: 80% match (prologue sched + reloc only)
-  Maps nn::settings::LanguageCode → Language via linear scan of 17 entries. Default: English.
-
-### Range Analysis
-The 0x710373e000–0x7103760000 range is NOT exclusively resource-service code. It contains:
-- **Language/locale utilities**: FUN_7103754c70 (done), FUN_7103741520 (game language mapper)
-- **Date/time bitfield packers**: FUN_7103741160/1260/1330/1410 (nn::time SDK)
-- **Web/UI helpers**: FUN_7103755160/5270 (nn::web SDK, offline HTML pages)
-- **Friends/account**: FUN_7103755a50, GlobalParameter (nn::friends, nn::account)
-- **Mii database**: FUN_7103758e20, FUN_7103757140
-- **Font/glyph loading**: FUN_710375f650 (3840 bytes, very complex)
-- **Game loop/input**: FUN_710375ea70 (2576 bytes, vtable-heavy)
-- **Engine init**: FUN_7103753fc0 (singleton init with exclusive monitors)
-- **ResServiceNX init**: FUN_710374f360 (19,552 bytes — too large)
-
-Only FUN_710375f650 and FUN_710374f360 directly operate on ResServiceNX fields.
-Most "small" functions need engine types (nu::*, cross2app) or have matching challenges
-(prologue scheduling, switch tables, bitfield instruction selection).
-
-### Output: src/resource/res_helpers.cpp
+### Output: src/resource/res_service_funcs.cpp
 
 ### Quick Reference
 ```
@@ -58,6 +49,6 @@ python tools/compare_bytes.py FUN_name
 ```
 
 ### Rules
-- CAN create: src/resource/res_helpers.cpp, and edit include/resource/*.h if needed
+- CAN create: src/resource/res_service_funcs.cpp, and edit include/resource/*.h if needed
 - Use ARCropolis field names with [derived: ARCropolis] provenance
 - 3-attempt limit per function
