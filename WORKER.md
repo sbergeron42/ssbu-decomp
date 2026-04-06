@@ -21,6 +21,18 @@ Decomp the mid-size resource service functions using the ARCropolis type headers
 - `include/resource/LoadedArc.h` — ARC archive structures
 - `include/resource/containers.h` — CppVector, ResList, ListNode, LoadInfo
 
+### Results
+- `FUN_7103741520` (get_language_index) — **VERIFIED MATCH** (100% modulo relocations)
+- `set_format` (0x7103755390) — **COMPILED**, body matches, prologue divergence (NX Clang fork)
+- `FUN_7103753fc0` — SKIPPED: compiler-generated singleton init, not resource service
+- `FUN_7103755cb0` — SKIPPED: 100 unrolled memcpy for nn::friends::Profile init
+- `FUN_7103758f50` — SKIPPED: graphics rendering setup with exclusive monitors
+- `FUN_7103757290` — SKIPPED: Mii renderer init (nn::mii::Database)
+- `FUN_710374d270` — SKIPPED: graphics rendering update loop
+- `FUN_710375a630` — SKIPPED: massive singleton init (13,584 bytes)
+
+**Note:** 6/8 assigned targets were not resource service functions — they were selected by address proximity, not module affinity. Only get_language_index and set_format are resource-service related.
+
 ### Approach
 1. Decompile each function in Ghidra
 2. Identify which ResServiceNX/FilesystemInfo/LoadedArc fields it accesses
