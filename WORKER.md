@@ -1,34 +1,20 @@
-# Worker: pool-e
+# Worker: pool-b
 
 ## Model: Opus
 
-## Task: Resource service decomp — engine init + main_loop helpers
-
-Decomp the engine initialization chain and main_loop related functions.
+## Task: Resource service — medium functions + inflate chain
 
 ### Target Functions
-- `FUN_710373e080` — 10,240 bytes (early init, before resource service)
-- `FUN_7103740880` — 1,936 bytes
-- `FUN_71037569c0` — 1,920 bytes
-- `start_prepo_report` (0x710375f650) — if not taken by pool-d
-- Any remaining functions in 0x710373e000–0x7103745000
+- `FUN_7103753fc0` — 1,344 bytes (singleton init)
+- `FUN_7103755cb0` — 2,448 bytes (friends profile init)
+- `deal_with_inputs?` (0x710375ea70) — 2,576 bytes
+- `inflate` (0x710002c1f0) — 5,936 bytes (zlib core inflate function)
+- `zlib_unencode` (0x71000281d0) — 576 bytes
 
-### Type Headers Available
-- `include/resource/ResServiceNX.h` — ResServiceNX struct
-- `include/resource/LoadedArc.h` — ARC archive structures
-- `include/resource/containers.h` — CppVector, ResList, ListNode, LoadInfo
+The `inflate` function is the zlib decompression core used by ResInflateThread. It's open-source (zlib), so match against known zlib source like we did with jemalloc.
 
-### Key Context
-- main_loop is at 0x7103747270 (24,576 bytes) — DO NOT attempt this function, it's too large for one session
-- Focus on the helper functions that main_loop calls
-- FUN_710373e080 may be early engine init (before resource service)
-
-### Approach
-1. Decompile in Ghidra, identify what each function initializes or manages
-2. Map to resource service structs where applicable
-3. Write C++ using the headers
-
-### Output: src/resource/engine_init.cpp
+### Headers
+- `include/resource/ResServiceNX.h`, `include/resource/LoadedArc.h`, `include/resource/containers.h`
 
 ### Quick Reference
 ```
@@ -37,8 +23,15 @@ Decomp the engine initialization chain and main_loop related functions.
 python tools/compare_bytes.py FUN_name
 ```
 
+### Derivation Chains (MANDATORY)
+Every function and every struct field MUST have provenance:
+- For zlib: `// zlib 1.2.11: inflate.c:1234` — exact upstream file and line
+- For resource funcs: `[derived: ARCropolis field_name]` or `[inferred: pattern description]`
+- For SDK functions: `[derived: nn::prepo/friends/account SDK call]`
+- Any offset like `+0x10`, `+0x68` MUST get a confidence tag — no bare offsets
+
 ### Rules
-- CAN create: src/resource/engine_init.cpp, and edit include/resource/*.h if needed
-- Use ARCropolis field names with [derived: ARCropolis] provenance
+- Output: src/resource/res_medium_funcs.cpp (resource), src/lib/zlib_inflate.cpp (zlib)
+- For zlib: use upstream source with `// zlib: inflate.c:line` provenance
+- For resource funcs: use resource headers with derivation chains
 - 3-attempt limit per function
-- Do NOT attempt main_loop (0x7103747270) — too large
