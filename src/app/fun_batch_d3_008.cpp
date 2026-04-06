@@ -3,7 +3,7 @@
 #define HIDDEN __attribute__((visibility("hidden")))
 
 // MEDIUM-tier FUN_* functions — 0x7100 address range, batch d3-008
-// Pool-d worker: auto-generated from Ghidra decompilation
+// Networking: NEX error mapping, type guards, byte-swap, ctor
 
 // ---- External declarations -----------------------------------------------
 
@@ -23,147 +23,147 @@ extern void FUN_71001b4200(u64, u32 *);
 // ---- Functions ---------------------------------------------------------------
 
 // 0x71000f20e0 — ctor: parent init, clear 5 fields, set vtable (80 bytes)
-void FUN_71000f20e0(s64 *param_1)
+void FUN_71000f20e0(s64 *self)
 {
-    u64 uVar1;
+    u64 vtable_base;
 
     FUN_710013e590();
-    uVar1 = PTR_DAT_71052a4180;
-    *(u32 *)(param_1 + 0x2d) = 0;
-    param_1[0x27] = 0;
-    param_1[0x28] = 0;
-    param_1[0x29] = 0;
-    param_1[0x2a] = 0;
-    *param_1 = (s64)(uVar1 + 0x10);
-    *(u8 *)((s64)param_1 + 0x16c) = 0;
-    param_1[0x2e] = 0;
+    vtable_base = PTR_DAT_71052a4180;
+    *(u32 *)(self + 0x2d) = 0;
+    self[0x27] = 0;
+    self[0x28] = 0;
+    self[0x29] = 0;
+    self[0x2a] = 0;
+    *self = (s64)(vtable_base + 0x10);
+    *(u8 *)((s64)self + 0x16c) = 0;
+    self[0x2e] = 0;
 }
 
 // 0x71002280d0 — bswap64: byte-swap both 32-bit halves via FUN_7100227700 (48 bytes)
-u64 FUN_71002280d0(u64 param_1)
+u64 FUN_71002280d0(u64 value)
 {
-    s64 lVar1;
-    u64 uVar2;
+    s64 hi_swapped;
+    u64 lo_swapped;
 
-    lVar1 = FUN_7100227700((u32)param_1);
-    uVar2 = FUN_7100227700(param_1 >> 0x20);
-    return uVar2 & 0xffffffff | lVar1 << 0x20;
+    hi_swapped = FUN_7100227700((u32)value);
+    lo_swapped = FUN_7100227700(value >> 0x20);
+    return lo_swapped & 0xffffffff | hi_swapped << 0x20;
 }
 
 // 0x7100246338 — delegate: forward to FUN_71001d0c80 with field at +0x90 (32 bytes)
-u64 FUN_7100246338(s64 param_1, u64 param_2, u64 param_3)
+u64 FUN_7100246338(s64 self, u64 conn, u64 packet)
 {
-    FUN_71001d0c80(param_3, param_1, *(u32 *)(param_1 + 0x90));
+    FUN_71001d0c80(packet, self, *(u32 *)(self + 0x90));
     return 1;
 }
 
 // 0x710024a610 — type guard: skip if +0x18 is "AuthenticationInfo", else delegate (64 bytes)
-u64 FUN_710024a610(u64 param_1, s64 param_2)
+u64 FUN_710024a610(u64 self, s64 type_info)
 {
-    u64 uVar1;
-    u64 uVar2;
+    u64 is_auth_info;
+    u64 result;
 
-    uVar1 = FUN_71001b4e00(*(u64 *)(param_2 + 0x18), "AuthenticationInfo");
-    if ((uVar1 & 1) != 0) {
+    is_auth_info = FUN_71001b4e00(*(u64 *)(type_info + 0x18), "AuthenticationInfo");
+    if ((is_auth_info & 1) != 0) {
         return 1;
     }
-    uVar2 = FUN_710022b360(param_1, param_2);
-    return uVar2;
+    result = FUN_710022b360(self, type_info);
+    return result;
 }
 
 // 0x7100255690 — type guard: skip if +0x18 is "MatchmakeSession", else delegate (64 bytes)
-u64 FUN_7100255690(u64 param_1, s64 param_2)
+u64 FUN_7100255690(u64 self, s64 type_info)
 {
-    u64 uVar1;
-    u64 uVar2;
+    u64 is_matchmake;
+    u64 result;
 
-    uVar1 = FUN_71001b4e00(*(u64 *)(param_2 + 0x18), "MatchmakeSession");
-    if ((uVar1 & 1) != 0) {
+    is_matchmake = FUN_71001b4e00(*(u64 *)(type_info + 0x18), "MatchmakeSession");
+    if ((is_matchmake & 1) != 0) {
         return 1;
     }
-    uVar2 = FUN_710024cc10(param_1, param_2);
-    return uVar2;
+    result = FUN_710024cc10(self, type_info);
+    return result;
 }
 
 // 0x7100256ac0 — type guard: skip if +0x18 is "PersistentGathering", else delegate (64 bytes)
-u64 FUN_7100256ac0(u64 param_1, s64 param_2)
+u64 FUN_7100256ac0(u64 self, s64 type_info)
 {
-    u64 uVar1;
-    u64 uVar2;
+    u64 is_persistent;
+    u64 result;
 
-    uVar1 = FUN_71001b4e00(*(u64 *)(param_2 + 0x18), "PersistentGathering");
-    if ((uVar1 & 1) != 0) {
+    is_persistent = FUN_71001b4e00(*(u64 *)(type_info + 0x18), "PersistentGathering");
+    if ((is_persistent & 1) != 0) {
         return 1;
     }
-    uVar2 = FUN_710024cc10(param_1, param_2);
-    return uVar2;
+    result = FUN_710024cc10(self, type_info);
+    return result;
 }
 
-// 0x7100282924 — delegate: forward param_1 and param_2+0x478 to FUN_71001b2f70 (32 bytes)
-void FUN_7100282924(u64 param_1, s64 param_2)
+// 0x7100282924 — delegate: forward self and ctx+0x478 to FUN_71001b2f70 (32 bytes)
+void FUN_7100282924(u64 self, s64 ctx)
 {
-    FUN_71001b2f70(param_1, param_2 + 0x478);
+    FUN_71001b2f70(self, ctx + 0x478);
 }
 
 // 0x71002a9850 — NEX error map: switch NEX code → result code, call FUN_71001b4200 (256 bytes)
-void FUN_71002a9850(u64 param_1, s64 param_2)
+void FUN_71002a9850(u64 self, s64 nex_code)
 {
-    u32 local_14;
+    u32 result_code;
 
-    switch (param_2) {
+    switch (nex_code) {
     case 0x24bb:
     case 0x24bc:
-        local_14 = 0x80720004;
+        result_code = 0x80720004;
         break;
     case 0x24bd:
-        local_14 = 0x80720006;
+        result_code = 0x80720006;
         break;
     case 0x24be:
-        local_14 = 0x80720005;
+        result_code = 0x80720005;
         break;
     case 0x24c0:
-        local_14 = 0x80720007;
+        result_code = 0x80720007;
         break;
     case 0x24c1:
-        local_14 = 0x8072000a;
+        result_code = 0x8072000a;
         break;
     case 0x24c3:
-        local_14 = 0x80720008;
+        result_code = 0x80720008;
         break;
     case 0x24c4:
-        local_14 = 0x80720009;
+        result_code = 0x80720009;
         break;
     case 0x24ca:
-        local_14 = 0x80720011;
+        result_code = 0x80720011;
         break;
     case 0x24cb:
-        local_14 = 0x80720014;
+        result_code = 0x80720014;
         break;
     case 0x24d4:
-        local_14 = 0x80720010;
+        result_code = 0x80720010;
         break;
     case 0x24ea:
-        local_14 = 0x80720012;
+        result_code = 0x80720012;
         break;
     case 0x251b:
-        local_14 = 0x8072000f;
+        result_code = 0x8072000f;
         break;
     case 0x251c:
-        local_14 = 0x8072000b;
+        result_code = 0x8072000b;
         break;
     case 0x251d:
-        local_14 = 0x8072000c;
+        result_code = 0x8072000c;
         break;
     case 0x2527:
-        local_14 = 0x8072000e;
+        result_code = 0x8072000e;
         break;
     default:
-        if (param_2 == 0x257f) {
-            local_14 = 0x8072000d;
+        if (nex_code == 0x257f) {
+            result_code = 0x8072000d;
             break;
         }
-        if (param_2 == 0) {
-            local_14 = 0x10001;
+        if (nex_code == 0) {
+            result_code = 0x10001;
             break;
         }
     case 0x24bf:
@@ -259,7 +259,7 @@ void FUN_71002a9850(u64 param_1, s64 param_2)
     case 0x2524:
     case 0x2525:
     case 0x2526:
-        local_14 = 0x80720001;
+        result_code = 0x80720001;
     }
-    FUN_71001b4200(param_1, &local_14);
+    FUN_71001b4200(self, &result_code);
 }
