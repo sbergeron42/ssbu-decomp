@@ -24,6 +24,8 @@ extern s64  DAT_7105331f18;
 // ---- Functions ---------------------------------------------------------------
 
 // 0x71035237f0 -- wrapper: FUN_71035231c0(*(param_2+0x20)), return 1 (32 bytes)
+// param_2 [inferred: context struct]
+//   +0x20 [inferred: sub-object pointer, passed to FUN_71035231c0]
 u64 FUN_71035237f0(u64 param_1, s64 param_2)
 {
     FUN_71035231c0(*(u64*)(param_2 + 0x20));
@@ -31,9 +33,16 @@ u64 FUN_71035237f0(u64 param_1, s64 param_2)
 }
 
 // 0x7103534380 -- double-deref vtable[0x110], return result != 1 (48 bytes)
+// param_2 [inferred: context struct]
+//   +0x20 [inferred: sub-object pointer (same pattern as FUN_71035237f0)]
+//   *(+0x20)+0x40 [inferred: nested object pointer, deref'd for vtable dispatch]
+//   vtable+0x110 [inferred: virtual method, result compared against 1]
 u8 FUN_7103534380(u64 param_1, s64 param_2)
 {
+    // +0x20 [inferred: sub-object pointer from context]
+    // +0x40 [inferred: nested pointer to vtable-bearing object]
     s64 *plVar1 = *(s64**)(*(s64*)(param_2 + 0x20) + 0x40);
+    // vtable+0x110 [inferred: virtual method returning status code]
     s32 iVar1 = (*(s32(*)())(*(s64*)(*plVar1 + 0x110)))();
     return (u8)(iVar1 != 1);
 }
