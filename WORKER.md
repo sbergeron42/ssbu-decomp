@@ -1,16 +1,16 @@
-# Worker: pool-a
+# Worker: pool-b
 
 ## Model: Opus
 
-## Task: Rewrite Ghidra-paste files (round 3) — batch_d + batch_c large files
+## Task: Rewrite Ghidra-paste files (round 3) — batch_d + batch_d3 + batch_d4
 
 ### Target Files
-- `src/app/fun_batch_d_006.cpp` — 12 funcs, 39 paste
-- `src/app/fun_batch_d_003.cpp` — 14 funcs, 35 paste
-- `src/app/fun_batch_d_004.cpp` — 12 funcs, 33 paste
-- `src/app/fun_batch_c_003.cpp` — 40 funcs, 29 paste
-- `src/app/fun_batch_c_001.cpp` — 60 funcs, 24 paste
-- `src/app/fun_batch_d_013.cpp` — 30 funcs, 24 paste
+- `src/app/fun_batch_d_007.cpp` — 52 funcs, 30 paste
+- `src/app/fun_batch_d3_008.cpp` — 8 funcs, 30 paste
+- `src/app/fun_batch_d3_023.cpp` — 13 funcs, 27 paste
+- `src/app/fun_batch_d4_001.cpp` — 14 funcs, 27 paste
+- `src/app/fun_batch_d4_015.cpp` — 8 funcs, 20 paste
+- `src/app/fun_batch_d4_008.cpp` — 10 funcs, 11 paste
 
 ### Workflow
 1. Identify module access via offset → rewrite with struct field access
@@ -37,4 +37,4 @@ python tools/compare_bytes.py FUN_name  # NOT address
 ```
 
 ### Rules
-- CAN ONLY edit: fun_batch_d_003.cpp, fun_batch_d_004.cpp, fun_batch_d_006.cpp, fun_batch_d_013.cpp, fun_batch_c_001.cpp, fun_batch_c_003.cpp
+- CAN ONLY edit: fun_batch_d_007.cpp, fun_batch_d3_008.cpp, fun_batch_d3_023.cpp, fun_batch_d4_001.cpp, fun_batch_d4_008.cpp, fun_batch_d4_015.cpp

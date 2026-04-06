@@ -1,8 +1,7 @@
 #include "types.h"
 
 // MEDIUM-tier FUN_* functions — 0x7100 address range, batch d4-008
-// Pool-d worker: auto-generated from Ghidra decompilation
-// Includes: throw stubs, motion-category switches, vtable dispatchers, static inits
+// Throw stubs, motion-category switches, vtable dispatchers, static inits
 
 // ---- External declarations -----------------------------------------------
 
@@ -25,29 +24,29 @@ extern u64 DAT_71052bfe00;  // stores vtable ptr
     abort();
 }
 
-// 0x71006c90b0 — vtable dispatch: call vtable[0x98] with sentinel, return == 0x4d
-u8 FUN_71006c90b0(u64 param_1, s64 param_2)
+// 0x71006c90b0 — vtable dispatch: call work_module vtable[0x98] with sentinel, check == 0x4d
+u8 FUN_71006c90b0(u64 unused, s64 fighter)
 {
-    s32 iVar1;
+    s32 status_kind;
 
-    iVar1 = (**(s32 (**)(s64 *, u32))(**(s64 **)(param_2 + 0x50) + 0x98))
-                (*(s64 **)(param_2 + 0x50), 0x10000001);
-    return iVar1 == 0x4d;
+    status_kind = (**(s32 (**)(s64 *, u32))(**(s64 **)(fighter + 0x50) + 0x98))
+                (*(s64 **)(fighter + 0x50), 0x10000001);
+    return status_kind == 0x4d;
 }
 
 // 0x71006ea020 — side-effect call then conditional byte clear
-void FUN_71006ea020(s64 param_1, s64 param_2)
+void FUN_71006ea020(s64 self, s64 ctx)
 {
     FUN_71004d8c50();
-    if (*(u8 *)(param_2 + 0x40) != '\0') {
-        *(u8 *)(param_1 + 0x855) = 0;
+    if (*(u8 *)(ctx + 0x40) != '\0') {
+        *(u8 *)(self + 0x855) = 0;
     }
 }
 
 // 0x7100b30f70 — motion-category switch: return 1 for active-state motion IDs
-u64 FUN_7100b30f70(s32 param_1)
+u64 FUN_7100b30f70(s32 motion_kind)
 {
-    switch(param_1) {
+    switch(motion_kind) {
     case 0x60:
     case 0x62:
     case 99:
@@ -263,7 +262,7 @@ u64 FUN_7100b30f70(s32 param_1)
     case 0x132:
         return 0;
     default:
-        if (2 < (u32)((u32)param_1 - 0x1a3u)) {
+        if (2 < (u32)((u32)motion_kind - 0x1a3u)) {
             return 0;
         }
 label_return1:
@@ -272,9 +271,9 @@ label_return1:
 }
 
 // 0x7100b30fb0 — motion-category switch: return 1 for specific motion IDs set B
-u64 FUN_7100b30fb0(u32 param_1)
+u64 FUN_7100b30fb0(u32 motion_kind)
 {
-    switch(param_1) {
+    switch(motion_kind) {
     case 0x41:
     case 200:
     case 0xcb:
@@ -338,9 +337,9 @@ u64 FUN_7100b30fb0(u32 param_1)
 }
 
 // 0x7100b30fe0 — motion-category switch: return 1 for specific motion IDs set C
-u64 FUN_7100b30fe0(u32 param_1)
+u64 FUN_7100b30fe0(u32 motion_kind)
 {
-    switch(param_1) {
+    switch(motion_kind) {
     case 0x46:
     case 199:
     case 0xef:
@@ -388,9 +387,9 @@ u64 FUN_7100b30fe0(u32 param_1)
 }
 
 // 0x7100b31010 — motion-category switch: return 1 for specific motion IDs set D
-u64 FUN_7100b31010(u32 param_1)
+u64 FUN_7100b31010(u32 motion_kind)
 {
-    switch(param_1) {
+    switch(motion_kind) {
     case 0x42:
     case 0x43:
     case 0xc0:
@@ -458,36 +457,36 @@ u64 FUN_7100b31010(u32 param_1)
 }
 
 // 0x7100c2cd60 — vtable call with local array init
-u64 FUN_7100c2cd60(s64 *param_1)
+u64 FUN_7100c2cd60(s64 *self)
 {
-    u32 local_58[18];
+    u32 out_buffer[18];
 
-    local_58[0] = 0;
-    (**(void (**)(s64 *, u32 *))(*param_1 + 0x50))(param_1, local_58);
+    out_buffer[0] = 0;
+    (**(void (**)(s64 *, u32 *))(*self + 0x50))(self, out_buffer);
     return 1;
 }
 
 // 0x7100cec310 — vtable chain dispatch: call vtable[0x110], check masked != 0x1ea
-u8 FUN_7100cec310(u64 param_1, s64 param_2)
+u8 FUN_7100cec310(u64 unused, s64 fighter)
 {
-    u32 uVar1;
+    u32 status_kind;
 
-    uVar1 = (**(u32 (**)())(**(s64 **)(*(s64 *)(param_2 + 0x20) + 0x40) + 0x110))();
-    return (uVar1 & 0xfffffffe) != 0x1ea;
+    status_kind = (**(u32 (**)())(**(s64 **)(*(s64 *)(fighter + 0x20) + 0x40) + 0x110))();
+    return (status_kind & 0xfffffffe) != 0x1ea;
 }
 
-// 0x7100d12af0 — static init: set vtable ptr, then assign to two fields of param_2
-void FUN_7100d12af0(u64 param_1, s64 param_2)
+// 0x7100d12af0 — static init: set vtable ptr, then assign to two fields of ctx
+void FUN_7100d12af0(u64 unused, s64 ctx)
 {
-    s32 iVar1;
+    s32 acquired;
 
     if ((DAT_71052bfdf8 & 1) == 0) {
-        iVar1 = __cxa_guard_acquire(&DAT_71052bfdf8);
-        if (iVar1 != 0) {
+        acquired = __cxa_guard_acquire(&DAT_71052bfdf8);
+        if (acquired != 0) {
             DAT_71052bfe00 = (u64)&PTR_LAB_7104feab20;
             __cxa_guard_release(&DAT_71052bfdf8);
         }
     }
-    *(u64 **)(param_2 + 0x318) = &DAT_71052bfe00;
-    *(u8 *)(param_2 + 0xe8) = 6;
+    *(u64 **)(ctx + 0x318) = &DAT_71052bfe00;
+    *(u8 *)(ctx + 0xe8) = 6;
 }

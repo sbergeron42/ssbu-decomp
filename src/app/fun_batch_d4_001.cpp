@@ -1,7 +1,7 @@
 #include "types.h"
 
 // MEDIUM-tier FUN_* functions — 0x7100 address range, batch d4-001
-// Pool-d worker: auto-generated from Ghidra decompilation
+// Table lookups, switch dispatchers, struct inits
 
 // ---- External declarations -----------------------------------------------
 
@@ -26,54 +26,55 @@ extern u8 DAT_71044a7d50;
 #pragma GCC visibility pop
 
 // ---- Functions ---------------------------------------------------------------
+
 // 0x71002c2810 — table lookup by index (<3): return u64 entry from DAT table
-u64 FUN_71002c2810(u32 param_1)
+u64 FUN_71002c2810(u32 index)
 {
-    if (param_1 < 3) {
-        return *(u64 *)(&DAT_71044a7c80 + (s64)(s32)param_1 * 8);
+    if (index < 3) {
+        return *(u64 *)(&DAT_71044a7c80 + (s64)(s32)index * 8);
     }
     /* WARNING: Subroutine does not return */
     nn__detail__UnexpectedDefaultImpl("", "", 0);
 }
 
 // 0x71002c2bf0 — table lookup by index (<12): return u32 entry from DAT table
-u32 FUN_71002c2bf0(u32 param_1)
+u32 FUN_71002c2bf0(u32 index)
 {
-    if (param_1 < 0xc) {
-        return *(u32 *)(&DAT_71044a7cd0 + (s64)(s32)param_1 * 4);
+    if (index < 0xc) {
+        return *(u32 *)(&DAT_71044a7cd0 + (s64)(s32)index * 4);
     }
     /* WARNING: Subroutine does not return */
     nn__detail__UnexpectedDefaultImpl("", "", 0);
 }
 
-// 0x71002c2c30 — switch returning pointer offset into param_1 by category (12 cases)
-s64 FUN_71002c2c30(s64 param_1, u32 param_2, s32 param_3)
+// 0x71002c2c30 — switch returning pointer offset into self by category (12 cases)
+s64 FUN_71002c2c30(s64 self, u32 category, s32 slot)
 {
-    switch(param_2) {
+    switch(category) {
     case 0:
-        return param_1 + (s64)param_3 * 0x58 + 0x6c;
+        return self + (s64)slot * 0x58 + 0x6c;
     case 1:
-        return param_1 + (s64)param_3 * 0x58 + 0x1cc;
+        return self + (s64)slot * 0x58 + 0x1cc;
     case 2:
-        return param_1 + (s64)param_3 * 0x58 + 0x5ec;
+        return self + (s64)slot * 0x58 + 0x5ec;
     case 3:
-        return param_1 + (s64)param_3 * 0x58 + 0xa0c;
+        return self + (s64)slot * 0x58 + 0xa0c;
     case 4:
-        return param_1 + (s64)param_3 * 0x58 + 0x376c;
+        return self + (s64)slot * 0x58 + 0x376c;
     case 5:
-        return param_1 + (s64)param_3 * 0x58 + 0x64cc;
+        return self + (s64)slot * 0x58 + 0x64cc;
     case 6:
-        return param_1 + (s64)param_3 * 0x58 + 0x922c;
+        return self + (s64)slot * 0x58 + 0x922c;
     case 7:
-        return param_1 + (s64)param_3 * 0x58 + 0xbf8c;
+        return self + (s64)slot * 0x58 + 0xbf8c;
     case 8:
-        return param_1 + (s64)param_3 * 0x58 + 0xecec;
+        return self + (s64)slot * 0x58 + 0xecec;
     case 9:
-        return param_1 + (s64)param_3 * 0x58 + 0x11a4c;
+        return self + (s64)slot * 0x58 + 0x11a4c;
     case 10:
-        return param_1 + (s64)param_3 * 0x58 + 0x11aa4;
+        return self + (s64)slot * 0x58 + 0x11aa4;
     case 0xb:
-        return param_1 + (s64)param_3 * 0x58 + 0x120d4;
+        return self + (s64)slot * 0x58 + 0x120d4;
     default:
         /* WARNING: Subroutine does not return */
         nn__detail__UnexpectedDefaultImpl("", "", 0);
@@ -81,41 +82,41 @@ s64 FUN_71002c2c30(s64 param_1, u32 param_2, s32 param_3)
 }
 
 // 0x71002c2df0 — table lookup by index (<11): return u32 entry from DAT table
-u32 FUN_71002c2df0(u32 param_1)
+u32 FUN_71002c2df0(u32 index)
 {
-    if (param_1 < 0xb) {
-        return *(u32 *)(&DAT_71044a7d50 + (s64)(s32)param_1 * 4);
+    if (index < 0xb) {
+        return *(u32 *)(&DAT_71044a7d50 + (s64)(s32)index * 4);
     }
     /* WARNING: Subroutine does not return */
     nn__detail__UnexpectedDefaultImpl("", "", 0);
 }
 
-// 0x71002c2e50 — switch returning pointer offset into param_1 struct by category (11 cases)
-u8 *FUN_71002c2e50(s64 param_1, u32 param_2, s32 param_3)
+// 0x71002c2e50 — switch returning pointer offset into self by category (11 cases)
+u8 *FUN_71002c2e50(s64 self, u32 category, s32 slot)
 {
-    switch(param_2) {
+    switch(category) {
     case 0:
-        return (u8 *)(param_1 + (s64)param_3 * 0x1c + 100);
+        return (u8 *)(self + (s64)slot * 0x1c + 100);
     case 1:
-        return (u8 *)(param_1 + (s64)param_3 * 0x1c + 0xed4);
+        return (u8 *)(self + (s64)slot * 0x1c + 0xed4);
     case 2:
-        return (u8 *)(param_1 + (s64)param_3 * 0x1c + 0x159c);
+        return (u8 *)(self + (s64)slot * 0x1c + 0x159c);
     case 3:
-        return (u8 *)(param_1 + (s64)param_3 * 0x1c + 0x183c);
+        return (u8 *)(self + (s64)slot * 0x1c + 0x183c);
     case 4:
-        return (u8 *)(param_1 + (s64)param_3 * 0x1c + 0x1874);
+        return (u8 *)(self + (s64)slot * 0x1c + 0x1874);
     case 5:
-        return (u8 *)(param_1 + (s64)param_3 * 0x1c + 0x19c4);
+        return (u8 *)(self + (s64)slot * 0x1c + 0x19c4);
     case 6:
-        return (u8 *)(param_1 + (s64)param_3 * 0x1c + 0x1b14);
+        return (u8 *)(self + (s64)slot * 0x1c + 0x1b14);
     case 7:
-        return (u8 *)(param_1 + (s64)param_3 * 0x1c + 0x1d44);
+        return (u8 *)(self + (s64)slot * 0x1c + 0x1d44);
     case 8:
-        return (u8 *)(param_1 + (s64)param_3 * 0x1c + 0x1d7c);
+        return (u8 *)(self + (s64)slot * 0x1c + 0x1d7c);
     case 9:
-        return (u8 *)(param_1 + (s64)param_3 * 0x1c + 0x2188);
+        return (u8 *)(self + (s64)slot * 0x1c + 0x2188);
     case 10:
-        return (u8 *)(param_1 + (s64)param_3 * 0x1c + 0x2230);
+        return (u8 *)(self + (s64)slot * 0x1c + 0x2230);
     default:
         /* WARNING: Subroutine does not return */
         nn__detail__UnexpectedDefaultImpl("", "", 0);
@@ -123,85 +124,88 @@ u8 *FUN_71002c2e50(s64 param_1, u32 param_2, s32 param_3)
 }
 
 // 0x71002c1790 — get non-empty string: return ptr if not '\0', else null
-char *FUN_71002c1790(s64 param_1, u32 param_2)
+char *FUN_71002c1790(s64 self, u32 entry_index)
 {
-    char *pcVar1;
-    char *pcVar2;
+    char *str;
+    char *result;
 
-    pcVar2 = (char *)FUN_71002c31d0(param_1 + (u64)param_2 * 0x128 + 8);
-    pcVar1 = (char *)0x0;
-    if (*pcVar2 != '\0') {
-        pcVar1 = pcVar2;
+    str = (char *)FUN_71002c31d0(self + (u64)entry_index * 0x128 + 8);
+    result = (char *)0x0;
+    if (*str != '\0') {
+        result = str;
     }
-    return pcVar1;
+    return result;
 }
 
 // 0x71002c1d20 — delegate: call FUN_71002c3200 with computed array offset
-void FUN_71002c1d20(s64 param_1, u32 param_2)
+void FUN_71002c1d20(s64 self, u32 entry_index)
 {
-    FUN_71002c3200((void *)(param_1 + (u64)param_2 * 0x128 + 8));
+    FUN_71002c3200((void *)(self + (u64)entry_index * 0x128 + 8));
 }
+
 // 0x71002c1fe0 — delegate+offset: return FUN_71000339f0(*p) + p[2]
-s64 FUN_71002c1fe0(u64 *param_1)
+s64 FUN_71002c1fe0(u64 *entry)
 {
-    s64 lVar1;
+    s64 base;
 
-    lVar1 = FUN_71000339f0(*param_1);
-    return lVar1 + param_1[2];
+    base = FUN_71000339f0(*entry);
+    return base + entry[2];
 }
+
 // 0x71002c2ba0 — divide field +0x2c by table[1] entry
-u64 FUN_71002c2ba0(s64 param_1)
+u64 FUN_71002c2ba0(s64 self)
 {
-    u32 uVar1;
-    u64 uVar2;
-    u64 uVar3;
+    u32 field_value;
+    u64 divisor;
+    u64 result;
 
-    uVar1 = *(u32 *)(param_1 + 0x2c);
-    uVar3 = FUN_71002c2810(1);
-    uVar2 = 0;
-    if (uVar3 != 0) {
-        uVar2 = uVar1 / uVar3;
+    field_value = *(u32 *)(self + 0x2c);
+    divisor = FUN_71002c2810(1);
+    result = 0;
+    if (divisor != 0) {
+        result = field_value / divisor;
     }
-    return uVar2;
+    return result;
 }
 
-// 0x71002c2910 — dispatch: lookup type+size, then write to ptr+0x10 region
-void FUN_71002c2910(s64 param_1, u32 param_2, u32 param_3)
+// 0x71002c2910 — dispatch: lookup type+size, then index into +0x10 region
+void FUN_71002c2910(s64 self, u32 category, u32 size)
 {
-    u32 uVar1;
+    u32 index;
 
-    uVar1 = FUN_71002c2f60(param_2, param_3);
-    FUN_71002c2df0(param_2);
-    FUN_71002c2e50(*(u64 *)(param_1 + 0x10), param_2, uVar1);
+    index = FUN_71002c2f60(category, size);
+    FUN_71002c2df0(category);
+    FUN_71002c2e50(*(u64 *)(self + 0x10), category, index);
 }
 
-// 0x71002c2960 — dispatch: lookup type+size, then write to ptr+0x18 region
-void FUN_71002c2960(s64 param_1, u32 param_2, u32 param_3)
+// 0x71002c2960 — dispatch: lookup type+size, then index into +0x18 region
+void FUN_71002c2960(s64 self, u32 category, u32 size)
 {
-    u32 uVar1;
+    u32 index;
 
-    uVar1 = FUN_71002c2d60(param_2, param_3);
-    FUN_71002c2bf0(param_2);
-    FUN_71002c2c30(*(u64 *)(param_1 + 0x18), param_2, uVar1);
+    index = FUN_71002c2d60(category, size);
+    FUN_71002c2bf0(category);
+    FUN_71002c2c30(*(u64 *)(self + 0x18), category, index);
 }
 
 // 0x71002c2f70 — init: call setup fns and set -1 sentinel at +0x120
-void FUN_71002c2f70(s64 param_1)
+void FUN_71002c2f70(s64 self)
 {
     FUN_710003a0e0();
-    FUN_710003a240(param_1 + 0xd8);
-    *(u64 *)(param_1 + 0x120) = 0xffffffffffffffff;
+    FUN_710003a240(self + 0xd8);
+    *(u64 *)(self + 0x120) = 0xffffffffffffffff;
 }
+
 // 0x710031321c — delegate: call FUN_7100313000 with 4 sub-offsets
-u64 FUN_710031321c(s64 param_1, s64 param_2)
+u64 FUN_710031321c(s64 data, s64 stream)
 {
-    FUN_7100313000(param_1, param_1 + 4, param_1 + 8, param_1 + 0xc, param_2 + -4);
+    FUN_7100313000(data, data + 4, data + 8, data + 0xc, stream + -4);
     return 1;
 }
 
 // 0x710031367c — delegate: call FUN_7100313460 with 4 sub-offsets
-u64 FUN_710031367c(s64 param_1, s64 param_2)
+u64 FUN_710031367c(s64 data, s64 stream)
 {
-    FUN_7100313460(param_1, param_1 + 4, param_1 + 8, param_1 + 0xc, param_2 + -4);
+    FUN_7100313460(data, data + 4, data + 8, data + 0xc, stream + -4);
     return 1;
 }
