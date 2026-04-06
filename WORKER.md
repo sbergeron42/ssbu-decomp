@@ -1,21 +1,18 @@
-# Worker: pool-d
+# Worker: pool-e
 
 ## Model: Opus
 
-## Task: Paste rewrites with derivation chains — batch_d files (redo)
+## Task: Paste rewrites with derivation chains — batch_c + batch_e files (redo)
 
 Rewrite these files with proper confidence tags. Not every function has module accessor access — that's fine. The requirement is that every named field/offset gets a derivation comment.
 
 ### Target Files
-- `src/app/fun_batch_d_006.cpp` — 12 funcs
-- `src/app/fun_batch_d_007.cpp` — 52 funcs
-- `src/app/fun_batch_d_009.cpp` — 47 funcs
-- `src/app/fun_batch_d_010.cpp` — 36 funcs
-- `src/app/fun_batch_d_011.cpp` — 33 funcs
-- `src/app/fun_batch_d_017.cpp` — 12 funcs
-- `src/app/fun_batch_d_018.cpp` — 7 funcs
-- `src/app/fun_batch_d_019.cpp` — 5 funcs
-- `src/app/fun_batch_d_020.cpp` — 4 funcs
+- `src/app/fun_batch_c_006.cpp` — 31 funcs (already has BattleObjectModuleAccessor include)
+- `src/app/fun_batch_c_009.cpp` — 39 funcs
+- `src/app/fun_batch_c_011.cpp` — 57 funcs
+- `src/app/fun_batch_e_001.cpp` — 10 funcs
+- `src/app/fun_batch_e_002.cpp` — 5 funcs
+- `src/app/fun_batch_e2_013.cpp` — 8 funcs
 
 ### What "done" looks like for EACH function type
 
@@ -30,14 +27,13 @@ ground->method_name(args);
 ```cpp
 // self [inferred: animation state struct, 0x90 bytes]
 //   +0x08 [inferred: sub-object pointer, passed to size query]
-//   +0x20 [inferred: secondary sub-object pointer]
 //   +0x68 [inferred: enable flag, bool]
 s64 FUN_...(s64 self) {
     // +0x08 [inferred: sub-object A, passed to FUN_7100039590 which returns size]
     s64 size_a = FUN_7100039590(*(u64*)(self + 8));
 ```
 
-**Forwarding wrapper (just passes args through, nothing to annotate):**
+**Forwarding wrapper (just passes args through):**
 ```cpp
 // 0x710219a420 — lua_bind forwarding wrapper, dispatches to FUN_710082a290
 u64 FUN_710219a420(s64 ctx) {
@@ -50,7 +46,7 @@ u64 FUN_710219a420(s64 ctx) {
 ```
 
 ### Key rule
-If a function has NO struct offsets at all (just a pass-through call), a one-line description comment is sufficient — don't force derivation tags where there's nothing to derive. But if ANY offset like `+0x10`, `+0x68`, `+0x90` appears, it MUST get a confidence tag.
+If a function has NO struct offsets at all (just a pass-through call), a one-line description comment is sufficient. But if ANY offset like `+0x10`, `+0x68`, `+0x90` appears, it MUST get a confidence tag.
 
 ### Checklist per function (mental check before moving on)
 - [ ] Any raw offset `+0xNN` in the function? → needs `[derived:]` or `[inferred:]` tag
