@@ -1,34 +1,33 @@
-# Worker: pool-c
+# Worker: pool-d
 
 ## Model: Opus
 
-## Task: Build KineticModule vtable struct + replace VT calls
+## Task: Build PostureModule vtable struct + replace VT calls
 
-### Phase 1: Build KineticModule vtable struct
-`include/app/modules/KineticModule.h` currently has NO vtable methods.
-`src/app/fun_batch_c_012.cpp` and `fun_batch_c_013.cpp` have 69 functions that call vtable methods on KineticModule (accessor+0x68).
+### Phase 1: Build PostureModule vtable struct
+`include/app/modules/PostureModule.h` currently has NO vtable methods.
+`src/app/fun_batch_e3_025.cpp` has 20 PostureModule functions (accessor+0x38).
 
-1. Read both files and catalog every VT(mod)[slot] call with its argument signature
-2. Cross-reference slot indices with .dynsym: search Ghidra for KineticModule__*_impl
-3. Add method wrappers to KineticModule.h with derivation chains
+1. Read the file and catalog every VT(mod)[slot] call with signature
+2. Search Ghidra for PostureModule__*_impl to get .dynsym names
+3. Add method wrappers to PostureModule.h with derivation chains
 
-### Phase 2: Replace VT calls with method names
+### Phase 2: Replace VT calls
 **BEFORE:**
 ```cpp
-void** mod = reinterpret_cast<void**>(acc->item_kinetic_module);
-(*reinterpret_cast<s64(*)(void**, s64)>(VT(mod)[0x60/8]))(mod, 0xc);
+void** mod = reinterpret_cast<void**>(acc->posture_module);
+reinterpret_cast<u64(*)(void**)>(VT(mod)[0x80/8])(mod);
 ```
 **AFTER:**
 ```cpp
-// [derived: KineticModule__get_energy_impl (.dynsym) -> slot 12 (0x60/8)]
-KineticModule* kinetic = static_cast<KineticModule*>(acc->item_kinetic_module);
-kinetic->get_energy(0xc);
+// [derived: PostureModule__pos_impl (.dynsym) -> slot 16 (0x80/8)]
+PostureModule* posture = static_cast<PostureModule*>(acc->posture_module);
+posture->pos();
 ```
 
 ### Target Files
-- `include/app/modules/KineticModule.h` (add vtable methods)
-- `src/app/fun_batch_c_012.cpp` (replace VT calls)
-- `src/app/fun_batch_c_013.cpp` (replace VT calls)
+- `include/app/modules/PostureModule.h` (add vtable methods)
+- `src/app/fun_batch_e3_025.cpp` (PostureModule VT calls ONLY — ReflectModule is pool-e territory)
 
 ### Quick Reference
 ```
@@ -38,6 +37,6 @@ python tools/compare_bytes.py FUN_name
 ```
 
 ### Rules
-- CAN edit: KineticModule.h, fun_batch_c_012.cpp, fun_batch_c_013.cpp
+- CAN edit: PostureModule.h, fun_batch_e3_025.cpp (PostureModule functions ONLY)
 - Every new vtable entry MUST have [derived:] or [inferred:] tag
 - 3-attempt limit per function
