@@ -1,22 +1,22 @@
-# Worker: pool-c
+# Worker: pool-a
 
 ## Model: Opus
 
-## Task: Resource service — large functions from Ghidra exports
+## Task: Resource service — small/medium uncompiled functions
 
-The mega-functions can't be decompiled via MCP, but Ghidra exports exist as .txt files.
+Decomp the remaining small/medium resource area functions using the resource headers.
 
-### Target Functions
-- `FUN_710374d270` — 8,432 bytes (called from main_loop)
-- `FUN_7103757290` — 7,056 bytes (Mii renderer or resource related — identify first)
-- `FUN_7103758f50` — 5,520 bytes
-
-### Available Ghidra Exports
-Check the project root for .txt files:
-- `FUN_710374f360.txt` (already exists — 2,627 lines of decompiled C)
-- Other exports may be in asm/ directory
-
-If a function doesn't have a Ghidra export, try decompiling via MCP first. If MCP fails, decompile from raw disassembly (use llvm-objdump).
+### Target Functions (sorted by size, smallest first)
+- `FUN_7103741010` — 336 bytes
+- `FUN_7103757140` — 336 bytes
+- `start_prepo_report` (0x710375a4e0) — 336 bytes (already named)
+- `FUN_7103754500` — 304 bytes
+- `FUN_7103758e20` — 304 bytes
+- `FUN_7103755270` — 288 bytes
+- `FUN_710375f480` — 464 bytes
+- `FUN_7103754ef0` — 624 bytes
+- `FUN_7103755a50` — 608 bytes
+- `GlobalParameter` (0x7103756640) — 896 bytes (already named)
 
 ### Headers
 - `include/resource/ResServiceNX.h`, `include/resource/LoadedArc.h`, `include/resource/containers.h`
@@ -28,24 +28,8 @@ If a function doesn't have a Ghidra export, try decompiling via MCP first. If MC
 python tools/compare_bytes.py FUN_name
 ```
 
-### Results
-- FUN_710374d270 — **SKIP**: scene/render update loop (5 object vectors via DAT_710593aa90)
-- FUN_7103757290 — **SKIP**: Mii renderer init (nn::mii::Database, MiiModelRenderer)
-- FUN_7103758f50 — **SKIP**: Mii model creation (0x388-byte alloc, 4 render passes)
-- **Replacement targets found**: FixedString<512> utilities at 0x71037c3f20/4550/4630
-  - Struct: char data[514] + u16 length at +0x202
-  - Functions throw std::out_of_range (requires -fexceptions)
-  - Loop bodies match structurally; NX Clang divergences: post-index load, AND mask
-
-### Additional resource service functions identified (future targets)
-- FUN_71037c3db0 (368 bytes) — ResServiceNX singleton path resolution wrapper
-- FUN_71037c4010 (1,344 bytes) — ResServiceNX singleton path resolution (4 params)
-- FUN_71037c5ff0 (2,288 bytes) — ResServiceNX singleton constructor
-- FUN_710353d5e0 (384 bytes) — copy_filepath_vector_from_loaded_directory
-- FUN_710353a8f0 (1,280 bytes) — filesystem entry scanner/resolver
-
 ### Rules
-- Output: src/resource/res_large_funcs.cpp
-- Use resource headers with derivation chains
+- Output: src/resource/res_small_funcs.cpp
+- Use resource headers with [derived: ARCropolis] or [inferred:] tags on every offset
 - 3-attempt limit per function
-- If a function is NOT resource-related (graphics, Mii, etc.), document what it is and skip
+- Not every function here is resource-related — if it's nn::friends or nn::mii, document what it is and move on
