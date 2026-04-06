@@ -1,7 +1,14 @@
 #include "types.h"
 #include "app/BattleObjectModuleAccessor.h"
+#include "app/modules/PostureModule.h"
+#include "app/modules/WorkModule.h"
+#include "app/modules/KineticModule.h"
 
 using app::BattleObjectModuleAccessor;
+using app::PostureModule;
+using app::WorkModule;
+using app::KineticModule;
+using app::KineticEnergy;
 
 // Batch decompiled via Ghidra MCP -- pool-c, batch 017
 // Range: 0x7102000000 -- 0x7102FFFFFF
@@ -90,16 +97,18 @@ bool is_active_71022839d0(u32 id) {
 void pos_7102283660(u32 id) {
     void* obj = resolve_battle_object(id);
     auto* inner = reinterpret_cast<BattleObjectModuleAccessor*>(*reinterpret_cast<void**>(reinterpret_cast<u8*>(obj) + 0x20));
-    void* posture = inner->posture_module;
-    reinterpret_cast<void(*)(void*)>(VT(posture)[0x60/8])(posture);
+    // [derived: PostureModule__pos_impl (.dynsym) -> vtable slot 0x60/8]
+    auto* posture = static_cast<PostureModule*>(inner->posture_module);
+    posture->pos();
 }
 
 // ── 0x7102283920 -- app::sv_battle_object::set_float (176B) ──────────────────
 void set_float(u32 id, f32 val, s32 idx) {
     void* obj = resolve_battle_object(id);
     auto* inner = reinterpret_cast<BattleObjectModuleAccessor*>(*reinterpret_cast<void**>(reinterpret_cast<u8*>(obj) + 0x20));
-    void* work = inner->work_module;
-    reinterpret_cast<void(*)(void*, f32, s32)>(VT(work)[0x60/8])(work, val, idx);
+    // [derived: WorkModule__set_float_impl (.dynsym) -> vtable slot 0x60/8]
+    auto* work = static_cast<WorkModule*>(inner->work_module);
+    work->set_float(idx, val);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -222,7 +231,7 @@ static inline void lua_pop_all(void* L) {
 // ── 0x7102276a40 -- app::sv_kinetic_energy::enable (192B) ────────────────────
 void enable_7102276a40(void* L) {
     void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
-    void** km = reinterpret_cast<void**>(reinterpret_cast<BattleObjectModuleAccessor*>(*reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x1a0))->item_kinetic_module);
+    auto* km = static_cast<KineticModule*>(reinterpret_cast<BattleObjectModuleAccessor*>(*reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x1a0))->item_kinetic_module);
 
     u64 top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
     u64 ci_base = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20)) + 0x10;
@@ -233,8 +242,9 @@ void enable_7102276a40(void* L) {
         kind = FUN_71038f4000(L, 1, 0);
     }
 
-    void* energy = reinterpret_cast<void*>(reinterpret_cast<u64(*)(void**, u64)>(VT(km)[0x60/8])(km, kind));
-    *reinterpret_cast<u8*>(reinterpret_cast<u8*>(energy) + 0x30) = 1;
+    // [derived: KineticModule__get_energy_impl (.dynsym) -> vtable slot 0x60/8]
+    auto* energy = km->get_energy((int)kind);
+    energy->enabled = 1;
 
     lua_pop_all(L);
 }
@@ -242,7 +252,7 @@ void enable_7102276a40(void* L) {
 // ── 0x7102276b00 -- app::sv_kinetic_energy::unable (192B) ────────────────────
 void unable_7102276b00(void* L) {
     void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
-    void** km = reinterpret_cast<void**>(reinterpret_cast<BattleObjectModuleAccessor*>(*reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x1a0))->item_kinetic_module);
+    auto* km = static_cast<KineticModule*>(reinterpret_cast<BattleObjectModuleAccessor*>(*reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x1a0))->item_kinetic_module);
 
     u64 top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
     u64 ci_base = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20)) + 0x10;
@@ -253,8 +263,9 @@ void unable_7102276b00(void* L) {
         kind = FUN_71038f4000(L, 1, 0);
     }
 
-    void* energy = reinterpret_cast<void*>(reinterpret_cast<u64(*)(void**, u64)>(VT(km)[0x60/8])(km, kind));
-    *reinterpret_cast<u8*>(reinterpret_cast<u8*>(energy) + 0x30) = 0;
+    // [derived: KineticModule__get_energy_impl (.dynsym) -> vtable slot 0x60/8]
+    auto* energy = km->get_energy((int)kind);
+    energy->enabled = 0;
 
     lua_pop_all(L);
 }
@@ -262,7 +273,7 @@ void unable_7102276b00(void* L) {
 // ── 0x7102276c90 -- app::sv_kinetic_energy::clear_speed (208B) ───────────────
 void clear_speed_7102276c90(void* L) {
     void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
-    void** km = reinterpret_cast<void**>(reinterpret_cast<BattleObjectModuleAccessor*>(*reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x1a0))->item_kinetic_module);
+    auto* km = static_cast<KineticModule*>(reinterpret_cast<BattleObjectModuleAccessor*>(*reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x1a0))->item_kinetic_module);
 
     u64 top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
     u64 ci_base = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20)) + 0x10;
@@ -273,8 +284,10 @@ void clear_speed_7102276c90(void* L) {
         kind = FUN_71038f4000(L, 1, 0);
     }
 
-    void** energy = reinterpret_cast<void**>(reinterpret_cast<u64(*)(void**, u64)>(VT(km)[0x60/8])(km, kind));
-    reinterpret_cast<void(*)(void**)>(VT(energy)[0x48/8])(energy);
+    // [derived: KineticModule__get_energy_impl (.dynsym) -> vtable slot 0x60/8]
+    auto* energy = km->get_energy((int)kind);
+    // [derived: KineticEnergy__clear_speed_impl (.dynsym) -> vtable slot 0x48/8]
+    energy->clear_speed();
 
     lua_pop_all(L);
 }
@@ -282,7 +295,7 @@ void clear_speed_7102276c90(void* L) {
 // ── 0x7102277640 -- app::sv_kinetic_energy::get_speed (256B) ─────────────────
 void get_speed_7102277640(void* L) {
     void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
-    void** km = reinterpret_cast<void**>(reinterpret_cast<BattleObjectModuleAccessor*>(*reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x1a0))->item_kinetic_module);
+    auto* km = static_cast<KineticModule*>(reinterpret_cast<BattleObjectModuleAccessor*>(*reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x1a0))->item_kinetic_module);
 
     u64 top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
     u64 ci_base = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20)) + 0x10;
@@ -293,8 +306,10 @@ void get_speed_7102277640(void* L) {
         kind = FUN_71038f4000(L, 1, 0);
     }
 
-    void** energy = reinterpret_cast<void**>(reinterpret_cast<u64(*)(void**, u64)>(VT(km)[0x60/8])(km, kind));
-    u64* speed = reinterpret_cast<u64*>(reinterpret_cast<u64*(*)(void**)>(VT(energy)[0x20/8])(energy));
+    // [derived: KineticModule__get_energy_impl (.dynsym) -> vtable slot 0x60/8]
+    auto* energy = km->get_energy((int)kind);
+    // [derived: KineticEnergy__get_speed_impl (.dynsym) -> vtable slot 0x20/8]
+    u64* speed = reinterpret_cast<u64*>(energy->get_speed());
     (void)*speed;
 
     lua_pop_all(L);

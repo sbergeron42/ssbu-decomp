@@ -302,7 +302,7 @@ struct GroundModule {
     virtual void _vf254();                                                         // 0x7f0
     virtual void set_rhombus_modify_air_lasso(bool p1);                            // 0x7f8
     virtual void set_rhombus_modify(u64 p1);                                       // 0x800
-    virtual void _vf257();                                                         // 0x808
+    virtual void _vf257(u32 p1);                                                    // 0x808 [inferred: callers pass u32 (0 or 1)]
     virtual void _vf258();                                                         // 0x810
     virtual void set_is_ignore_geometry_move_power(bool p1);                       // 0x818
 };

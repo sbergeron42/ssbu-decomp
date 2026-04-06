@@ -1,4 +1,6 @@
 #include "types.h"
+#include "app/modules/GroundModule.h"
+#include "app/modules/WorkModule.h"
 
 // MEDIUM-tier FUN_* functions — 0x7102 address range, batch e3-004
 // Pool-e worker: StageManager dispatch, ground vtable, work module, chain loads, nested CXA guards
@@ -69,8 +71,9 @@ u64 FUN_71020c6e20(u64 param_1)
     register u64 in_x10 asm("x10");
     asm volatile("" : "+r"(acc), "+r"(in_x10));
     *(u64 *)(param_1 + 0x10) = in_x10;
-    void *mod = *(void **)(acc + 0x58);
-    reinterpret_cast<void (*)(void *, u32)>(VT(mod)[0x808 / 8])(mod, 0);
+    // [inferred: GroundModule vtable slot 0x808/8, unnamed in .dynsym]
+    auto *mod = static_cast<app::GroundModule *>(*(void **)(acc + 0x58));
+    mod->_vf257(0);
     return 0;
 }
 
@@ -81,8 +84,9 @@ u64 FUN_71020c6ef0(u64 param_1)
     register u64 in_x10 asm("x10");
     asm volatile("" : "+r"(acc), "+r"(in_x10));
     *(u64 *)(param_1 + 0x10) = in_x10;
-    void *mod = *(void **)(acc + 0x58);
-    reinterpret_cast<void (*)(void *, u32)>(VT(mod)[0x808 / 8])(mod, 1);
+    // [inferred: GroundModule vtable slot 0x808/8, unnamed in .dynsym]
+    auto *mod = static_cast<app::GroundModule *>(*(void **)(acc + 0x58));
+    mod->_vf257(1);
     return 0;
 }
 
@@ -101,8 +105,9 @@ u64 FUN_7102149f10(u64 param_1)
     register u64 in_x10 asm("x10");
     asm volatile("" : "+r"(acc), "+r"(in_x10));
     *(u64 *)(param_1 + 0x10) = in_x10;
-    void *mod = *(void **)(acc + 0x50);
-    s32 index = reinterpret_cast<s32 (*)(void *, u32)>(VT(mod)[0x98 / 8])(mod, 0x10000000);
+    // [derived: WorkModule__get_int_impl (.dynsym) -> vtable slot 0x98/8]
+    auto *mod = reinterpret_cast<app::WorkModule *>(*(void **)(acc + 0x50));
+    s32 index = mod->get_int(0x10000000);
     if (index <= 7) {
         (&DAT_71052c10d0)[(s64)index * 0x110] = 0;
     }
@@ -116,8 +121,9 @@ u64 FUN_7102182150(u64 param_1)
     register u64 in_x10 asm("x10");
     asm volatile("" : "+r"(acc), "+r"(in_x10));
     *(u64 *)(param_1 + 0x10) = in_x10;
-    void *mod = *(void **)(acc + 0x50);
-    s32 index = reinterpret_cast<s32 (*)(void *, u32)>(VT(mod)[0x98 / 8])(mod, 0x10000000);
+    // [derived: WorkModule__get_int_impl (.dynsym) -> vtable slot 0x98/8]
+    auto *mod = reinterpret_cast<app::WorkModule *>(*(void **)(acc + 0x50));
+    s32 index = mod->get_int(0x10000000);
     if (index <= 7) {
         (&DAT_71052c10d0)[(s64)index * 0x110] = 0;
     }

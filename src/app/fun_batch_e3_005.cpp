@@ -1,11 +1,10 @@
 #include "types.h"
+#include "app/modules/LinkModule.h"
 
 // MEDIUM-tier FUN_* functions — 0x7102 address range, batch e3-005
 // Pool-e worker: singleton dispatch, chain loads, two-/three-level nested CXA guard inits
 
 // ---- External declarations -----------------------------------------------
-
-#define VT(m) (*reinterpret_cast<void***>(m))
 
 extern u64 DAT_71053299d8;   // lib::Singleton<app::StageManager>::instance_
 extern u64 DAT_71052c2958;   // global pointer used by FUN_710220bf70
@@ -65,8 +64,9 @@ u64 FUN_7102259440(u64 param_1)
     register u64 in_x10 asm("x10");
     asm volatile("" : "+r"(acc), "+r"(in_x10));
     *(u64 *)(param_1 + 0x10) = in_x10;
-    void *mod = *(void **)(acc + 0xd0);
-    reinterpret_cast<void (*)(void *, u64, u64)>(VT(mod)[0x3b0 / 8])(mod, 0, 0);
+    // [derived: LinkModule__adjust_model_constraint_posture_impl (.dynsym) -> vtable slot 0x3b0/8]
+    auto *mod = reinterpret_cast<app::LinkModule *>(*(void **)(acc + 0xd0));
+    mod->adjust_model_constraint_posture(0, 0);
     return 0;
 }
 

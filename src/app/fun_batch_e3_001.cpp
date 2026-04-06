@@ -1,4 +1,7 @@
 #include "types.h"
+#include "app/modules/LinkModule.h"
+#include "app/modules/GroundModule.h"
+#include "app/modules/WorkModule.h"
 
 // MEDIUM-tier FUN_* functions â€” 0x7102 address range, batch e3-001
 // Pool-e worker: abort wrappers, singleton dispatchers, x9-register module dispatch
@@ -25,27 +28,27 @@ extern void FUN_7102608770(u64);
 // ---- Abort wrappers (0x7102a66xxx / 0x71028595b4 / 0x7102853f6c) ---------
 // Pattern: stp+mov+bl abort  (3 insns, no epilogue, caller never returns)
 
-// FUN_7102a66198 — defined in earlier batch file
+// FUN_7102a66198 ï¿½ defined in earlier batch file
 
-// FUN_7102a661d8 — defined in earlier batch file
+// FUN_7102a661d8 ï¿½ defined in earlier batch file
 
-// FUN_7102a66208 — defined in earlier batch file
+// FUN_7102a66208 ï¿½ defined in earlier batch file
 
-// FUN_7102a66238 — defined in earlier batch file
+// FUN_7102a66238 ï¿½ defined in earlier batch file
 
-// FUN_7102a66268 — defined in earlier batch file
+// FUN_7102a66268 ï¿½ defined in earlier batch file
 
-// FUN_7102a66298 — defined in earlier batch file
+// FUN_7102a66298 ï¿½ defined in earlier batch file
 
-// FUN_7102a662c8 — defined in earlier batch file
+// FUN_7102a662c8 ï¿½ defined in earlier batch file
 
-// FUN_7102a666f8 — defined in earlier batch file
+// FUN_7102a666f8 ï¿½ defined in earlier batch file
 
-// FUN_7102a66768 — defined in earlier batch file
+// FUN_7102a66768 ï¿½ defined in earlier batch file
 
-// FUN_7102a667c8 — defined in earlier batch file
+// FUN_7102a667c8 ï¿½ defined in earlier batch file
 
-// FUN_7102a66828 — defined in earlier batch file
+// FUN_7102a66828 ï¿½ defined in earlier batch file
 
 // 0x71028595b4 â€” defined in fun_batch_c2_002.cpp
 // 0x7102853f6c â€” defined in fun_batch_c2_003.cpp
@@ -107,8 +110,9 @@ u64 FUN_7102250050(u64 param_1)
     register u64 in_x10 asm("x10");
     asm volatile("" : "+r"(acc), "+r"(in_x10));
     *(u64 *)(param_1 + 0x10) = in_x10;
-    void *mod = *(void **)(acc + 0xd0);
-    reinterpret_cast<void (*)(void *, u64, u64)>(VT(mod)[0x3b0 / 8])(mod, 0, 0);
+    // [derived: LinkModule__adjust_model_constraint_posture_impl (.dynsym) -> vtable slot 0x3b0/8]
+    auto *mod = reinterpret_cast<app::LinkModule *>(*(void **)(acc + 0xd0));
+    mod->adjust_model_constraint_posture(0, 0);
     return 0;
 }
 
@@ -120,8 +124,9 @@ u64 FUN_710226f314(u64 param_1)
     register u64 in_x10 asm("x10");
     asm volatile("" : "+r"(acc), "+r"(in_x10));
     *(u64 *)(param_1 + 0x10) = in_x10;
-    void *mod = *(void **)(acc + 0x58);
-    reinterpret_cast<void (*)(void *)>(VT(mod)[0x178 / 8])(mod);
+    // [inferred: GroundModule vtable slot 0x178/8, unnamed in .dynsym]
+    auto *mod = static_cast<app::GroundModule *>(*(void **)(acc + 0x58));
+    mod->_vf47();
     return 0;
 }
 
@@ -134,8 +139,9 @@ u64 FUN_710217b524(u64 param_1, u64 param_2)
     register u64 in_x10 asm("x10");
     asm volatile("" : "+r"(acc), "+r"(in_x10));
     *(u64 *)(param_1 + 0x10) = in_x10;
-    void *mod = *(void **)(acc + 0x50);
-    reinterpret_cast<void (*)(void *, u64, u32)>(VT(mod)[0x130 / 8])(mod, param_2, 0x200000e2);
+    // [derived: WorkModule__set_flag_impl (.dynsym) -> vtable slot 0x130/8]
+    auto *mod = reinterpret_cast<app::WorkModule *>(*(void **)(acc + 0x50));
+    mod->set_flag(param_2, 0x200000e2);
     return 0;
 }
 
@@ -164,8 +170,9 @@ u64 FUN_710216af30(u64 param_1)
     register u64 in_x10 asm("x10");
     asm volatile("" : "+r"(acc), "+r"(in_x10));
     *(u64 *)(param_1 + 0x10) = in_x10;
-    void *mod = *(void **)(acc + 0x50);
-    u64 result = reinterpret_cast<u64 (*)(void *, u32)>(VT(mod)[0xb0 / 8])(mod, 0x100000c0);
+    // [derived: WorkModule__get_int64_impl (.dynsym) -> vtable slot 0xb0/8]
+    auto *mod = reinterpret_cast<app::WorkModule *>(*(void **)(acc + 0x50));
+    u64 result = (u64)mod->get_int64(0x100000c0);
     FUN_71034bcc80(result, 0, 0);
     return 0;
 }
