@@ -27,21 +27,32 @@ extern u8  *PTR_DAT_71052a34b0;
 extern u8  *PTR_DAT_71052a34f8;
 
 
-// 0x710003b460
+// 0x710003b460 — bounding box range check on a struct
+// param_1 [inferred: object with enable flag + AABB bounds, ~0x80 bytes]
+//   +0x68 [inferred: enable/valid flag, s64 — zero means disabled]
+//   +0x70 [inferred: AABB min X, float]
+//   +0x74 [inferred: AABB min Y, float]
+//   +0x78 [inferred: AABB max X, float]
+//   +0x7c [inferred: AABB max Y, float]
 bool FUN_710003b460(s64 param_1, float *param_2)
 {
+  // +0x68 [inferred: enable/valid flag — if zero, range check is skipped]
   if (*(s64 *)(param_1 + 0x68) == 0) {
     return false;
   }
+  // +0x70 [inferred: AABB min X bound, float]
   if (*param_2 < *(float *)(param_1 + 0x70)) {
     return false;
   }
+  // +0x78 [inferred: AABB max X bound, float]
   if (*(float *)(param_1 + 0x78) < *param_2) {
     return false;
   }
+  // +0x74 [inferred: AABB min Y bound, float]
   if (param_2[1] < *(float *)(param_1 + 0x74)) {
     return false;
   }
+  // +0x7c [inferred: AABB max Y bound, float]
   return param_2[1] <= *(float *)(param_1 + 0x7c);
 }
 
