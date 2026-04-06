@@ -19,7 +19,9 @@ enum Language {
     Language_Taiwanese,
     Language_BritishEnglish,
     Language_CanadianFrench,
-    Language_LatinAmericanSpanish
+    Language_LatinAmericanSpanish,
+    Language_SimplifiedChinese,
+    Language_TraditionalChinese
 };
 
 struct LanguageCode {
@@ -29,6 +31,7 @@ struct LanguageCode {
 };
 
 bool operator==(nn::settings::LanguageCode const&, nn::settings::LanguageCode const&);
+bool operator==(nn::settings::LanguageCode const&, nn::settings::Language const&);
 
 namespace system {
 struct FirmwareVersion {
