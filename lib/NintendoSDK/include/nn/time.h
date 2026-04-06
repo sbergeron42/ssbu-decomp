@@ -76,6 +76,8 @@ Result ToCalendarTime(nn::time::CalendarTime*, nn::time::CalendarAdditionalInfo*
 Result ToCalendarTime(nn::time::CalendarTime*, nn::time::CalendarAdditionalInfo*,
                       nn::time::PosixTime const&, nn::time::TimeZoneRule const&);
 Result ToPosixTime(int*, PosixTime*, int, const CalendarTime&);
+bool IsValidDate(int year, int month, int day);
+int GetDayOfWeek(int year, int month, int day);
 CalendarTime ToCalendarTimeInUtc(const PosixTime&);
 PosixTime ToPosixTimeFromUtc(const CalendarTime&);
 }  // namespace time
