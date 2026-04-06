@@ -1,22 +1,17 @@
-# Worker: pool-a
+# Worker: pool-b
 
 ## Model: Opus
 
-## Task: Resource service — small/medium uncompiled functions
+## Task: Resource service — medium functions + inflate chain
 
-Decomp the remaining small/medium resource area functions using the resource headers.
+### Target Functions
+- `FUN_7103753fc0` — 1,344 bytes (singleton init)
+- `FUN_7103755cb0` — 2,448 bytes (friends profile init)
+- `deal_with_inputs?` (0x710375ea70) — 2,576 bytes
+- `inflate` (0x710002c1f0) — 5,936 bytes (zlib core inflate function)
+- `zlib_unencode` (0x71000281d0) — 576 bytes
 
-### Target Functions (sorted by size, smallest first)
-- `FUN_7103741010` — 336 bytes
-- `FUN_7103757140` — 336 bytes
-- `start_prepo_report` (0x710375a4e0) — 336 bytes (already named)
-- `FUN_7103754500` — 304 bytes
-- `FUN_7103758e20` — 304 bytes
-- `FUN_7103755270` — 288 bytes
-- `FUN_710375f480` — 464 bytes
-- `FUN_7103754ef0` — 624 bytes
-- `FUN_7103755a50` — 608 bytes
-- `GlobalParameter` (0x7103756640) — 896 bytes (already named)
+The `inflate` function is the zlib decompression core used by ResInflateThread. It's open-source (zlib), so match against known zlib source like we did with jemalloc.
 
 ### Headers
 - `include/resource/ResServiceNX.h`, `include/resource/LoadedArc.h`, `include/resource/containers.h`
@@ -28,8 +23,15 @@ Decomp the remaining small/medium resource area functions using the resource hea
 python tools/compare_bytes.py FUN_name
 ```
 
+### Derivation Chains (MANDATORY)
+Every function and every struct field MUST have provenance:
+- For zlib: `// zlib 1.2.11: inflate.c:1234` — exact upstream file and line
+- For resource funcs: `[derived: ARCropolis field_name]` or `[inferred: pattern description]`
+- For SDK functions: `[derived: nn::prepo/friends/account SDK call]`
+- Any offset like `+0x10`, `+0x68` MUST get a confidence tag — no bare offsets
+
 ### Rules
-- Output: src/resource/res_small_funcs.cpp
-- Use resource headers with [derived: ARCropolis] or [inferred:] tags on every offset
+- Output: src/resource/res_medium_funcs.cpp (resource), src/lib/zlib_inflate.cpp (zlib)
+- For zlib: use upstream source with `// zlib: inflate.c:line` provenance
+- For resource funcs: use resource headers with derivation chains
 - 3-attempt limit per function
-- Not every function here is resource-related — if it's nn::friends or nn::mii, document what it is and move on
