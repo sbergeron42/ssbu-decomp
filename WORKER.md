@@ -2,32 +2,38 @@
 
 ## Model: Opus
 
-## Task: jemalloc 5.1.0 decomp — middle range
+## Task: Resource service — lookup_stream_hash (FUN_7103541200, 704 bytes)
 
-Continue matching jemalloc functions against upstream source at `lib/jemalloc/`.
+This is one of the 9 ARCropolis hook points. It's the stream file hash lookup function — the most decomp-friendly of the hook targets.
 
-### Upstream Reference
-- jemalloc 5.1.0, upstream source at `lib/jemalloc/src/`
-- Every function gets `// jemalloc 5.1.0: file.c:line` provenance comment
+### Function Details
+- Address: 0x7103541200
+- Size: 704 bytes
+- ARCropolis hook name: `lookup_stream_hash`
+- Signature (from ARCropolis): `void lookup_stream_hash(char* out_path, LoadedArc* arc, size_t* size_out, u64* offset_out, Hash40 hash)`
 
-### Address Range
-0x7103930000 — 0x7103950000 (skip functions already in build/*.o)
+### Key Context
+- This function looks up a file in the stream section of the ARC archive by hash
+- ARCropolis replaces this entire function to redirect file loads to modded content
+- The LoadedArc struct is defined in `include/resource/LoadedArc.h`
+- Stream-related fields: stream_header, stream_hash_to_entries, stream_entries, stream_file_indices, stream_datas
+
+### Headers
+- `include/resource/ResServiceNX.h`, `include/resource/LoadedArc.h`, `include/resource/containers.h`
+
+### Derivation Chains (MANDATORY)
+- `[derived: ARCropolis lookup_stream_hash hook]` — for function signature and purpose
+- `[derived: smash-arc StreamEntry/StreamData]` — for ARC struct fields
+- `[inferred:]` for any fields not in ARCropolis/smash-arc
 
 ### Quick Reference
 ```
-/c/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -Ilib/NintendoSDK/include -Ilib/NintendoSDK/include/stubs -c src/lib/FILE.cpp -o build/FILE.o
+/c/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -Ilib/NintendoSDK/include -Ilib/NintendoSDK/include/stubs -c src/resource/FILE.cpp -o build/FILE.o
 
 python tools/compare_bytes.py FUN_name
 ```
 
-### Derivation Chains (MANDATORY)
-Every function and every struct field MUST have provenance:
-- `// jemalloc 5.1.0: arena.c:1234` — exact upstream source file and line
-- `[derived: jemalloc 5.1.0 upstream]` — for fields matching upstream exactly
-- `[inferred: Nintendo delta, not in upstream 5.1.0]` — for any Nintendo-specific modifications
-- If a function doesn't match upstream, document WHAT differs and WHY
-
 ### Rules
-- ONLY create src/lib/jemalloc_a3_*.cpp
-- Use upstream jemalloc field names
-- 3-attempt limit per function
+- Output: src/resource/res_stream.cpp
+- 3-attempt limit
+- Do NOT use naked asm
