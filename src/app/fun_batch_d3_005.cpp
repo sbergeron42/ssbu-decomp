@@ -37,10 +37,10 @@ extern void FUN_7100195180();
 // 0x7100156720 — protocol-ID to name string (128 bytes)
 const char *FUN_7100156720(u64 param_1)
 {
-    const char *pcVar1 = "KeepAlive";
+    const char *default_name = "KeepAlive";
     switch ((u32)((u64)param_1 >> 0x18) & 0xff) {
     default:                   return "(KickoutReason_Unknown PROTOCOL NAME)";
-    case 0x08:                 return pcVar1;
+    case 0x08:                 return default_name;
     case 0x14:                 return "Station";
     case 0x18:                 return "Mesh";
     case 0x1c:                 return "SyncClock";
@@ -75,10 +75,10 @@ const char *FUN_7100156720(u64 param_1)
 // 0x7100156d00 — protocol-ID to flag bitmask (128 bytes)
 u64 FUN_7100156d00(u16 param_1)
 {
-    u64 uVar1 = 2;
+    u64 flag = 2;
     switch (param_1) {
     default:    return 0;
-    case 0x14:  return uVar1;
+    case 0x14:  return flag;
     case 0x18:  return 4;
     case 0x1c:  return 8;
     case 0x24:  return 0x80000;
@@ -113,11 +113,11 @@ u64 FUN_7100156d00(u16 param_1)
 // 0x710015e880 — guarded delegate: if ptr+0x50 and channel != -3, forward (80 bytes)
 u64 FUN_710015e880(s64 param_1, u32 param_2)
 {
-    u64 uVar1;
+    u64 result;
     if (*(s64 *)(param_1 + 0x50) != 0) {
         if (*(s8 *)(param_1 + 0x38) != -3) {
-            uVar1 = (u64)FUN_710015f600(*(s64 *)(param_1 + 0x50), *(s8 *)(param_1 + 0x38), param_2);
-            return uVar1;
+            result = (u64)FUN_710015f600(*(s64 *)(param_1 + 0x50), *(s8 *)(param_1 + 0x38), param_2);
+            return result;
         }
     }
     return 0xffffffff;
@@ -148,57 +148,57 @@ void FUN_7100163d70(s64 *param_1)
 // 0x7100166180 — vtable dispatch at +0x68, return non-zero bool (48 bytes)
 bool FUN_7100166180(s64 *param_1)
 {
-    s64 lVar1;
-    lVar1 = (*(s64 (*)(void))(*(s64 *)*param_1 + 0x68))();
-    return lVar1 != 0;
+    s64 result;
+    result = (*(s64 (*)(void))(*(s64 *)*param_1 + 0x68))();
+    return result != 0;
 }
 
 // 0x7100168810 — ctor: parent + sub init, set vtable + sub-vtable ptr (80 bytes)
 void FUN_7100168810(s64 *param_1)
 {
-    u64 uVar1;
+    u64 vtable_base;
     FUN_71001770c0();
     FUN_71000bed00(param_1 + 2);
-    uVar1 = PTR_DAT_71052a50c0;
-    *param_1 = (s64)(uVar1 + 0x10);
-    param_1[2] = (s64)(uVar1 + 0x48);
+    vtable_base = PTR_DAT_71052a50c0;
+    *param_1 = (s64)(vtable_base + 0x10);
+    param_1[2] = (s64)(vtable_base + 0x48);
 }
 
 // 0x710016a240 — ctor: parent + sub init, set vtable + sub-vtable ptr (80 bytes)
 void FUN_710016a240(s64 *param_1)
 {
-    u64 uVar1;
+    u64 vtable_base;
     FUN_710017c1c0();
     FUN_71000bed00(param_1 + 2);
-    uVar1 = PTR_DAT_71052a50e0;
-    *param_1 = (s64)(uVar1 + 0x10);
-    param_1[2] = (s64)(uVar1 + 0x68);
+    vtable_base = PTR_DAT_71052a50e0;
+    *param_1 = (s64)(vtable_base + 0x10);
+    param_1[2] = (s64)(vtable_base + 0x68);
 }
 
 // 0x710016b7a0 — factory: alloc 0x68-byte object, init with FUN_7100170cd0 (144 bytes)
 s64 FUN_710016b7a0(u64 param_1)
 {
-    u64 uVar1;
-    s64 lVar2;
-    uVar1 = FUN_71000b1b90();
-    lVar2 = FUN_7100130810(0x68, uVar1);
-    if (lVar2 != 0) {
-        FUN_7100170cd0(lVar2, param_1);
+    u64 alloc_pool;
+    s64 obj;
+    alloc_pool = FUN_71000b1b90();
+    obj = FUN_7100130810(0x68, alloc_pool);
+    if (obj != 0) {
+        FUN_7100170cd0(obj, param_1);
     }
-    return lVar2;
+    return obj;
 }
 
 // 0x710016d800 — struct copy: store param_2, memcpy from +0x440, copy byte+u32 (80 bytes)
 u64 *FUN_710016d800(s64 param_1, u64 param_2)
 {
-    u64 *puVar1;
-    puVar1 = *(u64 **)(param_1 + 0x460);
-    *puVar1 = param_2;
-    memcpy((void *)((s64)puVar1 + 0xc), *(void **)(param_1 + 0x440),
+    u64 *dest;
+    dest = *(u64 **)(param_1 + 0x460);
+    *dest = param_2;
+    memcpy((void *)((s64)dest + 0xc), *(void **)(param_1 + 0x440),
            (u64)*(u8 *)(param_1 + 0x448));
-    *(u8 *)((s64)puVar1 + 0x4c) = *(u8 *)(param_1 + 0x448);
-    *(u32 *)(puVar1 + 1) = *(u32 *)(param_1 + 0x44c);
-    return puVar1;
+    *(u8 *)((s64)dest + 0x4c) = *(u8 *)(param_1 + 0x448);
+    *(u32 *)(dest + 1) = *(u32 *)(param_1 + 0x44c);
+    return dest;
 }
 
 // 0x71001a8810 — ctor: parent init, set vtable (48 bytes)
@@ -211,28 +211,28 @@ void FUN_71001a8810(s64 *param_1)
 // 0x71001a8c40 — flag/channel check: match on bit pattern and mask (96 bytes)
 bool FUN_71001a8c40(s64 param_1, s64 param_2)
 {
-    u32 uVar1;
-    s64 lVar2;
-    u64 uVar3;
+    u32 channel_mask;
+    s64 channel_id;
+    u64 channel_value;
 
     if ((*(u8 *)(param_2 + 0x31) & 1) == 0) {
         if ((*(u8 *)(param_2 + 0x31) >> 1 & 1) == 0) {
-            lVar2 = FUN_7100157cf0(param_2);
-            return lVar2 == *(s64 *)(param_1 + 8);
+            channel_id = FUN_7100157cf0(param_2);
+            return channel_id == *(s64 *)(param_1 + 8);
         }
         return false;
     }
-    uVar3 = FUN_7100157cf0(param_2);
-    if (uVar3 >> 0x20 != 0) {
+    channel_value = FUN_7100157cf0(param_2);
+    if (channel_value >> 0x20 != 0) {
         return false;
     }
-    uVar1 = (u32)FUN_7100157cf0(param_2);
-    if (uVar1 != 0) {
-        if ((*(u32 *)(param_1 + 0x110) & uVar1) == 0) {
+    channel_mask = (u32)FUN_7100157cf0(param_2);
+    if (channel_mask != 0) {
+        if ((*(u32 *)(param_1 + 0x110) & channel_mask) == 0) {
             return false;
         }
         if (((*(u8 *)(param_2 + 0x31) >> 1 & 1) != 0) &&
-            ((uVar1 & (*(u32 *)(param_1 + 0x110) ^ 0xffffffff)) == 0)) {
+            ((channel_mask & (*(u32 *)(param_1 + 0x110) ^ 0xffffffff)) == 0)) {
             return false;
         }
         return true;
