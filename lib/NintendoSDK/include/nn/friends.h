@@ -28,6 +28,8 @@ public:
     nn::account::Nickname& GetNickname() const;
     bool IsValid() const;
     Result GetProfileImageUrl(nn::friends::Url*, s32);
+
+    u8 data[0x100];  // [derived: Ghidra FUN_7103755cb0 shows memcpy with size 0x100]
 };
 
 class AsyncContext {
