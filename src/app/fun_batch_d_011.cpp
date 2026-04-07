@@ -98,7 +98,7 @@ void FUN_710392ecf0(u64 param_1) { FUN_710392ed20(param_1); }
 
 // 0x710392ed20 -- FUN_710392ed50 at param_1 + 0xa0 (48 bytes)
 // +0xa0 [inferred: embedded sub-object passed to FUN_710392ed50]
-void FUN_710392ed20(s64 param_1) { FUN_710392ed50((void*)(param_1 + 0xa0)); }
+void FUN_710392ed20(u64 param_1) { FUN_710392ed50((void*)(param_1 + 0xa0)); }
 
 // 0x710392f0a0 -- return FUN_710392f0d0(p+0x9c, 2) & 1 (48 bytes)
 // +0x9c [inferred: embedded flag/state field passed to FUN_710392f0d0 with arg 2]

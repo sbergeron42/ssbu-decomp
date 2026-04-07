@@ -1,16 +1,16 @@
-# Worker: pool-e
+# Worker: pool-d
 
 ## Model: Opus
 
-## Task: Ghidra paste rewrite — fun_batch_e series (Track 2)
+## Task: Ghidra paste rewrite — fun_batch_d series (Track 2)
 
 Rewrite Ghidra paste functions with struct field access and derivation chains.
 
 ### Target Files
-- `src/app/fun_batch_e_003.cpp` — 15 funcs
-- `src/app/fun_batch_e_004.cpp` — 16 funcs
-- `src/app/fun_batch_e_005.cpp` — 14 funcs
-- `src/app/fun_batch_e_006.cpp` — 19 funcs
+- `src/app/fun_batch_d_003.cpp` — 14 funcs
+- `src/app/fun_batch_d_004.cpp` — 12 funcs
+- `src/app/fun_batch_d_009.cpp` — 47 funcs
+- `src/app/fun_batch_d_011.cpp` — 33 funcs
 
 ### Checklist per function
 - [ ] Any raw offset `+0xNN`? → needs `[derived:]` or `[inferred:]` tag
