@@ -60,7 +60,7 @@ void FUN_7103541200(FixedString256* out_path, LoadedArc* arc, u64* size_out, u64
 
         // Look up stream data through file index table
         // [derived: stream_entries -> stream_file_indices -> stream_datas lookup chain]
-        int file_group_idx = (int)(entry->raw >> 40);
+        int file_group_idx = (int)entry->file_group_index();
         u32 file_idx = arc->stream_file_indices[locale_offset + file_group_idx];
         StreamData* data = &arc->stream_datas[file_idx];
 

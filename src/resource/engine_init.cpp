@@ -96,42 +96,5 @@ bool FUN_7103741410_3741410(const u32* packed_in, u64* posix_out) {
     return success;
 }
 
-// 0x7103741520 — Map system language to game-internal language index
-// [derived: calls nn::oe::GetDesiredLanguage, nn::settings::operator==(LanguageCode, Language)]
-u32 FUN_7103741520_3741520() {
-    nn::settings::LanguageCode desired = nn::oe::GetDesiredLanguage();
-    nn::settings::Language lang;
-
-    lang = (nn::settings::Language)0;
-    if (desired == lang) return 0;    // Japanese → 0
-    lang = (nn::settings::Language)1;
-    if (desired == lang) return 1;    // English → 1
-    lang = (nn::settings::Language)2;
-    if (desired == lang) return 5;    // French → 5
-    lang = (nn::settings::Language)3;
-    if (desired == lang) return 7;    // German → 7
-    lang = (nn::settings::Language)4;
-    if (desired == lang) return 9;    // Italian → 9
-    lang = (nn::settings::Language)5;
-    if (desired == lang) return 6;    // Spanish → 6
-    lang = (nn::settings::Language)7;
-    if (desired == lang) return 13;   // Korean → 13
-    lang = (nn::settings::Language)8;
-    if (desired == lang) return 8;    // Dutch → 8
-    lang = (nn::settings::Language)10;
-    if (desired == lang) return 10;   // Russian → 10
-    lang = (nn::settings::Language)10; // [note: duplicate check in original binary, likely bug]
-    if (desired == lang) return 10;
-    lang = (nn::settings::Language)12;
-    if (desired == lang) return 4;    // BritishEnglish → 4
-    lang = (nn::settings::Language)13;
-    if (desired == lang) return 2;    // CanadianFrench → 2
-    lang = (nn::settings::Language)14;
-    if (desired == lang) return 3;    // LatinAmericanSpanish → 3
-    lang = (nn::settings::Language)15;
-    if (desired == lang) return 11;   // SimplifiedChinese → 11
-    lang = (nn::settings::Language)16;
-    if (desired == lang) return 12;   // TraditionalChinese → 12
-
-    return 1; // default: English
-}
+// FUN_7103741520 — get_language_region_index
+// MOVED to game_init.cpp (canonical version, verified match)

@@ -6,11 +6,11 @@ This file exists only as a quick overview. If it conflicts with WORKER.md, WORKE
 
 | Pool | Model | Task | File Territory | Status |
 |------|-------|------|----------------|--------|
-| pool-a | Opus | Rewrite Ghidra-paste batch_c files | fun_batch_c_010 through c_017 | assigned |
-| pool-b | Opus | Rewrite Ghidra-paste batch_d + d2 files | fun_batch_d_001, fun_batch_d2_001-008 | assigned |
-| pool-c | Opus | Rewrite Ghidra-paste batch_d3 + d4 lower files | fun_batch_d3_001-008, fun_batch_d4_001-010 | assigned |
-| pool-d | Opus | Rewrite Ghidra-paste batch_d4 upper files | fun_batch_d4_011 through d4_026 | assigned |
-| pool-e | Opus | Rewrite Ghidra-paste batch_b + d5 files | fun_batch_b_001-005, fun_batch_d5_042-054 | assigned |
+| pool-a | Opus | Resource service — lookup_stream_hash (done) | src/resource/res_stream.cpp | idle |
+| pool-b | Opus | Resource service — zstd v1.3.7 ID (done) + NX Clang analysis | src/resource/, lib/zstd/ | idle |
+| pool-c | Opus | Resource service — ResServiceNX filesystem funcs | src/resource/res_filesystem.cpp | idle |
+| pool-d | Opus | Resource service — process loop sub-functions | src/resource/res_load_helpers.cpp | assigned |
+| pool-e | Opus | Resource service — filesystem utils (0x710353xxxx) | src/resource/res_filesystem_utils.cpp | assigned |
 
 ## Rules
 - **Update WORKER.md in the pool's worktree when assigning work** — that's the only file that matters
