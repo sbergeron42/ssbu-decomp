@@ -2,19 +2,19 @@
 
 ## Model: Opus
 
-## Task: Resource service — thread creation + remaining utility functions
+## Task: Resource service — remaining scattered functions
 
 ### Targets
-- `FUN_710353d000` (864B) — thread creation wrapper (creates ResUpdateThread/LoadingThread/InflateThread)
-- `FUN_710353d760` (1,216B)
-- `FUN_710353b490` (1,184B)
-- `FUN_710353f1b0` (3,344B) — large pipeline function
-- `FUN_710353ff00` (1,360B)
-- `FUN_7103546000` (384B), `FUN_71035472b0` (3,872B) — if time permits
+- `FUN_710353b490` (1,184B) — if not done by pool-c
+- `FUN_7103549620` (1,568B) — task worker pool creator
+- `FUN_7103549c40` (704B)
+- `FUN_710354b370` (320B)
+- `FUN_710354e180` (416B), `FUN_710354e320` (448B)
+- `FUN_710354d130` (720B)
 
 ### Headers: include/resource/*.h
 ### Derivation Chains MANDATORY
-### Output: src/resource/res_thread_utils.cpp
+### Output: src/resource/res_scattered.cpp
 ### Do NOT use naked asm. 3-attempt limit.
 
 ### Quick Reference
