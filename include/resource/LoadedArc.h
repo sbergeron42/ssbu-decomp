@@ -108,8 +108,20 @@ struct StreamHeader {
     u32 stream_offset_entry_count; // +0x0C
 };
 
-// Stream entry (HashToIndex alias)
-using StreamEntry = HashToIndex;
+// Stream entry — maps a hash40 to a file group with locale information
+// [derived: FUN_7103541200 access pattern — madd with 0xC (12-byte) stride]
+// [derived: locale_type at +0x08: 0=none, 1=language, 2=region]
+#pragma pack(push, 4)
+struct StreamEntry {
+    u64 raw;           // +0x00 — lower 40 bits = hash40, upper 24 bits = file_group_index
+    u8 locale_type;    // +0x08 — 0=none, 1=language, 2=region
+    u8 pad[3];         // +0x09
+
+    u64 hash40() const { return raw & 0xFFFFFFFFFFULL; }
+    u32 file_group_index() const { return (u32)(raw >> 40); }
+};
+#pragma pack(pop)
+
 using QuickDir = HashToIndex;
 
 // Filesystem header (on-disk, at start of parsed ARC data)

@@ -178,11 +178,12 @@ struct ResServiceNX {
     bool is_loader_thread_running;   // +0x0E6 [derived: ARCropolis]
     u8 unk5;                         // +0x0E7 [unknown]
 
-    // --- ARC file path (0x0E8–0x1E7) ---
-    char data_arc_string[256];       // +0x0E8 [derived: ARCropolis — "rom:/data.arc" etc.]
+    // --- ARC file path (0x0E8–0x1E9) ---
+    // [derived: FUN_7103541200 reads u16 length at +0x1E8 and char data at +0xE8]
+    FixedString256 arc_string;       // +0x0E8 [derived: ARCropolis data_arc_string — "rom:/data.arc" etc.]
 
-    // --- I/O state (0x1E8–0x244) ---
-    void* unk6;                      // +0x1E8 [inferred: checked != 0 before ARC open]
+    // --- I/O state (0x1F0–0x244) ---
+    // [note: 6 bytes implicit padding between arc_string.length (+0x1EA) and data_arc_filenx (+0x1F0)]
     FileNX** data_arc_filenx;        // +0x1F0 [derived: ARCropolis]
     u64 buffer_size;                 // +0x1F8 [derived: ARCropolis]
     u8* buffer_array[2];             // +0x200 [derived: ARCropolis — double-buffered I/O]
