@@ -29,6 +29,7 @@ extern "C" void FUN_71039c7680(s64*, u64);  // nn::fs::GetFileSize(long*, FileHa
 extern "C" void* je_aligned_alloc(unsigned long, unsigned long);
 extern "C" void FUN_710392e590(void*);  // je_free
 extern "C" void* memcpy(void*, const void*, u64);
+extern "C" void* memset(void*, int, u64);
 extern "C" void* memmove(void*, const void*, u64);
 
 // Error handlers
@@ -49,9 +50,38 @@ s32 FUN_7103542ad0(LoadedDirectory* dir);
 // [derived: reset/update loaded directory state]
 extern "C" void FUN_7103541e30(LoadedDirectory* dir);
 
+// Additional subfunctions for ResInflateThread (FUN_71035444C0)
+// [derived: process pending stream releases on FilesystemInfo]
+extern "C" void FUN_710353f1b0(FilesystemInfo*);
+// [derived: resolve version with filesystem default — if *ver==0xFFFF, replaces with ARC header version]
+extern "C" s32 FUN_7103542f30(s32* ver);
+// [derived: directory state update helper]
+extern "C" void FUN_7103542860(LoadedDirectory* dir);
+// [derived: zstd streaming decompression state machine — returns 0=continue, 1=done, 2+=error]
+extern "C" u32 FUN_71035472b0(void* ctx, void* src, u64* decomp_remaining, u8* data_src, u64* chunk_size);
+// [derived: free decompression context — frees both sub-contexts and buffers]
+extern "C" void FUN_7103547220(void** state);
+// [derived: init decompression state — returns 0 on success]
+extern "C" u32 FUN_7103541ae0(void* state);
+// [derived: cleanup decompression filepath/dir pair]
+extern "C" void FUN_7103541a60(void** state);
+// nn::os PLT stubs used by ResInflateThread
+extern "C" void _ZN2nn2os16ReleaseSemaphoreEPNS0_13SemaphoreTypeE(void*);
+extern "C" void _ZN2nn2os9WaitEventEPNS0_9EventTypeE(void*);
+extern "C" void _ZN2nn2os11YieldThreadEv(void);
+// [derived: ZSTD_decompressStream — streaming decompression step]
+extern "C" s64 ZSTD_decompressStream_71039a3a50(void* dstream, void* output, void* input);
+// [derived: ZSTD_freeDStream]
+extern "C" s64 ZSTD_freeDStream_71039a38e0(void* dstream);
+// [derived: ZSTD_DStream cleanup helper]
+extern "C" void FUN_71039a2200(void* ctx);
+// [derived: ZSTD finalize decomp context]
+extern "C" void FUN_710399f880(void* ctx);
+
 // Globals
 __attribute__((visibility("hidden"))) extern ResServiceNX* DAT_7105331f28;
 __attribute__((visibility("hidden"))) extern s64* DAT_7105331f00;
+__attribute__((visibility("hidden"))) extern FilesystemInfo* DAT_7105331f20;
 
 // ============================================================================
 // Helper: vector push_back with OOM retry (inlined by compiler 3 times)
@@ -948,4 +978,565 @@ void ResLoadingThread(ResServiceNX* service) {
         }
 
     } while (!service->is_loader_thread_running);
+}
+
+// ============================================================================
+// FUN_7103542F30 — resolve_version_or_default
+// If *ver is the sentinel 0xFFFF, replaces it with the filesystem header's
+// version (masked to 24 bits). Self-recursive: the recursive call returns
+// the non-sentinel value unchanged.
+// [derived: called from ResInflateThread at 0x35447EC via bl #-6332]
+// [derived: accesses DAT_7105331f20 (FilesystemInfo*) → path_info → arc → fs_header → version]
+// Address: 0x7103542F30, Size: 100 bytes
+// ============================================================================
+s32 FUN_7103542f30(s32* ver) {
+    s32 val = *ver;
+    if (val != (s32)0xFFFF) return val;
+
+    // Load default version from filesystem
+    FilesystemInfo* fs = DAT_7105331f20;
+    if (fs == nullptr) return (s32)0xFFFF;
+
+    PathInformation* pi = (PathInformation*)fs->path_info;
+    LoadedArc* arc = pi->arc;
+    s32 default_ver = (s32)(arc->fs_header->version & 0xFFFFFF);
+
+    if (default_ver == (s32)0xFFFF) return (s32)0xFFFF;
+
+    // Recursive call: since default_ver != 0xFFFF, this just returns it
+    s32 temp = default_ver;
+    s32 result = FUN_7103542f30(&temp);
+    *ver = result;
+    return result;
+}
+
+// ============================================================================
+// FUN_7103547220 — free_decomp_context
+// Frees a two-level decompression context structure:
+//   state[0] → container with two sub-contexts at [0] and [8]
+//   Sub-context 0 has allocated buffers at +0xA8 and +0x58
+//   Sub-context 1 has allocated buffers at +0x40 and +0x58
+// All freed via je_free, then container itself freed.
+// [derived: called from ResInflateThread cleanup paths]
+// [derived: sub-context buffer offsets confirmed by Ghidra field analysis]
+// Address: 0x7103547220, Size: 140 bytes
+// ============================================================================
+void FUN_7103547220(void** state) {
+    void* ctx = *state;
+    if (ctx != nullptr) {
+        // Free first sub-context (decompression workspace)
+        void* sub0 = ((void**)ctx)[0];
+        if (sub0 != nullptr) {
+            void* buf_a8 = *(void**)((u8*)sub0 + 168);  // +0xA8
+            if (buf_a8 != nullptr) FUN_710392e590(buf_a8);
+            void* buf_58 = *(void**)((u8*)sub0 + 88);   // +0x58
+            if (buf_58 != nullptr) FUN_710392e590(buf_58);
+            FUN_710392e590(sub0);
+        }
+        // [derived: store null BEFORE loading next sub-context, matching binary at 0x3547264]
+        ((void**)ctx)[0] = nullptr;
+
+        // Free second sub-context (ZSTD DStream or similar)
+        void* sub1 = ((void**)ctx)[1];
+        if (sub1 != nullptr) {
+            void* buf_40 = *(void**)((u8*)sub1 + 64);   // +0x40
+            if (buf_40 != nullptr) FUN_710392e590(buf_40);
+            void* buf_58b = *(void**)((u8*)sub1 + 88);  // +0x58
+            if (buf_58b != nullptr) FUN_710392e590(buf_58b);
+            FUN_710392e590(sub1);
+            // [derived: null store inside if-block — target skips it when sub1 was already null]
+            ((void**)ctx)[1] = nullptr;
+        }
+
+        // Free container
+        FUN_710392e590(ctx);
+    }
+    *state = nullptr;
+}
+
+// ============================================================================
+// FUN_7103541A60 — cleanup_decomp_state
+// Cleans up a decompression state: finalizes the decomp context (if owned),
+// closes the ZSTD stream, frees the container.
+// [derived: implements CLEANUP_CTX + CLOSE_STREAM + free pattern]
+// [derived: field_0x1A8 == 0 means "we own it" → finalize + dealloc]
+// [derived: field_0x198 = dealloc function, field_0x1A0 = dealloc arg]
+// Address: 0x7103541A60, Size: 128 bytes
+// ============================================================================
+void FUN_7103541a60(void** state) {
+    void* ctx = *state;
+    if (ctx == nullptr) { *state = nullptr; return; }
+
+    // Clean up sub-context 0 (decompression workspace)
+    void* sub0 = ((void**)ctx)[0];
+    if (sub0 != nullptr) {
+        u64 ext_flag = *(u64*)((u8*)sub0 + 0x1A8);
+        if (ext_flag != 0) {
+            // Externally managed — just free container and return
+            FUN_710392e590(ctx);
+            *state = nullptr;
+            return;
+        }
+        // Owned: finalize decomp context
+        FUN_710399f880(sub0);
+        typedef void (*DeallocFn)(void*, void*);
+        DeallocFn dealloc = *(DeallocFn*)((u8*)sub0 + 0x198);
+        if (dealloc != nullptr) {
+            void* dealloc_arg = *(void**)((u8*)sub0 + 0x1A0);
+            dealloc(dealloc_arg, sub0);
+        } else {
+            FUN_710392e590(sub0);
+        }
+    }
+    ((void**)ctx)[0] = nullptr;
+
+    // Close ZSTD stream (sub-context 1)
+    void* stream = ((void**)ctx)[1];
+    if (stream != nullptr) {
+        ZSTD_freeDStream_71039a38e0(stream);
+    }
+
+    // Free container
+    FUN_710392e590(ctx);
+    *state = nullptr;
+}
+
+// ============================================================================
+// FUN_71035444C0 — ResInflateThread entry point
+// Address: 0x71035444C0, Size: 4,608 bytes (0x35444C0–0x35456C0)
+// Thread function for ResInflateThread — receives buffered data from the
+// loading thread and processes (decompresses/inflates) it into target buffers.
+// [derived: DATA xref from FUN_710374f360 (init) at 0x7103751b9c — thread entry]
+// [derived: ARCropolis hooks inflate, inflate_dir_file, memcpy_1/2/3 in this function]
+//
+// Processing types (switch on self->processing_type):
+//   0: Directory file data — resolve through file_infos, decompress into LoadedData
+//   1: Single file data — same resolution, full decompress path
+//   2: Directory with sub-dirs — conditional directory setup
+//   3: Similar to type 2 with different resolution
+//   4: Raw memcpy — no decompression
+//
+// For each file index from processing_file_idx_curr to processing_file_idx_count:
+//   1. Resolve FileInfo through ARC tables (with locale/region adjustment)
+//   2. Get FileData (offset, comp_size, decomp_size, flags)
+//   3. Allocate output buffer
+//   4. Decompress (zstd streaming, memcpy, or read+decompress)
+//   5. Store result in LoadedData entry
+// ============================================================================
+void FUN_71035444C0(ResServiceNX* self) {
+    if (self->is_loader_thread_running) return;
+
+    const u32 SENTINEL = 0xFFFFFF;
+    const u32 STREAM_ENTRY_SIZE = 12;
+
+    do {
+        // Wait for data from loading thread via io_swap_event
+        // [derived: +0x018 io_swap_event is EventType** wrapper]
+        void* event = **(void***)self->io_swap_event;
+        if (event != nullptr) {
+            _ZN2nn2os9WaitEventEPNS0_9EventTypeE(event);
+        }
+        if (self->is_loader_thread_running) return;
+
+        // One-time init: process pending stream releases if filesystem dirty
+        // [derived: +0x248 is init_done flag (byte), filesystem_info->unk3 at +0x68]
+        u8* init_flag = (u8*)((u8*)self + 0x248);
+        if (!*init_flag) {
+            FilesystemInfo* fs = self->filesystem_info;
+            if (fs->unk3) {
+                void* mtx = self->mutex;
+                lock_71039c1490(mtx);
+                FUN_710353f1b0(self->filesystem_info);
+                unlock_71039c14a0(mtx);
+            }
+            *init_flag = 1;
+        }
+
+        // Load processing state from service fields
+        u32 processing_type = self->processing_type;
+        u8* data_ptr = self->data_ptr;
+        u32 file_count = self->processing_file_idx_count;
+        u32 file_start = self->processing_file_idx_start;
+        u32 file_curr = self->processing_file_idx_curr;
+        u32 saved_type = processing_type;
+
+        if (file_curr >= file_count) goto post_process;
+
+        // ================================================================
+        // MAIN FILE PROCESSING LOOP
+        // Iterates from file_curr to file_count, processing each file
+        // ================================================================
+        for (; file_curr < file_count; file_curr++) {
+            if (self->is_loader_thread_running) return;
+
+            u32 combined_idx = file_start + file_curr;
+            u32 proc_type = saved_type;
+
+            // ---- Phase 1: Resolve FileInfo through ARC tables ----
+            // The resolution differs based on processing_type but all paths
+            // produce: comp_size, decomp_size, offset_in_folder, flags, folder_offset_idx
+            FilesystemInfo* fs = self->filesystem_info;
+            LoadedArc* arc = ((PathInformation*)fs->path_info)->arc;
+            FileInfo* fi_table = arc->file_infos;
+            FileInfoToFileData* fitfd_table = arc->file_info_to_datas;
+            FileData* fd_table = arc->file_datas;
+            DirectoryOffset* fo_table = arc->folder_offsets;
+
+            u32 info_to_data_idx;
+            u32 fi_flags;
+            u32 folder_offset_idx;
+            u32 file_data_idx;
+            u32 comp_size;
+            u32 decomp_size;
+            u32 offset_in_folder;
+            u32 fd_flags;
+            u32 is_compressed;
+            LoadedData* target_entry = nullptr;
+            u32 loaded_data_idx_for_entry = 0;
+
+            // Resolve FileInfo at combined_idx and apply locale adjustment
+            {
+                FileInfo* fi = &fi_table[combined_idx];
+                info_to_data_idx = fi->info_to_data_index;
+                fi_flags = fi->flags;
+
+                u32 region_type = (fi_flags >> 15) & 3;
+                if (region_type == 2) {
+                    u32 ridx = DAT_7105331f28->region_idx;
+                    u32 adj = (ridx != 0xFFFFFFFF) ? ridx : 0;
+                    info_to_data_idx += adj + 1;
+                } else if (region_type == 1) {
+                    u32 lidx = DAT_7105331f28->language_idx;
+                    u32 adj = (lidx != 0xFFFFFFFF) ? lidx : 0;
+                    info_to_data_idx += adj + 1;
+                }
+
+                // Get FileInfoToFileData entry
+                FileInfoToFileData* fitfd = &fitfd_table[info_to_data_idx];
+                file_data_idx = fitfd->file_data_index;
+                folder_offset_idx = fitfd->folder_offset_index;
+            }
+
+            // Handle sentinel file_data_idx
+            if (file_data_idx == SENTINEL) {
+                // Resolve through stream entries instead
+                // [derived: stream_entries at arc+0xC8, 12-byte stride]
+                StreamEntry* streams = arc->stream_entries;
+                StreamEntry* se = &streams[combined_idx];
+                u32 se_idx = se->file_group_index();
+                u32 se_region = (se->raw >> 15) & 3;
+
+                if (se_region == 2) {
+                    u32 ridx = DAT_7105331f28->region_idx;
+                    u32 adj = (ridx != 0xFFFFFFFF) ? ridx : 0;
+                    se_idx += adj + 1;
+                } else if (se_region == 1) {
+                    u32 lidx = DAT_7105331f28->language_idx;
+                    u32 adj = (lidx != 0xFFFFFFFF) ? lidx : 0;
+                    se_idx += adj + 1;
+                }
+
+                FileInfoToFileData* fitfd2 = &fitfd_table[se_idx];
+                file_data_idx = fitfd2->file_data_index;
+                folder_offset_idx = fitfd2->folder_offset_index;
+            }
+
+            // Load file data
+            {
+                FileData* fd = &fd_table[file_data_idx];
+                offset_in_folder = fd->offset_in_folder;
+                comp_size = fd->comp_size;
+                decomp_size = fd->decomp_size;
+                fd_flags = fd->flags;
+                is_compressed = fd_flags & 7;
+            }
+
+            // Get decomp_size — if zero, load from filesystem header
+            u32 actual_decomp_size = decomp_size & 0x7FFF;
+            if (actual_decomp_size == 0) {
+                // Load default from loaded_data->arc->uncompressed_fs
+                LoadedArc* arc2 = ((PathInformation*)fs->path_info)->arc;
+                FileSystemHeader* hdr = arc2->uncompressed_fs;
+                actual_decomp_size = hdr->file_data_count; // placeholder
+            }
+
+            u32 file_offset = offset_in_folder << 2;
+            u32 aligned_decomp = (comp_size + 15) & ~15u;
+            u32 actual_comp = comp_size;
+
+            // ---- Phase 2: Check LoadedData target (for types 1,3) ----
+            // [derived: LoadedData access via filesystem_info for file types]
+            if (proc_type == 1 || proc_type == 3) {
+                // Check LoadedData entry validity
+                if (target_entry != nullptr) {
+                    s32 refcount = (s32)__atomic_load_n(&target_entry->ref_count, __ATOMIC_ACQUIRE);
+                    if (refcount >= 1) {
+                        u8 state = __atomic_load_n(&target_entry->state, __ATOMIC_ACQUIRE);
+                        if (state != 0 && target_entry->data != nullptr) {
+                            __atomic_store_n(&target_entry->state, 3, __ATOMIC_RELEASE);
+                        }
+                    }
+                }
+            }
+
+            // ---- Phase 3: Process data based on type ----
+            bool error_flag = false;
+
+            switch (proc_type) {
+            case 0: {
+                // Simple flag set — used for directory data
+                error_flag = (folder_offset_idx != 0);
+                break;
+            }
+            case 1: {
+                // Full decompress path with allocation
+                if (target_entry == nullptr) goto next_file;
+                if (folder_offset_idx == 0) goto next_file;
+
+                // Allocate output buffer
+                u64 alloc_size = actual_decomp_size;
+                if (alloc_size == 0) alloc_size = 1;
+                void* out_buf = je_aligned_alloc(0x10, alloc_size);
+                if (out_buf == nullptr) {
+                    // OOM retry
+                    if (DAT_7105331f00 != nullptr) {
+                        s32 oom_flags = 0;
+                        s64 oom_size = (s64)alloc_size;
+                        u64 r = ((u64(*)(s64*, s32*, s64*))(*(s64*)(*DAT_7105331f00 + 0x30)))
+                                 (DAT_7105331f00, &oom_flags, &oom_size);
+                        if ((r & 1) != 0) {
+                            out_buf = je_aligned_alloc(0x10, alloc_size);
+                        }
+                    }
+                    if (out_buf == nullptr) goto next_file;
+                }
+
+                // Store buffer pointer
+                target_entry->data = (u8*)out_buf;
+                target_entry->flags &= ~0x40;
+
+                // Dispatch on compression type
+                u64 end_offset = file_offset + actual_comp;
+                u64 avail = self->offset_into_read;
+
+                if (is_compressed == 0) {
+                    // Uncompressed: memcpy
+                    if (end_offset <= avail) {
+                        memcpy(out_buf, data_ptr + file_offset, actual_comp);
+                    } else {
+                        // Chunked read with semaphore sync
+                        u64 chunk = avail - file_offset;
+                        memcpy(out_buf, data_ptr + file_offset, chunk);
+                        u64 remaining = actual_comp - chunk;
+                        u8* dst = (u8*)out_buf + chunk;
+                        u64 src_offset = file_offset + chunk;
+
+                        while (remaining > 0) {
+                            _ZN2nn2os16ReleaseSemaphoreEPNS0_13SemaphoreTypeE(
+                                *(void**)(*(u64*)self->semaphore2 + 8));
+                            _ZN2nn2os16ReleaseSemaphoreEPNS0_13SemaphoreTypeE(
+                                *(void**)(*(u64*)self->semaphore1 + 8));
+                            if (self->is_loader_thread_running) return;
+                            event = **(void***)self->io_swap_event;
+                            if (event != nullptr) {
+                                _ZN2nn2os9WaitEventEPNS0_9EventTypeE(event);
+                            }
+                            data_ptr = self->data_ptr;
+                            avail = self->offset_into_read;
+                            u64 this_chunk = avail - src_offset;
+                            if (this_chunk > remaining) this_chunk = remaining;
+                            _ZN2nn2os11YieldThreadEv();
+                            memcpy(dst, data_ptr, this_chunk);
+                            dst += this_chunk;
+                            remaining -= this_chunk;
+                            src_offset += this_chunk;
+                        }
+                    }
+                } else if (is_compressed == 3) {
+                    // zstd compressed: streaming decompress
+                    // Allocate decompression context (80 bytes)
+                    void* decomp_ctx = je_aligned_alloc(0x10, 80);
+                    if (decomp_ctx == nullptr) {
+                        if (DAT_7105331f00 != nullptr) {
+                            s32 oom_flags = 0;
+                            s64 oom_size = 80;
+                            u64 r = ((u64(*)(s64*, s32*, s64*))(*(s64*)(*DAT_7105331f00 + 0x30)))
+                                     (DAT_7105331f00, &oom_flags, &oom_size);
+                            if ((r & 1) != 0) {
+                                decomp_ctx = je_aligned_alloc(0x10, 80);
+                            }
+                        }
+                        if (decomp_ctx == nullptr) decomp_ctx = nullptr;
+                    }
+
+                    // Zero out context
+                    memset(decomp_ctx, 0, 80);
+                    *(void**)((u8*)decomp_ctx + 64) = nullptr;  // sp+64
+
+                    // Allocate ZSTD DStream (256 bytes)
+                    void* dstream = je_aligned_alloc(0x10, 256);
+                    if (dstream == nullptr) {
+                        if (DAT_7105331f00 != nullptr) {
+                            s32 oom_flags = 0;
+                            s64 oom_size = 256;
+                            u64 r = ((u64(*)(s64*, s32*, s64*))(*(s64*)(*DAT_7105331f00 + 0x30)))
+                                     (DAT_7105331f00, &oom_flags, &oom_size);
+                            if ((r & 1) != 0) {
+                                dstream = je_aligned_alloc(0x10, 256);
+                            }
+                        }
+                        if (dstream == nullptr) goto next_file;
+                    }
+
+                    // Init and decompress
+                    // ... streaming decompression loop ...
+                    // (complex state machine, placeholder)
+                    break;
+                } else {
+                    // Other compression types
+                    // Allocate small context (16 bytes)
+                    void* ctx = je_aligned_alloc(0x10, 16);
+                    if (ctx == nullptr) {
+                        if (DAT_7105331f00 != nullptr) {
+                            s32 oom_flags = 0;
+                            s64 oom_size = 16;
+                            u64 r = ((u64(*)(s64*, s32*, s64*))(*(s64*)(*DAT_7105331f00 + 0x30)))
+                                     (DAT_7105331f00, &oom_flags, &oom_size);
+                            if ((r & 1) != 0) {
+                                ctx = je_aligned_alloc(0x10, 16);
+                            }
+                        }
+                        if (ctx == nullptr) ctx = nullptr;
+                    }
+                    // Init and read+decompress
+                    break;
+                }
+                break;
+            }
+            case 2:
+            case 3: {
+                // Conditional decompress
+                if (folder_offset_idx == 0 && !error_flag) goto next_file;
+                break;
+            }
+            case 4: {
+                // Raw data — no decompression needed
+                if (folder_offset_idx != 0) goto next_file;
+                break;
+            }
+            default:
+                break;
+            }
+
+            // Write back result state
+            if (target_entry != nullptr) {
+                u8 final_state;
+                if (*(u8*)((u8*)self + 0xE5)) {  // error occurred
+                    final_state = 3;
+                } else {
+                    final_state = (u8)-1;  // 0xFF = error
+                }
+                __atomic_store_n(&target_entry->state, final_state, __ATOMIC_RELEASE);
+            }
+
+            // Advance position
+            data_ptr += aligned_decomp;
+            _ZN2nn2os11YieldThreadEv();
+
+        next_file:;
+        }
+
+    post_process:
+        // ================================================================
+        // POST-PROCESSING: update directory loading states
+        // [derived: checks current_index (+0x240) and processing_dir_idx_start (+0x238)]
+        // ================================================================
+        {
+            u32 cur_idx = self->current_index;
+            if (cur_idx != SENTINEL) {
+                FilesystemInfo* fs = self->filesystem_info;
+                u32 dir_data_idx = self->current_index;
+                if (dir_data_idx != SENTINEL && dir_data_idx < fs->loaded_directory_len) {
+                    void* fs_mtx = fs->mutex;
+                    lock_71039c1490(fs_mtx);
+                    LoadedDirectory* dirs = fs->loaded_directories;
+                    u8 dir_flags = dirs[dir_data_idx].flags;
+                    unlock_71039c14a0(fs_mtx);
+
+                    if ((dir_flags & 1) && &dirs[dir_data_idx] != nullptr) {
+                        if (*(u8*)((u8*)self + 0xE5)) {
+                            // Error: set state to -1
+                            u8* state_ptr = &dirs[dir_data_idx].state;
+                            __atomic_load_n(state_ptr, __ATOMIC_ACQUIRE);
+                            __atomic_store_n(state_ptr, (u8)-1, __ATOMIC_RELEASE);
+                        } else {
+                            FUN_7103541e30(&dirs[dir_data_idx]);
+                        }
+                    }
+                }
+
+                // Check processing_dir_idx_single (+0x23C)
+                u32 dir_single = self->processing_dir_idx_single;
+                if (dir_single != SENTINEL) {
+                    FilesystemInfo* fs2 = self->filesystem_info;
+                    u32 dir_idx2 = self->processing_dir_idx_single;
+                    if (dir_idx2 != SENTINEL && dir_idx2 < fs2->loaded_directory_len) {
+                        void* fs_mtx2 = fs2->mutex;
+                        lock_71039c1490(fs_mtx2);
+                        LoadedDirectory* dirs2 = fs2->loaded_directories;
+                        u8 dir_flags2 = dirs2[dir_idx2].flags;
+                        unlock_71039c14a0(fs_mtx2);
+
+                        if ((dir_flags2 & 1) && &dirs2[dir_idx2] != nullptr) {
+                            if (*(u8*)((u8*)self + 0xE5)) {
+                                u8* state_ptr2 = &dirs2[dir_idx2].state;
+                                __atomic_load_n(state_ptr2, __ATOMIC_ACQUIRE);
+                                __atomic_store_n(state_ptr2, (u8)-1, __ATOMIC_RELEASE);
+                            } else {
+                                u32 fg_idx = dirs2[dir_idx2].file_group_index;
+                                if (fg_idx != SENTINEL) {
+                                    s32 load_state = FUN_7103542ad0(&dirs2[dir_idx2]);
+                                    if (load_state == 2) {
+                                        FUN_7103541e30(&dirs2[dir_idx2]);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Check processing_dir_idx_start (+0x238)
+                if (!*(u8*)((u8*)self + 0xE5)) {
+                    u32 saved_proc = saved_type;
+                    if ((saved_proc | 2) == 2) {
+                        FilesystemInfo* fs3 = self->filesystem_info;
+                        u32 dir_idx3 = self->processing_dir_idx_start;
+                        if (dir_idx3 != SENTINEL && dir_idx3 < fs3->loaded_directory_len) {
+                            void* fs_mtx3 = fs3->mutex;
+                            lock_71039c1490(fs_mtx3);
+                            LoadedDirectory* dirs3 = fs3->loaded_directories;
+                            u8 dir_flags3 = dirs3[dir_idx3].flags;
+                            unlock_71039c14a0(fs_mtx3);
+
+                            if ((dir_flags3 & 1) && &dirs3[dir_idx3] != nullptr) {
+                                u8* flags_byte = &dirs3[dir_idx3].flags;
+                                if (saved_proc == 0) {
+                                    *flags_byte |= 0x02;
+                                } else {
+                                    *flags_byte |= 0x04;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Clear init flag and signal semaphores
+            *init_flag = 0;
+            _ZN2nn2os16ReleaseSemaphoreEPNS0_13SemaphoreTypeE(
+                *(void**)(*(u64*)self->semaphore2 + 8));
+            _ZN2nn2os16ReleaseSemaphoreEPNS0_13SemaphoreTypeE(
+                *(void**)(*(u64*)self->semaphore1 + 8));
+        }
+    } while (!self->is_loader_thread_running);
 }
