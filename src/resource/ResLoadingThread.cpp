@@ -8,6 +8,7 @@
 #include "types.h"
 #include "resource/ResServiceNX.h"
 #include "resource/LoadedArc.h"
+#include "resource/LZ4Frame.h"
 
 using namespace resource;
 
@@ -59,8 +60,11 @@ extern "C" void FUN_710353f1b0(FilesystemInfo*);
 extern "C" s32 FUN_7103542f30(s32* ver);
 // [derived: directory state update helper]
 extern "C" void FUN_7103542860(LoadedDirectory* dir);
-// [derived: zstd streaming decompression state machine — returns 0=continue, 1=done, 2+=error]
-extern "C" u32 FUN_71035472b0(void* ctx, void* src, u64* decomp_remaining, u8* data_src, u64* chunk_size);
+// [derived: LZ4F_decompress — LZ4 frame streaming decompression state machine]
+// [identified: LZ4 v1.8.x library, lz4frame.c:LZ4F_decompress() — NOT zstd]
+// [evidence: XXH32 seed constants 0x24234428/0x85EBCA77/0x61C8864F, 15-state machine]
+// defined below at line ~1215
+extern "C" u32 FUN_71035472b0(LZ4F_wrapper* ctx, void* dstBuffer, u64* dstSizePtr, u8* srcBuffer, u64* srcSizePtr);
 // [derived: free decompression context — frees both sub-contexts and buffers]
 extern "C" void FUN_7103547220(void** state);
 // [derived: init decompression state — returns 0 on success, 0x80000004 on alloc failure]
@@ -83,6 +87,24 @@ extern "C" s64 ZSTD_freeDStream_71039a38e0(void* dstream);
 extern "C" void FUN_71039a2200(void* ctx);
 // [derived: ZSTD finalize decomp context]
 extern "C" void FUN_710399f880(void* ctx);
+
+// LZ4 library functions (LZ4 v1.8.x, bundled in Nintendo SDK 8.2.1)
+// [derived: called from FUN_71035472b0 (LZ4F_decompress)]
+// [derived: LZ4F_decodeHeader — parses frame header, returns bytes consumed]
+extern "C" u64 FUN_710399d650(LZ4F_dctx* dctx, const u8* src);
+// [derived: LZ4_decompress_safe_usingDict — block decompression with dictionary]
+extern "C" s32 FUN_710399d850(const u8* src, u8* dst, u32 compressedSize,
+                               u64 maxDecompressedSize, const u8* dictStart, u32 dictSize);
+// [derived: XXH32_update — streaming hash update]
+extern "C" void FUN_710399ee20(XXH32_state_t* state, const void* input, u64 length);
+// [derived: XXH32_digest — finalize streaming hash, return 32-bit hash]
+extern "C" u32 FUN_710399efc0(XXH32_state_t* state);
+// [derived: XXH32 — one-shot hash computation]
+extern "C" s32 FUN_710399eb90(const void* input, u64 length);
+
+// Error code lookup table for LZ4F_decompress
+// [derived: adrp+add at 0x7103547fd0, indexed by (hint + 18)]
+__attribute__((visibility("hidden"))) extern u32 DAT_7104560990[];
 
 // Globals
 __attribute__((visibility("hidden"))) extern ResServiceNX* DAT_7105331f28;
@@ -1208,6 +1230,833 @@ alloc_dctx:
         *(volatile u64*)(p + 0x7158) = 0;
 
         return 0;
+    }
+}
+
+// ============================================================================
+// FUN_71035472B0 — LZ4F_decompress (modified for game)
+// LZ4 frame streaming decompression state machine with 15 states.
+// [identified: LZ4 library v1.8.x, lz4frame.c:LZ4F_decompress()]
+// [modified: je_aligned_alloc(0x10, size) + OOM retry replaces standard malloc/free]
+// [modified: return convention: 0=done, 1=continue, 0x80000001=bad_param,
+//  0x80000002=decomp_error, 0x80000003=uninitialized]
+// [evidence: XXH32 reset constants at +0x88/+0xB8 match XXH32_reset(state, 0)]
+//
+// Parameters:
+//   ctx:        LZ4F_wrapper* — wrapper[1] = LZ4F_dctx*
+//   dstBuffer:  output buffer base pointer
+//   dstSizePtr: in: available output size; out: bytes produced
+//   srcBuffer:  compressed input data
+//   srcSizePtr: in: available input size; out: bytes consumed
+//
+// State machine stages:
+//   0: getFrameHeader     — decode LZ4 frame header from src
+//   1: storeFrameHeader   — buffer partial frame header
+//   2: init               — allocate tmpIn/tmpOutBuffer based on maxBlockSize
+//   3: getBlockHeader     — read 4-byte block header (size + compressed flag)
+//   4: storeBlockHeader   — buffer partial block header
+//   5: copyDirect         — copy uncompressed block to output
+//   6: getBlockChecksum   — read 4-byte block checksum
+//   7: getCBlock          — decompress compressed block (direct or via tmpIn)
+//   8: storeCBlock        — buffer partial compressed block into tmpIn
+//   9: flushOut           — flush decompressed data from tmpOut to output
+//  10: getSuffix          — read content checksum at end of frame
+//  11: storeSuffix        — buffer partial content checksum
+//  12: getSFrameSize      — read skippable frame size
+//  13: storeSFrameSize    — buffer partial skippable frame size
+//  14: skipSkippable      — skip over skippable frame data
+//
+// Address: 0x71035472B0, Size: 3,860 bytes
+// ============================================================================
+
+// Ring buffer window management helper (inlined in original)
+// Updates dict/dictSize when output crosses the ring buffer boundary.
+// Window size capped at 64KB (LZ4 maximum).
+static inline void lz4f_update_window_copy(
+    LZ4F_dctx* dctx, u8* dstPtr, u8* dstBuffer, u8* srcData, u64 copyLen)
+{
+    u8* dictPtr;
+    u64 dSize = dctx->dictSize;
+
+    if (dSize == 0) {
+        dctx->dict = dstPtr;
+        dictPtr = dstPtr;
+    } else {
+        dictPtr = dctx->dict;
+    }
+
+    u8* dictEnd = dictPtr + dSize;
+    if (dictEnd == dstPtr) {
+        // Contiguous — just extend
+        dctx->dictSize = dSize + copyLen;
+        return;
+    }
+
+    // Non-contiguous — check if output wraps into ring buffer range
+    u64 outputOffset = copyLen + (u64)(dstPtr - dstBuffer);
+    if (outputOffset >= 0x10000) {
+        // Output too far from ring buffer — reset to dstBuffer
+        dctx->dict = dstBuffer;
+        return;
+    }
+
+    u8* ringBase = dctx->tmpOutBuffer;
+    if (dictPtr == ringBase) {
+        // Dict starts at ring buffer base
+        if (dctx->maxBufferSize < dSize + copyLen) {
+            // Overflow — shift ring buffer contents
+            u64 keep = 0x10000 - copyLen;
+            memcpy(dictPtr, dictEnd - keep, keep);
+            dctx->dictSize = keep;
+            dictEnd = ringBase + keep;
+        }
+        memcpy(dictEnd, dstPtr, copyLen);
+        dctx->dictSize = dctx->dictSize + copyLen;
+    } else {
+        // Dict not at ring buffer base — consolidate
+        u64 keep = dSize;
+        if (0x10000 - copyLen <= dSize) {
+            keep = 0x10000 - copyLen;
+        }
+        memcpy(ringBase, dictEnd - keep, keep);
+        memcpy(ringBase + keep, dstPtr, copyLen);
+        dctx->dictSize = keep + copyLen;
+        dctx->dict = ringBase;
+    }
+}
+
+// Flush-path window update for decompressed data routed through tmpOut
+static inline void lz4f_update_window_flush(
+    LZ4F_dctx* dctx, u8* dstPtr, u8* dstBuffer, u64 copyLen)
+{
+    u8* dictPtr;
+    u64 dSize = dctx->dictSize;
+
+    if (dSize == 0) {
+        dctx->dict = dstPtr;
+        dictPtr = dstPtr;
+    } else {
+        dictPtr = dctx->dict;
+    }
+
+    u8* dictEnd = dictPtr + dSize;
+    if (dictEnd == dstPtr) {
+        dctx->dictSize = dSize + copyLen;
+        return;
+    }
+
+    u64 outputOffset = copyLen + (u64)(dstPtr - dstBuffer);
+    if (outputOffset >= 0x10000) {
+        dctx->dict = dstBuffer;
+        return;
+    }
+
+    u8* ringBase = dctx->tmpOutBuffer;
+    if (dictPtr != ringBase) {
+        // Consolidate window around tmpOut
+        u64 tmpOutOff = (u64)(dctx->tmpOut - ringBase);
+        u64 outTotal = dctx->tmpOutSize;
+        u64 window = outTotal;
+        if (outTotal < 0x10001) window = 0x10000;
+        u64 backCopy = window - outTotal;
+        if (backCopy > tmpOutOff) backCopy = tmpOutOff;
+        if (backCopy != 0) {
+            memcpy(dctx->tmpOut - backCopy,
+                   dictEnd - (dctx->tmpOutStart + backCopy),
+                   backCopy);
+        }
+        dctx->dict = ringBase;
+        dctx->dictSize = dctx->tmpOutStart + tmpOutOff + copyLen;
+    } else {
+        dctx->dictSize = dSize + copyLen;
+    }
+}
+
+extern "C" u32 FUN_71035472b0(LZ4F_wrapper* wrapper, void* dstBuffer, u64* dstSizePtr,
+                               u8* srcBuffer, u64* srcSizePtr)
+{
+    // Parameter validation
+    if (dstBuffer == nullptr) return 0x80000001;
+    if (srcBuffer == nullptr) return 0x80000001;
+    u64 srcSize = *srcSizePtr;
+    if (srcSize == 0) return 0x80000001;
+
+    LZ4F_dctx* dctx = wrapper->dctx;
+    if (dctx == nullptr) return 0x80000003;
+
+    // Setup tracking pointers
+    u8* srcPtr = srcBuffer;
+    u8* const srcEnd = srcBuffer + srcSize;
+    u8* dstPtr = (u8*)dstBuffer;
+    u8* const dstEnd = (u8*)dstBuffer + *dstSizePtr;
+
+    // Function-scope variables for cross-goto communication
+    // (matches register usage in original: hint in x26, consumed in x8, produced in x9)
+    u64 hint = 0;
+    u8* parseBuf = nullptr;
+
+    // Cross-goto shared variables (declared here to avoid bypassing initialization)
+    u64 copyDone, target, remaining, need, copyLen, newSize, srcRem;
+    u64 blockTarget, dstAvail, totalDecoded, alreadyFlushed, flushRem;
+    u64 outAlloc;
+    u8* copyDst;
+    u8* nextSrc;
+    u8* outBuf;
+    u8* blockData;
+    s32 bcFlag;
+
+    // Main state machine loop
+next_stage:
+    switch (dctx->dStage) {
+
+    // ---- Stage 0: getFrameHeader ----
+    case 0: {
+        u64 remaining = srcEnd - srcPtr;
+        if (remaining < 19) { // LZ4F_HEADER_SIZE_MAX
+            dctx->tmpInSize = 0;
+            if (remaining == 0) {
+                hint = 7; // LZ4F_HEADER_SIZE_MIN
+                goto return_progress_zero;
+            }
+            copyDone = 0;
+            dctx->tmpInTarget = 7;
+            dctx->dStage = 1;
+            copyDst = dctx->header;
+            goto do_store_header;
+        }
+        u64 consumed = FUN_710399d650(dctx, srcPtr);
+        srcPtr += consumed;
+        if (consumed > (u64)(-19)) goto return_decode_error;
+        goto next_stage;
+    }
+
+    // ---- Stage 1: storeFrameHeader ----
+    case 1: {
+        copyDone = dctx->tmpInSize;
+        target = dctx->tmpInTarget;
+        remaining = srcEnd - srcPtr;
+        copyDst = dctx->header + copyDone;
+    do_store_header:
+        need = target - copyDone;
+        copyLen = (remaining < need) ? remaining : need;
+        memcpy(copyDst, srcPtr, copyLen);
+        newSize = copyLen + dctx->tmpInSize;
+        srcPtr += copyLen;
+        dctx->tmpInSize = newSize;
+        if (newSize < dctx->tmpInTarget) {
+            hint = (4 - newSize) + dctx->tmpInTarget;
+            goto return_exit;
+        }
+        u64 consumed = FUN_710399d650(dctx, dctx->header);
+        if (consumed > (u64)(-19)) goto return_decode_error;
+        goto next_stage;
+    }
+
+    // ---- Stage 2: init ----
+    case 2: {
+        if (dctx->frameInfo.contentChecksumFlag != 0) {
+            // XXH32_reset(&dctx->xxh, 0)
+            dctx->xxh.total_len_32 = 0;
+            dctx->xxh.large_len = 0;
+            dctx->xxh.v1 = 0x24234428;
+            dctx->xxh.v2 = 0x85EBCA77;
+            dctx->xxh.v3 = 0;
+            dctx->xxh.v4 = 0x61C8864F;
+            memset(dctx->xxh.mem32, 0, sizeof(dctx->xxh.mem32));
+            dctx->xxh.memsize = 0;
+        }
+
+        u64 blockSize = dctx->maxBlockSize;
+        u64 bufferSize = blockSize + (u64)(dctx->frameInfo.blockMode == 0) * 0x20000;
+        if (bufferSize <= dctx->maxBufferSize) {
+            outBuf = dctx->tmpOutBuffer;
+            goto init_done;
+        }
+
+        dctx->maxBufferSize = 0;
+        if (dctx->tmpIn != nullptr) {
+            FUN_710392e590(dctx->tmpIn);
+            blockSize = dctx->maxBlockSize;
+        }
+
+        {
+            u64 tmpInAlloc = blockSize + 4;
+            if (tmpInAlloc == 0) tmpInAlloc = 1;
+            u8* tmpInBuf = (u8*)je_aligned_alloc(0x10, tmpInAlloc);
+            if (tmpInBuf == nullptr) {
+                if (DAT_7105331f00 != nullptr) {
+                    s32 oom_flags = 0;
+                    u64 oom_size = tmpInAlloc;
+                    u64 r = ((u64(*)(s64*, s32*, u64*))(*(u64*)(*DAT_7105331f00 + 0x30)))
+                             (DAT_7105331f00, &oom_flags, &oom_size);
+                    if ((r & 1) != 0) {
+                        tmpInBuf = (u8*)je_aligned_alloc(0x10, tmpInAlloc);
+                        if (tmpInBuf != nullptr) goto got_tmpin;
+                    }
+                }
+                dctx->tmpIn = nullptr;
+                hint = 9;
+                goto do_lookup;
+            }
+        got_tmpin:
+            dctx->tmpIn = tmpInBuf;
+        }
+
+        if (dctx->tmpOutBuffer != nullptr) {
+            FUN_710392e590(dctx->tmpOutBuffer);
+        }
+
+        {
+            outAlloc = bufferSize;
+            if (outAlloc == 0) outAlloc = 1;
+            outBuf = (u8*)je_aligned_alloc(0x10, outAlloc);
+            if (outBuf == nullptr) {
+                if (DAT_7105331f00 != nullptr) {
+                    s32 oom_flags2 = 0;
+                    u64 oom_size2 = outAlloc;
+                    u64 r2 = ((u64(*)(s64*, s32*, u64*))(*(u64*)(*DAT_7105331f00 + 0x30)))
+                              (DAT_7105331f00, &oom_flags2, &oom_size2);
+                    if ((r2 & 1) != 0) {
+                        outBuf = (u8*)je_aligned_alloc(0x10, outAlloc);
+                        if (outBuf != nullptr) goto got_outbuf;
+                    }
+                }
+                dctx->tmpOutBuffer = nullptr;
+                hint = 9;
+                goto do_lookup;
+            }
+        got_outbuf:
+            dctx->tmpOutBuffer = outBuf;
+            dctx->maxBufferSize = bufferSize;
+
+        init_done:
+            dctx->tmpInSize = 0;
+            dctx->tmpInTarget = 0;
+            dctx->tmpOut = outBuf;
+            dctx->tmpOutSize = 0;
+            dctx->tmpOutStart = 0;
+            dctx->dStage = 3;
+        }
+        // fall through to case 3
+    }
+
+    // ---- Stage 3: getBlockHeader ----
+    case 3: {
+        remaining = srcEnd - srcPtr;
+        if (remaining >= 4) {
+            parseBuf = srcPtr;
+            srcPtr += 4;
+            goto parse_block_header;
+        }
+        dctx->tmpInSize = 0;
+        dctx->dStage = 4;
+        copyDone = 0;
+        srcRem = remaining;
+        goto do_store_block_header;
+    }
+
+    // ---- Stage 4: storeBlockHeader ----
+    case 4: {
+        copyDone = dctx->tmpInSize;
+        srcRem = srcEnd - srcPtr;
+    do_store_block_header:
+        need = 4 - copyDone;
+        copyLen = (srcRem < need) ? srcRem : need;
+        memcpy(dctx->tmpIn + copyDone, srcPtr, copyLen);
+        newSize = dctx->tmpInSize + copyLen;
+        srcPtr += copyLen;
+        dctx->tmpInSize = newSize;
+        if (newSize < 4) {
+            hint = 4 - newSize;
+            goto return_exit;
+        }
+        parseBuf = dctx->tmpIn;
+
+    parse_block_header:;
+        u64 val = (u64)parseBuf[0];
+        val |= (u64)parseBuf[1] << 8;
+        val |= (u64)parseBuf[2] << 16;
+        val |= (u64)parseBuf[3] << 24;
+        u64 blockSize = val & 0x7FFFFFFF;
+
+        if ((u32)blockSize == 0) {
+            dctx->dStage = 10;
+            goto next_stage;
+        }
+        if (blockSize > dctx->maxBlockSize) {
+            hint = 0x10;
+            goto do_lookup;
+        }
+
+        if ((s32)(u32)val < 0) {
+            // Uncompressed block
+            dctx->tmpInTarget = blockSize;
+            if (dctx->frameInfo.blockChecksumFlag != 0) {
+                dctx->blockChecksum.total_len_32 = 0;
+                dctx->blockChecksum.large_len = 0;
+                dctx->blockChecksum.v1 = 0x24234428;
+                dctx->blockChecksum.v2 = 0x85EBCA77;
+                dctx->blockChecksum.v3 = 0;
+                dctx->blockChecksum.v4 = 0x61C8864F;
+                memset(dctx->blockChecksum.mem32, 0, sizeof(dctx->blockChecksum.mem32));
+                dctx->blockChecksum.memsize = 0;
+            }
+            dctx->dStage = 5;
+        } else {
+            // Compressed block
+            u64 target = blockSize + (u32)(dctx->frameInfo.blockChecksumFlag << 2);
+            dctx->dStage = 7;
+            dctx->tmpInTarget = target;
+            if (dstPtr == dstEnd) {
+                hint = target + 4;
+                goto return_exit;
+            }
+        }
+        goto next_stage;
+    }
+
+    // ---- Stage 5: copyDirect (uncompressed block) ----
+    case 5: {
+        u64 srcRem = srcEnd - srcPtr;
+        u64 dstRem = dstEnd - dstPtr;
+        u64 avail = (srcRem < dstRem) ? srcRem : dstRem;
+        u64 blockRem = dctx->tmpInTarget;
+        u64 copyLen = (avail > blockRem) ? blockRem : avail;
+
+        memcpy(dstPtr, srcPtr, copyLen);
+
+        if (dctx->frameInfo.blockChecksumFlag != 0)
+            FUN_710399ee20(&dctx->blockChecksum, srcPtr, copyLen);
+        if (dctx->frameInfo.contentChecksumFlag != 0)
+            FUN_710399ee20(&dctx->xxh, srcPtr, copyLen);
+        if (dctx->frameInfo.contentSize != 0)
+            dctx->frameRemainingSize -= copyLen;
+
+        if (dctx->frameInfo.blockMode == 0)
+            lz4f_update_window_copy(dctx, dstPtr, (u8*)dstBuffer, srcPtr, copyLen);
+
+        u8* nextSrc = srcPtr + copyLen;
+        dstPtr += copyLen;
+        u64 newRem = dctx->tmpInTarget - copyLen;
+        if (newRem != 0) {
+            dctx->tmpInTarget = newRem;
+            hint = newRem + (u64)((u32)(dctx->frameInfo.contentChecksumFlag) << 2);
+            srcPtr = nextSrc;
+            goto return_exit;
+        }
+        srcPtr = nextSrc;
+        if (dctx->frameInfo.blockChecksumFlag == 0) {
+            dctx->dStage = 3;
+        } else {
+            dctx->tmpInSize = 0;
+            dctx->dStage = 6;
+        }
+        goto next_stage;
+    }
+
+    // ---- Stage 6: getBlockChecksum ----
+    case 6: {
+        u64 copyDone = dctx->tmpInSize;
+        u64 remaining = srcEnd - srcPtr;
+        if (remaining >= 4 && copyDone == 0) {
+            u8* nextSrc = srcPtr + 4;
+            u32 stored = *(u32*)srcPtr;
+            u32 computed = FUN_710399efc0(&dctx->blockChecksum);
+            if (stored != computed) { hint = 0xb; goto do_lookup; }
+            dctx->dStage = 3;
+            srcPtr = nextSrc;
+            goto next_stage;
+        }
+        u64 need = 4 - copyDone;
+        u64 copyLen = (remaining < need) ? remaining : need;
+        memcpy(dctx->header + copyDone, srcPtr, copyLen);
+        u64 newSize = copyLen + dctx->tmpInSize;
+        u8* nextSrc = srcPtr + copyLen;
+        dctx->tmpInSize = newSize;
+        if (newSize < 4) {
+            hint = 1;
+            srcPtr = nextSrc;
+            goto return_exit;
+        }
+        {
+            u32 stored = *(u32*)dctx->header;
+            u32 computed = FUN_710399efc0(&dctx->blockChecksum);
+            if (stored != computed) { hint = 0xb; goto do_lookup; }
+        }
+        dctx->dStage = 3;
+        srcPtr = nextSrc;
+        goto next_stage;
+    }
+
+    // ---- Stage 7: getCBlock (compressed block) ----
+    case 7: {
+        blockTarget = dctx->tmpInTarget;
+        remaining = srcEnd - srcPtr;
+        if (blockTarget <= remaining) {
+            bcFlag = dctx->frameInfo.blockChecksumFlag;
+            nextSrc = srcPtr + blockTarget;
+            blockData = srcPtr;
+            goto do_decompress;
+        }
+        dctx->tmpInSize = 0;
+        dctx->dStage = 8;
+        goto next_stage;
+    }
+
+    // ---- Stage 8: storeCBlock ----
+    case 8: {
+        copyDone = dctx->tmpInSize;
+        target = dctx->tmpInTarget;
+        remaining = srcEnd - srcPtr;
+        need = target - copyDone;
+        copyLen = (remaining < need) ? remaining : need;
+
+        memcpy(dctx->tmpIn + copyDone, srcPtr, copyLen);
+        blockTarget = dctx->tmpInTarget;
+        newSize = dctx->tmpInSize + copyLen;
+        dctx->tmpInSize = newSize;
+        if (newSize < blockTarget) {
+            hint = (4 - newSize) + blockTarget;
+            srcPtr += copyLen;
+            goto return_exit;
+        }
+        {
+            bcFlag = dctx->frameInfo.blockChecksumFlag;
+            nextSrc = srcPtr + copyLen;
+            blockData = dctx->tmpIn;
+
+        do_decompress:
+            srcPtr = nextSrc;
+            if (bcFlag != 0) {
+                blockTarget -= 4;
+                dctx->tmpInTarget = blockTarget;
+                s32 stored = *(s32*)(blockData + blockTarget);
+                s32 computed = FUN_710399eb90(blockData, blockTarget);
+                if (stored != computed) { hint = 0xb; goto do_lookup; }
+            }
+
+            u64 maxDecomp = dctx->maxBlockSize;
+            u64 dstAvail = dstEnd - dstPtr;
+            if (dstAvail < maxDecomp) {
+                // Decompress into ring buffer (tmpOut)
+                if (dctx->frameInfo.blockMode == 0) {
+                    u8* ringBase = dctx->tmpOutBuffer;
+                    u8* dictPtr = dctx->dict;
+                    u64 dSize = dctx->dictSize;
+                    if (dictPtr == ringBase) {
+                        if (dSize > 0x20000) {
+                            memcpy(dictPtr, dictPtr + (dSize - 0x10000), 0x10000);
+                            blockTarget = dctx->tmpInTarget;
+                            dictPtr = dctx->tmpOutBuffer;
+                            maxDecomp = dctx->maxBlockSize;
+                            dctx->dictSize = 0x10000;
+                            dSize = 0x10000;
+                        }
+                        dctx->tmpOut = dictPtr + dSize;
+                    } else {
+                        u64 capped = dSize;
+                        if (dSize > 0xFFFF) capped = 0x10000;
+                        dctx->tmpOut = ringBase + capped;
+                    }
+                } else {
+                    // independent mode — reuse existing positions
+                }
+
+                u8* dp = dctx->dict;
+                u64 ds = dctx->dictSize;
+                u8* dictStart; u32 dictLen;
+                if (dp != nullptr && ds > 0x40000000ULL) {
+                    dictStart = dp + ds - 0x10000;
+                    dictLen = 0x10000;
+                } else {
+                    dictStart = dp;
+                    dictLen = (u32)ds;
+                }
+
+                s32 decompResult = FUN_710399d850(blockData, dctx->tmpOut,
+                                                   (u32)blockTarget, maxDecomp,
+                                                   dictStart, dictLen);
+                if (decompResult < 0) { hint = 2; goto do_lookup; }
+
+                if (dctx->frameInfo.contentChecksumFlag != 0)
+                    FUN_710399ee20(&dctx->xxh, dctx->tmpOut, (u64)(s64)decompResult);
+                u64 decompLen = (u64)(s64)decompResult;
+                if (dctx->frameInfo.contentSize != 0)
+                    dctx->frameRemainingSize -= decompLen;
+
+                u64 flushed = 0;
+                dctx->dStage = 9;
+                dctx->tmpOutSize = decompLen;
+                dctx->tmpOutStart = 0;
+                goto do_flush;
+            } else {
+                // Decompress directly into output buffer
+                u8* dp2 = dctx->dict;
+                u64 ds2 = dctx->dictSize;
+                u8* dictStart2; u32 dictLen2;
+                if (dp2 != nullptr && ds2 > 0x40000000ULL) {
+                    dictStart2 = dp2 + ds2 - 0x10000;
+                    dictLen2 = 0x10000;
+                } else {
+                    dictStart2 = dp2;
+                    dictLen2 = (u32)ds2;
+                }
+
+                s32 decompResult = FUN_710399d850(blockData, dstPtr,
+                                                   (u32)blockTarget, maxDecomp,
+                                                   dictStart2, dictLen2);
+                if (decompResult < 0) return 0x80000002;
+
+                if (dctx->frameInfo.contentChecksumFlag != 0)
+                    FUN_710399ee20(&dctx->xxh, dstPtr, (u64)(s64)decompResult);
+                u64 decompLen = (u64)(s64)decompResult;
+                if (dctx->frameInfo.contentSize != 0)
+                    dctx->frameRemainingSize -= decompLen;
+
+                if (dctx->frameInfo.blockMode == 0)
+                    lz4f_update_window_copy(dctx, dstPtr, (u8*)dstBuffer, dstPtr, decompLen);
+                dstPtr += decompLen;
+            }
+        }
+        dctx->dStage = 3;
+        goto next_stage;
+    }
+
+    // ---- Stage 9: flushOut ----
+    case 9: {
+        dstAvail = dstEnd - dstPtr;
+        totalDecoded = dctx->tmpOutSize;
+        alreadyFlushed = dctx->tmpOutStart;
+    do_flush:
+        flushRem = totalDecoded - alreadyFlushed;
+        copyLen = (dstAvail < flushRem) ? dstAvail : flushRem;
+
+        memcpy(dstPtr, dctx->tmpOut + alreadyFlushed, copyLen);
+
+        if (dctx->frameInfo.blockMode == 0)
+            lz4f_update_window_flush(dctx, dstPtr, (u8*)dstBuffer, copyLen);
+
+        u64 newFlushed = dctx->tmpOutStart + copyLen;
+        dstPtr += copyLen;
+        dctx->tmpOutStart = newFlushed;
+        if (newFlushed != dctx->tmpOutSize) {
+            hint = 4;
+            goto return_exit;
+        }
+        dctx->dStage = 3;
+        goto next_stage;
+    }
+
+    // ---- Stage 10: getSuffix ----
+    case 10: {
+        if (dctx->frameRemainingSize != 0) { hint = 4; goto do_lookup; }
+        if (dctx->frameInfo.contentChecksumFlag == 0) {
+            hint = 0;
+            dctx->dStage = 0;
+            dctx->dict = nullptr;
+            dctx->dictSize = 0;
+            goto return_final;
+        }
+        u64 remaining = srcEnd - srcPtr;
+        if (remaining >= 4) {
+            u8* nextSrc = srcPtr + 4;
+            u32 stored = *(u32*)srcPtr;
+            u32 computed = FUN_710399efc0(&dctx->xxh);
+            if (stored != computed) { hint = 0; goto do_lookup; }
+            hint = 0;
+            dctx->dStage = 0;
+            dctx->dict = nullptr;
+            dctx->dictSize = 0;
+            srcPtr = nextSrc;
+            goto return_final;
+        }
+        dctx->tmpInSize = 0;
+        dctx->dStage = 11;
+        goto do_store_suffix;
+    }
+
+    // ---- Stage 11: storeSuffix ----
+    case 11: {
+        copyDone = dctx->tmpInSize;
+        remaining = srcEnd - srcPtr;
+    do_store_suffix:
+        need = 4 - copyDone;
+        copyLen = (remaining < need) ? remaining : need;
+        memcpy(dctx->tmpIn + copyDone, srcPtr, copyLen);
+        u64 newSize = dctx->tmpInSize + copyLen;
+        u8* nextSrc = srcPtr + copyLen;
+        dctx->tmpInSize = newSize;
+        if (newSize < 4) {
+            hint = 4 - newSize;
+            srcPtr = nextSrc;
+            goto return_exit;
+        }
+        {
+            u32 stored = *(u32*)dctx->tmpIn;
+            u32 computed = FUN_710399efc0(&dctx->xxh);
+            if (stored != computed) { hint = 0; goto do_lookup; }
+        }
+        hint = 0;
+        dctx->dStage = 0;
+        dctx->dict = nullptr;
+        dctx->dictSize = 0;
+        srcPtr = nextSrc;
+        goto return_final;
+    }
+
+    // ---- Stage 12: getSFrameSize ----
+    case 12: {
+        remaining = srcEnd - srcPtr;
+        if (remaining >= 4) {
+            parseBuf = srcPtr;
+            nextSrc = srcPtr + 4;
+            srcPtr = nextSrc;
+            goto parse_sframe_size;
+        }
+        dctx->tmpInSize = 4;
+        dctx->tmpInTarget = 8;
+        copyDone = 4;
+        target = 8;
+        dctx->dStage = 13;
+        copyDst = dctx->header + 4;
+        goto do_store_sframe;
+    }
+
+    // ---- Stage 13: storeSFrameSize ----
+    case 13: {
+        copyDone = dctx->tmpInSize;
+        target = dctx->tmpInTarget;
+        remaining = srcEnd - srcPtr;
+        copyDst = dctx->header + copyDone;
+    do_store_sframe:
+        need = target - copyDone;
+        copyLen = (remaining < need) ? remaining : need;
+        memcpy(copyDst, srcPtr, copyLen);
+        newSize = copyLen + dctx->tmpInSize;
+        nextSrc = srcPtr + copyLen;
+        hint = dctx->tmpInTarget - newSize;
+        dctx->tmpInSize = newSize;
+        if (dctx->tmpInTarget > newSize && hint != 0) {
+            srcPtr = nextSrc;
+            goto return_exit;
+        }
+        parseBuf = dctx->header + 4;
+
+    parse_sframe_size:;
+        {
+            u64 skipSize = (u64)*(u32*)parseBuf;
+            dctx->frameInfo.contentSize = skipSize;
+            dctx->tmpInTarget = skipSize;
+            dctx->dStage = 14;
+            srcPtr = nextSrc;
+            goto next_stage;
+        }
+    }
+
+    // ---- Stage 14: skipSkippable ----
+    case 14: {
+        u64 skipRem = dctx->tmpInTarget;
+        u64 srcRem = srcEnd - srcPtr;
+        u64 skipLen = (srcRem < skipRem) ? srcRem : skipRem;
+        srcPtr += skipLen;
+        u64 newRem = skipRem - skipLen;
+        dctx->tmpInTarget = newRem;
+        if (newRem != 0) goto return_final;
+        dctx->dStage = 0;
+        dctx->dict = nullptr;
+        dctx->dictSize = 0;
+        goto return_final;
+    }
+
+    default:
+        goto next_stage;
+    } // end switch
+
+    // ---- Return paths ----
+
+return_exit:
+    // When blockMode == linked, consolidate ring buffer if dict pointer drifted
+    if (dctx->frameInfo.blockMode == 0) {
+        u8* ringBase = dctx->tmpOutBuffer;
+        u8* dictPtr = dctx->dict;
+        if (dictPtr != ringBase) {
+            u32 stage = dctx->dStage;
+            if (stage >= 2 && stage <= 9) {
+                if (stage == 9) {
+                    u64 tmpOutOff = (u64)(dctx->tmpOut - ringBase);
+                    u64 outTotal = dctx->tmpOutSize;
+                    u64 window = outTotal;
+                    if (outTotal < 0x10001) window = 0x10000;
+                    u64 backCopy = window - outTotal;
+                    if (backCopy > tmpOutOff) backCopy = tmpOutOff;
+                    if (backCopy != 0) {
+                        memcpy(ringBase + (tmpOutOff - backCopy),
+                               dictPtr + (dctx->dictSize - dctx->tmpOutStart) - backCopy,
+                               backCopy);
+                        ringBase = dctx->tmpOutBuffer;
+                    }
+                    dctx->dict = ringBase;
+                    dctx->dictSize = dctx->tmpOutStart + tmpOutOff;
+                } else {
+                    u64 dSize = dctx->dictSize;
+                    u64 keep = dSize;
+                    if (dSize > 0xFFFF) keep = 0x10000;
+                    if (keep != 0) {
+                        memcpy(ringBase, dictPtr + dSize - keep, keep);
+                        ringBase = dctx->tmpOutBuffer;
+                    }
+                    dctx->dict = ringBase;
+                    dctx->dictSize = keep;
+                    dctx->tmpOut = ringBase + keep;
+                }
+            }
+        }
+    }
+
+    {
+        u64 consumed = (u64)(srcPtr - srcBuffer);
+        u64 produced = (u64)(dstPtr - (u8*)dstBuffer);
+        u64 total_hint = hint + 18;
+        if (total_hint > 0x10) {
+            if (hint > (u64)(-20)) return 0x80000002;
+            *srcSizePtr = consumed;
+            *dstSizePtr = produced;
+            return (u32)(hint != 0);
+        }
+        goto do_lookup;
+    }
+
+return_final:
+    {
+        hint = 0;
+        dctx->dStage = 0;
+        dctx->dict = nullptr;
+        dctx->dictSize = 0;
+        goto return_exit;
+    }
+
+return_progress_zero:
+    {
+        *srcSizePtr = 0;
+        *dstSizePtr = 0;
+        return (u32)(hint != 0);
+    }
+
+return_decode_error:
+    {
+        hint = 0;
+        *srcSizePtr = 0;
+        *dstSizePtr = 0;
+        u64 total_hint = hint + 18;
+        goto do_lookup;
+    }
+
+do_lookup:
+    {
+        u32 bitmask = 0x11CE3;
+        u32 idx = (u32)hint;
+        if (((bitmask >> (idx & 0x1F)) & 1) == 0) return 0x80000002;
+        return DAT_7104560990[idx];
     }
 }
 
