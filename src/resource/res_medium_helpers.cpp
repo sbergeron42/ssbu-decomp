@@ -872,3 +872,332 @@ void FUN_710353ec40(u64 param_1, u32* param_2, u64* param_3) {
         FUN_710353ec40(param_1, (u32*)piVar12, param_3);
     }
 }
+
+// ============================================================================
+// FUN_710353b200 — tree_insert_fixedstring
+// Searches a global std::__1::__tree (rooted at DAT_7105331ec8) for a
+// FixedString<256> key. If not found, allocates a 0x120-byte tree node,
+// copies the string data, and inserts/rebalances.
+// [derived: DAT_7105331ec8 = tree root, DAT_7105331ec0 = tree begin_node]
+// [derived: DAT_7105331ed0 = tree size counter]
+// [derived: tree nodes: +0x00=left, +0x08=right, +0x10=parent, +0x1a=string, +0x11a=length]
+// Address: 0x710353b200 (656 bytes)
+// ============================================================================
+
+// Tree globals
+__attribute__((visibility("hidden"))) extern u64 DAT_7105331ec8;   // tree root
+__attribute__((visibility("hidden"))) extern u64* DAT_7105331ec0;  // tree begin_node
+__attribute__((visibility("hidden"))) extern u64 DAT_7105331ed0;   // tree size
+
+void FUN_710353b200(u8* param_1, u8* param_2) {
+    u64* p_Var17 = (u64*)&DAT_7105331ec8;
+    u64* p_Var18 = p_Var17;
+
+    if (DAT_7105331ec8 != 0) {
+        u64 uVar10 = (u64)*(u16*)(param_1 + 0x100);
+        u64 uVar12 = ~uVar10;
+        u64* p_Var8 = (u64*)DAT_7105331ec8;
+        p_Var18 = (u64*)&DAT_7105331ec8;
+
+    tree_loop:
+        do {
+            p_Var17 = p_Var8;
+            u64 uVar14 = (u64)*(u16*)((u8*)p_Var17 + 0x11a);
+            u8* p_Var8_str = (u8*)p_Var17 + 0x1a;
+            u64 uVar3 = uVar14;
+            if (uVar10 <= uVar14) uVar3 = uVar10;
+            u32 uVar9 = (u32)*(u16*)(param_1 + 0x100);
+            u32 uVar13 = (u32)*(u16*)((u8*)p_Var17 + 0x11a);
+
+            if (uVar3 != 0) {
+                u64 uVar2 = uVar12;
+                if (uVar12 < ~uVar14) uVar2 = ~uVar14;
+                s64 lVar15 = (s64)uVar2 + 1;
+                u8* p_Var11 = p_Var8_str;
+                u8* pbVar16 = param_1;
+                do {
+                    s32 iVar7 = (u32)*pbVar16 - (u32)*p_Var11;
+                    if (iVar7 != 0) {
+                        s32 iVar1 = (s32)uVar9 - (s32)uVar13;
+                        if (iVar7 != 0) iVar1 = iVar7;
+                        if (iVar1 < 0) goto go_left;
+                        goto go_right;
+                    }
+                    if (*pbVar16 == 0) break;
+                    pbVar16++;
+                    p_Var11++;
+                    lVar15++;
+                } while (lVar15 != 0);
+            }
+            if ((s32)(uVar9 - uVar13) >= 0) {
+            go_right:
+                if (uVar3 != 0) {
+                    u64 uVar3_2 = uVar12;
+                    if (uVar12 < ~uVar14) uVar3_2 = ~uVar14;
+                    s64 lVar15 = (s64)uVar3_2 + 1;
+                    u8* pbVar16 = param_1;
+                    do {
+                        s32 iVar7 = (u32)*p_Var8_str - (u32)*pbVar16;
+                        if (iVar7 != 0) {
+                            s32 iVar1 = (s32)uVar13 - (s32)uVar9;
+                            if (iVar7 != 0) iVar1 = iVar7;
+                            if (iVar1 < 0) {
+                                // Insert to right
+                                p_Var18 = p_Var17 + 1;  // right child ptr
+                                p_Var8 = (u64*)*p_Var18;
+                                if (p_Var8 != nullptr) goto tree_loop;
+                            }
+                            goto check_insert;
+                        }
+                        if (*p_Var8_str == 0) break;
+                        p_Var8_str++;
+                        pbVar16++;
+                        lVar15++;
+                    } while (lVar15 != 0);
+                }
+                // Equal or node_str < param_1
+                if ((s32)uVar13 - (s32)uVar9 < 0) {
+                    p_Var18 = p_Var17 + 1;
+                    p_Var8 = (u64*)*p_Var18;
+                    if (p_Var8 != nullptr) goto tree_loop;
+                }
+            check_insert:
+                if (*(u64*)p_Var18 != 0) return;  // already exists
+                goto do_insert;
+            }
+        go_left:
+            p_Var8 = (u64*)*p_Var17;  // left child
+            p_Var18 = p_Var17;
+        } while (*p_Var17 != 0);
+        if (*(u64*)p_Var17 != 0) return;
+    }
+
+do_insert:
+    // Allocate new node (0x120 bytes)
+    u8* node = (u8*)je_aligned_alloc(0x10, 0x120);
+    if (node == nullptr) {
+        if (DAT_7105331f00 != nullptr) {
+            u32 oom_flags = 0;
+            u64 oom_size = 0x120;
+            u64 r = ((u64(*)(s64*, u32*, u64*))(*(s64*)(*DAT_7105331f00 + 0x30)))
+                     (DAT_7105331f00, &oom_flags, &oom_size);
+            if (((r & 1) != 0) &&
+                (node = (u8*)je_aligned_alloc(0x10, 0x120), node != nullptr))
+                goto init_node;
+        }
+        node = nullptr;
+    }
+
+init_node:
+    {
+        u8* str_dst = node + 0x1a;
+        *str_dst = 0;
+        u16 uVar5 = *(u16*)(param_2 + 0x100);
+        u64 len = (u64)uVar5;
+        *(u16*)(node + 0x11a) = 0;
+
+        if (len != 0) {
+            u64 idx;
+            if (uVar5 == 1) {
+                idx = 0;
+            } else {
+                idx = 0;
+                s64 lVar15 = (s64)((len & 1) - len);
+                do {
+                    u8 c = *param_2;
+                    *(u16*)(node + 0x11a) = (u16)idx + 1;
+                    lVar15 += 2;
+                    node[idx + 0x1a] = c;
+                    u16 uVar6 = *(u16*)(node + 0x11a);
+                    c = param_2[1];
+                    param_2 += 2;
+                    *(u16*)(node + 0x11a) = uVar6 + 1;
+                    node[(u64)uVar6 + 0x1a] = c;
+                    idx = (u64)*(u16*)(node + 0x11a);
+                } while (lVar15 != 0);
+            }
+            if (uVar5 & 1) {
+                u8 c = *param_2;
+                *(u16*)(node + 0x11a) = (u16)idx + 1;
+                node[idx + 0x1a] = c;
+                idx = (u64)*(u16*)(node + 0x11a);
+            }
+            str_dst = node + idx + 0x1a;
+        }
+        *str_dst = 0;
+
+        // Initialize tree node links
+        *(u64*)(node) = 0;           // left = null
+        *(u64*)(node + 8) = 0;       // right = null
+        *(u64**)(node + 0x10) = p_Var17;  // parent
+        *(u64*)p_Var18 = (u64)node;       // insert into tree
+
+        if (*(u64*)*DAT_7105331ec0 != 0) {
+            node = (u8*)*(u64*)p_Var18;
+            *DAT_7105331ec0 = *(u64*)*DAT_7105331ec0;
+        }
+        std::__1::__tree_balance_after_insert(
+            (void*)DAT_7105331ec8, (void*)node);
+        DAT_7105331ed0++;
+    }
+}
+
+// ============================================================================
+// FUN_710353af30 — file_open_with_path_validation
+// Copies param_2 string to a local FixedString<256>, searches for ':',
+// extracts the substring before ':', validates it via FUN_710353b490,
+// and if valid calls a vtable function to open the file.
+// [derived: param_1 is a FileNX* or similar struct with vtable at **param_1]
+// [derived: vtable+0x30 = close, vtable+0x10 = open]
+// [derived: flag at *param_1+0x22C controls close-before-open]
+// Address: 0x710353af30 (656 bytes)
+// ============================================================================
+
+extern "C" u64 FUN_710353b490(const char*);  // path validation
+
+bool FUN_710353af30(u64* param_1, const char* param_2) {
+    u64 obj = *param_1;
+
+    // Close existing file if flag is set
+    if (*(u8*)(obj + 0x22c) != 0) {
+        // vtable[6] = close function: (**(code**)(*(long*)obj + 0x30))(local_138)
+        char local_138[256];
+        ((void(*)(char*))(*(u64*)(*(u64*)obj + 0x30)))(local_138);
+        *(u8*)(obj + 0x22c) = 0;
+    }
+
+    // Copy param_2 to local FixedString<256>
+    char local_138_2[256];
+    u16 local_38 = 0;
+    local_138_2[0] = '\0';
+    u64 sVar3 = strlen(param_2);
+    local_38 = 0;
+
+    if (sVar3 == 0) {
+        // empty string — already null-terminated
+    } else {
+        // Character-by-character copy with unrolled loop
+        const char* src = param_2;
+        u64 idx;
+        if (sVar3 == 1) {
+            idx = 0;
+            local_38 = 1;
+            local_138_2[0] = *src;
+            idx = 1;
+        } else {
+            idx = 0;
+            s64 remaining = (s64)((sVar3 & 1) - sVar3);
+            do {
+                local_38 = (u16)idx + 1;
+                local_138_2[idx] = *src;
+                idx = (u64)local_38;
+                char c1 = src[1];
+                src += 2;
+                local_38++;
+                remaining += 2;
+                local_138_2[idx] = c1;
+                idx = (u64)local_38;
+            } while (remaining != 0);
+            if ((sVar3 & 1) != 0) {
+                local_38 = (u16)idx + 1;
+                local_138_2[idx] = *src;
+                idx = (u64)local_38;
+            }
+        }
+        local_138_2[idx] = '\0';
+    }
+
+    // Find ':' in the string
+    u64 len = (u64)local_38;
+    u64 colon_pos;
+    if (len == 0) {
+        const char* p = local_138_2;
+        if (p == local_138_2 + len) {
+            colon_pos = 0xffffffffffffffffULL;
+        } else {
+            colon_pos = (u64)(p - local_138_2);
+        }
+    } else {
+        const char* p = local_138_2;
+        colon_pos = 0xffffffffffffffffULL;
+        u64 count = len;
+        do {
+            if (*p == ':') {
+                if (p == local_138_2 + len) {
+                    colon_pos = 0xffffffffffffffffULL;
+                } else {
+                    colon_pos = (u64)(p - local_138_2);
+                }
+                break;
+            }
+            p++;
+            count--;
+        } while (count != 0);
+    }
+
+    // Take min(len, colon_pos) as substring length
+    u64 sub_len = len;
+    if (colon_pos <= len) {
+        sub_len = colon_pos;
+    }
+
+    // Copy substring to local_240 (another FixedString<256>)
+    u8 local_240[256];
+    u16 local_140 = 0;
+    local_240[0] = 0;
+
+    if (sub_len != 0) {
+        const char* src = local_138_2;
+        u64 idx;
+        if (sub_len == 1) {
+            idx = 0;
+            local_140 = 1;
+            local_240[0] = *src;
+            idx = 1;
+        } else {
+            u64 neg_colon = ~colon_pos;
+            u64 neg_len = ~len;
+            if (neg_colon < neg_len) neg_colon = neg_len;
+            idx = 0;
+            s64 remaining = (s64)(neg_colon + (sub_len & 1) + 1);
+            do {
+                local_140 = (u16)idx + 1;
+                local_240[idx] = *src;
+                idx = (u64)local_140;
+                u8 c1 = src[1];
+                src += 2;
+                local_140++;
+                remaining += 2;
+                local_240[idx] = c1;
+                idx = (u64)local_140;
+            } while (remaining != 0);
+            if ((sub_len & 1) != 0) {
+                local_140 = (u16)idx + 1;
+                local_240[idx] = *src;
+                idx = (u64)local_140;
+            }
+        }
+        local_240[idx] = 0;
+    }
+
+    // Copy local_240 back to local_138 and validate
+    memcpy(local_138_2, local_240, 0x100);
+    local_38 = local_140;
+
+    bool bVar2;
+    if (local_140 == 0 || (FUN_710353b490(local_138_2) & 1)) {
+        // Validation passed — call vtable open function
+        u64 local_240_params[2];
+        local_240_params[0] = 0x100000002ULL;
+        local_240_params[1] = 0x100000002ULL;
+        u8 local_248[4];
+        ((void(*)(u8*, u64*, const char*, u64*))(*(u64*)(*(u64*)obj + 0x10)))
+            (local_248, (u64*)obj, param_2, local_240_params);
+        u8 bStack_245 = local_248[3];
+        *(u8*)(obj + 0x22c) = (bStack_245 >> 7) ^ 1;
+        bVar2 = *(u8*)(obj + 0x22c) != 0;
+    } else {
+        bVar2 = false;
+    }
+    return bVar2;
+}
