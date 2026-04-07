@@ -2,31 +2,24 @@
 
 ## Model: Opus
 
-## Task: Resource service — filesystem utility functions (0x710353xxxx range)
+## Task: Resource service — fiber/thread + large pipeline functions
 
-Decomp the filesystem utility functions that support the resource loading pipeline. These are called by the main processing loop and handle file lookup, path resolution, and loaded-data management.
+### Targets
+- `~Fiber` (320B) — 0x710353c210
+- `finalize` (176B) — 0x710353c350
+- `switch_to_fiber` (384B) — 0x710353c400
+- `setup` (1,504B) — 0x710353c5b0
+- `get_hit_entry_id` (944B) — 0x710353cb90
+- `FUN_710353d000` (864B) — thread creation wrapper
+- `FUN_710353d760` (1,216B)
+- `FUN_710353b490` (1,184B)
+- `FUN_710353f1b0` (3,344B) — if time permits
+- `FUN_710353ff00` (1,360B) — if time permits
 
-### Target Functions
-Scan the 0x710353xxxx range for uncompiled functions related to:
-- File path/hash lookup
-- LoadedArc table access
-- FilesystemInfo operations
-- LoadedData/LoadedDirectory state management
-
-Start with the smallest functions and work up. Use Ghidra to identify which ones access resource service structs.
-
-### Known Targets
-- `FUN_710353d5e0` (384B) — copy_filepath_vector_from_loaded_directory (if not done by pool-c)
-- `FUN_710353a8f0` (1,280B) — filesystem entry scanner/resolver (if not done by pool-c)
-- Any other uncompiled functions in 0x710353xxxx that access LoadedArc/FilesystemInfo
-
-### Headers
-- `include/resource/ResServiceNX.h`, `include/resource/LoadedArc.h`, `include/resource/containers.h`
-
-### Derivation Chains (MANDATORY)
-- `[derived: ARCropolis field_name]` or `[derived: smash-arc field_name]` for known fields
-- `[inferred:]` for fields identified from decompilation patterns
-- Any offset `+0xNN` MUST get a confidence tag
+### Headers: include/resource/*.h
+### Derivation Chains MANDATORY: [derived:] or [inferred:] on every offset
+### Output: src/resource/res_fiber_thread.cpp
+### Do NOT use naked asm. 3-attempt limit.
 
 ### Quick Reference
 ```
@@ -34,8 +27,3 @@ Start with the smallest functions and work up. Use Ghidra to identify which ones
 
 python tools/compare_bytes.py FUN_name
 ```
-
-### Rules
-- Output: src/resource/res_filesystem_utils.cpp
-- 3-attempt limit per function
-- Do NOT use naked asm
