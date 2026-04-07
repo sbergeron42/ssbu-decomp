@@ -2,21 +2,39 @@
 
 ## Model: Opus
 
-## Task: Resource service — loading pipeline functions (continued)
+## Task: ResLoadingThread — THE critical path function (12,496 bytes)
 
-Pick up remaining uncompiled functions in the loading pipeline area.
+This is the function the community has been asking for. `ResLoadingThread` at `0x7103542f30` is the combined loading/inflate processing loop where 6 of 9 ARCropolis hooks land.
 
-### Targets (from pool-c's range that wasn't finished)
-- `FUN_7103541ae0` (288B), `FUN_7103541cb0` (528B)
-- `get_info_to_data` (608B) — 0x7103541ec0
-- `FUN_7103542120` (1,056B), `FUN_7103542540` (672B)
-- `FUN_71035427e0` (752B), `FUN_7103542b10` (528B)
-- `FUN_7103540860` (2,080B) — initialize_loaded_directories
+### CRITICAL: How to get the Ghidra decompilation
+The 13.0.4 Ghidra instance CANNOT decompile this function (wrong boundaries).
+The 13.0.1 instance CAN. Use:
+```
+mcp__ghidra-1301__decompile_function_by_address("0x7103542f30")
+```
+This returns the full `ResLoadingThread` decompilation with typed structs.
 
-### Headers: include/resource/*.h
-### Derivation Chains MANDATORY: [derived:] or [inferred:] on every offset
-### Output: src/resource/res_loading_pipeline.cpp
-### Do NOT use naked asm. 3-attempt limit.
+### What it does (from Ghidra 13.0.1)
+- Main loop for ResLoadingThread — processes file/directory load requests
+- Drains 5 request queues from ResServiceNX
+- For file requests: looks up in LoadedArc tables, reads data via nn::fs
+- For directory requests: processes child directories recursively
+- Uses semaphores for I/O synchronization, double-buffered reads
+- All 6 inline ARCropolis hooks are in this function
+
+### Approach
+This is a 12,496-byte function — too large to match in one shot. Break it into logical sections:
+1. **Outer loop + queue drain** (lines ~1-50 of Ghidra output) — event wait, mutex lock, swap queues
+2. **File loading path** (the `*(int *)&pvVar47->eos == 1` branch) — LoadedArc lookup, nn::fs read, double-buffer
+3. **Directory loading path** (the `*(int *)&pvVar47->eos == 0` branch) — recursive dir processing
+4. **Post-iteration cleanup** — directory state updates, SleepThread, queue cleanup
+
+Write each section as clean C++ using the resource headers, then combine.
+
+### Headers: include/resource/*.h (ResServiceNX, LoadedArc, containers, Fiber)
+### Derivation Chains MANDATORY on every offset
+### Output: src/resource/ResLoadingThread.cpp
+### Do NOT use naked asm. This function is the project's showcase.
 
 ### Quick Reference
 ```
