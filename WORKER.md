@@ -26,13 +26,19 @@ The function is in src/resource/ResLoadingThread.cpp. **Three binary functions**
 - Match rate: ~0.6% — low because 32-byte frame size mismatch cascades to all sp-relative insns
 - Frame size: 384 (compiled) vs 416 (expected) — 32 bytes short
 
+### Verification results
+- **State access patterns: 16/16 match** — all field accesses generate identical instructions
+- **Event wait section: 6/8 match** — only branch offsets differ (code structure correct)
+- **Function size: 98.3%** of expected (5068 vs 5156 bytes)
+- **Frame: 400 vs 416** — 16 bytes off (register spill pressure)
+- **Register allocation: x28 vs x27** for local_lists base — cascades to all instructions
+
 ### What still needs work (priority order)
-1. **Frame size (32 bytes short)**: Need function-scope temporaries (aiStack_78[2] + uStack_70) to match expected 416-byte frame. Once this matches, many more instructions will align.
-2. **Queue swap**: Still "simplified" — needs full doubly-linked list swap
-3. **Re-queue unrolling**: Binary shows 5 unrolled while loops; our for-loop may not unroll
-4. **92 bytes missing**: Likely from queue swap / re-queue differences
-5. **Function 2 (inflate thread)**: 4608 bytes of processing loop — entirely unwritten, next major target
-6. **Function 3**: FUN_7103544ca0 directory dispatch — 1940 bytes, currently extern
+1. **Register allocation**: x28→x27 for base, x21→x20 for sentinel[0], x27→x26 for constant. May need sentinel variables at function scope to match register pressure.
+2. **Frame size (16 bytes short)**: Remaining gap is from register spill slots, depends on register pressure from other code changes.
+3. **88 bytes missing**: From swap/re-queue/cleanup structural differences.
+4. **Function 2 (inflate thread)**: 4608 bytes at 0x35444C0 — entirely unwritten, next major decomp target.
+5. **Function 3 (FUN_7103544ca0)**: 1940 bytes at 0x35456D0, currently extern.
 
 ### ELF comparison note
 Use proper segment mapping: `file_offset = seg_offset + (vaddr - seg_vaddr)`. First segment: vaddr=0x0, offset=0x888.
