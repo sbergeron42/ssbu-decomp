@@ -465,3 +465,56 @@ void FUN_710353eb70(u32* param_1) {
         *param_1 = 0xffffff;
     }
 }
+
+// ============================================================================
+// FUN_710353e980 — swap_directory_and_release_filepath
+// Swaps the directory index in param_1[1] with a new value. Acquires the new
+// directory (increment ref or init), releases the old directory, then releases
+// the filepath index at param_1[0].
+// [derived: combines get_or_init, increment_ref, release patterns]
+// [derived: operates on { filepath_idx, directory_idx } pair struct]
+// Address: 0x710353e980 (304 bytes)
+// ============================================================================
+u32* FUN_710353e980(u32* param_1, u32 new_dir_index) {
+    u32 old_dir_index = param_1[1];
+    param_1[1] = new_dir_index;
+
+    // Acquire new directory
+    if (new_dir_index != 0xffffff) {
+        FilesystemInfo* fs = DAT_7105331f20;
+        if (new_dir_index < fs->loaded_directory_len) {
+            void* mtx = fs->mutex;
+            lock_71039c1490(mtx);
+            LoadedDirectory* dir = &fs->loaded_directories[new_dir_index];
+            if (dir->flags & 1) {
+                FUN_7103542d20(dir);
+                unlock_71039c14a0(mtx);
+            } else {
+                unlock_71039c14a0(mtx);
+                FUN_71035407a0(fs, new_dir_index);
+            }
+        }
+    }
+
+    // Release old directory
+    if (old_dir_index != 0xffffff) {
+        FilesystemInfo* fs = DAT_7105331f20;
+        if (old_dir_index < fs->loaded_directory_len) {
+            void* mtx = fs->mutex;
+            lock_71039c1490(mtx);
+            LoadedDirectory* dir = &fs->loaded_directories[old_dir_index];
+            if (dir->flags & 1) {
+                FUN_710353eff0(fs, dir);
+            }
+            unlock_71039c14a0(mtx);
+        }
+    }
+
+    // Release filepath index
+    if (*param_1 != 0xffffff) {
+        FUN_7103540560(DAT_7105331f20, *param_1);
+        *param_1 = 0xffffff;
+    }
+
+    return param_1;
+}
