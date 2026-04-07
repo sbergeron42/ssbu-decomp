@@ -1,32 +1,22 @@
-# Worker: pool-e
+# Worker: pool-b
 
 ## Model: Opus
 
-## Task: Resource service — filesystem utility functions (0x710353xxxx range)
+## Task: Resource service — medium functions (400-1400 bytes)
 
-Decomp the filesystem utility functions that support the resource loading pipeline. These are called by the main processing loop and handle file lookup, path resolution, and loaded-data management.
+### Targets
+- `FUN_710353af30` (656B), `FUN_710353b200` (656B)
+- `FUN_710353b930` (752B)
+- `FUN_710353dc20` (432B), `FUN_710353ddd0` (608B)
+- `FUN_710353e330` (432B), `FUN_710353e5d0` (400B), `FUN_710353e760` (544B)
+- `FUN_710353ec40` (944B), `FUN_710353eff0` (448B)
+- `FUN_710353a8f0` (1,280B) — filesystem scanner
+- `FUN_710353a230` (1,376B)
 
-### Target Functions
-Scan the 0x710353xxxx range for uncompiled functions related to:
-- File path/hash lookup
-- LoadedArc table access
-- FilesystemInfo operations
-- LoadedData/LoadedDirectory state management
-
-Start with the smallest functions and work up. Use Ghidra to identify which ones access resource service structs.
-
-### Known Targets
-- `FUN_710353d5e0` (384B) — copy_filepath_vector_from_loaded_directory (if not done by pool-c)
-- `FUN_710353a8f0` (1,280B) — filesystem entry scanner/resolver (if not done by pool-c)
-- Any other uncompiled functions in 0x710353xxxx that access LoadedArc/FilesystemInfo
-
-### Headers
-- `include/resource/ResServiceNX.h`, `include/resource/LoadedArc.h`, `include/resource/containers.h`
-
-### Derivation Chains (MANDATORY)
-- `[derived: ARCropolis field_name]` or `[derived: smash-arc field_name]` for known fields
-- `[inferred:]` for fields identified from decompilation patterns
-- Any offset `+0xNN` MUST get a confidence tag
+### Headers: include/resource/*.h
+### Derivation Chains MANDATORY: [derived:] or [inferred:] on every offset
+### Output: src/resource/res_medium_helpers.cpp
+### Do NOT use naked asm. 3-attempt limit.
 
 ### Quick Reference
 ```
@@ -34,8 +24,3 @@ Start with the smallest functions and work up. Use Ghidra to identify which ones
 
 python tools/compare_bytes.py FUN_name
 ```
-
-### Rules
-- Output: src/resource/res_filesystem_utils.cpp
-- 3-attempt limit per function
-- Do NOT use naked asm
