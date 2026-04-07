@@ -8,6 +8,35 @@
 
 ---
 
+## CRITICAL FINDING: CSV Size Inflation (+1,246 matches)
+
+**21,425 functions** (54% of all 39,635) have inflated sizes in functions.csv
+because Ghidra includes `udf #0` alignment padding in the function size.
+
+Stripping trailing UDF padding from CSV sizes flips **1,246 functions from
+non-matching to perfect match** in one pass. No code changes needed.
+
+| Metric | Before | After | Delta |
+|--------|--------|-------|-------|
+| Perfect matches | 3,962 | 5,208 | **+1,246** |
+| Still mismatching | 3,845 | 2,599 | -1,246 |
+
+**Script:** `tools/fix_csv_sizes.py` (dry-run with `--dry-run`)
+**Action needed:** Orchestrator must run this on master (workers can't touch CSV)
+
+### Root Cause
+The original binary uses `udf #0` (0x00000000) as inter-function alignment
+padding. Ghidra's auto-analysis includes this padding in function sizes.
+The decomp generates correct function bodies but doesn't emit the padding,
+so the size comparison fails even though the code matches perfectly.
+
+### Remaining 137 functions with real missing code
+7% of the truncated-but-matching population (137 functions) have actual code
+after the decomp function ends. These are real missing code paths that need
+source-level fixes.
+
+---
+
 ## Gap Analysis Report
 
 **Date:** 2026-04-07
