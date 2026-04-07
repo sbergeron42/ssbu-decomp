@@ -61,8 +61,12 @@ extern "C" void FUN_7103542860(LoadedDirectory* dir);
 extern "C" u32 FUN_71035472b0(void* ctx, void* src, u64* decomp_remaining, u8* data_src, u64* chunk_size);
 // [derived: free decompression context — frees both sub-contexts and buffers]
 extern "C" void FUN_7103547220(void** state);
-// [derived: init decompression state — returns 0 on success]
-extern "C" u32 FUN_7103541ae0(void* state);
+// [derived: init decompression state — returns 0 on success, 0x80000004 on alloc failure]
+extern "C" u32 FUN_7103541ae0(void** state);
+// [derived: ZSTD custom free wrapper — calls je_free(ptr) if ptr != null]
+extern "C" void FUN_7103541c80(void* opaque, void* ptr);
+// [derived: alloc_with_oom_retry — calls je_aligned_alloc(8, size) with OOM retry]
+extern "C" void* FUN_7103541c00(u64 unused, u64 size);
 // [derived: cleanup decompression filepath/dir pair]
 extern "C" void FUN_7103541a60(void** state);
 // nn::os PLT stubs used by ResInflateThread
@@ -1099,6 +1103,110 @@ void FUN_7103541a60(void** state) {
     // Free container
     FUN_710392e590(ctx);
     *state = nullptr;
+}
+
+// ============================================================================
+// FUN_7103541C80 — ZSTD custom free callback
+// Simple wrapper: if ptr is non-null, calls je_free(ptr).
+// Used as ZSTD_customMem.customFree in the decompression context.
+// [derived: stored at DCtx+0x7128 by FUN_7103541AE0]
+// Address: 0x7103541C80, Size: 16 bytes
+// ============================================================================
+void FUN_7103541c80(void* /*opaque*/, void* ptr) {
+    if (ptr != nullptr) {
+        FUN_710392e590(ptr);
+    }
+}
+
+// ============================================================================
+// FUN_7103541AE0 — init_decomp_state
+// Initializes (or re-initializes) a ZSTD streaming decompression state.
+// State is a 2-element array: state[0] = decomp workspace, state[1] = DCtx.
+// If state[0] is owned (field_0x1A8 == 0), finalizes and frees it.
+// If state[0] is externally managed, skips cleanup entirely.
+// Closes any existing state[1] stream, then allocates a fresh 160,240-byte
+// ZSTD DCtx and initializes its custom allocator and internal fields.
+// [derived: called from ResInflateThread decompression paths]
+// [derived: DCtx allocation = 160,240 bytes = zstd v1.3.7 ZSTD_sizeof_DCtx()]
+// [derived: custom alloc at DCtx+0x7120, custom free at DCtx+0x7128, opaque at DCtx+0x7130]
+// Address: 0x7103541AE0, Size: 284 bytes
+// ============================================================================
+u32 FUN_7103541ae0(void** state) {
+    void* sub0 = *state;
+    void** stream_slot;  // tracks &state[1] for final storage
+
+    if (sub0 != nullptr) {
+        u64 ext_flag = *(u64*)((u8*)sub0 + 0x1A8);
+        if (ext_flag != 0) {
+            // Externally managed — skip all cleanup, go straight to allocation
+            stream_slot = &state[1];
+            goto alloc_dctx;
+        }
+        // Owned: finalize and free decomp context (CLEANUP_CTX)
+        FUN_710399f880(sub0);
+        typedef void (*DeallocFn)(void*, void*);
+        DeallocFn dealloc = *(DeallocFn*)((u8*)sub0 + 0x198);
+        if (dealloc != nullptr) {
+            void* dealloc_arg = *(void**)((u8*)sub0 + 0x1A0);
+            dealloc(dealloc_arg, sub0);
+        } else {
+            FUN_710392e590(sub0);
+        }
+        state[0] = nullptr;
+    }
+
+    // Close existing ZSTD stream (state[1])
+    stream_slot = &state[1];
+    {
+        void* stream = *stream_slot;
+        if (stream != nullptr) {
+            s64 result = ZSTD_freeDStream_71039a38e0(stream);
+            // Only clear if close succeeded (not an error)
+            if ((u64)result <= 0xFFFFFFFFFFFFFF88ULL) {
+                *stream_slot = nullptr;
+            }
+        }
+    }
+
+alloc_dctx:
+    {
+        // Allocate ZSTD DCtx (160,240 bytes)
+        void* buf = FUN_7103541c00((u64)state, 160240);
+        if (buf == nullptr) {
+            *stream_slot = nullptr;
+            return 0x80000004;
+        }
+
+        // Initialize custom allocator (ZSTD_customMem at DCtx+0x7120)
+        u8* p = (u8*)buf;
+        *(void**)(p + 0x7120) = (void*)FUN_7103541c00;  // customAlloc
+        *(void**)(p + 0x7128) = (void*)FUN_7103541c80;  // customFree
+        *(void**)(p + 0x7130) = (void*)state;            // opaque (backlink)
+
+        // Clear internal state fields
+        *(u32*)(p + 0x7114) = 0;
+        *(u64*)(p + 0x7188) = 0x08000001ULL;  // stage/version flags
+        *(u64*)(p + 0x7148) = 0;
+        *(u64*)(p + 0x7198) = 0;
+        *(u64*)(p + 0x71C8) = 0;
+        *(u32*)(p + 0x71C0) = 0;
+        *(u32*)(p + 0x7150) = 0;
+        *(u64*)(p + 0x7158) = 0;
+        *(u64*)(p + 0x7160) = 0;
+        *(u64*)(p + 0x7178) = 0;
+        *(u64*)(p + 0x7170) = 0;
+
+        // Store DCtx pointer
+        *stream_slot = buf;
+
+        // More field clears (redundant but present in binary — must not be optimized away)
+        *(u32*)(p + 0x7168) = 0;
+        *(u32*)(p + 0x71DC) = 0;
+        *(volatile u64*)(p + 0x7160) = 0;
+        *(volatile u64*)(p + 0x7158) = 0;
+
+        return 0;
+    }
 }
 
 // ============================================================================
