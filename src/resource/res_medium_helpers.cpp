@@ -687,3 +687,188 @@ do_search:
     }
     *param_1 = 0xffffff;
 }
+
+// ============================================================================
+// FUN_710353ec40 — unload_directory_recursive
+// Recursively unloads a loaded directory: decrements ref counts via
+// FUN_710353eff0, releases all child filepath entries, inserts remaining
+// entries into a tracking tree, and calls itself on child LoadedDirectories.
+// [derived: recursive pattern — calls itself at the end for child dirs]
+// [derived: uses exclusive monitor (ldaxr/stlxr) for atomic decrement on ref_count_byte]
+// [derived: inserts into std::__1::__tree with __tree_balance_after_insert]
+// Address: 0x710353ec40 (944 bytes)
+// ============================================================================
+
+// AArch64 exclusive monitor intrinsics
+extern "C" u32 ExclusiveMonitorPass(volatile u8* addr, u32 size);
+extern "C" u32 ExclusiveMonitorsStatus();
+
+// Forward declare this function for recursion
+void FUN_710353ec40(u64 param_1, u32* param_2, u64* param_3);
+
+void FUN_710353ec40(u64 param_1, u32* param_2, u64* param_3) {
+    // Check if directory entry is active (flags bit 0)
+    if (!((*(u8*)((u64)param_2 + 8) & 1))) return;
+
+    // Release loaded directory entries
+    FUN_710353eff0((FilesystemInfo*)param_1, (LoadedDirectory*)param_2);
+
+    // Check ref count
+    if ((s32)*(u64*)((u64)param_2 + 4) >= 1) return;
+
+    // Atomic decrement of byte at param_2+10
+    u8* ref_byte = (u8*)((u64)param_2 + 10);
+    if (*ref_byte != 0) {
+        if (*(u8*)((u64)param_2 + 9) != 0) {
+            u8 val;
+            do {
+                val = 1;
+                bool pass = (bool)ExclusiveMonitorPass((volatile u8*)ref_byte, 0x10);
+                if (pass) {
+                    *ref_byte = *ref_byte - 1;
+                    val = ExclusiveMonitorsStatus();
+                }
+            } while (val != 0);
+        }
+
+        // Iterate child path indices
+        u32* puVar16 = *(u32**)((u64)param_2 + 16);  // child_path_indices.start
+        u32* puVar18 = *(u32**)((u64)param_2 + 24);   // child_path_indices.end
+        if (puVar16 != puVar18) {
+            u64* plVar2 = param_3 + 1;  // tree root pointer
+            do {
+                u32 uVar4 = *puVar16;
+                if (uVar4 != 0xffffff) {
+                    FUN_7103540450(DAT_7105331f20, uVar4);
+                    if (uVar4 < *(u32*)(param_1 + 0x18) &&
+                        *(u8*)(*(u64*)(param_1 + 8) + (u64)uVar4 * 8 + 4) != 0) {
+                        u32 uVar5 = *(u32*)(*(u64*)(param_1 + 8) + (u64)uVar4 * 8);
+                        if (uVar5 != 0xffffff &&
+                            uVar5 < *(u32*)(param_1 + 0x1c)) {
+                            u64 lVar10 = *(u64*)(param_1 + 0x10) + (u64)uVar5 * 0x18;
+                            if (*(u8*)(lVar10 + 0xc) != 0 && lVar10 != 0) {
+                                if ((s32)*(u64*)(*(u64*)(param_1 + 0x10) + (u64)uVar5 * 0x18 + 8) > 1) {
+                                    u8 bVar6 = *(u8*)((u64)param_2 + 0xb);
+
+                                    // Tree insertion
+                                    u64* plVar8 = (u64*)*plVar2;
+                                    u64* plVar15 = plVar2;
+                                    u64* plVar11;
+                                    u64 lVar10_node;
+                                    if (plVar8 == nullptr) {
+                                        lVar10_node = *plVar15;
+                                        plVar11 = plVar15;
+                                    } else {
+                                        do {
+                                            while (plVar11 = plVar8,
+                                                   *(u32*)((u64)plVar11 + 0x1c) <= uVar4) {
+                                                if (uVar4 <= *(u32*)((u64)plVar11 + 0x1c))
+                                                    goto tree_found;
+                                                plVar15 = plVar11 + 1;  // right child
+                                                plVar8 = (u64*)*plVar15;
+                                                if (plVar8 == nullptr) goto tree_found;
+                                            }
+                                            plVar8 = (u64*)*plVar11;  // left child
+                                            plVar15 = plVar11;
+                                        } while (plVar8 != nullptr);
+                                    tree_found:
+                                        lVar10_node = *plVar15;
+                                    }
+
+                                    if (lVar10_node == 0) {
+                                        // Allocate new tree node (0x28 bytes)
+                                        void* p_Var9 = (void*)je_aligned_alloc(0x10, 0x28);
+                                        if (p_Var9 == nullptr) {
+                                            u32 oom_flags = 0;
+                                            u64 oom_size = 0x28;
+                                            ((u64(*)(s64*, u32*, u64*))(*(s64*)(*DAT_7105331f00 + 0x30)))
+                                                (DAT_7105331f00, &oom_flags, &oom_size);
+                                            p_Var9 = (void*)je_aligned_alloc(0x10, 0x28);
+                                        }
+
+                                        // Initialize node
+                                        *(u64*)((u64)p_Var9 + 0x10) = (u64)plVar11;  // parent
+                                        *(u64*)(u64)p_Var9 = 0;                        // left
+                                        *(u64*)((u64)p_Var9 + 8) = 0;                  // right
+                                        *(u32*)((u64)p_Var9 + 0x1c) = uVar4;          // key
+                                        *(u32*)((u64)p_Var9 + 0x20) = (u32)bVar6;     // value
+
+                                        *plVar15 = (u64)p_Var9;
+                                        if (*(u64*)*param_3 != 0) {
+                                            *param_3 = *(u64*)*param_3;
+                                            p_Var9 = (void*)*plVar15;
+                                        }
+                                        std::__1::__tree_balance_after_insert(
+                                            (void*)param_3[1], p_Var9);
+                                        param_3[2]++;
+                                    }
+
+                                    if (uVar4 == 0xffffff) continue;
+                                }
+                            }
+                        }
+                    }
+                    FUN_7103540560(DAT_7105331f20, uVar4);
+                }
+                puVar16++;
+            } while (puVar16 != puVar18);
+        }
+    }
+
+    // Clear filepath entries and release child path index vector
+    u64* puVar19 = (u64*)((u64)param_2 + 24);
+    s32* piVar13 = (s32*)*puVar19;
+    for (s32* piVar12 = *(s32**)((u64)param_2 + 16); piVar12 != piVar13; piVar12++) {
+        if (*piVar12 != (s32)0xffffff) {
+            FUN_7103540560(DAT_7105331f20, (u32)*piVar12);
+            *piVar12 = (s32)0xffffff;
+        }
+    }
+
+    // Reset directory fields
+    *param_2 = 0xffffff;
+    s32* piVar12 = *(s32**)((u64)param_2 + 0x40);
+    *(u64*)((u64)param_2 + 4) = 0;
+    *(u8*)((u64)param_2 + 8) = *(u8*)((u64)param_2 + 8) & 0xfe;
+    *(u32*)((u64)param_2 + 10) = 0;
+    *(u8*)((u64)param_2 + 8) = *(u8*)((u64)param_2 + 8) & 0xf9;
+    *(u32*)((u64)param_2 + 9) = 0;
+    *(u64*)((u64)param_2 + 0x40) = 0;
+
+    // Release redirection directory pointer if set
+    if (*(u64*)((u64)param_2 + 0x28 + 0x10) != 0) {
+        *(u64*)((u64)param_2 + 0x28 + 0x08) = *(u64*)((u64)param_2 + 0x28 + 0x10);
+        FUN_710392e590((void*)0);  // freed by caller
+    }
+
+    // Release child path indices array
+    s32* piVar13_2 = *(s32**)((u64)param_2 + 16);
+    if (piVar13_2 != nullptr) {
+        s32* piVar14 = (s32*)*puVar19;
+        if (piVar14 == piVar13_2) {
+            *puVar19 = (u64)piVar13_2;
+            piVar14 = piVar13_2;
+        } else {
+            do {
+                piVar14 = piVar14 - 1;
+                if (*piVar14 != (s32)0xffffff) {
+                    FUN_7103540560(DAT_7105331f20, (u32)*piVar14);
+                    *piVar14 = (s32)0xffffff;
+                }
+            } while (piVar13_2 != piVar14);
+            piVar14 = *(s32**)((u64)param_2 + 16);
+            *puVar19 = (u64)piVar13_2;
+        }
+        if (piVar14 != nullptr) {
+            FUN_710392e590((void*)piVar14);
+        }
+    }
+
+    // Decrement counter
+    *(s32*)(param_1 + 0x4c) = *(s32*)(param_1 + 0x4c) - 1;
+
+    // Recurse on child loaded directory
+    if (piVar12 != nullptr && *piVar12 != (s32)0xffffff) {
+        FUN_710353ec40(param_1, (u32*)piVar12, param_3);
+    }
+}
