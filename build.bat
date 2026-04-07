@@ -18,52 +18,38 @@ for /R src %%f in (*.cpp) do (
 REM Post-process: Fix PLT stubs - upstream Clang uses GOT-relative calls,
 REM but NX uses direct ADRP+LDR+ADD+BR pattern with x16/x17.
 echo Fixing PLT stubs...
-for %%f in (build\fun_region_039.o) do (
-    python tools\fix_plt_stubs.py "%%f"
-)
+python tools\fix_plt_stubs.py build\fun_region_039.o
 
 REM Post-process: upstream Clang emits movz for bitmask immediates,
 REM but the NX original uses orr-with-wzr. Patch to match.
 echo Patching movz-^>orr...
-for %%f in (build\*.o) do (
-    python tools\fix_movz_to_orr.py "%%f"
-)
+python tools\fix_movz_to_orr.py build\*.o
 
 REM Post-process: NX Clang places mov x29,sp / add x29,sp,#imm immediately
 REM after stp in prologue. fix_prologue_sched.py handles both cases.
 echo Fixing prologue scheduling...
-for %%f in (build\*.o) do (
-    python tools\fix_prologue_sched.py "%%f"
-)
+python tools\fix_prologue_sched.py build\*.o
 
 REM Post-process: Fix epilogue scheduling in batch files (whitelist-based).
 REM Generate whitelist first, then apply.
 python tools\gen_epilogue_list.py
 echo Fixing epilogue scheduling...
-for %%f in (build\fun_batch_c_*.o build\fun_batch_d_*.o build\fun_batch_e2_*.o) do (
-    python tools\fix_epilogue.py "%%f"
-)
+python tools\fix_epilogue.py build\fun_batch_c_*.o build\fun_batch_d_*.o build\fun_batch_e2_*.o
 
 REM Post-process: Fix return-register width (mov w0,wzr vs mov x0,xzr).
 REM NX Clang may use different widths for zeroing return registers.
 echo Fixing return-register width...
-for %%f in (build\*.o) do (
-    python tools\fix_return_width.py "%%f"
-)
+python tools\fix_return_width.py build\*.o
 
 REM Post-process: Fix x8-dispatch register allocation (x8->x9 scratch).
 REM NX Clang uses x9 for vtable chain, upstream Clang 8.0.0 uses x8.
 echo Fixing x8-dispatch register allocation...
-for %%f in (build\*.o) do (
-    python tools\fix_x8_regalloc.py "%%f"
-)
+python tools\fix_x8_regalloc.py build\*.o
 
 REM Post-process: Fix instruction reordering (same instructions, different order).
 REM NX Clang may schedule instructions differently from upstream Clang 8.0.0.
 echo Fixing instruction reordering...
-for %%f in (build\*.o) do (
-    python tools\fix_insn_reorder.py "%%f"
-)
+python tools\fix_insn_reorder.py build\*.o
 
 echo.
 echo Disassembly:

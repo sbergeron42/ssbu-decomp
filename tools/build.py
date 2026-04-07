@@ -46,15 +46,19 @@ def compile_file(cpp_path, o_path):
 
 
 def run_postprocess(tool, glob_pattern="build/*.o"):
-    """Run a post-processing tool on matching .o files."""
+    """Run a post-processing tool on all matching .o files in a single invocation."""
     tool_path = PROJECT_ROOT / "tools" / tool
     if not tool_path.exists():
         return
-    for o_file in glob.glob(str(PROJECT_ROOT / glob_pattern)):
-        subprocess.run(
-            'python "%s" "%s"' % (tool_path, o_file),
-            shell=True, capture_output=True
-        )
+    # Use relative paths + cwd to stay within Windows command line length limit
+    matching = glob.glob(glob_pattern, root_dir=str(PROJECT_ROOT))
+    if not matching:
+        return
+    subprocess.run(
+        ['python', str(tool_path)] + matching,
+        cwd=str(PROJECT_ROOT),
+        capture_output=True
+    )
 
 
 def main():
