@@ -2,22 +2,19 @@
 
 ## Model: Opus
 
-## Task: Resource service — remaining pipeline functions from previous assignment
+## Task: Resource service — large remaining functions (>1500B)
 
-Continue with the remaining functions from your previous assignment that weren't finished.
-
-### Remaining Targets
-- `FUN_71035414c0` (928B)
-- `FUN_7103541860` (640B) — lookup_stream_hash variant
-- `FUN_7103541ae0` (288B)
-- `FUN_7103541cb0` (528B)
-- `FUN_7103541ec0` (608B) — get_info_to_data
-- `FUN_7103542120` (1,056B)
-- `FUN_7103542540` (672B)
+### Targets
+- `FUN_71035461f0` (1,472B)
+- `FUN_710353c5b0` (1,504B) — setup/init
+- `FUN_710354fb70` (928B), `FUN_710354f470` (1,168B)
+- `FUN_7103549f00` (2,272B)
+- `FUN_710354a7e0` (2,960B), `FUN_710354bb90` (2,960B)
+- `FUN_710354e4e0` (3,360B) — if time permits
 
 ### Headers: include/resource/*.h
 ### Derivation Chains MANDATORY
-### Output: src/resource/res_loading_pipeline.cpp (append to existing)
+### Output: src/resource/res_remaining_large.cpp
 ### Do NOT use naked asm. 3-attempt limit.
 
 ### Quick Reference
