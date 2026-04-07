@@ -23,6 +23,9 @@ extern "C" void FUN_7103540450(FilesystemInfo*, u32);   // add_idx_to_table1_and
 extern "C" void* je_aligned_alloc(unsigned long, unsigned long);
 extern "C" void FUN_710392e590(void*);  // je_free
 
+// SDK
+extern "C" long GetCurrentThread();  // nn::os::GetCurrentThread — PLT at 0x71039c0840
+
 // Error handler (libc++ vector overflow)
 extern "C" [[noreturn]] void __throw_length_error(void*);
 
@@ -30,6 +33,10 @@ extern "C" [[noreturn]] void __throw_length_error(void*);
 // [derived: DAT_7105331f20 used across all resource helpers, accessed as FilesystemInfo*]
 // [derived: +0x00=mutex, +0x40=loaded_directories, +0x48=loaded_directory_len matches FilesystemInfo layout]
 __attribute__((visibility("hidden"))) extern FilesystemInfo* DAT_7105331f20;
+
+// Main thread handle (for is_main_thread check)
+// [derived: compared against nn::os::GetCurrentThread() result]
+__attribute__((visibility("hidden"))) extern long DAT_7105331f18;
 
 // OOM handler singleton
 // [derived: DAT_7105331f00 at 0x7105331f00, 40+ refs in binary, vtable dispatch at +0x30]
@@ -354,5 +361,107 @@ void FUN_7103542d80(LoadedDirectory* dir, CppVector<u32>* release_vec) {
     while (child != child_end) {
         FUN_7103542d80(*child, release_vec);
         child++;
+    }
+}
+
+// ============================================================================
+// FUN_710353cfd0 — is_main_thread
+// Returns true if the current thread matches the stored main thread handle.
+// [derived: compares nn::os::GetCurrentThread() with DAT_7105331f18]
+// Address: 0x710353cfd0 (48 bytes)
+// ============================================================================
+bool FUN_710353cfd0() {
+    long current = GetCurrentThread();
+    return DAT_7105331f18 == current;
+}
+
+// ============================================================================
+// FUN_710353b1c0 — tree_free_recursive
+// Recursively frees a binary tree node: left child, right child, then self.
+// [derived: post-order traversal with je_free at each node]
+// Address: 0x710353b1c0 (64 bytes)
+// ============================================================================
+void FUN_710353b1c0(void** node) {
+    if (node != nullptr) {
+        FUN_710353b1c0((void**)node[0]);
+        FUN_710353b1c0((void**)node[1]);
+        FUN_710392e590(node);
+    }
+}
+
+// ============================================================================
+// FUN_710353fec0 — tree_free_recursive_2
+// Recursively frees a binary tree node (identical pattern to FUN_710353b1c0,
+// separate function for a different tree type).
+// [derived: post-order traversal with je_free at each node]
+// Address: 0x710353fec0 (64 bytes)
+// ============================================================================
+void FUN_710353fec0(void** node) {
+    if (node != nullptr) {
+        FUN_710353fec0((void**)node[0]);
+        FUN_710353fec0((void**)node[1]);
+        FUN_710392e590(node);
+    }
+}
+
+// ============================================================================
+// FUN_7103541c00 — alloc_with_oom_retry
+// Allocates memory with 8-byte alignment. If allocation fails, invokes
+// the OOM handler and retries once.
+// [derived: je_aligned_alloc(8, size) with OOM handler pattern]
+// [derived: first param is unused (possibly 'this' from caller)]
+// Address: 0x7103541c00 (176 bytes)
+// ============================================================================
+void* FUN_7103541c00(u64 /*unused*/, u64 size) {
+    if (size == 0) size = 1;
+    void* ptr = je_aligned_alloc(8, size);
+    if (ptr == nullptr && DAT_7105331f00 != nullptr) {
+        u32 oom_flags = 0;
+        s64 oom_size = (s64)size;
+        u64 r = ((u64(*)(s64*, u32*, s64*))(*(s64*)(*DAT_7105331f00 + 0x30)))
+                 (DAT_7105331f00, &oom_flags, &oom_size);
+        if ((r & 1) == 0) {
+            ptr = nullptr;
+        } else {
+            ptr = je_aligned_alloc(8, size);
+        }
+    }
+    return ptr;
+}
+
+// ============================================================================
+// FUN_710353eb70 — release_filepath_and_directory_pair
+// Releases a filepath index, then a directory index, then the filepath
+// index again (redundant third check — original source artifact).
+// [derived: same release patterns as FUN_710353d5a0 and FUN_710353e150]
+// Address: 0x710353eb70 (208 bytes)
+// ============================================================================
+void FUN_710353eb70(u32* param_1) {
+    // Release first filepath index
+    if (*param_1 != 0xffffff) {
+        FUN_7103540560(DAT_7105331f20, *param_1);
+        *param_1 = 0xffffff;
+    }
+
+    // Release directory index
+    u32 dir_index = param_1[1];
+    if (dir_index != 0xffffff) {
+        FilesystemInfo* fs = DAT_7105331f20;
+        if (dir_index < fs->loaded_directory_len) {
+            void* mtx = fs->mutex;
+            lock_71039c1490(mtx);
+            LoadedDirectory* dir = &fs->loaded_directories[dir_index];
+            if (dir->flags & 1) {
+                FUN_710353eff0(fs, dir);
+            }
+            unlock_71039c14a0(mtx);
+        }
+        param_1[1] = 0xffffff;
+    }
+
+    // Release filepath index again (redundant but matches original)
+    if (*param_1 != 0xffffff) {
+        FUN_7103540560(DAT_7105331f20, *param_1);
+        *param_1 = 0xffffff;
     }
 }
