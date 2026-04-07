@@ -172,69 +172,60 @@ void ResLoadingThread(ResServiceNX* service) {
             ListNode* svc_sentinel = (ListNode*)&svc->next;
             s32 count = (s32)svc->size;
 
-            if (&service->res_lists[0] != &local_lists[0]) {
-                ListNode* local_next_addr = (ListNode*)&local->next;
+            {
                 ListNode* local_head = local->next;
                 ListNode* svc_head = svc->next;
-                ListNode* swap_local = local_head;
-                ListNode* swap_svc_end;
-                ListNode* swap_svc_head;
+
+                // Determine swap participants (handle null/sentinel cases)
+                ListNode* sw_local;
+                ListNode* sw_svc;
+                ListNode* sw_svc_end;
 
                 if (local_head == nullptr) {
-                    // Reinitialize local list sentinel
-                    local->next = local_next_addr;
-                    local->end = local_next_addr;
-                    swap_local = local_next_addr;
-                    if (svc_head != nullptr) {
-                        swap_svc_end = svc->end;
-                        swap_svc_head = svc_head;
-                        goto do_swap;
-                    }
-                    goto fix_svc;
+                    // Reinitialize local sentinel
+                    ListNode* lsent = (ListNode*)&local->next;
+                    local->next = lsent;
+                    local->end = lsent;
+                    sw_local = lsent;
+                    if (svc_head == nullptr) goto null_both;
+                    sw_svc_end = svc->end;
+                    sw_svc = svc_head;
+                } else if (svc_head == nullptr) {
+                null_both:
+                    svc->next = svc_sentinel;
+                    sw_svc = svc_sentinel;
+                    sw_svc_end = svc_sentinel;
+                    svc->end = svc_sentinel;
+                    sw_local = local_head ? local_head : (ListNode*)&local->next;
                 } else {
-                    if (svc_head == nullptr) {
-                        goto fix_svc;
-                    }
-                    swap_svc_end = svc->end;
-                    swap_svc_head = svc_head;
-                    goto do_swap;
+                    sw_local = local_head;
+                    sw_svc_end = svc->end;
+                    sw_svc = svc_head;
                 }
 
-            fix_svc:
-                svc->next = svc_sentinel;
-                swap_svc_head = svc_sentinel;
-                swap_svc_end = svc_sentinel;
-                svc->end = svc_sentinel;
+                // 4-way pointer swap
+                ListNode* lhp = sw_local->prev;
+                ListNode* shp = sw_svc->prev;
+                ListNode* local_end_ptr = local->end;
+                sw_local->prev = shp;
+                sw_svc->prev = lhp;
 
-            do_swap:
-                {
-                    // Swap head->prev pointers
-                    ListNode* lhp = swap_local->prev;
-                    ListNode* shp = swap_svc_head->prev;
-                    ListNode* local_end = local->end;
-                    swap_local->prev = shp;
-                    swap_svc_head->prev = lhp;
+                ListNode* se_next = sw_svc_end->next;
+                ListNode* le_next = local_end_ptr->next;
+                local_end_ptr->next = se_next;
+                sw_svc_end->next = le_next;
 
-                    // Swap end->next pointers
-                    ListNode* sen = swap_svc_end->next;
-                    ListNode* len = local_end->next;
-                    local_end->next = sen;
-                    swap_svc_end->next = len;
+                ListNode* ln = local->next;
+                ListNode* sn = svc->next;
+                local->next = sn;
+                svc->next = ln;
 
-                    // Swap list header .next
-                    ListNode* ln = local->next;
-                    ListNode* sn = svc->next;
-                    local->next = sn;
-                    svc->next = ln;
+                ListNode* le = local->end;
+                ListNode* se = svc->end;
+                local->end = se;
+                svc->end = le;
 
-                    // Swap list header .end
-                    ListNode* le = local->end;
-                    ListNode* se = svc->end;
-                    local->end = se;
-                    svc->end = le;
-                }
-
-                // Null fixup after swap
+                // Null fixup
                 if (local_head == nullptr) {
                     svc->next = nullptr;
                     svc->end = nullptr;
@@ -250,7 +241,7 @@ void ResLoadingThread(ResServiceNX* service) {
             local->size = svc->size;
             svc->size = old_local_size;
 
-            // Clear any remaining nodes in service list
+            // Clear remaining nodes in service list
             ListNode* clear_node = svc->next;
             while (clear_node != svc_sentinel) {
                 ListNode* next_clear = clear_node->next;
