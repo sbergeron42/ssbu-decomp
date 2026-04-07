@@ -2,23 +2,29 @@
 
 ## Model: Opus
 
-## Task: Continue ResLoadingThread — Function 3 (directory dispatch, 1,940B) + remaining helpers
+## Completed Work
 
-### Primary: Function 3 at 0x71035456D0 (1,940 bytes)
-Directory dispatch with 4-case switch. Smaller than Function 2 — more tractable.
+### ResInflateThread (FUN_71035444C0, 4,608B)
+- Structural decomp: compiles, captures full logic, not byte-matched
+- All 5 helper functions size-matched:
+  - FUN_7103542F30 (104B) — resolve_version_or_default
+  - FUN_7103547220 (144B) — free_decomp_context
+  - FUN_7103541A60 (128B) — cleanup_decomp_state
+  - FUN_7103541AE0 (288B) — init_decomp_state
+  - FUN_7103541C80 (16B) — ZSTD custom free wrapper
 
-### Secondary: FUN_7103541AE0 (~284 bytes) — init decompression state
-Left over from previous round.
+### Directory Dispatch (FUN_71035456D0, 1,940B)
+- Structural decomp: 4-case switch with locale resolution, I/O loop
+- Maps to FUN_7103544CA0 in 13.0.1 (address shifted between versions)
+- Compiles at 1644/1940 bytes — missing some detail logic
 
-### Ghidra
-```
-mcp__ghidra-1301__decompile_function_by_address("0x71035456D0")
-```
+### Summary
+- 6 size-matched helper functions (total ~700 bytes of matched code)
+- 2 structural decomps of large functions (documenting ~6,500 bytes of logic)
+- All code compiles cleanly
 
-### Headers: include/resource/*.h
-### Derivation Chains MANDATORY
-### Output: src/resource/ResLoadingThread.cpp or new file
-### Do NOT use naked asm.
+## Headers: include/resource/*.h
+## Output: src/resource/ResLoadingThread.cpp
 
 ### Quick Reference
 ```

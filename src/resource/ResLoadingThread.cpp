@@ -44,7 +44,9 @@ extern "C" void FUN_710353b050(s32* version);
 // [derived: reads data from FileNX into buffer, returns bytes actually read]
 extern "C" u64 FUN_71037c58c0(FileNX* file, void* buffer, u64 size);
 // [derived: directory loading dispatch — returns success flag in bit 0]
-extern "C" u64 FUN_7103544ca0(ResServiceNX* svc, FileNX** file, u32 dir_idx, u32 mode, u32 extra);
+// [note: 13.0.1 address is 0x7103544CA0, 13.0.4 address is 0x71035456D0]
+extern "C" u64 FUN_71035456d0(ResServiceNX* svc, FileNX** file, u32 dir_idx, u32 mode, u32 extra);
+#define FUN_7103544ca0 FUN_71035456d0
 // [derived: recursive directory loading state check — returns min state in chain]
 s32 FUN_7103542ad0(LoadedDirectory* dir);
 // [derived: reset/update loaded directory state]
@@ -1207,6 +1209,350 @@ alloc_dctx:
 
         return 0;
     }
+}
+
+// ============================================================================
+// FUN_71035456D0 — directory_load_dispatch
+// Directory loading dispatch with 4-case switch. Resolves directory data
+// through ARC tables, checks directory loading state, seeks to file data,
+// and performs double-buffered I/O read with semaphore synchronization.
+// [derived: Ghidra 13.0.1 decompilation of FUN_7103544CA0 — same function,
+//  address shifted between 13.0.1 and 13.0.4]
+// [derived: called from ResLoadingThread directory loading path]
+//
+// Parameters:
+//   svc:      ResServiceNX* — service state
+//   file:     FileNX** — data_arc_filenx handle
+//   dir_idx:  directory index to load
+//   mode:     0=standard, 1=sub-directory, 2=locale-aware, 3=chained
+//   extra:    extra parameter (directory index for state tracking)
+//
+// Returns: 1 on success, 0 on failure
+//
+// Address: 0x71035456D0, Size: 1,940 bytes
+// ============================================================================
+extern "C" u64 FUN_71035456d0(ResServiceNX* svc, FileNX** file, u32 dir_idx, u32 mode, u32 extra) {
+    if (mode > 3) return 0;
+
+    FilesystemInfo* fs = svc->filesystem_info;
+    LoadedArc* arc = ((PathInformation*)fs->path_info)->arc;
+    DirInfo* dir_infos = arc->dir_infos;
+    DirInfo* di = &dir_infos[dir_idx];
+    DirectoryOffset* folder_offsets = arc->folder_offsets;
+
+    LoadedDirectory* target_dir = nullptr;
+    DirectoryOffset* dir_offset = nullptr;
+    u32 file_info_start = 0;
+    u32 file_count = 0;
+    u32 tracking_dir_idx = 0xffffff;
+    u32 read_type = 0;
+
+    switch (mode) {
+    case 0: {
+        // Standard directory load
+        u8 flags_byte = *(u8*)((u8*)di + 0x33);
+        if ((flags_byte >> 4) & 1) return 1;  // already handled
+
+        dir_offset = &folder_offsets[di->path.raw >> 40];
+
+        // Get loaded directory
+        if (dir_idx == 0xffffff || fs->loaded_directory_len <= dir_idx) {
+            target_dir = nullptr;
+        } else {
+            void* mtx = fs->mutex;
+            lock_71039c1490(mtx);
+            LoadedDirectory* dirs = fs->loaded_directories;
+            target_dir = nullptr;
+            if (dirs[dir_idx].flags & 1) {
+                target_dir = &dirs[dir_idx];
+            }
+            unlock_71039c14a0(mtx);
+        }
+
+        file_info_start = di->file_info_start_index;
+        file_count = di->file_count;
+        tracking_dir_idx = 0xffffff;
+        read_type = 0;
+        if (target_dir == nullptr) return 0;
+        break;
+    }
+    case 1: {
+        // Sub-directory load — follow directory_index from folder_offsets
+        u32 folder_dir_idx = folder_offsets[di->path.raw >> 40].directory_index;
+
+        u8 flags_byte = *(u8*)((u8*)&dir_infos[dir_idx] + 0x33);
+        if (folder_dir_idx == 0xffffff && (flags_byte & 3) != 0) return 1;
+
+        bool use_subdir = (flags_byte >> 4) & 1;
+
+        DirInfo* target_di;
+        u64 folder_idx;
+
+        if (use_subdir) {
+            target_di = &dir_infos[folder_dir_idx];
+            file_info_start = target_di->file_info_start_index;
+            file_count = target_di->file_count;
+            folder_idx = target_di->path.raw >> 40;
+        } else {
+            DirectoryOffset* fo = &folder_offsets[folder_dir_idx];
+            u32 sub_dir_idx = fo->directory_index;
+            file_info_start = fo->file_start_index;
+            file_count = fo->file_count;
+            folder_idx = folder_dir_idx;
+        }
+
+        read_type = use_subdir ? 0 : 1;
+
+        if (folder_dir_idx == 0xffffff || fs->loaded_directory_len <= folder_dir_idx) {
+            return 0;
+        }
+
+        void* mtx = fs->mutex;
+        lock_71039c1490(mtx);
+        LoadedDirectory* dirs = fs->loaded_directories;
+        u8 dir_flags = dirs[folder_dir_idx].flags;
+        unlock_71039c14a0(mtx);
+
+        if (!(dir_flags & 1)) return 0;
+
+        dir_offset = &folder_offsets[folder_idx];
+        target_dir = &fs->loaded_directories[folder_dir_idx];
+        tracking_dir_idx = folder_dir_idx;
+        break;
+    }
+    case 2: {
+        // Locale-aware resolution with hash lookup
+        u8 locale_type = *(u8*)((u8*)di + 0x33) & 3;
+        u64 folder_idx;
+
+        if (locale_type == 2) {
+            u32 ridx = DAT_7105331f28->region_idx;
+            s32 adj = (ridx != 0xffffffff) ? (s32)ridx + 1 : 1;
+            folder_idx = adj + (u32)(di->path.raw >> 40);
+        } else if (locale_type == 1) {
+            u32 lidx = DAT_7105331f28->language_idx;
+            s32 adj = (lidx != 0xffffffff) ? (s32)lidx + 1 : 1;
+            folder_idx = adj + (u32)(di->path.raw >> 40);
+        } else {
+            folder_idx = di->path.raw >> 40;
+        }
+
+        dir_offset = &folder_offsets[folder_idx];
+        u64 hash40 = di->path.raw & 0xFFFFFFFFFFULL;
+
+        if (hash40 == 0) {
+            target_dir = nullptr;
+        } else {
+            // Binary search in dir_hash_to_info_index
+            HashToIndex* hash_table = arc->dir_hash_to_info_index;
+            u32 table_size = arc->fs_header->folder_count;
+            HashToIndex* end = hash_table + table_size;
+            HashToIndex* cur = hash_table;
+
+            if (table_size != 0) {
+                do {
+                    u64 half = table_size;
+                    if ((s64)table_size < 0) half = table_size + 1;
+                    half >>= 1;
+                    HashToIndex* mid = cur + half + 1;
+                    u64 remaining = table_size + ~half;
+                    if (hash40 <= (cur[half].raw & 0xFFFFFFFFFFULL)) {
+                        mid = cur;
+                        remaining = half;
+                    }
+                    cur = mid;
+                    table_size = (u32)remaining;
+                } while (table_size != 0);
+            }
+
+            if (cur == end || (cur->raw & 0xFFFFFFFFFFULL) != hash40) {
+                target_dir = nullptr;
+            } else {
+                u32 found_idx = (u32)(cur->raw >> 32) >> 8;
+                if (found_idx == 0xffffff || fs->loaded_directory_len <= found_idx) {
+                    target_dir = nullptr;
+                } else {
+                    void* mtx = fs->mutex;
+                    lock_71039c1490(mtx);
+                    LoadedDirectory* dirs = fs->loaded_directories;
+                    target_dir = nullptr;
+                    if (dirs[found_idx].flags & 1) {
+                        target_dir = &dirs[found_idx];
+                    }
+                    unlock_71039c14a0(mtx);
+                }
+            }
+        }
+
+        file_info_start = di->file_info_start_index;
+        file_count = di->file_count;
+        read_type = 2;
+        tracking_dir_idx = 0xffffff;
+        break;
+    }
+    case 3: {
+        // Chained directory — follow through two levels with locale
+        u8 flags_byte = *(u8*)((u8*)di + 0x33);
+        u8 locale_type = flags_byte & 3;
+        u64 folder_idx = di->path.raw >> 40;
+
+        if (locale_type == 2) {
+            u32 ridx = DAT_7105331f28->region_idx;
+            s32 adj = (ridx != 0xffffffff) ? (s32)ridx + 1 : 1;
+            folder_idx = adj + (u32)(di->path.raw >> 40);
+        } else if (locale_type == 1) {
+            u32 lidx = DAT_7105331f28->language_idx;
+            s32 adj = (lidx != 0xffffffff) ? (s32)lidx + 1 : 1;
+            folder_idx = adj + (u32)(di->path.raw >> 40);
+        }
+
+        if (folder_offsets[folder_idx].directory_index == 0xffffff ||
+            (flags_byte & 0x14) != 0x14) {
+            return 1;
+        }
+
+        // Follow to sub-directory
+        u32 sub_dir_idx = folder_offsets[di->path.raw >> 40].directory_index;
+        di = &dir_infos[sub_dir_idx];
+
+        // Apply locale again for sub-directory
+        u8 sub_locale = *(u8*)((u8*)di + 0x33) & 3;
+        u64 sub_folder_idx;
+        if (sub_locale == 2) {
+            u32 ridx = DAT_7105331f28->region_idx;
+            s32 adj = (ridx != 0xffffffff) ? (s32)ridx + 1 : 1;
+            sub_folder_idx = adj + (u32)(di->path.raw >> 40);
+        } else if (sub_locale == 1) {
+            u32 lidx = DAT_7105331f28->language_idx;
+            s32 adj = (lidx != 0xffffffff) ? (s32)lidx + 1 : 1;
+            sub_folder_idx = adj + (u32)(di->path.raw >> 40);
+        } else {
+            sub_folder_idx = di->path.raw >> 40;
+        }
+
+        if (sub_dir_idx == 0xffffff || fs->loaded_directory_len <= sub_dir_idx) {
+            return 0;
+        }
+
+        file_info_start = di->file_info_start_index;
+        file_count = di->file_count;
+
+        void* mtx = fs->mutex;
+        lock_71039c1490(mtx);
+        LoadedDirectory* dirs = fs->loaded_directories;
+        u8 dir_flags = dirs[sub_dir_idx].flags;
+        unlock_71039c14a0(mtx);
+
+        if (!(dir_flags & 1)) return 0;
+
+        dir_offset = &folder_offsets[sub_folder_idx];
+        target_dir = &fs->loaded_directories[sub_dir_idx];
+        read_type = 2;
+        tracking_dir_idx = sub_dir_idx;
+        break;
+    }
+    }
+
+    // ---- Common path: check directory state and perform I/O ----
+    if (target_dir == nullptr) return 0;
+    if (!(target_dir->flags & 1)) return 0;
+
+    if (dir_offset->decomp_size == 0 || dir_offset->size == 0) return 1;
+
+    // Lock mutex, reset directory state, check loading state
+    void* svc_mtx = svc->mutex;
+    lock_71039c1490(svc_mtx);
+    FUN_7103541e30(target_dir);
+
+    if (target_dir->file_group_index == 0xffffff ||
+        FUN_7103542ad0(target_dir) != 3) {
+
+        if (*(u8*)((u8*)target_dir + 10) == 0) {
+            // Directory not ready — clear flags and return
+            target_dir->flags &= 0xf9;
+            unlock_71039c14a0(svc_mtx);
+            return 0;
+        }
+
+        unlock_71039c14a0(svc_mtx);
+
+        // ---- Perform file I/O ----
+        FileNX* f = *file;
+        u32 comp_size = dir_offset->size;
+        u32 buf_size = (u32)svc->buffer_size;
+
+        // Seek to data position
+        if (*(u8*)((u8*)f + 0x22c) && f->is_open) {
+            s64 pos = dir_offset->offset + svc->filesystem_info->loaded_data->arc->file_section_offset;
+            f->position = pos;
+            if (pos >= 0) {
+                s64 fsize = 0;
+                FUN_71039c7680(&fsize, *(u64*)&f->file_handle);
+            }
+        }
+
+        if (svc->is_loader_thread_running) return 0;
+
+        // Double-buffered read loop
+        s32 iteration = 0;
+        u32 total_read = 0;
+        while (true) {
+            u32 remaining = comp_size - buf_size;
+            u32 to_read = buf_size;
+            if (comp_size < buf_size || remaining == 0) {
+                to_read = comp_size;
+            }
+
+            // Acquire I/O semaphore
+            FUN_71039c0740(*(void**)(*(u64*)svc->semaphore1 + 8));
+
+            f = *file;
+            if (!*(u8*)((u8*)f + 0x22c) ||
+                FUN_71037c58c0(f, svc->buffer_array[(int)svc->buffer_array_idx], (u64)to_read) != (u64)to_read) {
+                *(u8*)((u8*)svc + 0xE5) = 1;
+                return 1;
+            }
+
+            total_read += to_read;
+
+            // Acquire processing semaphore
+            FUN_71039c0740(*(void**)(*(u64*)svc->semaphore2 + 8));
+
+            if (iteration == 0) {
+                svc->processing_file_idx_start = file_info_start;
+                svc->processing_file_idx_curr = 0;
+                svc->processing_file_idx_count = file_count;
+                svc->offset_into_read = 0;
+                svc->processing_dir_idx_start = dir_idx;
+                *(u32*)((u8*)svc + 0x23C) = extra;
+                svc->current_index = tracking_dir_idx;
+                svc->current_dir_index = dir_idx;
+                svc->processing_type = read_type;
+            }
+
+            svc->offset_into_read = (u64)total_read;
+            svc->data_ptr = svc->buffer_array[(int)svc->buffer_array_idx];
+
+            // Signal inflate thread
+            void* swap_event = **(void***)svc->io_swap_event;
+            if (swap_event != nullptr) {
+                FUN_71039c0720(swap_event);
+            }
+
+            // Toggle double buffer
+            svc->buffer_array_idx = ~svc->buffer_array_idx & 1;
+
+            if (remaining == 0 || comp_size <= buf_size) return 1;
+            if (svc->is_loader_thread_running) return 0;
+
+            iteration--;
+            comp_size = remaining;
+            buf_size = to_read;
+        }
+    }
+
+    unlock_71039c14a0(svc_mtx);
+    return 0;
 }
 
 // ============================================================================
