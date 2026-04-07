@@ -1,19 +1,20 @@
-# Worker: pool-d
+# Worker: pool-c
 
 ## Model: Opus
 
-## Task: Resource service — remaining post-processing and large functions
+## Task: Resource service — large remaining functions (>1500B)
 
-### Targets (from previous assignment + new large functions)
-- `FUN_71035461f0` (1,472B), `FUN_71035467b0` (848B)
-- `FUN_7103546b00` (320B), `FUN_7103546c40` (336B), `FUN_7103546d90` (816B)
+### Targets
+- `FUN_71035461f0` (1,472B)
+- `FUN_710353c5b0` (1,504B) — setup/init
+- `FUN_710354fb70` (928B), `FUN_710354f470` (1,168B)
 - `FUN_7103549f00` (2,272B)
-- `FUN_710354b4b0` (848B), `FUN_710354b800` (912B)
-- `FUN_710354c720` (544B), `FUN_710354cc80` (400B), `FUN_710354ce10` (704B)
+- `FUN_710354a7e0` (2,960B), `FUN_710354bb90` (2,960B)
+- `FUN_710354e4e0` (3,360B) — if time permits
 
 ### Headers: include/resource/*.h
 ### Derivation Chains MANDATORY
-### Output: src/resource/res_post_processing2.cpp
+### Output: src/resource/res_remaining_large.cpp
 ### Do NOT use naked asm. 3-attempt limit.
 
 ### Quick Reference
