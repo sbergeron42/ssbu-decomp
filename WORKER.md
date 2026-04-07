@@ -1,20 +1,25 @@
-# Worker: pool-e
+# Worker: pool-b
 
 ## Model: Opus
 
-## Task: Resource service — thread creation + remaining utility functions
+## Task: Decomp FUN_7103542f30 (version resolver, 104 bytes) + ResLoadingThread callees
 
-### Targets
-- `FUN_710353d000` (864B) — thread creation wrapper (creates ResUpdateThread/LoadingThread/InflateThread)
-- `FUN_710353d760` (1,216B)
-- `FUN_710353b490` (1,184B)
-- `FUN_710353f1b0` (3,344B) — large pipeline function
-- `FUN_710353ff00` (1,360B)
-- `FUN_7103546000` (384B), `FUN_71035472b0` (3,872B) — if time permits
+### Primary target
+`FUN_7103542f30` — 104-byte recursive version resolver. Confirmed by disassembly:
+- Prologue at 0x3542f30, ret at 0x3542f94
+- `bl #-84` at 0x3542f84 = recursive self-call
+- Takes `u32*` param, returns `s32`
+- Resolves ARC filesystem version by reading fs_header->version
+
+This should be a quick match — it's small and self-contained.
+
+### Secondary: remaining ResLoadingThread callees
+- `FUN_7103544ca0` (~840B) — directory dispatch function (4-case switch), deferred from last round
+- Any other undecomped functions called from ResLoadingThread
 
 ### Headers: include/resource/*.h
 ### Derivation Chains MANDATORY
-### Output: src/resource/res_thread_utils.cpp
+### Output: src/resource/res_version_resolver.cpp
 ### Do NOT use naked asm. 3-attempt limit.
 
 ### Quick Reference
