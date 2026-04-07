@@ -53,7 +53,7 @@ extern "C" s64 FUN_71039a4040(void*, void*, void*);
 
 // Version lookup
 // [derived: FUN_7103542f30 takes u32* of masked version, returns int version index]
-extern "C" int FUN_7103542f30(u32*);
+extern "C" s32 FUN_7103542f30(u32*);
 
 // libc++ internal
 namespace std { namespace __1 {

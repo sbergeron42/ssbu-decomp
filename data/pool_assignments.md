@@ -6,11 +6,11 @@ This file exists only as a quick overview. If it conflicts with WORKER.md, WORKE
 
 | Pool | Model | Task | File Territory | Status |
 |------|-------|------|----------------|--------|
-| pool-a | Opus | Resource service — lookup_stream_hash (done) | src/resource/res_stream.cpp | idle |
-| pool-b | Opus | Resource service — zstd v1.3.7 ID (done) + NX Clang analysis | src/resource/, lib/zstd/ | idle |
-| pool-c | Opus | Resource service — ResServiceNX filesystem funcs | src/resource/res_filesystem.cpp | idle |
-| pool-d | Opus | Resource service — process loop sub-functions | src/resource/res_load_helpers.cpp | assigned |
-| pool-e | Opus | Resource service — filesystem utils (0x710353xxxx) | src/resource/res_filesystem_utils.cpp | assigned |
+| pool-a | Opus | Resource service — remaining small funcs | src/resource/res_remaining_small.cpp | idle |
+| pool-b | Opus | Resource service — remaining medium funcs | src/resource/res_remaining_medium.cpp | idle |
+| pool-c | Opus | Resource service — remaining large funcs | src/resource/res_remaining_large.cpp | idle |
+| pool-d | Opus | Resource service — post-processing | src/resource/res_post_processing2.cpp | idle |
+| pool-e | Opus | Resource service — thread utils | src/resource/res_thread_utils.cpp | idle |
 
 ## Rules
 - **Update WORKER.md in the pool's worktree when assigning work** — that's the only file that matters

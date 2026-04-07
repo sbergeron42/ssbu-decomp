@@ -30,7 +30,7 @@ void FUN_7103546000(ResServiceNX* service, u32 filepath_index, u32 priority);
 
 // Forward declarations for external functions
 extern "C" s32 FUN_7103542ad0(LoadedDirectory* dir);  // get_redirected_dir_loading_state_recursive
-extern "C" void FUN_7103542f30(u32* version_out);     // resolve_arc_version
+extern "C" s32 FUN_7103542f30(u32* version_out);      // resolve_arc_version
 extern "C" void* FUN_7103546d90(void* task_dispatch);  // alloc_list_node_from_pool
 
 // ============================================================================
