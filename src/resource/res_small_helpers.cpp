@@ -22,7 +22,12 @@ extern "C" void lock_71039c1490(void*);
 extern "C" void unlock_71039c14a0(void*);
 
 // Resource service helpers
-extern "C" long FUN_710353ff00(void*, u64);  // validate filepath entry under lock
+extern "C" long FUN_710353ff00(void*, u64);   // validate filepath entry under lock
+extern "C" u32* FUN_71035407a0(void*, u64);   // get dir path pointer from dir index
+
+// Fallback constant for FUN_710353e030 (returns 0xffffff when lookup fails)
+// [derived: adrp+add 0x7104470f50 in FUN_710353e030 — .rodata constant]
+__attribute__((visibility("hidden"))) extern u32 UNK_7104470f50;
 
 // Global filesystem info singleton
 // [derived: DAT_7105331f20 — FilesystemInfo* used across all resource helpers]
@@ -580,4 +585,88 @@ u64 FUN_710353e4e0(u32 param_1) {
 
 LAB_e4e0_end:
     return result;
+}
+
+// ============================================================================
+// FUN_710353e030 — get_parent_dir_path (288 bytes)
+// Given a filepath_index, looks up DirInfo under lock, extracts parent hash40,
+// binary searches dir_hash_to_info_index for the parent, calls FUN_71035407a0
+// to resolve to a path pointer, and stores the u32 path result.
+// [derived: DirInfo at arc+0x78, stride 0x34 (52 bytes) confirmed by umaddl]
+// [derived: DirInfo+0x00 = path (HashToIndex), DirInfo+0x10 = parent (Hash40)]
+// [derived: dir_hash_to_info_index at arc+0x70, count from fs_header+0x0C]
+// [derived: FUN_71035407a0 = resolve dir index to path pointer]
+// [derived: UNK_7104470f50 = fallback constant (0xffffff)]
+// ============================================================================
+void FUN_710353e030(u32* param_1, u32 param_2) {
+    u64 path_hash;
+    u64 parent_hash;
+
+    if (param_2 == 0xffffff) goto LAB_e030_fail;
+
+    {
+        FilesystemInfo* fs = DAT_7105331f20;
+        void* mutex = fs->mutex;
+
+        lock_71039c1490(mutex);
+
+        PathInformation* pi = (PathInformation*)fs->path_info;
+        LoadedArc* arc = pi->arc;
+        // DirInfo is 0x34 bytes in binary (no alignment padding)
+        DirInfo* dir = (DirInfo*)((char*)arc->dir_infos + (u64)param_2 * 0x34);
+        u64 parent_raw = dir->parent;  // +0x10
+        u64 path_raw = dir->path.raw;  // +0x00
+
+        unlock_71039c14a0(mutex);
+
+        path_hash = path_raw & 0xffffffffffULL;
+        parent_hash = parent_raw & 0xffffffffffULL;
+
+        if (path_hash == 0 || parent_hash == 0) goto LAB_e030_fail;
+    }
+
+    {
+        FilesystemInfo* fs2 = DAT_7105331f20;
+        PathInformation* pi2 = (PathInformation*)fs2->path_info;
+        LoadedArc* arc2 = pi2->arc;
+
+        HashToIndex* dir_hash = arc2->dir_hash_to_info_index;
+        u32 dir_count = arc2->fs_header->folder_count;
+
+        HashToIndex* lo = dir_hash;
+        HashToIndex* end = dir_hash + dir_count;
+
+        // Binary search (lower_bound on parent_hash)
+        u64 count = dir_count;
+        while (count != 0) {
+            s64 sc = (s64)count;
+            u64 half = (u64)((sc + (sc < 0)) >> 1);
+            HashToIndex* next = lo + half + 1;
+            u64 remaining = count + ~half;
+            u64 mid_hash = lo[half].raw & 0xffffffffffULL;
+            if (mid_hash >= parent_hash) {
+                next = lo;
+                remaining = half;
+            }
+            lo = next;
+            count = remaining;
+        }
+
+        u64 dir_idx;
+        if (lo != end && (lo->raw & 0xffffffffffULL) == parent_hash) {
+            dir_idx = lo->raw >> 40;
+        } else {
+            dir_idx = 0xffffff;
+        }
+
+        u32* result_ptr = FUN_71035407a0(fs2, dir_idx);
+        if (result_ptr == nullptr) {
+            result_ptr = &UNK_7104470f50;
+        }
+        *param_1 = *result_ptr;
+        return;
+    }
+
+LAB_e030_fail:
+    *param_1 = 0xffffff;
 }
