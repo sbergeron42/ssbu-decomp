@@ -1,31 +1,55 @@
-# Worker: pool-a
+# Worker: pool-b
 
 ## Model: Opus
 
-## Task: ResLoadingThread — Function 2 (inflate/processing, 4,608 bytes)
+## Task: Fix in_x10 lua_bind pattern — batch_c_001 + batch_c_003 + batch_c_004
 
-Function 1 is at 98.3%. Move to Function 2: the inflate/processing loop at 0x71035444C0 (binary offset 0x35444C0), 4,608 bytes.
+### Goal: Fix the broken `in_x10` / `in_w8` pattern in lua_bind wrappers to achieve ~88% match rate
 
-### How to decompile
+Pool-c already proved this pattern on batch_c_007/008 — 68/77 functions matched. Apply the SAME fix to these files.
+
+### The Pattern (MANDATORY — follow exactly)
+
+**BEFORE (broken Ghidra paste):**
+```cpp
+u64 FUN_...(s64 param_1, s64 param_2) {
+    u64 in_x10;                          // ← uninitialized, UB
+    *(u64 *)(param_1 + 0x10) = in_x10;   // ← wrong target (should be param_1, not param_2)
+    app::SomeFunc(param_2);
+    return 0;
+}
 ```
-mcp__ghidra-1301__decompile_function_by_address("0x71035444C0")
-```
-If Ghidra merges it with the parent, extract the section from 0x35444C0 to 0x35456C0 in the disassembly.
 
-### Binary disassembly
-```
-/c/llvm-8.0.0/bin/llvm-objdump.exe -d --no-show-raw-insn --start-address=0x35444C0 --stop-address=0x35456C0 data/main.elf
+**AFTER (correct register-asm dispatch):**
+```cpp
+u32 FUN_...(app::BattleObjectModuleAccessor* acc, s64 ctx) {
+    register u64 x10 asm("x10");
+    asm volatile("" : "=r"(x10));        // capture x10 without clobbering
+    *(u64 *)((u8*)acc + 0x10) = x10;     // store to acc (first param), not ctx
+    app::SomeFunc(acc);                   // dispatch uses acc
+    return 0;                             // u32 return (mov w0, wzr)
+}
 ```
 
-### Context
-This is the inflate/decompress dispatch — handles zlib/zstd decompression of ARC file data. ARCropolis hooks `inflate`, `inflate_dir_file`, `memcpy_1/2/3` all land in this function.
+### Key fixes in every function:
+1. `u64 in_x10` → `register u64 x10 asm("x10"); asm volatile("" : "=r"(x10));`
+2. Store target: `*(u64*)(param_2 + 0x10)` → `*(u64*)((u8*)acc + 0x10)` (first param, not second)
+3. Return type: `u64` → `u32` (binary uses `mov w0, wzr`)
+4. First param type: `s64` → `app::BattleObjectModuleAccessor*` where applicable
 
-### Headers: include/resource/*.h, include/zlib/zlib_nx.h
-### Derivation Chains MANDATORY
-### Output: Add to src/resource/ResLoadingThread.cpp or new file
-### Do NOT use naked asm.
+### Target Files
+- `src/app/fun_batch_c_001.cpp` — 72 occurrences
+- `src/app/fun_batch_c_003.cpp` — 87 occurrences  
+- `src/app/fun_batch_c_004.cpp` — 58 occurrences
 
 ### Quick Reference
 ```
-/c/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -Ilib/NintendoSDK/include -Ilib/NintendoSDK/include/stubs -c src/resource/FILE.cpp -o build/FILE.o
+/c/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -Ilib/NintendoSDK/include -Ilib/NintendoSDK/include/stubs -c src/app/FILE.cpp -o build/FILE.o
+
+python tools/compare_bytes.py FUN_name
 ```
+
+### Rules
+- CAN ONLY edit: fun_batch_c_001.cpp, fun_batch_c_003.cpp, fun_batch_c_004.cpp
+- Apply the register-asm pattern to EVERY in_x10/in_w8 occurrence
+- Derivation chains on any new offset tags
