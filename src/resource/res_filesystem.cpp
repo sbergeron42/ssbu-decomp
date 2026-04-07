@@ -206,7 +206,9 @@ SretResult FUN_71037c3db0_37c3db0(long* handler, const char* path) {
     PathResolverBase* singleton = DAT_710593c288;
     if (singleton != nullptr) goto resolve;
 
-    // CAS spinlock acquire
+    // CAS spinlock acquire — nu::ModuleInitializer<T>::Instance() pattern
+    // [derived: same pattern at 0x71037c3db0 and 0x71037c4010 — singleton creation with exclusive monitor]
+    // NOTE: not refactored to helper because inlining must match binary exactly
     do {
         u32 val = __builtin_arm_ldaex(&DAT_710593c280);
         if (val != 0) {
@@ -425,46 +427,27 @@ singleton_ready:
     unsigned long path_len = strlen(resolved_path.data);
     filename_buf.assign_buf(reinterpret_cast<const u8*>(resolved_path.data), path_len);
 
-    // Extract filename: find last '/' or '\\'
+    // Extract filename: find last path separator ('/' or '\\')
+    // [rewritten: original was Ghidra reverse-scan with decrement-from-zero pattern]
     u64 buf_len = (u64)filename_buf.length;
     if (buf_len != 0) {
-        // Find last '/' position
+        // Scan backwards for last '/' and last '\\'
         u64 slash_pos = 0xFFFFFFFFFFFFFFFF;
-        {
-            s64 i = 0;
-            do {
-                if (buf_len + (u64)i == 0) break;
-                s64 idx = i + (s64)buf_len;
-                i--;
-                if (filename_buf.data[idx] == '/') {
-                    slash_pos = (i == 0) ? 0xFFFFFFFFFFFFFFFF : buf_len + (u64)i;
-                    break;
-                }
-            } while (true);
-        }
-
-        // Find last '\\' position
         u64 backslash_pos = 0xFFFFFFFFFFFFFFFF;
-        {
-            s64 i = 0;
-            do {
-                if (buf_len + (u64)i == 0) {
-                    break;
-                }
-                s64 idx = i + (s64)buf_len;
-                i--;
-                if (filename_buf.data[idx] == '\\') {
-                    if (i == 0) {
-                        backslash_pos = 0xFFFFFFFFFFFFFFFF;
-                    } else {
-                        backslash_pos = buf_len + (u64)i;
-                    }
-                    break;
-                }
-            } while (true);
+        for (u64 j = buf_len; j > 0; j--) {
+            char c = filename_buf.data[j - 1];
+            if (c == '/' && slash_pos == 0xFFFFFFFFFFFFFFFF) {
+                slash_pos = j - 1;
+            }
+            if (c == '\\' && backslash_pos == 0xFFFFFFFFFFFFFFFF) {
+                backslash_pos = j - 1;
+            }
+            if (slash_pos != 0xFFFFFFFFFFFFFFFF && backslash_pos != 0xFFFFFFFFFFFFFFFF) {
+                break;
+            }
         }
 
-        // Take the larger position
+        // Take the later separator position
         u64 sep_pos;
         if (slash_pos == 0xFFFFFFFFFFFFFFFF) {
             sep_pos = backslash_pos;
