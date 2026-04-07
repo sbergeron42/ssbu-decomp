@@ -504,3 +504,80 @@ void FUN_710353d480(u32* param_1, u64 param_2) {
 LAB_fail:
     *param_1 = 0xffffff;
 }
+
+// ============================================================================
+// FUN_710353e4e0 — get_filepathidx_from_loaded_data_idx (240 bytes)
+// Resolves a loaded data index to a filepath index.
+// Goes through LoadedSearchSection (path_info[1]) to find the hash40,
+// then does the standard bucket hash + binary search on file_info_buckets.
+// [derived: path_info->search at +0x08 (PathInformation layout)]
+// [derived: search->body at +0x08 — contains count fields]
+// [derived: search->redirect at +0x28 — u32 remap table, nullable]
+// [derived: search->entries at +0x30 — stride 0x20, first u64 contains hash40]
+// [derived: body+0x04 = path_count, body+0x08 = index_count (bounds checks)]
+// ============================================================================
+u64 FUN_710353e4e0(u32 param_1) {
+    u64 result = 0xffffff;
+    if (param_1 == 0xffffff) goto LAB_e4e0_end;
+
+    {
+        FilesystemInfo* fs = DAT_7105331f20;
+        PathInformation* pi = (PathInformation*)fs->path_info;
+        long search = (long)pi->search;
+        long body = *(long*)(search + 0x08);
+
+        if (*(u32*)(body + 4) <= param_1) goto LAB_e4e0_end;
+
+        long redirect = *(long*)(search + 0x28);
+        if (redirect != 0) {
+            param_1 = *(u32*)(redirect + (u64)param_1 * 4);
+        }
+
+        if (param_1 == 0xffffff) goto LAB_e4e0_end;
+        if (*(u32*)(body + 8) <= param_1) goto LAB_e4e0_end;
+
+        long entries = *(long*)(search + 0x30);
+        long entry_ptr = entries + (u64)param_1 * 0x20;
+        if (entry_ptr == 0) goto LAB_e4e0_end;
+
+        u64 hash = *(u64*)entry_ptr & 0xffffffffffULL;
+        if (hash == 0) goto LAB_e4e0_end;
+
+        LoadedArc* arc = pi->arc;
+        FileInfoBucket* buckets = arc->file_info_buckets;
+        HashToIndex* hash_to_path = arc->file_hash_to_path_index;
+
+        u32 bucket_count = buckets[0].count;
+        u64 bucket_idx = hash % (u64)bucket_count;
+        FileInfoBucket* bucket = &buckets[bucket_idx + 1];
+
+        u32 chain_count = bucket->count;
+        HashToIndex* lo = &hash_to_path[bucket->start];
+        HashToIndex* end = lo + chain_count;
+
+        u64 count = chain_count;
+        while (count != 0) {
+            s64 sc = (s64)count;
+            u64 half = (u64)((sc + (sc < 0)) >> 1);
+            HashToIndex* next = lo + half + 1;
+            u64 remaining = count + ~half;
+            u64 mid_hash = lo[half].raw & 0xffffffffffULL;
+            if (mid_hash >= hash) {
+                next = lo;
+                remaining = half;
+            }
+            lo = next;
+            count = remaining;
+        }
+
+        if (lo != end) {
+            u64 entry = lo->raw;
+            u64 entry_hash = entry & 0xffffffffffULL;
+            result = entry >> 40;
+            if (entry_hash != hash) result = 0xffffff;
+        }
+    }
+
+LAB_e4e0_end:
+    return result;
+}
