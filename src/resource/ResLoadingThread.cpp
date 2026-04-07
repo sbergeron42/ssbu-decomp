@@ -64,7 +64,7 @@ extern "C" void FUN_7103547220(void** state);
 // [derived: init decompression state — returns 0 on success]
 extern "C" u32 FUN_7103541ae0(void* state);
 // [derived: cleanup decompression filepath/dir pair]
-extern "C" void FUN_7103541a60(void* state);
+extern "C" void FUN_7103541a60(void** state);
 // nn::os PLT stubs used by ResInflateThread
 extern "C" void _ZN2nn2os16ReleaseSemaphoreEPNS0_13SemaphoreTypeE(void*);
 extern "C" void _ZN2nn2os9WaitEventEPNS0_9EventTypeE(void*);
@@ -81,6 +81,7 @@ extern "C" void FUN_710399f880(void* ctx);
 // Globals
 __attribute__((visibility("hidden"))) extern ResServiceNX* DAT_7105331f28;
 __attribute__((visibility("hidden"))) extern s64* DAT_7105331f00;
+__attribute__((visibility("hidden"))) extern FilesystemInfo* DAT_7105331f20;
 
 // ============================================================================
 // Helper: vector push_back with OOM retry (inlined by compiler 3 times)
@@ -977,6 +978,127 @@ void ResLoadingThread(ResServiceNX* service) {
         }
 
     } while (!service->is_loader_thread_running);
+}
+
+// ============================================================================
+// FUN_7103542F30 — resolve_version_or_default
+// If *ver is the sentinel 0xFFFF, replaces it with the filesystem header's
+// version (masked to 24 bits). Self-recursive: the recursive call returns
+// the non-sentinel value unchanged.
+// [derived: called from ResInflateThread at 0x35447EC via bl #-6332]
+// [derived: accesses DAT_7105331f20 (FilesystemInfo*) → path_info → arc → fs_header → version]
+// Address: 0x7103542F30, Size: 100 bytes
+// ============================================================================
+s32 FUN_7103542f30(s32* ver) {
+    s32 val = *ver;
+    if (val != (s32)0xFFFF) return val;
+
+    // Load default version from filesystem
+    FilesystemInfo* fs = DAT_7105331f20;
+    if (fs == nullptr) return (s32)0xFFFF;
+
+    PathInformation* pi = (PathInformation*)fs->path_info;
+    LoadedArc* arc = pi->arc;
+    s32 default_ver = (s32)(arc->fs_header->version & 0xFFFFFF);
+
+    if (default_ver == (s32)0xFFFF) return (s32)0xFFFF;
+
+    // Recursive call: since default_ver != 0xFFFF, this just returns it
+    s32 temp = default_ver;
+    s32 result = FUN_7103542f30(&temp);
+    *ver = result;
+    return result;
+}
+
+// ============================================================================
+// FUN_7103547220 — free_decomp_context
+// Frees a two-level decompression context structure:
+//   state[0] → container with two sub-contexts at [0] and [8]
+//   Sub-context 0 has allocated buffers at +0xA8 and +0x58
+//   Sub-context 1 has allocated buffers at +0x40 and +0x58
+// All freed via je_free, then container itself freed.
+// [derived: called from ResInflateThread cleanup paths]
+// [derived: sub-context buffer offsets confirmed by Ghidra field analysis]
+// Address: 0x7103547220, Size: 140 bytes
+// ============================================================================
+void FUN_7103547220(void** state) {
+    void* ctx = *state;
+    if (ctx != nullptr) {
+        // Free first sub-context (decompression workspace)
+        void* sub0 = ((void**)ctx)[0];
+        if (sub0 != nullptr) {
+            void* buf_a8 = *(void**)((u8*)sub0 + 168);  // +0xA8
+            if (buf_a8 != nullptr) FUN_710392e590(buf_a8);
+            void* buf_58 = *(void**)((u8*)sub0 + 88);   // +0x58
+            if (buf_58 != nullptr) FUN_710392e590(buf_58);
+            FUN_710392e590(sub0);
+        }
+        // [derived: store null BEFORE loading next sub-context, matching binary at 0x3547264]
+        ((void**)ctx)[0] = nullptr;
+
+        // Free second sub-context (ZSTD DStream or similar)
+        void* sub1 = ((void**)ctx)[1];
+        if (sub1 != nullptr) {
+            void* buf_40 = *(void**)((u8*)sub1 + 64);   // +0x40
+            if (buf_40 != nullptr) FUN_710392e590(buf_40);
+            void* buf_58b = *(void**)((u8*)sub1 + 88);  // +0x58
+            if (buf_58b != nullptr) FUN_710392e590(buf_58b);
+            FUN_710392e590(sub1);
+            // [derived: null store inside if-block — target skips it when sub1 was already null]
+            ((void**)ctx)[1] = nullptr;
+        }
+
+        // Free container
+        FUN_710392e590(ctx);
+    }
+    *state = nullptr;
+}
+
+// ============================================================================
+// FUN_7103541A60 — cleanup_decomp_state
+// Cleans up a decompression state: finalizes the decomp context (if owned),
+// closes the ZSTD stream, frees the container.
+// [derived: implements CLEANUP_CTX + CLOSE_STREAM + free pattern]
+// [derived: field_0x1A8 == 0 means "we own it" → finalize + dealloc]
+// [derived: field_0x198 = dealloc function, field_0x1A0 = dealloc arg]
+// Address: 0x7103541A60, Size: 128 bytes
+// ============================================================================
+void FUN_7103541a60(void** state) {
+    void* ctx = *state;
+    if (ctx == nullptr) { *state = nullptr; return; }
+
+    // Clean up sub-context 0 (decompression workspace)
+    void* sub0 = ((void**)ctx)[0];
+    if (sub0 != nullptr) {
+        u64 ext_flag = *(u64*)((u8*)sub0 + 0x1A8);
+        if (ext_flag != 0) {
+            // Externally managed — just free container and return
+            FUN_710392e590(ctx);
+            *state = nullptr;
+            return;
+        }
+        // Owned: finalize decomp context
+        FUN_710399f880(sub0);
+        typedef void (*DeallocFn)(void*, void*);
+        DeallocFn dealloc = *(DeallocFn*)((u8*)sub0 + 0x198);
+        if (dealloc != nullptr) {
+            void* dealloc_arg = *(void**)((u8*)sub0 + 0x1A0);
+            dealloc(dealloc_arg, sub0);
+        } else {
+            FUN_710392e590(sub0);
+        }
+    }
+    ((void**)ctx)[0] = nullptr;
+
+    // Close ZSTD stream (sub-context 1)
+    void* stream = ((void**)ctx)[1];
+    if (stream != nullptr) {
+        ZSTD_freeDStream_71039a38e0(stream);
+    }
+
+    // Free container
+    FUN_710392e590(ctx);
+    *state = nullptr;
 }
 
 // ============================================================================
