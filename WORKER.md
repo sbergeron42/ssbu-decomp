@@ -1,32 +1,26 @@
-# Worker: pool-e
+# Worker: pool-c
 
 ## Model: Opus
 
-## Task: Resource service — filesystem utility functions (0x710353xxxx range)
+## Task: Resource service — loading pipeline functions (0x7103540xxx-0x7103542xxx)
 
-Decomp the filesystem utility functions that support the resource loading pipeline. These are called by the main processing loop and handle file lookup, path resolution, and loaded-data management.
+These are the functions in the loading pipeline that feed into the main processing loop.
 
-### Target Functions
-Scan the 0x710353xxxx range for uncompiled functions related to:
-- File path/hash lookup
-- LoadedArc table access
-- FilesystemInfo operations
-- LoadedData/LoadedDirectory state management
+### Targets
+- `add_idx_to_table1_and_table2` (272B) — 0x7103540450
+- `load_file_by_hash40` (576B) — 0x7103540560
+- `load_directory_files` (384B) — 0x7103541080
+- `FUN_71035414c0` (928B)
+- `lookup_stream_hash` (640B) — 0x7103541860 (different from the one pool-a decomped)
+- `FUN_7103541ae0` (288B), `FUN_7103541cb0` (528B)
+- `get_info_to_data` (608B) — 0x7103541ec0
+- `FUN_7103542120` (1,056B), `FUN_7103542540` (672B), `FUN_71035427e0` (752B)
+- `FUN_7103542b10` (528B)
 
-Start with the smallest functions and work up. Use Ghidra to identify which ones access resource service structs.
-
-### Known Targets
-- `FUN_710353d5e0` (384B) — copy_filepath_vector_from_loaded_directory (if not done by pool-c)
-- `FUN_710353a8f0` (1,280B) — filesystem entry scanner/resolver (if not done by pool-c)
-- Any other uncompiled functions in 0x710353xxxx that access LoadedArc/FilesystemInfo
-
-### Headers
-- `include/resource/ResServiceNX.h`, `include/resource/LoadedArc.h`, `include/resource/containers.h`
-
-### Derivation Chains (MANDATORY)
-- `[derived: ARCropolis field_name]` or `[derived: smash-arc field_name]` for known fields
-- `[inferred:]` for fields identified from decompilation patterns
-- Any offset `+0xNN` MUST get a confidence tag
+### Headers: include/resource/*.h
+### Derivation Chains MANDATORY: [derived:] or [inferred:] on every offset
+### Output: src/resource/res_loading_pipeline.cpp
+### Do NOT use naked asm. 3-attempt limit.
 
 ### Quick Reference
 ```
@@ -34,8 +28,3 @@ Start with the smallest functions and work up. Use Ghidra to identify which ones
 
 python tools/compare_bytes.py FUN_name
 ```
-
-### Rules
-- Output: src/resource/res_filesystem_utils.cpp
-- 3-attempt limit per function
-- Do NOT use naked asm
