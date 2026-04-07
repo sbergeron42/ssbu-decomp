@@ -57,7 +57,10 @@ __attribute__((visibility("hidden"))) extern s64* DAT_7105331f00;
 // Helper: vector push_back with OOM retry (inlined by compiler 3 times)
 // Pushes a u32 to a { start, end, cap } triple with growth.
 // ============================================================================
-static __attribute__((always_inline)) void vec_push_u32(u32** start, u32** end, u32** cap, u32 value) {
+static __attribute__((always_inline)) void vec_push_u32(
+    u32** start, u32** end, u32** cap, u32 value,
+    s32* oom_flags_p, s64* oom_size_p)
+{
     if (*end != *cap) {
         **end = value;
         *end = *end + 1;
@@ -90,10 +93,10 @@ static __attribute__((always_inline)) void vec_push_u32(u32** start, u32** end, 
         new_buf = (u32*)je_aligned_alloc(0x10, alloc_size);
         if (new_buf == nullptr) {
             if (DAT_7105331f00 != nullptr) {
-                u32 oom_flags = 0;
-                s64 oom_size = (s64)alloc_size;
-                u64 r = ((u64(*)(s64*, u32*, s64*))(*(u64*)(*DAT_7105331f00 + 0x30)))
-                         (DAT_7105331f00, &oom_flags, &oom_size);
+                *oom_flags_p = 0;
+                *oom_size_p = (s64)alloc_size;
+                u64 r = ((u64(*)(s64*, s32*, s64*))(*(u64*)(*DAT_7105331f00 + 0x30)))
+                         (DAT_7105331f00, oom_flags_p, oom_size_p);
                 if (((r & 1) != 0) &&
                     (new_buf = (u32*)je_aligned_alloc(0x10, alloc_size), new_buf != nullptr))
                     goto insert;
@@ -123,6 +126,12 @@ insert:
 // ============================================================================
 void ResLoadingThread(ResServiceNX* service) {
     if (service->is_loader_thread_running) return;
+
+    // Function-scope temporaries — reused across multiple paths
+    // [derived: Ghidra aiStack_78[2] at fp-0x78, uStack_70 at fp-0x70]
+    // Address-taken locals that must persist on the stack
+    s32 temp_pair[2];
+    s64 temp_val;
 
     do {
         // ================================================================
@@ -156,61 +165,76 @@ void ResLoadingThread(ResServiceNX* service) {
         }
 
         // Swap each service queue into corresponding local list, accumulate counts
-        // [derived: res_lists at +0x058, 5 queues of 0x18 bytes each]
+        // [derived: binary at 0x35431a4–0x35432b8: full doubly-linked list swap with null handling]
         for (u64 qi = 0; qi < 5; qi++) {
             ResList* svc = &service->res_lists[qi];
             ResList* local = &local_lists[qi];
             ListNode* svc_sentinel = (ListNode*)&svc->next;
-            ListNode* local_sentinel = (ListNode*)&local->next;
             s32 count = (s32)svc->size;
 
-            // Swap linked list pointers (handles both-empty, one-empty, both-populated)
-            ListNode* local_head = local->next;
-            ListNode* svc_head = svc->next;
+            if (&service->res_lists[0] != &local_lists[0]) {
+                ListNode* local_next_addr = (ListNode*)&local->next;
+                ListNode* local_head = local->next;
+                ListNode* svc_head = svc->next;
+                ListNode* swap_local = local_head;
+                ListNode* swap_svc_end;
+                ListNode* swap_svc_head;
 
-            if (local_head == nullptr) {
-                local->next = local_sentinel;
-                local->end = local_sentinel;
-                if (svc_head != nullptr) {
-                    // Service has nodes, local is null → transfer
-                    ListNode* local_tail = local->end;
-                    ListNode* svc_tail = svc->end;
-                    local_head->prev = (ListNode*)svc_tail->prev;
-                    svc_tail->prev = (ListNode*)local_head->prev;
-                    // ... (simplified — full swap is complex)
+                if (local_head == nullptr) {
+                    // Reinitialize local list sentinel
+                    local->next = local_next_addr;
+                    local->end = local_next_addr;
+                    swap_local = local_next_addr;
+                    if (svc_head != nullptr) {
+                        swap_svc_end = svc->end;
+                        swap_svc_head = svc_head;
+                        goto do_swap;
+                    }
+                    goto fix_svc;
+                } else {
+                    if (svc_head == nullptr) {
+                        goto fix_svc;
+                    }
+                    swap_svc_end = svc->end;
+                    swap_svc_head = svc_head;
+                    goto do_swap;
                 }
+
+            fix_svc:
                 svc->next = svc_sentinel;
+                swap_svc_head = svc_sentinel;
+                swap_svc_end = svc_sentinel;
                 svc->end = svc_sentinel;
-            } else if (svc_head == nullptr) {
-                svc->next = svc_sentinel;
-                svc->end = svc_sentinel;
-                ListNode* local_tail = local->end;
-                ListNode* svc_tail = svc->end;
-                local_head->prev = (ListNode*)svc_tail->prev;
-                svc_tail->prev = (ListNode*)local_head->prev;
-            } else {
-                // Both non-null: full swap
-                ListNode* local_tail = local->end;
-                ListNode* svc_tail = svc->end;
 
-                // Swap last->next and first->prev links
-                ListNode* tmp1 = (ListNode*)local_head->prev;
-                ListNode* tmp2 = local->end;
-                local_head->prev = (ListNode*)svc_tail->prev;
-                svc_tail->prev = (ListNode*)tmp1;
+            do_swap:
+                {
+                    // Swap head->prev pointers
+                    ListNode* lhp = swap_local->prev;
+                    ListNode* shp = swap_svc_head->prev;
+                    ListNode* local_end = local->end;
+                    swap_local->prev = shp;
+                    swap_svc_head->prev = lhp;
 
-                ListNode* tmp3 = *(ListNode**)tmp2;
-                *(ListNode**)tmp2 = *(ListNode**)svc_tail;
-                *(ListNode**)svc_tail = tmp3;
+                    // Swap end->next pointers
+                    ListNode* sen = swap_svc_end->next;
+                    ListNode* len = local_end->next;
+                    local_end->next = sen;
+                    swap_svc_end->next = len;
 
-                ListNode* tmp4 = local->next;
-                local->next = svc->next;
-                svc->next = tmp4;
+                    // Swap list header .next
+                    ListNode* ln = local->next;
+                    ListNode* sn = svc->next;
+                    local->next = sn;
+                    svc->next = ln;
 
-                ListNode* tmp5 = local->end;
-                local->end = svc->end;
-                svc->end = tmp5;
+                    // Swap list header .end
+                    ListNode* le = local->end;
+                    ListNode* se = svc->end;
+                    local->end = se;
+                    svc->end = le;
+                }
 
+                // Null fixup after swap
                 if (local_head == nullptr) {
                     svc->next = nullptr;
                     svc->end = nullptr;
@@ -358,9 +382,9 @@ void ResLoadingThread(ResServiceNX* service) {
 
                         if (version != (s32)0xffff) {
                             // Check if version matches filesystem version
-                            s32 fs_ver = (s32)(arc->fs_header->version & 0x00ffffff);
-                            FUN_710353b050(&fs_ver);
-                            if (fs_ver == version) {
+                            temp_pair[0] = (s32)(arc->fs_header->version & 0x00ffffff);
+                            FUN_710353b050(&temp_pair[0]);
+                            if (temp_pair[0] == version) {
                                 goto alt_path_lookup;
                             }
                         } else {
@@ -381,9 +405,9 @@ void ResLoadingThread(ResServiceNX* service) {
 
                         // Store version on the LoadedData entry
                         {
-                            s32 ver_buf = version;
-                            FUN_710353b050(&ver_buf);
-                            datas[data_idx].version = (u32)ver_buf;
+                            temp_pair[0] = version;
+                            FUN_710353b050(&temp_pair[0]);
+                            datas[data_idx].version = (u32)temp_pair[0];
                         }
 
                         // ---- Resolve file data location ----
@@ -411,9 +435,9 @@ void ResLoadingThread(ResServiceNX* service) {
                         {
                             s32 arc_ver = (s32)arc->version;
                             if (arc_ver == (s32)0xffff) goto standard_file_resolve;
-                            s32 fs_ver2 = (s32)(arc->fs_header->version & 0x00ffffff);
-                            FUN_710353b050(&fs_ver2);
-                            if (arc_ver == fs_ver2) goto standard_file_resolve;
+                            temp_pair[0] = (s32)(arc->fs_header->version & 0x00ffffff);
+                            FUN_710353b050(&temp_pair[0]);
+                            if (arc_ver == temp_pair[0]) goto standard_file_resolve;
 
                             // Extra entry hash table lookup
                             u32 extra_idx = arc->extra_count;
@@ -520,8 +544,8 @@ void ResLoadingThread(ResServiceNX* service) {
                                               + file_offset;
                                 file->position = abs_pos;
                                 if ((s64)abs_pos >= 0) {
-                                    s64 file_size = 0;
-                                    FUN_71039c7680(&file_size,
+                                    temp_val = 0;
+                                    FUN_71039c7680(&temp_val,
                                         *(u64*)&file->file_handle);
                                 }
                             }
@@ -640,7 +664,8 @@ void ResLoadingThread(ResServiceNX* service) {
                                     (FUN_7103544ca0(service, service->data_arc_filenx,
                                         (u32)dir_info_idx, 0, (u32)dir_info_idx) & 1) != 0) {
                                     vec_push_u32(&dir_buf, &dir_buf_end, &dir_buf_cap,
-                                                 node->data.directory_index);
+                                                 node->data.directory_index,
+                                                 temp_pair, &temp_val);
                                 }
                             } else {
                                 // Bit 26 set: directory has sub-directory reference
@@ -650,7 +675,8 @@ void ResLoadingThread(ResServiceNX* service) {
                                     goto next_node;
                                 }
                                 vec_push_u32(&dir_buf, &dir_buf_end, &dir_buf_cap,
-                                             node->data.directory_index);
+                                             node->data.directory_index,
+                                             temp_pair, &temp_val);
 
                                 // Check if sub-dir reference is valid
                                 u32 folder_dir_idx = arc->folder_offsets[
@@ -681,7 +707,8 @@ void ResLoadingThread(ResServiceNX* service) {
                                 goto next_node;
                             }
                             vec_push_u32(&dir_buf, &dir_buf_end, &dir_buf_cap,
-                                         node->data.directory_index);
+                                         node->data.directory_index,
+                                         temp_pair, &temp_val);
                             flags_byte = *flags_ptr;
 
                             if ((flags_byte >> 2) & 1) {
