@@ -14,10 +14,11 @@ extern "C" void lock_71039c1490(void*);    // std::__1::recursive_mutex::lock()
 extern "C" void unlock_71039c14a0(void*);  // std::__1::recursive_mutex::unlock()
 
 // Forward declarations for functions in this file and nearby
-extern "C" void FUN_7103540560(FilesystemInfo*, u32);   // release/unload filepath entry
+void FUN_7103540560(FilesystemInfo*, u32);   // release/unload filepath entry (defined below)
 extern "C" void FUN_710353eff0(FilesystemInfo*, LoadedDirectory*);  // release loaded directory entry
 extern "C" long FUN_7103540860(FilesystemInfo*, u64);   // initialize_loaded_directories
 extern "C" void FUN_7103540450(FilesystemInfo*, u32);   // add_idx_to_table1_and_table2
+extern "C" void FUN_710353f1b0(FilesystemInfo*);        // process_stream_release
 
 // Allocator and helpers
 extern "C" void* je_aligned_alloc(unsigned long, unsigned long);
@@ -517,4 +518,112 @@ u32* FUN_710353e980(u32* param_1, u32 new_dir_index) {
     }
 
     return param_1;
+}
+
+// ============================================================================
+// FUN_7103540560 — release_filepath_entry
+// Decrements ref_count on the LoadedData entry for this filepath. If the ref
+// count reaches 0, pushes the filepath index to loaded_filepath_list for
+// deferred cleanup. Sets unk3 flag and optionally calls stream release.
+// [derived: FilesystemInfo +0x08=loaded_filepaths, +0x10=loaded_datas]
+// [derived: loaded_filepath_list CppVector<u32> at +0x28 in FilesystemInfo]
+// [derived: LoadedFilepath stride=8, LoadedData stride=0x18]
+// [derived: ldaxr/stlxr = __atomic_fetch_sub ACQ_REL on LoadedData.ref_count]
+// Address: 0x7103540560 (576 bytes)
+// ============================================================================
+void FUN_7103540560(FilesystemInfo* fs, u32 filepath_index) {
+    void* mtx = fs->mutex;
+    lock_71039c1490(mtx);
+
+    LoadedFilepath* fp = &fs->loaded_filepaths[filepath_index];
+    if (!fp->is_loaded) {
+        unlock_71039c14a0(mtx);
+        return;
+    }
+
+    u32 data_idx = fp->loaded_data_index;
+    LoadedData* data = &fs->loaded_datas[data_idx];
+    if (!data->is_used) {
+        unlock_71039c14a0(mtx);
+        return;
+    }
+
+    __atomic_fetch_sub(&data->ref_count, 1, __ATOMIC_ACQ_REL);
+    if ((s32)data->ref_count > 0) {
+        unlock_71039c14a0(mtx);
+        return;
+    }
+
+    // Ref count hit 0 — push to release list
+    u32* vec_end = fs->loaded_filepath_list.end;
+    if (vec_end < fs->loaded_filepath_list.eos) {
+        *vec_end = filepath_index;
+        fs->loaded_filepath_list.end = vec_end + 1;
+    } else {
+        // Vector grow
+        u32* old_start = fs->loaded_filepath_list.start;
+        u64 old_byte_count = (u64)((u8*)vec_end - (u8*)old_start);
+        u64 new_count = (old_byte_count >> 2) + 1;
+
+        if (new_count >> 62 != 0) {
+            __throw_length_error(fs);
+        }
+
+        u64 old_cap_bytes = (u64)((u8*)fs->loaded_filepath_list.eos - (u8*)old_start);
+        u64 new_cap;
+        u32* new_buf;
+
+        if ((old_cap_bytes >> 2) >= 0x1fffffffffffffff) {
+            new_cap = 0x3fffffffffffffff;
+        } else {
+            u64 half_cap = old_cap_bytes >> 1;
+            new_cap = (new_count <= half_cap) ? half_cap : new_count;
+            if (new_cap == 0) {
+                new_buf = nullptr;
+                goto LAB_insert;
+            }
+        }
+
+        {
+            if (new_cap >> 62 != 0) {
+                // abort
+            }
+            u64 alloc_size = new_cap * 4;
+            if (alloc_size == 0) alloc_size = 1;
+            new_buf = (u32*)je_aligned_alloc(0x10, alloc_size);
+            if (new_buf == nullptr) {
+                if (DAT_7105331f00 != nullptr) {
+                    u32 oom_flags = 0;
+                    s64 oom_size = (s64)alloc_size;
+                    u64 r = ((u64(*)(s64*, u32*, s64*))(*(s64*)(*DAT_7105331f00 + 0x30)))
+                             (DAT_7105331f00, &oom_flags, &oom_size);
+                    if (((r & 1) != 0) &&
+                        (new_buf = (u32*)je_aligned_alloc(0x10, alloc_size),
+                         new_buf != nullptr))
+                        goto LAB_insert;
+                }
+                new_buf = nullptr;
+            }
+        }
+    LAB_insert:
+        u32* insert_pos = new_buf + (old_byte_count >> 2);
+        *insert_pos = filepath_index;
+        if ((s64)old_byte_count > 0) {
+            memcpy(new_buf, old_start, old_byte_count);
+        }
+        fs->loaded_filepath_list.start = new_buf;
+        fs->loaded_filepath_list.end = insert_pos + 1;
+        fs->loaded_filepath_list.eos = (u32*)((u8*)new_buf + new_cap * 4);
+        if (old_start != nullptr) {
+            FUN_710392e590(old_start);
+        }
+    }
+
+    fs->unk3 = 1;
+    u8 flags = data->flags;
+    unlock_71039c14a0(mtx);
+
+    if ((flags >> 6) & 1) {
+        FUN_710353f1b0(fs);
+    }
 }
