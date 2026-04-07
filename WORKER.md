@@ -1,54 +1,40 @@
-# Worker: pool-b
+# Worker: pool-d
 
 ## Model: Opus
 
-## Task: Identify zstd library in binary — COMPLETE
+## Task: Resource service — res_service_process_loop sub-functions
 
-### Findings
+FUN_7103542f30 (12,496 bytes) is the combined ResLoadingThread/ResInflateThread processing loop — 6 of 9 ARCropolis hooks land here. It's too large for one session, so decomp the sub-functions it calls first.
 
-`directory_file_read` at 0x71039a4040 (11,408 bytes) is **ZSTD_decompressStream** from **zstd v1.3.7**.
+### Target Sub-Functions (called by FUN_7103542f30)
+Find and decomp functions called from within 0x7103542f30–0x71035460c0 that are:
+- Under 2,000 bytes
+- Related to file loading, decompression, or resource management
+- Use ResServiceNX, FilesystemInfo, or LoadedArc structs
 
-- **Library**: facebook/zstd v1.3.7 (October 2018)
-- **Config**: `ZSTD_LEGACY_SUPPORT=4` (supports format versions 0.4–0.7)
-- **Function**: `ZSTD_decompressStream` with inlined legacy dispatch
-- **Struct**: `ZSTD_DCtx` at 0x271F0 bytes (matches binary exactly)
-- **Source added**: `lib/zstd/` (common, decompress, legacy directories)
+Start by decompiling FUN_7103542f30 in Ghidra (or reading disassembly) to identify its call targets, then decomp the smallest callees first.
 
-### Evidence
-- ZSTD_DCtx field offsets match v1.3.7 struct layout exactly
-- `WILDCOPY_OVERLENGTH=8` (0x20008 litBuffer) confirms 1.3.x (changed to 32 in 1.4.x)
-- `sizeof(ZSTD_DCtx)=0x271F0` matches `staticSize - 0x271F0` check in binary
-- State machine matches `ZSTD_dStreamStage` enum (zdss_init through zdss_flush)
-- All fields present: hostageByte, noForwardProgress, ddictIsCold, bmi2
-- Legacy magic numbers 0xfd2fb524-527, XXH64 constants confirmed
-- Stall detection at 15 iterations matches `ZSTD_NO_FORWARD_PROGRESS_MAX`
+### Known Sub-Functions in Area
+- `FUN_710353d5e0` (384B) — copy_filepath_vector_from_loaded_directory
+- `FUN_710353a8f0` (1,280B) — filesystem entry scanner/resolver
+- Look for more in the 0x710353xxxx–0x710354xxxx range
 
-### Why not byte-matching
-NX clang fork generates different prologue scheduling, register allocation, and
-instruction ordering vs upstream clang 8.0.0. For an 11,408-byte function with
-extensive inlined legacy code, manual asm barrier fixups are impractical (~2,852
-instructions, 0.2% natural match rate).
+### Headers
+- `include/resource/ResServiceNX.h`, `include/resource/LoadedArc.h`, `include/resource/containers.h`
 
-### Sub-function mapping
-| Binary Address | Size | zstd Function |
-|---|---|---|
-| 0x71039a4040 | 11,408 | ZSTD_decompressStream |
-| 0x71039a6cd0 | ~336 | ZSTD_decompressLegacyStream |
-| 0x71039a0ce0 | ~564 | ZSTD_getFrameHeader_advanced |
-| 0x71039a10a0 | ~1,136 | ZSTD_decompressContinue |
-| 0x71039a1580 | ~5,960 | ZSTD_decompressBlock_internal |
-| 0x710399fe40 | — | FSE_readNCount (FSE table decode) |
-| 0x71039a0f50 | — | ZSTD_buildFSETable |
-| 0x71039a8430 | — | ZSTD_loadEntropy (dictionary) |
-| 0x710399f530 | — | XXH64_update |
-| 0x710399f6c0 | — | XXH64_digest |
-| 0x71039b2c70 | — | ZSTDv05_init (legacy v0.5) |
-| 0x71039b86d0 | — | ZSTDv06_init (legacy v0.6) |
-| 0x71039bc3f0 | — | ZSTDv07_init (legacy v0.7) |
-| 0x71039aab60 | — | ZSTDv04_decompress (block decoder) |
-| 0x71039b3370 | — | ZSTDv05_decompress (block decoder) |
-| 0x71039b88f0 | — | ZSTDv06_decompress (block decoder) |
-| 0x71039bc6c0 | — | ZSTDv07_decompress (block decoder) |
+### Derivation Chains (MANDATORY)
+- `[derived: ARCropolis hook_name]` for functions matching ARCropolis hooks
+- `[derived: smash-arc struct_field]` for ARC format fields
+- `[inferred:]` for fields identified from decompilation patterns
 
-### Next assignment
-Awaiting new target from orchestrator.
+### Quick Reference
+```
+/c/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -Ilib/NintendoSDK/include -Ilib/NintendoSDK/include/stubs -c src/resource/FILE.cpp -o build/FILE.o
+
+python tools/compare_bytes.py FUN_name
+```
+
+### Rules
+- Output: src/resource/res_load_helpers.cpp
+- 3-attempt limit per function
+- Do NOT use naked asm — write real C++ or skip the function
