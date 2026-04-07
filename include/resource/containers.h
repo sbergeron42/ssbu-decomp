@@ -43,4 +43,12 @@ struct ResList {
     ListNode* end;   // +0x10
 };
 
+// Fixed-length string with inline storage (256 bytes + u16 length)
+// [derived: FUN_7103541200 accesses out_path[0x100] as u16 length, data at [0x00..0xFF]]
+// [derived: ResServiceNX+0xE8 has matching layout — char[256] followed by u16 length at +0x1E8]
+struct FixedString256 {
+    char data[256];  // +0x000
+    u16 length;      // +0x100
+};
+
 } // namespace resource

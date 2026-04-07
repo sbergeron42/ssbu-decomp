@@ -1,20 +1,30 @@
-# Worker: pool-c
+# Worker: pool-a
 
 ## Model: Opus
 
-## Task: Resource service — actual ResServiceNX functions (identified by pool-c previous round)
+## Task: Resource service — lookup_stream_hash (FUN_7103541200, 704 bytes)
 
-These are real resource service functions found by module affinity analysis, NOT address proximity.
+This is one of the 9 ARCropolis hook points. It's the stream file hash lookup function — the most decomp-friendly of the hook targets.
 
-### Target Functions
-- `FUN_71037c3db0` (368 bytes) — ResServiceNX singleton path resolution wrapper
-- `FUN_71037c4010` (1,344 bytes) — ResServiceNX singleton path resolution (4 params)
-- `FUN_71037c5ff0` (2,288 bytes) — ResServiceNX singleton constructor
-- `FUN_710353d5e0` (384 bytes) — copy_filepath_vector_from_loaded_directory
-- `FUN_710353a8f0` (1,280 bytes) — filesystem entry scanner/resolver
+### Function Details
+- Address: 0x7103541200
+- Size: 704 bytes
+- ARCropolis hook name: `lookup_stream_hash`
+- Signature (from ARCropolis): `void lookup_stream_hash(char* out_path, LoadedArc* arc, size_t* size_out, u64* offset_out, Hash40 hash)`
+
+### Key Context
+- This function looks up a file in the stream section of the ARC archive by hash
+- ARCropolis replaces this entire function to redirect file loads to modded content
+- The LoadedArc struct is defined in `include/resource/LoadedArc.h`
+- Stream-related fields: stream_header, stream_hash_to_entries, stream_entries, stream_file_indices, stream_datas
 
 ### Headers
 - `include/resource/ResServiceNX.h`, `include/resource/LoadedArc.h`, `include/resource/containers.h`
+
+### Derivation Chains (MANDATORY)
+- `[derived: ARCropolis lookup_stream_hash hook]` — for function signature and purpose
+- `[derived: smash-arc StreamEntry/StreamData]` — for ARC struct fields
+- `[inferred:]` for any fields not in ARCropolis/smash-arc
 
 ### Quick Reference
 ```
@@ -23,16 +33,7 @@ These are real resource service functions found by module affinity analysis, NOT
 python tools/compare_bytes.py FUN_name
 ```
 
-### Derivation Chains (MANDATORY)
-Every function and every struct field MUST have provenance:
-- `[derived: ARCropolis field_name]` — field name from ARCropolis community RE
-- `[derived: smash-arc field_name]` — field from smash-arc ARC format library
-- `[inferred: pattern description]` — field name guessed from usage
-- `[unknown]` — offset used but no name determinable, use `field_0xNN`
-- Any offset like `+0x10`, `+0x68` appearing in code MUST get a confidence tag
-
 ### Rules
-- Output: src/resource/res_filesystem.cpp
-- Use resource headers with derivation chains as above
-- 3-attempt limit per function
-- These functions may reveal new struct fields — add them to the headers with proper tags
+- Output: src/resource/res_stream.cpp
+- 3-attempt limit
+- Do NOT use naked asm
