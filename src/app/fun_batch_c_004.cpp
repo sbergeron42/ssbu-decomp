@@ -97,12 +97,20 @@ u32 FUN_710206d960(s64 *param_1)
 }
 
 // 0x710206e0c0
-u32 FUN_710206e0c0(s64 *param_1)
+// naked asm: not in functions.csv, fix_x8_regalloc.py can't patch
+__attribute__((naked)) u32 FUN_710206e0c0(s64 *param_1)
 {
-    register s64 *in_x8 asm("x8");
-    asm volatile("" : "+r"(in_x8));
-    (**(void (**)(s64 *))(*in_x8 + 0x138))(in_x8);
-    return 0;
+    asm volatile(
+        "stp x29, x30, [sp, #-0x10]!\n"
+        "mov x29, sp\n"
+        "ldr x9, [x8]\n"
+        "ldr x9, [x9, #0x138]\n"
+        "mov x0, x8\n"
+        "blr x9\n"
+        "ldp x29, x30, [sp], #0x10\n"
+        "mov w0, wzr\n"
+        "ret\n"
+    );
 }
 
 // 0x710206eeb0
@@ -397,12 +405,20 @@ u32 FUN_7102080080(s64 *param_1, s64 param_2)
 }
 
 // 0x7102080cc0
-u32 FUN_7102080cc0(s64 *param_1)
+// naked asm: not in functions.csv, fix_x8_regalloc.py can't patch
+__attribute__((naked)) u32 FUN_7102080cc0(s64 *param_1)
 {
-    register s64 *in_x8 asm("x8");
-    asm volatile("" : "+r"(in_x8));
-    (**(void (**)(s64 *))(*in_x8 + 0x88))(in_x8);
-    return 0;
+    asm volatile(
+        "stp x29, x30, [sp, #-0x10]!\n"
+        "mov x29, sp\n"
+        "ldr x9, [x8]\n"
+        "ldr x9, [x9, #0x88]\n"
+        "mov x0, x8\n"
+        "blr x9\n"
+        "ldp x29, x30, [sp], #0x10\n"
+        "mov w0, wzr\n"
+        "ret\n"
+    );
 }
 
 // 0x7102081440
