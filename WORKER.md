@@ -267,6 +267,42 @@ Run with: `python tools/gap_analysis.py`
 
 ---
 
+## CODEGEN_DIFF Sub-Classification (Directed Solver Target)
+
+The ~1,496 CODEGEN_DIFF functions break down by instruction type:
+
+### Mismatched Instruction Type Pairs (top 5)
+
+| Original | Decomp | Count | Meaning |
+|----------|--------|-------|---------|
+| LDST_UNSIGNED | LDST_UNSIGNED | 1,607 | Same load/store type, different reg/offset |
+| ADD_SUB_IMM | LDST_UNSIGNED | 848 | Instruction reordering |
+| MOVE_WIDE | MOVE_WIDE | 737 | Same move type, different imm/reg |
+| ADD_SUB_IMM | ADD_SUB_IMM | 526 | Same add/sub, different operands |
+| LDST_UNSIGNED | ADD_SUB_IMM | 385 | Instruction reordering (reverse) |
+
+### Function-Level Dominant Category
+
+| Category | Functions | Solver Strategy |
+|----------|-----------|----------------|
+| LOAD_STORE_DOMINANT | 944 | Reorder C statements |
+| ARITH_DOMINANT | 370 | Restructure expressions |
+| MIXED | 288 | Combination approach |
+| BRANCH_DOMINANT | 58 | Rearrange if/else blocks |
+
+The #1 pattern is instruction reordering (same instructions, different order).
+Solver strategies: statement reordering (~1,200 funcs), expression
+restructuring (~370 funcs), branch layout (~58 funcs).
+
+### MOVZ/ORR Fix Status
+
+29 MOVZ_ORR mismatches across 13 functions. Bidirectional:
+- ~half are over-correction (script converted movz->orr when orig had movz)
+- ~half are missed conversion (orig has orr, script didn't fix)
+Script needs per-instruction comparison, not blanket conversion.
+
+---
+
 ## Key Bug Found: categorize_mismatches.py Address Lookup
 
 The existing `tools/categorize_mismatches.py` has a name-matching bug where
