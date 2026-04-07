@@ -14,6 +14,7 @@ namespace resource {
 // Forward declarations
 struct FilesystemInfo;
 struct FileNX;
+struct LoadedArc;
 
 // File inflate result
 // [derived: ARCropolis InflateFile]
@@ -57,6 +58,9 @@ struct LoadedDirectory {
     LoadedDirectory* redirection_directory;     // +0x40
 };
 
+// Forward declaration for FilesystemInfo field
+struct LoadedDataWrapper;
+
 // Filesystem tracking structure
 // [derived: ARCropolis FilesystemInfo]
 struct FilesystemInfo {
@@ -74,7 +78,7 @@ struct FilesystemInfo {
     CppVector<u32> unk2;                        // +0x50
     u8 unk3;                                    // +0x68
     u8 unk4[7];                                 // +0x69
-    void* addr;                                 // +0x70
+    LoadedDataWrapper* loaded_data;              // +0x70 [derived: Ghidra 13.0.1 loaded_tables->loaded_data]
     void* path_info;                            // +0x78 — PathInformation*
     u32 version;                                // +0x80
 };
@@ -108,7 +112,7 @@ struct LoadedFsSearch {
 // Loaded data wrapper — holds arc and search pointers
 // [inferred: Ghidra 13.0.1 decompilation, allocated at 0x18 bytes in init — not in ARCropolis]
 struct LoadedDataWrapper {
-    void* arc;                       // +0x00 [inferred: LoadedArc*]
+    LoadedArc* arc;                  // +0x00 [derived: Ghidra 13.0.1 loaded_data->arc access chain]
     void* search;                    // +0x08 [inferred: LoadedFsSearch*]
     void* unk;                       // +0x10 [unknown]
 };
