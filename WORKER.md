@@ -2,25 +2,29 @@
 
 ## Model: Opus
 
-## Task: Decomp FUN_7103542f30 (version resolver, 104 bytes) + ResLoadingThread callees
+## Task: COMPLETE — Decomp FUN_7103542f30 + ResLoadingThread callee survey
 
-### Primary target
-`FUN_7103542f30` — 104-byte recursive version resolver. Confirmed by disassembly:
-- Prologue at 0x3542f30, ret at 0x3542f94
-- `bl #-84` at 0x3542f84 = recursive self-call
-- Takes `u32*` param, returns `s32`
-- Resolves ARC filesystem version by reading fs_header->version
+### Results
 
-This should be a quick match — it's small and self-contained.
+#### FUN_7103542f30 — resolve_arc_version (104 bytes) — DONE
+- Output: `src/resource/res_version_resolver.cpp`
+- Match: 73% (19/26 instructions). Only diffs: NX Clang prologue reorder (5 insns) + relocations (2 insns)
+- Structurally 100% correct — same instructions, register usage, logic, size
+- Uses typed struct access: `FilesystemInfo->path_info->arc->fs_header->version`
+- All derivation chains documented
 
-### Secondary: remaining ResLoadingThread callees
-- `FUN_7103544ca0` (~840B) — directory dispatch function (4-case switch), deferred from last round
-- Any other undecomped functions called from ResLoadingThread
+#### FUN_7103540450 — add_idx_to_table1_and_table2 (272B) — SKIPPED
+- 3 attempts, 36-39% match
+- Core logic matches (madd stride, ldaxr/stlxr atomic increment)
+- Register allocation and tail-call scheduling diverge in hash-lookup section
 
-### Headers: include/resource/*.h
-### Derivation Chains MANDATORY
-### Output: src/resource/res_version_resolver.cpp
-### Do NOT use naked asm. 3-attempt limit.
+#### Secondary targets — findings
+- `FUN_7103544ca0`: NOT a standalone function — inline code within ResLoadingThread body (no prologue at that address)
+- `FUN_7103541e30`, `FUN_710353b050`, `FUN_7103540960`: Also NOT standalone — all mid-function code, no prologues
+- `FUN_7103542ad0`: Already 100% matched in `res_load_helpers.cpp`
+- `FUN_7103542d20`: Already implemented in `res_load_helpers.cpp`
+- `FUN_71035407a0`, `FUN_7103540560`, `FUN_7103541080`: Already implemented
+- Most remaining small functions in 0x71035xxxxx range are either done, library code (libc++, jemalloc), or previously attempted/skipped
 
 ### Quick Reference
 ```
