@@ -624,3 +624,195 @@ lab_wk:
 lab_abort:
     abort();
 }
+
+// Guard variable and BST globals for FUN_710353b490
+// [derived: __cxa_guard_acquire/release at 0x710353b66c]
+__attribute__((visibility("hidden"))) extern u8 DAT_7105331ed8;
+// [derived: BST root at DAT_7105331ec0, first node at DAT_7105331ec8]
+__attribute__((visibility("hidden"))) extern long DAT_7105331ec0;
+__attribute__((visibility("hidden"))) extern long* DAT_7105331ec8;
+__attribute__((visibility("hidden"))) extern long DAT_7105331ed0;
+
+// __cxa_guard stubs
+extern "C" int __cxa_guard_acquire(void*);
+extern "C" void __cxa_guard_release(void*);
+
+// Static BST initializer
+extern "C" void FUN_71000001c0(void*, void*, void*);
+
+// Static data references for BST init
+__attribute__((visibility("hidden"))) extern char LAB_710353b1b0[];
+__attribute__((visibility("hidden"))) extern char PTR_LOOP_7104f16000[];
+
+// ============================================================================
+// FUN_710353b490 — is_registered_path
+// Address: 0x710353b490 (1,184 bytes)
+// Takes a file path string, strips drive letter prefix (before ':'),
+// then searches a static BST (std::set<FixedString<256>>) for the path.
+// Returns true (1) if found, false (0) if not.
+// [derived: called from 7 locations including FUN_710353af30, FUN_7103722500]
+// [derived: BST nodes have FixedString<256> key at +0x1A (data) and +0x11A (length)]
+//
+// Note: String copy loops are 2x unrolled by NX Clang — this is a known
+// compiler divergence that prevents upstream Clang 8 from matching.
+// ============================================================================
+extern "C" bool FUN_710353b490(const char* param_1)
+{
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
+    // FixedString<256> path at sp+0x00 (data[258] + u16 length at +0x100)
+    char path_data[258];
+    u16 path_len;
+    // FixedString<256> key at sp+0x108 (data[258] + u16 length at +0x208)
+    char key_data[258];
+    u16 key_len;
+
+    // Copy input string to path
+    path_data[0] = '\0';
+    u64 slen = strlen(param_1);
+    path_len = 0;
+    if (slen != 0) {
+        for (u64 i = 0; i < slen; i++) {
+            path_data[path_len] = param_1[i];
+            path_len++;
+        }
+    }
+    path_data[path_len] = '\0';
+
+    // Search for ':' from end of string
+    u64 uVar7 = (u64)path_len;
+    if (uVar7 != 0) {
+        long lVar9 = 0;
+        long lVar4;
+        do {
+            if (uVar7 + lVar9 == 0) goto lab_search;
+            lVar4 = lVar9 + (long)uVar7;
+            lVar9 = lVar9 - 1;
+        } while (path_data[lVar4 - 1] != ':');
+
+        if (lVar9 != 0) {
+            char* pcVar8 = path_data + lVar9 + uVar7;
+            u64 uVar10 = (long)pcVar8 - (long)path_data;
+            if (uVar10 != 0xFFFFFFFFFFFFFFFFULL) {
+                u64 uVar17 = uVar7;
+                if (uVar10 <= uVar7) uVar17 = uVar10;
+
+                key_data[0] = '\0';
+                key_len = 0;
+                if (uVar17 != 0) {
+                    u8* src = (u8*)path_data;
+                    for (u64 i = 0; i < uVar17; i++) {
+                        key_data[key_len] = src[i];
+                        key_len++;
+                    }
+                }
+                key_data[key_len] = '\0';
+                memcpy(path_data, key_data, 0x100);
+                path_len = key_len;
+            }
+        }
+    }
+
+lab_search:
+    // Initialize static BST if needed
+    if ((DAT_7105331ed8 & 1) == 0) {
+        if (__cxa_guard_acquire(&DAT_7105331ed8) != 0) {
+            DAT_7105331ec8 = nullptr;
+            DAT_7105331ed0 = 0;
+            DAT_7105331ec0 = (long)&DAT_7105331ec8;
+            FUN_71000001c0(LAB_710353b1b0, &DAT_7105331ec0, PTR_LOOP_7104f16000);
+            __cxa_guard_release(&DAT_7105331ed8);
+        }
+    }
+
+    // Copy path to search key
+    uVar7 = (u64)path_len;
+    key_data[0] = '\0';
+    key_len = 0;
+    if (uVar7 != 0) {
+        for (u64 i = 0; i < uVar7; i++) {
+            key_data[key_len] = path_data[i];
+            key_len++;
+        }
+    }
+    key_data[key_len] = '\0';
+
+    // Search BST — lower_bound traversal
+    // [derived: BST node: +0x00=child[0]/left, +0x08=child[1]/right, +0x1A=key_data, +0x11A=key_len]
+    long* puVar12 = (long*)&DAT_7105331ec8;
+    if (DAT_7105331ec8 != nullptr) {
+        long* puVar15 = DAT_7105331ec8;
+        do {
+            u16 uVar3 = *(u16*)((long)puVar15 + 0x11A);
+            u64 uVar17 = (u64)uVar3;
+            u64 uVar10 = (u64)key_len;
+            if (uVar17 <= uVar10) uVar10 = uVar17;
+
+            int iVar16;
+            u32 uVar13 = (u32)key_len;
+            if (uVar10 != 0) {
+                u8* pbVar11 = (u8*)key_data;
+                u8* pbVar14 = (u8*)((long)puVar15 + 0x1A);
+                u64 cnt = ~uVar10 + 1;  // negative count
+                if (~(u64)key_len <= ~uVar17)
+                    cnt = ~uVar17 + 1;
+                // Actually let me use the simpler approach
+                int iVar5 = 0;
+                for (u64 j = 0; j < uVar10; j++) {
+                    iVar5 = (int)pbVar14[j] - (int)pbVar11[j];
+                    if (iVar5 != 0) {
+                        iVar16 = (iVar5 != 0) ? iVar5 : (int)(uVar3 - uVar13);
+                        goto lab_cmp_done;
+                    }
+                    if (pbVar14[j] == 0) break;
+                }
+            }
+            iVar16 = (int)(uVar3 - uVar13);
+lab_cmp_done:
+            if (iVar16 >= 0) puVar12 = puVar15;
+            puVar15 = (long*)puVar15[iVar16 < 0];
+        } while (puVar15 != nullptr);
+
+        if (puVar12 != (long*)&DAT_7105331ec8) {
+            // Verify match (comparison with reversed operand order)
+            u16 uVar3 = *(u16*)((long)puVar12 + 0x11A);
+            u64 uVar17 = (u64)uVar3;
+            u64 uVar10 = uVar17;
+            if ((u64)key_len <= uVar17) uVar10 = (u64)key_len;
+
+            u32 uVar13 = (u32)key_len;
+            int iVar16;
+            if (uVar10 != 0) {
+                u8* pbVar11 = (u8*)key_data;
+                u8* pbVar14 = (u8*)((long)puVar12 + 0x1A);
+                for (u64 j = 0; j < uVar10; j++) {
+                    int iVar5 = (int)pbVar11[j] - (int)pbVar14[j];
+                    if (iVar5 != 0) {
+                        iVar16 = (iVar5 != 0) ? iVar5 : (int)(uVar13 - uVar3);
+                        goto lab_verify_done;
+                    }
+                    if (pbVar11[j] == 0) break;
+                }
+            }
+            iVar16 = (int)(uVar13 - uVar3);
+lab_verify_done:
+            if (iVar16 >= 0) goto lab_found;
+        }
+    }
+    puVar12 = (long*)&DAT_7105331ec8;
+
+lab_found:
+    // Re-check guard (defensive, matches binary)
+    if ((DAT_7105331ed8 & 1) == 0) {
+        if (__cxa_guard_acquire(&DAT_7105331ed8) != 0) {
+            DAT_7105331ec8 = nullptr;
+            DAT_7105331ed0 = 0;
+            DAT_7105331ec0 = (long)&DAT_7105331ec8;
+            FUN_71000001c0(LAB_710353b1b0, &DAT_7105331ec0, PTR_LOOP_7104f16000);
+            __cxa_guard_release(&DAT_7105331ed8);
+        }
+    }
+
+    return puVar12 != (long*)&DAT_7105331ec8;
+}
