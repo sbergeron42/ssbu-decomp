@@ -1,31 +1,32 @@
-# Worker: pool-d
+# Worker: pool-e
 
 ## Model: Opus
 
-## Task: Resource service — res_service_process_loop sub-functions
+## Task: Resource service — filesystem utility functions (0x710353xxxx range)
 
-FUN_7103542f30 (12,496 bytes) is the combined ResLoadingThread/ResInflateThread processing loop — 6 of 9 ARCropolis hooks land here. It's too large for one session, so decomp the sub-functions it calls first.
+Decomp the filesystem utility functions that support the resource loading pipeline. These are called by the main processing loop and handle file lookup, path resolution, and loaded-data management.
 
-### Target Sub-Functions (called by FUN_7103542f30)
-Find and decomp functions called from within 0x7103542f30–0x71035460c0 that are:
-- Under 2,000 bytes
-- Related to file loading, decompression, or resource management
-- Use ResServiceNX, FilesystemInfo, or LoadedArc structs
+### Target Functions
+Scan the 0x710353xxxx range for uncompiled functions related to:
+- File path/hash lookup
+- LoadedArc table access
+- FilesystemInfo operations
+- LoadedData/LoadedDirectory state management
 
-Start by decompiling FUN_7103542f30 in Ghidra (or reading disassembly) to identify its call targets, then decomp the smallest callees first.
+Start with the smallest functions and work up. Use Ghidra to identify which ones access resource service structs.
 
-### Known Sub-Functions in Area
-- `FUN_710353d5e0` (384B) — copy_filepath_vector_from_loaded_directory
-- `FUN_710353a8f0` (1,280B) — filesystem entry scanner/resolver
-- Look for more in the 0x710353xxxx–0x710354xxxx range
+### Known Targets
+- `FUN_710353d5e0` (384B) — copy_filepath_vector_from_loaded_directory (if not done by pool-c)
+- `FUN_710353a8f0` (1,280B) — filesystem entry scanner/resolver (if not done by pool-c)
+- Any other uncompiled functions in 0x710353xxxx that access LoadedArc/FilesystemInfo
 
 ### Headers
 - `include/resource/ResServiceNX.h`, `include/resource/LoadedArc.h`, `include/resource/containers.h`
 
 ### Derivation Chains (MANDATORY)
-- `[derived: ARCropolis hook_name]` for functions matching ARCropolis hooks
-- `[derived: smash-arc struct_field]` for ARC format fields
+- `[derived: ARCropolis field_name]` or `[derived: smash-arc field_name]` for known fields
 - `[inferred:]` for fields identified from decompilation patterns
+- Any offset `+0xNN` MUST get a confidence tag
 
 ### Quick Reference
 ```
@@ -35,6 +36,6 @@ python tools/compare_bytes.py FUN_name
 ```
 
 ### Rules
-- Output: src/resource/res_load_helpers.cpp
+- Output: src/resource/res_filesystem_utils.cpp
 - 3-attempt limit per function
-- Do NOT use naked asm — write real C++ or skip the function
+- Do NOT use naked asm
