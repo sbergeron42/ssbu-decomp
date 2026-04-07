@@ -2,49 +2,26 @@
 
 ## Model: Opus
 
-## Task: Fix in_x10 lua_bind pattern — batch_e3 + batch_d5 + batch_e2 files
-
-Same register-asm fix pattern proven by pool-c on batch_c_007/008.
-
-### The Pattern
-**BEFORE:**
-```cpp
-u64 FUN_...(s64 param_1, s64 param_2) {
-    u64 in_x10;
-    *(u64 *)(param_1 + 0x10) = in_x10;
-    app::SomeFunc(param_2);
-    return 0;
-}
-```
-**AFTER:**
-```cpp
-u32 FUN_...(app::BattleObjectModuleAccessor* acc, s64 ctx) {
-    register u64 x10 asm("x10");
-    asm volatile("" : "=r"(x10));
-    *(u64 *)((u8*)acc + 0x10) = x10;
-    app::SomeFunc(acc);
-    return 0;
-}
-```
+## Task: Fix N-quality functions to match — idiomatic C++ only
 
 ### Target Files
-- `src/app/fun_batch_e3_001.cpp` — 15 occurrences
-- `src/app/fun_batch_e3_003.cpp` — 3 occurrences
-- `src/app/fun_batch_e3_004.cpp` — 15 occurrences
-- `src/app/fun_batch_e3_005.cpp` — 3 occurrences
-- `src/app/fun_batch_d5_007.cpp` — 4 occurrences
-- `src/app/fun_batch_d5_008.cpp` — 8 occurrences
-- `src/app/fun_batch_d5_009.cpp` — 11 occurrences
-- `src/app/fun_batch_d5_017.cpp` — 8 occurrences
-- `src/app/fun_batch_d5_042.cpp` — 11 occurrences
-- `src/app/fun_batch_e2_001.cpp` — 3 occurrences
+- `src/app/fun_med_final_c_007.cpp` — 33 N-quality functions
+- `src/app/fun_batch_d5_049.cpp` — 32 N-quality functions
+- `src/app/fun_batch_d_009.cpp` — 32 N-quality functions
+
+### Method per function
+1. `python tools/compare_bytes.py FUN_name` — see what doesn't match
+2. `mcp__ghidra__decompile_function_by_address("0x71XXXXXXXXX")` — see what binary does
+3. Fix source to match (types, control flow, expressions)
+4. Re-compare. 3 attempts max.
+
+### Rules
+- **NO naked asm.** Idiomatic C++ only.
+- **NO blind patterns.** Check each function individually.
+- Derivation chains on any new offset tags
 
 ### Quick Reference
 ```
-/c/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -Ilib/NintendoSDK/include -Ilib/NintendoSDK/include/stubs -c src/app/FILE.cpp -o build/FILE.o
-
 python tools/compare_bytes.py FUN_name
+/c/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -Ilib/NintendoSDK/include -Ilib/NintendoSDK/include/stubs -c src/app/FILE.cpp -o build/FILE.o
 ```
-
-### Rules
-- CAN ONLY edit the files listed above
