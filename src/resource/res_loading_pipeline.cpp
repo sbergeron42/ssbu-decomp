@@ -799,3 +799,210 @@ void FUN_7103541ec0(ResHashTable* ht, u64 new_count) {
         }
     }
 }
+
+
+// nn::os::YieldThread
+extern "C" void _ZN2nn2os11YieldThreadEv(void);
+
+// nn::fs::GetFileSize
+extern "C" void _ZN2nn2fs11GetFileSizeEPxNS0_10FileHandleE(s64*, void*);
+
+
+// ============================================================================
+// FUN_71035414c0 — read_and_decompress_from_arc
+// Reads compressed data from the ARC file and decompresses it using a
+// streaming decompression context (zstd-compatible).
+// Flow: seek → read 16-byte header → alloc decomp buf → alloc comp buf →
+//   seek to data → read compressed → init decomp stream → stream decompress
+//   in loop → cleanup → return decompressed buffer or null.
+// [derived: header layout: u32 offset_skip, u32 decomp_size, u32 comp_size]
+// [derived: allocation alignment is 4 (not 16 like other resource allocs)]
+// [derived: file object accessed at +0x14 (is_open), +0x18 (file_handle),
+//  +0x20 (position), +0x22c (is_valid)]
+// [derived: decompression uses FUN_71039a4040 with progress tracking and
+//  error codes: 0x80000000=generic, 0x80000005=specific, 0x80000006=timeout]
+// Address: 0x71035414c0 (928 bytes)
+// ============================================================================
+u64 FUN_71035414c0(s64* param_1, s64 param_2) {
+    s64 file = *param_1;
+
+    // Seek to initial offset
+    if (*(u8*)(file + 0x22c) != 0 && *(u32*)(file + 0x14) != 0) {
+        *(s64*)(file + 0x20) = param_2;
+        if (param_2 >= 0) {
+            s64 fsize = 0;
+            _ZN2nn2fs11GetFileSizeEPxNS0_10FileHandleE(&fsize, *(void**)(file + 0x18));
+        }
+    }
+
+    // Read 16-byte header
+    if (*(u8*)(*param_1 + 0x22c) == 0) return 0;
+    u32 header[4];
+    if (FUN_71037c6940((void*)*param_1, header, 0x10) != 0x10) return 0;
+
+    // Parse header
+    u32 decomp_size = header[1];
+    u32 comp_size = header[2];
+
+    // Allocate decompressed buffer
+    u64 decomp_alloc = (decomp_size == 0) ? 1 : (u64)decomp_size;
+    u8* decomp_buf = (u8*)je_aligned_alloc(4, decomp_alloc);
+    if (decomp_buf == nullptr) {
+        if (DAT_7105331f00 == nullptr) return 0;
+        u32 oom_flags = 0;
+        s64 oom_size = (s64)decomp_alloc;
+        u64 r = ((u64(*)(s64*, u32*, s64*))(*(s64*)(*DAT_7105331f00 + 0x30)))
+                 (DAT_7105331f00, &oom_flags, &oom_size);
+        if ((r & 1) == 0) return 0;
+        decomp_buf = (u8*)je_aligned_alloc(4, decomp_alloc);
+        if (decomp_buf == nullptr) { FUN_710392e590(decomp_buf); return 0; }
+    }
+
+    {
+        // Allocate compressed buffer
+        u64 comp_alloc = (comp_size == 0) ? 1 : (u64)comp_size;
+        u8* comp_buf;
+        comp_buf = (u8*)je_aligned_alloc(4, comp_alloc);
+        if (comp_buf == nullptr) {
+            if (DAT_7105331f00 == nullptr) goto LAB_free_both_fail;
+            u32 oom_flags = 0;
+            s64 oom_size = (s64)comp_alloc;
+            u64 r = ((u64(*)(s64*, u32*, s64*))(*(s64*)(*DAT_7105331f00 + 0x30)))
+                     (DAT_7105331f00, &oom_flags, &oom_size);
+            if ((r & 1) == 0) goto LAB_free_both_fail;
+            comp_buf = (u8*)je_aligned_alloc(4, comp_alloc);
+            if (comp_buf == nullptr) goto LAB_free_both_fail;
+        }
+
+        // Seek to data start (base_offset + header[0])
+        file = *param_1;
+        if (*(u8*)(file + 0x22c) != 0 && *(u32*)(file + 0x14) != 0) {
+            s64 data_pos = (u64)header[0] + param_2;
+            *(s64*)(file + 0x20) = data_pos;
+            if (data_pos >= 0) {
+                s64 fsize = 0;
+                _ZN2nn2fs11GetFileSizeEPxNS0_10FileHandleE(&fsize, *(void**)(file + 0x18));
+            }
+        }
+
+        s64 state[2];
+        u32 err;
+
+        // Read compressed data
+        if (*(u8*)(*param_1 + 0x22c) == 0 ||
+            FUN_71037c6940((void*)*param_1, comp_buf, (u64)comp_size) != (s64)(u64)comp_size) {
+            FUN_710392e590(decomp_buf);
+            decomp_buf = comp_buf;
+            goto LAB_free_both_fail;
+        }
+
+        // Check sizes are valid
+        if (comp_size == 0 || decomp_size == 0) {
+            FUN_710392e590(comp_buf);
+            goto LAB_free_both_fail;
+        }
+
+        // Initialize streaming decompression
+        state[0] = 0;
+        state[1] = 0;
+        err = FUN_7103541ae0(state);
+
+        // Helper lambdas for cleanup
+        // [derived: cleanup pattern: finalize context → custom dealloc or je_free]
+        #define CLEANUP_CTX(ctx_val) do { \
+            if (*(s64*)((ctx_val) + 0x1a8) == 0) { \
+                FUN_710399f880((void*)(ctx_val)); \
+                typedef void (*DFn)(void*,void*); \
+                DFn d = *(DFn*)((ctx_val) + 0x198); \
+                if (d == nullptr) FUN_710392e590((void*)(ctx_val)); \
+                else d(*(void**)((ctx_val) + 0x1a0), (void*)(ctx_val)); \
+                state[0] = 0; \
+            } \
+        } while(0)
+        #define CLOSE_STREAM() do { \
+            if (state[1] != 0) { \
+                u64 cr = FUN_71039a3e70((void*)state[1]); \
+                if (cr < 0xffffffffffffff89ULL) state[1] = 0; \
+            } \
+        } while(0)
+
+        if (err == 0 && state[1] != 0) {
+            // Streaming decompression loop
+            u8* out_ptr = comp_buf;
+            u64 out_rem = (u64)comp_size;
+            u8* in_ptr = decomp_buf;
+            u64 in_rem = (u64)decomp_size;
+
+            do {
+                s64 io_out[4];
+                io_out[0] = (s64)out_ptr;
+                io_out[1] = (s64)out_rem;
+                io_out[2] = (s64)in_ptr;
+                io_out[3] = (s64)in_rem;
+                u64 consumed_out = 0;
+                u64 consumed_in = 0;
+                s64 res = FUN_71039a4040((void*)state[1], io_out, &io_out[2]);
+                s64 ctx = state[0];
+                u64 c_in = (u64)io_out[3];
+                u64 c_out = (u64)io_out[1];
+
+                if ((u64)res < 0xffffffffffffff89ULL) {
+                    consumed_in = c_in;
+                    consumed_out = c_out;
+                    if (c_in >= consumed_out) {
+                        err = (res != 0) ? (u32)res : 0;
+                        if (err == 0) goto LAB_check_done;
+                    }
+                } else {
+                    s32 neg = -(s32)res;
+                    u32 code = 0x80000000;
+                    if (neg == 0x48) code = 0x80000006;
+                    err = 0x80000005;
+                    if (neg != 0x46) err = code;
+                    consumed_in = in_rem;
+                    consumed_out = out_rem;
+                    if (err != 1) goto LAB_check_done;
+                }
+
+                out_ptr += consumed_out;
+                out_rem -= consumed_out;
+                in_ptr += consumed_in;
+                in_rem -= consumed_in;
+                _ZN2nn2os11YieldThreadEv();
+            } while (state[1] != 0);
+        }
+
+        err = 0x80000003;
+        if (state[0] != 0) { CLEANUP_CTX(state[0]); }
+        CLOSE_STREAM();
+        goto LAB_free_comp;
+
+    LAB_check_done:
+        if (err != 0) {
+            if (state[0] != 0) { CLEANUP_CTX(state[0]); }
+            CLOSE_STREAM();
+        } else {
+            if (state[0] != 0) {
+                if (*(s64*)(state[0] + 0x1a8) == 0) {
+                    CLEANUP_CTX(state[0]);
+                    CLOSE_STREAM();
+                    err = 0;
+                    if (state[0] != 0) { CLEANUP_CTX(state[0]); }
+                    CLOSE_STREAM();
+                }
+            }
+        }
+
+    LAB_free_comp:
+        #undef CLEANUP_CTX
+        #undef CLOSE_STREAM
+        FUN_710392e590(comp_buf);
+        if (err != 0) {
+        LAB_free_both_fail:
+            FUN_710392e590(decomp_buf);
+        LAB_return_null:
+            return 0;
+        }
+        return (u64)decomp_buf;
+    }
+}
