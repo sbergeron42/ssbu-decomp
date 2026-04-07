@@ -1,20 +1,22 @@
-# Worker: pool-b
+# Worker: pool-a
 
 ## Model: Opus
 
-## Task: Resource service — medium remaining functions (400-1500B)
+## Task: Resource service — remaining small functions + Fiber lifecycle
 
 ### Targets
-- `FUN_7103546c40` (336B), `FUN_710353e5d0` (400B)
-- `FUN_710354e180` (416B), `FUN_710354e320` (448B)
-- `FUN_710354cc80` (400B), `FUN_710354d130` (720B)
-- `FUN_710354ce10` (704B), `FUN_710354c720` (544B)
-- `FUN_7103546d90` (816B), `FUN_71035467b0` (848B)
-- `FUN_710354b4b0` (848B), `FUN_710354b800` (912B)
+- `get_current_fiber` (48B) — 0x710353c580
+- `finalize` (176B) — 0x710353c350
+- `~Fiber` (320B) — 0x710353c210
+- `FUN_710353e1e0` (336B)
+- `FUN_710353c130` (208B)
+- `FUN_710354f380` (240B), `FUN_710354fa40` (304B)
+- `FUN_710354b370` (320B), `FUN_710354f900` (320B)
+- `FUN_710354ff10` (368B)
 
 ### Headers: include/resource/*.h
 ### Derivation Chains MANDATORY
-### Output: src/resource/res_remaining_medium.cpp
+### Output: src/resource/res_remaining_small.cpp
 ### Do NOT use naked asm. 3-attempt limit.
 
 ### Quick Reference
