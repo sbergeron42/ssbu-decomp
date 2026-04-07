@@ -2,41 +2,26 @@
 
 ## Model: Opus
 
-## Task: Fix in_x10 lua_bind pattern — batch_c_010 + batch_c_011
-
-Same register-asm fix pattern proven by pool-c on batch_c_007/008.
-
-### The Pattern
-**BEFORE:**
-```cpp
-u64 FUN_...(s64 param_1, s64 param_2) {
-    u64 in_x10;
-    *(u64 *)(param_1 + 0x10) = in_x10;
-    app::SomeFunc(param_2);
-    return 0;
-}
-```
-**AFTER:**
-```cpp
-u32 FUN_...(app::BattleObjectModuleAccessor* acc, s64 ctx) {
-    register u64 x10 asm("x10");
-    asm volatile("" : "=r"(x10));
-    *(u64 *)((u8*)acc + 0x10) = x10;
-    app::SomeFunc(acc);
-    return 0;
-}
-```
+## Task: Fix N-quality functions to match — idiomatic C++ only
 
 ### Target Files
-- `src/app/fun_batch_c_010.cpp` — 40 occurrences
-- `src/app/fun_batch_c_011.cpp` — 106 occurrences
+- `src/app/fun_batch_d5_017.cpp` — 38 N-quality functions
+- `src/app/fun_batch_d5_051.cpp` — 36 N-quality functions
+- `src/app/fun_med_final_b_004.cpp` — 33 N-quality functions
+
+### Method per function
+1. `python tools/compare_bytes.py FUN_name` — see what doesn't match
+2. `mcp__ghidra__decompile_function_by_address("0x71XXXXXXXXX")` — see what binary does
+3. Fix source to match (types, control flow, expressions)
+4. Re-compare. 3 attempts max.
+
+### Rules
+- **NO naked asm.** Idiomatic C++ only.
+- **NO blind patterns.** Check each function individually.
+- Derivation chains on any new offset tags
 
 ### Quick Reference
 ```
-/c/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -Ilib/NintendoSDK/include -Ilib/NintendoSDK/include/stubs -c src/app/FILE.cpp -o build/FILE.o
-
 python tools/compare_bytes.py FUN_name
+/c/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -Ilib/NintendoSDK/include -Ilib/NintendoSDK/include/stubs -c src/app/FILE.cpp -o build/FILE.o
 ```
-
-### Rules
-- CAN ONLY edit: fun_batch_c_010.cpp, fun_batch_c_011.cpp
