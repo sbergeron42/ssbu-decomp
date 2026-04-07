@@ -1,9 +1,7 @@
 #include "types.h"
 
 // Batch decompiled via Ghidra MCP -- pool-e, batch 004
-// Range: 0x7100000000 -- 0x7100FFFFFF
-
-// ---- External declarations --------------------------------------------------
+// Rewritten with derivation chains
 
 extern "C" {
     void abort(void);
@@ -11,6 +9,7 @@ extern "C" {
 }
 
 // Allocator helpers
+// [inferred: FUN_71000b1b90 returns current heap id, FUN_7100130810(size, heap) allocates]
 extern u64  FUN_71000b1b90(void);
 extern s64  FUN_7100130810(u64, u64);
 
@@ -37,13 +36,15 @@ extern void FUN_71001cb870(u64, s64, u64, s64);
 extern void FUN_71001b6bc0(u64, void *);
 
 // Data pointer variables
-extern u8  *PTR_DAT_71052a3da8;   // char* -- checked against '\0'
-extern u64 *PTR_DAT_71052a3db8;   // u64*  -- used as handle
-extern u8  *PTR_DAT_71052a3df0;   // u64*  -- dereferenced as u64
+extern u8  *PTR_DAT_71052a3da8;   // [inferred: bool flag pointer — checked against '\0']
+extern u64 *PTR_DAT_71052a3db8;   // [inferred: handle pointer — passed to FUN_71001b6bc0]
+extern u8  *PTR_DAT_71052a3df0;   // [inferred: service pointer — dereferenced as u64]
 
 // ---- Allocator-pattern functions -------------------------------------------
+// All follow: heap_id = get_heap(); obj = alloc(size, heap_id); if (obj) init(obj); return obj;
+// [inferred: factory functions for networking/resource service objects]
 
-// 0x7100194310 -- alloc 0x60, init FUN_71001875f0
+// 0x7100194310 -- factory: alloc 0x60, init FUN_71001875f0
 s64 FUN_7100194310(void)
 {
     u64 heap_id;
@@ -57,7 +58,7 @@ s64 FUN_7100194310(void)
     return obj;
 }
 
-// 0x7100179ab0 -- alloc 0xa0, init FUN_710017ada0
+// 0x7100179ab0 -- factory: alloc 0xa0, init FUN_710017ada0
 s64 FUN_7100179ab0(void)
 {
     u64 heap_id;
@@ -71,7 +72,7 @@ s64 FUN_7100179ab0(void)
     return obj;
 }
 
-// 0x7100194410 -- alloc 0x80, init FUN_710018ea30
+// 0x7100194410 -- factory: alloc 0x80, init FUN_710018ea30
 s64 FUN_7100194410(void)
 {
     u64 heap_id;
@@ -85,7 +86,7 @@ s64 FUN_7100194410(void)
     return obj;
 }
 
-// 0x7100194490 -- alloc 0x1b0, init FUN_710018daa0
+// 0x7100194490 -- factory: alloc 0x1b0, init FUN_710018daa0
 s64 FUN_7100194490(void)
 {
     u64 heap_id;
@@ -99,7 +100,7 @@ s64 FUN_7100194490(void)
     return obj;
 }
 
-// 0x7100194510 -- alloc 0x130, init FUN_71001a4310
+// 0x7100194510 -- factory: alloc 0x130, init FUN_71001a4310
 s64 FUN_7100194510(void)
 {
     u64 heap_id;
@@ -113,7 +114,7 @@ s64 FUN_7100194510(void)
     return obj;
 }
 
-// 0x7100194590 -- alloc 0x80, init FUN_7100186580
+// 0x7100194590 -- factory: alloc 0x80, init FUN_7100186580
 s64 FUN_7100194590(void)
 {
     u64 heap_id;
@@ -127,7 +128,7 @@ s64 FUN_7100194590(void)
     return obj;
 }
 
-// 0x7100194610 -- alloc 0x80, init FUN_7100187f50
+// 0x7100194610 -- factory: alloc 0x80, init FUN_7100187f50
 s64 FUN_7100194610(void)
 {
     u64 heap_id;
@@ -141,7 +142,7 @@ s64 FUN_7100194610(void)
     return obj;
 }
 
-// 0x7100194690 -- alloc 0xf8, init FUN_710019c400
+// 0x7100194690 -- factory: alloc 0xf8, init FUN_710019c400
 s64 FUN_7100194690(void)
 {
     u64 heap_id;
@@ -155,7 +156,7 @@ s64 FUN_7100194690(void)
     return obj;
 }
 
-// 0x7100194710 -- alloc 0x260, init FUN_710019b910
+// 0x7100194710 -- factory: alloc 0x260, init FUN_710019b910
 s64 FUN_7100194710(void)
 {
     u64 heap_id;
@@ -178,53 +179,72 @@ void FUN_710065fa64(void)
 }
 
 // 0x710017c180 -- memcpy then default byte 9 to 0x14
+// param_1 [inferred: small struct, at least 10 bytes]
+//   +0x09 [inferred: u8 field, defaults to 0x14 if zero after copy]
 void FUN_710017c180(void *param_1, void *param_2, u64 param_3)
 {
     memcpy(param_1, param_2, param_3 & 0xffffffff);
-    if (*(char *)((s64)param_1 + 9) != '\0') {
+    if (*(char *)((s64)param_1 + 9) != '\0') {  // +0x09 [inferred: config byte]
         return;
     }
-    *(u8 *)((s64)param_1 + 9) = 0x14;
+    *(u8 *)((s64)param_1 + 9) = 0x14;           // +0x09 [inferred: default value 0x14]
 }
 
 // 0x71001aa330 -- dispatch command, then clear field
+// param_1 [inferred: command request struct]
+//   +0x78 [inferred: u32 command id, cleared to 0 after dispatch]
+// PTR_DAT_71052a3df0 [inferred: global service handle pointer]
 void FUN_71001aa330(s64 param_1)
 {
     u64 handle;
 
     handle = FUN_7100193a30(*(u64 *)PTR_DAT_71052a3df0);
-    FUN_71001acd50(handle, *(u32 *)(param_1 + 0x78));
-    *(u32 *)(param_1 + 0x78) = 0;
+    FUN_71001acd50(handle, *(u32 *)(param_1 + 0x78));  // +0x78 [inferred: command id]
+    *(u32 *)(param_1 + 0x78) = 0;                       // +0x78 [inferred: clear after dispatch]
 }
 
 // 0x71001b3cb0 -- conditional update via FUN_71001b47e0
+// param_1 [inferred: string/buffer wrapper struct]
+//   +0x18 [inferred: current value, compared against param_2]
+// FUN_71001b47e0 [inferred: assign/set function, -1 sentinel = full replace]
 s64 FUN_71001b3cb0(s64 param_1, s64 param_2)
 {
-    if (*(s64 *)(param_1 + 0x18) != param_2) {
+    if (*(s64 *)(param_1 + 0x18) != param_2) {         // +0x18 [inferred: stored value]
         FUN_71001b47e0(param_1, param_2, 0xffffffffffffffff);
     }
     return param_1;
 }
 
-// 0x71001cfce0 -- passthrough to FUN_71001cb870
+// 0x71001cfce0 -- passthrough to FUN_71001cb870 (data copy/transfer)
+// param_2 [inferred: source descriptor struct]
+//   +0x10 [inferred: base offset (s64)]
+//   +0x18 [inferred: size/length (u64)]
+//   +0x28 [inferred: additional offset added to base]
 u64 FUN_71001cfce0(u64 param_1, s64 param_2)
 {
     FUN_71001cb870(param_1,
-                   *(s64 *)(param_2 + 0x10) + *(s64 *)(param_2 + 0x28),
-                   *(u64 *)(param_2 + 0x18), 0xffffffffffffffff);
+                   *(s64 *)(param_2 + 0x10) + *(s64 *)(param_2 + 0x28),  // +0x10+0x28 [inferred: base+offset]
+                   *(u64 *)(param_2 + 0x18),                               // +0x18 [inferred: size/count]
+                   0xffffffffffffffff);
     return param_1;
 }
 
-// 0x71001d05f0 -- passthrough variant using field dereference
+// 0x71001d05f0 -- passthrough variant, reads inner handle from param_1
+// param_1 [inferred: wrapper struct]
+//   +0x10 [inferred: inner handle, passed to FUN_71001cb870 as dest]
+// param_2 [inferred: source descriptor, same layout as FUN_71001cfce0]
 s64 FUN_71001d05f0(s64 param_1, s64 param_2)
 {
-    FUN_71001cb870(*(u64 *)(param_1 + 0x10),
-                   *(s64 *)(param_2 + 0x10) + *(s64 *)(param_2 + 0x28),
-                   *(u64 *)(param_2 + 0x18), 0xffffffffffffffff);
+    FUN_71001cb870(*(u64 *)(param_1 + 0x10),                               // +0x10 [inferred: dest handle]
+                   *(s64 *)(param_2 + 0x10) + *(s64 *)(param_2 + 0x28),    // +0x10+0x28 [inferred: base+offset]
+                   *(u64 *)(param_2 + 0x18),                                // +0x18 [inferred: size/count]
+                   0xffffffffffffffff);
     return param_1;
 }
 
-// 0x71001d7470 -- conditional dispatch via PTR
+// 0x71001d7470 -- conditional dispatch via global flag
+// PTR_DAT_71052a3da8 [inferred: bool enable flag]
+// PTR_DAT_71052a3db8 [inferred: service handle pointer]
 void FUN_71001d7470(u32 param_1)
 {
     u32 value;
