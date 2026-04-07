@@ -16,6 +16,18 @@ extern "C" void* je_realloc(void*, unsigned long);       // FUN_710392dd80
 extern "C" void* memset(void*, int, unsigned long);
 extern "C" int   je_posix_memalign(void**, unsigned long, unsigned long); // FUN_710392dc40
 
+// std::__1::recursive_mutex PLT stubs
+// [derived: lock at 0x71039c1490, unlock at 0x71039c14a0]
+extern "C" void lock_71039c1490(void*);
+extern "C" void unlock_71039c14a0(void*);
+
+// Resource service helpers
+extern "C" long FUN_710353ff00(void*, u64);  // validate filepath entry under lock
+
+// Global filesystem info singleton
+// [derived: DAT_7105331f20 — FilesystemInfo* used across all resource helpers]
+__attribute__((visibility("hidden"))) extern FilesystemInfo* DAT_7105331f20;
+
 // nn::os TLS support
 // [derived: nn::os::SetTlsValue PLT at 0x71039c07b0]
 extern "C" void nn_os_SetTlsValue(u32, u64);
@@ -412,4 +424,83 @@ void FUN_710353adf0(u64* param_1) {
     *(u64*)((char*)p + 0x18) = 0;
     *(u64*)((char*)p + 0x20) = 0;
     *param_1 = (u64)p;
+}
+
+// ============================================================================
+// FUN_710353d480 — get_filepathidx_by_hash40 (288 bytes)
+// Looks up a filepath index by hash40 value. Uses bucket hash table + binary
+// search (lower_bound) on the file_hash_to_path_index array in LoadedArc.
+// Then validates under mutex lock and checks if the filepath is loaded.
+// [derived: bucket[0].count as total bucket count — smash-arc pattern]
+// [derived: bucket[hash%count + 1] for actual chain — smash-arc get_bucket_for_hash]
+// [derived: binary search = std::lower_bound from libc++ (Clang 8 codegen)]
+// [derived: fs->mutex at +0x00, fs->loaded_filepaths at +0x08, fs->path_info at +0x78]
+// [derived: path_info->arc at +0x00 (PathInformation layout)]
+// [derived: arc->file_info_buckets at +0x50, arc->file_hash_to_path_index at +0x58]
+// ============================================================================
+void FUN_710353d480(u32* param_1, u64 param_2) {
+    u32 result;
+    *param_1 = 0xffffff;
+    u64 hash = param_2 & 0xffffffffffULL;
+    if (hash == 0) goto LAB_fail;
+
+    {
+        FilesystemInfo* fs = DAT_7105331f20;
+        PathInformation* pi = (PathInformation*)fs->path_info;
+        LoadedArc* arc = pi->arc;
+        FileInfoBucket* buckets = arc->file_info_buckets;
+        HashToIndex* hash_to_path = arc->file_hash_to_path_index;
+
+        u32 bucket_count = buckets[0].count;
+        u64 bucket_idx = hash % (u64)bucket_count;
+        FileInfoBucket* bucket = &buckets[bucket_idx + 1];
+
+        u32 chain_count = bucket->count;
+        HashToIndex* lo = &hash_to_path[bucket->start];
+        HashToIndex* end = lo + chain_count;
+
+        // Binary search (lower_bound on hash40 field)
+        // [derived: libc++ std::lower_bound codegen — cinc+asr half, csel branchless]
+        u64 count = chain_count;
+        while (count != 0) {
+            s64 sc = (s64)count;
+            u64 half = (u64)((sc + (sc < 0)) >> 1);
+            HashToIndex* next = lo + half + 1;
+            u64 remaining = count + ~half;
+            u64 mid_hash = lo[half].raw & 0xffffffffffULL;
+            if (mid_hash >= hash) {
+                next = lo;
+                remaining = half;
+            }
+            lo = next;
+            count = remaining;
+        }
+
+        if (lo == end) goto LAB_fail;
+
+        {
+            u64 entry = lo->raw;
+            u64 entry_hash = entry & 0xffffffffffULL;
+            u32 path_idx = (u32)(entry >> 40);
+
+            if (entry_hash != hash || path_idx == 0xffffff) goto LAB_fail;
+
+            void* mutex = fs->mutex;
+            u64 lookup_key = (entry & ~0xffffffffffULL) | hash;
+            lock_71039c1490(mutex);
+            long valid = FUN_710353ff00(fs, lookup_key);
+            unlock_71039c14a0(mutex);
+
+            result = (valid != 0) ? path_idx : (u32)0xffffff;
+            if (result == 0xffffff) goto LAB_fail;
+
+            if (*(u8*)((char*)fs->loaded_filepaths + (u64)result * 8 + 4) != 0) {
+                *param_1 = result;
+                return;
+            }
+        }
+    }
+
+LAB_fail:
+    *param_1 = 0xffffff;
 }
