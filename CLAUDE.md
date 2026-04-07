@@ -70,7 +70,7 @@ This repo supports parallel decomp work via git worktrees. Multiple Claude Code 
 4. Commit to your worker branch, never push to master directly
 
 ### Worker Code Quality Rules
-1. **Write C++ that a Bandai Namco developer would have written.** Use the struct definitions in `include/app/`. If Ghidra shows a pattern, understand it and rewrite it idiomatically — do NOT copy-paste Ghidra pseudocode.
+1. **Write C++ that a Bandai Namco developer would have written.** Use the struct definitions in `include/app/` and `include/resource/`. If Ghidra shows a pattern, understand it and rewrite it idiomatically — do NOT copy-paste Ghidra pseudocode.
 2. **Use struct field access, not raw offsets.** Write `acc->camera_module` not `*reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x60)`. If the struct header exists, use it.
 3. **Do NOT paste assembly into C functions.** `__attribute__((naked))` with inline asm is a last resort after 3 failed matching attempts, not a first approach. It inflates progress metrics without recovering source.
 4. **Decompile module-by-module, not random addresses.** Understand the module's struct layout first, then decomp its functions. Each function you decomp should reveal new field information for the struct.
@@ -80,6 +80,17 @@ This repo supports parallel decomp work via git worktrees. Multiple Claude Code 
    - `unk_0xE4[0x5C]`  — unknown padding, honest gap
    - NEVER label an inferred field name as if it were confirmed. Wrong names that look authoritative mislead the community.
    - The derivation chain should be enough for someone to verify the name by checking the referenced function in Ghidra.
+6. **Minimize `reinterpret_cast`.** If a module header has typed vtable methods (e.g., `MotionModule::change_motion()`), use them instead of `reinterpret_cast<void(*)(...)>(VT(mod)[slot])`. If the struct field is `void*` but the type is known, add the type to the header rather than casting at every use site.
+7. **Use vtable method wrappers from module headers.** Headers in `include/app/modules/` have named methods for vtable slots. Write `mod->change_motion(hash, rate, p1, p2, p3)` not `reinterpret_cast<void(*)(MotionModule*,u64,f32,bool,bool,bool)>(mod->_vt[28])(mod, hash, rate, p1, p2, p3)`.
+8. **Renaming variables is NOT a rewrite.** Changing `uVar1` to `result` without replacing raw offsets with struct access is not acceptable. The goal is structural rewriting with typed field access, not cosmetic renames.
+
+### Resource Service Guidelines
+- **Use ARCropolis community names.** Field names come from `ARCropolis` (Rust mod loader) and `smash-arc` (ARC format library). These are empirically validated by millions of mod installations. Tag with `[derived: ARCropolis field_name]`.
+- **OOM retry pattern.** Many resource functions use: `alloc(); if (!ptr && OOM_handler) { OOM_handler->retry(); alloc(); }`. Factor this into `alloc_with_oom_retry()` rather than inlining it everywhere.
+- **FixedString<N> template.** The game uses fixed-length strings with inline storage + length field. Use the `FixedString256` type from `include/resource/containers.h`.
+- **Singleton creation pattern.** Uses CAS spinlock (`ldxr/stxr` loop) + `nn::os::YieldThread()`. Recognize and document it, don't paste the raw exclusive monitor instructions.
+- **0xFFFFFF sentinel.** Invalid index for filepath and directory handles. Use named constant or document inline.
+- **Library code identification.** If a function matches a known open-source library (jemalloc, zlib, zstd), identify the version and document with `// library_name version: source_file.c:line`. Do NOT try to byte-match library code compiled with different optimization flags — document the version and move on.
 
 ### Worker Efficiency Rules
 1. **NEVER rebuild just to re-parse output** — run `cmd /c build.bat 2>&1 | tee /tmp/build.txt` once, then grep the saved file. One build, not ten.
