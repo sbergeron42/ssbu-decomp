@@ -3,6 +3,7 @@
 
 #include "types.h"
 #include "resource/ResServiceNX.h"
+#include "resource/LoadedArc.h"
 
 using namespace resource;
 
@@ -333,3 +334,351 @@ after_check:
     svc->unk5 = 1;
     *(u8*)&svc->state = 1;
 }
+
+// Additional extern declarations for FUN_710353d760
+extern "C" void* memcpy(void*, const void*, u64);
+extern "C" void FUN_710392e590(void*);  // je_free
+extern "C" [[noreturn]] void FUN_71039c0650(void*);  // __throw_length_error wrapper
+extern "C" [[noreturn]] void abort();
+
+// [derived: returns LoadedDirectory* for a given directory index]
+extern "C" LoadedDirectory* FUN_71035407a0(FilesystemInfo* fs, u32 dir_index);
+// [derived: increment ref count on directory and all children]
+extern "C" void FUN_7103542d20(LoadedDirectory* dir);
+// [derived: release/cleanup a loaded directory entry]
+extern "C" void FUN_710353eff0(FilesystemInfo* fs, LoadedDirectory* dir);
+
+// Fallback directory index constant
+// [derived: UNK_7104470f50 = u32 value 0xFFFFFF at .rodata address 0x7104470f50]
+__attribute__((visibility("hidden"))) extern u32 UNK_7104470f50;
+
+// ============================================================================
+// FUN_710353d760 — resolve_child_folder_indices
+// Address: 0x710353d760 (1,216 bytes)
+// Given a directory index, resolves all child folder references to their
+// actual directory file_group_indices via ARC hash table lookup.
+// Returns a vector of u32 file_group_indices through param_1.
+//
+// Algorithm:
+// 1. Validate dir_index against sentinel (0xFFFFFF) and bounds
+// 2. Lock mutex, read LoadedDirectory flags, unlock
+// 3. Copy the child_folders CppVector<LoadedDirectory*>
+// 4. For each child folder:
+//    a. Read file_group_index from LoadedDirectory
+//    b. Look up DirInfo[file_group_index].path.raw (hash40)
+//    c. Binary search dir_hash_to_info_index for matching hash
+//    d. Call FUN_71035407a0 to resolve the index
+//    e. Push resolved file_group_index to output vector
+// 5. Free the child_folders copy
+//
+// [derived: accesses FilesystemInfo +0x00 mutex, +0x40 loaded_directories,
+//  +0x48 loaded_directory_len, +0x78 path_info]
+// [derived: uses LoadedArc dir_infos (+0x78, stride 0x34),
+//  dir_hash_to_info_index (+0x70), fs_header->folder_count (+0x40→+0x0C)]
+// [derived: binary search matches FUN_710353e030 pattern exactly]
+//
+// Status: COMPILED, NOT MATCHING (NX Clang divergence)
+// ============================================================================
+void FUN_710353d760(u64* param_1, u32 param_2)
+{
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
+    FilesystemInfo* fs = DAT_7105331f20;
+
+    // Validate directory index
+    if (param_2 == 0xFFFFFF || param_2 >= fs->loaded_directory_len) {
+        param_1[1] = 0;
+        param_1[2] = 0;
+        param_1[0] = 0;
+        return;
+    }
+
+    // Read flags under lock
+    void* mutex = fs->mutex;
+    lock_71039c1490(mutex);
+    LoadedDirectory* dirs = fs->loaded_directories;
+    // [derived: LoadedDirectory is 0x48 bytes, accessed via umaddl with stride 0x48]
+    LoadedDirectory* dir = (LoadedDirectory*)((u8*)dirs + (u64)param_2 * 0x48);
+    u8 flags = dir->flags;
+    unlock_71039c14a0(mutex);
+
+    // Must be active (bit 0 set) and valid pointer
+    if (!(flags & 1) || dir == nullptr) {
+        param_1[1] = 0;
+        param_1[2] = 0;
+        param_1[0] = 0;
+        return;
+    }
+
+    // Re-compute directory address and get child_folders vector
+    // [derived: child_folders at LoadedDirectory+0x28 (CppVector<LoadedDirectory*>)]
+    LoadedDirectory* dir2 = (LoadedDirectory*)((u8*)dirs + (u64)param_2 * 0x48);
+    u8* cf_vec_start = (u8*)dir2 + 0x28;  // &child_folders.start
+    u8* cf_vec_end = (u8*)dir2 + 0x30;    // &child_folders.end
+
+    u8** cf_start_ptr = (u8**)cf_vec_start;
+    u8** cf_end_ptr = (u8**)cf_vec_end;
+
+    u8* cf_start = *cf_start_ptr;
+    u8* cf_end = *cf_end_ptr;
+    s64 cf_size = cf_end - cf_start;
+
+    // Track allocated buffer and output vector on stack
+    u8* alloc_buf = nullptr;
+    u8* alloc_end_data = nullptr;
+    u8* alloc_start = nullptr;
+
+    if (cf_size == 0) {
+        // Empty child_folders — return empty result vector
+        u32* result_start = nullptr;
+        u32* result_end = nullptr;
+        u32* result_cap = nullptr;
+        alloc_end_data = alloc_start;
+        param_1[0] = (u64)result_start;
+        param_1[1] = (u64)result_end;
+        param_1[2] = (u64)result_cap;
+        if (alloc_start != nullptr) {
+            FUN_710392e590(alloc_start);
+        }
+        return;
+    }
+
+    // Allocate buffer for child_folders copy
+    s64 cf_count = cf_size >> 3;  // count of pointers (each 8 bytes)
+    if ((u64)cf_count >> 61 != 0) {
+        // Overflow — throw length error
+        FUN_71039c0650(cf_vec_start);  // __throw_length_error
+    }
+
+    u8* buf = (u8*)je_aligned_alloc(0x10, (u64)cf_size);
+    if (buf == nullptr) {
+        if (DAT_7105331f00 != nullptr) {
+            u32 oom_flags = 0;
+            u64 oom_size = (u64)cf_size;
+            u64 r = ((u64(*)(s64*, u32*, u64*))(*(s64*)(*DAT_7105331f00 + 0x30)))
+                     (DAT_7105331f00, &oom_flags, &oom_size);
+            if (((r & 1) != 0) &&
+                (buf = (u8*)je_aligned_alloc(0x10, (u64)cf_size), buf != nullptr))
+                goto alloc_ok;
+        }
+        buf = nullptr;
+    }
+alloc_ok:
+    // Set up buffer tracking
+    alloc_start = buf;
+    alloc_end_data = buf;
+    u8* alloc_cap = buf + (cf_count << 3);
+
+    // Re-read source pointers and copy
+    u8* src_start = *cf_start_ptr;
+    u8* src_end = *cf_end_ptr;
+    s64 copy_size = src_end - src_start;
+
+    u32* result_start = nullptr;
+    u32* result_end = nullptr;
+    u32* result_cap = nullptr;
+
+    u8* process_end;
+    if (copy_size <= 0) {
+        // No data to copy — empty results
+        alloc_end_data = alloc_start;
+        goto store_results;
+    }
+
+    // memcpy the child folder pointers
+    memcpy(buf, src_start, (u64)copy_size);
+    process_end = buf + copy_size;
+    alloc_end_data = process_end;
+
+    result_start = nullptr;
+    result_end = nullptr;
+    result_cap = nullptr;
+
+    if (copy_size == 0) goto store_results;
+
+    {
+        // Process each child folder pointer
+        u64** cur = (u64**)buf;
+        u64** end = (u64**)process_end;
+
+        while (cur != end) {
+            // Get file_group_index from child folder
+            // [derived: LoadedDirectory+0x00 = file_group_index (u32)]
+            u32 fgi = *(u32*)(*cur);
+
+            // Look up hash40 from DirInfo table
+            // [derived: dir_infos at arc+0x78, DirInfo is 0x34 bytes]
+            FilesystemInfo* fs2 = DAT_7105331f20;
+            PathInformation* pi = (PathInformation*)fs2->path_info;
+            LoadedArc* arc = pi->arc;
+
+            u64 dir_raw = *(u64*)((u8*)arc->dir_infos + (u64)fgi * 0x34);
+            u64 hash40 = dir_raw & 0xFFFFFFFFFFULL;
+
+            u64 dir_idx;
+            if (hash40 == 0) {
+                dir_idx = 0xFFFFFF;
+            } else {
+                // Binary search in dir_hash_to_info_index
+                // [derived: same pattern as FUN_710353e030]
+                HashToIndex* lo = arc->dir_hash_to_info_index;
+                u32 folder_count = arc->fs_header->folder_count;
+                HashToIndex* search_end = lo + folder_count;
+
+                u64 count = folder_count;
+                while (count != 0) {
+                    s64 sc = (s64)count;
+                    u64 half = (u64)((sc + (sc < 0)) >> 1);
+                    HashToIndex* next = lo + half + 1;
+                    u64 remaining = count + ~half;
+                    u64 mid_hash = lo[half].raw & 0xFFFFFFFFFFULL;
+                    if (mid_hash >= hash40) {
+                        next = lo;
+                        remaining = half;
+                    }
+                    lo = next;
+                    count = remaining;
+                }
+
+                if (lo == search_end || (lo->raw & 0xFFFFFFFFFFULL) != hash40) {
+                    dir_idx = 0xFFFFFF;
+                } else {
+                    dir_idx = lo->raw >> 40;
+                }
+            }
+
+            // Resolve directory
+            LoadedDirectory* resolved = FUN_71035407a0(DAT_7105331f20, (u32)dir_idx);
+            u32* result_ptr = (u32*)&UNK_7104470f50;
+            if (resolved != nullptr) {
+                result_ptr = (u32*)resolved;
+            }
+            u32 value = *result_ptr;  // file_group_index of resolved directory
+
+            // Push to result vector
+            if (result_end < result_cap) {
+                // Space available — simple push
+                *result_end = value;
+                result_end++;
+            } else {
+                // Need to grow vector — inline push_back with OOM retry
+                // [derived: standard vector growth pattern seen in ResLoadingThread etc.]
+                s64 old_count = (s64)((u8*)result_end - (u8*)result_start) >> 2;
+                u64 new_count = (u64)old_count + 1;
+                if (new_count >> 62 != 0) {
+                    FUN_71039c0650(&result_start);  // __throw_length_error
+                }
+
+                u64 old_cap_count = (s64)((u8*)result_cap - (u8*)result_start) >> 2;
+                u64 new_cap;
+                if (old_cap_count < 0x1FFFFFFFFFFFFFFFULL) {
+                    u64 doubled = old_cap_count >> 1;  // NOTE: ASR not LSR
+                    new_cap = (new_count > doubled) ? new_count : doubled;
+                    if (new_cap == 0) {
+                        // Zero capacity
+                        u32* new_buf = nullptr;
+                        u32* insert_pos = new_buf + old_count;
+                        *insert_pos = value;
+                        // ... (growth continues)
+                        goto growth_done;
+                    }
+                } else {
+                    new_cap = 0x3FFFFFFFFFFFFFFFULL;
+                }
+
+                {
+                    u64 alloc_size = new_cap * 4;
+                    if (alloc_size == 0) alloc_size = 1;
+                    u32* new_buf = (u32*)je_aligned_alloc(0x10, alloc_size);
+                    if (new_buf == nullptr) {
+                        if (DAT_7105331f00 != nullptr) {
+                            u32 oom_f2 = 0;
+                            u64 oom_s2 = alloc_size;
+                            u64 r2 = ((u64(*)(s64*, u32*, u64*))(*(s64*)(*DAT_7105331f00 + 0x30)))
+                                       (DAT_7105331f00, &oom_f2, &oom_s2);
+                            if (((r2 & 1) != 0) &&
+                                (new_buf = (u32*)je_aligned_alloc(0x10, alloc_size), new_buf != nullptr))
+                                goto growth_alloc_ok;
+                        }
+                        new_buf = nullptr;
+                    }
+growth_alloc_ok:
+                    u32* old_start = result_start;
+                    u32* insert_pos = new_buf + old_count;
+                    u32* new_end = insert_pos + 1;
+                    *insert_pos = value;
+
+                    // Copy old elements backward and do reference counting
+                    u32* old_cur = result_end;
+                    u32* old_base = result_start;
+                    while (old_cur != old_base) {
+                        insert_pos[-1] = 0xFFFFFF;  // sentinel
+                        old_cur--;
+                        u32 elem = *old_cur;
+                        insert_pos[-1] = elem;
+
+                        if (elem != 0xFFFFFF && elem < DAT_7105331f20->loaded_directory_len) {
+                            void* mx = DAT_7105331f20->mutex;
+                            lock_71039c1490(mx);
+                            LoadedDirectory* d = (LoadedDirectory*)((u8*)DAT_7105331f20->loaded_directories
+                                                 + (u64)elem * 0x48);
+                            if (!(d->flags & 1)) {
+                                unlock_71039c14a0(mx);
+                                FUN_71035407a0(DAT_7105331f20, elem);
+                            } else {
+                                FUN_7103542d20(d);
+                                unlock_71039c14a0(mx);
+                            }
+                        }
+                        insert_pos--;
+                    }
+
+                    // Cleanup remaining old entries
+                    u32* cleanup_cur = result_end;
+                    result_start = insert_pos;
+                    result_end = new_end;
+                    result_cap = new_buf + new_cap;
+
+                    while (cleanup_cur != old_base) {
+                        cleanup_cur--;
+                        u32 elem2 = *cleanup_cur;
+                        if (elem2 != 0xFFFFFF) {
+                            if (elem2 < DAT_7105331f20->loaded_directory_len) {
+                                void* mx2 = DAT_7105331f20->mutex;
+                                lock_71039c1490(mx2);
+                                LoadedDirectory* d2 = (LoadedDirectory*)((u8*)DAT_7105331f20->loaded_directories
+                                                      + (u64)elem2 * 0x48);
+                                if (d2->flags & 1) {
+                                    FUN_710353eff0(DAT_7105331f20, d2);
+                                }
+                                unlock_71039c14a0(mx2);
+                            }
+                            *cleanup_cur = 0xFFFFFF;  // sentinel
+                        }
+                    }
+
+                    // Free old buffer
+                    if (old_base != nullptr) {
+                        FUN_710392e590(old_base);
+                    }
+                }
+growth_done:;
+            }
+
+            cur++;
+        }
+    }
+
+store_results:
+    param_1[0] = (u64)result_start;
+    param_1[1] = (u64)result_end;
+    param_1[2] = (u64)result_cap;
+
+    // Free child_folders copy buffer
+    if (alloc_start != nullptr) {
+        alloc_end_data = alloc_start;
+        FUN_710392e590(alloc_start);
+    }
+}
+
