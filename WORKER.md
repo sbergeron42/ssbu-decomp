@@ -1,23 +1,24 @@
-# Worker: pool-d
+# Worker: pool-e
 
 ## Model: Opus
 
-## Task: Resource service — post-processing loop functions (0x7103546xxx-0x710354fxxx)
+## Task: Resource service — fiber/thread + large pipeline functions
 
-Functions after the main processing loop — likely handle post-load processing, verification, and cleanup.
-
-### Targets (pick from these)
-- `FUN_7103546000` (384B), `FUN_7103546180` (112B)
-- `FUN_71035461f0` (1,472B), `FUN_71035467b0` (848B)
-- `FUN_7103546b00` (320B), `FUN_7103546c40` (336B), `FUN_7103546d90` (816B)
-- `FUN_7103547110` (176B), `FUN_71035471c0` (240B)
-- `FUN_71035481d0` (112B), `FUN_7103548240` (208B)
-- `FUN_7103549620` (1,568B) — task worker pool creator
-- `FUN_7103549c40` (704B)
+### Targets
+- `~Fiber` (320B) — 0x710353c210
+- `finalize` (176B) — 0x710353c350
+- `switch_to_fiber` (384B) — 0x710353c400
+- `setup` (1,504B) — 0x710353c5b0
+- `get_hit_entry_id` (944B) — 0x710353cb90
+- `FUN_710353d000` (864B) — thread creation wrapper
+- `FUN_710353d760` (1,216B)
+- `FUN_710353b490` (1,184B)
+- `FUN_710353f1b0` (3,344B) — if time permits
+- `FUN_710353ff00` (1,360B) — if time permits
 
 ### Headers: include/resource/*.h
 ### Derivation Chains MANDATORY: [derived:] or [inferred:] on every offset
-### Output: src/resource/res_post_processing.cpp
+### Output: src/resource/res_fiber_thread.cpp
 ### Do NOT use naked asm. 3-attempt limit.
 
 ### Quick Reference
