@@ -1,40 +1,21 @@
-# Worker: pool-a
+# Worker: pool-e
 
 ## Model: Opus
 
-## Task: ResLoadingThread — THE critical path function (12,496 bytes)
+## Task: Resource service — thread creation + remaining utility functions
 
-This is the function the community has been asking for. `ResLoadingThread` at `0x7103542f30` is the combined loading/inflate processing loop where 6 of 9 ARCropolis hooks land.
+### Targets
+- `FUN_710353d000` (864B) — thread creation wrapper (creates ResUpdateThread/LoadingThread/InflateThread)
+- `FUN_710353d760` (1,216B)
+- `FUN_710353b490` (1,184B)
+- `FUN_710353f1b0` (3,344B) — large pipeline function
+- `FUN_710353ff00` (1,360B)
+- `FUN_7103546000` (384B), `FUN_71035472b0` (3,872B) — if time permits
 
-### CRITICAL: How to get the Ghidra decompilation
-The 13.0.4 Ghidra instance CANNOT decompile this function (wrong boundaries).
-The 13.0.1 instance CAN. Use:
-```
-mcp__ghidra-1301__decompile_function_by_address("0x7103542f30")
-```
-This returns the full `ResLoadingThread` decompilation with typed structs.
-
-### What it does (from Ghidra 13.0.1)
-- Main loop for ResLoadingThread — processes file/directory load requests
-- Drains 5 request queues from ResServiceNX
-- For file requests: looks up in LoadedArc tables, reads data via nn::fs
-- For directory requests: processes child directories recursively
-- Uses semaphores for I/O synchronization, double-buffered reads
-- All 6 inline ARCropolis hooks are in this function
-
-### Approach
-This is a 12,496-byte function — too large to match in one shot. Break it into logical sections:
-1. **Outer loop + queue drain** (lines ~1-50 of Ghidra output) — event wait, mutex lock, swap queues
-2. **File loading path** (the `*(int *)&pvVar47->eos == 1` branch) — LoadedArc lookup, nn::fs read, double-buffer
-3. **Directory loading path** (the `*(int *)&pvVar47->eos == 0` branch) — recursive dir processing
-4. **Post-iteration cleanup** — directory state updates, SleepThread, queue cleanup
-
-Write each section as clean C++ using the resource headers, then combine.
-
-### Headers: include/resource/*.h (ResServiceNX, LoadedArc, containers, Fiber)
-### Derivation Chains MANDATORY on every offset
-### Output: src/resource/ResLoadingThread.cpp
-### Do NOT use naked asm. This function is the project's showcase.
+### Headers: include/resource/*.h
+### Derivation Chains MANDATORY
+### Output: src/resource/res_thread_utils.cpp
+### Do NOT use naked asm. 3-attempt limit.
 
 ### Quick Reference
 ```
