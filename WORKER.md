@@ -1,31 +1,44 @@
-# Worker: pool-b
+# Worker: pool-a
 
 ## Model: Opus
 
-## Task: ResLoadingThread support — callees and sub-functions
+## Task: ResLoadingThread — THE critical path function (12,496 bytes)
 
-Pool-a is decomping ResLoadingThread itself. Your job is to decomp the functions IT CALLS that aren't done yet.
+This is the function the community has been asking for. `ResLoadingThread` at `0x7103542f30` is the combined loading/inflate processing loop where 6 of 9 ARCropolis hooks land.
 
-### How to find callees
-Decompile ResLoadingThread via 13.0.1 Ghidra:
+### CRITICAL: How to get the Ghidra decompilation
+The 13.0.4 Ghidra instance CANNOT decompile this function (wrong boundaries).
+The 13.0.1 instance CAN. Use:
 ```
 mcp__ghidra-1301__decompile_function_by_address("0x7103542f30")
 ```
-Then identify every `FUN_` or named function called from within, cross-reference with data/functions.csv to find which are still U (uncompiled), and decomp those.
+This returns the full `ResLoadingThread` decompilation with typed structs.
 
-### Known callees NOT yet decomped
-- `FUN_7103544ca0` — called 4+ times in the loop (directory processing dispatch)
-- `FUN_7103540960` — file info lookup
-- `FUN_71037c58c0` — file read wrapper
-- `func_0x007103541e30` — directory state update
-- Any other uncompiled callees you discover
+### What it does (from Ghidra 13.0.1)
+- Main loop for ResLoadingThread — processes file/directory load requests
+- Drains 5 request queues from ResServiceNX
+- For file requests: looks up in LoadedArc tables, reads data via nn::fs
+- For directory requests: processes child directories recursively
+- Uses semaphores for I/O synchronization, double-buffered reads
+- All 6 inline ARCropolis hooks are in this function
 
-### Headers: include/resource/*.h
-### Derivation Chains MANDATORY
-### Output: src/resource/res_loading_callees.cpp
-### Do NOT use naked asm. 3-attempt limit.
+### Approach
+This is a 12,496-byte function — too large to match in one shot. Break it into logical sections:
+1. **Outer loop + queue drain** (lines ~1-50 of Ghidra output) — event wait, mutex lock, swap queues
+2. **File loading path** (the `*(int *)&pvVar47->eos == 1` branch) — LoadedArc lookup, nn::fs read, double-buffer
+3. **Directory loading path** (the `*(int *)&pvVar47->eos == 0` branch) — recursive dir processing
+4. **Post-iteration cleanup** — directory state updates, SleepThread, queue cleanup
+
+Write each section as clean C++ using the resource headers, then combine.
+
+### Headers: include/resource/*.h (ResServiceNX, LoadedArc, containers, Fiber)
+### Derivation Chains MANDATORY on every offset
+### Output: src/resource/ResLoadingThread.cpp
+### Do NOT use naked asm. This function is the project's showcase.
 
 ### Quick Reference
 ```
 /c/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -Ilib/NintendoSDK/include -Ilib/NintendoSDK/include/stubs -c src/resource/FILE.cpp -o build/FILE.o
+
+python tools/compare_bytes.py FUN_name
 ```
