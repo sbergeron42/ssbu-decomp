@@ -39,7 +39,8 @@ struct LoadedData {
 // [derived: ARCropolis LoadedFilepath — repr(packed)]
 struct LoadedFilepath {
     u32 loaded_data_index;  // +0x00
-    u32 is_loaded;          // +0x04
+    u8 is_loaded;           // +0x04 [derived: Ghidra char access, original uses ldrb not ldr]
+    u8 pad[3];              // +0x05
 };
 
 // Loaded directory state
