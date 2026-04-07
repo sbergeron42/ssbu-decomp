@@ -1,43 +1,23 @@
-# Worker: pool-b
+# Worker: pool-d
 
 ## Model: Opus
 
-## Task: Resource service — medium functions (400-1400 bytes)
+## Task: Resource service — post-processing loop functions (0x7103546xxx-0x710354fxxx)
 
-### Targets
-- `FUN_710353af30` (656B), `FUN_710353b200` (656B)
-- `FUN_710353b930` (752B)
-- `FUN_710353dc20` (432B), `FUN_710353ddd0` (608B)
-- `FUN_710353e330` (432B), `FUN_710353e5d0` (400B), `FUN_710353e760` (544B)
-- `FUN_710353ec40` (944B), `FUN_710353eff0` (448B)
-- `FUN_710353a8f0` (1,280B) — filesystem scanner (DONE in res_filesystem.cpp)
-- `FUN_710353a230` (1,376B) — battle object function, not resource service
+Functions after the main processing loop — likely handle post-load processing, verification, and cleanup.
 
-### Progress
-| Function | Status | Match | Notes |
-|----------|--------|-------|-------|
-| FUN_710353e760 | compiled | 65% | region/language resolver, register swap diffs |
-| FUN_710353e5d0 | compiled | 56% | dual bsearch, cmn/adds NX fork diff |
-| FUN_710353ec40 | compiled | 5% | recursive dir unload, complex control flow |
-| FUN_710353dc20 | compiled | 4% | CRC32 hash + directory child search |
-| FUN_710353e330 | compiled | 4% | path normalize + bsearch |
-| FUN_710353af30 | compiled | 3% | file open with path validation |
-| FUN_710353eff0 | compiled | 2% | vector push loop |
-| FUN_710353b200 | compiled | 1% | tree insertion with FixedString comparison |
-| FUN_710353ddd0 | compiled | 1% | hash match + binary search |
-| FUN_710353a8f0 | DONE | — | already in res_filesystem.cpp |
-| FUN_710353b930 | SKIP | — | std::function SBO handler swap, too complex |
-| FUN_710353a230 | SKIP | — | battle object function, wrong module |
-
-Low match rates are mostly due to NX Clang fork divergences:
-- Prologue shrink-wrapping (comparison before register saves)
-- `cmn` vs `adds` codegen (upstream discards result, NX keeps it)
-- Comparison operand ordering
-- ADRP/LDR relocation differences (not patched in compare_bytes)
+### Targets (pick from these)
+- `FUN_7103546000` (384B), `FUN_7103546180` (112B)
+- `FUN_71035461f0` (1,472B), `FUN_71035467b0` (848B)
+- `FUN_7103546b00` (320B), `FUN_7103546c40` (336B), `FUN_7103546d90` (816B)
+- `FUN_7103547110` (176B), `FUN_71035471c0` (240B)
+- `FUN_71035481d0` (112B), `FUN_7103548240` (208B)
+- `FUN_7103549620` (1,568B) — task worker pool creator
+- `FUN_7103549c40` (704B)
 
 ### Headers: include/resource/*.h
 ### Derivation Chains MANDATORY: [derived:] or [inferred:] on every offset
-### Output: src/resource/res_medium_helpers.cpp
+### Output: src/resource/res_post_processing.cpp
 ### Do NOT use naked asm. 3-attempt limit.
 
 ### Quick Reference
