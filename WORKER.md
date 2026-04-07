@@ -18,16 +18,25 @@ The function is in src/resource/ResLoadingThread.cpp. **Three binary functions**
 6. **Re-queue unified**: Merged "for 4 + separate 1" into single "for 5" loop
 
 ### Current status
-- Compiled: 5064 bytes (1266 insns), Expected: ~12,136 bytes (3034 insns) → 42% of expected size
-- Match rate: ~0.9% (mostly due to frame size difference cascading to all sp-relative insns)
+- **CRITICAL FINDING**: The 12,136 byte range contains 3 SEPARATE functions, not 1!
+  - Function 1 (ResLoadingThread): 0x3543090-0x35444B4 = **5156 bytes** ← OUR TARGET
+  - Function 2 (inflate/processing): 0x35444C0-0x35456C0 = 4608 bytes (not yet decompiled)
+  - Function 3 (FUN_7103544ca0): 0x35456D0-0x3545E64 = 1940 bytes (declared extern)
+- Compiled: 5064 bytes → **98.2% of expected Function 1 size** (only 92 bytes short!)
+- Match rate: ~0.6% — low because 32-byte frame size mismatch cascades to all sp-relative insns
 - Frame size: 384 (compiled) vs 416 (expected) — 32 bytes short
 
-### What still needs work
-1. **Frame size mismatch (32 bytes)**: Expected has function-scope temporaries (aiStack_78[2] + uStack_70 = 16 bytes) plus extra saved pointers. Need to declare temp_pair[2] and temp_val at function scope.
-2. **Missing ~1768 instructions**: Expected has 160 bl calls, compiled has 63. Large code sections appear to be generating differently or are missing.
-3. **Queue swap still simplified**: Needs full doubly-linked list swap
-4. **Re-queue may need forced unrolling**: Binary has 5 separate while loops (at 0x3543fd0-0x354419c, ~115 insns); our for-loop may not be unrolling
-5. **ELF comparison note**: Use proper segment mapping: `file_offset = seg_offset + (vaddr - seg_vaddr)`. First segment has vaddr=0x0, offset=0x888.
+### What still needs work (priority order)
+1. **Frame size (32 bytes short)**: Need function-scope temporaries (aiStack_78[2] + uStack_70) to match expected 416-byte frame. Once this matches, many more instructions will align.
+2. **Queue swap**: Still "simplified" — needs full doubly-linked list swap
+3. **Re-queue unrolling**: Binary shows 5 unrolled while loops; our for-loop may not unroll
+4. **92 bytes missing**: Likely from queue swap / re-queue differences
+5. **Function 2 (inflate thread)**: 4608 bytes of processing loop — entirely unwritten, next major target
+6. **Function 3**: FUN_7103544ca0 directory dispatch — 1940 bytes, currently extern
+
+### ELF comparison note
+Use proper segment mapping: `file_offset = seg_offset + (vaddr - seg_vaddr)`. First segment: vaddr=0x0, offset=0x888.
+Compare against Function 1 only: vaddr 0x3543090, size 5156 bytes.
 
 ### How to get Ghidra decompilation
 ```
