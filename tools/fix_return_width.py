@@ -20,6 +20,7 @@ Only patches when:
 """
 
 import struct
+import glob
 import csv
 import sys
 from pathlib import Path
@@ -192,6 +193,13 @@ def main():
     parser.add_argument('--dry-run', action='store_true',
                         help='Show what would be patched without modifying')
     args = parser.parse_args()
+    # Expand globs for Windows cmd.exe compatibility
+    import glob as _glob
+    expanded = []
+    for pattern in args.files:
+        matched = _glob.glob(pattern)
+        expanded.extend(matched if matched else [pattern])
+    args.files = expanded
 
     # Load CSV lookup
     csv_by_short = {}

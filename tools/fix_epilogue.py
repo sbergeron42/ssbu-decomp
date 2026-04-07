@@ -118,10 +118,15 @@ def main():
     if not whitelist:
         return
 
+    import glob as _glob
     dry_run = '--dry-run' in sys.argv
+    files = []
     for f in sys.argv[1:]:
         if f.startswith('--'):
             continue
+        matched = _glob.glob(f)
+        files.extend(matched if matched else [f])
+    for f in files:
         process_elf(f, whitelist, dry_run=dry_run)
 
 

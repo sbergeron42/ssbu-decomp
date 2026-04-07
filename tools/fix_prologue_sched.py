@@ -33,6 +33,7 @@ AArch64 encoding reference:
 """
 
 import argparse
+import glob
 import struct
 import sys
 from pathlib import Path
@@ -386,6 +387,13 @@ def main():
     parser.add_argument('--verbose', '-v', action='store_true',
                         help='Print details for each patch site')
     args = parser.parse_args()
+    # Expand globs for Windows cmd.exe compatibility
+    import glob as _glob
+    expanded = []
+    for pattern in args.files:
+        matched = _glob.glob(pattern)
+        expanded.extend(matched if matched else [pattern])
+    args.files = expanded
 
     total = 0
     files_patched = 0

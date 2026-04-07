@@ -19,6 +19,7 @@ AArch64 encoding reference:
 """
 
 import struct
+import glob
 import sys
 from pathlib import Path
 
@@ -338,6 +339,13 @@ def main():
     parser.add_argument('files', nargs='+', help='ELF object files to patch')
     parser.add_argument('--dry-run', action='store_true', help='Show what would be patched without modifying')
     args = parser.parse_args()
+    # Expand globs for Windows cmd.exe compatibility
+    import glob as _glob
+    expanded = []
+    for pattern in args.files:
+        matched = _glob.glob(pattern)
+        expanded.extend(matched if matched else [pattern])
+    args.files = expanded
 
     total = 0
     for f in args.files:
