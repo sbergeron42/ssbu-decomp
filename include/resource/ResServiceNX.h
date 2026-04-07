@@ -81,16 +81,19 @@ struct FilesystemInfo {
 
 // File handle wrapper (NX filesystem)
 // [derived: ARCropolis FileNX]
+// [fixed: position is at +0x020, not +0x028 — confirmed by FUN_71037c58c0 disassembly
+//  which accesses position via ldr x8,[x0,#0x20] and file_handle via ldr x0,[x0,#0x18].
+//  The erroneous unk3 field at +0x020 did not exist; +0x028+516 = +0x22C matches
+//  field14_0x22c in Ghidra's ResLoadingThread decompilation.]
 struct FileNX {
     void* vtable;                    // +0x000
     void* unk1;                      // +0x008
     u32 unk2;                        // +0x010
     u32 is_open;                     // +0x014
-    void* file_handle;               // +0x018 — nn::fs::FileHandle*
-    u32 unk3;                        // +0x020
-    u64 position;                    // +0x028
-    char filename[516];              // +0x030 — fixed-length string
-    u32 unk4;                        // +0x234
+    void* file_handle;               // +0x018 — nn::fs::FileHandle (u64 internally)
+    s64 position;                    // +0x020 [fixed: was +0x028]
+    char filename[516];              // +0x028 [fixed: was +0x030]
+    u32 flags;                       // +0x22C [fixed: was unk4 at +0x234]
 };
 
 // Loaded filesystem search table
