@@ -18,7 +18,7 @@ for /R src %%f in (*.cpp) do (
 REM Post-process: Fix PLT stubs - upstream Clang uses GOT-relative calls,
 REM but NX uses direct ADRP+LDR+ADD+BR pattern with x16/x17.
 echo Fixing PLT stubs...
-python tools\fix_plt_stubs.py build\fun_region_039.o
+python tools\fix_plt_stubs.py build\*.o
 
 REM Post-process: upstream Clang emits movz for bitmask immediates,
 REM but the NX original uses orr-with-wzr. Patch to match.
@@ -34,7 +34,7 @@ REM Post-process: Fix epilogue scheduling in batch files (whitelist-based).
 REM Generate whitelist first, then apply.
 python tools\gen_epilogue_list.py
 echo Fixing epilogue scheduling...
-python tools\fix_epilogue.py build\fun_batch_c_*.o build\fun_batch_d_*.o build\fun_batch_e2_*.o
+python tools\fix_epilogue.py build\*.o
 
 REM Post-process: Fix return-register width (mov w0,wzr vs mov x0,xzr).
 REM NX Clang may use different widths for zeroing return registers.
