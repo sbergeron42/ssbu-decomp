@@ -1,23 +1,19 @@
-# Worker: pool-c
+# Worker: pool-d
 
 ## Model: Opus
 
-## Task: Resource service — remaining pipeline functions from previous assignment
+## Task: Resource service — remaining post-processing and large functions
 
-Continue with the remaining functions from your previous assignment that weren't finished.
-
-### Remaining Targets
-- `FUN_71035414c0` (928B)
-- `FUN_7103541860` (640B) — lookup_stream_hash variant
-- `FUN_7103541ae0` (288B)
-- `FUN_7103541cb0` (528B)
-- `FUN_7103541ec0` (608B) — get_info_to_data
-- `FUN_7103542120` (1,056B)
-- `FUN_7103542540` (672B)
+### Targets (from previous assignment + new large functions)
+- `FUN_71035461f0` (1,472B), `FUN_71035467b0` (848B)
+- `FUN_7103546b00` (320B), `FUN_7103546c40` (336B), `FUN_7103546d90` (816B)
+- `FUN_7103549f00` (2,272B)
+- `FUN_710354b4b0` (848B), `FUN_710354b800` (912B)
+- `FUN_710354c720` (544B), `FUN_710354cc80` (400B), `FUN_710354ce10` (704B)
 
 ### Headers: include/resource/*.h
 ### Derivation Chains MANDATORY
-### Output: src/resource/res_loading_pipeline.cpp (append to existing)
+### Output: src/resource/res_post_processing2.cpp
 ### Do NOT use naked asm. 3-attempt limit.
 
 ### Quick Reference
