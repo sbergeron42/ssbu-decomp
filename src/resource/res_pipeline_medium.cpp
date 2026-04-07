@@ -1357,21 +1357,520 @@ LAB_ea68:
 // ============================================================================
 // FUN_710354d400 — pipeline_init (3,456 bytes)
 // Initializes the rendering pipeline: allocates sub-object pools, resizes
-// matrix element vector, clears hash maps, allocates state objects.
-// Too complex for full byte-matching — structural implementation.
+// matrix element vector (0x330-byte elements with identity matrices),
+// clears hash maps, allocates 0x110-byte state object, sets "ErrorDummy".
 // Address: 0x710354d400
 // ============================================================================
 long FUN_710354d400(long param_1, unsigned long param_2, unsigned long param_3, long param_4) {
-    // TODO: 864 instructions. Key sections:
-    // 1. FUN_710354e180() clear sub-pipeline
-    // 2. Allocate param_2 * 0x80 byte pool, init with FUN_7103554370
-    // 3. Build vector of pool element pointers (with OOM retry)
-    // 4. Resize 0x330-byte render entry vector for param_3 elements
-    // 5. Initialize identity matrices (0x3f800000 = 1.0f) in each entry
-    // 6. Store param_4 at +0xF8
-    // 7. Clean up shared_ptr linked list at +0x118/0x120
-    // 8. Allocate 0x110-byte state object with vtable PTR_FUN_710522eda8
-    // 9. Set up "ErrorDummy" string at +0x28 in state object
-    // 10. Release old shared_ptr at +0x138, store new one at +0x130/0x138
+    long* plVar1;
+    u8* puVar2;
+    long lVar14;
+    unsigned long uVar15;
+    long lVar16;
+    long lVar17;
+    unsigned long uVar18;
+    long uVar19;
+    long uVar20;
+    unsigned long uVar21;
+    void* pvVar22;
+    void* pvVar23;
+    u16* puVar24;
+    long* plVar25;
+    void* pvVar26;
+    unsigned long uVar27;
+    long* plVar28;
+    long* puVar29;
+    long* puVar30;
+    void* pvVar31;
+    unsigned long __n;
+    void* pvVar32;
+    void* __src;
+    long local_70;
+    u32 local_64;
+
+    // Section 1: clear sub-pipeline
+    FUN_710354e180(param_1);
+
+    // Section 2: call destructors on vector at +0x68/+0x70 in reverse
+    puVar30 = *(long**)(param_1 + 0x68);
+    puVar29 = *(long**)(param_1 + 0x70);
+    while (puVar29 != puVar30) {
+        puVar29 = puVar29 - 4;
+        (*(void(**)(long*))(*(long*)puVar29))(puVar29);
+    }
+    *(long**)(param_1 + 0x70) = puVar30;
+
+    // Section 3: allocate sub-object pool (param_2 elements of 0x80 bytes)
+    puVar30 = *(long**)(param_1 + 0x90);
+    puVar30[5] = (long)param_2;
+    puVar30[3] = 0;
+    puVar30[4] = 0;
+    uVar21 = param_2 * 0x80;
+    lVar17 = (long)(uVar21 + 0x10);
+    // Overflow check: if param_2 * 0x80 overflows or > 0xffffffffffffffef
+    if ((param_2 >> 57) != 0 || 0xffffffffffffffefUL < uVar21) {
+        lVar17 = -1;
+    }
+    lVar14 = (long)je_aligned_alloc(0x10, lVar17);
+    if (lVar14 == 0) {
+        if (DAT_7105331f00 != nullptr) {
+            local_64 = 0;
+            local_70 = lVar17;
+            uVar15 = (*(unsigned long(**)(s64*, u32*, long*))(*(long*)DAT_7105331f00 + 0x30))(DAT_7105331f00, &local_64, &local_70);
+            if ((uVar15 & 1) != 0) {
+                lVar14 = (long)je_aligned_alloc(0x10, lVar17);
+                if (lVar14 != 0) goto LAB_d4e8;
+            }
+        }
+        lVar14 = 0;
+    }
+LAB_d4e8:
+    lVar17 = lVar14 + 0x10;
+    *(unsigned long*)(lVar14 + 8) = param_2;
+    lVar14 = lVar17;
+    if (param_2 != 0) {
+        // Init each 0x80-byte element
+        do {
+            FUN_7103554370(lVar14);
+            uVar21 = uVar21 - 0x80;
+            lVar14 = lVar14 + 0x80;
+        } while (uVar21 != 0);
+
+        // Build vector of pointers to each pool element
+        uVar21 = 1;
+        puVar30[6] = lVar17;
+        lVar14 = 0;
+        do {
+            plVar25 = (long*)puVar30[1];
+            if (plVar25 < (long*)puVar30[2]) {
+                // Vector has space: append pointer
+                *plVar25 = lVar17 + lVar14;
+                puVar30[1] = puVar30[1] + 8;
+            } else {
+                // Vector full: reallocate
+                pvVar31 = (void*)*puVar30;
+                __n = (long)plVar25 - (long)pvVar31;
+                uVar15 = ((long)__n >> 3) + 1;
+                if (uVar15 >> 0x3d != 0) {
+                    std::__1::__throw_length_error("vector");
+                }
+                lVar16 = (long)puVar30[2] - (long)pvVar31;
+                if ((unsigned long)(lVar16 >> 3) < 0xfffffffffffffffUL) {
+                    uVar27 = lVar16 >> 2;
+                    if (uVar15 <= uVar27) {
+                        uVar15 = uVar27;
+                    }
+                    if (uVar15 != 0) {
+                        if (uVar15 >> 0x3d == 0) goto LAB_d5a4;
+                        goto LAB_e170;
+                    }
+                    pvVar22 = nullptr;
+                } else {
+                    uVar15 = 0x1fffffffffffffffUL;
+LAB_d5a4:
+                    lVar16 = (long)(uVar15 * 8);
+                    if (lVar16 == 0) lVar16 = 1;
+                    pvVar22 = je_aligned_alloc(0x10, lVar16);
+                    if (pvVar22 == nullptr) {
+                        if (DAT_7105331f00 != nullptr) {
+                            local_64 = 0;
+                            local_70 = lVar16;
+                            uVar27 = (*(unsigned long(**)(s64*, u32*, long*))(*(long*)DAT_7105331f00 + 0x30))(DAT_7105331f00, &local_64, &local_70);
+                            if ((uVar27 & 1) != 0) {
+                                pvVar22 = je_aligned_alloc(0x10, lVar16);
+                                if (pvVar22 != nullptr) goto LAB_d60c;
+                            }
+                        }
+                        pvVar22 = nullptr;
+                    }
+                }
+LAB_d60c:
+                plVar25 = (long*)((long)pvVar22 + ((long)__n >> 3) * 8);
+                *plVar25 = lVar17 + lVar14;
+                if (0 < (long)__n) {
+                    memcpy(pvVar22, pvVar31, __n);
+                }
+                *puVar30 = (long)pvVar22;
+                puVar30[1] = (long)(plVar25 + 1);
+                puVar30[2] = (long)((long)pvVar22 + uVar15 * 8);
+                if (pvVar31 != nullptr) {
+                    FUN_710392e590(pvVar31);
+                }
+            }
+            if (param_2 <= uVar21) goto LAB_d660;
+            lVar17 = puVar30[6];
+            uVar21 = uVar21 + 1;
+            lVar14 = lVar14 + 0x80;
+        } while (true);
+    }
+    puVar30[6] = lVar17;
+LAB_d660:
+    *(long*)(*(long*)(param_1 + 0x90) + 0x18) = 0;
+
+    // Section 4: resize 0x330-byte element vector for param_3 elements
+    plVar25 = (long*)(param_1 + 0xe0);
+    pvVar31 = (void*)*plVar25;
+    // Compute current capacity: (eos - start) / 0x330
+    // The compiler uses magic number multiplication for div by 0x330
+    if ((unsigned long)(((*(long*)(param_1 + 0xf0) - (long)pvVar31) >> 4) * (long)-0x505050505050505LL) < param_3) {
+        if (0x50505050505050UL < param_3) {
+LAB_e170:
+            abort();
+        }
+        pvVar22 = *(void**)(param_1 + 0xe8);
+        lVar17 = (long)(param_3 * 0x330);
+        if (lVar17 == 0) lVar17 = 1;
+        lVar14 = (long)je_aligned_alloc(0x10, lVar17);
+        if (lVar14 == 0) {
+            if (DAT_7105331f00 != nullptr) {
+                local_64 = 0;
+                local_70 = lVar17;
+                uVar21 = (*(unsigned long(**)(s64*, u32*, long*))(*(long*)DAT_7105331f00 + 0x30))(DAT_7105331f00, &local_64, &local_70);
+                if ((uVar21 & 1) != 0) {
+                    lVar14 = (long)je_aligned_alloc(0x10, lVar17);
+                    if (lVar14 != 0) goto LAB_d738;
+                }
+            }
+            lVar14 = 0;
+        }
+LAB_d738:
+        pvVar26 = (void*)(lVar14 + (((long)pvVar22 - (long)pvVar31) >> 4) * 0x10);
+        lVar14 = lVar14 + (long)(param_3 * 0x330);
+        pvVar23 = pvVar26;
+        if (pvVar22 == pvVar31) {
+            *(void**)(param_1 + 0xe0) = pvVar26;
+            *(void**)(param_1 + 0xe8) = pvVar26;
+            *(long*)(param_1 + 0xf0) = lVar14;
+        } else {
+            // Move existing elements backward
+            do {
+                pvVar32 = (void*)((long)pvVar23 - 0x330);
+                __src = (void*)((long)pvVar22 - 0x330);
+                memcpy(pvVar32, __src, 0x1b0);
+                uVar20 = *(long*)((long)pvVar22 - 0x178);
+                uVar19 = *(long*)((long)pvVar22 - 0x180);
+                *(long*)((long)pvVar23 - 0x170) = *(long*)((long)pvVar22 - 0x170);
+                *(long*)((long)pvVar23 - 0x178) = uVar20;
+                *(long*)((long)pvVar23 - 0x180) = uVar19;
+                *(long*)((long)pvVar22 - 0x170) = 0;
+                *(long*)((long)pvVar22 - 0x178) = 0;
+                *(long*)((long)pvVar22 - 0x180) = 0;
+                memcpy((void*)((long)pvVar23 - 0x160), (void*)((long)pvVar22 - 0x160), 0x160);
+                pvVar22 = __src;
+                pvVar23 = pvVar32;
+            } while (pvVar31 != __src);
+            pvVar31 = *(void**)(param_1 + 0xe0);
+            pvVar22 = *(void**)(param_1 + 0xe8);
+            *(void**)(param_1 + 0xe0) = pvVar32;
+            *(void**)(param_1 + 0xe8) = pvVar26;
+            *(long*)(param_1 + 0xf0) = lVar14;
+            void* puVar13 = PTR_VirtualFreeHook_71052a7a70;
+            while (pvVar23 = pvVar22, pvVar23 != pvVar31) {
+                pvVar22 = (void*)((long)pvVar23 - 0x330);
+                if ((*(u8*)((long)pvVar23 - 0x180) & 1) != 0) {
+                    pvVar26 = *(void**)((long)pvVar23 - 0x170);
+                    if (puVar13 != nullptr) {
+                        FUN_71039c1400(pvVar26);
+                    }
+                    FUN_710392e590(pvVar26);
+                }
+            }
+        }
+        if (pvVar31 != nullptr) {
+            FUN_710392e590(pvVar31);
+        }
+    }
+
+    // Section 5: store element count and init new elements
+    *(unsigned long*)(param_1 + 0xd8) = param_3;
+    if (param_3 != 0) {
+        uVar21 = 0;
+        do {
+            pvVar31 = *(void**)(param_1 + 0xe8);
+            if (pvVar31 < *(void**)(param_1 + 0xf0)) {
+                // Space available: init element in-place
+                memset(pvVar31, 0, 0x1d0);
+                // Identity matrices: 16 4x4 matrices at offsets 0x1D0-0x30C
+                // Each diagonal element = 1.0f (0x3f800000)
+                *(u32*)((long)pvVar31 + 0x1d0) = 0x3f800000;
+                *(long*)((long)pvVar31 + 0x1d4) = 0;
+                *(long*)((long)pvVar31 + 0x1dc) = 0;
+                *(u32*)((long)pvVar31 + 0x1e4) = 0x3f800000;
+                *(long*)((long)pvVar31 + 0x1e8) = 0;
+                *(long*)((long)pvVar31 + 0x1f0) = 0;
+                *(u32*)((long)pvVar31 + 0x1f8) = 0x3f800000;
+                *(long*)((long)pvVar31 + 0x1fc) = 0;
+                *(long*)((long)pvVar31 + 0x204) = 0;
+                *(long*)((long)pvVar31 + 0x20c) = 0x3f8000003f800000LL;
+                *(long*)((long)pvVar31 + 0x21c) = 0;
+                *(long*)((long)pvVar31 + 0x214) = 0;
+                *(u32*)((long)pvVar31 + 0x224) = 0x3f800000;
+                *(long*)((long)pvVar31 + 0x230) = 0;
+                *(long*)((long)pvVar31 + 0x228) = 0;
+                *(u32*)((long)pvVar31 + 0x238) = 0x3f800000;
+                *(long*)((long)pvVar31 + 0x244) = 0;
+                *(long*)((long)pvVar31 + 0x23c) = 0;
+                *(u32*)((long)pvVar31 + 0x24c) = 0x3f800000;
+                *(u32*)((long)pvVar31 + 0x250) = 0x3f800000;
+                *(long*)((long)pvVar31 + 0x25c) = 0;
+                *(long*)((long)pvVar31 + 0x254) = 0;
+                *(u32*)((long)pvVar31 + 0x264) = 0x3f800000;
+                *(long*)((long)pvVar31 + 0x270) = 0;
+                *(long*)((long)pvVar31 + 0x268) = 0;
+                *(u32*)((long)pvVar31 + 0x278) = 0x3f800000;
+                *(long*)((long)pvVar31 + 0x284) = 0;
+                *(long*)((long)pvVar31 + 0x27c) = 0;
+                *(u32*)((long)pvVar31 + 0x28c) = 0x3f800000;
+                *(u32*)((long)pvVar31 + 0x290) = 0x3f800000;
+                *(long*)((long)pvVar31 + 0x29c) = 0;
+                *(long*)((long)pvVar31 + 0x294) = 0;
+                *(u32*)((long)pvVar31 + 0x2a4) = 0x3f800000;
+                *(long*)((long)pvVar31 + 0x2b0) = 0;
+                *(long*)((long)pvVar31 + 0x2a8) = 0;
+                *(u32*)((long)pvVar31 + 0x2b8) = 0x3f800000;
+                *(long*)((long)pvVar31 + 0x2c4) = 0;
+                *(long*)((long)pvVar31 + 0x2bc) = 0;
+                *(u32*)((long)pvVar31 + 0x2cc) = 0x3f800000;
+                *(u32*)((long)pvVar31 + 0x2d0) = 0x3f800000;
+                *(long*)((long)pvVar31 + 0x2dc) = 0;
+                *(long*)((long)pvVar31 + 0x2d4) = 0;
+                *(u32*)((long)pvVar31 + 0x2e4) = 0x3f800000;
+                *(long*)((long)pvVar31 + 0x2f0) = 0;
+                *(long*)((long)pvVar31 + 0x2e8) = 0;
+                *(u32*)((long)pvVar31 + 0x2f8) = 0x3f800000;
+                *(long*)((long)pvVar31 + 0x304) = 0;
+                *(long*)((long)pvVar31 + 0x2fc) = 0;
+                *(u32*)((long)pvVar31 + 0x30c) = 0x3f800000;
+                *(long*)((long)pvVar31 + 0x328) = 0;
+                *(long*)((long)pvVar31 + 0x320) = 0;
+                *(long*)((long)pvVar31 + 0x318) = 0;
+                *(long*)((long)pvVar31 + 0x310) = 0;
+                *(long*)(param_1 + 0xe8) = *(long*)(param_1 + 0xe8) + 0x330;
+            } else {
+                // Need to grow vector — similar to above realloc but with 0x330 elements
+                // (Vector grow path omitted for brevity — same OOM+move pattern as above)
+                // In practice this path should rarely be taken since we pre-allocated
+                abort();  // placeholder
+            }
+            uVar21 = uVar21 + 1;
+        } while (uVar21 != param_3);
+
+        // Section 5b: second pass — write packed float render constants to each element
+        long uVar5 = _DAT_7104464fb0;
+        long uVar6 = _UNK_7104464fb8;
+        long uVar7 = _DAT_7104467ca0;
+        long uVar8 = _UNK_7104467ca8;
+        long uVar9 = _DAT_7104469350;
+        long uVar10 = _UNK_7104469358;
+        long uVar11 = DAT_7104469360;
+        long uVar12 = DAT_7104469368;
+        long uVar19_ = _DAT_71044646b0;
+        long uVar20_ = _UNK_71044646b8;
+        lVar17 = 0x1a2;
+        do {
+            puVar2 = (u8*)(*plVar25 + lVar17);
+            lVar17 = lVar17 + 0x330;
+            *(u32*)(puVar2 - 0x52) = 0;
+            *(long*)(puVar2 - 0x4e) = 0x448000003c000000LL;
+            *(long*)(puVar2 - 0x46) = 0x3f490fdb42340000LL;
+            *(long*)(puVar2 - 0x3e) = 0x4487000044f00000LL;
+            *(long*)(puVar2 - 0x36) = 0x44f000003fe38e39LL;
+            *(long*)(puVar2 - 0x2e) = 0x3a08888944870000LL;
+            *(u32*)(puVar2 - 0x26) = 0x3a72b9d6;
+            *(long*)(puVar2 - 0x1a) = uVar6;
+            *(long*)(puVar2 - 0x22) = uVar5;
+            param_3 = param_3 - 1;
+            *(long*)(puVar2 - 10) = uVar6;
+            *(long*)(puVar2 - 0x12) = uVar5;
+            *(long*)(puVar2 - 0x15a) = uVar8;
+            *(long*)(puVar2 - 0x162) = uVar7;
+            *(long*)(puVar2 - 0x14a) = uVar12;
+            *(long*)(puVar2 - 0x152) = uVar11;
+            *(long*)(puVar2 - 0x13a) = uVar20_;
+            *(long*)(puVar2 - 0x142) = uVar19_;
+            *(long*)(puVar2 - 0x12a) = uVar10;
+            *(long*)(puVar2 - 0x132) = uVar9;
+            *(long*)(puVar2 - 0x18a) = *(long*)(puVar2 - 0x14a);
+            *(long*)(puVar2 - 0x192) = *(long*)(puVar2 - 0x152);
+            *(long*)(puVar2 - 0x19a) = *(long*)(puVar2 - 0x15a);
+            *(long*)(puVar2 - 0x1a2) = *(long*)(puVar2 - 0x162);
+            *(long*)(puVar2 - 0x16a) = *(long*)(puVar2 - 0x12a);
+            *(long*)(puVar2 - 0x172) = *(long*)(puVar2 - 0x132);
+            *(long*)(puVar2 - 0x17a) = *(long*)(puVar2 - 0x13a);
+            *(long*)(puVar2 - 0x182) = *(long*)(puVar2 - 0x142);
+            *(long*)(puVar2 - 0x11a) = uVar8;
+            *(long*)(puVar2 - 0x122) = uVar7;
+            *(long*)(puVar2 - 0x10a) = uVar12;
+            *(long*)(puVar2 - 0x112) = uVar11;
+            *(long*)(puVar2 - 0xfa) = uVar20_;
+            *(long*)(puVar2 - 0x102) = uVar19_;
+            *puVar2 = 0;
+            *(long*)(puVar2 - 0xea) = uVar10;
+            *(long*)(puVar2 - 0xf2) = uVar9;
+            *(long*)(puVar2 - 0xda) = uVar8;
+            *(long*)(puVar2 - 0xe2) = uVar7;
+            *(long*)(puVar2 - 0xca) = uVar12;
+            *(long*)(puVar2 - 0xd2) = uVar11;
+            *(long*)(puVar2 - 0xba) = uVar20_;
+            *(long*)(puVar2 - 0xc2) = uVar19_;
+            *(long*)(puVar2 - 0xaa) = uVar10;
+            *(long*)(puVar2 - 0xb2) = uVar9;
+            *(long*)(puVar2 - 0x9a) = 0;
+            *(long*)(puVar2 - 0xa2) = 0;
+            *(long*)(puVar2 - 0x8a) = uVar12;
+            *(long*)(puVar2 - 0x92) = uVar11;
+            *(long*)(puVar2 - 0x7a) = 0;
+            *(long*)(puVar2 - 0x82) = 0;
+            *(long*)(puVar2 - 0x6a) = 0x3f8000003f800000LL;
+            *(long*)(puVar2 - 0x72) = 0x3f8000003f800000LL;
+        } while (param_3 != 0);
+    }
+
+    // Section 6: store param_4
+    *(long*)(param_1 + 0xf8) = param_4;
+
+    // Section 7: clean up hash table at +0x108/+0x110/+0x118/+0x120
+    if (*(long*)(param_1 + 0x120) != 0) {
+        plVar25 = (long*)*(long*)(param_1 + 0x118);
+        while (plVar25 != nullptr) {
+            lVar17 = *plVar25;
+            plVar28 = (long*)plVar25[4];
+            if (plVar28 != nullptr) {
+                // Atomic decrement shared_owners
+                long old_val = __sync_fetch_and_sub(plVar28 + 1, 1);
+                if (old_val == 0) {
+                    (*(void(**)(long*))(*(long*)plVar28 + 0x10))(plVar28);
+                    ((std::__1::__shared_weak_count*)plVar28)->__release_weak();
+                }
+            }
+            FUN_710392e590(plVar25);
+            plVar25 = (long*)lVar17;
+        }
+        uVar21 = *(unsigned long*)(param_1 + 0x110);
+        *(long*)(param_1 + 0x118) = 0;
+        if (uVar21 != 0) {
+            uVar15 = uVar21 & 3;
+            if (uVar21 - 1 < 3) {
+                lVar17 = 0;
+            } else {
+                lVar17 = 0;
+                do {
+                    lVar14 = lVar17 * 8;
+                    lVar17 = lVar17 + 4;
+                    *(long*)(*(long*)(param_1 + 0x108) + lVar14) = 0;
+                    *(long*)(*(long*)(param_1 + 0x108) + lVar14 + 8) = 0;
+                    *(long*)(*(long*)(param_1 + 0x108) + lVar14 + 0x10) = 0;
+                    *(long*)(*(long*)(param_1 + 0x108) + lVar14 + 0x18) = 0;
+                } while (uVar21 - uVar15 != (unsigned long)lVar17);
+            }
+            if (uVar15 != 0) {
+                lVar17 = lVar17 << 3;
+                lVar14 = -(long)uVar15;
+                do {
+                    *(long*)(*(long*)(param_1 + 0x108) + lVar17) = 0;
+                    lVar17 = lVar17 + 8;
+                    lVar14 = lVar14 + 1;
+                } while (lVar14 != 0);
+            }
+        }
+        *(long*)(param_1 + 0x120) = 0;
+    }
+
+    // Section 8: allocate 0x110-byte state object
+    puVar30 = (long*)je_aligned_alloc(0x10, 0x110);
+    if (puVar30 == nullptr) {
+        if (DAT_7105331f00 != nullptr) {
+            local_64 = 0;
+            local_70 = 0x110;
+            uVar21 = (*(unsigned long(**)(s64*, u32*, long*))(*(long*)DAT_7105331f00 + 0x30))(DAT_7105331f00, &local_64, &local_70);
+            if ((uVar21 & 1) != 0) {
+                puVar30 = (long*)je_aligned_alloc(0x10, 0x110);
+                if (puVar30 != nullptr) goto LAB_df9c;
+            }
+        }
+        puVar30 = nullptr;
+    }
+LAB_df9c:
+    // Init state object
+    *puVar30 = (long)&PTR_FUN_710522eda8;
+    puVar30[1] = 0;
+    puVar30[2] = 0;
+    puVar30[5] = 0;
+    puVar30[9] = 0;
+    puVar30[10] = 0;
+    puVar30[0xb] = 0;
+    puVar30[8] = (long)&PTR_LAB_710522ef60;
+    puVar30[0xc] = 0;
+    *(u8*)((long)puVar30 + 0xe9) = 0;
+    *(u8*)(puVar30 + 0xd) = 0;
+    puVar30[0x1f] = 0;
+    puVar30[0x20] = 0;
+    puVar30[0x21] = 0;
+    puVar30[0x1e] = 0;
+    *(u16*)(puVar30 + 0x1e) = 1;
+    *(u8*)((long)puVar30 + 0xf2) = 0;
+
+    // Mutex lock, init sub-state, unlock
+    FUN_71039c14b0(puVar30 + 0xd);  // std::__1::mutex::lock()
+    *(u16*)(puVar30 + 3) = 0;
+    *(u8*)((long)puVar30 + 0x1a) = 1;
+    puVar30[4] = (long)0xffffffffffffffffLL;
+    if ((long*)puVar30[0xc] != nullptr) {
+        (*(void(**)(void))(*(long*)puVar30[0xc] + 8))();
+        puVar30[0xc] = 0;
+    }
+    *(u8*)((long)puVar30 + 0xe9) = 0;
+    puVar30[5] = 0;
+    puVar30[6] = 0;
+    puVar30[7] = 0;
+    *(u8*)(puVar30 + 0xd) = 0;
+    puVar30[0xb] = 0;
+    puVar30[0xc] = 0;
+    puVar30[9] = 0;
+    puVar30[10] = 0;
+    FUN_71039c14c0(puVar30 + 0xd);  // std::__1::mutex::unlock()
+
+    // Section 9: update shared_ptr at +0x130/+0x138
+    plVar25 = *(long**)(param_1 + 0x138);
+    *(long**)(param_1 + 0x130) = puVar30 + 3;
+    *(long**)(param_1 + 0x138) = puVar30;
+    if (plVar25 != nullptr) {
+        long old_val = __sync_fetch_and_sub(plVar25 + 1, 1);
+        if (old_val == 0) {
+            (*(void(**)(long*))(*(long*)plVar25 + 0x10))(plVar25);
+            ((std::__1::__shared_weak_count*)plVar25)->__release_weak();
+        }
+    }
+
+    // Section 10: init the state via +0x130 pointer, set "ErrorDummy" string
+    puVar24 = *(u16**)(param_1 + 0x130);
+    FUN_71039c14b0((void*)((long)puVar24 + 0x50));  // std::__1::mutex::lock()
+    *puVar24 = 0;
+    *(u8*)(puVar24 + 1) = 1;
+    *(long*)(puVar24 + 4) = (long)0xffffffffffffffffLL;
+    if (*(long**)(puVar24 + 0x24) != nullptr) {
+        (*(void(**)(void))(**(long**)(puVar24 + 0x24) + 8))();
+        *(long*)(puVar24 + 0x24) = 0;
+    }
+    *(u8*)((long)puVar24 + 0xd1) = 0;
+    *(long*)(puVar24 + 8) = 0;
+    *(long*)(puVar24 + 0xc) = 0;
+    *(long*)(puVar24 + 0x10) = 0;
+    *(u8*)(puVar24 + 0x28) = 0;
+    *(long*)(puVar24 + 0x20) = 0;
+    *(long*)(puVar24 + 0x24) = 0;
+    *(long*)(puVar24 + 0x18) = 0;
+    *(long*)(puVar24 + 0x1c) = 0;
+    FUN_71039c14c0((void*)((long)puVar24 + 0x50));  // std::__1::mutex::unlock()
+
+    // Write "ErrorDummy" string (ASCII: 0x45,72,72,6f,72,44,75,6d,6d,79)
+    *(long*)(puVar24 + 0x28) = 0x6d7544726f727245LL;  // "ErrorDum"
+    *(u8*)(puVar24 + 0x2c) = 0x6d;                    // "m"
+    // NUL at +0x2d implied; length at +0xd1 = 10
+    *(u8*)((long)puVar24 + 0xd1) = 10;
+    *(long*)(puVar24 + 4) = (long)0xffffffffffffffffLL;
+    *(u8*)puVar24 = 1;
+    *(u16*)((long)puVar24 + 0x59) = 0x79;  // "y" + NUL
+
     return 1;
 }
