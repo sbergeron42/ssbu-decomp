@@ -35,10 +35,15 @@ struct PrioritySlot {
     u8 pad1[0x10];         // +0x08 [unknown]
     s32 count;              // +0x18 [derived: checked > 0, passed to FUN_710354c720]
     u32 table_index;        // +0x1C [derived: indexes DAT_7105332f58 for dispatch lookup]
-    u8 pad2[0x30];         // +0x20 [unknown]
-    void* list_head;        // +0x50 [derived: linked list of work items, walked during reset]
+    u8 pad2[0x28];         // +0x20 [unknown]
+    PrioritySlot* next;     // +0x48 [derived: linked list next pointer, FUN_71035481d0]
+    PrioritySlot* list_head;// +0x50 [derived: head of child linked list]
     u8 lock;                // +0x58 [derived: atomic spinlock, ldaxrb/stxrb pattern]
-    u8 pad3[0x1F];         // +0x59 [unknown]
+    u8 pad3a[0x0F];        // +0x59 [unknown]
+    u32 recursive_param;    // +0x68 [derived: set recursively by FUN_71035481d0]
+    u8 pad3b[0x04];        // +0x6C [unknown]
+    u8 state;               // +0x70 [derived: set to 2 during reset in FUN_7103548310]
+    u8 pad3c[0x07];        // +0x71 [unknown]
 };
 static_assert(sizeof(PrioritySlot) == 0x78, "PrioritySlot must be 0x78 bytes");
 
@@ -69,10 +74,10 @@ extern "C" void FUN_7103548310(PrioritySlot* slots) {
 
         // Walk linked list, set each node's state byte to 2
         // [derived: node+0x48 = next pointer, node+0x70 = state byte]
-        u8* node = (u8*)slots[i].list_head;
+        PrioritySlot* node = slots[i].list_head;
         while (node != nullptr) {
-            *(node + 0x70) = 2;
-            node = *(u8**)(node + 0x48);
+            node->state = 2;
+            node = node->next;
         }
 
         // Release spinlock
@@ -85,6 +90,145 @@ extern "C" void FUN_7103548310(PrioritySlot* slots) {
             u64 entry = DAT_7105332f58[slots[i].table_index];
             FUN_710354c720(*(u32*)(entry + 0x10), cnt);
         }
+    }
+}
+
+
+// ============================================================================
+// FUN_71035481d0 — set_recursive_param
+// Recursively sets the u32 field at +0x68 on this node and all children.
+// Acquires spinlock at +0x58, walks child list at +0x50 (next at +0x48),
+// recurses on each child, then releases the lock.
+// [derived: called to propagate a parameter value through a priority tree]
+// [derived: same struct layout as PrioritySlot — nodes are recursive]
+// Address: 0x71035481d0 (112 bytes)
+// ============================================================================
+extern "C" void FUN_71035481d0(PrioritySlot* slot, u32 param) {
+    u8* lock_ptr = &slot->lock;
+    slot->recursive_param = param;
+
+    // Acquire spinlock
+    // [derived: ldaxrb/stxrb loop at +0x58]
+    while (__atomic_exchange_n(lock_ptr, 1, __ATOMIC_ACQUIRE) & 1) {}
+
+    // Recurse on all children in the linked list
+    // [derived: walks list_head at +0x50, next at +0x48]
+    PrioritySlot* child = slot->list_head;
+    while (child != nullptr) {
+        FUN_71035481d0(child, param);
+        child = child->next;
+    }
+
+    // Release spinlock
+    // [derived: stlrb wzr at +0x58]
+    __atomic_store_n(lock_ptr, 0, __ATOMIC_RELEASE);
+}
+
+
+// Global ResServiceNX pointer
+// [derived: DAT_7105331f28 at 0x7105331f28, referenced from all resource functions]
+__attribute__((visibility("hidden"))) extern ResServiceNX* DAT_7105331f28;
+
+
+// ============================================================================
+// FUN_7103541200 — resolve_stream_entry
+// Binary searches stream_hash_to_entries for a hash40 key. If found, resolves
+// the locale-adjusted stream data (offset + size) and copies the ARC path
+// string to the output FixedString256.
+// [derived: param_1=output FixedString256, param_2=LoadedArc*, param_3=out_offset,
+//           param_4=out_size, param_5=hash40 search key]
+// [derived: binary search on HashToIndex array (8-byte entries, lower 40 = hash)]
+// [derived: locale_type 1=language (+0xDC), 2=region (+0xD8) from ResServiceNX]
+// [derived: copies arc_string FixedString256 from ResServiceNX+0xE8 to output]
+// Address: 0x7103541200 (704 bytes)
+// ============================================================================
+extern "C" void FUN_7103541200(FixedString256* out, LoadedArc* arc,
+                                u64* out_offset, u64* out_size, u64 hash40_key) {
+    // Binary search stream_hash_to_entries for hash40_key
+    // [derived: lower_bound pattern with signed half computation]
+    HashToIndex* base = arc->stream_hash_to_entries;
+    u32 count_u = arc->stream_header->stream_hash_count;
+    HashToIndex* end_ptr = base + count_u;
+
+    if (count_u != 0) {
+        s64 n = (s64)(u64)count_u;
+        do {
+            s64 half = n / 2;
+            HashToIndex* mid = base + half;
+            u64 mid_hash = mid->raw & 0xFFFFFFFFFFULL;
+            s64 remaining = n + ~half;
+            if (mid_hash < hash40_key) {
+                base = mid + 1;
+                n = remaining;
+            } else {
+                n = half;
+            }
+        } while (n != 0);
+    }
+
+    // Check if key was found
+    // [derived: b.ne to found handler placed after ret — cold path layout]
+    u64 found_index;
+    if (base != end_ptr) {
+        u64 found_raw = base->raw;
+        u64 found_hash = found_raw & 0xFFFFFFFFFFULL;
+        found_index = found_raw >> 40;
+        if (found_hash == hash40_key && found_index != 0xffffff)
+            goto found;
+    }
+
+    // Not found — set outputs to zero, fall through to copy
+    *out_offset = 0;
+    *out_size = 0;
+
+copy_string:
+    // Copy arc_string from ResServiceNX to output
+    // [derived: FixedString256 copy with 2-char unrolled loop]
+    {
+        ResServiceNX* svc = DAT_7105331f28;
+        out->data[0] = '\0';
+        u16 src_len = svc->arc_string.length;
+        out->length = 0;
+        if (src_len != 0) {
+            const char* src = svc->arc_string.data;
+            for (u64 i = 0; i < (u64)src_len; i++) {
+                out->data[out->length] = src[i];
+                out->length++;
+            }
+        }
+        char* end_ch = out->data + out->length;
+        *end_ch = '\0';
+    }
+    return;
+
+found:
+    {
+        // Resolve locale-adjusted stream data
+        // [derived: StreamEntry at +0xC8, 12-byte stride, locale_type at +0x08]
+        u8 locale_type = arc->stream_entries[found_index].locale_type;
+
+        s32 locale_offset;
+        if (locale_type == 2) {
+            locale_offset = (s32)DAT_7105331f28->region_idx;
+            if (locale_offset == -1) locale_offset = 0;
+        } else if (locale_type == 1) {
+            locale_offset = (s32)DAT_7105331f28->language_idx;
+            if (locale_offset == -1) locale_offset = 0;
+        } else {
+            locale_offset = 0;
+        }
+
+        // Compute final data index
+        // [derived: stream_entries[idx].file_group_index() + locale_offset]
+        u32 file_group_idx = (u32)(arc->stream_entries[found_index].raw >> 40);
+        u32 final_idx = (u32)locale_offset + file_group_idx;
+
+        // [derived: stream_file_indices at +0xD0, stream_datas at +0xD8]
+        u32 data_idx = arc->stream_file_indices[final_idx];
+        StreamData* sd = &arc->stream_datas[data_idx];
+        *out_size = sd->size;
+        *out_offset = sd->offset;
+        goto copy_string;
     }
 }
 
