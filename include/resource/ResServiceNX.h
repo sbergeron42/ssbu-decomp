@@ -181,8 +181,9 @@ struct ResServiceNX {
     // --- Configuration (0x0D8–0x0E7) ---
     u32 region_idx;                  // +0x0D8 [derived: ARCropolis]
     u32 language_idx;                // +0x0DC [derived: ARCropolis]
-    u32 unk4;                        // +0x0E0 [unknown]
-    s16 state;                       // +0x0E4 [derived: ARCropolis]
+    u32 unk4;                        // +0x0E0 [derived: loading_thread_state, set to 2/3/0xFFFFFFFF]
+    u8 state;                        // +0x0E4 [derived: processing state counter, byte access only]
+    u8 pad_e5;                       // +0x0E5
     bool is_loader_thread_running;   // +0x0E6 [derived: ARCropolis]
     u8 unk5;                         // +0x0E7 [unknown]
 

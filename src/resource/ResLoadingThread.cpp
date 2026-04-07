@@ -57,7 +57,7 @@ __attribute__((visibility("hidden"))) extern s64* DAT_7105331f00;
 // Helper: vector push_back with OOM retry (inlined by compiler 3 times)
 // Pushes a u32 to a { start, end, cap } triple with growth.
 // ============================================================================
-static inline void vec_push_u32(u32** start, u32** end, u32** cap, u32 value) {
+static __attribute__((always_inline)) void vec_push_u32(u32** start, u32** end, u32** cap, u32 value) {
     if (*end != *cap) {
         **end = value;
         *end = *end + 1;
@@ -129,8 +129,8 @@ void ResLoadingThread(ResServiceNX* service) {
         // Wait for update event (unless already in processing state)
         // [derived: unk_event2 at +0x020 is EventType** wrapper]
         // ================================================================
-        if (service->state != 2) {
-            void* event = *(void**)service->unk_event2;
+        if (service->unk4 != 2) {
+            void* event = **(void***)service->res_update_event;
             if (event != nullptr) {
                 FUN_71039c0710(event);
             }
@@ -142,7 +142,7 @@ void ResLoadingThread(ResServiceNX* service) {
         // ================================================================
         lock_71039c1490(service->mutex);
         s32 total_items = 0;
-        service->state = 2;
+        service->unk4 = 2;
 
         // Initialize 5 local lists as empty sentinel-based doubly-linked lists
         // Layout: [size(u64), next(ListNode*), end(ListNode*)] per list
@@ -242,7 +242,7 @@ void ResLoadingThread(ResServiceNX* service) {
         }
 
         service->unk5 = 0;     // +0x0E7: clear re-queue flag
-        service->unk4 = 0;     // +0x0E0: clear processing sub-state
+        service->state = 0;   // +0x0E4: clear processing sub-state (byte access)
 
         if (total_items != 0) {
             unlock_71039c14a0(service->mutex);
@@ -268,47 +268,35 @@ void ResLoadingThread(ResServiceNX* service) {
         re_queue:
             lock_71039c1490(service->mutex);
 
-            // Re-drain each of the first 4 queues
-            for (int rq = 0; rq < 4; rq++) {
+            // Re-drain all 5 queues from service into local lists
+            // [derived: binary shows 5 unrolled while loops at 0x3543fd0-0x354419c]
+            for (int rq = 0; rq < 5; rq++) {
                 ListNode* svc_sent_rq = (ListNode*)&service->res_lists[rq].next;
                 ListNode* rq_node = service->res_lists[rq].next;
                 while (rq_node != svc_sent_rq) {
                     ListNode* rq_next = rq_node->next;
-                    // Unlink from service
-                    rq_node->next->prev = rq_node->prev;
-                    rq_node->prev->next = rq_node->next;
+                    // Unlink from service list
+                    ListNode* rq_prev = rq_node->prev;
+                    ListNode* rq_nxt = rq_node->next;
+                    rq_nxt->prev = rq_prev;
+                    rq_prev->next = rq_nxt;
                     service->res_lists[rq].size--;
-                    // Link to local list tail
+                    // Clear and relink to local list tail
+                    rq_node->next = nullptr;
+                    rq_node->prev = nullptr;
                     ListNode* local_sent_rq = (ListNode*)&local_lists[rq].next;
+                    ListNode* old_end = local_lists[rq].end;
                     rq_node->next = local_sent_rq;
-                    rq_node->prev = local_lists[rq].end;
-                    local_lists[rq].end->next = rq_node;
+                    rq_node->prev = old_end;
+                    old_end->next = rq_node;
                     local_lists[rq].end = rq_node;
                     local_lists[rq].size++;
                     rq_node = rq_next;
                 }
             }
-            // Re-drain queue 4 (at +0xC0)
-            {
-                ListNode* svc_sent_4 = (ListNode*)&service->res_lists[4].next;
-                ListNode* rq_node = service->res_lists[4].next;
-                while (rq_node != svc_sent_4) {
-                    ListNode* rq_next = rq_node->next;
-                    rq_node->next->prev = rq_node->prev;
-                    rq_node->prev->next = rq_node->next;
-                    service->res_lists[4].size--;
-                    ListNode* local_sent_4 = (ListNode*)&local_lists[4].next;
-                    rq_node->next = local_sent_4;
-                    rq_node->prev = local_lists[4].end;
-                    local_lists[4].end->next = rq_node;
-                    local_lists[4].end = rq_node;
-                    local_lists[4].size++;
-                    rq_node = rq_next;
-                }
-            }
 
             service->unk5 = 0;
-            service->unk4 = 0;
+            service->state = 0;
             unlock_71039c14a0(service->mutex);
             queue_idx = 0;
 
@@ -594,7 +582,7 @@ void ResLoadingThread(ResServiceNX* service) {
                                 service->data_ptr = service->buffer_array[(int)service->buffer_array_idx];
 
                                 // Signal inflate thread
-                                void* swap_event = *(void**)service->io_swap_event;
+                                void* swap_event = **(void***)service->io_swap_event;
                                 if (swap_event != nullptr) {
                                     FUN_71039c0720(swap_event);
                                 }
@@ -892,9 +880,9 @@ void ResLoadingThread(ResServiceNX* service) {
                 unlock_71039c14a0(svc_mtx);
 
                 // Update loading thread state
-                if (service->state != (s16)-1) {
+                if (service->unk4 != (u32)-1) {
                     lock_71039c1490(service->mutex);
-                    service->state = 3;
+                    service->unk4 = 3;
                     unlock_71039c14a0(service->mutex);
                 }
             }
@@ -908,14 +896,14 @@ void ResLoadingThread(ResServiceNX* service) {
             // Check for file read errors
             if (*(u8*)((u8*)service + 0x248)) {
                 lock_71039c1490(service->mutex);
-                service->state = -1;
+                service->unk4 = (u32)-1;
                 unlock_71039c14a0(service->mutex);
             }
             goto cleanup_lists;
 
         } else {
             // No items to process
-            service->state = 3;
+            service->unk4 = 3;
             unlock_71039c14a0(service->mutex);
             // Signal completion event
             void* comp_event = *(void**)
