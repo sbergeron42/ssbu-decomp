@@ -1,20 +1,20 @@
-# Worker: pool-d
+# Worker: pool-e
 
 ## Model: Opus
 
-## Task: Resource service — remaining medium pipeline functions
+## Task: Resource service — remaining scattered functions
 
 ### Targets
-- `FUN_710354d400` (3,456B)
-- `FUN_710354e4e0` (3,360B)
-- `FUN_710354f200` (384B), `FUN_710354f380` (240B)
-- `FUN_710354f470` (1,168B)
-- `FUN_710354f900` (320B), `FUN_710354fa40` (304B)
-- `FUN_710354ff10` (368B)
+- `FUN_710353b490` (1,184B) — if not done by pool-c
+- `FUN_7103549620` (1,568B) — task worker pool creator
+- `FUN_7103549c40` (704B)
+- `FUN_710354b370` (320B)
+- `FUN_710354e180` (416B), `FUN_710354e320` (448B)
+- `FUN_710354d130` (720B)
 
 ### Headers: include/resource/*.h
 ### Derivation Chains MANDATORY
-### Output: src/resource/res_pipeline_medium.cpp
+### Output: src/resource/res_scattered.cpp
 ### Do NOT use naked asm. 3-attempt limit.
 
 ### Quick Reference
