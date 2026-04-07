@@ -1,10 +1,14 @@
 #include "types.h"
 #include "app/BattleObjectModuleAccessor.h"
+#include "app/modules/StatusModule.h"
+#include "app/modules/WorkModule.h"
 
 // MEDIUM-tier FUN_* functions -- 0x7103 address range, batch d-003
 // Rewritten from Ghidra paste with meaningful names and struct field access
 
 using app::BattleObjectModuleAccessor;
+using app::StatusModule;
+using app::WorkModule;
 
 // ---- External declarations -----------------------------------------------
 
@@ -43,16 +47,21 @@ extern u8 DAT_7105331f20[];
 extern s64 *DAT_7105331f00;
 
 // ---- Helper: extract accessor from lua context ----------------------------
+// +0x20 [derived: all lua_bind_impl (.dynsym) dispatchers extract BattleObjectModuleAccessor* from lua context at offset 0x20]
 #define ACC(p) reinterpret_cast<BattleObjectModuleAccessor*>(*(s64*)((p) + 0x20))
 
 // ---- Functions ---------------------------------------------------------------
 
-// 0x71033dc420 -- status_module vtable[0x110/8]() != 1
+// 0x71033dc420 -- StatusModule::StatusKind() != 1
+// [derived: acc+0x40 = status_module (.dynsym), vtable+0x110 = StatusKind (StatusModule.h)]
 u8 FUN_71033dc420(u64 param_1, s64 param_2)
 {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
     auto* acc = ACC(param_2);
-    s64* status_mod = static_cast<s64*>(acc->status_module);
-    s32 status_kind = (*(s32(*)())(*(s64*)(*status_mod + 0x110)))();
+    auto* status_mod = static_cast<StatusModule*>(acc->status_module);
+    s32 status_kind = status_mod->vtbl->StatusKind(status_mod);
     return (u8)(status_kind != 1);
 }
 
@@ -75,6 +84,8 @@ u64 *FUN_7103796c20(void)
 }
 
 // 0x71037b0b30 -- call FUN_71037aeec0 on three consecutive 8-byte fields
+// param_1: struct with three 8-byte fields processed sequentially
+//   +0x00, +0x08, +0x10 [inferred: three consecutive 8-byte slots, each cleaned/reset by FUN_71037aeec0]
 void FUN_71037b0b30(s64 param_1)
 {
     FUN_71037aeec0(param_1);
@@ -83,6 +94,7 @@ void FUN_71037b0b30(s64 param_1)
 }
 
 // 0x71033640c0 -- vtable dispatch via x8 at offset 0x18, return 0
+// +0x18 [inferred: vtable slot 3, unknown virtual method — dispatched via hidden x8 param]
 u32 FUN_71033640c0(s64 *obj)
 {
     register s64 *in_x8 asm("x8");
@@ -92,6 +104,7 @@ u32 FUN_71033640c0(s64 *obj)
 }
 
 // 0x7103364460 -- vtable dispatch via x8 at offset 8, return 0
+// +0x08 [inferred: vtable slot 1, unknown virtual method — dispatched via hidden x8 param]
 u32 FUN_7103364460(s64 *obj)
 {
     register s64 *in_x8 asm("x8");
@@ -100,16 +113,22 @@ u32 FUN_7103364460(s64 *obj)
     return 0;
 }
 
-// 0x710341aac0 -- work_module vtable[0x98/8](mod, 0x10000005) > 3
+// 0x710341aac0 -- WorkModule::get_int(0x10000005) > 3
+// [derived: acc+0x50 = work_module (.dynsym), vtable+0x98 = get_int (WorkModule.h)]
 u8 FUN_710341aac0(u64 param_1, s64 param_2)
 {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
     auto* acc = ACC(param_2);
-    s64* work_mod = static_cast<s64*>(acc->work_module);
-    s32 work_val = (*(s32(*)(s64*, u32))(*(s64 *)(*work_mod + 0x98)))(work_mod, 0x10000005);
+    auto* work_mod = static_cast<WorkModule*>(acc->work_module);
+    s32 work_val = work_mod->get_int(0x10000005);
     return (u8)(3 < work_val);
 }
 
 // 0x7103541c00 -- je_aligned_alloc(8, size) with OOM handler fallback
+// DAT_7105331f00 [inferred: global OOM handler pointer, vtable-dispatched retry pattern]
+//   +0x30 [inferred: OOM handler vtable slot 6 — retry callback, returns bool in bit 0]
 s64 *FUN_7103541c00(u64 param_1, s64 size)
 {
     s64 *result;
@@ -142,6 +161,12 @@ u32 FUN_710335a5fc(u64 param_1, u64 param_2)
 }
 
 // 0x71037b0360 -- switch on *(param3+0x6c): compute result from sub-calls
+// param_3: expression node struct
+//   +0x6c [inferred: u32 node_type tag — 0=null, 1=literal, 2=binary_op, 3=null]
+//   +0x10 [inferred: u64 literal value (case 1), or left operand sub-node (case 2)]
+//   +0x18 [inferred: u32 left operand type tag (case 2)]
+//   +0x34 [inferred: right operand sub-node start (case 2)]
+//   +0x3c [inferred: u32 right operand type tag (case 2)]
 u64 FUN_71037b0360(u8 param_1[16], u32 param_2, s64 param_3)
 {
     u32 val_a;
@@ -176,6 +201,11 @@ u64 FUN_71037b0360(u8 param_1[16], u32 param_2, s64 param_3)
 }
 
 // 0x71037b09d0 -- switch on *(param3+0x6c): compute result from sub-calls (variant)
+// param_3: expression node struct (same layout as FUN_71037b0360)
+//   +0x6c [inferred: u32 node_type tag — 0=null, 1=null, 2=compare, 3=ternary]
+//   +0x10 [inferred: left operand sub-node (case 2,3)]
+//   +0x34 [inferred: right operand sub-node (case 2), or first branch (case 3)]
+//   +0x58 [inferred: second branch sub-node (case 3)]
 u64 FUN_71037b09d0(u8 param_1[16], u32 param_2, s64 param_3)
 {
     u32 val_a;
@@ -216,6 +246,7 @@ void FUN_71039505b0(void)
 }
 
 // 0x71031cfbe0 -- call FUN_71031f4740 on field at +8, return 1
+// +0x08 [inferred: u64 field, passed to FUN_71031f4740 — likely sub-object or handle]
 u64 FUN_71031cfbe0(s64 param_1)
 {
     FUN_71031f4740(*(u64*)(param_1 + 8));
@@ -223,6 +254,7 @@ u64 FUN_71031cfbe0(s64 param_1)
 }
 
 // 0x71031cfd10 -- vtable dispatch at 0x20, return 1
+// +0x20 [inferred: vtable slot 4, unknown virtual method]
 u64 FUN_71031cfd10(s64 *obj)
 {
     (*(void(*)(s64*))(*(s64 *)(*obj + 0x20)))(obj);
@@ -230,6 +262,15 @@ u64 FUN_71031cfd10(s64 *obj)
 }
 
 // 0x71036e5780 -- vtable call + guard init, return struct ptr
+// obj vtable:
+//   +0x108 [inferred: vtable slot 0x21, returns sub-object pointer]
+// vtable_result:
+//   +0x08 [inferred: pointer to inner container]
+// inner container:
+//   +0x120 [inferred: pointer to inner_obj, nullable]
+// inner_obj vtable:
+//   +0x28 [inferred: vtable slot 5, returns base address]
+// base + 0x500 [inferred: target sub-struct within object hierarchy]
 u64 *FUN_71036e5780(s64 *obj)
 {
     s32 acquired;

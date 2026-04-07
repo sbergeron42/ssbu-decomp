@@ -146,16 +146,16 @@ void FUN_710395fbe0(void) { nn::os::GetCurrentThread(); }
 
 // 0x710395fb80 — store GetCurrentThread() result to global (32 bytes)
 // DAT_7106dd40b8 [inferred: global pointer, stores current thread handle]
-u32 FUN_710395fb80(void) { *(void**)DAT_7106dd40b8 = nn::os::GetCurrentThread(); }
+void FUN_710395fb80(void) { *(void**)DAT_7106dd40b8 = nn::os::GetCurrentThread(); }
 
 // 0x7103929470 — wrapper: call FUN_71039295c0() (32 bytes)
-u32 FUN_7103929470(void) { FUN_71039295c0(); }
+void FUN_7103929470(void) { FUN_71039295c0(); }
 
 // 0x7103929490 — wrapper: call FUN_71039294b0() (32 bytes)
-u32 FUN_7103929490(void) { FUN_71039294b0(); }
+void FUN_7103929490(void) { FUN_71039294b0(); }
 
 // 0x710392abd0 — wrapper: call FUN_710392abf0() (32 bytes)
-u32 FUN_710392abd0(void) { FUN_710392abf0(); }
+void FUN_710392abd0(void) { FUN_710392abf0(); }
 
 // 0x71039353c0 -- wrapper: FUN_710392ed50(&DAT_7106d4a668) (32 bytes)
 void FUN_71039353c0(void) { FUN_710392ed50(DAT_7106d4a668); }
@@ -164,21 +164,24 @@ void FUN_71039353c0(void) { FUN_710392ed50(DAT_7106d4a668); }
 void FUN_7103935440(void) { FUN_710392ed50(DAT_7106d4a670); }
 
 // 0x710393fa80 — wrapper: FUN_710393fb50(1) (32 bytes)
-u32 FUN_710393fa80(void) { FUN_710393fb50(1); }
+void FUN_710393fa80(void) { FUN_710393fb50(1); }
 
 // 0x7103944810 — wrapper: call FUN_7103944a60() (32 bytes)
-u32 FUN_7103944810(void) { FUN_7103944a60(); }
+void FUN_7103944810(void) { FUN_7103944a60(); }
 
 // 0x7103949530 — wrapper: call FUN_7103949660() (32 bytes)
-u32 FUN_7103949530(void) { FUN_7103949660(); }
+void FUN_7103949530(void) { FUN_7103949660(); }
 
 // 0x710395f730 — wrapper: call FUN_710395f750() (32 bytes)
-u32 FUN_710395f730(void) { FUN_710395f750(); }
+void FUN_710395f730(void) { FUN_710395f750(); }
 
 // 0x710392b210 -- read errno via __errno_location (32 bytes)
 s32 FUN_710392b210(void) { return *__errno_location(); }
 
-// 0x71038d70c0 -- call FUN_71038d7000 with abs-xor of *param_1 (32 bytes)
+// 0x71038d70c0 -- call FUN_71038d7000 with abs() of *param_1 (32 bytes)
+// param_1: struct with s32 value at +0x00 and data at +0x08
+//   +0x00 [inferred: s32 value, abs() computed via xor-with-sign trick]
+//   +0x08 [inferred: data pointer passed as second arg to FUN_71038d7000 (param_1+2 = +8 bytes)]
 void FUN_71038d70c0(u32 *param_1)
 {
     FUN_71038d7000(*param_1 ^ (s32)*param_1 >> 0x1f, param_1 + 2);

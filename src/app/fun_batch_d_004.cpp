@@ -1,10 +1,14 @@
 #include "types.h"
 #include "app/BattleObjectModuleAccessor.h"
+#include "app/modules/StatusModule.h"
+#include "app/modules/WorkModule.h"
 
 // MEDIUM-tier FUN_* functions -- 0x7103 address range, batch d-004
 // Rewritten from Ghidra paste with meaningful names and struct field access
 
 using app::BattleObjectModuleAccessor;
+using app::StatusModule;
+using app::WorkModule;
 
 // ---- External declarations -----------------------------------------------
 
@@ -42,6 +46,7 @@ extern u8 DAT_710593aa10[];
 extern u8 DAT_710593aa18[];
 
 // ---- Helper: extract accessor from lua context ----------------------------
+// +0x20 [derived: all lua_bind_impl (.dynsym) dispatchers extract BattleObjectModuleAccessor* from lua context at offset 0x20]
 #define ACC(p) reinterpret_cast<BattleObjectModuleAccessor*>(*(s64*)((p) + 0x20))
 
 // ---- Functions ---------------------------------------------------------------
@@ -60,6 +65,7 @@ u64 FUN_71038f9be4(u64 param_1, u64 param_2)
 }
 
 // 0x71031d0660 -- vtable dispatch at 0x20, return 1
+// +0x20 [inferred: vtable slot 4, unknown virtual method]
 u64 FUN_71031d0660(s64 *obj)
 {
     (*(void(*)())(*(s64 *)(*obj + 0x20)))();
@@ -73,16 +79,21 @@ u32 FUN_710336e170(void)
     return 0;
 }
 
-// 0x71034d3d70 -- status_module vtable[0x110/8]() == 0
+// 0x71034d3d70 -- StatusModule::StatusKind() == 0
+// [derived: acc+0x40 = status_module (.dynsym), vtable+0x110 = StatusKind (StatusModule.h)]
 u8 FUN_71034d3d70(u64 param_1, s64 param_2)
 {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
     auto* acc = ACC(param_2);
-    s64* status_mod = static_cast<s64*>(acc->status_module);
-    s32 status_kind = (*(s32(*)())(*(s64*)(*status_mod + 0x110)))();
+    auto* status_mod = static_cast<StatusModule*>(acc->status_module);
+    s32 status_kind = status_mod->vtbl->StatusKind(status_mod);
     return (u8)(status_kind == 0);
 }
 
 // 0x7103791bb0 -- vtable dispatch at 0x230, return 1
+// +0x230 [inferred: vtable slot 0x46, unknown virtual method]
 u64 FUN_7103791bb0(s64 *obj)
 {
     (*(void(*)())(*(s64 *)(*obj + 0x230)))();
@@ -136,6 +147,7 @@ u64 *FUN_710379dc50(void)
 }
 
 // 0x71037a0060 -- vtable dispatch at 0x230, return 1
+// +0x230 [inferred: vtable slot 0x46, same as FUN_7103791bb0]
 u64 FUN_71037a0060(s64 *obj)
 {
     (*(void(*)())(*(s64 *)(*obj + 0x230)))();
@@ -165,16 +177,22 @@ u64 *FUN_71037a1170(void)
     return (u64*)DAT_710593aa18;
 }
 
-// 0x71033c86a0 -- work_module vtable[0x108/8](mod, 0x20000006), return ~result & 1
+// 0x71033c86a0 -- !WorkModule::is_flag(0x20000006)
+// [derived: acc+0x50 = work_module (.dynsym), vtable+0x108 = is_flag (WorkModule.h)]
 u64 FUN_71033c86a0(u64 param_1, s64 param_2)
 {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
     auto* acc = ACC(param_2);
-    s64* work_mod = static_cast<s64*>(acc->work_module);
-    u32 result = (*(u32(*)(s64*, u32))(*(s64 *)(*work_mod + 0x108)))(work_mod, 0x20000006);
+    auto* work_mod = static_cast<WorkModule*>(acc->work_module);
+    // Use u32-typed call to preserve 32-bit register width for ~result & 1
+    u32 result = ((u32(*)(WorkModule*, u32))work_mod->_vt[0x108/8])(work_mod, 0x20000006);
     return ~result & 1;
 }
 
 // 0x71031cfe40 -- vtable dispatch at 0x20, return 1
+// +0x20 [inferred: vtable slot 4, unknown virtual method]
 u64 FUN_71031cfe40(s64 *obj)
 {
     (*(void(*)())(*(s64 *)(*obj + 0x20)))();
