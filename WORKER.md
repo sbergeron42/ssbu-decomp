@@ -1,30 +1,22 @@
-# Worker: pool-d
+# Worker: pool-a
 
 ## Model: Opus
 
-## Task: New decomp — fighter motion/animation functions
+## Task: Fix remaining abort thunks + near-miss grind toward 75%
 
-### Context
-852 undecompiled motion/animation functions with community names. MotionModule.h already has 128 vtable methods. The animation system is heavily used by moveset modders.
+### Phase 1: Check batch_b/c2/easy files for abort→__throw_out_of_range
+Many files still call `abort()` where the binary calls `__throw_out_of_range()`. Check each file — if the binary really calls __throw_out_of_range, fix it.
 
-### Approach
-1. Start with small named MotionModule functions (under 200 bytes)
-2. Use `mcp__ghidra__search_functions_by_name("motion")` to find targets
-3. Decompile in Ghidra, write C++ using MotionModule.h
-4. Use existing vtable method wrappers
+Files to check: fun_batch_b_*.cpp, fun_batch_c2_*.cpp, fun_easy_*.cpp
 
-### Target Area
-Functions with names containing: motion_, change_motion, set_rate, set_frame, is_end, is_loop, add_motion_partial
+### Phase 2: Near-miss grind
+For N-quality functions at 80%+ match, find the 1-2 instruction differences and fix them.
+Common fixes: return type (u64→u32), condition polarity, visibility("hidden"), asm volatile barriers.
 
-### Headers: include/app/modules/MotionModule.h, BattleObjectModuleAccessor.h
-### Derivation Chains MANDATORY
-### Output: src/app/fighter_motion.cpp
-### Do NOT use naked asm.
+### NO naked asm. Compare each function against binary before fixing.
 
 ### Quick Reference
 ```
-/c/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -Ilib/NintendoSDK/include -Ilib/NintendoSDK/include/stubs -c src/app/FILE.cpp -o build/FILE.o
-
 python tools/compare_bytes.py FUN_name
-mcp__ghidra__search_functions_by_name("motion")
+/c/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -Ilib/NintendoSDK/include -Ilib/NintendoSDK/include/stubs -c src/app/FILE.cpp -o build/FILE.o
 ```
