@@ -161,17 +161,88 @@ extern "C" void set_stage_status_darz() {
 // upstream Clang 8 optimizes to frameless leaf (20B vs 36B)
 // begin_scale_animation_simple @ 0x71015c1170: SKIPPED — same NX tail-call frame issue
 
-// ---- AI stat check (leaf) --------------------------------------------------
+// ---- AI stat check functions (all leaf, 32 bytes each) ---------------------
+// Family of 28+ functions that read single-bit flags from the AI battle object
+// state bitfields. All follow the same pointer chain:
+//   *(L-8) → +0x168 → battle object state struct
+// Then read a byte/word at a specific offset and extract one bit.
+//
+// Battle object state bitfield layout (partial, from +0x54):
+//   +0x54 bit 0: air         +0x55 bit 1: final_act     +0x56 bit 4: sp_dir
+//   +0x54 bit 2: build_max   +0x55 bit 5: invincible    +0x56 bit 5: unguarded_hind
+//   +0x54 bit 3: build_up    +0x58 bit 0: touch_l       +0x56 bit 6: unguarded
+//   +0x54 bit 5: gorogoro    +0x58 bit 1: touch_r       +0x58 bit 4: cannot_catch_cliff
+//   +0x54 bit 6: attention   +0x58 bit 2: touch_u       +0x58 bit 5: dive
+//   +0x59 bit 1: unable_cliff_xlu   +0x59 bit 4: unable_special  +0x5c bit 0: have
+//   +0x59 bit 2: unable_escape_air  +0x59 bit 5: unable_jump     +0x5c bit 1: put_bomb
+//   +0x59 bit 6: unable_shield      +0x5c bit 4: can_use_superleaf
+//   +0x5c bit 5: can_use_rocketbelt +0x5d bit 4: have_throw
+//   +0x5d bit 5: have_shoot  +0x5d bit 6: have_swing
+//   +0x60 bit 4: dogs_blind_own  +0x60 bit 6: target_invisible
 
-// 0x7100361350 (32 bytes) — app::ai::check_stat_gorogoro
-// Checks rolling/tumbling state bitmask in battle object struct.
-// *(L-8) [derived: AI context from lua_State extra]
-// +0x168 [inferred: battle object pointer within AI context]
-// +0x54 [inferred: state flags, u32]
-// 0x80020 [inferred: bitmask for gorogoro (rolling/tumbling) states]
+// Helper macro for the common pointer chain
+#define AI_STATE(L) (*(u64*)(*(u64*)(L - 8) + 0x168))
+
+// 0x71003612f0 — check_stat_air (word load, bit 0)
+extern "C" u32 check_stat_air(u64 L) { return *(u32*)(AI_STATE(L) + 0x54) & 1; }
+// 0x7100361310 — check_stat_build_max (byte load, bit 2)
+extern "C" u8 check_stat_build_max(u64 L) { return (*(u8*)(AI_STATE(L) + 0x54) >> 2) & 1; }
+// 0x7100361330 — check_stat_build_up (byte load, bit 3)
+extern "C" u8 check_stat_build_up(u64 L) { return (*(u8*)(AI_STATE(L) + 0x54) >> 3) & 1; }
+// 0x7100361350 — check_stat_gorogoro (word load, multi-bit bitmask)
 extern "C" bool check_stat_gorogoro(u64 L) {
-    return (*(u32*)(*(u64*)(*(u64*)(L - 8) + 0x168) + 0x54) & 0x80020) != 0;
+    return (*(u32*)(AI_STATE(L) + 0x54) & 0x80020) != 0;
 }
+// 0x7100361370 — check_stat_attention (byte load, bit 6)
+extern "C" u8 check_stat_attention(u64 L) { return (*(u8*)(AI_STATE(L) + 0x54) >> 6) & 1; }
+// 0x71003613b0 — check_stat_final_act (byte load at +0x55, bit 1)
+extern "C" u8 check_stat_final_act(u64 L) { return (*(u8*)(AI_STATE(L) + 0x55) >> 1) & 1; }
+// 0x71003613d0 — check_stat_invincible (byte load at +0x55, bit 5)
+extern "C" u8 check_stat_invincible(u64 L) { return (*(u8*)(AI_STATE(L) + 0x55) >> 5) & 1; }
+// 0x7100361470 — check_stat_sp_dir (byte load at +0x56, bit 4)
+extern "C" u8 check_stat_sp_dir(u64 L) { return (*(u8*)(AI_STATE(L) + 0x56) >> 4) & 1; }
+// 0x7100361490 — check_stat_unguarded_hind (byte load at +0x56, bit 5)
+extern "C" u8 check_stat_unguarded_hind(u64 L) { return (*(u8*)(AI_STATE(L) + 0x56) >> 5) & 1; }
+// 0x71003614b0 — check_stat_unguarded (byte load at +0x56, bit 6)
+extern "C" u8 check_stat_unguarded(u64 L) { return (*(u8*)(AI_STATE(L) + 0x56) >> 6) & 1; }
+// 0x71003617a0 — check_stat_touch_u (byte load at +0x58, bit 2)
+extern "C" u8 check_stat_touch_u(u64 L) { return (*(u8*)(AI_STATE(L) + 0x58) >> 2) & 1; }
+// 0x71003617c0 — check_stat_touch_l (word load at +0x58, bit 0)
+extern "C" u32 check_stat_touch_l(u64 L) { return *(u32*)(AI_STATE(L) + 0x58) & 1; }
+// 0x71003617e0 — check_stat_touch_r (byte load at +0x58, bit 1)
+extern "C" u8 check_stat_touch_r(u64 L) { return (*(u8*)(AI_STATE(L) + 0x58) >> 1) & 1; }
+// 0x7100361800 — check_stat_cannot_catch_cliff (byte load at +0x58, bit 4)
+extern "C" u8 check_stat_cannot_catch_cliff(u64 L) { return (*(u8*)(AI_STATE(L) + 0x58) >> 4) & 1; }
+// 0x7100361820 — check_stat_dive (byte load at +0x58, bit 5)
+extern "C" u8 check_stat_dive(u64 L) { return (*(u8*)(AI_STATE(L) + 0x58) >> 5) & 1; }
+// 0x7100361840 — check_stat_unable_cliff_xlu (byte load at +0x59, bit 1)
+extern "C" u8 check_stat_unable_cliff_xlu(u64 L) { return (*(u8*)(AI_STATE(L) + 0x59) >> 1) & 1; }
+// 0x7100361860 — check_stat_unable_escape_air (byte load at +0x59, bit 2)
+extern "C" u8 check_stat_unable_escape_air(u64 L) { return (*(u8*)(AI_STATE(L) + 0x59) >> 2) & 1; }
+// 0x71003618a0 — check_stat_unable_special (byte load at +0x59, bit 4)
+extern "C" u8 check_stat_unable_special(u64 L) { return (*(u8*)(AI_STATE(L) + 0x59) >> 4) & 1; }
+// 0x71003618c0 — check_stat_unable_jump (byte load at +0x59, bit 5)
+extern "C" u8 check_stat_unable_jump(u64 L) { return (*(u8*)(AI_STATE(L) + 0x59) >> 5) & 1; }
+// 0x71003618e0 — check_stat_unable_shield (byte load at +0x59, bit 6)
+extern "C" u8 check_stat_unable_shield(u64 L) { return (*(u8*)(AI_STATE(L) + 0x59) >> 6) & 1; }
+// 0x7100361900 — check_stat_have (word load at +0x5c, bit 0)
+extern "C" u32 check_stat_have(u64 L) { return *(u32*)(AI_STATE(L) + 0x5c) & 1; }
+// 0x7100361920 — check_stat_put_bomb (byte load at +0x5c, bit 1)
+extern "C" u8 check_stat_put_bomb(u64 L) { return (*(u8*)(AI_STATE(L) + 0x5c) >> 1) & 1; }
+// 0x7100361940 — check_stat_can_use_superleaf (byte load at +0x5c, bit 4)
+extern "C" u8 check_stat_can_use_superleaf(u64 L) { return (*(u8*)(AI_STATE(L) + 0x5c) >> 4) & 1; }
+// 0x7100361960 — check_stat_can_use_rocketbelt (byte load at +0x5c, bit 5)
+extern "C" u8 check_stat_can_use_rocketbelt(u64 L) { return (*(u8*)(AI_STATE(L) + 0x5c) >> 5) & 1; }
+// 0x7100361980 — check_stat_have_throw (byte load at +0x5d, bit 4)
+extern "C" u8 check_stat_have_throw(u64 L) { return (*(u8*)(AI_STATE(L) + 0x5d) >> 4) & 1; }
+// 0x71003619a0 — check_stat_have_shoot (byte load at +0x5d, bit 5)
+extern "C" u8 check_stat_have_shoot(u64 L) { return (*(u8*)(AI_STATE(L) + 0x5d) >> 5) & 1; }
+// 0x71003619c0 — check_stat_have_swing (byte load at +0x5d, bit 6)
+extern "C" u8 check_stat_have_swing(u64 L) { return (*(u8*)(AI_STATE(L) + 0x5d) >> 6) & 1; }
+// 0x71003619e0 — check_stat_dogs_blind_own (byte load at +0x60, bit 4)
+extern "C" u8 check_stat_dogs_blind_own(u64 L) { return (*(u8*)(AI_STATE(L) + 0x60) >> 4) & 1; }
+// 0x7100361a00 — check_stat_target_invisible (byte load at +0x60, bit 6)
+extern "C" u8 check_stat_target_invisible(u64 L) { return (*(u8*)(AI_STATE(L) + 0x60) >> 6) & 1; }
 
 // ---- Boss manager queries (leaf, singleton access) -------------------------
 
