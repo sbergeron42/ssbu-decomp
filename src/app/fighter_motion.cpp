@@ -2,6 +2,7 @@
 #include "app/BattleObjectModuleAccessor.h"
 #include "app/modules/MotionModule.h"
 #include "app/modules/PostureModule.h"
+#include "app/modules/WorkModule.h"
 
 using namespace app;
 
@@ -25,7 +26,29 @@ bool is_hammer_motion(u64 hash) {
     return h == 0x101acf6ce8 || h == 0x1052425d86 || h == 0x10c092e91b;
 }
 
+// 0x710068e160 (16 bytes)
+// Returns true if status kind is in the hammer range (0xd9..0xdf)
+// [derived: literal SUB #0xd9, CMP #7 in binary]
+bool is_hammer_status(int kind) {
+    return static_cast<u32>(kind - 0xd9) < 7;
+}
+
 } // namespace app::FighterUtil
+
+namespace app::FighterSpecializer_Pickel {
+
+// 0x7100f0a980 (48 bytes)
+// Returns true if fighter has a tool equipped (WorkModule::get_int(0x100000cf) != -1)
+// [derived: work_module vtable[19] called with hash 0x100000cf, compared to -1]
+bool is_have_tool(BattleObjectModuleAccessor* acc) {
+    WorkModule* wm = static_cast<WorkModule*>(acc->work_module);
+    return wm->get_int(0x100000cf) != -1;
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
+}
+
+} // namespace app::FighterSpecializer_Pickel
 
 namespace app::sv_fighter_util {
 
