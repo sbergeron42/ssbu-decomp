@@ -2030,3 +2030,213 @@ f32 range_long_710036bb00(void* L) {
     void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
     return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(ctx) + 0xab4);
 }
+
+// ════════════════════════════════════════════════════════════════════
+// AI — check_stat comparison functions (24B each)
+// Read stat_type from ai_data(+0x168)+0x74 and compare to a constant
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x7100361390 -- app::ai::check_stat_final (24B) ─────────────
+// [derived: tests bits 0-1 of u8 at +0x55 — final smash active or pending]
+u32 check_stat_final_7100361390(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    return (*reinterpret_cast<u8*>(reinterpret_cast<u8*>(ai) + 0x55) & 3) != 0;
+}
+
+// ── 0x71003614d0 -- app::ai::check_stat_dash (24B) ──────────────
+// [derived: compares stat_type(+0x74) == 3 — dashing state]
+u32 check_stat_dash_71003614d0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    return *reinterpret_cast<s32*>(reinterpret_cast<u8*>(ai) + 0x74) == 3;
+}
+
+// ── 0x71003614f0 -- app::ai::check_stat_down (24B) ──────────────
+// [derived: compares stat_type(+0x74) == 4 — downed state]
+u32 check_stat_down_71003614f0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    return *reinterpret_cast<s32*>(reinterpret_cast<u8*>(ai) + 0x74) == 4;
+}
+
+// ── 0x7100361530 -- app::ai::check_stat_dragoon (24B) ───────────
+// [derived: compares stat_type(+0x74) == 0x11 — using dragoon item]
+u32 check_stat_dragoon_7100361530(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    return *reinterpret_cast<s32*>(reinterpret_cast<u8*>(ai) + 0x74) == 0x11;
+}
+
+// ── 0x7100361550 -- app::ai::check_stat_genesis (24B) ───────────
+// [derived: compares stat_type(+0x74) == 0x12 — using daybreak/genesis item]
+u32 check_stat_genesis_7100361550(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    return *reinterpret_cast<s32*>(reinterpret_cast<u8*>(ai) + 0x74) == 0x12;
+}
+
+// ── 0x7100361570 -- app::ai::check_stat_catch (24B) ─────────────
+// [derived: compares stat_type(+0x74) == 0xc — catching/grabbing state]
+u32 check_stat_catch_7100361570(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    return *reinterpret_cast<s32*>(reinterpret_cast<u8*>(ai) + 0x74) == 0xc;
+}
+
+// ── 0x71003615b0 -- app::ai::check_stat_guard (24B) ─────────────
+// [derived: compares stat_type(+0x74) == 0x1a — guarding/shielding state]
+u32 check_stat_guard_71003615b0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    return *reinterpret_cast<s32*>(reinterpret_cast<u8*>(ai) + 0x74) == 0x1a;
+}
+
+// ── 0x7100361a20 -- app::ai::check_skill_stat (24B) ─────────────
+// [derived: tests bitmask of u32 at ai_data+0x6c against param]
+u32 check_skill_stat_7100361a20(void* L, u32 mask) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    return (*reinterpret_cast<u32*>(reinterpret_cast<u8*>(ai) + 0x6c) & mask) != 0;
+}
+
+// ── 0x7100361a40 -- app::ai::check_spirits_event_stat (24B) ─────
+// [derived: tests bitmask of u32 at ai_data+0x70 against param]
+u32 check_spirits_event_stat_7100361a40(void* L, u32 mask) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    return (*reinterpret_cast<u32*>(reinterpret_cast<u8*>(ai) + 0x70) & mask) != 0;
+}
+
+// ── 0x7100361b50 -- app::ai::check_passable (24B) ───────────────
+// [derived: bit 5 of u8 at ai_data(+0x168)->sub(+0xd0)+0x5c — passable flag]
+u32 check_passable_7100361b50(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    void* sub = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ai) + 0xd0);
+    return (*reinterpret_cast<u8*>(reinterpret_cast<u8*>(sub) + 0x5c) >> 5) & 1;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// ai_camera — dead zone boundaries (24B each, read from global)
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x710036b180 -- app::ai_camera::dead_top (24B) ──────────────
+// [derived: reads f32 from *(*DAT_71052b5fd8+0xc8)+0x10]
+f32 dead_top_710036b180() {
+    void* global = *reinterpret_cast<void**>(DAT_71052b5fd8);
+    void* cam = *reinterpret_cast<void**>(reinterpret_cast<u8*>(global) + 0xc8);
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(cam) + 0x10);
+}
+
+// ── 0x710036b1a0 -- app::ai_camera::dead_bottom (24B) ───────────
+// [derived: reads f32 from *(*DAT_71052b5fd8+0xc8)+0x14]
+f32 dead_bottom_710036b1a0() {
+    void* global = *reinterpret_cast<void**>(DAT_71052b5fd8);
+    void* cam = *reinterpret_cast<void**>(reinterpret_cast<u8*>(global) + 0xc8);
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(cam) + 0x14);
+}
+
+// ── 0x710036b1c0 -- app::ai_camera::dead_left (24B) ────────────
+// [derived: reads f32 from *(*DAT_71052b5fd8+0xc8)+0x8]
+f32 dead_left_710036b1c0() {
+    void* global = *reinterpret_cast<void**>(DAT_71052b5fd8);
+    void* cam = *reinterpret_cast<void**>(reinterpret_cast<u8*>(global) + 0xc8);
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(cam) + 0x8);
+}
+
+// ── 0x710036b1e0 -- app::ai_camera::dead_right (24B) ───────────
+// [derived: reads f32 from *(*DAT_71052b5fd8+0xc8)+0xc]
+f32 dead_right_710036b1e0() {
+    void* global = *reinterpret_cast<void**>(DAT_71052b5fd8);
+    void* cam = *reinterpret_cast<void**>(reinterpret_cast<u8*>(global) + 0xc8);
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(cam) + 0xc);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// ai_param — indexed parameter lookups (24B each)
+// Pattern: ctx->ai_data(+0x168)->index(+0x240) * 4 + base_offset
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x710036b8f0 -- app::ai_param::sp_u_high (24B) ─────────────
+// [derived: indexed f32 read at ctx + ai_index*4 + 0xad0]
+f32 sp_u_high_710036b8f0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    s32 idx = *reinterpret_cast<s32*>(reinterpret_cast<u8*>(ai) + 0x240);
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(ctx) + static_cast<s64>(idx) * 4 + 0xad0);
+}
+
+// ── 0x710036b910 -- app::ai_param::sp_u_length (24B) ────────────
+// [derived: indexed f32 read at ctx + ai_index*4 + 0xae0]
+f32 sp_u_length_710036b910(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    s32 idx = *reinterpret_cast<s32*>(reinterpret_cast<u8*>(ai) + 0x240);
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(ctx) + static_cast<s64>(idx) * 4 + 0xae0);
+}
+
+// ── 0x710036b930 -- app::ai_param::return_sp_u_cliff_x (24B) ────
+// [derived: indexed f32 read at ctx + ai_index*4 + 0xb34]
+f32 return_sp_u_cliff_x_710036b930(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    s32 idx = *reinterpret_cast<s32*>(reinterpret_cast<u8*>(ai) + 0x240);
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(ctx) + static_cast<s64>(idx) * 4 + 0xb34);
+}
+
+// ── 0x710036b950 -- app::ai_param::return_sp_u_cliff_y (24B) ────
+// [derived: indexed f32 read at ctx + ai_index*4 + 0xb44]
+f32 return_sp_u_cliff_y_710036b950(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    s32 idx = *reinterpret_cast<s32*>(reinterpret_cast<u8*>(ai) + 0x240);
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(ctx) + static_cast<s64>(idx) * 4 + 0xb44);
+}
+
+// ── 0x710036b970 -- app::ai_param::return_goal_x (24B) ──────────
+// [derived: indexed f32 read at ctx + ai_index*4 + 0xb54]
+f32 return_goal_x_710036b970(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    s32 idx = *reinterpret_cast<s32*>(reinterpret_cast<u8*>(ai) + 0x240);
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(ctx) + static_cast<s64>(idx) * 4 + 0xb54);
+}
+
+// ── 0x710036b990 -- app::ai_param::return_goal_x_strict (24B) ───
+// [derived: indexed f32 read at ctx + ai_index*4 + 0xb64]
+f32 return_goal_x_strict_710036b990(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    s32 idx = *reinterpret_cast<s32*>(reinterpret_cast<u8*>(ai) + 0x240);
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(ctx) + static_cast<s64>(idx) * 4 + 0xb64);
+}
+
+// ── 0x710036b9b0 -- app::ai_param::return_goal_pad_x_strict (24B)
+// [derived: indexed f32 read at ctx + ai_index*4 + 0xb74]
+f32 return_goal_pad_x_strict_710036b9b0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    s32 idx = *reinterpret_cast<s32*>(reinterpret_cast<u8*>(ai) + 0x240);
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(ctx) + static_cast<s64>(idx) * 4 + 0xb74);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// ai_param — challenger_guard_rate, analyst::chanced_frame
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x710036c1a0 -- app::ai_param::challenger_guard_rate (20B) ──
+// [derived: reads f32 from *DAT_71052b60e8 + 0x84]
+f32 challenger_guard_rate_710036c1a0(void* L) {
+    return *reinterpret_cast<f32*>(
+        reinterpret_cast<u8*>(*reinterpret_cast<void**>(DAT_71052b60e8)) + 0x84);
+}
+
+// ── 0x7100376b90 -- app::analyst::chanced_frame (20B) ───────────
+// [derived: reads u32 from ctx->battle_object(+0x170)->+0x1c]
+u32 chanced_frame_7100376b90(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* bo = *reinterpret_cast<void**>(
+        *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x170));
+    return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(bo) + 0x1c);
+}
