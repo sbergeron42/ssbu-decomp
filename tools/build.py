@@ -96,6 +96,9 @@ def main():
     print()
     print("Post-processing...")
 
+    print("  fix_plt_stubs...")
+    run_postprocess("fix_plt_stubs.py")
+
     print("  fix_movz_to_orr...")
     run_postprocess("fix_movz_to_orr.py")
 
