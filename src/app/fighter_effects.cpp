@@ -383,3 +383,71 @@ extern "C" void special_n_remove_effect_flushing(BattleObjectModuleAccessor* acc
         work->off_flag(0x21000011);
     }
 }
+
+// ---- Item attack data functions (kiilalaser, kiilatorrent, marx) -----------
+// All three follow an identical pattern via the item's AttackModule (+0xA0):
+// 1. Read attack data from slot 0 via attack_data(0, false) [vtable slot 61, 0x1e8]
+// 2. Set attack on target slot via set_attack(id, 0, data) [vtable slot 13, 0x68]
+
+// 0x7101653be0 (80 bytes) — app::kiilalaser::copy_attack_data
+// +0xA0 [derived: AttackModule at ItemModuleAccessor+0xA0, same offset as BattleObjectModuleAccessor]
+// vtable[61] 0x1e8 [derived: attack_data from AttackModule.h]
+// vtable[13] 0x68 [derived: set_attack from AttackModule.h]
+extern "C" void copy_attack_data(u64 acc, s32 id) {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
+    void* mod = *(void**)(acc + 0xA0);
+    void** vt = *(void***)mod;
+    u64 data = reinterpret_cast<u64(*)(void*, s32, s32)>(vt[0x1e8 / 8])(mod, 0, 0);
+    mod = *(void**)(acc + 0xA0);
+    vt = *(void***)mod;
+    reinterpret_cast<void(*)(void*, s32, s32, u64)>(vt[0x68 / 8])(mod, id, 0, data);
+}
+
+// 0x7101653cf0 (80 bytes) — app::kiilatorrent::set_attack_data
+extern "C" void set_attack_data(u64 acc, s32 id) {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
+    void* mod = *(void**)(acc + 0xA0);
+    void** vt = *(void***)mod;
+    u64 data = reinterpret_cast<u64(*)(void*, s32, s32)>(vt[0x1e8 / 8])(mod, 0, 0);
+    mod = *(void**)(acc + 0xA0);
+    vt = *(void***)mod;
+    reinterpret_cast<void(*)(void*, s32, s32, u64)>(vt[0x68 / 8])(mod, id, 0, data);
+}
+
+// 0x71016545a0 (80 bytes) — app::marx::set_capillary_attack_data
+extern "C" void set_capillary_attack_data(u64 acc, s32 id) {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
+    void* mod = *(void**)(acc + 0xA0);
+    void** vt = *(void***)mod;
+    u64 data = reinterpret_cast<u64(*)(void*, s32, s32)>(vt[0x1e8 / 8])(mod, 0, 0);
+    mod = *(void**)(acc + 0xA0);
+    vt = *(void***)mod;
+    reinterpret_cast<void(*)(void*, s32, s32, u64)>(vt[0x68 / 8])(mod, id, 0, data);
+}
+
+// ---- Item WorkModule init functions ----------------------------------------
+
+// 0x710165bd30 (80 bytes) — app::curryshot::init_log_attack_info
+// Initializes attack log work ints for curryshot item
+// +0x50 [derived: WorkModule at ItemModuleAccessor+0x50]
+// WorkModule::set_int [derived: vtable offset 0xa0]
+// 0x1000002c [inferred: attack log frame counter work var]
+// 0x1000002b [inferred: attack log max frame work var]
+extern "C" void init_log_attack_info(u64 acc) {
+    void* work = *(void**)(acc + 0x50);
+    void** vt = *(void***)work;
+    reinterpret_cast<void(*)(void*, s32, s32)>(vt[0xa0 / 8])(work, 0x65, 0x1000002c);
+    vt = *(void***)work;
+    reinterpret_cast<void(*)(void*, s32, s32)>(vt[0xa0 / 8])(work, 0x7fffffff, 0x1000002b);
+}
+
+// homerun_contest_effect_no_pause @ 0x71016708e0: SKIPPED — EffectManager singleton
+// access pattern and control flow don't match (12%), needs more analysis
+// set_head_effect @ 0x71033dc010: SKIPPED — req_follow parameter passing and vector
+// constant loading don't match (7%), needs req_follow signature investigation
