@@ -505,6 +505,192 @@ u32 EXPLOSIONBOMB_WIRE_ROT_SPEED_710165d480() {
 }
 
 // ════════════════════════════════════════════════════════════════════
+// check_stat_* — AI/item status bit-field accessors
+// All read from scripting context *(L-8)+0x168, then extract a single
+// bit from a flags byte. [derived: consistent pattern across 28 functions]
+// ════════════════════════════════════════════════════════════════════
+
+// Helper: read the AI stat module from lua state
+#define STAT_MODULE(L) \
+    (*reinterpret_cast<u8**>(*reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8) + 0x168))
+
+// -- Flags byte at +0x54 --
+
+// ── 0x71003612f0 -- check_stat_air (20B) ─────────────────────────
+// ldr w8,[x8,#0x54]; and w0,w8,#1 — bit 0 via 32-bit load
+u32 check_stat_air_71003612f0(void* L) {
+    u8* mod = STAT_MODULE(L);
+    return *reinterpret_cast<u32*>(mod + 0x54) & 1;
+}
+
+// ── 0x7100361310 -- check_stat_build_max (20B) ───────────────────
+u32 check_stat_build_max_7100361310(void* L) {
+    return (STAT_MODULE(L)[0x54] >> 2) & 1;
+}
+
+// ── 0x7100361330 -- check_stat_build_up (20B) ────────────────────
+u32 check_stat_build_up_7100361330(void* L) {
+    return (STAT_MODULE(L)[0x54] >> 3) & 1;
+}
+
+// ── 0x7100361370 -- check_stat_attention (20B) ───────────────────
+u32 check_stat_attention_7100361370(void* L) {
+    return (STAT_MODULE(L)[0x54] >> 6) & 1;
+}
+
+// -- Flags byte at +0x55 --
+
+// ── 0x71003613b0 -- check_stat_final_act (20B) ──────────────────
+u32 check_stat_final_act_71003613b0(void* L) {
+    return (STAT_MODULE(L)[0x55] >> 1) & 1;
+}
+
+// ── 0x71003613d0 -- check_stat_invincible (20B) ─────────────────
+u32 check_stat_invincible_71003613d0(void* L) {
+    return (STAT_MODULE(L)[0x55] >> 5) & 1;
+}
+
+// -- Flags byte at +0x56 --
+
+// ── 0x7100361470 -- check_stat_sp_dir (20B) ─────────────────────
+u32 check_stat_sp_dir_7100361470(void* L) {
+    return (STAT_MODULE(L)[0x56] >> 4) & 1;
+}
+
+// ── 0x7100361490 -- check_stat_unguarded_hind (20B) ─────────────
+u32 check_stat_unguarded_hind_7100361490(void* L) {
+    return (STAT_MODULE(L)[0x56] >> 5) & 1;
+}
+
+// ── 0x71003614b0 -- check_stat_unguarded (20B) ──────────────────
+u32 check_stat_unguarded_71003614b0(void* L) {
+    return (STAT_MODULE(L)[0x56] >> 6) & 1;
+}
+
+// -- Flags word/byte at +0x58 --
+
+// ── 0x71003617a0 -- check_stat_touch_u (20B) ────────────────────
+u32 check_stat_touch_u_71003617a0(void* L) {
+    return (STAT_MODULE(L)[0x58] >> 2) & 1;
+}
+
+// ── 0x71003617c0 -- check_stat_touch_l (20B) ────────────────────
+// ldr w8,[x8,#0x58]; and w0,w8,#1 — bit 0 via 32-bit load
+u32 check_stat_touch_l_71003617c0(void* L) {
+    u8* mod = STAT_MODULE(L);
+    return *reinterpret_cast<u32*>(mod + 0x58) & 1;
+}
+
+// ── 0x71003617e0 -- check_stat_touch_r (20B) ────────────────────
+u32 check_stat_touch_r_71003617e0(void* L) {
+    return (STAT_MODULE(L)[0x58] >> 1) & 1;
+}
+
+// ── 0x7100361800 -- check_stat_cannot_catch_cliff (20B) ──────────
+u32 check_stat_cannot_catch_cliff_7100361800(void* L) {
+    return (STAT_MODULE(L)[0x58] >> 4) & 1;
+}
+
+// ── 0x7100361820 -- check_stat_dive (20B) ────────────────────────
+u32 check_stat_dive_7100361820(void* L) {
+    return (STAT_MODULE(L)[0x58] >> 5) & 1;
+}
+
+// -- Flags byte at +0x59 --
+
+// ── 0x7100361840 -- check_stat_unable_cliff_xlu (20B) ───────────
+u32 check_stat_unable_cliff_xlu_7100361840(void* L) {
+    return (STAT_MODULE(L)[0x59] >> 1) & 1;
+}
+
+// ── 0x7100361860 -- check_stat_unable_escape_air (20B) ──────────
+u32 check_stat_unable_escape_air_7100361860(void* L) {
+    return (STAT_MODULE(L)[0x59] >> 2) & 1;
+}
+
+// ── 0x71003618a0 -- check_stat_unable_special (20B) ─────────────
+u32 check_stat_unable_special_71003618a0(void* L) {
+    return (STAT_MODULE(L)[0x59] >> 4) & 1;
+}
+
+// ── 0x71003618c0 -- check_stat_unable_jump (20B) ────────────────
+u32 check_stat_unable_jump_71003618c0(void* L) {
+    return (STAT_MODULE(L)[0x59] >> 5) & 1;
+}
+
+// ── 0x71003618e0 -- check_stat_unable_shield (20B) ──────────────
+u32 check_stat_unable_shield_71003618e0(void* L) {
+    return (STAT_MODULE(L)[0x59] >> 6) & 1;
+}
+
+// -- Flags word/byte at +0x5c --
+
+// ── 0x7100361900 -- check_stat_have (20B) ────────────────────────
+// ldr w8,[x8,#0x5c]; and w0,w8,#1 — bit 0 via 32-bit load
+u32 check_stat_have_7100361900(void* L) {
+    u8* mod = STAT_MODULE(L);
+    return *reinterpret_cast<u32*>(mod + 0x5c) & 1;
+}
+
+// ── 0x7100361920 -- check_stat_put_bomb (20B) ───────────────────
+u32 check_stat_put_bomb_7100361920(void* L) {
+    return (STAT_MODULE(L)[0x5c] >> 1) & 1;
+}
+
+// ── 0x7100361940 -- check_stat_can_use_superleaf (20B) ──────────
+u32 check_stat_can_use_superleaf_7100361940(void* L) {
+    return (STAT_MODULE(L)[0x5c] >> 4) & 1;
+}
+
+// ── 0x7100361960 -- check_stat_can_use_rocketbelt (20B) ─────────
+u32 check_stat_can_use_rocketbelt_7100361960(void* L) {
+    return (STAT_MODULE(L)[0x5c] >> 5) & 1;
+}
+
+// -- Flags byte at +0x5d --
+
+// ── 0x7100361980 -- check_stat_have_throw (20B) ─────────────────
+u32 check_stat_have_throw_7100361980(void* L) {
+    return (STAT_MODULE(L)[0x5d] >> 4) & 1;
+}
+
+// ── 0x71003619a0 -- check_stat_have_shoot (20B) ─────────────────
+u32 check_stat_have_shoot_71003619a0(void* L) {
+    return (STAT_MODULE(L)[0x5d] >> 5) & 1;
+}
+
+// ── 0x71003619c0 -- check_stat_have_swing (20B) ─────────────────
+u32 check_stat_have_swing_71003619c0(void* L) {
+    return (STAT_MODULE(L)[0x5d] >> 6) & 1;
+}
+
+// -- Flags byte at +0x60 --
+
+// ── 0x71003619e0 -- check_stat_dogs_blind_own (20B) ─────────────
+u32 check_stat_dogs_blind_own_71003619e0(void* L) {
+    return (STAT_MODULE(L)[0x60] >> 4) & 1;
+}
+
+// ── 0x7100361a00 -- check_stat_target_invisible (20B) ───────────
+u32 check_stat_target_invisible_7100361a00(void* L) {
+    return (STAT_MODULE(L)[0x60] >> 6) & 1;
+}
+
+// -- Float accessor --
+
+// ── 0x7100361b70 -- shield_rate (20B) ────────────────────────────
+// ldp s0,s1,[x8,#0xe8]; fdiv s0,s0,s1 — ratio of two floats
+// [derived: current shield / max shield from AI stat module]
+f32 shield_rate_7100361b70(void* L) {
+    u8* mod = STAT_MODULE(L);
+    f32 cur = *reinterpret_cast<f32*>(mod + 0xe8);
+    f32 max = *reinterpret_cast<f32*>(mod + 0xec);
+    return cur / max;
+}
+
+#undef STAT_MODULE
+
+// ════════════════════════════════════════════════════════════════════
 // sv_item — item utility functions
 // ════════════════════════════════════════════════════════════════════
 
