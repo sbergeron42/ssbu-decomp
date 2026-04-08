@@ -18,12 +18,13 @@ void FUN_710014f090(long param_1, long param_2)
 // 0x710014f150  size=~  FUN_710014f150
 // Init node: set vtable from PTR_DAT_71052a4f38, clear param_1[1]
 // ---------------------------------------------------------------------------
-extern u8 *PTR_DAT_71052a4f38;
+__attribute__((visibility("hidden"))) extern u8 *PTR_DAT_71052a4f38;
 
 void FUN_710014f150(long *param_1)
 {
+    u8 *puVar1 = PTR_DAT_71052a4f38;
     *(u32 *)(param_1 + 1) = 0;
-    *param_1 = (long)(PTR_DAT_71052a4f38 + 0x10);
+    *param_1 = (long)(puVar1 + 0x10);
 }
 
 // ---------------------------------------------------------------------------
@@ -32,8 +33,11 @@ void FUN_710014f150(long *param_1)
 // ---------------------------------------------------------------------------
 void FUN_710014fde0(long *param_1)
 {
-    (*(void (*)(void))(*param_1 + 0x20))();
-    (*(void (*)(long *, int))(*param_1 + 0x10))(param_1, 1);
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
+    (*(void (**)(void))(*param_1 + 0x20))();
+    (*(void (**)(long *, int))(*param_1 + 0x10))(param_1, 1);
 }
 
 // ---------------------------------------------------------------------------
@@ -156,7 +160,7 @@ u64 FUN_7100153200(u64 param_1, u8 param_2)
 long *FUN_7100153d50(long *param_1, u32 *param_2)
 {
     *(u32 *)(param_1 + 0x1b) = *param_2;
-    (*(void (*)(void))(*param_1 + 0x98))();
+    (*(void (**)(void))(*param_1 + 0x98))();
     return param_1 + 0x1d;
 }
 
@@ -372,23 +376,24 @@ void FUN_71001583c0(long param_1, u64 param_2, u64 param_3, u64 param_4,
 // 0x710015d240  size=~  FUN_710015d240
 // Set timeout at +0x488: global_tick_rate * param_2 / 1000
 // ---------------------------------------------------------------------------
-extern long *PTR_DAT_71052a3cd0;
+__attribute__((visibility("hidden"))) extern long *PTR_DAT_71052a3cd0;
 
 void FUN_710015d240(long param_1, u32 param_2)
 {
-    *(long *)(param_1 + 0x488) = (*PTR_DAT_71052a3cd0 * (u64)param_2) / 1000;
+    *(long *)(param_1 + 0x488) = (long)(*PTR_DAT_71052a3cd0 * (u64)param_2) / 1000;
 }
 
 // ---------------------------------------------------------------------------
 // 0x710015e850  size=~  FUN_710015e850
 // If connection active and not in state -3: get socket fd, else -1
 // ---------------------------------------------------------------------------
-u64 FUN_710015f5c0(void);
+u64 FUN_710015f5c0(long);
 
 u64 FUN_710015e850(long param_1)
 {
-    if (*(long *)(param_1 + 0x50) != 0 && *(s8 *)(param_1 + 0x38) != -3)
-        return FUN_710015f5c0();
+    long conn = *(long *)(param_1 + 0x50);
+    if (conn != 0 && *(s8 *)(param_1 + 0x38) != -3)
+        return FUN_710015f5c0(conn);
     return 0xffffffff;
 }
 
@@ -413,15 +418,21 @@ void FUN_710015fb50(char *param_1)
 {
     if (*param_1 == '\0')
         return;
-    // Invalidate key bytes [4..11] and [0xc..0xf]
     param_1[4] = -1; param_1[5] = -1; param_1[6] = -1; param_1[7] = -1;
     param_1[8] = -1; param_1[9] = -1; param_1[0xa] = -1; param_1[0xb] = -1;
-    param_1[0xc] = -1; param_1[0xd] = -1; param_1[0xe] = -1; param_1[0xf] = -1;
-    // Clear status and address fields
     *param_1 = '\0';
-    for (int i = 0x10; i <= 0x18; i++) param_1[i] = '\0';
-    for (int i = 0x1c; i <= 0x23; i++) param_1[i] = '\0';
-    for (int i = 0x48; i <= 0x53; i++) param_1[i] = '\0';
+    param_1[0x10] = '\0'; param_1[0x11] = '\0'; param_1[0x12] = '\0';
+    param_1[0x13] = '\0'; param_1[0x14] = '\0'; param_1[0x15] = '\0';
+    param_1[0x16] = '\0'; param_1[0x17] = '\0'; param_1[0x18] = '\0';
+    param_1[0x48] = '\0'; param_1[0x49] = '\0'; param_1[0x4a] = '\0';
+    param_1[0x4b] = '\0'; param_1[0x4c] = '\0'; param_1[0x4d] = '\0';
+    param_1[0x4e] = '\0'; param_1[0x4f] = '\0';
+    param_1[0x1c] = '\0'; param_1[0x1d] = '\0'; param_1[0x1e] = '\0';
+    param_1[0x1f] = '\0'; param_1[0x20] = '\0'; param_1[0x21] = '\0';
+    param_1[0x22] = '\0'; param_1[0x23] = '\0';
+    param_1[0xc] = -1; param_1[0xd] = -1; param_1[0xe] = -1; param_1[0xf] = -1;
+    param_1[0x50] = '\0'; param_1[0x51] = '\0'; param_1[0x52] = '\0';
+    param_1[0x53] = '\0';
 }
 
 // ---------------------------------------------------------------------------
@@ -437,7 +448,7 @@ void FUN_71001604a0(long param_1, u32 param_2)
 // 0x7100162ce0  size=~  FUN_7100162ce0
 // Clamp field at +0xa4 to [1..254]; write to PTR_DAT_71052a3bd8[0x2b6]
 // ---------------------------------------------------------------------------
-extern u8 *PTR_DAT_71052a3bd8;
+__attribute__((visibility("hidden"))) extern u8 *PTR_DAT_71052a3bd8;
 
 void FUN_7100162ce0(long param_1)
 {
@@ -466,10 +477,13 @@ void FUN_7100163d40(long param_1)
 void FUN_7100164070(long param_1)
 {
     long off = 0;
+#pragma clang loop unroll(disable)
     do {
         u64 *p = (u64 *)(param_1 + off);
         off += 0x20;
-        p[0] = 0; p[1] = 0; p[2] = 0;
+        *p = 0;
+        p[1] = 0;
+        p[2] = 0;
         *(u32 *)(p + 3) = 0;
         *(u8 *)((u8 *)p + 0x1c) = 0;
     } while (off != 0x400);
@@ -482,7 +496,10 @@ void FUN_7100164070(long param_1)
 // ---------------------------------------------------------------------------
 void FUN_7100174530(long *param_1)
 {
-    (*(void (*)(void))(*param_1 + 0x30))();
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
+    (*(void (**)(void))(*param_1 + 0x30))();
     *(u8 *)((u8 *)param_1 + 9) = 0;
 }
 
@@ -506,8 +523,11 @@ bool FUN_7100174cb0(long param_1)
 void FUN_7100174ff0(long param_1, long *param_2)
 {
     u8 tmp[16];
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
     *(long **)(param_1 + 0x18) = param_2;
-    (*(void (*)(u8 *, long *, u64))(*param_2 + 0x178))(tmp, param_2, *(u64 *)(param_1 + 0x10));
+    (*(void (**)(u8 *, long *, u64))(*param_2 + 0x178))(tmp, param_2, *(u64 *)(param_1 + 0x10));
 }
 
 // ---------------------------------------------------------------------------
@@ -516,9 +536,12 @@ void FUN_7100174ff0(long param_1, long *param_2)
 // ---------------------------------------------------------------------------
 void FUN_7100175030(long param_1)
 {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
     long *ptr = *(long **)(param_1 + 0x18);
     if (ptr != nullptr)
-        (*(void (*)(void))(*ptr + 0x180))();
+        (*(void (**)(void))(*ptr + 0x180))();
     *(u64 *)(param_1 + 0x18) = 0;
 }
 
@@ -551,7 +574,7 @@ done:
 // 0x7100182c70  size=~  FUN_7100182c70
 // Init packet node: vtable from PTR_DAT_71052a53d8, type=0x12, size=0x10
 // ---------------------------------------------------------------------------
-extern u8 *PTR_DAT_71052a53d8;
+__attribute__((visibility("hidden"))) extern u8 *PTR_DAT_71052a53d8;
 
 void FUN_7100182c70(long *param_1, long param_2, u16 param_3)
 {
@@ -567,7 +590,7 @@ void FUN_7100182c70(long *param_1, long param_2, u16 param_3)
 // 0x7100182d10  size=~  FUN_7100182d10
 // Init packet node: vtable from PTR_DAT_71052a53e0, type=0x13
 // ---------------------------------------------------------------------------
-extern u8 *PTR_DAT_71052a53e0;
+__attribute__((visibility("hidden"))) extern u8 *PTR_DAT_71052a53e0;
 
 void FUN_7100182d10(long *param_1, long param_2, u16 param_3)
 {
@@ -583,7 +606,7 @@ void FUN_7100182d10(long *param_1, long param_2, u16 param_3)
 // 0x7100182db0  size=~  FUN_7100182db0
 // Init extended packet node: vtable from PTR_DAT_71052a53e8, parameterized type
 // ---------------------------------------------------------------------------
-extern u8 *PTR_DAT_71052a53e8;
+__attribute__((visibility("hidden"))) extern u8 *PTR_DAT_71052a53e8;
 
 void FUN_7100182db0(long *param_1, long param_2, u16 param_3, u8 param_4, u32 param_5)
 {
@@ -609,12 +632,13 @@ void FUN_7100185e30(long param_1, u32 param_2)
 // 0x7100186270  size=~  FUN_7100186270
 // Init node: vtable from PTR_DAT_71052a5528, clear u32 at [1]
 // ---------------------------------------------------------------------------
-extern u8 *PTR_DAT_71052a5528;
+__attribute__((visibility("hidden"))) extern u8 *PTR_DAT_71052a5528;
 
 void FUN_7100186270(long *param_1)
 {
+    u8 *puVar1 = PTR_DAT_71052a5528;
     *(u32 *)(param_1 + 1) = 0;
-    *param_1 = (long)(PTR_DAT_71052a5528 + 0x10);
+    *param_1 = (long)(puVar1 + 0x10);
 }
 
 // ---------------------------------------------------------------------------
@@ -644,7 +668,7 @@ u64 FUN_7100157cf0(long);
 
 bool FUN_7100194e60(long *param_1, long param_2)
 {
-    u64 r = (*(u64 (*)(void))(*param_1 + 200))();
+    u64 r = (*(u64 (**)(void))(*param_1 + 200))();
     if (r & 1)
         return true;
     if ((*(u8 *)(param_2 + 0x31) & 3u) == 1) {
@@ -681,7 +705,7 @@ u32 FUN_7100157cf0_u32(long);
 
 bool FUN_71001a8b40(long *param_1, long param_2)
 {
-    u64 r = (*(u64 (*)(void))(*param_1 + 200))();
+    u64 r = (*(u64 (**)(void))(*param_1 + 200))();
     if (r & 1) return true;
 
     u8 role = *(u8 *)(param_2 + 0x31);
@@ -707,15 +731,19 @@ bool FUN_71001a8b40(long *param_1, long param_2)
 // ---------------------------------------------------------------------------
 void FUN_71001aa3d0(u64 *param_1)
 {
-    param_1[0] = 0; param_1[1] = 0; param_1[2] = 0; param_1[3] = 0;
-    param_1[4] = 0; param_1[5] = 0;
+    *(u64 *)((u8 *)param_1 + 0x44) = 0;
     param_1[6] = 0x40001f4ULL;
     param_1[7] = 0;
     *(u16 *)(param_1 + 8) = 0x5fd;
     *(u8  *)((u8 *)param_1 + 0x42) = 0xff;
-    *(u8  *)((u8 *)param_1 + 0x44) = 0;
     *(u8  *)((u8 *)param_1 + 0x4c) = 0;
     param_1[10] = 0;
+    *param_1 = 0;
+    param_1[1] = 0;
+    param_1[2] = 0;
+    param_1[3] = 0;
+    param_1[4] = 0;
+    param_1[5] = 0;
 }
 
 // ---------------------------------------------------------------------------

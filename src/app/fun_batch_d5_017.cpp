@@ -14,37 +14,39 @@ extern "C" void __cxa_guard_release(s64 *);
 extern "C" void FUN_71000b4160(s64);
 
 // PTR_ConstantZero guard init DATs
-extern "C" u64  DAT_71052b6eb0;
-extern "C" u64  DAT_71052b6ec0;
-extern "C" u64  DAT_71052b6ec8;
-extern "C" u8  *PTR_ConstantZero_71052a7a88;
+#define _H __attribute__((visibility("hidden")))
+_H extern "C" u64  DAT_71052b6eb0;
+_H extern "C" u64  DAT_71052b6ec0;
+_H extern "C" u64  DAT_71052b6ec8;
+_H extern "C" u8  *PTR_ConstantZero_71052a7a88;
 
-extern "C" u64  DAT_71052b6f90;
-extern "C" u64  DAT_71052b6fa0;
-extern "C" u64  DAT_71052b6fa8;
-extern "C" u8  *PTR_ConstantZero_71052a7a80;
+_H extern "C" u64  DAT_71052b6f90;
+_H extern "C" u64  DAT_71052b6fa0;
+_H extern "C" u64  DAT_71052b6fa8;
+_H extern "C" u8  *PTR_ConstantZero_71052a7a80;
 
 // Shared inner guard / value (DAT_7105323690 series)
-extern "C" u64  DAT_7105323690;
-extern "C" u64  DAT_7105323698;
+_H extern "C" u64  DAT_7105323690;
+_H extern "C" u64  DAT_7105323698;
 
 // Outer guard/pointer pairs for nested CXA-guard series
-extern "C" u64  DAT_71053236a8;
-extern "C" u64  DAT_71053236b0;
-extern "C" u64  DAT_71053236b8;
-extern "C" u64  DAT_71053236c0;
-extern "C" u64  DAT_71053236c8;
-extern "C" u64  DAT_71053236d0;
-extern "C" u64  DAT_71053236d8;
-extern "C" u64  DAT_71053236e0;
-extern "C" u64  DAT_71053236e8;
-extern "C" u64  DAT_71053236f0;
-extern "C" u64  DAT_71053236f8;
-extern "C" u64  DAT_7105323700;
-extern "C" u64  DAT_7105323728;
-extern "C" u64  DAT_7105323730;
-extern "C" u64  DAT_7105323738;
-extern "C" u64  DAT_7105323740;
+_H extern "C" u64  DAT_71053236a8;
+_H extern "C" u64  DAT_71053236b0;
+_H extern "C" u64  DAT_71053236b8;
+_H extern "C" u64  DAT_71053236c0;
+_H extern "C" u64  DAT_71053236c8;
+_H extern "C" u64  DAT_71053236d0;
+_H extern "C" u64  DAT_71053236d8;
+_H extern "C" u64  DAT_71053236e0;
+_H extern "C" u64  DAT_71053236e8;
+_H extern "C" u64  DAT_71053236f0;
+_H extern "C" u64  DAT_71053236f8;
+_H extern "C" u64  DAT_7105323700;
+_H extern "C" u64  DAT_7105323728;
+_H extern "C" u64  DAT_7105323730;
+_H extern "C" u64  DAT_7105323738;
+_H extern "C" u64  DAT_7105323740;
+#undef _H
 
 // ---- abort() / __throw_out_of_range thunks (192 bytes each) ----------------
 
@@ -112,7 +114,7 @@ void FUN_7100187670(u64 param_1, s64 *param_2, s64 param_3)
 // 0x71003b02c0 — guard: copy 16 bytes from PTR_ConstantZero → DAT_71052b6ec0/ec8
 u64 *FUN_71003b02c0(void)
 {
-    if (!(DAT_71052b6eb0 & 1)) {
+    if (!(__atomic_load_n((u8*)&DAT_71052b6eb0, __ATOMIC_ACQUIRE) & 1)) {
         s32 iVar1 = __cxa_guard_acquire((s64*)&DAT_71052b6eb0);
         if (iVar1 != 0) {
             DAT_71052b6ec0 = *(u64*)PTR_ConstantZero_71052a7a88;
@@ -127,7 +129,7 @@ u64 *FUN_71003b02c0(void)
 struct FUN_71003b21a0_ret { u64 lo; u64 hi; };
 FUN_71003b21a0_ret FUN_71003b21a0(void)
 {
-    if (!(DAT_71052b6f90 & 1)) {
+    if (!(__atomic_load_n((u8*)&DAT_71052b6f90, __ATOMIC_ACQUIRE) & 1)) {
         s32 iVar1 = __cxa_guard_acquire((s64*)&DAT_71052b6f90);
         if (iVar1 != 0) {
             DAT_71052b6fa0 = *(u64*)PTR_ConstantZero_71052a7a80;
@@ -183,10 +185,10 @@ u64 FUN_7101fe1fe0(s64 *param_1, s64 param_2)
 // 0x71017f3da0 — outer: DAT_71053236a8 → DAT_71053236b0
 u64 *FUN_71017f3da0(void)
 {
-    if (!(DAT_71053236a8 & 1)) {
+    if (!(__atomic_load_n((u8*)&DAT_71053236a8, __ATOMIC_ACQUIRE) & 1)) {
         s32 iVar1 = __cxa_guard_acquire((s64*)&DAT_71053236a8);
         if (iVar1 != 0) {
-            if (!(DAT_7105323690 & 1)) {
+            if (!(__atomic_load_n((u8*)&DAT_7105323690, __ATOMIC_ACQUIRE) & 1)) {
                 s32 iVar2 = __cxa_guard_acquire((s64*)&DAT_7105323690);
                 if (iVar2 != 0) {
                     DAT_7105323698 = 0;
@@ -203,10 +205,10 @@ u64 *FUN_71017f3da0(void)
 // 0x71017f3ef0 — outer: DAT_71053236b8 → DAT_71053236c0
 u64 *FUN_71017f3ef0(void)
 {
-    if (!(DAT_71053236b8 & 1)) {
+    if (!(__atomic_load_n((u8*)&DAT_71053236b8, __ATOMIC_ACQUIRE) & 1)) {
         s32 iVar1 = __cxa_guard_acquire((s64*)&DAT_71053236b8);
         if (iVar1 != 0) {
-            if (!(DAT_7105323690 & 1)) {
+            if (!(__atomic_load_n((u8*)&DAT_7105323690, __ATOMIC_ACQUIRE) & 1)) {
                 s32 iVar2 = __cxa_guard_acquire((s64*)&DAT_7105323690);
                 if (iVar2 != 0) {
                     DAT_7105323698 = 0;
@@ -223,10 +225,10 @@ u64 *FUN_71017f3ef0(void)
 // 0x71017f4040 — outer: DAT_71053236c8 → DAT_71053236d0
 u64 *FUN_71017f4040(void)
 {
-    if (!(DAT_71053236c8 & 1)) {
+    if (!(__atomic_load_n((u8*)&DAT_71053236c8, __ATOMIC_ACQUIRE) & 1)) {
         s32 iVar1 = __cxa_guard_acquire((s64*)&DAT_71053236c8);
         if (iVar1 != 0) {
-            if (!(DAT_7105323690 & 1)) {
+            if (!(__atomic_load_n((u8*)&DAT_7105323690, __ATOMIC_ACQUIRE) & 1)) {
                 s32 iVar2 = __cxa_guard_acquire((s64*)&DAT_7105323690);
                 if (iVar2 != 0) {
                     DAT_7105323698 = 0;
@@ -243,10 +245,10 @@ u64 *FUN_71017f4040(void)
 // 0x71017f4190 — outer: DAT_71053236d8 → DAT_71053236e0
 u64 *FUN_71017f4190(void)
 {
-    if (!(DAT_71053236d8 & 1)) {
+    if (!(__atomic_load_n((u8*)&DAT_71053236d8, __ATOMIC_ACQUIRE) & 1)) {
         s32 iVar1 = __cxa_guard_acquire((s64*)&DAT_71053236d8);
         if (iVar1 != 0) {
-            if (!(DAT_7105323690 & 1)) {
+            if (!(__atomic_load_n((u8*)&DAT_7105323690, __ATOMIC_ACQUIRE) & 1)) {
                 s32 iVar2 = __cxa_guard_acquire((s64*)&DAT_7105323690);
                 if (iVar2 != 0) {
                     DAT_7105323698 = 0;
@@ -263,10 +265,10 @@ u64 *FUN_71017f4190(void)
 // 0x71017f42e0 — outer: DAT_71053236e8 → DAT_71053236f0
 u64 *FUN_71017f42e0(void)
 {
-    if (!(DAT_71053236e8 & 1)) {
+    if (!(__atomic_load_n((u8*)&DAT_71053236e8, __ATOMIC_ACQUIRE) & 1)) {
         s32 iVar1 = __cxa_guard_acquire((s64*)&DAT_71053236e8);
         if (iVar1 != 0) {
-            if (!(DAT_7105323690 & 1)) {
+            if (!(__atomic_load_n((u8*)&DAT_7105323690, __ATOMIC_ACQUIRE) & 1)) {
                 s32 iVar2 = __cxa_guard_acquire((s64*)&DAT_7105323690);
                 if (iVar2 != 0) {
                     DAT_7105323698 = 0;
@@ -283,10 +285,10 @@ u64 *FUN_71017f42e0(void)
 // 0x71017f4430 — outer: DAT_71053236f8 → DAT_7105323700
 u64 *FUN_71017f4430(void)
 {
-    if (!(DAT_71053236f8 & 1)) {
+    if (!(__atomic_load_n((u8*)&DAT_71053236f8, __ATOMIC_ACQUIRE) & 1)) {
         s32 iVar1 = __cxa_guard_acquire((s64*)&DAT_71053236f8);
         if (iVar1 != 0) {
-            if (!(DAT_7105323690 & 1)) {
+            if (!(__atomic_load_n((u8*)&DAT_7105323690, __ATOMIC_ACQUIRE) & 1)) {
                 s32 iVar2 = __cxa_guard_acquire((s64*)&DAT_7105323690);
                 if (iVar2 != 0) {
                     DAT_7105323698 = 0;
@@ -303,10 +305,10 @@ u64 *FUN_71017f4430(void)
 // 0x71017f4f90 — outer: DAT_7105323728 → DAT_7105323730
 u64 *FUN_71017f4f90(void)
 {
-    if (!(DAT_7105323728 & 1)) {
+    if (!(__atomic_load_n((u8*)&DAT_7105323728, __ATOMIC_ACQUIRE) & 1)) {
         s32 iVar1 = __cxa_guard_acquire((s64*)&DAT_7105323728);
         if (iVar1 != 0) {
-            if (!(DAT_7105323690 & 1)) {
+            if (!(__atomic_load_n((u8*)&DAT_7105323690, __ATOMIC_ACQUIRE) & 1)) {
                 s32 iVar2 = __cxa_guard_acquire((s64*)&DAT_7105323690);
                 if (iVar2 != 0) {
                     DAT_7105323698 = 0;
@@ -323,10 +325,10 @@ u64 *FUN_71017f4f90(void)
 // 0x71017f50e0 — outer: DAT_7105323738 → DAT_7105323740
 u64 *FUN_71017f50e0(void)
 {
-    if (!(DAT_7105323738 & 1)) {
+    if (!(__atomic_load_n((u8*)&DAT_7105323738, __ATOMIC_ACQUIRE) & 1)) {
         s32 iVar1 = __cxa_guard_acquire((s64*)&DAT_7105323738);
         if (iVar1 != 0) {
-            if (!(DAT_7105323690 & 1)) {
+            if (!(__atomic_load_n((u8*)&DAT_7105323690, __ATOMIC_ACQUIRE) & 1)) {
                 s32 iVar2 = __cxa_guard_acquire((s64*)&DAT_7105323690);
                 if (iVar2 != 0) {
                     DAT_7105323698 = 0;

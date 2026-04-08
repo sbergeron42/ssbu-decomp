@@ -1,16 +1,13 @@
-# Worker: pool-c
+# Worker: pool-d
 
 ## Model: Opus
 
 ## Task: Fix N-quality functions to match — idiomatic C++ only
 
-### Goal
-Same as pool-b: grind through N-quality functions, compare against binary, fix source.
-
 ### Target Files
-- `src/app/fun_easy_003.cpp` — 43 N-quality functions
-- `src/app/fun_batch_d_012.cpp` — 40 N-quality functions
-- `src/app/fun_batch_d5_054.cpp` — 39 N-quality functions
+- `src/app/fun_batch_d5_017.cpp` — 38 N-quality functions
+- `src/app/fun_batch_d5_051.cpp` — 36 N-quality functions
+- `src/app/fun_med_final_b_004.cpp` — 33 N-quality functions
 
 ### Method per function
 1. `python tools/compare_bytes.py FUN_name` — see what doesn't match
