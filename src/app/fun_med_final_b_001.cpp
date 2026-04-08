@@ -243,7 +243,7 @@ void FUN_7100017450(u8 *param_1, u8 *param_2, long param_3)
 // 0x710001ebb0  size=80  FUN_710001ebb0
 // Linked-list search by value param_1, unlink if found; returns 1/0
 // ---------------------------------------------------------------------------
-u64 FUN_710001ebb0(long param_1, long *param_2)
+int FUN_710001ebb0(long param_1, long *param_2)
 {
     if (param_2 != nullptr) {
         for (long *node = (long *)*param_2; node != nullptr; node = (long *)node[2]) {
