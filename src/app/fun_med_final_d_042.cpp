@@ -14,8 +14,9 @@ long FUN_710335a8e8(long param_1) { (void)param_1; return 0; }
 // 0x000000710335b79c  size=384
 long FUN_710335b79c(long param_1) { (void)param_1; return 0; }
 
-// 0x000000710335b91c  size=2260
-long FUN_710335b91c(long param_1) { (void)param_1; return 0; }
+// 0x000000710335b91c  size=24 â€” call lua_pushstring + return 1
+extern void lua_pushstring(u64);
+u32 FUN_710335b91c(u64 param_1) { lua_pushstring(param_1); asm(""); return 1; }
 
 // 0x000000710335c5a4  size=448
 long FUN_710335c5a4(long param_1) { (void)param_1; return 0; }
@@ -62,7 +63,7 @@ long FUN_710348d6a8(long param_1) { (void)param_1; return 0; }
 // 0x00000071034d0a28  size=504
 long FUN_71034d0a28(long param_1) { (void)param_1; return 0; }
 
-// 0x000000710357a708  size=12 — calls abort
+// 0x000000710357a708  size=12 ï¿½ calls abort
 void FUN_710357a708(void) { abort(); }
 
 // 0x0000007103717098  size=408
