@@ -308,7 +308,7 @@ void FUN_7100044c70(long param_1, u64 param_2)
 // 0x7100044dd0  size=64  FUN_7100044dd0
 // Update addr+port if changed; returns 1 on change, 0 if same
 // ---------------------------------------------------------------------------
-u64 FUN_7100044dd0(long param_1, long param_2, s16 param_3)
+u32 FUN_7100044dd0(long param_1, long param_2, s16 param_3)
 {
     if (*(long *)(param_1 + 400) == param_2 && *(s16 *)(param_1 + 0x198) == param_3)
         return 0;
