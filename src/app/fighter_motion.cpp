@@ -367,6 +367,96 @@ f32 get_speed_x(u8* L) {
 
 } // namespace app::kinetic_energy_stop
 
+namespace app::kinetic_energy_damage {
+
+// 0x71015d0be0 (60 bytes)
+// Returns x speed from damage energy (slot 8)
+// [derived: get_energy(8) → get_speed(), return *(f32*)speed]
+f32 get_speed_x(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(8);
+    void* speed = energy->get_speed();
+    return *reinterpret_cast<f32*>(speed);
+}
+
+} // namespace app::kinetic_energy_damage
+
+namespace app::kinetic_energy_jostle {
+
+// 0x71015d0a30 (60 bytes)
+// Returns x speed from jostle energy (slot 9)
+// [derived: get_energy(9) → get_speed(), return *(f32*)speed]
+f32 get_speed_x(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(9);
+    void* speed = energy->get_speed();
+    return *reinterpret_cast<f32*>(speed);
+}
+
+} // namespace app::kinetic_energy_jostle
+
+namespace app::kinetic_energy_ground_movement {
+
+// 0x71015d0b30 (60 bytes)
+// Returns x speed from ground movement energy (slot 10)
+// [derived: get_energy(0xa) → get_speed(), return *(f32*)speed]
+f32 get_speed_x(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(10);
+    void* speed = energy->get_speed();
+    return *reinterpret_cast<f32*>(speed);
+}
+
+} // namespace app::kinetic_energy_ground_movement
+
+namespace app::kinetic_energy_motion_linked_main {
+
+// 0x71015d0cc0 (60 bytes)
+// Returns x speed from motion-linked main energy (slot 0xc)
+// [derived: get_energy(0xc) → get_speed(), return *(f32*)speed]
+f32 get_speed_x(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(0xc);
+    void* speed = energy->get_speed();
+    return *reinterpret_cast<f32*>(speed);
+}
+
+// 0x71015d0d00 (60 bytes)
+// Returns y speed from motion-linked main energy (slot 0xc)
+// [derived: get_energy(0xc) → get_speed(), return *(f32*)(speed+4)]
+f32 get_speed_y(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(0xc);
+    void* speed = energy->get_speed();
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(speed) + 4);
+}
+
+} // namespace app::kinetic_energy_motion_linked_main
+
+namespace app::kinetic_energy_motion_linked_sub1 {
+
+// 0x71015d0e00 (60 bytes)
+// Returns x speed from motion-linked sub1 energy (slot 0xd)
+// [derived: get_energy(0xd) → get_speed(), return *(f32*)speed]
+f32 get_speed_x(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(0xd);
+    void* speed = energy->get_speed();
+    return *reinterpret_cast<f32*>(speed);
+}
+
+// 0x71015d0e40 (60 bytes)
+// Returns y speed from motion-linked sub1 energy (slot 0xd)
+// [derived: get_energy(0xd) → get_speed(), return *(f32*)(speed+4)]
+f32 get_speed_y(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(0xd);
+    void* speed = energy->get_speed();
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(speed) + 4);
+}
+
+} // namespace app::kinetic_energy_motion_linked_sub1
+
 namespace app::ai_param {
 
 // 0x710036ba00 (16 bytes)
