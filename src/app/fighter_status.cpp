@@ -2240,3 +2240,41 @@ u32 chanced_frame_7100376b90(void* L) {
         *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x170));
     return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(bo) + 0x1c);
 }
+
+// ════════════════════════════════════════════════════════════════════
+// AI system — stick/action controls
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x7100376330 -- app::ai_system::set_action_id_none (24B) ────
+// [derived: saves current action_id(+0x198) to prev(+0x19a) if nonzero, then clears it]
+void set_action_id_none_7100376330(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    s16 cur = *reinterpret_cast<s16*>(reinterpret_cast<u8*>(ctx) + 0x198);
+    if (cur != 0) {
+        *reinterpret_cast<s16*>(reinterpret_cast<u8*>(ctx) + 0x19a) = cur;
+    }
+    *reinterpret_cast<u16*>(reinterpret_cast<u8*>(ctx) + 0x198) = 0;
+}
+
+// ── 0x71003762f0 -- app::ai_system::reset_stick (24B) ───────────
+// [derived: zeroes stick vectors at ctx+0xc30 and ctx+0xc38 from zero constant]
+void reset_stick_71003762f0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    u64 z0 = *reinterpret_cast<u64*>(DAT_71052a7a80);
+    u64 z1 = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(DAT_71052a7a80) + 8);
+    *reinterpret_cast<u64*>(reinterpret_cast<u8*>(ctx) + 0xc38) = z1;
+    *reinterpret_cast<u64*>(reinterpret_cast<u8*>(ctx) + 0xc30) = z0;
+}
+
+// ── 0x710036b810 -- app::ai_param::width (24B) ─────────────────
+// [derived: multiplies ctx+0xb2c (base_width) by ai_data+0xc0 (scale factor)]
+f32 width_710036b810(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(ctx) + 0xb2c) *
+           *reinterpret_cast<f32*>(reinterpret_cast<u8*>(ai) + 0xc0);
+}
+
+// NOTE: DAISY/DOLL/EXPLOSIONBOMB param functions (0x710165xxxx) need non-hidden
+// FPA2 singleton access (GOT-style double deref). They belong in a separate TU
+// where DAT_71052bb3b0 is declared without __attribute__((visibility("hidden"))).
