@@ -435,6 +435,7 @@ def main():
     total_bytes_matched = 0
     total_bytes_compared = 0
     results = {}
+    results_by_addr = {}
     details = []
     unmatched_names = []
     reloc_stats = {'patched': 0, 'unpatched': 0}
@@ -484,6 +485,8 @@ def main():
                     details.append((short_name, match_count, num_insns))
             display_name = short_name or mangled
             results[display_name] = (status, match_count * 100 // num_insns if num_insns else 0)
+            # Also key by address for unambiguous CSV updates
+            results_by_addr[orig_addr] = status
 
     total = verified + mismatch
     total_funcs = len(all_funcs)
@@ -534,31 +537,27 @@ def main():
     print()
 
     if update_csv and results:
-        # Build addr → status for functions where compiled symbol differs from CSV name
-        # (e.g. FUN_71017e4940 compiled under a named CSV entry like load_fighter's_nro___)
-        addr_to_status = {}
-        for dname, (st, pct) in results.items():
-            if dname in source_addr_map:
-                addr_to_status[source_addr_map[dname]] = (st, pct)
-
+        updated = 0
         rows = []
         with open(FUNCTIONS_CSV) as f:
             reader = csv.DictReader(f)
             fieldnames = reader.fieldnames
             for row in reader:
+                csv_addr = int(row['Address'], 16)
                 name = row['Name']
                 short = extract_short_name(name)
-                if name in results:
-                    status, _ = results[name]
-                    row['Quality'] = status
+
+                # Primary: match by address (unambiguous)
+                if csv_addr in results_by_addr:
+                    row['Quality'] = results_by_addr[csv_addr]
+                    updated += 1
+                # Fallback: match by name
+                elif name in results:
+                    row['Quality'] = results[name][0]
+                    updated += 1
                 elif short in results:
-                    status, _ = results[short]
-                    row['Quality'] = status
-                else:
-                    csv_addr = int(row['Address'], 16)
-                    if csv_addr in addr_to_status:
-                        status, _ = addr_to_status[csv_addr]
-                        row['Quality'] = status
+                    row['Quality'] = results[short][0]
+                    updated += 1
                 rows.append(row)
         tmp_csv = str(FUNCTIONS_CSV) + '.tmp'
         with open(tmp_csv, 'w', newline='') as f:
@@ -566,7 +565,7 @@ def main():
             writer.writeheader()
             writer.writerows(rows)
         os.replace(tmp_csv, str(FUNCTIONS_CSV))
-        print("  Updated %d entries in functions.csv" % len(results))
+        print("  Updated %d entries in functions.csv" % updated)
 
 
 if __name__ == '__main__':

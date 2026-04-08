@@ -13,9 +13,9 @@ Targeting the final version: **patch 13.0.4**.
 | Category | Count | % of total |
 |----------|------:|------------|
 | **Total functions** | 39,635 | |
-| Verified (real C++) | 9,573 | 24.15% |
+| Verified (real C++) | 9,554 | 24.10% |
 | Verified (naked asm) | 569 | 1.44% |
-| Non-matching (WIP) | 3,312 | 8.36% |
+| Non-matching (WIP) | 3,331 | 8.40% |
 | **Total compiled** | **13,454** | **33.94%** |
 | Undecompiled | 26,181 | 66.06% |
 
@@ -25,11 +25,11 @@ Targeting the final version: **patch 13.0.4**.
 |----------|-----:|------------|
 | **.text total** | **27.0 MB** | |
 | Compiled | 1.69 MB | 6.24% |
-| Byte-matched | 0.48 MB | 1.76% |
+| Byte-matched | 0.47 MB | 1.75% |
 
 ```
-By functions:  13,454 / 39,635  (33.94% compiled, 25.59% verified)
-By bytes:       1.69M / 27.0M   ( 6.24% compiled,  1.76% verified)
+By functions:  13,454 / 39,635  (33.94% compiled, 25.54% verified)
+By bytes:       1.69M / 27.0M   ( 6.24% compiled,  1.75% verified)
 ```
 
 > Progress skews toward small functions: avg matched function is 46 bytes vs
