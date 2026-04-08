@@ -21,7 +21,7 @@ extern "C" bool FUN_71004e5780(void*);
 extern "C" void FUN_71039c20c0(void*);  // std::__1::__shared_weak_count::__release_weak
 
 // Default entity singleton at 0x7104f73b70 (adrp 0x7104f73000 + #0xb70)
-extern "C" u8 DAT_7104f73b70;
+extern "C" u8 DAT_7104f73b70 __attribute__((visibility("hidden")));
 
 namespace app::lua_bind {
 
