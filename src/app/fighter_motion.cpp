@@ -1,6 +1,7 @@
 #include "types.h"
 #include "app/BattleObjectModuleAccessor.h"
 #include "app/modules/MotionModule.h"
+#include "app/modules/PostureModule.h"
 
 using namespace app;
 
@@ -25,6 +26,31 @@ bool is_hammer_motion(u64 hash) {
 }
 
 } // namespace app::FighterUtil
+
+namespace app::sv_fighter_util {
+
+// 0x7102281bf0 (120 bytes)
+// Returns Hash40 motion kind for attack_hi3 based on fighter kind and facing
+// +0x198 on battle object is fighter_kind [derived: compared against 0x3c-0x3d range and 0x1c]
+// Uses PostureModule::lr() to check facing direction
+u64 get_attack_hi3_motion(u8* L) {
+    u8* obj = *reinterpret_cast<u8**>(L - 8);
+    int kind = *reinterpret_cast<int*>(obj + 0x198);
+    u32 diff = static_cast<u32>(kind) - 0x3c;
+    if (diff < 2) {
+        return 0xc2500ccc8;  // [derived: literal Hash40 in binary]
+    }
+    if (kind == 0x1c) {
+        BattleObjectModuleAccessor* acc = *reinterpret_cast<BattleObjectModuleAccessor**>(obj + 0x1a0);
+        PostureModule* pm = static_cast<PostureModule*>(acc->posture_module);
+        if (pm->lr() == -1.0f) {
+            return 0xca808c13d;  // [derived: literal Hash40 in binary]
+        }
+    }
+    return 0xacbfc42e6;  // [derived: literal Hash40 in binary — default attack_hi3 motion]
+}
+
+} // namespace app::sv_fighter_util
 
 namespace app::item {
 
