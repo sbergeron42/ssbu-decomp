@@ -5,7 +5,7 @@
 ## Task: New decomp — EffectModule + SoundModule functions
 
 ### Context
-327 undecompiled effect functions, 198 undecompiled sound functions — both heavily used by modders. EffectModule.h has 91 vtable methods, SoundModule header exists.
+327 undecompiled effect functions, 198 undecompiled sound functions. EffectModule.h has 91 vtable methods.
 
 ### Approach
 1. Search for named undecompiled EffectModule/SoundModule functions
