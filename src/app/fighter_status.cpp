@@ -11,6 +11,10 @@ extern "C" double pow(double, double);
 extern "C" float powf(float, float);
 extern "C" void FUN_710067de90(void*, u64, s32, s32, u32);
 extern "C" void FUN_710068e1c0(void*);  // get_item_lift_motion_rate_mul helper
+extern "C" u64 FUN_71006798f0(void*, u32);  // owner_rank lookup on FighterManager
+extern "C" [[noreturn]] void abort();
+extern "C" void FUN_7100695b10(void*);  // FighterUtil::flash_eye_info
+extern "C" void FUN_7100695070();       // curry face disable helper
 
 // ______ External data ____________________________________________
 
@@ -40,6 +44,10 @@ extern "C" __attribute__((visibility("hidden"))) f32 DAT_7104471970;
 
 // StageManager singleton (adrp 0x7105329000 + 0x9d8)
 extern "C" __attribute__((visibility("hidden"))) void* DAT_710532999d8;  // intentionally wrong name for unique symbol
+
+// FighterParamAccessor2 singleton (adrp 0x71052bb000 + 0x3b0)
+// [derived: get_default_fighter_param functions index into this]
+extern "C" __attribute__((visibility("hidden"))) void* DAT_71052bb3b0;
 
 // .rodata float constants for get_fov calculation
 // [derived: get_fov multiplies by DAT_7104471fbc and divides by DAT_7104470d10]
@@ -967,66 +975,84 @@ Float4 camera_range_7102282ea0() {
 // fcmp s0,epsilon_neg; cset gt; fcmp s0,epsilon_pos; cset mi; and
 // [derived: returns true if value is between negative and positive epsilon]
 bool is_zero_7102275a20(f32 v) {
-    return (v > DAT_7104470f68) && (v < DAT_7104471970);
+    return (v > DAT_7104470f68) & (v < DAT_7104471970);
 }
 
 // ── 0x7102275ad0 -- app::sv_math::vec2_length_square (24B) ────────
 // movi v2,#0; mov lanes; fmul v0.4S; faddp v0.2S
 // [derived: squared magnitude of 2D vector]
 f32 vec2_length_square_7102275ad0(f32 x, f32 y) {
-    return x * x + y * y;
+    float4 v = {x, y, 0.0f, 0.0f};
+    v = v * v;
+    return v[0] + v[1];
 }
 
 // ── 0x7102275a50 -- app::sv_math::vec2_is_zero (44B) ──────────────
 // fcmeq v0.4S,v2.4S,#0; ext; and; tst; cset
 // [derived: true if both x and y are exactly 0.0]
 bool vec2_is_zero_7102275a50(f32 x, f32 y) {
-    return x == 0.0f && y == 0.0f;
+    float4 v = {x, y, 0.0f, 0.0f};
+    float4 zero = {0.0f, 0.0f, 0.0f, 0.0f};
+    return v[0] == zero[0] && v[1] == zero[1];
 }
 
 // ── 0x7102275d10 -- app::sv_math::vec2_dot (36B) ──────────────────
 // movi; mov lanes; fmul v0.4S; faddp v0.2S
 // [derived: dot product of two 2D vectors]
 f32 vec2_dot_7102275d10(f32 x, f32 y, f32 a, f32 b) {
-    return x * a + y * b;
+    float4 v1 = {x, y, 0.0f, 0.0f};
+    float4 v2 = {a, b, 0.0f, 0.0f};
+    float4 m = v1 * v2;
+    return m[0] + m[1];
 }
 
 // ── 0x7102275da0 -- app::sv_math::vec3_is_zero (48B) ──────────────
 // fcmeq v0.4S,v3.4S,#0; ext; and; tst; cset
 // [derived: true if all three components are exactly 0.0]
 bool vec3_is_zero_7102275da0(f32 x, f32 y, f32 z) {
-    return x == 0.0f && y == 0.0f && z == 0.0f;
+    float4 v = {x, y, z, 0.0f};
+    float4 zero = {0.0f, 0.0f, 0.0f, 0.0f};
+    return v[0] == zero[0] && v[1] == zero[1] && v[2] == zero[2];
 }
 
 // ── 0x7102275dd0 -- app::sv_math::vec3_length (44B) ───────────────
 // fmul v0.4S; ext; fadd; faddp; fsqrt v0.4S
 // [derived: magnitude of 3D vector]
 f32 vec3_length_7102275dd0(f32 x, f32 y, f32 z) {
-    return __builtin_sqrtf(x * x + y * y + z * z);
+    float4 v = {x, y, z, 0.0f};
+    float4 sq = v * v;
+    f32 sum = sq[0] + sq[1] + sq[2];
+    return __builtin_sqrtf(sum);
 }
 
 // ── 0x7102275e00 -- app::sv_math::vec3_length_square (36B) ────────
 // fmul v0.4S; ext; fadd; faddp
 // [derived: squared magnitude of 3D vector]
 f32 vec3_length_square_7102275e00(f32 x, f32 y, f32 z) {
-    return x * x + y * y + z * z;
+    float4 v = {x, y, z, 0.0f};
+    float4 sq = v * v;
+    return sq[0] + sq[1] + sq[2];
 }
 
 // ── 0x7102275e30 -- app::sv_math::vec3_dot (52B) ──────────────────
 // fmul; ext; fadd; faddp (same pattern as vec3_length_square but with two vectors)
 // [derived: dot product of two 3D vectors]
 f32 vec3_dot_7102275e30(f32 x1, f32 y1, f32 z1, f32 x2, f32 y2, f32 z2) {
-    return x1 * x2 + y1 * y2 + z1 * z2;
+    float4 a = {x1, y1, z1, 0.0f};
+    float4 b = {x2, y2, z2, 0.0f};
+    float4 m = a * b;
+    return m[0] + m[1] + m[2];
 }
 
 // ── 0x7102275f50 -- app::sv_math::vec3_distance (64B) ─────────────
 // fsub; fmul; ext; fadd; faddp; fsqrt
 // [derived: Euclidean distance between two 3D points]
 f32 vec3_distance_7102275f50(f32 x1, f32 y1, f32 z1, f32 x2, f32 y2, f32 z2) {
-    f32 dx = x1 - x2;
-    f32 dy = y1 - y2;
-    f32 dz = z1 - z2;
-    return __builtin_sqrtf(dx * dx + dy * dy + dz * dz);
+    float4 a = {x1, y1, z1, 0.0f};
+    float4 b = {x2, y2, z2, 0.0f};
+    float4 d = a - b;
+    float4 sq = d * d;
+    return __builtin_sqrtf(sq[0] + sq[1] + sq[2]);
 }
 
 // ── 0x7102275f90 -- app::sv_math::vec3_lerp (44B) ─────────────────
@@ -1052,7 +1078,9 @@ float4 vec2_reflection_7102275cd0(f32 dx, f32 dy, f32 nx, f32 ny) {
 // fmul; faddp; frsqrte; frsqrts (x2 Newton-Raphson); fcmeq; bic
 // [derived: length of 2D vector using reciprocal sqrt approximation]
 f32 vec2_length_7102275a80(f32 x, f32 y) {
-    return __builtin_sqrtf(x * x + y * y);
+    float4 v = {x, y, 0.0f, 0.0f};
+    float4 sq = v * v;
+    return __builtin_sqrtf(sq[0] + sq[1]);
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -1131,6 +1159,9 @@ void get_item_lift_motion_rate_mul_71022820f0(void* L) {
     void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
     void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0);
     FUN_710068e1c0(acc);
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
 }
 
 // ── 0x7102282700 -- app::sv_fighter_util::get_kirifuda_position (28B)
@@ -1193,3 +1224,401 @@ float4 get_right_pos_7102284a90(void* line) {
     return *reinterpret_cast<float4*>(DAT_71052a7a80);
 }
 
+// ════════════════════════════════════════════════════════════════════
+// Helper: get entry_id from lua state via WorkModule vtable
+// Pattern: acc->work_module->vt[0x13](wm, 0x10000000)
+// ════════════════════════════════════════════════════════════════════
+
+static inline u32 get_entry_id_from_lua(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0);
+    void* wm = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x50);
+    void** vt = *reinterpret_cast<void***>(wm);
+    return reinterpret_cast<u32(*)(void*, u32)>(vt[0x98 / 8])(wm, 0x10000000);
+}
+
+// Helper: get FighterInformation sub-struct from entry_id
+static inline void* get_fighter_info(u32 entry_id) {
+    void* fm = *reinterpret_cast<void**>(DAT_71052b84f8);
+    void* fi = *reinterpret_cast<void**>(
+        reinterpret_cast<u8*>(fm) + static_cast<s32>(entry_id) * 8 + 0x20);
+    return *reinterpret_cast<void**>(reinterpret_cast<u8*>(fi) + 0xf8);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// sv_information / sv_fighter_util — FighterInformation field accessors
+// All follow: get_entry_id → bounds check → FighterManager lookup → read field
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x710227ed00 -- app::sv_information::is_dead_up_force_crush (84B)
+// [derived: reads byte at FighterInformation+0xf8 sub-struct +0x6e]
+u8 is_dead_up_force_crush_710227ed00(void* L) {
+    u32 eid = get_entry_id_from_lua(L);
+    if (eid >= 8) abort();
+    return *reinterpret_cast<u8*>(reinterpret_cast<u8*>(get_fighter_info(eid)) + 0x6e);
+}
+
+// ── 0x710227ef00 -- app::sv_information::sleep_time_mul (84B) ─────
+// [derived: reads f32 at FighterInformation sub-struct +0x384]
+f32 sleep_time_mul_710227ef00(void* L) {
+    u32 eid = get_entry_id_from_lua(L);
+    if (eid >= 8) abort();
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(get_fighter_info(eid)) + 0x384);
+}
+
+// ── 0x7102281890 -- app::sv_fighter_util::get_dead_up_star_fall_prob (84B)
+// [derived: reads u32 at FighterInformation sub-struct +0x7c]
+u32 get_dead_up_star_fall_prob_7102281890(void* L) {
+    u32 eid = get_entry_id_from_lua(L);
+    if (eid >= 8) abort();
+    return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(get_fighter_info(eid)) + 0x7c);
+}
+
+// ── 0x71022818f0 -- app::sv_fighter_util::get_dead_up_camera_hit_prob (84B)
+// [derived: reads u32 at FighterInformation sub-struct +0x80]
+u32 get_dead_up_camera_hit_prob_71022818f0(void* L) {
+    u32 eid = get_entry_id_from_lua(L);
+    if (eid >= 8) abort();
+    return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(get_fighter_info(eid)) + 0x80);
+}
+
+// ── 0x710227eea0 -- app::sv_information::owner_rank (88B) ────────
+// [derived: checks FighterManager+0xcd flag, calls FUN_71006798f0 if set]
+u64 owner_rank_710227eea0(void* L) {
+    u32 eid = get_entry_id_from_lua(L);
+    void* fm = *reinterpret_cast<void**>(DAT_71052b84f8);
+    if (*reinterpret_cast<u8*>(reinterpret_cast<u8*>(fm) + 0xcd) != 0) {
+        return FUN_71006798f0(fm, eid);
+    }
+    return 0;
+}
+
+// ── 0x710227ee30 -- app::sv_information::owner_handi (104B) ──────
+// [derived: bounds check + FM flag check, reads f32 at +0x370]
+f32 owner_handi_710227ee30(void* L) {
+    u32 eid = get_entry_id_from_lua(L);
+    if (eid >= 8) abort();
+    void* fm = *reinterpret_cast<void**>(DAT_71052b84f8);
+    if (*reinterpret_cast<u8*>(reinterpret_cast<u8*>(fm) + 0xcd) != 0) {
+        void* info = *reinterpret_cast<void**>(
+            reinterpret_cast<u8*>(fm) + static_cast<s32>(eid) * 8 + 0x20);
+        void* sub = *reinterpret_cast<void**>(reinterpret_cast<u8*>(info) + 0xf8);
+        return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(sub) + 0x370);
+    }
+    return 0.0f;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// sv_fighter_util — default fighter param accessors
+// Pattern: kind < 0x5e → index through FighterParamAccessor2
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x71022822b0 -- get_default_fighter_param_walk_speed_max (72B) ─
+// [derived: reads f32 at param_base + index*0x628 + 0x10]
+f32 get_default_fighter_param_walk_speed_max_71022822b0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    u32 kind = *reinterpret_cast<u32*>(reinterpret_cast<u8*>(ctx) + 0x198);
+    if (kind >= 0x5e) abort();
+    u8* accessor = reinterpret_cast<u8*>(DAT_71052bb3b0);
+    s32 idx = *reinterpret_cast<s32*>(accessor + static_cast<s32>(kind) * 0xc + 0x14f0);
+    void* data_ptr = *reinterpret_cast<void**>(accessor);
+    void* param_base = *reinterpret_cast<void**>(reinterpret_cast<u8*>(data_ptr) + 8);
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(param_base) + idx * 0x628 + 0x10);
+}
+
+// ── 0x7102282300 -- get_default_fighter_param_ground_brake (72B) ──
+// [derived: reads f32 at param_base + index*0x628 + 0x20]
+f32 get_default_fighter_param_ground_brake_7102282300(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    u32 kind = *reinterpret_cast<u32*>(reinterpret_cast<u8*>(ctx) + 0x198);
+    if (kind >= 0x5e) abort();
+    u8* accessor = reinterpret_cast<u8*>(DAT_71052bb3b0);
+    s32 idx = *reinterpret_cast<s32*>(accessor + static_cast<s32>(kind) * 0xc + 0x14f0);
+    void* data_ptr = *reinterpret_cast<void**>(accessor);
+    void* param_base = *reinterpret_cast<void**>(reinterpret_cast<u8*>(data_ptr) + 8);
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(param_base) + idx * 0x628 + 0x20);
+}
+
+// ── 0x7102282370 -- get_default_fighter_param_air_brake_x (72B) ──
+// [derived: reads f32 at param_base + index*0x628 + 0x64]
+f32 get_default_fighter_param_air_brake_x_7102282370(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    u32 kind = *reinterpret_cast<u32*>(reinterpret_cast<u8*>(ctx) + 0x198);
+    if (kind >= 0x5e) abort();
+    u8* accessor = reinterpret_cast<u8*>(DAT_71052bb3b0);
+    s32 idx = *reinterpret_cast<s32*>(accessor + static_cast<s32>(kind) * 0xc + 0x14f0);
+    void* data_ptr = *reinterpret_cast<void**>(accessor);
+    void* param_base = *reinterpret_cast<void**>(reinterpret_cast<u8*>(data_ptr) + 8);
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(param_base) + idx * 0x628 + 0x64);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// sv_animcmd — ACMD command functions
+// Pattern: module vtable call + lua stack pop
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x71022a9a00 -- app::sv_animcmd::REVERSE_LR (104B) ──────────
+// [derived: PostureModule->vt[0x18](posture) — flips facing direction]
+void REVERSE_LR_71022a9a00(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0);
+    void* posture = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x38);
+    void** vt = *reinterpret_cast<void***>(posture);
+    reinterpret_cast<void(*)(void*)>(vt[0xc0 / 8])(posture);
+    // pop lua stack
+    u64 base = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20));
+    u64 top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
+    while (top < base + 0x10) {
+        *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = top + 0x10;
+        *reinterpret_cast<u32*>(top + 8) = 0;
+        top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
+    }
+    *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = base + 0x10;
+}
+
+// ── 0x71022a9ae0 -- app::sv_animcmd::UPDATE_ROT (104B) ──────────
+// [derived: PostureModule->vt[0x20](posture) — updates rotation]
+void UPDATE_ROT_71022a9ae0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0);
+    void* posture = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x38);
+    void** vt = *reinterpret_cast<void***>(posture);
+    reinterpret_cast<void(*)(void*)>(vt[0x100 / 8])(posture);
+    u64 base = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20));
+    u64 top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
+    while (top < base + 0x10) {
+        *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = top + 0x10;
+        *reinterpret_cast<u32*>(top + 8) = 0;
+        top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
+    }
+    *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = base + 0x10;
+}
+
+// ── 0x71022a9a70 -- app::sv_animcmd::STICK_LR (108B) ────────────
+// [derived: PostureModule->vt[0x2f](posture, 0) — stick-based LR]
+void STICK_LR_71022a9a70(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0);
+    void* posture = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x38);
+    void** vt = *reinterpret_cast<void***>(posture);
+    reinterpret_cast<void(*)(void*, s32)>(vt[0x178 / 8])(posture, 0);
+    u64 base = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20));
+    u64 top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
+    while (top < base + 0x10) {
+        *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = top + 0x10;
+        *reinterpret_cast<u32*>(top + 8) = 0;
+        top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
+    }
+    *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = base + 0x10;
+}
+
+// ── 0x71022aa4e0 -- app::sv_animcmd::HIT_RESET_ALL (108B) ───────
+// [derived: CollisionModule(+0xb0)->vt[0x11](collision, 0) — resets all hitboxes]
+void HIT_RESET_ALL_71022aa4e0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0);
+    void* collision = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0xb0);
+    void** vt = *reinterpret_cast<void***>(collision);
+    reinterpret_cast<void(*)(void*, s32)>(vt[0x88 / 8])(collision, 0);
+    u64 base = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20));
+    u64 top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
+    while (top < base + 0x10) {
+        *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = top + 0x10;
+        *reinterpret_cast<u32*>(top + 8) = 0;
+        top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
+    }
+    *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = base + 0x10;
+}
+
+// ── 0x71022ac050 -- app::sv_animcmd::CAM_ZOOM_OUT (108B) ─────────
+// [derived: CameraModule(+0x60)->vt[0x1f](camera, 0) — zoom out camera]
+void CAM_ZOOM_OUT_71022ac050(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0);
+    void* camera = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x60);
+    void** vt = *reinterpret_cast<void***>(camera);
+    reinterpret_cast<void(*)(void*, s32)>(vt[0xf8 / 8])(camera, 0);
+    u64 base = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20));
+    u64 top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
+    while (top < base + 0x10) {
+        *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = top + 0x10;
+        *reinterpret_cast<u32*>(top + 8) = 0;
+        top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
+    }
+    *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = base + 0x10;
+}
+
+// ── 0x71022a2870 -- app::sv_animcmd::COL_NORMAL (128B) ──────────
+// [derived: ColorBlendModule(+0x70) → get flag via vt[0x2e], set via vt[0xc]]
+void COL_NORMAL_71022a2870(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0);
+    void* cb = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x70);
+    void** vt = *reinterpret_cast<void***>(cb);
+    u32 flag = reinterpret_cast<u32(*)(void*)>(vt[0x170 / 8])(cb);
+    reinterpret_cast<void(*)(void*, u32)>(vt[0x60 / 8])(cb, flag & 1);
+    u64 base = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20));
+    u64 top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
+    while (top < base + 0x10) {
+        *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = top + 0x10;
+        *reinterpret_cast<u32*>(top + 8) = 0;
+        top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
+    }
+    *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = base + 0x10;
+}
+
+// ── 0x71022a28f0 -- app::sv_animcmd::BURN_COLOR_NORMAL (128B) ───
+// [derived: ColorBlendModule(+0x70) → get flag via vt[0x2e], set burn via vt[0x14]]
+void BURN_COLOR_NORMAL_71022a28f0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0);
+    void* cb = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x70);
+    void** vt = *reinterpret_cast<void***>(cb);
+    u32 flag = reinterpret_cast<u32(*)(void*)>(vt[0x170 / 8])(cb);
+    reinterpret_cast<void(*)(void*, u32)>(vt[0xa0 / 8])(cb, flag & 1);
+    u64 base = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20));
+    u64 top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
+    while (top < base + 0x10) {
+        *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = top + 0x10;
+        *reinterpret_cast<u32*>(top + 8) = 0;
+        top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
+    }
+    *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = base + 0x10;
+}
+
+// ── 0x71022a9b50 -- app::sv_animcmd::SET_AIR (132B) ─────────────
+// [derived: StatusModule(+0x40)->vt[0x2f](status,2,0); GroundModule(+0x58)->vt[0x2a](ground,5)]
+void SET_AIR_71022a9b50(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0);
+    void* status = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x40);
+    void** svt = *reinterpret_cast<void***>(status);
+    reinterpret_cast<void(*)(void*, s32, s32)>(svt[0x178 / 8])(status, 2, 0);
+    void* ground = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x58);
+    void** gvt = *reinterpret_cast<void***>(ground);
+    reinterpret_cast<void(*)(void*, s32)>(gvt[0x150 / 8])(ground, 5);
+    u64 base = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20));
+    u64 top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
+    while (top < base + 0x10) {
+        *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = top + 0x10;
+        *reinterpret_cast<u32*>(top + 8) = 0;
+        top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
+    }
+    *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = base + 0x10;
+}
+
+// ── 0x71022b0f80 -- app::sv_animcmd::START_INFO_FLASH_EYE (92B) ─
+// [derived: calls FighterUtil::flash_eye_info(acc) + pop lua stack]
+void START_INFO_FLASH_EYE_71022b0f80(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0);
+    FUN_7100695b10(acc);
+    u64 base = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20));
+    u64 top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
+    while (top < base + 0x10) {
+        *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = top + 0x10;
+        *reinterpret_cast<u32*>(top + 8) = 0;
+        top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
+    }
+    *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = base + 0x10;
+}
+
+// ── 0x71022b4e10 -- app::sv_animcmd::GET_VOICE_REGION (92B) ─────
+// [derived: pop lua stack, then SoundModule(+0x148)->vt[0x52](sound)]
+void GET_VOICE_REGION_71022b4e10(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0);
+    u64 base = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20));
+    u64 top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
+    while (top < base + 0x10) {
+        *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = top + 0x10;
+        *reinterpret_cast<u32*>(top + 8) = 0;
+        top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
+    }
+    *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = base + 0x10;
+    void* sound = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x148);
+    void** vt = *reinterpret_cast<void***>(sound);
+    reinterpret_cast<void(*)(void*)>(vt[0x290 / 8])(sound);
+}
+
+// ── 0x71022b4e70 -- app::sv_animcmd::GET_VOICE_REGION_NEW (92B) ──
+// [derived: pop lua stack, then SoundModule(+0x148)->vt[0x53](sound)]
+void GET_VOICE_REGION_NEW_71022b4e70(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0);
+    u64 base = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20));
+    u64 top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
+    while (top < base + 0x10) {
+        *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = top + 0x10;
+        *reinterpret_cast<u32*>(top + 8) = 0;
+        top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
+    }
+    *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = base + 0x10;
+    void* sound = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x148);
+    void** vt = *reinterpret_cast<void***>(sound);
+    reinterpret_cast<void(*)(void*)>(vt[0x298 / 8])(sound);
+}
+
+// ── 0x71022b4ed0 -- app::sv_animcmd::GET_VOICE_VARIATION (92B) ───
+// [derived: pop lua stack, then SoundModule(+0x148)->vt[0x54](sound)]
+void GET_VOICE_VARIATION_71022b4ed0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0);
+    u64 base = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20));
+    u64 top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
+    while (top < base + 0x10) {
+        *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = top + 0x10;
+        *reinterpret_cast<u32*>(top + 8) = 0;
+        top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
+    }
+    *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = base + 0x10;
+    void* sound = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x148);
+    void** vt = *reinterpret_cast<void***>(sound);
+    reinterpret_cast<void(*)(void*)>(vt[0x2a0 / 8])(sound);
+}
+
+// ── 0x71022b3490 -- app::sv_animcmd::FT_DISABLE_CURRY_FACE (104B) ─
+// [derived: sets StatusModule(+0x40)+0x11a = 1, calls helper, pop stack]
+void FT_DISABLE_CURRY_FACE_71022b3490(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0);
+    void* status = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x40);
+    *reinterpret_cast<u8*>(reinterpret_cast<u8*>(status) + 0x11a) = 1;
+    FUN_7100695070();
+    u64 base = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20));
+    u64 top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
+    while (top < base + 0x10) {
+        *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = top + 0x10;
+        *reinterpret_cast<u32*>(top + 8) = 0;
+        top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
+    }
+    *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = base + 0x10;
+}
+
+// ── 0x71022ad810 -- app::sv_animcmd::IS_MENU (140B) ─────────────
+// [derived: pop stack, check ctx+0x19c for player entry, look up fighter info]
+u32 IS_MENU_71022ad810(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    u64 base = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20));
+    u64 top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
+    while (top < base + 0x10) {
+        *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = top + 0x10;
+        *reinterpret_cast<u32*>(top + 8) = 0;
+        top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
+    }
+    *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = base + 0x10;
+    u32 entry = *reinterpret_cast<u32*>(reinterpret_cast<u8*>(ctx) + 0x19c);
+    if (entry != 0xffffffff) {
+        if (entry >= 8) abort();
+        void* fm = *reinterpret_cast<void**>(DAT_71052b84f8);
+        void* fi = *reinterpret_cast<void**>(
+            reinterpret_cast<u8*>(fm) + static_cast<s32>(entry) * 8 + 0x20);
+        if (fi != nullptr) {
+            void* sub = *reinterpret_cast<void**>(reinterpret_cast<u8*>(fi) + 0xf8);
+            if (*reinterpret_cast<u8*>(reinterpret_cast<u8*>(sub) + 0x94) != 0) {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
