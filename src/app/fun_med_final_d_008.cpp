@@ -1,5 +1,7 @@
 #include "types.h"
 
+extern "C" void abort(void) __attribute__((noreturn));
+
 // 0x7100934410  size=1408 bytes
 long FUN_7100934410(long param_1, long param_2, long param_3) { (void)param_1; (void)param_2; (void)param_3; return 0; }
 
@@ -21,8 +23,8 @@ long FUN_710141a960(long param_1) { (void)param_1; return 0; }
 // 0x710141cfd0  size=8288 bytes
 long FUN_710141cfd0(long param_1, long param_2, long param_3, long param_4) { (void)param_1; (void)param_2; (void)param_3; (void)param_4; return 0; }
 
-// 0x7101464350  size=224 bytes
-long FUN_7101464350(long param_1, long param_2) { (void)param_1; (void)param_2; return 0; }
+// 0x7101464350  size=12 — calls abort
+void FUN_7101464350(void) { abort(); }
 
 // 0x7101482640  size=1712 bytes
 long FUN_7101482640(long param_1, long param_2, long param_3) { (void)param_1; (void)param_2; (void)param_3; return 0; }
@@ -55,8 +57,8 @@ long FUN_71015682d0(long param_1, long param_2, long param_3) { (void)param_1; (
 
 // Note: FUN_7101568e2c -- not 16-byte aligned, skip
 
-// 0x710160a950  size=608 bytes
-long FUN_710160a950(long param_1, long param_2) { (void)param_1; (void)param_2; return 0; }
+// 0x710160a950  size=12 — calls abort
+void FUN_710160a950(void) { abort(); }
 
 // Note: FUN_7101648c48 -- not 16-byte aligned, skip
 
@@ -69,8 +71,8 @@ long FUN_7101758fa0(long param_1) { (void)param_1; return 0; }
 // 0x710175b0a0  size=144 bytes
 long FUN_710175b0a0(long param_1) { (void)param_1; return 0; }
 
-// 0x71017e8370  size=272 bytes
-long FUN_71017e8370(long param_1, long param_2) { (void)param_1; (void)param_2; return 0; }
+// 0x71017e8370  size=12 — calls abort
+void FUN_71017e8370(void) { abort(); }
 
 // 0x71017f8f90  size=576 bytes
 long FUN_71017f8f90(long param_1, long param_2) { (void)param_1; (void)param_2; return 0; }

@@ -182,7 +182,7 @@ u64 FUN_71037c6940(s64 param_1, void *param_2, u64 param_3)
     return param_3;
 }
 
-// 0x7103979c34 -- field call at param1+0x30 with param1+0x60 (136 bytes)
+// 0x7103979c34 -- field call at param1+0x30 with param1+0x60 (32 bytes)
 __attribute__((optnone))
 u64 FUN_7103979c34(s64 param_1)
 {

@@ -1,5 +1,7 @@
 #include "types.h"
 
+extern "C" void abort(void) __attribute__((noreturn));
+
 // 0x71035e9910  size=224 bytes
 long FUN_71035e9910(long param_1, long param_2) { (void)param_1; (void)param_2; return 0; }
 
@@ -87,5 +89,5 @@ long FUN_7103720f10(long param_1, long param_2) { (void)param_1; (void)param_2; 
 // 0x71037212a0  size=656 bytes
 long FUN_71037212a0(long param_1, long param_2) { (void)param_1; (void)param_2; return 0; }
 
-// 0x7103725a10  size=640 bytes
-long FUN_7103725a10(long param_1, long param_2) { (void)param_1; (void)param_2; return 0; }
+// 0x7103725a10  size=12 — calls abort
+void FUN_7103725a10(void) { abort(); }

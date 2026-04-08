@@ -207,9 +207,7 @@ u64 FUN_710392f020(void)
 //   inner+0x90 [inferred: data region passed as 'this' to function at +0x70]
 u32 FUN_71039737f0(s64 param_1)
 {
-    // +0x08 → +0x18 [inferred: double-deref to inner object]
     s64 inner = *(s64 *)(*(s64 *)(param_1 + 8) + 0x18);
-    // +0x70 [inferred: fn_ptr], +0x90 [inferred: data/this pointer]
     reinterpret_cast<void (*)(s64)>(*(s64 *)(inner + 0x70))(inner + 0x90);
     return 0;
 }

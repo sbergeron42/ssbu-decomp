@@ -1,5 +1,7 @@
 #include "types.h"
 
+extern "C" void abort(void) __attribute__((noreturn));
+
 // 0x7101f92e90  size=752 bytes
 long FUN_7101f92e90(long param_1, long param_2) { (void)param_1; (void)param_2; return 0; }
 
@@ -69,23 +71,23 @@ long FUN_7101ff51c0(long param_1, long param_2) { (void)param_1; (void)param_2; 
 // 0x7101ff6fb0  size=384 bytes
 long FUN_7101ff6fb0(long param_1, long param_2) { (void)param_1; (void)param_2; return 0; }
 
-// 0x7102513280  size=16 bytes
-long FUN_7102513280(long param_1) { (void)param_1; return 0; }
+// 0x7102513280  size=12 bytes — calls abort (pure virtual stub)
+void FUN_7102513280(void) { abort(); }
 
 // 0x7102525180  size=1264 bytes
 long FUN_7102525180(long param_1, long param_2, long param_3) { (void)param_1; (void)param_2; (void)param_3; return 0; }
 
-// 0x7102528660  size=16 bytes
-long FUN_7102528660(long param_1) { (void)param_1; return 0; }
+// 0x7102528660  size=12 bytes — calls abort (pure virtual stub)
+void FUN_7102528660(void) { abort(); }
 
-// 0x71025fc8a0  size=4272 bytes
-long FUN_71025fc8a0(long param_1, long param_2, long param_3, long param_4) { (void)param_1; (void)param_2; (void)param_3; (void)param_4; return 0; }
+// 0x71025fc8a0  size=12 � calls abort
+void FUN_71025fc8a0(void) { abort(); }
 
-// 0x7102627c10  size=16 bytes
-long FUN_7102627c10(long param_1) { (void)param_1; return 0; }
+// 0x7102627c10  size=12 bytes — calls abort (pure virtual stub)
+void FUN_7102627c10(void) { abort(); }
 
-// 0x710275f250  size=16 bytes
-long FUN_710275f250(long param_1) { (void)param_1; return 0; }
+// 0x710275f250  size=12 bytes — calls abort (pure virtual stub)
+void FUN_710275f250(void) { abort(); }
 
-// 0x7102855970  size=16 bytes
-long FUN_7102855970(long param_1) { (void)param_1; return 0; }
+// 0x7102855970  size=12 bytes — calls abort (pure virtual stub)
+void FUN_7102855970(void) { abort(); }
