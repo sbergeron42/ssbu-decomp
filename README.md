@@ -8,21 +8,36 @@ Targeting the final version: **patch 13.0.4**.
 
 <!-- Verified by tools/verify_all.py against real 13.0.4 binary -->
 
-| Category | Count | Percentage |
+### By function count
+
+| Category | Count | % of total |
 |----------|------:|------------|
 | **Total functions** | 39,635 | |
-| Verified byte-identical | 11,281 | 28.46% |
-| Compiled (non-matching) | 4,726 | 11.92% |
-| **Total decompiled** | **16,007** | **40.39%** |
-| Undecompiled | 23,628 | 59.61% |
+| Verified (real C++) | 9,573 | 24.15% |
+| Verified (naked asm) | 569 | 1.44% |
+| Non-matching (WIP) | 3,312 | 8.36% |
+| **Total compiled** | **13,454** | **33.94%** |
+| Undecompiled | 26,181 | 66.06% |
+
+### By bytes (.text)
+
+| Category | Size | % of .text |
+|----------|-----:|------------|
+| **.text total** | **27.0 MB** | |
+| Compiled | 1.69 MB | 6.24% |
+| Byte-matched | 0.48 MB | 1.76% |
 
 ```
-Verified  [###########                             ]  11,281 / 39,635  (28.46%)
-Compiled  [################                        ]  16,007 / 39,635  (40.39%)
+By functions:  13,454 / 39,635  (33.94% compiled, 25.59% verified)
+By bytes:       1.69M / 27.0M   ( 6.24% compiled,  1.76% verified)
 ```
 
-> **11,281 functions verified byte-identical** against the real 13.0.4 binary.
-> 74.7% match rate on verified functions. Autonomous multi-agent orchestrator operational.
+> Progress skews toward small functions: avg matched function is 46 bytes vs
+> avg undecompiled 967 bytes. Byte-weighted progress is the more accurate
+> measure of source recovery. Both metrics are shown for transparency.
+>
+> Naked asm functions (569) are binary-identical but not real source recovery
+> -- they are tracked separately from C++ decomp.
 
 ## Naming Provenance
 
