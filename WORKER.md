@@ -2,23 +2,16 @@
 
 ## Model: Opus
 
-## Task: New decomp — fighter motion/animation functions
+## Task: Continue fighter motion decomp — expand MotionModule coverage
 
-### Context
-852 undecompiled motion/animation functions with community names. MotionModule.h already has 128 vtable methods. The animation system is heavily used by moveset modders.
+You produced 10 fighter motion functions last round. Keep going — there are 852 undecompiled.
 
 ### Approach
-1. Start with small named MotionModule functions (under 200 bytes)
-2. Use `mcp__ghidra__search_functions_by_name("motion")` to find targets
-3. Decompile in Ghidra, write C++ using MotionModule.h
-4. Use existing vtable method wrappers
+Search for named undecompiled MotionModule functions. Focus on small ones (<200B) that use the existing 128 vtable methods in MotionModule.h.
 
-### Target Area
-Functions with names containing: motion_, change_motion, set_rate, set_frame, is_end, is_loop, add_motion_partial
-
-### Headers: include/app/modules/MotionModule.h, BattleObjectModuleAccessor.h
+### Target: src/app/fighter_motion.cpp (append to existing)
+### Headers: MotionModule.h, BattleObjectModuleAccessor.h
 ### Derivation Chains MANDATORY
-### Output: src/app/fighter_motion.cpp
 ### Do NOT use naked asm.
 
 ### Quick Reference
