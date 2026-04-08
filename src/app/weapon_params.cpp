@@ -131,3 +131,74 @@ f32 LOG_ROT_Z_RATIO_710165f2a0()      { return FPA2_PARAM(0xc08, 0x178, 0x44); }
 
 f32 MECHAKOOPA_BURST_FRAME_71016611e0()           { return FPA2_PARAM(0xd20, 0x198, 0x00); }
 f32 MECHAKOOPA_COUNT_DOWN_FRAME_7101661200()      { return FPA2_PARAM(0xd20, 0x198, 0x04); }
+
+// Helper: FPA2 singleton → one pointer read → final f32 (2-level pattern)
+// [derived: *(*(FPA2 + off1) + off2)]
+#define FPA2_PARAM2(off1, off2) \
+    *reinterpret_cast<f32*>( \
+        *reinterpret_cast<u64*>( \
+            reinterpret_cast<u8*>(DAT_71052bb3b0) + (off1)) + (off2))
+
+// ════════════════════════════════════════════════════════════════════
+// BUDDYBOMB params — Snake's C4 (20B each)
+// [derived: FPA2+0x12d0 → final offset]
+// ════════════════════════════════════════════════════════════════════
+
+f32 init_bound_frame_71016593a0()              { return FPA2_PARAM2(0x12d0, 0x230); }
+f32 special_lw_gravity_71016593c0()            { return FPA2_PARAM2(0x12d0, 0x234); }
+f32 special_lw_speed_y_max_71016593e0()        { return FPA2_PARAM2(0x12d0, 0x238); }
+f32 length_gravity_7101659400()                { return FPA2_PARAM2(0x12d0, 0x240); }
+f32 length_speed_y_max_7101659420()            { return FPA2_PARAM2(0x12d0, 0x244); }
+f32 length_angle_x_velocity_7101659440()       { return FPA2_PARAM2(0x12d0, 0x260); }
+f32 length_angle_y_velocity_7101659460()       { return FPA2_PARAM2(0x12d0, 0x264); }
+f32 length_angle_z_velocity_7101659480()       { return FPA2_PARAM2(0x12d0, 0x268); }
+f32 side_gravity_71016594a0()                  { return FPA2_PARAM2(0x12d0, 0x26c); }
+f32 side_speed_y_max_71016594c0()              { return FPA2_PARAM2(0x12d0, 0x270); }
+f32 side_angle_x_velocity_71016594e0()         { return FPA2_PARAM2(0x12d0, 0x28c); }
+f32 side_angle_y_velocity_7101659500()         { return FPA2_PARAM2(0x12d0, 0x290); }
+f32 side_angle_z_velocity_7101659520()         { return FPA2_PARAM2(0x12d0, 0x294); }
+f32 flashing_frame_before_life_over_7101659560(){ return FPA2_PARAM2(0x12d0, 0x2a4); }
+f32 rebound_speed_x_add_7101659580()           { return FPA2_PARAM2(0x12d0, 0x2a8); }
+f32 rebound_speed_y_add_71016595a0()           { return FPA2_PARAM2(0x12d0, 0x2ac); }
+
+// ════════════════════════════════════════════════════════════════════
+// EXPLOSIONBOMB extra params (20B)
+// [derived: FPA2+0x3f0 → +0x120]
+// ════════════════════════════════════════════════════════════════════
+
+f32 EXPLOSIONBOMB_WIRE_ROT_SPEED_710165d480()  { return FPA2_PARAM2(0x3f0, 0x120); }
+
+// ════════════════════════════════════════════════════════════════════
+// PICKELBOMB params — Minecraft TNT (20B each)
+// [derived: FPA2+0x13b0 → final offset]
+// ════════════════════════════════════════════════════════════════════
+
+f32 reaction_7101668fa0()                      { return FPA2_PARAM2(0x13b0, 0x750); }
+f32 ignition_7101669000()                      { return FPA2_PARAM2(0x13b0, 0x75c); }
+f32 lost_7101669060()                          { return FPA2_PARAM2(0x13b0, 0x768); }
+f32 gravity_accel_71016690a0()                 { return FPA2_PARAM2(0x13b0, 0x770); }
+f32 gravity_accel_max_71016690c0()             { return FPA2_PARAM2(0x13b0, 0x774); }
+f32 gravity_frame_71016690e0()                 { return FPA2_PARAM2(0x13b0, 0x778); }
+f32 flashing_frame_before_life_7101669100()    { return FPA2_PARAM2(0x13b0, 0x77c); }
+
+// ════════════════════════════════════════════════════════════════════
+// PICKELOBJECT params — Minecraft objects (20B each)
+// [derived: FPA2+0x13b0 → final offset]
+// ════════════════════════════════════════════════════════════════════
+
+f32 flash_start_frame_710166e110()             { return FPA2_PARAM2(0x13b0, 0x51c); }
+f32 camera_range_damag_mul_start_rate_710166e190() { return FPA2_PARAM2(0x13b0, 0x530); }
+f32 camera_range_damag_mul_end_rate_710166e1b0()   { return FPA2_PARAM2(0x13b0, 0x534); }
+f32 camera_range_damag_mul_min_710166e1d0()    { return FPA2_PARAM2(0x13b0, 0x538); }
+f32 camera_range_damag_mul_max_710166e1f0()    { return FPA2_PARAM2(0x13b0, 0x53c); }
+f32 generate_continuous_forbid_frame_710166e210() { return FPA2_PARAM2(0x13b0, 0x540); }
+f32 jostle_touch_ground_frame_710166e250()     { return FPA2_PARAM2(0x13b0, 0x554); }
+f32 jostle_up_touch_ground_frame_710166e270()  { return FPA2_PARAM2(0x13b0, 0x55c); }
+f32 jostle_up_touch_air_frame_710166e290()     { return FPA2_PARAM2(0x13b0, 0x560); }
+
+// ════════════════════════════════════════════════════════════════════
+// POWERESA / ROCKETBELT params (20B each)
+// ════════════════════════════════════════════════════════════════════
+
+f32 POWERESA_SHAPE_TYPE_710166f720()           { return FPA2_PARAM2(0xc78, 0x3a0); }
+f32 get_energy_max_frame_710166fc60()          { return FPA2_PARAM2(0x50, 0xefc); }

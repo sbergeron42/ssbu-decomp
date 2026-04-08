@@ -2366,6 +2366,442 @@ f32 width_710036b810(void* L) {
            *reinterpret_cast<f32*>(reinterpret_cast<u8*>(ai) + 0xc0);
 }
 
+// ════════════════════════════════════════════════════════════════════
+// AI check_stat — additional bitfield tests
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x7100361350 -- app::ai::check_stat_gorogoro (32B) ────────────
+// [derived: tests bits 0x80020 of ai_data(+0x168)->+0x54 (combined gorogoro flags)]
+u32 check_stat_gorogoro_7100361350(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    return (*reinterpret_cast<u32*>(reinterpret_cast<u8*>(ai) + 0x54) & 0x80020) != 0;
+}
+
+// ── 0x7100361510 -- app::ai::check_stat_piyo (28B) ────────────────
+// [derived: checks ai_data(+0x168)->+0x74 in range [9,11] (piyo status kinds)]
+u32 check_stat_piyo_7100361510(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    return static_cast<u32>(*reinterpret_cast<s32*>(reinterpret_cast<u8*>(ai) + 0x74) - 9) < 3;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// AI command step checks — fighting game input checks
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x7100361fe0 -- app::ai::check_command_236236_step (44B) ──────
+// [derived: ai_data+0x28 == 0x55 && sign bit of +0x68 set]
+u64 check_command_236236_step_7100361fe0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    if (*reinterpret_cast<s32*>(reinterpret_cast<u8*>(ai) + 0x28) == 0x55 &&
+        *reinterpret_cast<s8*>(reinterpret_cast<u8*>(ai) + 0x68) < 0) {
+        return 1;
+    }
+    return static_cast<u64>(0);
+}
+
+// ── 0x7100362010 -- app::ai::check_command_21416_step (44B) ───────
+// [derived: ai_data+0x28 == 0x55 && bit0 of +0x69 set]
+u64 check_command_21416_step_7100362010(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    if (*reinterpret_cast<s32*>(reinterpret_cast<u8*>(ai) + 0x28) == 0x55 &&
+        (*reinterpret_cast<u8*>(reinterpret_cast<u8*>(ai) + 0x69) & 1) != 0) {
+        return 1;
+    }
+    return static_cast<u64>(0);
+}
+
+// ── 0x7100362040 -- app::ai::check_command_214214_step (44B) ──────
+// [derived: ai_data+0x28 == 0x55 && bit1 of +0x69 set]
+u64 check_command_214214_step_7100362040(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    if (*reinterpret_cast<s32*>(reinterpret_cast<u8*>(ai) + 0x28) == 0x55 &&
+        (*reinterpret_cast<u8*>(reinterpret_cast<u8*>(ai) + 0x69) >> 1 & 1) != 0) {
+        return 1;
+    }
+    return static_cast<u64>(0);
+}
+
+// ── 0x7100362070 -- app::ai::check_command_23634_step (44B) ───────
+// [derived: ai_data+0x28 == 0x55 && bit2 of +0x69 set]
+u64 check_command_23634_step_7100362070(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    if (*reinterpret_cast<s32*>(reinterpret_cast<u8*>(ai) + 0x28) == 0x55 &&
+        (*reinterpret_cast<u8*>(reinterpret_cast<u8*>(ai) + 0x69) >> 2 & 1) != 0) {
+        return 1;
+    }
+    return static_cast<u64>(0);
+}
+
+// ── 0x7100361b20 -- app::ai::check_cliffable_floor_lr (44B) ───────
+// [derived: checks bit6 or bit7 of floor_data(+0xd0)->+0x5c based on lr sign]
+u32 check_cliffable_floor_lr_7100361b20(void* L, f32 lr) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    void* floor = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ai) + 0xd0);
+    u32 mask = 0x40;
+    if (lr == 0.0f || lr < 0.0f) {
+        mask = 0x80;
+    }
+    return (*reinterpret_cast<u32*>(reinterpret_cast<u8*>(floor) + 0x5c) & mask) != 0;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// AI target queries — FUN_7100314030 lookup family
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x7100366de0 -- app::ai::target_height (40B) ──────────────────
+// [derived: FUN_7100314030(global, ctx+0xc50) → +0xc8 (height)]
+f32 target_height_7100366de0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* target = FUN_7100314030(DAT_71052b5fd8,
+        reinterpret_cast<void*>(reinterpret_cast<u8*>(ctx) + 0xc50));
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(target) + 0xc8);
+}
+
+// ── 0x7100366e10 -- app::ai::target_pos_x (40B) ──────────────────
+// [derived: FUN_7100314030(global, ctx+0xc50) → +0x80 (pos.x)]
+f32 target_pos_x_7100366e10(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* target = FUN_7100314030(DAT_71052b5fd8,
+        reinterpret_cast<void*>(reinterpret_cast<u8*>(ctx) + 0xc50));
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(target) + 0x80);
+}
+
+// ── 0x7100366e40 -- app::ai::target_pos_y (40B) ──────────────────
+// [derived: FUN_7100314030(global, ctx+0xc50) → +0x84 (pos.y)]
+f32 target_pos_y_7100366e40(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* target = FUN_7100314030(DAT_71052b5fd8,
+        reinterpret_cast<void*>(reinterpret_cast<u8*>(ctx) + 0xc50));
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(target) + 0x84);
+}
+
+// ── 0x7100366e70 -- app::ai::target_speed_x (40B) ────────────────
+// [derived: FUN_7100314030(global, ctx+0xc50) → +0xa0 (speed.x)]
+f32 target_speed_x_7100366e70(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* target = FUN_7100314030(DAT_71052b5fd8,
+        reinterpret_cast<void*>(reinterpret_cast<u8*>(ctx) + 0xc50));
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(target) + 0xa0);
+}
+
+// ── 0x7100366ea0 -- app::ai::target_speed_y (40B) ────────────────
+// [derived: FUN_7100314030(global, ctx+0xc50) → +0xa4 (speed.y)]
+f32 target_speed_y_7100366ea0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* target = FUN_7100314030(DAT_71052b5fd8,
+        reinterpret_cast<void*>(reinterpret_cast<u8*>(ctx) + 0xc50));
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(target) + 0xa4);
+}
+
+// ── 0x7100366ed0 -- app::ai::target_scale (40B) ──────────────────
+// [derived: FUN_7100314030(global, ctx+0xc50) → +0xc0 (scale)]
+f32 target_scale_7100366ed0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* target = FUN_7100314030(DAT_71052b5fd8,
+        reinterpret_cast<void*>(reinterpret_cast<u8*>(ctx) + 0xc50));
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(target) + 0xc0);
+}
+
+// ── 0x7100366fc0 -- app::ai::target_lr (40B) ─────────────────────
+// [derived: FUN_7100314030(global, ctx+0xc50) → +0xc4 (lr direction)]
+f32 target_lr_7100366fc0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* target = FUN_7100314030(DAT_71052b5fd8,
+        reinterpret_cast<void*>(reinterpret_cast<u8*>(ctx) + 0xc50));
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(target) + 0xc4);
+}
+
+// ── 0x7100367020 -- app::ai::target_motion_kind (40B) ─────────────
+// [derived: FUN_7100314030(global, ctx+0xc50) → +0x38 (motion kind hash)]
+u64 target_motion_kind_7100367020(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* target = FUN_7100314030(DAT_71052b5fd8,
+        reinterpret_cast<void*>(reinterpret_cast<u8*>(ctx) + 0xc50));
+    return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(target) + 0x38);
+}
+
+// ── 0x7100367050 -- app::ai::target_motion_frame (40B) ────────────
+// [derived: FUN_7100314030(global, ctx+0xc50) → +0x48 (motion frame)]
+f32 target_motion_frame_7100367050(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* target = FUN_7100314030(DAT_71052b5fd8,
+        reinterpret_cast<void*>(reinterpret_cast<u8*>(ctx) + 0xc50));
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(target) + 0x48);
+}
+
+// ── 0x71003666e0 -- app::ai::check_target_stat_air (44B) ──────────
+// [derived: FUN_7100314030(global, ctx+0xc50) → bit0 of +0x54]
+u32 check_target_stat_air_71003666e0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* target = FUN_7100314030(DAT_71052b5fd8,
+        reinterpret_cast<void*>(reinterpret_cast<u8*>(ctx) + 0xc50));
+    return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(target) + 0x54) & 1;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// AI floor/platform queries
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x7100367910 -- app::ai::floor_width (28B) ───────────────────
+// [derived: |floor_data(+0xd0)->+0x30 - floor_data(+0xd0)->+0x20| (right - left edge)]
+f32 floor_width_7100367910(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    void* floor = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ai) + 0xd0);
+    return __builtin_fabsf(*reinterpret_cast<f32*>(reinterpret_cast<u8*>(floor) + 0x30) -
+                           *reinterpret_cast<f32*>(reinterpret_cast<u8*>(floor) + 0x20));
+}
+
+// ── 0x7100367930 -- app::ai::floor_center (36B) ──────────────────
+// [derived: average of floor_data(+0xd0)->+0x30 and +0x20 (midpoint of floor)]
+f32 floor_center_7100367930(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    void* floor = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ai) + 0xd0);
+    return (*reinterpret_cast<f32*>(reinterpret_cast<u8*>(floor) + 0x30) +
+            *reinterpret_cast<f32*>(reinterpret_cast<u8*>(floor) + 0x20)) * 0.5f;
+}
+
+// ── 0x7100367e90 -- app::ai::floor_moves (20B) ──────────────────
+// [derived: returns 128-bit vector from floor_data(+0xd0)->+0x10]
+float4 floor_moves_7100367e90(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    void* floor = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ai) + 0xd0);
+    return *reinterpret_cast<float4*>(reinterpret_cast<u8*>(floor) + 0x10);
+}
+
+// ── 0x71003680e0 -- app::ai::goal_pos (12B) ─────────────────────
+// [derived: returns 128-bit vector from ctx+0x270]
+float4 goal_pos_71003680e0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    return *reinterpret_cast<float4*>(reinterpret_cast<u8*>(ctx) + 0x270);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// AI param — air movement
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x710036b8b0 -- app::ai_param::air_high (32B) ────────────────
+// [derived: (ctx+0xb04 - 3.0) * ai_data(+0x168)->+0x200]
+f32 air_high_710036b8b0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    return (*reinterpret_cast<f32*>(reinterpret_cast<u8*>(ctx) + 0xb04) - 3.0f) *
+           *reinterpret_cast<f32*>(reinterpret_cast<u8*>(ai) + 0x200);
+}
+
+// ── 0x710036b8d0 -- app::ai_param::air_length (32B) ──────────────
+// [derived: (ctx+0xb08 - 3.0) * ai_data(+0x168)->+0x1fc]
+f32 air_length_710036b8d0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    return (*reinterpret_cast<f32*>(reinterpret_cast<u8*>(ctx) + 0xb08) - 3.0f) *
+           *reinterpret_cast<f32*>(reinterpret_cast<u8*>(ai) + 0x1fc);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// AI stage queries
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x710036b470 -- app::ai_stage::is_in_transition (28B) ─────────
+// [derived: checks StageManager+0xbc != 0]
+u32 is_in_transition_710036b470(void* L) {
+    void* mgr = *reinterpret_cast<void**>(DAT_710532999d8);
+    return *reinterpret_cast<s32*>(reinterpret_cast<u8*>(mgr) + 0xbc) != 0;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// AI danger zone / line segment
+// ════════════════════════════════════════════════════════════════════
+
+extern "C" void FUN_71002f9ca0(void*, void*, void*, u32);
+
+// ── 0x710036b4b0 -- app::ai_dangerzone::check_line_segment (32B) ──
+// [derived: calls FUN_71002f9ca0 on *DAT_71052b5fd8+0xc0 danger zone data]
+void check_line_segment_710036b4b0(void* L, void* p1, void* p2) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    void* global = *reinterpret_cast<void**>(DAT_71052b5fd8);
+    void* dz = *reinterpret_cast<void**>(reinterpret_cast<u8*>(global) + 0xc0);
+    u32 id = *reinterpret_cast<u32*>(reinterpret_cast<u8*>(ai) + 0xf0);
+    FUN_71002f9ca0(dz, p1, p2, id);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// AI system — mode/button/target
+// ════════════════════════════════════════════════════════════════════
+
+extern "C" __attribute__((visibility("hidden"))) u32 DAT_7104538fec[];
+
+// ── 0x7100376310 -- app::ai_system::add_button (32B) ──────────────
+// [derived: ORs button bitmask from DAT_7104538fec[kind] into ctx+0xc40]
+void add_button_7100376310(void* L, s32 kind) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    *reinterpret_cast<u32*>(reinterpret_cast<u8*>(ctx) + 0xc40) |= DAT_7104538fec[kind];
+}
+
+// ── 0x7100376360 -- app::ai_system::change_mode_action (32B) ──────
+// [derived: if **ctx->+0x38 is true, sets **ctx->+0x39 = 1]
+void change_mode_action_7100376360(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* p = *reinterpret_cast<void**>(ctx);
+    void* q = *reinterpret_cast<void**>(p);
+    if (*reinterpret_cast<u8*>(reinterpret_cast<u8*>(q) + 0x38) != 0) {
+        *reinterpret_cast<u8*>(reinterpret_cast<u8*>(q) + 0x39) = 1;
+    }
+}
+
+extern "C" void FUN_71002d8ef0(void*, s32, s32, s32);
+
+// ── 0x71003763a0 -- app::ai_system::change_mode (32B) ─────────────
+// [derived: calls FUN_71002d8ef0(ctx, mode, -1, 0)]
+void change_mode_71003763a0(void* L, s32 mode) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    FUN_71002d8ef0(ctx, mode, -1, 0);
+}
+
+extern "C" void FUN_71002ec1a0(void*);
+
+// ── 0x71003763c0 -- app::ai_system::change_target (8B) ────────────
+// [derived: tail-calls FUN_71002ec1a0(ctx)]
+void change_target_71003763c0(void* L) {
+    FUN_71002ec1a0(*reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8));
+}
+
+// ════════════════════════════════════════════════════════════════════
+// AI deprecated — distance helpers
+// ════════════════════════════════════════════════════════════════════
+
+extern "C" void FUN_7100358a80(f32, void*, void*);
+
+// ── 0x710036ad10 -- app::ai_deprecated::get_target_vector (24B) ───
+// [derived: calls FUN_7100358a80(ctx+0xc20 * param, ai_data, ctx+0xc50)]
+void get_target_vector_710036ad10(void* L, f32 param) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    f32 val = *reinterpret_cast<f32*>(reinterpret_cast<u8*>(ctx) + 0xc20);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    FUN_7100358a80(val * param, ai, reinterpret_cast<void*>(reinterpret_cast<u8*>(ctx) + 0xc50));
+}
+
+// ════════════════════════════════════════════════════════════════════
+// AI ground check
+// ════════════════════════════════════════════════════════════════════
+
+extern "C" __attribute__((visibility("hidden"))) f32 DAT_7104471e0c;
+extern "C" void FUN_71002eeb20(f32, f32, void*, s32);
+
+// ── 0x7100367ae0 -- app::ai::check_over_ground_distance_current_lr (24B)
+// [derived: calls FUN_71002eeb20(param, DAT_7104471e0c, ctx+0x180, 1)]
+void check_over_ground_distance_current_lr_7100367ae0(void* L, f32 dist) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    FUN_71002eeb20(dist, DAT_7104471e0c,
+        reinterpret_cast<void*>(reinterpret_cast<u8*>(ctx) + 0x180), 1);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// AI weapon
+// ════════════════════════════════════════════════════════════════════
+
+extern "C" void* FUN_71003596f0(void*);
+
+// ── 0x710036b030 -- app::ai_weapon::most_earliest_weapon (36B) ────
+// [derived: looks up earliest weapon via FUN_71003596f0, returns +8 or 0]
+u64 most_earliest_weapon_710036b030(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    void* result = FUN_71003596f0(ai);
+    if (result != nullptr) {
+        return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(result) + 8);
+    }
+    return 0;
+}
+
+extern "C" void* FUN_710033ba50(u32);
+extern "C" s32 FUN_71002f2820(u64, u32);
+
+// ── 0x7100369ff0 -- app::ai::attack_is_as_weapon (160B) ───────────
+// [derived: resolves cmd_id to action index, then reads weapon flag at attack_data+lVar*0xb8+6]
+u8 attack_is_as_weapon_7100369ff0(void* L, u64 cmd_id) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    u32 fighter_kind = *reinterpret_cast<u32*>(reinterpret_cast<u8*>(ctx) + 0x988);
+    void* attack_data = FUN_710033ba50(fighter_kind);
+    s32 action = FUN_71002f2820(cmd_id, fighter_kind);
+    s64 idx = 0;
+    if (static_cast<u32>(action - 0x6051) < 0x18) {
+        idx = static_cast<s64>(action - 0x603b);
+    }
+    if (static_cast<u32>(action - 0x6041) < 0xf) {
+        idx = static_cast<s64>(action - 0x6034);
+    }
+    if (static_cast<u32>(action - 0x6031) < 0xf) {
+        idx = static_cast<s64>(static_cast<u32>(action - 0x6031));
+    }
+    return *reinterpret_cast<u8*>(
+        *reinterpret_cast<u64*>(reinterpret_cast<u8*>(attack_data) + 8) +
+        idx * 0xb8 + 6);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// NFP (amiibo) helpers
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x7100375f20 -- app::nfp::has_air_catch (40B) ─────────────────
+// [derived: bitmask lookup — checks if fighter kind supports air catch (tether grabs)]
+u32 has_air_catch_7100375f20(u32 kind) {
+    u32 result = 0;
+    if (kind - 3 < 0x2c) {
+        result = static_cast<u32>(0x82020100043ULL >> (static_cast<u64>(kind - 3) & 0x3f)) & 1;
+    }
+    return result;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// AI air lasso count
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x7100361aa0 -- app::ai::air_lasso_count (40B) ────────────────
+// [derived: reads WorkModule int at hash 0x10000049 via vtable[0x13] from fighter's accessor]
+void air_lasso_count_7100361aa0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    void* fighter = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ai) + 0x10);
+    void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(fighter) + 0x20);
+    void* work = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x50);
+    void** vt = *reinterpret_cast<void***>(work);
+    reinterpret_cast<void(*)(void*, u64)>(vt[0x13])(work, 0x10000049ULL);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// AI stage — calc_offset_with_gravity
+// ════════════════════════════════════════════════════════════════════
+
+extern "C" void FUN_710160e340(void*);
+
+// ── 0x710036b3e0 -- app::ai_stage::calc_offset_with_gravity (8B) ──
+// [derived: tail-calls FUN_710160e340 with param_2 (Vector3f)]
+void calc_offset_with_gravity_710036b3e0(void* p1, void* p2) {
+    FUN_710160e340(p2);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// Misc — zero hash return
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x71003a4820 -- get_hash (8B) ─────────────────────────────────
+// [derived: returns 128-bit zero]
+float4 get_hash_71003a4820() {
+    float4 zero = {0.0f, 0.0f, 0.0f, 0.0f};
+    return zero;
+}
+
 // NOTE: DAISY/DOLL/EXPLOSIONBOMB param functions (0x710165xxxx) need non-hidden
 // FPA2 singleton access (GOT-style double deref). They belong in a separate TU
 // where DAT_71052bb3b0 is declared without __attribute__((visibility("hidden"))).
