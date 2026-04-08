@@ -1,5 +1,7 @@
 #include "types.h"
 
+extern "C" void abort(void) __attribute__((noreturn));
+
 // 0x71035e9910  size=224 bytes
 long FUN_71035e9910(long param_1, long param_2) { (void)param_1; (void)param_2; return 0; }
 
@@ -45,8 +47,8 @@ long FUN_7103661fa0(long param_1) { (void)param_1; return 0; }
 // 0x71036854a0  size=192 bytes
 long FUN_71036854a0(long param_1) { (void)param_1; return 0; }
 
-// 0x7103685560  size=48 bytes
-long FUN_7103685560(long param_1) { (void)param_1; return 0; }
+// 0x7103685560  size=12 — calls noreturn
+void FUN_7103685560(void) { abort(); }
 
 // 0x7103685590  size=224 bytes
 long FUN_7103685590(long param_1, long param_2) { (void)param_1; (void)param_2; return 0; }
@@ -57,17 +59,17 @@ long FUN_7103685830(long param_1, long param_2) { (void)param_1; (void)param_2; 
 // 0x71036ab0a0  size=5856 bytes
 long FUN_71036ab0a0(long param_1, long param_2, long param_3, long param_4) { (void)param_1; (void)param_2; (void)param_3; (void)param_4; return 0; }
 
-// 0x71036b1bf0  size=496 bytes
-long FUN_71036b1bf0(long param_1, long param_2) { (void)param_1; (void)param_2; return 0; }
+// 0x71036b1bf0  size=12 — calls noreturn
+void FUN_71036b1bf0(void) { abort(); }
 
-// 0x71036b1de0  size=640 bytes
-long FUN_71036b1de0(long param_1, long param_2) { (void)param_1; (void)param_2; return 0; }
+// 0x71036b1de0  size=12 — calls noreturn
+void FUN_71036b1de0(void) { abort(); }
 
 // 0x71036b2060  size=560 bytes
 long FUN_71036b2060(long param_1, long param_2) { (void)param_1; (void)param_2; return 0; }
 
-// 0x71036c5cf0  size=416 bytes
-long FUN_71036c5cf0(long param_1, long param_2) { (void)param_1; (void)param_2; return 0; }
+// 0x71036c5cf0  size=12 — calls noreturn
+void FUN_71036c5cf0(void) { abort(); }
 
 // 0x71036d14b0  size=48 bytes
 long FUN_71036d14b0(long param_1) { (void)param_1; return 0; }
@@ -87,5 +89,5 @@ long FUN_7103720f10(long param_1, long param_2) { (void)param_1; (void)param_2; 
 // 0x71037212a0  size=656 bytes
 long FUN_71037212a0(long param_1, long param_2) { (void)param_1; (void)param_2; return 0; }
 
-// 0x7103725a10  size=640 bytes
-long FUN_7103725a10(long param_1, long param_2) { (void)param_1; (void)param_2; return 0; }
+// 0x7103725a10  size=12 — calls abort
+void FUN_7103725a10(void) { abort(); }

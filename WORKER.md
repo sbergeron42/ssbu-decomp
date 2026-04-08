@@ -1,14 +1,14 @@
-# Worker: pool-a
+# Worker: pool-b
 
 ## Model: Opus
 
-## Task: Near-miss matching grind + abort thunk sweep in batch_b/c2 files
+## Task: Near-miss matching + optnone sweep on fun_med_final_d files
 
-### Phase 1: abort→__throw_out_of_range in batch_b and batch_c2
-Check if remaining batch_b_*.cpp and batch_c2_*.cpp files have abort() thunks that should be __throw_out_of_range(). Verify against binary before fixing.
+### Phase 1: optnone for remaining -O0 functions
+Check fun_med_final_d_*.cpp files for functions in 0x71039xxxxx that need __attribute__((optnone)).
 
-### Phase 2: Near-miss grind on fun_easy/fun_medium files
-Fix N-quality functions at 80%+ match. Common fixes: return type, condition polarity, visibility("hidden"), asm volatile barriers, optnone.
+### Phase 2: Near-miss fixes
+Find N-quality functions close to matching (80%+). Fix types, visibility, barriers.
 
 ### NO naked asm. Compare each function against binary before fixing.
 

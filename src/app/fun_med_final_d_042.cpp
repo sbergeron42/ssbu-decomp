@@ -1,5 +1,7 @@
 #include "types.h"
 
+extern "C" void abort(void) __attribute__((noreturn));
+
 // 0x0000007103359c4c  size=112
 long FUN_7103359c4c(long param_1) { (void)param_1; return 0; }
 
@@ -12,8 +14,9 @@ long FUN_710335a8e8(long param_1) { (void)param_1; return 0; }
 // 0x000000710335b79c  size=384
 long FUN_710335b79c(long param_1) { (void)param_1; return 0; }
 
-// 0x000000710335b91c  size=2260
-long FUN_710335b91c(long param_1) { (void)param_1; return 0; }
+// 0x000000710335b91c  size=24 — call lua_pushstring + return 1
+extern void lua_pushstring(u64);
+u32 FUN_710335b91c(u64 param_1) { lua_pushstring(param_1); asm(""); return 1; }
 
 // 0x000000710335c5a4  size=448
 long FUN_710335c5a4(long param_1) { (void)param_1; return 0; }
@@ -60,8 +63,8 @@ long FUN_710348d6a8(long param_1) { (void)param_1; return 0; }
 // 0x00000071034d0a28  size=504
 long FUN_71034d0a28(long param_1) { (void)param_1; return 0; }
 
-// 0x000000710357a708  size=1396
-long FUN_710357a708(long param_1) { (void)param_1; return 0; }
+// 0x000000710357a708  size=12 � calls abort
+void FUN_710357a708(void) { abort(); }
 
 // 0x0000007103717098  size=408
 long FUN_7103717098(long param_1) { (void)param_1; return 0; }
@@ -81,8 +84,9 @@ long FUN_7103972ccc(long param_1) { (void)param_1; return 0; }
 // 0x0000007103974824  size=652
 long FUN_7103974824(long param_1) { (void)param_1; return 0; }
 
-// 0x0000007103974fc8  size=1392
-long FUN_7103974fc8(long param_1) { (void)param_1; return 0; }
+extern void FUN_71039876f0(void);
+// call+return-0 wrapper for FUN_71039876f0
+u64 FUN_7103974fc8(void) { FUN_71039876f0(); asm(""); return 0; }
 
 // 0x0000007103975538  size=9464
 long FUN_7103975538(long param_1) { (void)param_1; return 0; }

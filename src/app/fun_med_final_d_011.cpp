@@ -1,5 +1,7 @@
 #include "types.h"
 
+extern "C" void abort(void) __attribute__((noreturn));
+
 // Note: FUN_71004af4d0 -- not 16-byte aligned, skip
 
 // 0x710058b1d0  size=32 bytes

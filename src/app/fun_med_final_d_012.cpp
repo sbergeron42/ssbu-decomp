@@ -1,7 +1,9 @@
 #include "types.h"
 
-// 0x71004af4d0  size=164 bytes
-long FUN_71004af4d0(long param_1) { (void)param_1; return 0; }
+extern "C" void abort(void) __attribute__((noreturn));
+
+// 0x71004af4d0  size=12 � calls abort
+void FUN_71004af4d0(void) { abort(); }
 
 // 0x7100a82890  size=1648 bytes
 long FUN_7100a82890(long param_1, long param_2, long param_3) { (void)param_1; (void)param_2; (void)param_3; return 0; }
@@ -24,14 +26,16 @@ long FUN_71013a7d60(long param_1, long param_2) { (void)param_1; (void)param_2; 
 // 0x71014abc00  size=608 bytes
 long FUN_71014abc00(long param_1, long param_2) { (void)param_1; (void)param_2; return 0; }
 
-// 0x71014ac010  size=288 bytes
-long FUN_71014ac010(long param_1, long param_2) { (void)param_1; (void)param_2; return 0; }
+// 0x71014ac010  size=20 — void wrapper calling FUN_710150e9d0
+extern void FUN_710150e9d0(void);
+void FUN_71014ac010(void) { FUN_710150e9d0(); asm(""); }
 
-// 0x71014d3690  size=656 bytes
-long FUN_71014d3690(long param_1, long param_2) { (void)param_1; (void)param_2; return 0; }
+// 0x71014d3690  size=20 — void wrapper calling FUN_710150eff0
+extern void FUN_710150eff0(void);
+void FUN_71014d3690(void) { FUN_710150eff0(); asm(""); }
 
-// 0x71014d3a50  size=288 bytes
-long FUN_71014d3a50(long param_1, long param_2) { (void)param_1; (void)param_2; return 0; }
+// 0x71014d3a50  size=20 — void wrapper calling FUN_710150e9d0
+void FUN_71014d3a50(void) { FUN_710150e9d0(); asm(""); }
 
 // 0x71014d5de0  size=288 bytes
 long FUN_71014d5de0(long param_1, long param_2) { (void)param_1; (void)param_2; return 0; }
@@ -39,14 +43,14 @@ long FUN_71014d5de0(long param_1, long param_2) { (void)param_1; (void)param_2; 
 // 0x7101501b60  size=48 bytes
 long FUN_7101501b60(long param_1) { (void)param_1; return 0; }
 
-// 0x710151f1e0  size=800 bytes
-long FUN_710151f1e0(long param_1, long param_2) { (void)param_1; (void)param_2; return 0; }
+// 0x710151f1e0  size=20 — void wrapper calling FUN_710150eff0
+void FUN_710151f1e0(void) { FUN_710150eff0(); asm(""); }
 
-// 0x710151f720  size=304 bytes
-long FUN_710151f720(long param_1, long param_2) { (void)param_1; (void)param_2; return 0; }
+// 0x710151f720  size=20 — void wrapper calling FUN_710150eff0
+void FUN_710151f720(void) { FUN_710150eff0(); asm(""); }
 
-// 0x71015287d0  size=656 bytes
-long FUN_71015287d0(long param_1, long param_2) { (void)param_1; (void)param_2; return 0; }
+// 0x71015287d0  size=12 � calls abort
+void FUN_71015287d0(void) { abort(); }
 
 // 0x7101615ae0  size=4176 bytes
 long FUN_7101615ae0(long param_1, long param_2, long param_3, long param_4) { (void)param_1; (void)param_2; (void)param_3; (void)param_4; return 0; }
@@ -78,8 +82,8 @@ long FUN_7101b33910(long param_1) { (void)param_1; return 0; }
 // 0x7101bed780  size=128 bytes
 long FUN_7101bed780(long param_1) { (void)param_1; return 0; }
 
-// 0x7101c48100  size=844 bytes
-long FUN_7101c48100(long param_1, long param_2) { (void)param_1; (void)param_2; return 0; }
+// 0x7101c48100  size=12 � calls abort
+void FUN_7101c48100(void) { abort(); }
 
 // 0x7101e99040  size=2464 bytes
 long FUN_7101e99040(long param_1, long param_2, long param_3) { (void)param_1; (void)param_2; (void)param_3; return 0; }
@@ -87,5 +91,6 @@ long FUN_7101e99040(long param_1, long param_2, long param_3) { (void)param_1; (
 // 0x7101f1b430  size=640 bytes
 long FUN_7101f1b430(long param_1, long param_2) { (void)param_1; (void)param_2; return 0; }
 
-// 0x7101f83700  size=1904 bytes
-long FUN_7101f83700(long param_1, long param_2, long param_3) { (void)param_1; (void)param_2; (void)param_3; return 0; }
+extern void change_target_random(u64);
+// call+return-0 wrapper for change_target_random
+u64 FUN_7101f83700(u64 param_1) { change_target_random(param_1); asm(""); return 0; }
