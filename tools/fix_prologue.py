@@ -17,30 +17,28 @@ import struct
 import sys
 from pathlib import Path
 
-# stp x29, x30, [sp, #-0x10]! = 0xa9bf7bfd
-# stp x29, x30, [sp, #-0x20]! = 0xa9be7bfd
-# stp x29, x30, [sp, #-0x30]! = 0xa9bd7bfd
-# etc. Mask for stp x29, x30, [sp, #imm]! pre-index:
-#   bits[31:22] = 1010100110 (STP, pre-index, 64-bit)
-#   Rt2 = x30 (bits 14:10 = 11110)
-#   Rn = sp  (bits 9:5 = 11111)
-#   Rt  = x29 (bits 4:0 = 11101)
-STP_X29_X30_MASK = 0xFFC07FFF
-STP_X29_X30_BITS = 0xA9800000 | (30 << 10) | (31 << 5) | 29  # a9xx7bfd
+# STP x29, x30 detection — matches both pre-indexed and signed-offset forms:
+#   Pre-index:     stp x29, x30, [sp, #imm]!  (bits 25:23 = 011)
+#   Signed offset: stp x29, x30, [sp, #imm]   (bits 25:23 = 010)
+# Both have: opc=10 (64-bit), V=0, Rt2=x30, Rn=sp, Rt=x29
+# Mask clears bit 23 to match both forms, and bits 21:15 (imm7)
+STP_X29_X30_MASK = 0xFF407FFF
+STP_X29_X30_BITS = 0xA9007BFD
 
-# mov x29, sp = 0x910003fd
-MOV_X29_SP = 0x910003fd
-
-# Also handle: add x29, sp, #imm (for functions with larger stack frames)
-# add x29, sp, #imm = 0x910003fd when imm=0, or 0x91XXXX1D with Rn=sp(31)
-# We only match the exact mov x29, sp (imm=0) case
+# add x29, sp, #imm (includes mov x29, sp which is add x29, sp, #0)
+# Mask checks sf=1, op=00, 10001, shift=00, Rn=sp(31), Rd=x29(29)
 ADD_X29_SP_MASK = 0xFFC003FF
-ADD_X29_SP_BITS = 0x910003FD  # Only exact mov x29, sp
+ADD_X29_SP_BITS = 0x910003FD
 
 
-def is_stp_x29_x30_preindex(insn):
-    """Check if instruction is stp x29, x30, [sp, #imm]! (pre-index)."""
+def is_stp_x29_x30(insn):
+    """Check if instruction is stp x29, x30, [sp, #imm] (pre-index or signed offset)."""
     return (insn & STP_X29_X30_MASK) == STP_X29_X30_BITS
+
+
+def is_add_x29_sp(insn):
+    """Check if instruction is add x29, sp, #imm (or mov x29, sp)."""
+    return (insn & ADD_X29_SP_MASK) == ADD_X29_SP_BITS
 
 
 def process_elf(filepath, dry_run=False):
@@ -86,55 +84,60 @@ def process_elf(filepath, dry_run=False):
         if sec_size < 12:  # Need at least 3 instructions
             continue
 
-        first = struct.unpack_from('<I', data, sec_off)[0]
-        if not is_stp_x29_x30_preindex(first):
-            continue
-
-        second = struct.unpack_from('<I', data, sec_off + 4)[0]
-        if second == MOV_X29_SP:
-            continue  # Already in the right place
-
-        # Find mov x29, sp later in the function
-        mov_pos = None
-        for off in range(8, sec_size, 4):
-            insn = struct.unpack_from('<I', data, sec_off + off)[0]
-            if insn == MOV_X29_SP:
-                mov_pos = off
+        # Find STP x29, x30 in first 2 instructions (may be at pos 0 or pos 1)
+        stp_byte_off = None  # byte offset of STP within section
+        for pos in range(min(2, sec_size // 4)):
+            insn = struct.unpack_from('<I', data, sec_off + pos * 4)[0]
+            if is_stp_x29_x30(insn):
+                stp_byte_off = pos * 4
                 break
 
-        if mov_pos is None:
+        if stp_byte_off is None:
+            continue
+
+        # Check if add x29, sp, #imm is already right after STP
+        insert_off = stp_byte_off + 4  # where the add should go
+        next_insn = struct.unpack_from('<I', data, sec_off + insert_off)[0]
+        if is_add_x29_sp(next_insn):
+            continue  # Already in the right place
+
+        # Find add x29, sp, #imm later in the function (before first BLR/BL)
+        mov_byte_off = None
+        for off in range(insert_off + 4, sec_size, 4):
+            insn = struct.unpack_from('<I', data, sec_off + off)[0]
+            if is_add_x29_sp(insn):
+                mov_byte_off = off
+                break
+
+        if mov_byte_off is None:
             continue
 
         if dry_run:
-            print(f"  Would fix: {sec_name} (mov x29,sp at +{mov_pos:#x} -> +0x4)")
+            print(f"  Would fix: {sec_name} (add x29,sp at +{mov_byte_off:#x} -> +{insert_off:#x})")
             patches += 1
             continue
 
-        # Move: remove instruction at mov_pos, insert at offset 4
-        # Save the mov instruction
-        mov_insn_bytes = data[sec_off + mov_pos:sec_off + mov_pos + 4]
+        # Move: remove instruction at mov_byte_off, insert at insert_off
+        mov_insn_bytes = data[sec_off + mov_byte_off:sec_off + mov_byte_off + 4]
 
-        # Shift instructions from [4, mov_pos) down by 4 bytes
-        # (move them to [8, mov_pos+4))
-        chunk = bytes(data[sec_off + 4:sec_off + mov_pos])
-        data[sec_off + 8:sec_off + mov_pos + 4] = chunk
+        # Shift instructions from [insert_off, mov_byte_off) down by 4 bytes
+        chunk = bytes(data[sec_off + insert_off:sec_off + mov_byte_off])
+        data[sec_off + insert_off + 4:sec_off + mov_byte_off + 4] = chunk
 
-        # Place mov x29, sp at offset 4
-        data[sec_off + 4:sec_off + 8] = mov_insn_bytes
+        # Place add x29, sp, #imm at insert_off
+        data[sec_off + insert_off:sec_off + insert_off + 4] = mov_insn_bytes
 
-        # Fix relocations: entries pointing into [4, mov_pos) need offset += 4
-        # Entry at mov_pos needs offset = 4 (but mov x29,sp has no relocs)
+        # Fix relocations: entries in [insert_off, mov_byte_off) need offset += 4
         if sec_idx in rela_sections:
             rela_off, rela_size = rela_sections[sec_idx]
             num_entries = rela_size // 24
             for j in range(num_entries):
                 entry_off = rela_off + j * 24
                 r_offset = struct.unpack_from('<Q', data, entry_off)[0]
-                if 4 <= r_offset < mov_pos:
+                if insert_off <= r_offset < mov_byte_off:
                     struct.pack_into('<Q', data, entry_off, r_offset + 4)
-                elif r_offset == mov_pos:
-                    # mov x29, sp shouldn't have relocations, but handle it
-                    struct.pack_into('<Q', data, entry_off, 4)
+                elif r_offset == mov_byte_off:
+                    struct.pack_into('<Q', data, entry_off, insert_off)
 
         patches += 1
 

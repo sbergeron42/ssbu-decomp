@@ -1,5 +1,6 @@
 #include "types.h"
 #include "app/BattleObjectModuleAccessor.h"
+#include "app/modules/KineticModule.h"
 #include "app/modules/MotionModule.h"
 #include "app/modules/PostureModule.h"
 #include "app/modules/WorkModule.h"
@@ -146,3 +147,487 @@ void set_partial_motion_frame(u8* L, u64 slot, f32 frame) {
 }
 
 } // namespace app::item
+
+// Helper: get KineticModule* from lua context (item/boss pattern)
+// [derived: all boss_private/item kinetic functions load battle object from lua_State-8,
+//  then accessor at +0x1a0, then kinetic_module at accessor+0x68]
+static inline KineticModule* item_kinetic(u8* L) {
+    u8* obj = *reinterpret_cast<u8**>(L - 8);
+    BattleObjectModuleAccessor* acc = *reinterpret_cast<BattleObjectModuleAccessor**>(obj + 0x1a0);
+    return static_cast<KineticModule*>(acc->item_kinetic_module);
+}
+
+namespace app::boss_private {
+
+// 0x71015c8390 (48 bytes)
+// Disables main kinetic energy (slot 0xc) by clearing enabled flag
+// [derived: get_energy vtable+0x60 with index 0xc, strb wzr at energy+0x30]
+void unable_main_energy(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(0xc);
+    energy->enabled = 0;
+}
+
+// 0x71015c83c0 (48 bytes)
+// Disables sub1 kinetic energy (slot 0xd) by clearing enabled flag
+// [derived: get_energy vtable+0x60 with index 0xd, strb wzr at energy+0x30]
+void unable_sub1_energy(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(0xd);
+    energy->enabled = 0;
+}
+
+// 0x71015c8280 (60 bytes)
+// Sets angle on sub1 kinetic energy (slot 0xd) at energy+0xa4
+// [derived: get_energy(0xd), str s8 at +0xa4 — callee-saved float across virtual call]
+void set_sub1_energy_angle(u8* L, f32 angle) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(0xd);
+    *reinterpret_cast<f32*>(reinterpret_cast<u8*>(energy) + 0xa4) = angle;
+}
+
+// 0x71015c82c0 (72 bytes)
+// Clears sub1 kinetic energy (slot 0xd) — calls clear_speed then zeroes field at +0xa0
+// [derived: get_energy(0xd) → vtable+0x48 (clear_speed), then str wzr at energy+0xa0]
+void clear_sub1_energy(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(0xd);
+    energy->clear_speed();
+    *reinterpret_cast<u32*>(reinterpret_cast<u8*>(energy) + 0xa0) = 0;
+}
+
+} // namespace app::boss_private
+
+namespace app::kinetic_energy_damage {
+
+// 0x71015d1ca0 (56 bytes)
+// Returns true if damage energy (slot 8) has ground type == 0
+// [derived: get_energy(8), ldr w8 at +0x88, cmp #0, cset eq]
+bool is_ground_type_energy(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(8);
+    return *reinterpret_cast<int*>(reinterpret_cast<u8*>(energy) + 0x88) == 0;
+}
+
+} // namespace app::kinetic_energy_damage
+
+namespace app::WeaponSpecializer_EFlameEsword {
+
+// 0x71033f3630 (52 bytes)
+// Sets angle on motion energy (slot 2) at energy+0x8c
+// [derived: acc->kinetic_module vtable+0x60 get_energy(2), str s8 at +0x8c]
+void energy_motion_set_angle(BattleObjectModuleAccessor* acc, f32 angle) {
+    KineticModule* km = static_cast<KineticModule*>(acc->item_kinetic_module);
+    KineticEnergy* energy = km->get_energy(2);
+    *reinterpret_cast<f32*>(reinterpret_cast<u8*>(energy) + 0x8c) = angle;
+}
+
+} // namespace app::WeaponSpecializer_EFlameEsword
+
+namespace app::WeaponSpecializer_ElementDiver {
+
+// 0x71033f5630 (52 bytes)
+// Sets speed multiplier on motion energy (slot 2) at energy+0x90
+// [derived: acc->kinetic_module vtable+0x60 get_energy(2), str s8 at +0x90]
+void set_energy_motion_speed_mul(BattleObjectModuleAccessor* acc, f32 mul) {
+    KineticModule* km = static_cast<KineticModule*>(acc->item_kinetic_module);
+    KineticEnergy* energy = km->get_energy(2);
+    *reinterpret_cast<f32*>(reinterpret_cast<u8*>(energy) + 0x90) = mul;
+}
+
+} // namespace app::WeaponSpecializer_ElementDiver
+
+namespace app::boss_private {
+
+// 0x71015c83f0 (88 bytes)
+// Disables both main (slot 0xc) and sub1 (slot 0xd) kinetic energies
+// [derived: get_energy called twice on same KineticModule, km saved in x19,
+//  first result in x20; both energy->enabled (at +0x30) set to 0]
+void unable_energy_all(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* e1 = km->get_energy(0xc);
+    KineticEnergy* e2 = km->get_energy(0xd);
+    e1->enabled = 0;
+    e2->enabled = 0;
+}
+
+} // namespace app::boss_private
+
+namespace app::kinetic_energy_outer {
+
+// 0x71015d00f0 (60 bytes)
+// Returns x speed from outer energy (slot 1)
+// [derived: get_energy(1) → energy->get_speed() vtable+0x20, return *(f32*)speed]
+f32 get_speed_x(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(1);
+    void* speed = energy->get_speed();
+    return *reinterpret_cast<f32*>(speed);
+}
+
+// 0x71015d0130 (60 bytes)
+// Returns y speed from outer energy (slot 1)
+// [derived: get_energy(1) → energy->get_speed() vtable+0x20, return *(f32*)(speed+4)]
+f32 get_speed_y(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(1);
+    void* speed = energy->get_speed();
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(speed) + 4);
+}
+
+} // namespace app::kinetic_energy_outer
+
+namespace app::kinetic_energy_gravity {
+
+// 0x71015d0280 (60 bytes)
+// Returns y speed from gravity energy (slot 2)
+// [derived: get_energy(2) → get_speed(), return *(f32*)(speed+4)]
+f32 get_speed_y(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(2);
+    void* speed = energy->get_speed();
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(speed) + 4);
+}
+
+} // namespace app::kinetic_energy_gravity
+
+namespace app::kinetic_energy_ground {
+
+// 0x71015d03b0 (60 bytes)
+// Returns y speed from ground energy (slot 3)
+// [derived: get_energy(3) → get_speed(), return *(f32*)(speed+4)]
+f32 get_speed_y(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(3);
+    void* speed = energy->get_speed();
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(speed) + 4);
+}
+
+} // namespace app::kinetic_energy_ground
+
+namespace app::kinetic_energy_control {
+
+// 0x71015d0470 (60 bytes)
+// Returns x speed from control energy (slot 4)
+// [derived: get_energy(4) → get_speed(), return *(f32*)speed]
+f32 get_speed_x(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(4);
+    void* speed = energy->get_speed();
+    return *reinterpret_cast<f32*>(speed);
+}
+
+// 0x71015d04b0 (60 bytes)
+// Returns y speed from control energy (slot 4)
+// [derived: get_energy(4) → get_speed(), return *(f32*)(speed+4)]
+f32 get_speed_y(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(4);
+    void* speed = energy->get_speed();
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(speed) + 4);
+}
+
+} // namespace app::kinetic_energy_control
+
+namespace app::kinetic_energy_motion {
+
+// 0x71015d07f0 (60 bytes)
+// Returns x speed from motion energy (slot 6)
+// [derived: get_energy(6) → get_speed(), return *(f32*)speed]
+f32 get_speed_x(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(6);
+    void* speed = energy->get_speed();
+    return *reinterpret_cast<f32*>(speed);
+}
+
+// 0x71015d0830 (60 bytes)
+// Returns y speed from motion energy (slot 6)
+// [derived: get_energy(6) → get_speed(), return *(f32*)(speed+4)]
+f32 get_speed_y(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(6);
+    void* speed = energy->get_speed();
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(speed) + 4);
+}
+
+} // namespace app::kinetic_energy_motion
+
+namespace app::kinetic_energy_stop {
+
+// 0x71015d0900 (60 bytes)
+// Returns x speed from stop energy (slot 7)
+// [derived: get_energy(7) → get_speed(), return *(f32*)speed]
+f32 get_speed_x(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(7);
+    void* speed = energy->get_speed();
+    return *reinterpret_cast<f32*>(speed);
+}
+
+} // namespace app::kinetic_energy_stop
+
+namespace app::kinetic_energy_damage {
+
+// 0x71015d0be0 (60 bytes)
+// Returns x speed from damage energy (slot 8)
+// [derived: get_energy(8) → get_speed(), return *(f32*)speed]
+f32 get_speed_x(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(8);
+    void* speed = energy->get_speed();
+    return *reinterpret_cast<f32*>(speed);
+}
+
+} // namespace app::kinetic_energy_damage
+
+namespace app::kinetic_energy_jostle {
+
+// 0x71015d0a30 (60 bytes)
+// Returns x speed from jostle energy (slot 9)
+// [derived: get_energy(9) → get_speed(), return *(f32*)speed]
+f32 get_speed_x(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(9);
+    void* speed = energy->get_speed();
+    return *reinterpret_cast<f32*>(speed);
+}
+
+} // namespace app::kinetic_energy_jostle
+
+namespace app::kinetic_energy_ground_movement {
+
+// 0x71015d0b30 (60 bytes)
+// Returns x speed from ground movement energy (slot 10)
+// [derived: get_energy(0xa) → get_speed(), return *(f32*)speed]
+f32 get_speed_x(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(10);
+    void* speed = energy->get_speed();
+    return *reinterpret_cast<f32*>(speed);
+}
+
+} // namespace app::kinetic_energy_ground_movement
+
+namespace app::kinetic_energy_motion_linked_main {
+
+// 0x71015d0cc0 (60 bytes)
+// Returns x speed from motion-linked main energy (slot 0xc)
+// [derived: get_energy(0xc) → get_speed(), return *(f32*)speed]
+f32 get_speed_x(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(0xc);
+    void* speed = energy->get_speed();
+    return *reinterpret_cast<f32*>(speed);
+}
+
+// 0x71015d0d00 (60 bytes)
+// Returns y speed from motion-linked main energy (slot 0xc)
+// [derived: get_energy(0xc) → get_speed(), return *(f32*)(speed+4)]
+f32 get_speed_y(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(0xc);
+    void* speed = energy->get_speed();
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(speed) + 4);
+}
+
+} // namespace app::kinetic_energy_motion_linked_main
+
+namespace app::kinetic_energy_motion_linked_sub1 {
+
+// 0x71015d0e00 (60 bytes)
+// Returns x speed from motion-linked sub1 energy (slot 0xd)
+// [derived: get_energy(0xd) → get_speed(), return *(f32*)speed]
+f32 get_speed_x(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(0xd);
+    void* speed = energy->get_speed();
+    return *reinterpret_cast<f32*>(speed);
+}
+
+// 0x71015d0e40 (60 bytes)
+// Returns y speed from motion-linked sub1 energy (slot 0xd)
+// [derived: get_energy(0xd) → get_speed(), return *(f32*)(speed+4)]
+f32 get_speed_y(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(0xd);
+    void* speed = energy->get_speed();
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(speed) + 4);
+}
+
+} // namespace app::kinetic_energy_motion_linked_sub1
+
+namespace app::kinetic_energy_stop {
+
+// 0x71015d0a00 (48 bytes)
+// Returns whether stop energy (slot 7) is enabled
+// [derived: get_energy(7), return *(u8*)(energy+0x30) — the enabled field]
+u8 is_enable(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(7);
+    return energy->enabled;
+}
+
+} // namespace app::kinetic_energy_stop
+
+namespace app::kinetic_energy_motion_linked_sub1 {
+
+// 0x71015d0ef0 (48 bytes)
+// Returns whether motion-linked sub1 energy (slot 0xd) is enabled
+// [derived: get_energy(0xd), return *(u8*)(energy+0x30)]
+u8 is_enable(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(0xd);
+    return energy->enabled;
+}
+
+} // namespace app::kinetic_energy_motion_linked_sub1
+
+namespace app::kinetic_energy_control_rot {
+
+// 0x71015d0730 (52 bytes)
+// Suspends control rot energy (slot 5) by setting field_0x31 to 1
+// [derived: get_energy(5), strb #1 at energy+0x31]
+void suspend(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(5);
+    energy->field_0x31_u8 = 1;
+}
+
+// 0x71015d0770 (48 bytes)
+// Resumes control rot energy (slot 5) by clearing field_0x31
+// [derived: get_energy(5), strb #0 at energy+0x31]
+void resume(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(5);
+    energy->field_0x31_u8 = 0;
+}
+
+// 0x71015d1140 (48 bytes)
+// Returns pointer to rotation data of control rot energy (slot 5)
+// [derived: get_energy(5), return energy+0x20 — the _rotation field]
+void* get_rotation(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(5);
+    return energy->_rotation;
+}
+
+} // namespace app::kinetic_energy_control_rot
+
+namespace app::kinetic_energy_outer {
+
+// 0x71015d16f0 (48 bytes)
+// Returns pointer to accel data of outer energy (slot 1) at energy+0x40
+// [derived: get_energy(1), return energy+0x40]
+void* get_accel(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(1);
+    return reinterpret_cast<u8*>(energy) + 0x40;
+}
+
+// 0x71015d1720 (48 bytes)
+// Returns pointer to limit speed data of outer energy (slot 1) at energy+0x70
+// [derived: get_energy(1), return energy+0x70]
+void* get_limit_speed(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(1);
+    return reinterpret_cast<u8*>(energy) + 0x70;
+}
+
+} // namespace app::kinetic_energy_outer
+
+namespace app::kinetic_energy_control_rot {
+
+// 0x71015d1170 (56 bytes)
+// Clears rotation speed on control rot energy (slot 5)
+// [derived: get_energy(5) → energy->clear_rot_speed() vtable+0x50]
+void clear_rot_speed(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(5);
+    energy->clear_rot_speed();
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
+}
+
+} // namespace app::kinetic_energy_control_rot
+
+namespace app::kinetic_energy_gravity {
+
+// 0x71015d1af0 (48 bytes)
+// Returns accel value from gravity energy (slot 2) at energy+0x34
+// [derived: get_energy(2), return *(f32*)(energy+0x34)]
+f32 get_accel(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(2);
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(energy) + 0x34);
+}
+
+// 0x71015d1b20 (48 bytes)
+// Returns limit speed from gravity energy (slot 2) at energy+0x40
+// [derived: get_energy(2), return *(f32*)(energy+0x40)]
+f32 get_limit_speed(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(2);
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(energy) + 0x40);
+}
+
+// 0x71015d1ba0 (60 bytes)
+// Sets accel on gravity energy (slot 2) at energy+0x34
+// [derived: get_energy(2), str s8 at energy+0x34]
+void set_accel(u8* L, f32 val) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(2);
+    *reinterpret_cast<f32*>(reinterpret_cast<u8*>(energy) + 0x34) = val;
+}
+
+// 0x71015d1be0 (60 bytes)
+// Sets stable speed on gravity energy (slot 2) at energy+0x38
+// [derived: get_energy(2), str s8 at energy+0x38]
+void set_stable_speed(u8* L, f32 val) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(2);
+    *reinterpret_cast<f32*>(reinterpret_cast<u8*>(energy) + 0x38) = val;
+}
+
+// 0x71015d1c20 (60 bytes)
+// Sets brake on gravity energy (slot 2) at energy+0x3c
+// [derived: get_energy(2), str s8 at energy+0x3c]
+void set_brake(u8* L, f32 val) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(2);
+    *reinterpret_cast<f32*>(reinterpret_cast<u8*>(energy) + 0x3c) = val;
+}
+
+// 0x71015d1c60 (60 bytes)
+// Sets limit speed on gravity energy (slot 2) at energy+0x40
+// [derived: get_energy(2), str s8 at energy+0x40]
+void set_limit_speed(u8* L, f32 val) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(2);
+    *reinterpret_cast<f32*>(reinterpret_cast<u8*>(energy) + 0x40) = val;
+}
+
+} // namespace app::kinetic_energy_gravity
+
+namespace app::ai_param {
+
+// 0x710036ba00 (16 bytes)
+// Returns fall_speed_y_max from AI param block
+// [derived: *(obj-8)->0x168 is AI param ptr, +0x228 is fall_speed_y_max field]
+f32 fall_speed_y_max(u8* L) {
+    u8* obj = *reinterpret_cast<u8**>(L - 8);
+    u8* p = *reinterpret_cast<u8**>(obj + 0x168);
+    return *reinterpret_cast<f32*>(p + 0x228);
+}
+
+// 0x710036ba10 (16 bytes)
+// Returns dive_speed_y_max from AI param block
+// [derived: same base as fall_speed_y_max, offset +0x22c]
+f32 dive_speed_y_max(u8* L) {
+    u8* obj = *reinterpret_cast<u8**>(L - 8);
+    u8* p = *reinterpret_cast<u8**>(obj + 0x168);
+    return *reinterpret_cast<f32*>(p + 0x22c);
+}
+
+} // namespace app::ai_param

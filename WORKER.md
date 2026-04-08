@@ -1,19 +1,23 @@
-# Worker: pool-b
+# Worker: pool-d
 
 ## Model: Opus
 
-## Task: Near-miss matching grind + optnone sweep
+## Task: Continue fighter motion decomp — expand MotionModule coverage
 
-### Phase 1: Find and fix near-miss functions (80%+ match)
-Use compare_bytes.py on N-quality functions to find ones that are close. Fix the 1-2 instruction diffs.
+You produced 10 fighter motion functions last round. Keep going — there are 852 undecompiled.
 
-### Phase 2: optnone sweep for remaining -O0 regions
-Check fun_med_final_d_*.cpp files for functions in the 0x71039xxxxx range that need optnone.
+### Approach
+Search for named undecompiled MotionModule functions. Focus on small ones (<200B) that use the existing 128 vtable methods in MotionModule.h.
 
-### NO naked asm. Compare each function against binary before fixing.
+### Target: src/app/fighter_motion.cpp (append to existing)
+### Headers: MotionModule.h, BattleObjectModuleAccessor.h
+### Derivation Chains MANDATORY
+### Do NOT use naked asm.
 
 ### Quick Reference
 ```
-python tools/compare_bytes.py FUN_name
 /c/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -Ilib/NintendoSDK/include -Ilib/NintendoSDK/include/stubs -c src/app/FILE.cpp -o build/FILE.o
+
+python tools/compare_bytes.py FUN_name
+mcp__ghidra__search_functions_by_name("motion")
 ```
