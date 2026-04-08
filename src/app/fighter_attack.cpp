@@ -690,6 +690,79 @@ extern "C" bool check_target_stat_fall_sp(u64 L) {
     return *(s32*)(info + 0x74) == 0x10;
 }
 
+// 0x7100366a00 — check_target_stat_piyo (52B, status_kind in [9,10,11])
+extern "C" bool check_target_stat_piyo(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    return (u32)(*(s32*)(info + 0x74) - 9) < 3;
+}
+// 0x7100366a40 — check_target_stat_piyo_l (48B, status_kind == 0xb)
+extern "C" bool check_target_stat_piyo_l(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    return *(s32*)(info + 0x74) == 0xb;
+}
+// 0x7100366a70 — check_target_stat_dragoon (48B, status_kind == 0x11)
+extern "C" bool check_target_stat_dragoon(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    return *(s32*)(info + 0x74) == 0x11;
+}
+// 0x7100366aa0 — check_target_stat_cliff (48B, status_kind == 6)
+extern "C" bool check_target_stat_cliff(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    return *(s32*)(info + 0x74) == 6;
+}
+// 0x7100366ad0 — check_target_stat_cliff_act (48B, status_kind == 7)
+extern "C" bool check_target_stat_cliff_act(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    return *(s32*)(info + 0x74) == 7;
+}
+// 0x7100366b00 — check_target_stat_catch (48B, status_kind == 0xc)
+extern "C" bool check_target_stat_catch(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    return *(s32*)(info + 0x74) == 0xc;
+}
+// 0x7100366b60 — check_target_stat_guard (48B, status_kind == 0x1a)
+extern "C" bool check_target_stat_guard(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    return *(s32*)(info + 0x74) == 0x1a;
+}
+// 0x7100366b90 — check_target_stat_escape (48B, status_kind == 0x1e)
+extern "C" bool check_target_stat_escape(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    return *(s32*)(info + 0x74) == 0x1e;
+}
+// 0x7100366bc0 — check_target_stat_rebirth (48B, status_kind == 0x1f)
+extern "C" bool check_target_stat_rebirth(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    return *(s32*)(info + 0x74) == 0x1f;
+}
+// 0x7100366c70 — check_target_stat_squat (44B, byte at +0x58, bit 6)
+extern "C" u8 check_target_stat_squat(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    return (*(u8*)(info + 0x58) >> 6) & 1;
+}
+// 0x7100366cd0 — check_target_stat_unable_special (44B, byte at +0x59, bit 4)
+extern "C" u8 check_target_stat_unable_special(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    return (*(u8*)(info + 0x59) >> 4) & 1;
+}
+// 0x7100366d00 — check_target_stat_specialflag_hoist (44B, byte at +0x5c, bit 7)
+extern "C" u8 check_target_stat_specialflag_hoist(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    return *(u8*)(info + 0x5c) >> 7;
+}
+
 // ---- Boss manager queries (leaf, singleton access) -------------------------
 
 // lib::Singleton<app::BossManager>::instance_
