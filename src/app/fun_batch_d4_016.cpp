@@ -213,10 +213,11 @@ void FUN_71000bed20(s64 *self)
 // 0x71000bf2f0 — validate: check magic+flag at +8/+0xc, then range-check field +0x5e8
 u8 FUN_71000bf2f0(s64 self)
 {
-    if ((*(s32 *)(self + 8) == 0x32ab9864) && ((*(u8 *)(self + 0xc) & 0x7f) == 4)) {
-        return (u32)(*(s32 *)(self + 0x5e8)) - 0x20U < 0x5a1;
-    }
-    return 0;
+    if (*(s32 *)(self + 8) != 0x32ab9864)
+        return 0;
+    if ((*(u8 *)(self + 0xc) & 0x7f) != 4)
+        return 0;
+    return (u32)(*(s32 *)(self + 0x5e8)) - 0x20U < 0x5a1;
 }
 
 // 0x71000c4d40 — vtable call +0x28 on *(self+0x50): return null on failure, 1 on success

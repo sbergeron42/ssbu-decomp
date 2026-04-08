@@ -248,7 +248,7 @@ void FUN_7100228de0(u64 param_1, s64 param_2)
     if (*(s64 *)(param_2 + 0x18) != 0) {
         u64 uVar1 = FUN_71001e69b0();
         FUN_71001cb870(uVar1,
-                       *(s64 *)(param_2 + 0x10) + *(s64 *)(param_2 + 0x28),
+                       *(s64 *)(param_2 + 0x28) + *(s64 *)(param_2 + 0x10),
                        *(u64 *)(param_2 + 0x18),
                        (s64)-1);
     }

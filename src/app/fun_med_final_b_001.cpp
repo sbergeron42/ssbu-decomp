@@ -227,9 +227,9 @@ void FUN_7100017450(u8 *param_1, u8 *param_2, long param_3)
         return;
     do {
         u8 ch = *param_2;
-        u8 out = ch - 0x20u;
-        if (ch - 0x61u > 0x19u)
-            out = ch;
+        u8 out = ch;
+        if (ch - 0x61u < 0x1au)
+            out = ch - 0x20u;
         *param_1 = out;
         if (*param_2 == 0)
             return;
@@ -260,13 +260,13 @@ u64 FUN_710001ebb0(long param_1, long *param_2)
 // 0x710001ef80  size=48  FUN_710001ef80
 // Vtable dispatch through param_1+0x858 slot +0x30; sets *param_2 flag
 // ---------------------------------------------------------------------------
-u64 FUN_710001ef80(long param_1, u8 *param_2)
+int FUN_710001ef80(long param_1, u8 *param_2)
 {
     if (param_1 != 0 && *(long *)(*(long *)(param_1 + 0x858) + 0x30) != 0) {
         *param_2 = 0;
-        typedef u64 (*fn_t)(void);
+        typedef int (*fn_t)(long, u8*);
         fn_t fn = *(fn_t *)(*(long *)(param_1 + 0x858) + 0x30);
-        return fn();
+        return fn(param_1, param_2);
     }
     *param_2 = 1;
     return 0;
@@ -276,13 +276,13 @@ u64 FUN_710001ef80(long param_1, u8 *param_2)
 // 0x710001efb0  size=48  FUN_710001efb0
 // Vtable dispatch through param_1+0x858 slot +0x38; sets *param_2 flag
 // ---------------------------------------------------------------------------
-u64 FUN_710001efb0(long param_1, u8 *param_2)
+int FUN_710001efb0(long param_1, u8 *param_2)
 {
     if (param_1 != 0 && *(long *)(*(long *)(param_1 + 0x858) + 0x38) != 0) {
         *param_2 = 0;
-        typedef u64 (*fn_t)(void);
+        typedef int (*fn_t)(long, u8*);
         fn_t fn = *(fn_t *)(*(long *)(param_1 + 0x858) + 0x38);
-        return fn();
+        return fn(param_1, param_2);
     }
     *param_2 = 1;
     return 0;

@@ -23,13 +23,13 @@ s32 *FUN_710007c310(s64 header, s32 key)
 
     if (*(u16 *)(header + 0x10) != 0) {
         i = 0;
-        entry = (s32 *)(header + (u64)*(u16 *)(header + 6));
+        entry = (s32 *)((u8 *)header + *(u16 *)(header + 6));
         do {
             if (*entry == key) {
                 return entry + 2;
             }
             i = i + 1;
-            entry = (s32 *)((s64)entry + (u64)(u32)entry[1]);
+            entry = (s32 *)((u8 *)entry + (u32)entry[1]);
         } while (i < *(u16 *)(header + 0x10));
     }
     return (s32 *)0x0;

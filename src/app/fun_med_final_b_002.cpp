@@ -387,9 +387,12 @@ long FUN_7100059890(long param_1)
     if (q == 0)
         return 0;
     if (*(int *)(param_1 + 0x60) != 0) {
-        if (*(s16 *)(q + 8) == 1)
-            return 0;
-        return q + 0x18;
+        if (*(u16 *)(q + 8) != 1)
+            return q + 0x18;
+#ifdef MATCHING_HACK_NX_CLANG
+        asm("");
+#endif
+        return 0;
     }
     return q + 0xc;
 }
