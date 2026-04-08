@@ -305,6 +305,41 @@ extern "C" u8 is_hp() {
     return *(u8*)(mgr + 0xc3);
 }
 
+// ---- Item param accessors (leaf, singleton + indexed array load) ------------
+
+// lib::Singleton<app::ItemParamAccessor>::instance_
+// [derived: address 0x71052c31e0 from adrp+ldr in game_param_float disassembly]
+extern "C" void* DAT_71052c31e0 HIDDEN;
+
+// 0x71015bfa00 (32 bytes) — app::item::game_param_float
+// Reads float from ItemParamAccessor's game param table at base offset 0x72f08
+// First param (x0) is lua_State (unused), second param (w1) is index
+extern "C" f32 game_param_float(u64 L, u32 idx) {
+    u8* acc = *(u8**)DAT_71052c31e0;
+    return *(f32*)(acc + (u64)idx * 4 + 0x72f08);
+}
+
+// 0x71015bfa20 (32 bytes) — app::item::game_param_int
+// Same pattern, base offset 0x72fe8, returns u32
+extern "C" u32 game_param_int(u64 L, u32 idx) {
+    u8* acc = *(u8**)DAT_71052c31e0;
+    return *(u32*)(acc + (u64)idx * 4 + 0x72fe8);
+}
+
+// 0x71015c4e00 (32 bytes) — app::item::assist_param_float
+// Only one param (w0) is index, base offset 0x73060
+extern "C" f32 assist_param_float(u32 idx) {
+    u8* acc = *(u8**)DAT_71052c31e0;
+    return *(f32*)(acc + (u64)idx * 4 + 0x73060);
+}
+
+// 0x71015c4e20 (32 bytes) — app::item::assist_param_int
+// Same pattern, base offset 0x73140, returns u32
+extern "C" u32 assist_param_int(u32 idx) {
+    u8* acc = *(u8**)DAT_71052c31e0;
+    return *(u32*)(acc + (u64)idx * 4 + 0x73140);
+}
+
 // ---- Camera query (leaf, singleton access) ---------------------------------
 
 // [inferred: camera mode/state pointer-to-pointer]
