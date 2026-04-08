@@ -1622,3 +1622,659 @@ u32 IS_MENU_71022ad810(void* L) {
     }
     return 0;
 }
+
+// ════════════════════════════════════════════════════════════════════
+// AI misc — predict_landing_frame
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x71003694f0 -- app::ai::predict_landing_frame (20B) ──────────
+// [derived: s32->f32 conversion of predicted frames until landing at +0x274]
+f32 predict_landing_frame_71003694f0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    return (f32)*reinterpret_cast<s32*>(reinterpret_cast<u8*>(ai) + 0x274);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// analyst — status_prev, status_count, target_status variants
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x7100376a00 -- app::analyst::status_prev (20B) ───────────────
+// [derived: reads prev status_kind from ctx->battle_object(+0x170)->+0x10]
+u32 status_prev_7100376a00(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* bo = *reinterpret_cast<void**>(
+        *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x170));
+    return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(bo) + 0x10);
+}
+
+// ── 0x7100376ac0 -- app::analyst::status_count (20B) ──────────────
+// [derived: reads status frame count from ctx->battle_object(+0x170)->+0x14]
+u32 status_count_7100376ac0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* bo = *reinterpret_cast<void**>(
+        *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x170));
+    return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(bo) + 0x14);
+}
+
+// ── 0x7100376a20 -- app::analyst::target_status (80B) ─────────────
+// [derived: looks up target entry from ctx+0xc50, validates against self
+//  entry (+0x160), clamps to 0x10, reads status_kind from global table]
+extern "C" __attribute__((visibility("hidden"))) void* DAT_71052b5fd8;
+
+u32 target_status_7100376a20(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    u32 target = *reinterpret_cast<u32*>(reinterpret_cast<u8*>(ctx) + 0xc50);
+    if (static_cast<s32>(target) < 0) return 0;
+    if (target == *reinterpret_cast<u32*>(reinterpret_cast<u8*>(ctx) + 0x160)) return 0;
+    if (target > 0xf) target = 0x10;
+    void* global = *reinterpret_cast<void**>(DAT_71052b5fd8);
+    void* table = *reinterpret_cast<void**>(reinterpret_cast<u8*>(global) + 0x98);
+    void* entry = *reinterpret_cast<void**>(reinterpret_cast<u8*>(table) + static_cast<u64>(target) * 8);
+    return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(entry) + 0xc);
+}
+
+// ── 0x7100376a70 -- app::analyst::target_status_prev (80B) ────────
+// [derived: same as target_status but reads +0x10 (prev status kind)]
+u32 target_status_prev_7100376a70(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    u32 target = *reinterpret_cast<u32*>(reinterpret_cast<u8*>(ctx) + 0xc50);
+    if (static_cast<s32>(target) < 0) return 0;
+    if (target == *reinterpret_cast<u32*>(reinterpret_cast<u8*>(ctx) + 0x160)) return 0;
+    if (target > 0xf) target = 0x10;
+    void* global = *reinterpret_cast<void**>(DAT_71052b5fd8);
+    void* table = *reinterpret_cast<void**>(reinterpret_cast<u8*>(global) + 0x98);
+    void* entry = *reinterpret_cast<void**>(reinterpret_cast<u8*>(table) + static_cast<u64>(target) * 8);
+    return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(entry) + 0x10);
+}
+
+// ── 0x7100376ae0 -- app::analyst::target_status_count (80B) ───────
+// [derived: same as target_status but reads +0x14 (status frame count)]
+u32 target_status_count_7100376ae0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    u32 target = *reinterpret_cast<u32*>(reinterpret_cast<u8*>(ctx) + 0xc50);
+    if (static_cast<s32>(target) < 0) return 0;
+    if (target == *reinterpret_cast<u32*>(reinterpret_cast<u8*>(ctx) + 0x160)) return 0;
+    if (target > 0xf) target = 0x10;
+    void* global = *reinterpret_cast<void**>(DAT_71052b5fd8);
+    void* table = *reinterpret_cast<void**>(reinterpret_cast<u8*>(global) + 0x98);
+    void* entry = *reinterpret_cast<void**>(reinterpret_cast<u8*>(table) + static_cast<u64>(target) * 8);
+    return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(entry) + 0x14);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// AI target — target_status_kind (uses FUN_7100314030 lookup)
+// ════════════════════════════════════════════════════════════════════
+
+extern "C" void* FUN_7100314030(void*, void*);
+
+// ── 0x7100366ff0 -- app::ai::target_status_kind (40B) ─────────────
+// [derived: looks up target via FUN_7100314030, reads status_kind at +0x2c]
+u32 target_status_kind_7100366ff0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* target = FUN_7100314030(DAT_71052b5fd8,
+        reinterpret_cast<void*>(reinterpret_cast<u8*>(ctx) + 0xc50));
+    return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(target) + 0x2c);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// ai_stage — stage property queries
+// ════════════════════════════════════════════════════════════════════
+
+extern "C" u8 FUN_7100314d50(u32);
+extern "C" u8 FUN_7100314dc0(u32);
+
+// ── 0x710036b200 -- app::ai_stage::current_id (20B) ───────────────
+// [derived: reads stage ID from global at *DAT_71052b5fd8 + 0x150]
+u32 current_id_710036b200() {
+    return *reinterpret_cast<u32*>(
+        reinterpret_cast<u8*>(*reinterpret_cast<void**>(DAT_71052b5fd8)) + 0x150);
+}
+
+// ── 0x710036b220 -- app::ai_stage::is_small (20B) ─────────────────
+// [derived: tail-calls FUN_7100314d50 with current stage ID]
+u8 is_small_710036b220() {
+    u32 id = *reinterpret_cast<u32*>(
+        reinterpret_cast<u8*>(*reinterpret_cast<void**>(DAT_71052b5fd8)) + 0x150);
+    return FUN_7100314d50(id);
+}
+
+// ── 0x710036b380 -- app::ai_stage::is_1on1 (20B) ─────────────────
+// [derived: tail-calls FUN_7100314dc0 with current stage ID]
+u8 is_1on1_710036b380() {
+    u32 id = *reinterpret_cast<u32*>(
+        reinterpret_cast<u8*>(*reinterpret_cast<void**>(DAT_71052b5fd8)) + 0x150);
+    return FUN_7100314dc0(id);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// ai_rule — rule property queries
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x710036b680 -- app::ai_rule::is_hp (20B) ─────────────────────
+// [derived: reads byte at FighterManager singleton + 0xc3]
+u8 is_hp_710036b680() {
+    return *reinterpret_cast<u8*>(
+        reinterpret_cast<u8*>(*reinterpret_cast<void**>(DAT_71052b84f8)) + 0xc3);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// ai_param — AI parameter queries from global param struct
+// ════════════════════════════════════════════════════════════════════
+
+extern "C" __attribute__((visibility("hidden"))) void* DAT_71052b60e8;
+
+// ── 0x710036c140 -- app::ai_param::zako2_search_range (20B) ───────
+// [derived: reads f32 at *DAT_71052b60e8 + 0x78 — uses ldr s0 (float return)]
+f32 zako2_search_range_710036c140(void* L) {
+    return *reinterpret_cast<f32*>(
+        reinterpret_cast<u8*>(*reinterpret_cast<void**>(DAT_71052b60e8)) + 0x78);
+}
+
+// ── 0x710036c160 -- app::ai_param::training_smash_interval (20B) ──
+// [derived: reads u32 at *DAT_71052b60e8 + 0x7c]
+u32 training_smash_interval_710036c160(void* L) {
+    return *reinterpret_cast<u32*>(
+        reinterpret_cast<u8*>(*reinterpret_cast<void**>(DAT_71052b60e8)) + 0x7c);
+}
+
+// ── 0x710036c180 -- app::ai_param::training_special_interval (20B)─
+// [derived: reads u32 at *DAT_71052b60e8 + 0x80]
+u32 training_special_interval_710036c180(void* L) {
+    return *reinterpret_cast<u32*>(
+        reinterpret_cast<u8*>(*reinterpret_cast<void**>(DAT_71052b60e8)) + 0x80);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// sv_animcmd — IS_FIGHTER_STATUS_KIND / IS_STATUS_KIND
+// Pop stack arg, compare against StatusModule::get_status_kind vtable call
+// ════════════════════════════════════════════════════════════════════
+
+extern "C" u64 FUN_71038f4000(void*, s32, s32);
+
+// ── 0x71022ad5a0 -- app::sv_animcmd::IS_FIGHTER_STATUS_KIND (200B)─
+// [derived: pops 1 int arg from lua stack, calls StatusModule(+0x40)->vt[0x110/8]
+//  (get_status_kind), returns true if current status == arg]
+u32 IS_FIGHTER_STATUS_KIND_71022ad5a0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0);
+    u64 top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
+    u64 base = *reinterpret_cast<u64*>(
+        *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20)) + 0x10;
+    s32 nargs = static_cast<s32>((top - base) >> 4);
+    s32 kind;
+    if (nargs < 1) {
+        kind = 0;
+    } else {
+        kind = static_cast<s32>(FUN_71038f4000(L, 1, 0));
+    }
+    // pop stack
+    top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
+    base = *reinterpret_cast<u64*>(
+        *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20)) + 0x10;
+    while (top < base) {
+        *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = top + 0x10;
+        *reinterpret_cast<u32*>(top + 8) = 0;
+        top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
+    }
+    *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = base;
+    // get current status kind via StatusModule vtable
+    void* status = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x40);
+    void** vt = *reinterpret_cast<void***>(status);
+    auto get_status_kind = reinterpret_cast<s32(*)(void*)>(vt[0x110 / 8]);
+    s32 current = get_status_kind(status);
+    return current == kind;
+}
+
+// ── 0x71022ad670 -- app::sv_animcmd::IS_STATUS_KIND (200B) ────────
+// [derived: identical to IS_FIGHTER_STATUS_KIND — same vtable slot,
+//  same stack cleanup pattern; exported under different symbol]
+u32 IS_STATUS_KIND_71022ad670(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0);
+    u64 top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
+    u64 base = *reinterpret_cast<u64*>(
+        *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20)) + 0x10;
+    s32 nargs = static_cast<s32>((top - base) >> 4);
+    s32 kind;
+    if (nargs < 1) {
+        kind = 0;
+    } else {
+        kind = static_cast<s32>(FUN_71038f4000(L, 1, 0));
+    }
+    // pop stack
+    top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
+    base = *reinterpret_cast<u64*>(
+        *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20)) + 0x10;
+    while (top < base) {
+        *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = top + 0x10;
+        *reinterpret_cast<u32*>(top + 8) = 0;
+        top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
+    }
+    *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = base;
+    // get current status kind via StatusModule vtable
+    void* status = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x40);
+    void** vt = *reinterpret_cast<void***>(status);
+    auto get_status_kind = reinterpret_cast<s32(*)(void*)>(vt[0x110 / 8]);
+    s32 current = get_status_kind(status);
+    return current == kind;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// AI — simple field reads/writes from scripting context
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x7100368180 -- app::ai::update_count (12B) ──────────────────
+// [derived: reads u32 at ctx+0x2fc — AI update frame counter]
+u32 update_count_7100368180(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(ctx) + 0x2fc);
+}
+
+// ── 0x7100368170 -- app::ai::set_auto_stop (12B) ─────────────────
+// [derived: writes s32 param to ctx+0x2bc — auto stop flag]
+void set_auto_stop_7100368170(void* L, s32 val) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    *reinterpret_cast<s32*>(reinterpret_cast<u8*>(ctx) + 0x2bc) = val;
+}
+
+// ── 0x71003681c0 -- app::ai::reset_return_count (12B) ────────────
+// [derived: zeroes u16 at ctx+0xc7c — return count reset]
+void reset_return_count_71003681c0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    *reinterpret_cast<u16*>(reinterpret_cast<u8*>(ctx) + 0xc7c) = 0;
+}
+
+// ── 0x7100376350 -- app::ai_system::set_update_count (12B) ───────
+// [derived: writes s32 param to ctx+0x2fc — set update frame counter]
+void set_update_count_7100376350(void* L, s32 val) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    *reinterpret_cast<s32*>(reinterpret_cast<u8*>(ctx) + 0x2fc) = val;
+}
+
+// ── 0x7100376390 -- app::ai_system::prev_mode (12B) ──────────────
+// [derived: reads u32 at ctx+0xc68 — previous AI mode]
+u32 prev_mode_7100376390(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(ctx) + 0xc68);
+}
+
+// ── 0x7100375f10 -- app::nfp::is_enabled (12B) ──────────────────
+// [derived: reads u8 at ctx+0xc24 — amiibo/NFC enabled flag]
+u8 is_enabled_7100375f10(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    return *reinterpret_cast<u8*>(reinterpret_cast<u8*>(ctx) + 0xc24);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// AI — tail-call dispatchers (12B each)
+// ════════════════════════════════════════════════════════════════════
+
+extern "C" void FUN_7100359e30(void*);
+extern "C" void FUN_71002f5770(void*, u64);
+extern "C" void FUN_71002f46a0(void*, u64);
+extern "C" void FUN_71002f43c0(void*);
+extern "C" void FUN_71002f4590(void*);
+extern "C" void FUN_710033e5c0(void*, u64);
+extern "C" void FUN_710036a5c0(void*, s32, s32);
+
+// ── 0x71003680f0 -- app::ai::check_away_floor (12B) ─────────────
+// [derived: tail-calls FUN_7100359e30 with ctx->ai_data(+0x168)]
+void check_away_floor_71003680f0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    FUN_7100359e30(*reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168));
+}
+
+// ── 0x7100368cf0 -- app::ai::enable_command (12B) ────────────────
+// [derived: tail-calls FUN_71002f5770 with ctx->cmd_module(+0x180), cmd_id]
+void enable_command_7100368cf0(void* L, u64 cmd_id) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    FUN_71002f5770(reinterpret_cast<void*>(reinterpret_cast<u8*>(ctx) + 0x180), cmd_id);
+}
+
+// ── 0x7100368d00 -- app::ai::disable_command (12B) ───────────────
+// [derived: tail-calls FUN_71002f46a0 with ctx->cmd_module(+0x180), cmd_id]
+void disable_command_7100368d00(void* L, u64 cmd_id) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    FUN_71002f46a0(reinterpret_cast<void*>(reinterpret_cast<u8*>(ctx) + 0x180), cmd_id);
+}
+
+// ── 0x7100368d10 -- app::ai::disable_command_ground_all (12B) ────
+// [derived: tail-calls FUN_71002f43c0 with ctx->cmd_module(+0x180)]
+void disable_command_ground_all_7100368d10(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    FUN_71002f43c0(reinterpret_cast<void*>(reinterpret_cast<u8*>(ctx) + 0x180));
+}
+
+// ── 0x7100368d20 -- app::ai::disable_command_air_all (12B) ──────
+// [derived: tail-calls FUN_71002f4590 with ctx->cmd_module(+0x180)]
+void disable_command_air_all_7100368d20(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    FUN_71002f4590(reinterpret_cast<void*>(reinterpret_cast<u8*>(ctx) + 0x180));
+}
+
+// ── 0x710036a130 -- app::ai::motion_to_cmd_id (12B) ─────────────
+// [derived: tail-calls FUN_710033e5c0 with ctx+0x988, hash40 param]
+void motion_to_cmd_id_710036a130(void* L, u64 hash) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    FUN_710033e5c0(reinterpret_cast<void*>(reinterpret_cast<u8*>(ctx) + 0x988), hash);
+}
+
+// ── 0x710036a5b0 -- app::ai_deprecated::range_in (12B) ──────────
+// [derived: tail-calls FUN_710036a5c0 with L, 1, 0]
+void range_in_710036a5b0(void* L, f32 a, f32 b) {
+    FUN_710036a5c0(L, 1, 0);
+}
+
+// ── 0x710036acf0 -- app::ai_deprecated::distance_in (12B) ───────
+// [derived: tail-calls FUN_710036a5c0 with L, 0, 0]
+void distance_in_710036acf0(void* L, f32 a, f32 b) {
+    FUN_710036a5c0(L, 0, 0);
+}
+
+// ── 0x710036ad00 -- app::ai_deprecated::other_in (12B) ──────────
+// [derived: tail-calls FUN_710036a5c0 with L, 0, 1]
+void other_in_710036ad00(void* L, f32 a, f32 b) {
+    FUN_710036a5c0(L, 0, 1);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// ai_param — more parameter field reads from scripting context
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x710036baa0 -- app::ai_param::closed_mul (12B) ─────────────
+// [derived: reads f32 at ctx+0xbf0 — uses ldr s0 (float return)]
+f32 closed_mul_710036baa0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(ctx) + 0xbf0);
+}
+
+// ── 0x710036bab0 -- app::ai_param::my_range_mul (12B) ───────────
+// [derived: reads f32 at ctx+0xbf4 — uses ldr s0 (float return)]
+f32 my_range_mul_710036bab0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(ctx) + 0xbf4);
+}
+
+// ── 0x710036bac0 -- app::ai_param::safe_range_mul (12B) ─────────
+// [derived: reads f32 at ctx+0xbf8 — uses ldr s0 (float return)]
+f32 safe_range_mul_710036bac0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(ctx) + 0xbf8);
+}
+
+// ── 0x710036bad0 -- app::ai_param::opened_mul (12B) ─────────────
+// [derived: reads f32 at ctx+0xbfc — uses ldr s0 (float return)]
+f32 opened_mul_710036bad0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(ctx) + 0xbfc);
+}
+
+// ── 0x710036bae0 -- app::ai_param::meteor_action_probability (12B)
+// [derived: reads f32 at ctx+0xc00 — uses ldr s0 (float return)]
+f32 meteor_action_probability_710036bae0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(ctx) + 0xc00);
+}
+
+// ── 0x710036baf0 -- app::ai_param::range_middle (12B) ───────────
+// [derived: reads f32 at ctx+0xab8 — uses ldr s0 (float return)]
+f32 range_middle_710036baf0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(ctx) + 0xab8);
+}
+
+// ── 0x710036bb00 -- app::ai_param::range_long (12B) ─────────────
+// [derived: reads f32 at ctx+0xab4 — uses ldr s0 (float return)]
+f32 range_long_710036bb00(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(ctx) + 0xab4);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// AI — check_stat comparison functions (24B each)
+// Read stat_type from ai_data(+0x168)+0x74 and compare to a constant
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x7100361390 -- app::ai::check_stat_final (24B) ─────────────
+// [derived: tests bits 0-1 of u8 at +0x55 — final smash active or pending]
+u32 check_stat_final_7100361390(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    return (*reinterpret_cast<u8*>(reinterpret_cast<u8*>(ai) + 0x55) & 3) != 0;
+}
+
+// ── 0x71003614d0 -- app::ai::check_stat_dash (24B) ──────────────
+// [derived: compares stat_type(+0x74) == 3 — dashing state]
+u32 check_stat_dash_71003614d0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    return *reinterpret_cast<s32*>(reinterpret_cast<u8*>(ai) + 0x74) == 3;
+}
+
+// ── 0x71003614f0 -- app::ai::check_stat_down (24B) ──────────────
+// [derived: compares stat_type(+0x74) == 4 — downed state]
+u32 check_stat_down_71003614f0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    return *reinterpret_cast<s32*>(reinterpret_cast<u8*>(ai) + 0x74) == 4;
+}
+
+// ── 0x7100361530 -- app::ai::check_stat_dragoon (24B) ───────────
+// [derived: compares stat_type(+0x74) == 0x11 — using dragoon item]
+u32 check_stat_dragoon_7100361530(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    return *reinterpret_cast<s32*>(reinterpret_cast<u8*>(ai) + 0x74) == 0x11;
+}
+
+// ── 0x7100361550 -- app::ai::check_stat_genesis (24B) ───────────
+// [derived: compares stat_type(+0x74) == 0x12 — using daybreak/genesis item]
+u32 check_stat_genesis_7100361550(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    return *reinterpret_cast<s32*>(reinterpret_cast<u8*>(ai) + 0x74) == 0x12;
+}
+
+// ── 0x7100361570 -- app::ai::check_stat_catch (24B) ─────────────
+// [derived: compares stat_type(+0x74) == 0xc — catching/grabbing state]
+u32 check_stat_catch_7100361570(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    return *reinterpret_cast<s32*>(reinterpret_cast<u8*>(ai) + 0x74) == 0xc;
+}
+
+// ── 0x71003615b0 -- app::ai::check_stat_guard (24B) ─────────────
+// [derived: compares stat_type(+0x74) == 0x1a — guarding/shielding state]
+u32 check_stat_guard_71003615b0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    return *reinterpret_cast<s32*>(reinterpret_cast<u8*>(ai) + 0x74) == 0x1a;
+}
+
+// ── 0x7100361a20 -- app::ai::check_skill_stat (24B) ─────────────
+// [derived: tests bitmask of u32 at ai_data+0x6c against param]
+u32 check_skill_stat_7100361a20(void* L, u32 mask) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    return (*reinterpret_cast<u32*>(reinterpret_cast<u8*>(ai) + 0x6c) & mask) != 0;
+}
+
+// ── 0x7100361a40 -- app::ai::check_spirits_event_stat (24B) ─────
+// [derived: tests bitmask of u32 at ai_data+0x70 against param]
+u32 check_spirits_event_stat_7100361a40(void* L, u32 mask) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    return (*reinterpret_cast<u32*>(reinterpret_cast<u8*>(ai) + 0x70) & mask) != 0;
+}
+
+// ── 0x7100361b50 -- app::ai::check_passable (24B) ───────────────
+// [derived: bit 5 of u8 at ai_data(+0x168)->sub(+0xd0)+0x5c — passable flag]
+u32 check_passable_7100361b50(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    void* sub = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ai) + 0xd0);
+    return (*reinterpret_cast<u8*>(reinterpret_cast<u8*>(sub) + 0x5c) >> 5) & 1;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// ai_camera — dead zone boundaries (24B each, read from global)
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x710036b180 -- app::ai_camera::dead_top (24B) ──────────────
+// [derived: reads f32 from *(*DAT_71052b5fd8+0xc8)+0x10]
+f32 dead_top_710036b180() {
+    void* global = *reinterpret_cast<void**>(DAT_71052b5fd8);
+    void* cam = *reinterpret_cast<void**>(reinterpret_cast<u8*>(global) + 0xc8);
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(cam) + 0x10);
+}
+
+// ── 0x710036b1a0 -- app::ai_camera::dead_bottom (24B) ───────────
+// [derived: reads f32 from *(*DAT_71052b5fd8+0xc8)+0x14]
+f32 dead_bottom_710036b1a0() {
+    void* global = *reinterpret_cast<void**>(DAT_71052b5fd8);
+    void* cam = *reinterpret_cast<void**>(reinterpret_cast<u8*>(global) + 0xc8);
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(cam) + 0x14);
+}
+
+// ── 0x710036b1c0 -- app::ai_camera::dead_left (24B) ────────────
+// [derived: reads f32 from *(*DAT_71052b5fd8+0xc8)+0x8]
+f32 dead_left_710036b1c0() {
+    void* global = *reinterpret_cast<void**>(DAT_71052b5fd8);
+    void* cam = *reinterpret_cast<void**>(reinterpret_cast<u8*>(global) + 0xc8);
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(cam) + 0x8);
+}
+
+// ── 0x710036b1e0 -- app::ai_camera::dead_right (24B) ───────────
+// [derived: reads f32 from *(*DAT_71052b5fd8+0xc8)+0xc]
+f32 dead_right_710036b1e0() {
+    void* global = *reinterpret_cast<void**>(DAT_71052b5fd8);
+    void* cam = *reinterpret_cast<void**>(reinterpret_cast<u8*>(global) + 0xc8);
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(cam) + 0xc);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// ai_param — indexed parameter lookups (24B each)
+// Pattern: ctx->ai_data(+0x168)->index(+0x240) * 4 + base_offset
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x710036b8f0 -- app::ai_param::sp_u_high (24B) ─────────────
+// [derived: indexed f32 read at ctx + ai_index*4 + 0xad0]
+f32 sp_u_high_710036b8f0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    s32 idx = *reinterpret_cast<s32*>(reinterpret_cast<u8*>(ai) + 0x240);
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(ctx) + static_cast<s64>(idx) * 4 + 0xad0);
+}
+
+// ── 0x710036b910 -- app::ai_param::sp_u_length (24B) ────────────
+// [derived: indexed f32 read at ctx + ai_index*4 + 0xae0]
+f32 sp_u_length_710036b910(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    s32 idx = *reinterpret_cast<s32*>(reinterpret_cast<u8*>(ai) + 0x240);
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(ctx) + static_cast<s64>(idx) * 4 + 0xae0);
+}
+
+// ── 0x710036b930 -- app::ai_param::return_sp_u_cliff_x (24B) ────
+// [derived: indexed f32 read at ctx + ai_index*4 + 0xb34]
+f32 return_sp_u_cliff_x_710036b930(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    s32 idx = *reinterpret_cast<s32*>(reinterpret_cast<u8*>(ai) + 0x240);
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(ctx) + static_cast<s64>(idx) * 4 + 0xb34);
+}
+
+// ── 0x710036b950 -- app::ai_param::return_sp_u_cliff_y (24B) ────
+// [derived: indexed f32 read at ctx + ai_index*4 + 0xb44]
+f32 return_sp_u_cliff_y_710036b950(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    s32 idx = *reinterpret_cast<s32*>(reinterpret_cast<u8*>(ai) + 0x240);
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(ctx) + static_cast<s64>(idx) * 4 + 0xb44);
+}
+
+// ── 0x710036b970 -- app::ai_param::return_goal_x (24B) ──────────
+// [derived: indexed f32 read at ctx + ai_index*4 + 0xb54]
+f32 return_goal_x_710036b970(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    s32 idx = *reinterpret_cast<s32*>(reinterpret_cast<u8*>(ai) + 0x240);
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(ctx) + static_cast<s64>(idx) * 4 + 0xb54);
+}
+
+// ── 0x710036b990 -- app::ai_param::return_goal_x_strict (24B) ───
+// [derived: indexed f32 read at ctx + ai_index*4 + 0xb64]
+f32 return_goal_x_strict_710036b990(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    s32 idx = *reinterpret_cast<s32*>(reinterpret_cast<u8*>(ai) + 0x240);
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(ctx) + static_cast<s64>(idx) * 4 + 0xb64);
+}
+
+// ── 0x710036b9b0 -- app::ai_param::return_goal_pad_x_strict (24B)
+// [derived: indexed f32 read at ctx + ai_index*4 + 0xb74]
+f32 return_goal_pad_x_strict_710036b9b0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    s32 idx = *reinterpret_cast<s32*>(reinterpret_cast<u8*>(ai) + 0x240);
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(ctx) + static_cast<s64>(idx) * 4 + 0xb74);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// ai_param — challenger_guard_rate, analyst::chanced_frame
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x710036c1a0 -- app::ai_param::challenger_guard_rate (20B) ──
+// [derived: reads f32 from *DAT_71052b60e8 + 0x84]
+f32 challenger_guard_rate_710036c1a0(void* L) {
+    return *reinterpret_cast<f32*>(
+        reinterpret_cast<u8*>(*reinterpret_cast<void**>(DAT_71052b60e8)) + 0x84);
+}
+
+// ── 0x7100376b90 -- app::analyst::chanced_frame (20B) ───────────
+// [derived: reads u32 from ctx->battle_object(+0x170)->+0x1c]
+u32 chanced_frame_7100376b90(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* bo = *reinterpret_cast<void**>(
+        *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x170));
+    return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(bo) + 0x1c);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// AI system — stick/action controls
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x7100376330 -- app::ai_system::set_action_id_none (24B) ────
+// [derived: saves current action_id(+0x198) to prev(+0x19a) if nonzero, then clears it]
+void set_action_id_none_7100376330(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    s16 cur = *reinterpret_cast<s16*>(reinterpret_cast<u8*>(ctx) + 0x198);
+    if (cur != 0) {
+        *reinterpret_cast<s16*>(reinterpret_cast<u8*>(ctx) + 0x19a) = cur;
+    }
+    *reinterpret_cast<u16*>(reinterpret_cast<u8*>(ctx) + 0x198) = 0;
+}
+
+// ── 0x71003762f0 -- app::ai_system::reset_stick (24B) ───────────
+// [derived: zeroes stick vectors at ctx+0xc30 and ctx+0xc38 from zero constant]
+void reset_stick_71003762f0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    u64 z0 = *reinterpret_cast<u64*>(DAT_71052a7a80);
+    u64 z1 = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(DAT_71052a7a80) + 8);
+    *reinterpret_cast<u64*>(reinterpret_cast<u8*>(ctx) + 0xc38) = z1;
+    *reinterpret_cast<u64*>(reinterpret_cast<u8*>(ctx) + 0xc30) = z0;
+}
+
+// ── 0x710036b810 -- app::ai_param::width (24B) ─────────────────
+// [derived: multiplies ctx+0xb2c (base_width) by ai_data+0xc0 (scale factor)]
+f32 width_710036b810(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(ctx) + 0xb2c) *
+           *reinterpret_cast<f32*>(reinterpret_cast<u8*>(ai) + 0xc0);
+}
+
+// NOTE: DAISY/DOLL/EXPLOSIONBOMB param functions (0x710165xxxx) need non-hidden
+// FPA2 singleton access (GOT-style double deref). They belong in a separate TU
+// where DAT_71052bb3b0 is declared without __attribute__((visibility("hidden"))).

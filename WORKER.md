@@ -1,19 +1,20 @@
-# Worker: pool-b
+# Worker: pool-c
 
 ## Model: Opus
 
-## Task: Near-miss matching + optnone sweep on fun_med_final_d files
+## Task: Continue fighter status decomp — next batch
 
-### Phase 1: optnone for remaining -O0 functions
-Check fun_med_final_d_*.cpp files for functions in 0x71039xxxxx that need __attribute__((optnone)).
+You've produced 168 fighter status functions so far. Keep going — same approach.
 
-### Phase 2: Near-miss fixes
-Find N-quality functions close to matching (80%+). Fix types, visibility, barriers.
-
-### NO naked asm. Compare each function against binary before fixing.
+### Target: src/app/fighter_status.cpp (append)
+### Focus: Named undecompiled functions related to fighter status, AI, params, ACMD
+### Headers: StatusModule.h, WorkModule.h, MotionModule.h, BattleObjectModuleAccessor.h
+### Derivation Chains MANDATORY
+### Do NOT use naked asm.
 
 ### Quick Reference
 ```
-python tools/compare_bytes.py FUN_name
 /c/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -Ilib/NintendoSDK/include -Ilib/NintendoSDK/include/stubs -c src/app/FILE.cpp -o build/FILE.o
+
+python tools/compare_bytes.py FUN_name
 ```
