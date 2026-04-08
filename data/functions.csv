@@ -7897,8 +7897,8 @@ Address,Quality,Size,Name
 0x000000710068d730,M,000004,FUN_710068d730
 0x000000710068df20,U,000352,set_damage_fly_angle
 0x000000710068e080,U,000224,get_ground_correct_kind_air_trans
-0x000000710068e160,U,000016,is_hammer_status
-0x000000710068e170,U,000072,is_hammer_motion
+0x000000710068e160,M,000016,is_hammer_status
+0x000000710068e170,M,000072,is_hammer_motion
 0x000000710068e1c0,U,000296,FUN_710068e1c0
 0x000000710068e2f0,N,000120,hash40_item_hand_grip
 0x000000710068e370,U,000240,tread_remove_constraint
@@ -7947,7 +7947,7 @@ Address,Quality,Size,Name
 0x00000071006941e0,U,000896,FUN_71006941e0
 0x0000007100694560,M,000004,exec_free_move
 0x0000007100694570,U,000336,is_scaling
-0x00000071006946c0,U,000044,is_valid_entry_id
+0x00000071006946c0,M,000044,is_valid_entry_id
 0x00000071006946f0,U,001220,get_opponent_fighter_num
 0x0000007100694bc0,U,000168,is_valid_just_shield
 0x0000007100694c70,M,000056,get_just_shield_se
@@ -10482,7 +10482,7 @@ Address,Quality,Size,Name
 0x0000007100f08ac0,U,001376,set_have_craft_weapon
 0x0000007100f09020,U,006476,FUN_7100f09020
 0x0000007100f0a970,M,000016,is_status_kind_attack
-0x0000007100f0a980,U,000048,is_have_tool
+0x0000007100f0a980,M,000048,is_have_tool
 0x0000007100f0a9b0,U,000172,set_head_angle_current_motion
 0x0000007100f0aa60,U,002668,FUN_7100f0aa60
 0x0000007100f0b4d0,U,000220,sub_craft_weapon_durability
@@ -13333,11 +13333,11 @@ Address,Quality,Size,Name
 0x00000071015c4200,U,000468,effect_req_follow_from_param
 0x00000071015c43e0,U,000176,vector3_from_param
 0x00000071015c4490,U,000068,camera_sleep
-0x00000071015c44e0,U,000072,change_partial_motion
-0x00000071015c4530,U,000072,change_partial_motion_as_skeletal
-0x00000071015c4580,U,000040,set_partial_motion_rate
-0x00000071015c45b0,U,000044,set_partial_motion_frame
-0x00000071015c45e0,U,000044,remove_partial_motion
+0x00000071015c44e0,N,000072,change_partial_motion
+0x00000071015c4530,N,000072,change_partial_motion_as_skeletal
+0x00000071015c4580,M,000040,set_partial_motion_rate
+0x00000071015c45b0,M,000044,set_partial_motion_frame
+0x00000071015c45e0,M,000044,remove_partial_motion
 0x00000071015c4610,U,000084,request_quake
 0x00000071015c4670,U,000048,stop_quake
 0x00000071015c46a0,U,000388,is_clip_in_camera
@@ -23231,7 +23231,7 @@ Address,Quality,Size,Name
 0x0000007102281a90,N,000056,set_dead_camera_hit_rumble
 0x0000007102281ad0,U,000240,is_capture_cut_distance
 0x0000007102281bc0,M,000048,get_attack_s3_s_motion
-0x0000007102281bf0,U,000120,get_attack_hi3_motion
+0x0000007102281bf0,N,000120,get_attack_hi3_motion
 0x0000007102281c70,M,000048,get_attack_lw3_motion
 0x0000007102281ca0,U,000168,is_attack_air_status
 0x0000007102281d50,U,000916,is_exist_lose_fighter
