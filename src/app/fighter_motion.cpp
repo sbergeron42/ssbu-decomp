@@ -1160,4 +1160,61 @@ f32 dive_speed_y_max(u8* L) {
     return *reinterpret_cast<f32*>(p + 0x22c);
 }
 
+// 0x710036b9d0 (12 bytes)
+// Returns catch attack cancel frame from AI object
+// [derived: *(obj + 0xbaa) direct byte access, no indirection]
+u8 catch_attack_cancel_frame(u8* L) {
+    u8* obj = *reinterpret_cast<u8**>(L - 8);
+    return *reinterpret_cast<u8*>(obj + 0xbaa);
+}
+
+// 0x710036ba80 (12 bytes)
+// Returns number of attack 123 combo hits from AI object
+// [derived: *(obj + 0xb14) direct u32 access]
+u32 num_of_attack_123(u8* L) {
+    u8* obj = *reinterpret_cast<u8**>(L - 8);
+    return *reinterpret_cast<u32*>(obj + 0xb14);
+}
+
+// 0x710036ba90 (12 bytes)
+// Returns whether fighter has attack 100 (rapid jab) from AI object
+// [derived: *(obj + 0xb18) direct byte access]
+u8 has_attack_100(u8* L) {
+    u8* obj = *reinterpret_cast<u8**>(L - 8);
+    return *reinterpret_cast<u8*>(obj + 0xb18);
+}
+
 } // namespace app::ai_param
+
+namespace app::ai_weapon {
+
+// 0x710036b020 (16 bytes)
+// Returns item kind from AI weapon param block
+// [derived: *(*(obj+0x168)+0x108) — AI param at +0x168, weapon item kind at +0x108]
+u32 have_item_kind(u8* L) {
+    u8* obj = *reinterpret_cast<u8**>(L - 8);
+    u8* p = *reinterpret_cast<u8**>(obj + 0x168);
+    return *reinterpret_cast<u32*>(p + 0x108);
+}
+
+// 0x710036b0b0 (20 bytes)
+// Returns weapon kind from FighterAIWeapon, or -1 if null
+// [derived: null check on param_2, then *(param_2+4) or 0xFFFFFFFF]
+u32 kind(u8* L, u8* weapon) {
+    if (weapon) {
+        return *reinterpret_cast<u32*>(weapon + 4);
+    }
+    return 0xFFFFFFFF;
+}
+
+// 0x710036b0d0 (20 bytes)
+// Returns weapon flags from FighterAIWeapon, or 0 if null
+// [derived: null check on param_2, then *(u16*)(param_2+8) or 0]
+u16 flag(u8* L, u8* weapon) {
+    if (weapon) {
+        return *reinterpret_cast<u16*>(weapon + 8);
+    }
+    return 0;
+}
+
+} // namespace app::ai_weapon
