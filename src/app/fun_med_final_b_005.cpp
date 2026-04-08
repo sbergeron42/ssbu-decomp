@@ -188,9 +188,9 @@ void FUN_71001b42e0(void *result_out, void *result_in, const char *path) {
     *(u32 *)((u8 *)result_out + 0x10) = 0xa1;
 }
 
-// FUN_71001b7b50 — return *param_1 if param_1[1] in {1,6}, else 0 (u64 variant)
+// FUN_71001b7b50 — return *param_1 if state in {1,6}, else 0 (u64 variant)
 u64 FUN_71001b7b50(u64 *param_1) {
-    u64 state = param_1[1];
+    u32 state = *(u32 *)((u8 *)param_1 + 8);
     if (state == 1 || state == 6) {
         return param_1[0];
     }
@@ -199,27 +199,27 @@ u64 FUN_71001b7b50(u64 *param_1) {
 
 // FUN_71001b7b70 — same as above, alternate entry
 u64 FUN_71001b7b70(u64 *param_1) {
-    u64 state = param_1[1];
+    u32 state = *(u32 *)((u8 *)param_1 + 8);
     if (state == 1 || state == 6) {
         return param_1[0];
     }
     return 0;
 }
 
-// FUN_71001b7b90 — return *param_1 if param_1[1] in {1,6}, else 0 (u32 field variant)
+// FUN_71001b7b90 — return *(u32*)param_1 if state in {1,6}, else 0
 u32 FUN_71001b7b90(u64 *param_1) {
-    u32 state = (u32)param_1[1];
+    u32 state = *(u32 *)((u8 *)param_1 + 8);
     if (state == 1 || state == 6) {
-        return (u32)param_1[0];
+        return *(u32 *)param_1;
     }
     return 0;
 }
 
 // FUN_71001b7bb0 — same as above, alternate entry
 u32 FUN_71001b7bb0(u64 *param_1) {
-    u32 state = (u32)param_1[1];
+    u32 state = *(u32 *)((u8 *)param_1 + 8);
     if (state == 1 || state == 6) {
-        return (u32)param_1[0];
+        return *(u32 *)param_1;
     }
     return 0;
 }

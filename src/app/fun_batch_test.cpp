@@ -24,11 +24,14 @@ u32 FUN_710022b510(s64 param_1)
     *(u8 *)(param_1 + 8) = 1;
     return 0;
   }
-  s64 base = *(s64 *)(stream + 0x10) + *(s64 *)(stream + 0x28);
+  s64 ptr = *(s64 *)(stream + 0x10);
+  s64 doff = *(s64 *)(stream + 0x28);
 #ifdef MATCHING_HACK_NX_CLANG
-  asm("" : "+r"(base));
+  asm("add %0, %1, %2" : "=r"(ptr) : "r"(ptr), "r"(doff));
+#else
+  ptr = ptr + doff;
 #endif
-  value = *(u32 *)(base + offset);
+  value = *(u32 *)(ptr + offset);
   *(s64 *)(param_1 + 0x18) = offset + 4;
   return value;
 }
@@ -46,11 +49,14 @@ u32 FUN_710022e510(s64 param_1)
     *(u8 *)(param_1 + 8) = 1;
     return 0;
   }
-  s64 base = *(s64 *)(stream + 0x10) + *(s64 *)(stream + 0x28);
+  s64 ptr = *(s64 *)(stream + 0x10);
+  s64 doff = *(s64 *)(stream + 0x28);
 #ifdef MATCHING_HACK_NX_CLANG
-  asm("" : "+r"(base));
+  asm("add %0, %1, %2" : "=r"(ptr) : "r"(ptr), "r"(doff));
+#else
+  ptr = ptr + doff;
 #endif
-  value = *(u32 *)(base + offset);
+  value = *(u32 *)(ptr + offset);
   *(s64 *)(param_1 + 0x18) = offset + 4;
   return value;
 }
