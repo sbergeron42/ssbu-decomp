@@ -11,18 +11,18 @@ Targeting the final version: **patch 13.0.4**.
 | Category | Count | Percentage |
 |----------|------:|------------|
 | **Total functions** | 39,635 | |
-| Verified byte-identical | 11,253 | 28.39% |
-| Compiled (non-matching) | 4,683 | 11.82% |
-| **Total decompiled** | **15,936** | **40.21%** |
-| Undecompiled | 23,699 | 59.79% |
+| Verified byte-identical | 11,281 | 28.46% |
+| Compiled (non-matching) | 4,726 | 11.92% |
+| **Total decompiled** | **16,007** | **40.39%** |
+| Undecompiled | 23,628 | 59.61% |
 
 ```
-Verified  [###########                             ]  11,253 / 39,635  (28.39%)
-Compiled  [################                        ]  15,936 / 39,635  (40.21%)
+Verified  [###########                             ]  11,281 / 39,635  (28.46%)
+Compiled  [################                        ]  16,007 / 39,635  (40.39%)
 ```
 
-> **11,253 functions verified byte-identical** against the real 13.0.4 binary.
-> 74.8% match rate on verified functions. Autonomous multi-agent orchestrator operational.
+> **11,281 functions verified byte-identical** against the real 13.0.4 binary.
+> 74.7% match rate on verified functions. Autonomous multi-agent orchestrator operational.
 
 ## Naming Provenance
 
@@ -113,6 +113,33 @@ config/        Symbol maps, matching targets
 - [zeldaret/botw](https://github.com/zeldaret/botw) — BotW decomp (pioneered the upstream Clang approach)
 - [ultimate-research](https://github.com/ultimate-research) — SSBU RE community
 - [decomp.me](https://decomp.me/) — Collaborative decomp scratchpad (supports Switch/AArch64)
+
+## AI-Assisted Methodology
+
+This project uses [Claude Code](https://claude.ai/code) as an accelerator within a human-led decomp workflow. Here's what the AI does and doesn't do.
+
+### What the AI handles
+
+- **Cross-referencing functions to discover struct layouts.** The AI reads dozens of functions that access the same struct offset, determines the field type from usage patterns, and builds struct definitions. Tedious work that benefits from processing hundreds of functions at once.
+- **Writing C++ against known types.** Given a Ghidra decompilation and the project's struct headers, the AI rewrites functions using proper field access, compiles, and iterates on matching. The types come from external sources (see below) — the AI does the mechanical translation.
+- **Bulk pattern fixes.** Identifying systematic mismatches (e.g., abort stubs that should be `__throw_out_of_range`) across thousands of functions and fixing them in batch.
+- **Post-processing script development.** Writing `fix_*.py` binary patchers that close known NX Clang divergences (prologue scheduling, movz/orr encoding, return width, etc.).
+
+### What the AI doesn't do
+
+- **Name fields without evidence.** Every struct field traces back to a verifiable source: binary `.dynsym` symbols, ARCropolis/smash-arc community types, or cross-referenced function behavior. Fields without evidence are left as `unk_0xNN` or tagged `[inferred:]`.
+- **Override community knowledge.** Resource service types use the exact names from ARCropolis and smash-arc. Module names come from the binary's exported symbols. The AI doesn't invent alternative naming.
+- **Claim understanding it doesn't have.** When a function's purpose is unclear, it's documented as such — not given a speculative name.
+
+### Verification chain
+
+1. **Structural correctness** — every decompiled function is byte-compared against the original 13.0.4 binary by `tools/verify_all.py`. Wrong offsets, wrong types, or wrong control flow cause verification failure. This is automated and runs on every merge.
+2. **Naming provenance** — struct headers carry `[derived:]` and `[inferred:]` tags showing how each field name was determined. See the [Naming Provenance](#naming-provenance) table above.
+3. **Community-sourced types** — resource service structs are sourced from [ARCropolis](https://github.com/Raytwo/ARCropolis) and [smash-arc](https://github.com/jam1garner/smash-arc), which have been validated by the modding community over 7 years of use.
+
+### Multi-agent workflow
+
+The project uses parallel Claude Code sessions ("pools") working on isolated git worktrees. An orchestrator merges verified work to master. Each pool has exclusive file territory to prevent conflicts. Worker rules (in CLAUDE.md) enforce quality gates: no naked asm as a first approach, no Ghidra paste copy, 3-attempt limit per function, mandatory provenance tags.
 
 ## License
 
