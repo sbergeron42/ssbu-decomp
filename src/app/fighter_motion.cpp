@@ -1,5 +1,6 @@
 #include "types.h"
 #include "app/BattleObjectModuleAccessor.h"
+#include "app/modules/KineticModule.h"
 #include "app/modules/MotionModule.h"
 #include "app/modules/PostureModule.h"
 #include "app/modules/WorkModule.h"
@@ -146,3 +147,92 @@ void set_partial_motion_frame(u8* L, u64 slot, f32 frame) {
 }
 
 } // namespace app::item
+
+// Helper: get KineticModule* from lua context (item/boss pattern)
+// [derived: all boss_private/item kinetic functions load battle object from lua_State-8,
+//  then accessor at +0x1a0, then kinetic_module at accessor+0x68]
+static inline KineticModule* item_kinetic(u8* L) {
+    u8* obj = *reinterpret_cast<u8**>(L - 8);
+    BattleObjectModuleAccessor* acc = *reinterpret_cast<BattleObjectModuleAccessor**>(obj + 0x1a0);
+    return static_cast<KineticModule*>(acc->item_kinetic_module);
+}
+
+namespace app::boss_private {
+
+// 0x71015c8390 (48 bytes)
+// Disables main kinetic energy (slot 0xc) by clearing enabled flag
+// [derived: get_energy vtable+0x60 with index 0xc, strb wzr at energy+0x30]
+void unable_main_energy(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(0xc);
+    energy->enabled = 0;
+}
+
+// 0x71015c83c0 (48 bytes)
+// Disables sub1 kinetic energy (slot 0xd) by clearing enabled flag
+// [derived: get_energy vtable+0x60 with index 0xd, strb wzr at energy+0x30]
+void unable_sub1_energy(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(0xd);
+    energy->enabled = 0;
+}
+
+// 0x71015c8280 (60 bytes)
+// Sets angle on sub1 kinetic energy (slot 0xd) at energy+0xa4
+// [derived: get_energy(0xd), str s8 at +0xa4 — callee-saved float across virtual call]
+void set_sub1_energy_angle(u8* L, f32 angle) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(0xd);
+    *reinterpret_cast<f32*>(reinterpret_cast<u8*>(energy) + 0xa4) = angle;
+}
+
+// 0x71015c82c0 (72 bytes)
+// Clears sub1 kinetic energy (slot 0xd) — calls clear_speed then zeroes field at +0xa0
+// [derived: get_energy(0xd) → vtable+0x48 (clear_speed), then str wzr at energy+0xa0]
+void clear_sub1_energy(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(0xd);
+    energy->clear_speed();
+    *reinterpret_cast<u32*>(reinterpret_cast<u8*>(energy) + 0xa0) = 0;
+}
+
+} // namespace app::boss_private
+
+namespace app::kinetic_energy_damage {
+
+// 0x71015d1ca0 (56 bytes)
+// Returns true if damage energy (slot 8) has ground type == 0
+// [derived: get_energy(8), ldr w8 at +0x88, cmp #0, cset eq]
+bool is_ground_type_energy(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(8);
+    return *reinterpret_cast<int*>(reinterpret_cast<u8*>(energy) + 0x88) == 0;
+}
+
+} // namespace app::kinetic_energy_damage
+
+namespace app::WeaponSpecializer_EFlameEsword {
+
+// 0x71033f3630 (52 bytes)
+// Sets angle on motion energy (slot 2) at energy+0x8c
+// [derived: acc->kinetic_module vtable+0x60 get_energy(2), str s8 at +0x8c]
+void energy_motion_set_angle(BattleObjectModuleAccessor* acc, f32 angle) {
+    KineticModule* km = static_cast<KineticModule*>(acc->item_kinetic_module);
+    KineticEnergy* energy = km->get_energy(2);
+    *reinterpret_cast<f32*>(reinterpret_cast<u8*>(energy) + 0x8c) = angle;
+}
+
+} // namespace app::WeaponSpecializer_EFlameEsword
+
+namespace app::WeaponSpecializer_ElementDiver {
+
+// 0x71033f5630 (52 bytes)
+// Sets speed multiplier on motion energy (slot 2) at energy+0x90
+// [derived: acc->kinetic_module vtable+0x60 get_energy(2), str s8 at +0x90]
+void set_energy_motion_speed_mul(BattleObjectModuleAccessor* acc, f32 mul) {
+    KineticModule* km = static_cast<KineticModule*>(acc->item_kinetic_module);
+    KineticEnergy* energy = km->get_energy(2);
+    *reinterpret_cast<f32*>(reinterpret_cast<u8*>(energy) + 0x90) = mul;
+}
+
+} // namespace app::WeaponSpecializer_ElementDiver
