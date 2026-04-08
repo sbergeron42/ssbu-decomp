@@ -230,7 +230,7 @@ namespace app::WeaponSpecializer_EFlameEsword {
 
 // 0x71033f3630 (52 bytes)
 // Sets angle on motion energy (slot 2) at energy+0x8c
-// [derived: acc->kinetic_module vtable+0x60 get_energy(2), str s8 at +0x8c]
+// [derived: acc->item_kinetic_module vtable+0x60 get_energy(2), str s8 at +0x8c]
 void energy_motion_set_angle(BattleObjectModuleAccessor* acc, f32 angle) {
     KineticModule* km = static_cast<KineticModule*>(acc->item_kinetic_module);
     KineticEnergy* energy = km->get_energy(2);
@@ -243,7 +243,7 @@ namespace app::WeaponSpecializer_ElementDiver {
 
 // 0x71033f5630 (52 bytes)
 // Sets speed multiplier on motion energy (slot 2) at energy+0x90
-// [derived: acc->kinetic_module vtable+0x60 get_energy(2), str s8 at +0x90]
+// [derived: acc->item_kinetic_module vtable+0x60 get_energy(2), str s8 at +0x90]
 void set_energy_motion_speed_mul(BattleObjectModuleAccessor* acc, f32 mul) {
     KineticModule* km = static_cast<KineticModule*>(acc->item_kinetic_module);
     KineticEnergy* energy = km->get_energy(2);
@@ -1218,3 +1218,814 @@ u16 flag(u8* L, u8* weapon) {
 }
 
 } // namespace app::ai_weapon
+
+// ════════════════════════════════════════════════════════════════════════════
+// AI attack info / target resolution functions
+// External helpers:
+//   FUN_710033ba50(u32 fighter_kind) — returns attack info table pointer
+//   FUN_71002f2820(u32 cmd_id, u32 fighter_kind) — remaps CmdId to motion status
+//   FUN_7100314030(void* world_ptr, void* target_slot) — resolves target entry
+//   FUN_710033c360(void* cmd_table, u32 cmd_id) — looks up attack entry by CmdId
+//   FUN_710033c510(u32 fighter_kind, u64 motion_hash) — looks up attack entry by motion hash
+//   FUN_710033e5c0(void* cmd_table, u64 motion_hash) — motion hash to CmdId
+// ════════════════════════════════════════════════════════════════════════════
+
+extern "C" void* FUN_710033ba50(u32);
+extern "C" s32 FUN_71002f2820(u32, u32);
+extern "C" void* FUN_7100314030(void*, void*);
+extern "C" void* FUN_710033c360(void*, u32);
+extern "C" void* FUN_710033c510(u32, u64);
+extern "C" u32 FUN_710033e5c0(void*, u64);
+extern "C" __attribute__((visibility("hidden"))) void* DAT_71052b5fd8;
+
+namespace app::ai {
+
+// ── Helper: compute attack table index from status code ──────────────
+// The AI attack info table uses a 3-tier range mapping on the motion status:
+//   [0x6031, 0x603f] → index = status - 0x6031 (ground normals, 0..14)
+//   [0x6041, 0x604f] → index = status - 0x6034 (aerials, 13..27)
+//   [0x6051, 0x6068] → index = status - 0x603b (specials, 22..45)
+// [derived: identical pattern in attack_info_needs_turn/reaction/no_shield/meteor/
+//  reflectable/as_weapon/distance — all 7 functions use same index logic with stride 0xb8]
+static inline s64 attack_info_index(s32 status) {
+    s64 idx_a = (s64)(s32)(status - 0x603b);
+    s64 idx_b = (s64)(s32)(status - 0x6034);
+    s64 idx_c = (s64)(s32)((u32)status - 0x6031u);
+#ifdef MATCHING_HACK_NX_CLANG
+    // Force compiler to keep 64-bit intermediates in x registers
+    // (NX Clang generates sxtw + x-register csel; upstream defers sxtw)
+    asm("" : "+r"(idx_a), "+r"(idx_b), "+r"(idx_c));
+#endif
+    s64 index = 0;
+    if ((u32)(status - 0x6051) < 0x18u)
+        index = idx_a;
+    if ((u32)(status - 0x6041) < 0xfu)
+        index = idx_b;
+    if ((u32)(status - 0x6031) < 0xfu)
+        index = idx_c;
+    return index;
+}
+
+// ---------------------------------------------------------------------------
+// 0x7100367020  40B  target_motion_kind
+// Returns Hash40 motion kind of current AI target.
+// [derived: resolves target via FUN_7100314030(*DAT_71052b5fd8, ctx+0xc50),
+//  reads u64 at target+0x38 — motion kind field in target info struct]
+// ---------------------------------------------------------------------------
+u64 target_motion_kind(void* L) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u8* target = reinterpret_cast<u8*>(FUN_7100314030(DAT_71052b5fd8, ctx + 0xc50));
+    return *reinterpret_cast<u64*>(target + 0x38);
+}
+
+// ---------------------------------------------------------------------------
+// 0x7100367050  40B  target_motion_frame
+// Returns current motion frame of AI target.
+// [derived: same target resolution as target_motion_kind, reads u32 at +0x48]
+// ---------------------------------------------------------------------------
+u32 target_motion_frame(void* L) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u8* target = reinterpret_cast<u8*>(FUN_7100314030(DAT_71052b5fd8, ctx + 0xc50));
+    return *reinterpret_cast<u32*>(target + 0x48);
+}
+
+// ---------------------------------------------------------------------------
+// 0x7100369cd0  160B  attack_info_needs_turn
+// AI: returns needs_turn flag (u8) from attack info table at +0x1d.
+// [derived: attack_info table at FUN_710033ba50(fighter_kind)->+8, stride 0xb8,
+//  +0x1d is needs_turn — compared with attack_info_no_shield (+0x24) pattern]
+// ---------------------------------------------------------------------------
+u8 attack_info_needs_turn(void* L, u32 cmd_id) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u32 obj_id = *reinterpret_cast<u32*>(ctx + 0x988);
+    u8* attack_data = reinterpret_cast<u8*>(FUN_710033ba50(obj_id));
+    s32 status = FUN_71002f2820(cmd_id, obj_id);
+
+    s64 index = attack_info_index(status);
+    u8* base = *reinterpret_cast<u8**>(attack_data + 8);
+    return base[index * 0xb8 + 0x1d];
+}
+
+// ---------------------------------------------------------------------------
+// 0x7100369d70  160B  attack_info_reaction
+// AI: returns reaction value (u32) from attack info table at +0x20.
+// [derived: same pattern as attack_info_needs_turn, offset +0x20 is reaction —
+//  u32 return type matches Ghidra undefined4 at that offset]
+// ---------------------------------------------------------------------------
+u32 attack_info_reaction(void* L, u32 cmd_id) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u32 obj_id = *reinterpret_cast<u32*>(ctx + 0x988);
+    u8* attack_data = reinterpret_cast<u8*>(FUN_710033ba50(obj_id));
+    s32 status = FUN_71002f2820(cmd_id, obj_id);
+
+    s64 index = attack_info_index(status);
+    u8* base = *reinterpret_cast<u8**>(attack_data + 8);
+    return *reinterpret_cast<u32*>(base + index * 0xb8 + 0x20);
+}
+
+// ---------------------------------------------------------------------------
+// 0x7100369eb0  160B  attack_info_meteor
+// AI: returns meteor flag (u8) from attack info table at +0x25.
+// [derived: same pattern, +0x25 immediately after no_shield (+0x24)]
+// ---------------------------------------------------------------------------
+u8 attack_info_meteor(void* L, u32 cmd_id) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u32 obj_id = *reinterpret_cast<u32*>(ctx + 0x988);
+    u8* attack_data = reinterpret_cast<u8*>(FUN_710033ba50(obj_id));
+    s32 status = FUN_71002f2820(cmd_id, obj_id);
+
+    s64 index = attack_info_index(status);
+    u8* base = *reinterpret_cast<u8**>(attack_data + 8);
+    return base[index * 0xb8 + 0x25];
+}
+
+// ---------------------------------------------------------------------------
+// 0x7100369f50  160B  attack_info_reflectable
+// AI: returns reflectable flag (u8) from attack info table at +0x5.
+// [derived: same pattern, +0x5 — note lower offset than others, near start of entry]
+// ---------------------------------------------------------------------------
+u8 attack_info_reflectable(void* L, u32 cmd_id) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u32 obj_id = *reinterpret_cast<u32*>(ctx + 0x988);
+    u8* attack_data = reinterpret_cast<u8*>(FUN_710033ba50(obj_id));
+    s32 status = FUN_71002f2820(cmd_id, obj_id);
+
+    s64 index = attack_info_index(status);
+    u8* base = *reinterpret_cast<u8**>(attack_data + 8);
+    return base[index * 0xb8 + 5];
+}
+
+// ---------------------------------------------------------------------------
+// 0x7100369ff0  160B  attack_is_as_weapon
+// AI: returns as_weapon flag (u8) from attack info table at +0x6.
+// [derived: same pattern, +0x6 — adjacent to reflectable at +0x5]
+// ---------------------------------------------------------------------------
+u8 attack_is_as_weapon(void* L, u32 cmd_id) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u32 obj_id = *reinterpret_cast<u32*>(ctx + 0x988);
+    u8* attack_data = reinterpret_cast<u8*>(FUN_710033ba50(obj_id));
+    s32 status = FUN_71002f2820(cmd_id, obj_id);
+
+    s64 index = attack_info_index(status);
+    u8* base = *reinterpret_cast<u8**>(attack_data + 8);
+    return base[index * 0xb8 + 6];
+}
+
+// ---------------------------------------------------------------------------
+// 0x710036a090  160B  attack_info_distance
+// AI: returns distance value (u32/f32) from attack info table at +0x18.
+// [derived: same pattern, +0x18 — 4-byte read, likely f32 distance threshold]
+// ---------------------------------------------------------------------------
+u32 attack_info_distance(void* L, u32 cmd_id) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u32 obj_id = *reinterpret_cast<u32*>(ctx + 0x988);
+    u8* attack_data = reinterpret_cast<u8*>(FUN_710033ba50(obj_id));
+    s32 status = FUN_71002f2820(cmd_id, obj_id);
+
+    s64 index = attack_info_index(status);
+    u8* base = *reinterpret_cast<u8**>(attack_data + 8);
+    return *reinterpret_cast<u32*>(base + index * 0xb8 + 0x18);
+}
+
+// ---------------------------------------------------------------------------
+// 0x7100369b00  108B  target_attack_start_frame
+// AI: resolves target, looks up attack entry by CmdId, returns start frame.
+// [derived: FUN_7100314030 for target, validates target_id < 16 and not self,
+//  FUN_710033c360 for attack lookup on target, reads u32 at entry+8]
+// ---------------------------------------------------------------------------
+u32 target_attack_start_frame(void* L, u32 cmd_id) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u8* target = reinterpret_cast<u8*>(FUN_7100314030(DAT_71052b5fd8, ctx + 0xc50));
+    u32 target_id = *reinterpret_cast<u32*>(ctx + 0xc50);
+
+    if ((s32)target_id < 0 || target_id == *reinterpret_cast<u32*>(ctx + 0x160) || target_id > 0xf)
+        return 0;
+
+    u8* target_obj = *reinterpret_cast<u8**>(target + 0x20);
+    if (!target_obj)
+        return 0;
+
+    u8* entry = reinterpret_cast<u8*>(FUN_710033c360(target_obj + 0x988, cmd_id));
+    if (!entry)
+        return 0;
+
+    return *reinterpret_cast<u32*>(entry + 8);
+}
+
+// ---------------------------------------------------------------------------
+// 0x7100369ba0  108B  attack_cancel_frame
+// AI: looks up attack entry by CmdId, returns cancel frame; if -1, computes
+// from MotionModule end frame via vtable call.
+// [derived: FUN_710033c360 for attack entry, +0x14 is cancel_frame,
+//  -1 sentinel triggers fallback to motion module end_frame (vtable slot 0x188/8)]
+// ---------------------------------------------------------------------------
+s32 attack_cancel_frame(void* L, u32 cmd_id) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u8* entry = reinterpret_cast<u8*>(FUN_710033c360(ctx + 0x988, cmd_id));
+
+    if (!entry)
+        return 0;
+
+    s32 frame = *reinterpret_cast<s32*>(entry + 0x14);
+    if (frame == -1) {
+        // Fallback: get end frame from MotionModule
+        // [derived: ctx+0x168 is AI fighter obj, +0x10 is battle object,
+        //  +0x20 is accessor, +0x88 is motion_module, vtable slot 0x188/8 = end_frame]
+        u8* ai_obj = *reinterpret_cast<u8**>(ctx + 0x168);
+        u8* battle_obj = *reinterpret_cast<u8**>(ai_obj + 0x10);
+        u8* acc = *reinterpret_cast<u8**>(battle_obj + 0x20);
+        void** motion_mod = *reinterpret_cast<void***>(acc + 0x88);
+        u64 motion_hash = *reinterpret_cast<u64*>(entry);
+        void** vt = reinterpret_cast<void**>(*motion_mod);
+        u32 end_frame_raw = reinterpret_cast<u32(*)(void**, u64)>(
+            vt[0x188 / 8])(motion_mod, motion_hash);
+        frame = (s32)(f32)end_frame_raw;
+    }
+    return frame;
+}
+
+// ---------------------------------------------------------------------------
+// 0x710036a300  92B  target_motion_to_cmd_id
+// AI: resolves target, calls motion_to_cmd_id on target's cmd table.
+// [derived: validates target_id < 16, resolves target via FUN_7100314030,
+//  tail-calls FUN_710033e5c0(target_obj+0x988, motion_hash)]
+// ---------------------------------------------------------------------------
+u64 target_motion_to_cmd_id(void* L, u64 motion_hash) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u8* target = reinterpret_cast<u8*>(FUN_7100314030(DAT_71052b5fd8, ctx + 0xc50));
+
+    if (*reinterpret_cast<u32*>(ctx + 0xc50) >= 0x10u)
+        return 0;
+
+    u8* target_obj = *reinterpret_cast<u8**>(target + 0x20);
+    if (!target_obj)
+        return 0;
+
+    return FUN_710033e5c0(target_obj + 0x988, motion_hash);
+}
+
+// ---------------------------------------------------------------------------
+// 0x710036a360  172B  current_attack_combo_next_motion
+// AI: returns the next motion in a jab combo chain based on current motion hash.
+// [derived: reads motion_hash at *(ctx+0x168)+0x38, masks to 40 bits,
+//  hardcoded Hash40 switch for attack_11/12/13 chain, fallback via FUN_710033c510]
+// Hash40 constants:
+//   0xea274b695 = attack_11 → returns 0xb78983dd2 = attack_12
+//   0xfee188235 = attack_12 → returns 0xa86d04046 = attack_13
+//   0xf5db36b5c = attack_13 → returns 0xa5598d745 = attack_100
+//   fallback: FUN_710033c510 entry+0x28 or 0x7fb997a80 = invalid
+// ---------------------------------------------------------------------------
+u64 current_attack_combo_next_motion(void* L) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u8* ai_obj = *reinterpret_cast<u8**>(ctx + 0x168);
+    u64 motion_raw = *reinterpret_cast<u64*>(ai_obj + 0x38);
+    u64 motion = motion_raw & 0xFFFFFFFFFFULL;
+
+    if (motion == 0xea274b695ULL)   // attack_11
+        return 0xb78983dd2ULL;       // attack_12
+    if (motion == 0xfee188235ULL)   // attack_12
+        return 0xa86d04046ULL;       // attack_13
+    if (motion == 0xf5db36b5cULL)   // attack_13
+        return 0xa5598d745ULL;       // attack_100
+
+    u8* entry = reinterpret_cast<u8*>(
+        FUN_710033c510(*reinterpret_cast<u32*>(ctx + 0x988), motion_raw));
+    if (entry)
+        return *reinterpret_cast<u64*>(entry + 0x28);
+
+    return 0x7fb997a80ULL;          // invalid/none motion hash
+}
+
+// ---------------------------------------------------------------------------
+// 0x710036a140  212B  target_attack_info_needs_turn
+// AI: like attack_info_needs_turn but resolves target first.
+// [derived: validates target_id < 16, resolves via FUN_7100314030,
+//  then same attack_info_index + table read at +0x1d]
+// ---------------------------------------------------------------------------
+bool target_attack_info_needs_turn(void* L, u32 cmd_id) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u8* target = reinterpret_cast<u8*>(FUN_7100314030(DAT_71052b5fd8, ctx + 0xc50));
+
+    if (*reinterpret_cast<u32*>(ctx + 0xc50) >= 0x10u)
+        return false;
+
+    u8* target_obj = *reinterpret_cast<u8**>(target + 0x20);
+    if (!target_obj)
+        return false;
+
+    u32 obj_id = *reinterpret_cast<u32*>(target_obj + 0x988);
+    u8* attack_data = reinterpret_cast<u8*>(FUN_710033ba50(obj_id));
+    s32 status = FUN_71002f2820(cmd_id, obj_id);
+
+    s64 index = attack_info_index(status);
+    u8* base = *reinterpret_cast<u8**>(attack_data + 8);
+    return base[index * 0xb8 + 0x1d] != 0;
+}
+
+// ---------------------------------------------------------------------------
+// 0x710036a410  228B  target_current_attack_combo_next_motion
+// AI: like current_attack_combo_next_motion but resolves target first.
+// [derived: validates target_id < 16 and not self and >= 0,
+//  reads target motion hash at target+0x38, same Hash40 switch,
+//  fallback via FUN_710033c510 on target's cmd table]
+// ---------------------------------------------------------------------------
+u64 target_current_attack_combo_next_motion(void* L) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u64 result = 0x7fb997a80ULL;  // invalid/none
+
+    u8* target = reinterpret_cast<u8*>(FUN_7100314030(DAT_71052b5fd8, ctx + 0xc50));
+    u32 target_id = *reinterpret_cast<u32*>(ctx + 0xc50);
+
+    if ((s32)target_id >= 0 && target_id != *reinterpret_cast<u32*>(ctx + 0x160) && target_id < 0x10) {
+        u64 motion_raw = *reinterpret_cast<u64*>(target + 0x38);
+        u64 motion = motion_raw & 0xFFFFFFFFFFULL;
+
+        if (motion == 0xea274b695ULL) {         // attack_11
+            result = 0xb78983dd2ULL;             // attack_12
+        } else if (motion == 0xfee188235ULL) {  // attack_12
+            result = 0xa86d04046ULL;             // attack_13
+        } else if (motion == 0xf5db36b5cULL) {  // attack_13
+            result = 0xa5598d745ULL;             // attack_100
+        } else {
+            u8* target_obj = *reinterpret_cast<u8**>(target + 0x20);
+            if (target_obj) {
+                u8* entry = reinterpret_cast<u8*>(
+                    FUN_710033c510(*reinterpret_cast<u32*>(target_obj + 0x988), motion_raw));
+                if (entry)
+                    result = *reinterpret_cast<u64*>(entry + 0x28);
+            }
+        }
+    }
+    return result;
+}
+
+// ---------------------------------------------------------------------------
+// 0x710036a500  108B  target_attack_start_frame_from_motion
+// AI: like target_attack_start_frame but looks up by motion Hash40.
+// [derived: same target validation, FUN_710033c510 for motion-based lookup,
+//  reads u32 at entry+8 for start frame]
+// ---------------------------------------------------------------------------
+u32 target_attack_start_frame_from_motion(void* L, u64 motion_hash) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u8* target = reinterpret_cast<u8*>(FUN_7100314030(DAT_71052b5fd8, ctx + 0xc50));
+    u32 target_id = *reinterpret_cast<u32*>(ctx + 0xc50);
+
+    if ((s32)target_id < 0 || target_id == *reinterpret_cast<u32*>(ctx + 0x160) || target_id > 0xf)
+        return 0;
+
+    u8* target_obj = *reinterpret_cast<u8**>(target + 0x20);
+    if (!target_obj)
+        return 0;
+
+    u8* entry = reinterpret_cast<u8*>(
+        FUN_710033c510(*reinterpret_cast<u32*>(target_obj + 0x988), motion_hash));
+    if (!entry)
+        return 0;
+
+    return *reinterpret_cast<u32*>(entry + 8);
+}
+
+} // namespace app::ai
+
+// ════════════════════════════════════════════════════════════════════════════
+// KineticUtility — energy management helpers
+// ════════════════════════════════════════════════════════════════════════════
+
+namespace app::KineticUtility {
+
+// ---------------------------------------------------------------------------
+// 0x710047b830  68B  clear_unable_energy
+// Clears speed on a kinetic energy slot and disables it.
+// [derived: KineticModule::get_energy(index) vtable+0x60, then
+//  KineticEnergy::clear_speed() vtable+0x48, then sets enabled byte +0x30 to 0]
+// ---------------------------------------------------------------------------
+void clear_unable_energy(int index, BattleObjectModuleAccessor* acc) {
+    KineticModule* km = static_cast<KineticModule*>(acc->item_kinetic_module);
+    KineticEnergy* energy = km->get_energy(index);
+    energy->clear_speed();
+    energy->enabled = 0;
+}
+
+// ---------------------------------------------------------------------------
+// 0x710047b7b0  116B  reset_enable_energy
+// Resets a kinetic energy slot with parameters and enables it.
+// [derived: KineticModule::get_energy(index) vtable+0x60, then
+//  KineticEnergy vtable+0x40 = reset_energy(kind, vec2, vec3, acc),
+//  then sets enabled byte +0x30 to 1]
+// ---------------------------------------------------------------------------
+void reset_enable_energy(int index, BattleObjectModuleAccessor* acc, int kind,
+                         void* vec2, void* vec3) {
+    KineticModule* km = static_cast<KineticModule*>(acc->item_kinetic_module);
+    KineticEnergy* energy = km->get_energy(index);
+    // reset_energy takes (kind, vec2, vec3, acc) via vtable+0x40
+    void** vt_e = *reinterpret_cast<void***>(energy);
+    reinterpret_cast<void(*)(KineticEnergy*, int, void*, void*, BattleObjectModuleAccessor*)>(
+        vt_e[0x40 / 8])(energy, kind, vec2, vec3, acc);
+    energy->enabled = 1;
+}
+
+} // namespace app::KineticUtility
+
+// ════════════════════════════════════════════════════════════════════════════
+// Item kinetic energy helpers
+// ════════════════════════════════════════════════════════════════════════════
+
+namespace app::item {
+
+// ---------------------------------------------------------------------------
+// 0x71015c3e60  52B  unable_control_energy
+// Disables control energy (slot 4) on an item's kinetic module.
+// [derived: *(L-8)->+0x1a0 is accessor, +0x190 (=400) is item_module offset,
+//  then +0x220 is kinetic sub-module ptr, +0x100 is kinetic module,
+//  calls unable_energy(4) via vtable+0x130]
+// ---------------------------------------------------------------------------
+void unable_control_energy(u8* L) {
+    u8* obj = *reinterpret_cast<u8**>(L - 8);
+    u8* acc = *reinterpret_cast<u8**>(obj + 0x1a0);
+    u8* item_mod = *reinterpret_cast<u8**>(acc + 400);
+    u8* kinetic_sub = *reinterpret_cast<u8**>(item_mod + 0x220);
+    void** km = *reinterpret_cast<void***>(kinetic_sub + 0x100);
+    void** vt = reinterpret_cast<void**>(*km);
+    reinterpret_cast<void(*)(void**, int)>(vt[0x130 / 8])(km, 4);
+#ifdef MATCHING_HACK_NX_CLANG
+    asm volatile("" ::: "memory");  // prevent tail-call optimization
+#endif
+}
+
+} // namespace app::item
+
+// ════════════════════════════════════════════════════════════════════════════
+// Rocketbelt energy accessor
+// ════════════════════════════════════════════════════════════════════════════
+
+// FighterParamAccessor2 singleton
+// [derived: lib::Singleton<app::FighterParamAccessor2>::instance_]
+extern "C" __attribute__((visibility("hidden"))) void* DAT_71052bb3b0;
+
+namespace app::rocketbelt {
+
+// ---------------------------------------------------------------------------
+// 0x710166fc60  20B  get_energy_max_frame
+// Returns max frame for rocketbelt energy from FighterParamAccessor2 singleton.
+// [derived: *(*(FPA2_instance + 0x50) + 0xefc) — FPA2 at DAT_71052bb3b0,
+//  +0x50 is param table ptr, +0xefc is rocketbelt max frame field]
+// ---------------------------------------------------------------------------
+u32 get_energy_max_frame() {
+    u8* pa = reinterpret_cast<u8*>(DAT_71052bb3b0);
+    u8* table = *reinterpret_cast<u8**>(pa + 0x50);
+    return *reinterpret_cast<u32*>(table + 0xefc);
+}
+
+} // namespace app::rocketbelt
+
+// ════════════════════════════════════════════════════════════════════════════
+// MECHAKOOPA weapon param accessors (Bowser Jr. Mechakoopa)
+// All read from FighterParamAccessor2 singleton → +0xd20 → +0x198 → offset
+// [derived: FPA2+0xd20 is Bowser Jr. character param block,
+//  +0x198 is mechakoopa weapon sub-params pointer]
+// ════════════════════════════════════════════════════════════════════════════
+
+// Helper: load mechakoopa param base pointer
+static inline u8* mechakoopa_params() {
+    u8* pa = reinterpret_cast<u8*>(DAT_71052bb3b0);
+    u8* char_params = *reinterpret_cast<u8**>(pa + 0xd20);
+    return *reinterpret_cast<u8**>(char_params + 0x198);
+}
+
+namespace app::mechakoopa {
+
+// 0x71016611e0 (24B) — burst frame before explosion
+// [derived: *(*(FPA2+0xd20+0x198)) — double deref at base, +0x0]
+u32 MECHAKOOPA_BURST_FRAME() {
+    return *reinterpret_cast<u32*>(mechakoopa_params());
+}
+
+// 0x7101661200 (24B) — countdown frame before activation
+// [derived: *(FPA2+0xd20+0x198) + 0x4]
+u32 MECHAKOOPA_COUNT_DOWN_FRAME() {
+    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x4);
+}
+
+// 0x71016612e0 (24B) — hit points
+// [derived: *(FPA2+0xd20+0x198) + 0x8]
+u32 MECHAKOOPA_HP() {
+    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x8);
+}
+
+// 0x71016612a0 (24B) — gravity acceleration
+// [derived: *(FPA2+0xd20+0x198) + 0x10]
+u32 MECHAKOOPA_GRAVITY() {
+    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x10);
+}
+
+// 0x7101661320 (24B) — limit speed Y
+// [derived: *(FPA2+0xd20+0x198) + 0x14]
+u32 MECHAKOOPA_LIMIT_SPEED_Y() {
+    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x14);
+}
+
+// 0x7101661360 (24B) — shoot speed X
+// [derived: *(FPA2+0xd20+0x198) + 0x18]
+u32 MECHAKOOPA_SHOOT_SPEED_X() {
+    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x18);
+}
+
+// 0x7101661380 (24B) — shoot brake deceleration
+// [derived: *(FPA2+0xd20+0x198) + 0x1c]
+u32 MECHAKOOPA_SHOOT_BRAKE() {
+    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x1c);
+}
+
+// 0x71016612c0 (24B) — bound speed threshold
+// [derived: *(FPA2+0xd20+0x198) + 0x20]
+u32 MECHAKOOPA_BOUND_SPEED_THRESHOLD() {
+    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x20);
+}
+
+// 0x71016613a0 (24B) — bound speed X
+// [derived: *(FPA2+0xd20+0x198) + 0x24]
+u32 MECHAKOOPA_BOUND_SPEED_X() {
+    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x24);
+}
+
+// 0x71016613c0 (24B) — bound speed Y
+// [derived: *(FPA2+0xd20+0x198) + 0x28]
+u32 MECHAKOOPA_BOUND_SPEED_Y() {
+    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x28);
+}
+
+// 0x71016613e0 (24B) — bound brake
+// [derived: *(FPA2+0xd20+0x198) + 0x2c]
+u32 MECHAKOOPA_BOUND_BRAKE() {
+    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x2c);
+}
+
+// 0x7101661300 (24B) — walk speed X
+// [derived: *(FPA2+0xd20+0x198) + 0x30]
+u32 MECHAKOOPA_SPEED_X() {
+    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x30);
+}
+
+// 0x7101661400 (24B) — turn count
+// [derived: *(FPA2+0xd20+0x198) + 0x34]
+u32 MECHAKOOPA_TURN_NUM() {
+    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x34);
+}
+
+// 0x7101661260 (24B) — hop speed X
+// [derived: *(FPA2+0xd20+0x198) + 0x38]
+u32 MECHAKOOPA_HOP_SPEED_X() {
+    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x38);
+}
+
+// 0x7101661280 (24B) — hop speed Y
+// [derived: *(FPA2+0xd20+0x198) + 0x3c]
+u32 MECHAKOOPA_HOP_SPEED_Y() {
+    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x3c);
+}
+
+// 0x7101661220 (24B) — hop burst frame
+// [derived: *(FPA2+0xd20+0x198) + 0x40]
+u32 MECHAKOOPA_HOP_BURST_FRAME() {
+    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x40);
+}
+
+// 0x7101661420 (24B) — dead burst frame
+// [derived: *(FPA2+0xd20+0x198) + 0x44]
+u32 MECHAKOOPA_DEAD_BURST_FRAME() {
+    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x44);
+}
+
+// 0x7101661240 (24B) — hop lost frame
+// [derived: *(FPA2+0xd20+0x198) + 0x48]
+u32 MECHAKOOPA_HOP_LOST_FRAME() {
+    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x48);
+}
+
+// 0x7101661520 (24B) — stop speed multiplier
+// [derived: *(FPA2+0xd20+0x198) + 0x4c]
+u32 MECHAKOOPA_STOP_SPEED_MUL() {
+    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x4c);
+}
+
+// 0x7101661540 (24B) — stop brake
+// [derived: *(FPA2+0xd20+0x198) + 0x50]
+u32 MECHAKOOPA_STOP_BRAKE() {
+    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x50);
+}
+
+} // namespace app::mechakoopa
+
+// ════════════════════════════════════════════════════════════════════════════
+// HOLYWATER weapon param accessors (Simon/Richter Belmont)
+// Branch on FighterKind: 0x44 (Richter) uses FPA2+0xf50, others use +0xf18
+// Then → +0x240 → final offset
+// [derived: FPA2+0xf18 = Simon params, FPA2+0xf50 = Richter params (echo),
+//  +0x240 = holywater sub-params, offsets for reflect shield properties]
+// ════════════════════════════════════════════════════════════════════════════
+
+// Helper: load holywater param base by fighter kind
+static inline u8* holywater_params(s32 fighter_kind) {
+    u8* pa = reinterpret_cast<u8*>(DAT_71052bb3b0);
+    u8* char_params = *reinterpret_cast<u8**>(pa + (fighter_kind == 0x44 ? 0xf50 : 0xf18));
+    return *reinterpret_cast<u8**>(char_params + 0x240);
+}
+
+namespace app::holywater {
+
+// 0x7101670dd0 (40B) — reflect shield gravity acceleration
+// [derived: FPA2+0xf18/0xf50 → +0x240 → +0x18]
+u32 HOLYWATER_REFLECT_SHIELD_GRAVITY_ACCEL(s32 fighter_kind) {
+    return *reinterpret_cast<u32*>(holywater_params(fighter_kind) + 0x18);
+}
+
+// 0x7101670e00 (40B) — reflect shield gravity accel max
+// [derived: FPA2+0xf18/0xf50 → +0x240 → +0x1c]
+u32 HOLYWATER_REFLECT_SHIELD_GRAVITY_ACCEL_MAX(s32 fighter_kind) {
+    return *reinterpret_cast<u32*>(holywater_params(fighter_kind) + 0x1c);
+}
+
+// 0x7101670e30 (40B) — reflect shield rotation speed
+// [derived: FPA2+0xf18/0xf50 → +0x240 → +0x20]
+u32 HOLYWATER_REFLECT_SHIELD_ROT_SPEED(s32 fighter_kind) {
+    return *reinterpret_cast<u32*>(holywater_params(fighter_kind) + 0x20);
+}
+
+} // namespace app::holywater
+
+// ════════════════════════════════════════════════════════════════════════════
+// PEACH PEACHDAIKON weapon param accessors
+// FPA2+0x348 (Peach char params) → +0x158 (daikon sub-params) → field
+// [derived: same pattern as DAISY (FPA2+0x380→+0x158) but for Peach fighter]
+// ════════════════════════════════════════════════════════════════════════════
+
+static inline u8* peach_daikon_params() {
+    u8* pa = reinterpret_cast<u8*>(DAT_71052bb3b0);
+    u8* char_params = *reinterpret_cast<u8**>(pa + 0x348);
+    return *reinterpret_cast<u8**>(char_params + 0x158);
+}
+
+namespace app::peachdaikon {
+
+// PROB accessors — probability weights for each daikon variant
+// 0x7101668c90 (24B) [derived: FPA2+0x348→+0x158→+0x40]
+u32 PEACH_PEACHDAIKON_DAIKON_1_PROB() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x40); }
+// 0x7101668cb0 (24B) [derived: +0x44]
+u32 PEACH_PEACHDAIKON_DAIKON_2_PROB() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x44); }
+// 0x7101668cd0 (24B) [derived: +0x48]
+u32 PEACH_PEACHDAIKON_DAIKON_3_PROB() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x48); }
+// 0x7101668cf0 (24B) [derived: +0x4c]
+u32 PEACH_PEACHDAIKON_DAIKON_4_PROB() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x4c); }
+// 0x7101668d10 (24B) [derived: +0x50]
+u32 PEACH_PEACHDAIKON_DAIKON_5_PROB() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x50); }
+// 0x7101668d30 (24B) [derived: +0x54]
+u32 PEACH_PEACHDAIKON_DAIKON_6_PROB() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x54); }
+// 0x7101668d50 (24B) [derived: +0x58]
+u32 PEACH_PEACHDAIKON_DAIKON_7_PROB() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x58); }
+// 0x7101668d70 (24B) [derived: +0x5c]
+u32 PEACH_PEACHDAIKON_DAIKON_8_PROB() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x5c); }
+
+// POWER accessors — damage power for each daikon variant
+// 0x7101668d90 (24B) [derived: +0x20]
+u32 PEACH_PEACHDAIKON_DAIKON_1_POWER() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x20); }
+// 0x7101668db0 (24B) [derived: +0x24]
+u32 PEACH_PEACHDAIKON_DAIKON_2_POWER() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x24); }
+// 0x7101668dd0 (24B) [derived: +0x28]
+u32 PEACH_PEACHDAIKON_DAIKON_3_POWER() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x28); }
+// 0x7101668df0 (24B) [derived: +0x2c]
+u32 PEACH_PEACHDAIKON_DAIKON_4_POWER() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x2c); }
+// 0x7101668e10 (24B) [derived: +0x30]
+u32 PEACH_PEACHDAIKON_DAIKON_5_POWER() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x30); }
+// 0x7101668e30 (24B) [derived: +0x34]
+u32 PEACH_PEACHDAIKON_DAIKON_6_POWER() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x34); }
+// 0x7101668e50 (24B) [derived: +0x38]
+u32 PEACH_PEACHDAIKON_DAIKON_7_POWER() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x38); }
+// 0x7101668e70 (24B) [derived: +0x3c]
+u32 PEACH_PEACHDAIKON_DAIKON_8_POWER() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x3c); }
+
+} // namespace app::peachdaikon
+
+// ════════════════════════════════════════════════════════════════════════════
+// DOLL weapon param accessors (Mr. Game & Watch? / item)
+// FPA2+0xc08 → +0x178 (doll sub-params) → field
+// [derived: Ghidra shows FPA2+0xc08 is character/item param block,
+//  +0x178 is doll weapon sub-params. SHAPE_TYPE uses +0x1c0 instead]
+// ════════════════════════════════════════════════════════════════════════════
+
+static inline u8* doll_params() {
+    u8* pa = reinterpret_cast<u8*>(DAT_71052bb3b0);
+    u8* char_params = *reinterpret_cast<u8**>(pa + 0xc08);
+    return *reinterpret_cast<u8**>(char_params + 0x178);
+}
+
+static inline u8* doll_shape_params() {
+    u8* pa = reinterpret_cast<u8*>(DAT_71052bb3b0);
+    u8* char_params = *reinterpret_cast<u8**>(pa + 0xc08);
+    return *reinterpret_cast<u8**>(char_params + 0x1c0);
+}
+
+namespace app::doll {
+
+// 0x710165c510 (24B) — base speed Y [derived: +0x0, double deref]
+u32 DOLL_SPEED_Y() { return *reinterpret_cast<u32*>(doll_params()); }
+// 0x710165c530 (24B) — rotation speed Z [derived: +0x8]
+u32 DOLL_ROT_SPEED_Z() { return *reinterpret_cast<u32*>(doll_params() + 0x8); }
+// 0x710165c3f0 (24B) — reaction multiplier [derived: +0xc]
+u32 DOLL_REACTION_MUL() { return *reinterpret_cast<u32*>(doll_params() + 0xc); }
+// 0x710165c450 (24B) — smash max speed X [derived: +0x10]
+u32 DOLL_SMASH_MAX_SPEED_X() { return *reinterpret_cast<u32*>(doll_params() + 0x10); }
+// 0x710165c470 (24B) — smash max speed Y [derived: +0x14]
+u32 DOLL_SMASH_MAX_SPEED_Y() { return *reinterpret_cast<u32*>(doll_params() + 0x14); }
+// 0x710165c430 (24B) — smash accel Y [derived: +0x20]
+u32 DOLL_SMASH_ACCEL_Y() { return *reinterpret_cast<u32*>(doll_params() + 0x20); }
+// 0x710165c4f0 (24B) — rotation speed min [derived: +0x24]
+u32 DOLL_ROT_SPEED_MIN() { return *reinterpret_cast<u32*>(doll_params() + 0x24); }
+// 0x710165c4d0 (24B) — rotation speed max [derived: +0x28]
+u32 DOLL_ROT_SPEED_MAX() { return *reinterpret_cast<u32*>(doll_params() + 0x28); }
+// 0x710165c4b0 (24B) — power min [derived: +0x2c]
+u32 DOLL_POWER_MIN() { return *reinterpret_cast<u32*>(doll_params() + 0x2c); }
+// 0x710165c490 (24B) — power max [derived: +0x30]
+u32 DOLL_POWER_MAX() { return *reinterpret_cast<u32*>(doll_params() + 0x30); }
+// 0x710165c3d0 (24B) — life [derived: +0x34]
+u32 DOLL_LIFE() { return *reinterpret_cast<u32*>(doll_params() + 0x34); }
+// 0x710165c410 (24B) — life decay multiplier [derived: +0x38]
+u32 DOLL_LIFE_DEC_MUL() { return *reinterpret_cast<u32*>(doll_params() + 0x38); }
+// 0x710165c630 (24B) — min degree Y [derived: +0x3c]
+u32 DOLL_MIN_DEGREE_Y() { return *reinterpret_cast<u32*>(doll_params() + 0x3c); }
+// 0x710165c610 (24B) — max degree Y [derived: +0x40]
+u32 DOLL_MAX_DEGREE_Y() { return *reinterpret_cast<u32*>(doll_params() + 0x40); }
+// 0x710165c550 (24B) — rotation Z ratio [derived: +0x44]
+u32 DOLL_ROT_Z_RATIO() { return *reinterpret_cast<u32*>(doll_params() + 0x44); }
+// 0x710165c5f0 (24B) — shape type (different sub-struct at +0x1c0)
+// [derived: FPA2+0xc08→+0x1c0→+0x0 — separate sub-struct from main doll params]
+u32 DOLL_SHAPE_TYPE() { return *reinterpret_cast<u32*>(doll_shape_params()); }
+
+} // namespace app::doll
+
+// ════════════════════════════════════════════════════════════════════════════
+// EXPLOSIONBOMB weapon param accessors (Link remote bomb)
+// FPA2+0x3f0 → +0x108 → field offset
+// [derived: FPA2+0x3f0 is Link character param block,
+//  +0x108 is explosionbomb weapon sub-params pointer]
+// ════════════════════════════════════════════════════════════════════════════
+
+static inline u8* explosionbomb_params() {
+    u8* pa = reinterpret_cast<u8*>(DAT_71052bb3b0);
+    u8* char_params = *reinterpret_cast<u8**>(pa + 0x3f0);
+    return *reinterpret_cast<u8**>(char_params + 0x108);
+}
+
+namespace app::explosionbomb {
+
+// 0x710165d2c0 (24B) [derived: +0x0, double deref]
+u32 EXPLOSIONBOMB_GRAVITY() { return *reinterpret_cast<u32*>(explosionbomb_params()); }
+// 0x710165d2e0 (24B) [derived: +0x4]
+u32 EXPLOSIONBOMB_LIMIT_GRAVITY() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0x4); }
+// 0x710165d300 (24B) [derived: +0x8]
+u32 EXPLOSIONBOMB_HOP_SPEED_MUL_X() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0x8); }
+// 0x710165d320 (24B) [derived: +0xc]
+u32 EXPLOSIONBOMB_HOP_SPEED_Y() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0xc); }
+// 0x710165d360 (24B) [derived: +0x10]
+u32 EXPLOSIONBOMB_BOUND_SPEED_MUL_X() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0x10); }
+// 0x710165d380 (24B) [derived: +0x14]
+u32 EXPLOSIONBOMB_BOUND_SPEED_MUL_Y() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0x14); }
+// 0x710165d340 (24B) [derived: +0x18]
+u32 EXPLOSIONBOMB_BOUND_NUM() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0x18); }
+// 0x710165d3a0 (24B) [derived: +0x1c]
+u32 EXPLOSIONBOMB_IGNITION_FRAME() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0x1c); }
+// 0x710165d3c0 (24B) [derived: +0x20]
+u32 EXPLOSIONBOMB_WIRE_SPEED_X() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0x20); }
+// 0x710165d3e0 (24B) [derived: +0x24]
+u32 EXPLOSIONBOMB_WIRE_SPEED_Y() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0x24); }
+// 0x710165d400 (24B) [derived: +0x28]
+u32 EXPLOSIONBOMB_WIRE_GRAVITY() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0x28); }
+// 0x710165d420 (24B) [derived: +0x2c]
+u32 EXPLOSIONBOMB_WIRE_BOUND_MUL_Y() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0x2c); }
+// 0x710165d440 (24B) [derived: +0x30]
+u32 EXPLOSIONBOMB_BURST_FRAME() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0x30); }
+// 0x710165d460 (24B) [derived: +0x38 — gap at +0x34]
+u32 EXPLOSIONBOMB_LIFE_MISFIRE() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0x38); }
+
+} // namespace app::explosionbomb
+
+// ════════════════════════════════════════════════════════════════════════════
+// LINKARROW weapon param accessors (Link arrow item)
+// FPA2+0xe0 → +0x120 → field offset
+// [derived: FPA2+0xe0 is Link character param block (different from +0x3f0),
+//  +0x120 is arrow item sub-params pointer]
+// ════════════════════════════════════════════════════════════════════════════
+
+static inline u8* linkarrow_params() {
+    u8* pa = reinterpret_cast<u8*>(DAT_71052bb3b0);
+    u8* char_params = *reinterpret_cast<u8**>(pa + 0xe0);
+    return *reinterpret_cast<u8**>(char_params + 0x120);
+}
+
+namespace app::linkarrow {
+
+// 0x710165eb30 (24B) — arrow item lifetime [derived: +0x2c]
+u32 LINKARROW_ITEM_LIFE() { return *reinterpret_cast<u32*>(linkarrow_params() + 0x2c); }
+// 0x710165eb50 (24B) — arrow throw angle [derived: +0x30]
+u32 LINKARROW_ITEM_THROW_DEGREE() { return *reinterpret_cast<u32*>(linkarrow_params() + 0x30); }
+
+} // namespace app::linkarrow

@@ -1,17 +1,14 @@
-# Worker: pool-c
+# Worker: pool-d
 
 ## Model: Opus
 
-## Task: Continue fighter status + weapon params decomp
+## Task: Continue fighter motion + kinetic energy decomp
 
-You've produced 298 fighter status + 69 weapon param functions. Keep going.
+101 functions so far. Keep expanding — focus on remaining kinetic energy slots and motion helpers.
 
-### Target Files
-- `src/app/fighter_status.cpp` (append)
-- `src/app/weapon_params.cpp` (append)
-
-### Focus: Named undecompiled functions related to fighter status, AI, params, weapons
-### Headers: StatusModule.h, WorkModule.h, MotionModule.h, BattleObjectModuleAccessor.h
+### Target: src/app/fighter_motion.cpp (append)
+### Focus: KineticModule energy slots, MotionModule helpers, AttackModule accessors
+### Headers: MotionModule.h, KineticModule.h, AttackModule.h, BattleObjectModuleAccessor.h
 ### Derivation Chains MANDATORY
 ### Do NOT use naked asm.
 
