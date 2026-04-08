@@ -4,8 +4,7 @@
 // Pool-b worker: manually decompiled from Ghidra
 
 // External globals
-extern u64  DAT_71052a90d8;
-extern u64  DAT_71052a90e0;
+extern u64  DAT_71052a90d8[2] __attribute__((visibility("hidden")));
 extern u32  DAT_710446f378[] __attribute__((visibility("hidden")));
 extern u32  DAT_7104470000[] __attribute__((visibility("hidden")));
 extern u32  DAT_710446f3a0[] __attribute__((visibility("hidden")));
@@ -13,67 +12,67 @@ extern u32  DAT_710446f3b4[] __attribute__((visibility("hidden")));
 extern u32  DAT_710446f400[] __attribute__((visibility("hidden")));
 extern u32  DAT_710446f528[] __attribute__((visibility("hidden")));
 extern u32  DAT_7104470580[] __attribute__((visibility("hidden")));
-extern u64  PTR_DAT_71052a22f8;
-extern u8   PTR_glslcCompilePreSpecialized_71052a32e8[];
-extern u8   PTR_glslcCompileSpecialized_71052a32f0[];
-extern u8   PTR_glslcInitialize_71052a32f8[];
-extern u8   PTR_glslcFinalize_71052a3300[];
-extern u8   PTR_glslcCompile_71052a3308[];
-extern u8   PTR_glslcGetVersion_71052a3310[];
-extern u8   PTR_glslcSetAllocator_71052a3318[];
-extern u8   PTR_glslcGetDefaultOptions_71052a3320[];
-extern u64  PTR_DAT_71052a3578;
-extern u64  PTR_DAT_71052a36e8;
-extern u64  PTR_DAT_71052a3910;
-extern u8   PTR_DAT_71052a3a68[];
-extern u64  PTR_DAT_71052a3c38;
-extern u8   DAT_71052aa9a0;
-extern u8   DAT_71052aa9a2;
-extern u64  DAT_7104f49398;
-extern u64  DAT_7104f49438;
-extern u8   DAT_71052abd8c;
-extern u8   DAT_71052abd8d;
-extern u8   PTR_DAT_71052a3d48[];
-extern u64  PTR_DAT_71052a3e28;
-extern u64  PTR_DAT_71052a4810;
-extern u8   DAT_71052abfc8;
-extern u8   DAT_71052abfc9;
-extern u64  PTR_DAT_71052a4820;
-extern u8   DAT_71052acb31;
-extern u64  PTR_DAT_71052a4bc0;
-extern s64  PTR_DAT_71052a4080;
-extern u64  PTR_DAT_71052a4ee0;
-extern u8   DAT_71052acb48;
-extern u8   DAT_71052acb49;
-extern u64  PTR_DAT_71052a4f80;
-extern u64  PTR_DAT_71052a5060;
-extern u64  PTR_DAT_71052a5088;
-extern u64  PTR_DAT_71052a5270;
-extern u64  PTR_DAT_71052a5388;
-extern u8   DAT_71052acd88;
-extern u8   DAT_71052acd89;
-extern u8   DAT_71052acfd3;
-extern u64  PTR_DAT_71052a5970;
-extern u64  PTR_DAT_71052a5c68;
-extern u64  PTR_DAT_71052a5fb8;
-extern u64  PTR_DAT_71052a6418;
-extern u64  PTR_DAT_71052a6838;
-extern u64  PTR_DAT_71052a6a18;
-extern u32  DAT_71052b4448;
-extern u64  PTR_DAT_71052a2248;
-extern u64  PTR_DAT_71052a2338;
-extern u64  PTR_DAT_71052a2340;
-extern u64  PTR_DAT_71052a2358;
-extern u64  PTR_DAT_71052a2530;
-extern u64  PTR_DAT_71052a2538;
-extern u64  PTR_DAT_71052a2558;
-extern u64  PTR_DAT_71052a2728;
-extern u64  PTR_DAT_71052a2868;
-extern u64  PTR_DAT_71052a2910;
-extern u64  PTR_DAT_71052a2a98;
-extern u64  PTR_DAT_71052a2c80;
-extern u64  PTR_DAT_71052a3630;
-extern u64  PTR_DAT_71052a3640;
+extern u64  PTR_DAT_71052a22f8 __attribute__((visibility("hidden")));
+extern u64  PTR_glslcCompilePreSpecialized_71052a32e8 __attribute__((visibility("hidden")));
+extern u64  PTR_glslcCompileSpecialized_71052a32f0 __attribute__((visibility("hidden")));
+extern u64  PTR_glslcInitialize_71052a32f8 __attribute__((visibility("hidden")));
+extern u64  PTR_glslcFinalize_71052a3300 __attribute__((visibility("hidden")));
+extern u64  PTR_glslcCompile_71052a3308 __attribute__((visibility("hidden")));
+extern u64  PTR_glslcGetVersion_71052a3310 __attribute__((visibility("hidden")));
+extern u64  PTR_glslcSetAllocator_71052a3318 __attribute__((visibility("hidden")));
+extern u64  PTR_glslcGetDefaultOptions_71052a3320 __attribute__((visibility("hidden")));
+extern u64  PTR_DAT_71052a3578 __attribute__((visibility("hidden")));
+extern u64  PTR_DAT_71052a36e8 __attribute__((visibility("hidden")));
+extern u64  PTR_DAT_71052a3910 __attribute__((visibility("hidden")));
+extern u8   PTR_DAT_71052a3a68[] __attribute__((visibility("hidden")));
+extern u64  PTR_DAT_71052a3c38 __attribute__((visibility("hidden")));
+extern u8   DAT_71052aa9a0 __attribute__((visibility("hidden")));
+extern u8   DAT_71052aa9a2 __attribute__((visibility("hidden")));
+extern u64  DAT_7104f49398 __attribute__((visibility("hidden")));
+extern u64  DAT_7104f49438 __attribute__((visibility("hidden")));
+extern u8   DAT_71052abd8c __attribute__((visibility("hidden")));
+extern u8   DAT_71052abd8d __attribute__((visibility("hidden")));
+extern u8   PTR_DAT_71052a3d48[] __attribute__((visibility("hidden")));
+extern u64  PTR_DAT_71052a3e28 __attribute__((visibility("hidden")));
+extern u64  PTR_DAT_71052a4810 __attribute__((visibility("hidden")));
+extern u8   DAT_71052abfc8 __attribute__((visibility("hidden")));
+extern u8   DAT_71052abfc9 __attribute__((visibility("hidden")));
+extern u64  PTR_DAT_71052a4820 __attribute__((visibility("hidden")));
+extern u8   DAT_71052acb31 __attribute__((visibility("hidden")));
+extern u64  PTR_DAT_71052a4bc0 __attribute__((visibility("hidden")));
+extern s64  PTR_DAT_71052a4080 __attribute__((visibility("hidden")));
+extern u64  PTR_DAT_71052a4ee0 __attribute__((visibility("hidden")));
+extern u8   DAT_71052acb48 __attribute__((visibility("hidden")));
+extern u8   DAT_71052acb49 __attribute__((visibility("hidden")));
+extern u64  PTR_DAT_71052a4f80 __attribute__((visibility("hidden")));
+extern u64  PTR_DAT_71052a5060 __attribute__((visibility("hidden")));
+extern u64  PTR_DAT_71052a5088 __attribute__((visibility("hidden")));
+extern u64  PTR_DAT_71052a5270 __attribute__((visibility("hidden")));
+extern u64  PTR_DAT_71052a5388 __attribute__((visibility("hidden")));
+extern u8   DAT_71052acd88 __attribute__((visibility("hidden")));
+extern u8   DAT_71052acd89 __attribute__((visibility("hidden")));
+extern u8   DAT_71052acfd3 __attribute__((visibility("hidden")));
+extern u64  PTR_DAT_71052a5970 __attribute__((visibility("hidden")));
+extern u64  PTR_DAT_71052a5c68 __attribute__((visibility("hidden")));
+extern u64  PTR_DAT_71052a5fb8 __attribute__((visibility("hidden")));
+extern u64  PTR_DAT_71052a6418 __attribute__((visibility("hidden")));
+extern u64  PTR_DAT_71052a6838 __attribute__((visibility("hidden")));
+extern u64  PTR_DAT_71052a6a18 __attribute__((visibility("hidden")));
+extern u32  DAT_71052b4448 __attribute__((visibility("hidden")));
+extern u64  PTR_DAT_71052a2248 __attribute__((visibility("hidden")));
+extern u64  PTR_DAT_71052a2338 __attribute__((visibility("hidden")));
+extern u64  PTR_DAT_71052a2340 __attribute__((visibility("hidden")));
+extern u64  PTR_DAT_71052a2358 __attribute__((visibility("hidden")));
+extern u64  PTR_DAT_71052a2530 __attribute__((visibility("hidden")));
+extern u64  PTR_DAT_71052a2538 __attribute__((visibility("hidden")));
+extern u64  PTR_DAT_71052a2558 __attribute__((visibility("hidden")));
+extern u64  PTR_DAT_71052a2728 __attribute__((visibility("hidden")));
+extern u64  PTR_DAT_71052a2868 __attribute__((visibility("hidden")));
+extern u64  PTR_DAT_71052a2910 __attribute__((visibility("hidden")));
+extern u64  PTR_DAT_71052a2a98 __attribute__((visibility("hidden")));
+extern u64  PTR_DAT_71052a2c80 __attribute__((visibility("hidden")));
+extern u64  PTR_DAT_71052a3630 __attribute__((visibility("hidden")));
+extern u64  PTR_DAT_71052a3640 __attribute__((visibility("hidden")));
 
 // External functions
 extern "C" s64 FUN_7100017750(u64, u64, s64, u64);
@@ -105,8 +104,8 @@ u32 FUN_7100026380(u64, s32*, s32);
 // 7100000220
 void FUN_7100000220(u64 param_1, u64 param_2)
 {
-    DAT_71052a90d8 = param_1;
-    DAT_71052a90e0 = param_2;
+    DAT_71052a90d8[0] = param_1;
+    DAT_71052a90d8[1] = param_2;
 }
 
 // -- FUN_71000067e0 ----------------------------------------------------------
@@ -169,18 +168,19 @@ void FUN_7100012920(s64 param_1)
 
 // -- FUN_71000145e0 ----------------------------------------------------------
 // 71000145e0
-u64 FUN_71000145e0(s64 param_1, s64 param_2)
+u32 FUN_71000145e0(s64 param_1, s64 param_2)
 {
-    if (*(s8 *)(param_2 + 0x82d) != 0) {
+    if (*(u8 *)(param_2 + 0x82d) != 0) {
         return 1;
     }
-    if (*(s8 *)(param_2 + 0x8c9) != 0) {
+    if (*(u8 *)(param_2 + 0x8c9) != 0) {
         return 0;
     }
-    if (*(s64 **)(param_2 + 0x8d0) == (s64 *)0x0) {
+    s64 ptr = *(s64 *)(param_2 + 0x8d0);
+    if (ptr == 0) {
         return 0;
     }
-    if (**(s64 **)(param_2 + 0x8d0) != param_1) {
+    if (*(s64 *)ptr != param_1) {
         return 0;
     }
     *(u8 *)(param_2 + 0x8c9) = 1;
@@ -189,18 +189,19 @@ u64 FUN_71000145e0(s64 param_1, s64 param_2)
 
 // -- FUN_7100014630 ----------------------------------------------------------
 // 7100014630
-u64 FUN_7100014630(s64 param_1, s64 param_2)
+u32 FUN_7100014630(s64 param_1, s64 param_2)
 {
-    if (*(s8 *)(param_2 + 0x82d) != 0) {
+    if (*(u8 *)(param_2 + 0x82d) != 0) {
         return 1;
     }
-    if (*(s8 *)(param_2 + 0x8c8) != 0) {
+    if (*(u8 *)(param_2 + 0x8c8) != 0) {
         return 0;
     }
-    if (*(s64 **)(param_2 + 0x8f0) == (s64 *)0x0) {
+    s64 ptr = *(s64 *)(param_2 + 0x8f0);
+    if (ptr == 0) {
         return 0;
     }
-    if (**(s64 **)(param_2 + 0x8f0) != param_1) {
+    if (*(s64 *)ptr != param_1) {
         return 0;
     }
     *(u8 *)(param_2 + 0x8c8) = 1;
@@ -212,26 +213,17 @@ u64 FUN_7100014630(s64 param_1, s64 param_2)
 s64 FUN_7100015160(s64 param_1, s64 param_2, s64 param_3, s64 param_4,
                    u64 param_5, u64 param_6, u64 param_7)
 {
-    s64 lVar1;
-    s64 lVar2;
-    s64 lVar3;
-
-    if ((param_4 == 0) && ((s32)param_5 == 0)) {
+    if (param_4 == 0 && (s32)param_5 == 0) {
         return 0;
     }
-    if (param_1 - param_2 < param_3) {
+    s64 diff = param_1 - param_2;
+    if (diff < param_3) {
         return -1;
     }
-    lVar1 = 0;
-    if (param_3 != 0) {
-        lVar1 = ((param_1 - param_2) * 1000) / param_3;
-    }
-    lVar3 = FUN_7100017750(param_6, param_7, param_4, param_5);
-    lVar2 = lVar1 - lVar3;
-    if (lVar2 == 0 || lVar1 < lVar3) {
-        lVar2 = 0;
-    }
-    return lVar2;
+    s64 lVar1 = (diff * 1000) / param_3;
+    s64 lVar3 = FUN_7100017750(param_6, param_7, param_4, param_5);
+    s64 result = lVar1 - lVar3;
+    return (result > 0) ? result : 0;
 }
 
 // -- FUN_7100016cc0 ----------------------------------------------------------
@@ -374,14 +366,16 @@ void FUN_7100033800(u8 *param_1)
 // 71000338a0
 s32 FUN_71000338a0(s64 param_1, s32 *param_2)
 {
-    if (*(s8 *)(param_1 + 1) != 0) {
+    if (*(u8 *)(param_1 + 1) != 0) {
         return *param_2;
     }
-    s32 iVar2 = *param_2 - *(s32 *)(param_1 + 0x10);
-    s32 iVar1 = iVar2 + 0xf;
-    if (-1 < iVar2) {
-        iVar1 = iVar2;
-    }
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("" ::: "memory");
+#endif
+    s32 a = *(s32 *)(param_1 + 0x10);
+    s32 b = *param_2;
+    s32 iVar2 = b - a;
+    s32 iVar1 = (iVar2 < 0) ? (iVar2 + 0xf) : iVar2;
     return iVar1 >> 4;
 }
 
@@ -560,56 +554,56 @@ bool FUN_710003a6f0(s64 *param_1)
 // 710003a710
 u64 FUN_710003a710(void)
 {
-    return *reinterpret_cast<u64 *>(PTR_glslcCompilePreSpecialized_71052a32e8);
+    return PTR_glslcCompilePreSpecialized_71052a32e8;
 }
 
 // -- FUN_710003a720 ----------------------------------------------------------
 // 710003a720
 u64 FUN_710003a720(void)
 {
-    return *reinterpret_cast<u64 *>(PTR_glslcCompileSpecialized_71052a32f0);
+    return PTR_glslcCompileSpecialized_71052a32f0;
 }
 
 // -- FUN_710003a730 ----------------------------------------------------------
 // 710003a730
 u64 FUN_710003a730(void)
 {
-    return *reinterpret_cast<u64 *>(PTR_glslcInitialize_71052a32f8);
+    return PTR_glslcInitialize_71052a32f8;
 }
 
 // -- FUN_710003a740 ----------------------------------------------------------
 // 710003a740
 u64 FUN_710003a740(void)
 {
-    return *reinterpret_cast<u64 *>(PTR_glslcFinalize_71052a3300);
+    return PTR_glslcFinalize_71052a3300;
 }
 
 // -- FUN_710003a750 ----------------------------------------------------------
 // 710003a750
 u64 FUN_710003a750(void)
 {
-    return *reinterpret_cast<u64 *>(PTR_glslcCompile_71052a3308);
+    return PTR_glslcCompile_71052a3308;
 }
 
 // -- FUN_710003a760 ----------------------------------------------------------
 // 710003a760
 u64 FUN_710003a760(void)
 {
-    return *reinterpret_cast<u64 *>(PTR_glslcGetVersion_71052a3310);
+    return PTR_glslcGetVersion_71052a3310;
 }
 
 // -- FUN_710003a770 ----------------------------------------------------------
 // 710003a770
 u64 FUN_710003a770(void)
 {
-    return *reinterpret_cast<u64 *>(PTR_glslcSetAllocator_71052a3318);
+    return PTR_glslcSetAllocator_71052a3318;
 }
 
 // -- FUN_710003a780 ----------------------------------------------------------
 // 710003a780
 u64 FUN_710003a780(void)
 {
-    return *reinterpret_cast<u64 *>(PTR_glslcGetDefaultOptions_71052a3320);
+    return PTR_glslcGetDefaultOptions_71052a3320;
 }
 
 // -- FUN_710003a810 ----------------------------------------------------------
@@ -864,18 +858,20 @@ u64 FUN_71000b3d40(void)
 // 71000bb9c0
 u32 FUN_71000bb9c0(u16 *param_1)
 {
-    return (u32)(*param_1 >> 8) | (*param_1 & 0xff00ff) << 8;
+    u32 val = (u32)*param_1;
+    val = __builtin_bswap32(val);
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("" : "+r"(val));
+#endif
+    return val >> 16;
 }
 
 // -- FUN_71000bc710 ----------------------------------------------------------
 // 71000bc710
 s64 FUN_71000bc710(s64 param_1, u32 param_2)
 {
-    param_1 = param_1 + (s64)(s32)param_2 * 0x68;
-    if (0xb < param_2) {
-        param_1 = 0;
-    }
-    return param_1;
+    s64 result = param_1 + (s64)(s32)param_2 * 0x68;
+    return (param_2 < 0xcu) ? result : 0;
 }
 
 // -- FUN_71000c0790 ----------------------------------------------------------
@@ -1369,7 +1365,7 @@ s32 FUN_71000001c0(void)
 // 7100000230
 void FUN_7100000230(void)
 {
-    ((void (*)())(u64)DAT_71052a90d8)();
+    ((void (*)())(u64)DAT_71052a90d8[0])();
 }
 
 // -- FUN_7100004350 ----------------------------------------------------------
@@ -2301,7 +2297,7 @@ void FUN_710007a220(void) {}
 
 // -- FUN_710007a450 ----------------------------------------------------------
 // 710007a450
-extern u8 DAT_7104f40000[];
+extern u8 DAT_7104f40000[] __attribute__((visibility("hidden")));
 extern "C" u64 FUN_71039c01e0(u8 *);
 
 u64 FUN_710007a450(void)
@@ -2363,7 +2359,7 @@ extern "C" u64   FUN_71000c7460(u64);
 extern "C" u64   FUN_71000c7160(u64, u64);
 extern "C" void *memset(void*, int, unsigned long);
 extern "C" int   memset_s(void*, unsigned long, int, unsigned long);
-extern u64       PTR_DAT_71052a3e30;
+extern u64       PTR_DAT_71052a3e30 __attribute__((visibility("hidden")));
 
 // Forward declarations (called before defined in address order)
 void FUN_71000b63c0(u64, u64);
