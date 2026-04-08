@@ -457,6 +457,85 @@ f32 get_speed_y(u8* L) {
 
 } // namespace app::kinetic_energy_motion_linked_sub1
 
+namespace app::kinetic_energy_stop {
+
+// 0x71015d0a00 (48 bytes)
+// Returns whether stop energy (slot 7) is enabled
+// [derived: get_energy(7), return *(u8*)(energy+0x30) — the enabled field]
+u8 is_enable(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(7);
+    return energy->enabled;
+}
+
+} // namespace app::kinetic_energy_stop
+
+namespace app::kinetic_energy_motion_linked_sub1 {
+
+// 0x71015d0ef0 (48 bytes)
+// Returns whether motion-linked sub1 energy (slot 0xd) is enabled
+// [derived: get_energy(0xd), return *(u8*)(energy+0x30)]
+u8 is_enable(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(0xd);
+    return energy->enabled;
+}
+
+} // namespace app::kinetic_energy_motion_linked_sub1
+
+namespace app::kinetic_energy_control_rot {
+
+// 0x71015d0730 (52 bytes)
+// Suspends control rot energy (slot 5) by setting field_0x31 to 1
+// [derived: get_energy(5), strb #1 at energy+0x31]
+void suspend(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(5);
+    energy->field_0x31_u8 = 1;
+}
+
+// 0x71015d0770 (48 bytes)
+// Resumes control rot energy (slot 5) by clearing field_0x31
+// [derived: get_energy(5), strb #0 at energy+0x31]
+void resume(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(5);
+    energy->field_0x31_u8 = 0;
+}
+
+// 0x71015d1140 (48 bytes)
+// Returns pointer to rotation data of control rot energy (slot 5)
+// [derived: get_energy(5), return energy+0x20 — the _rotation field]
+void* get_rotation(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(5);
+    return energy->_rotation;
+}
+
+} // namespace app::kinetic_energy_control_rot
+
+namespace app::kinetic_energy_outer {
+
+// 0x71015d16f0 (48 bytes)
+// Returns pointer to accel data of outer energy (slot 1) at energy+0x40
+// [derived: get_energy(1), return energy+0x40]
+void* get_accel(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(1);
+    return reinterpret_cast<u8*>(energy) + 0x40;
+}
+
+// 0x71015d1720 (48 bytes)
+// Returns pointer to limit speed data of outer energy (slot 1) at energy+0x70
+// [derived: get_energy(1), return energy+0x70]
+void* get_limit_speed(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(1);
+    return reinterpret_cast<u8*>(energy) + 0x70;
+}
+
+} // namespace app::kinetic_energy_outer
+
 namespace app::ai_param {
 
 // 0x710036ba00 (16 bytes)
