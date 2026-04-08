@@ -1,27 +1,34 @@
-# Worker: pool-e
+# Worker: pool-a
 
 ## Model: Opus
 
-## Task: Fix N-quality functions to match — idiomatic C++ only
+## Task: SIZE_DIFF investigation — why are 1,743 functions truncated but matching?
 
-### Target Files
-- `src/app/fun_med_final_c_007.cpp` — 33 N-quality functions
-- `src/app/fun_batch_d5_049.cpp` — 32 N-quality functions
-- `src/app/fun_batch_d_009.cpp` — 32 N-quality functions
+### Background
+Pool B's gap analysis found 1,743 functions where every compiled byte matches the original binary perfectly, but the compiled function is SHORTER than the CSV expects. If we can figure out why, one build/tooling fix could add ~1,700 verified.
 
-### Method per function
-1. `python tools/compare_bytes.py FUN_name` — see what doesn't match
-2. `mcp__ghidra__decompile_function_by_address("0x71XXXXXXXXX")` — see what binary does
-3. Fix source to match (types, control flow, expressions)
-4. Re-compare. 3 attempts max.
+### Investigation steps
+1. Pick 10 SIZE_DIFF functions from different source files
+2. For each: compare the .o symbol size vs the CSV expected size
+3. Examine what bytes follow our function in the original binary — are they:
+   a. Another function that should be in the same compilation unit?
+   b. An inlined function body?
+   c. Padding/alignment?
+   d. Part of the same function that our source doesn't capture?
+4. Check if the "missing" bytes are compiled elsewhere in another .o file
+5. Look for patterns: are these all lua_bind wrappers followed by impl bodies?
 
-### Rules
-- **NO naked asm.** Idiomatic C++ only.
-- **NO blind patterns.** Check each function individually.
-- Derivation chains on any new offset tags
-
-### Quick Reference
+### Tools
 ```
+# Check a specific function's sizes:
 python tools/compare_bytes.py FUN_name
-/c/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -Ilib/NintendoSDK/include -Ilib/NintendoSDK/include/stubs -c src/app/FILE.cpp -o build/FILE.o
+
+# Disassemble the original to see what follows:
+/c/llvm-8.0.0/bin/llvm-objdump.exe -d --no-show-raw-insn --start-address=ADDR --stop-address=END data/main.elf
+
+# Check CSV entry:
+grep FUN_name data/functions.csv
 ```
+
+### Deliverable
+A report in WORKER.md: what causes SIZE_DIFF, and a proposed fix (script, build change, or linker config).
