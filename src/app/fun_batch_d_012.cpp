@@ -363,7 +363,7 @@ u64 FUN_71037b73c0(s64 *param_1)
 // 0x71037b5650 — indexed element base: array[index] with stride 0x28 (48 bytes)
 // [inferred: array pointer at +0x08, element size 0x28 bytes]
 __attribute__((optnone))
-s64 FUN_71037b5650(s64 param_1, s32 param_2) { return *(s64*)(param_1 + 8) + (s64)param_2 * 0x28; }
+s64 FUN_71037b5650(s64 param_1, s32 param_2) { return *(s64*)(param_1 + 8) + (s64)param_2 * (s32)0x28; }
 
 // 0x71037b6320 — indexed element field: array[index].field_0x10 (48 bytes)
 // [inferred: returns u64 at +0x10 within 0x28-stride element]
