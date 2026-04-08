@@ -1961,3 +1961,71 @@ u32 DOLL_ROT_Z_RATIO() { return *reinterpret_cast<u32*>(doll_params() + 0x44); }
 u32 DOLL_SHAPE_TYPE() { return *reinterpret_cast<u32*>(doll_shape_params()); }
 
 } // namespace app::doll
+
+// ════════════════════════════════════════════════════════════════════════════
+// EXPLOSIONBOMB weapon param accessors (Link remote bomb)
+// FPA2+0x3f0 → +0x108 → field offset
+// [derived: FPA2+0x3f0 is Link character param block,
+//  +0x108 is explosionbomb weapon sub-params pointer]
+// ════════════════════════════════════════════════════════════════════════════
+
+static inline u8* explosionbomb_params() {
+    u8* pa = reinterpret_cast<u8*>(DAT_71052bb3b0);
+    u8* char_params = *reinterpret_cast<u8**>(pa + 0x3f0);
+    return *reinterpret_cast<u8**>(char_params + 0x108);
+}
+
+namespace app::explosionbomb {
+
+// 0x710165d2c0 (24B) [derived: +0x0, double deref]
+u32 EXPLOSIONBOMB_GRAVITY() { return *reinterpret_cast<u32*>(explosionbomb_params()); }
+// 0x710165d2e0 (24B) [derived: +0x4]
+u32 EXPLOSIONBOMB_LIMIT_GRAVITY() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0x4); }
+// 0x710165d300 (24B) [derived: +0x8]
+u32 EXPLOSIONBOMB_HOP_SPEED_MUL_X() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0x8); }
+// 0x710165d320 (24B) [derived: +0xc]
+u32 EXPLOSIONBOMB_HOP_SPEED_Y() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0xc); }
+// 0x710165d360 (24B) [derived: +0x10]
+u32 EXPLOSIONBOMB_BOUND_SPEED_MUL_X() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0x10); }
+// 0x710165d380 (24B) [derived: +0x14]
+u32 EXPLOSIONBOMB_BOUND_SPEED_MUL_Y() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0x14); }
+// 0x710165d340 (24B) [derived: +0x18]
+u32 EXPLOSIONBOMB_BOUND_NUM() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0x18); }
+// 0x710165d3a0 (24B) [derived: +0x1c]
+u32 EXPLOSIONBOMB_IGNITION_FRAME() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0x1c); }
+// 0x710165d3c0 (24B) [derived: +0x20]
+u32 EXPLOSIONBOMB_WIRE_SPEED_X() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0x20); }
+// 0x710165d3e0 (24B) [derived: +0x24]
+u32 EXPLOSIONBOMB_WIRE_SPEED_Y() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0x24); }
+// 0x710165d400 (24B) [derived: +0x28]
+u32 EXPLOSIONBOMB_WIRE_GRAVITY() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0x28); }
+// 0x710165d420 (24B) [derived: +0x2c]
+u32 EXPLOSIONBOMB_WIRE_BOUND_MUL_Y() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0x2c); }
+// 0x710165d440 (24B) [derived: +0x30]
+u32 EXPLOSIONBOMB_BURST_FRAME() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0x30); }
+// 0x710165d460 (24B) [derived: +0x38 — gap at +0x34]
+u32 EXPLOSIONBOMB_LIFE_MISFIRE() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0x38); }
+
+} // namespace app::explosionbomb
+
+// ════════════════════════════════════════════════════════════════════════════
+// LINKARROW weapon param accessors (Link arrow item)
+// FPA2+0xe0 → +0x120 → field offset
+// [derived: FPA2+0xe0 is Link character param block (different from +0x3f0),
+//  +0x120 is arrow item sub-params pointer]
+// ════════════════════════════════════════════════════════════════════════════
+
+static inline u8* linkarrow_params() {
+    u8* pa = reinterpret_cast<u8*>(DAT_71052bb3b0);
+    u8* char_params = *reinterpret_cast<u8**>(pa + 0xe0);
+    return *reinterpret_cast<u8**>(char_params + 0x120);
+}
+
+namespace app::linkarrow {
+
+// 0x710165eb30 (24B) — arrow item lifetime [derived: +0x2c]
+u32 LINKARROW_ITEM_LIFE() { return *reinterpret_cast<u32*>(linkarrow_params() + 0x2c); }
+// 0x710165eb50 (24B) — arrow throw angle [derived: +0x30]
+u32 LINKARROW_ITEM_THROW_DEGREE() { return *reinterpret_cast<u32*>(linkarrow_params() + 0x30); }
+
+} // namespace app::linkarrow
