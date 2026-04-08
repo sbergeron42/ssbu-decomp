@@ -184,17 +184,7 @@ void FUN_7100130aa0(s64 container, s64 *new_node)
     }
 }
 
-// 0x71001354c0 — Popcount (Hamming weight) of lower 32 bits via bit-parallel sum
-u32 FUN_71001354c0(u64 val)
-{
-    u32 x;
-
-    x = (s32)val - ((u32)(val >> 1) & 0x55555555);
-    x = (x >> 2 & 0x33333333) + (x & 0x33333333);
-    x = x + (x >> 4) & 0xf0f0f0f;
-    x = x + (x >> 8);
-    return x + (x >> 0x10) & 0x3f;
-}
+// 0x71001354c0 — defined in fun_med_final_b_003.cpp (popcount32)
 
 // 0x71000b3c70 — Returns DAT_7104f49390 / DAT_7104f49388, or 0 if denominator is zero
 u64 FUN_71000b3c70(void)

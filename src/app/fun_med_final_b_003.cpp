@@ -628,9 +628,9 @@ void FUN_71001353c0(u32 *param_1, int param_2, long param_3)
 // 0x71001354c0  size=~  FUN_71001354c0
 // popcount32 (Hamming weight)
 // ---------------------------------------------------------------------------
-u32 FUN_71001354c0(u64 param_1)
+u32 FUN_71001354c0(u32 param_1)
 {
-    u32 v = (u32)param_1;
+    u32 v = param_1;
     v = v - ((v >> 1) & 0x55555555u);
     v = (v & 0x33333333u) + ((v >> 2) & 0x33333333u);
     v = (v + (v >> 4)) & 0x0f0f0f0fu;

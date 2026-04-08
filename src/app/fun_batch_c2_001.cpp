@@ -14,20 +14,27 @@
   abort();
 }
 
+namespace std { namespace __1 {
+template<bool> struct __vector_base_common {
+    [[noreturn]] static void __throw_out_of_range();
+};
+}}
+
+
 // 0x7102499568
 [[noreturn]] void FUN_7102499568()
 {
-  abort();
+  std::__1::__vector_base_common<true>::__throw_out_of_range();
 }
 // 0x7102513c9c
 [[noreturn]] void FUN_7102513c9c()
 {
-  abort();
+  std::__1::__vector_base_common<true>::__throw_out_of_range();
 }
 // 0x710259a314
 [[noreturn]] void FUN_710259a314()
 {
-  abort();
+  std::__1::__vector_base_common<true>::__throw_out_of_range();
 }
 // 0x710275d7ec
 [[noreturn]] void FUN_710275d7ec()
@@ -129,10 +136,3 @@
 
 // 0x7102e2a9fc -- defined in fun_medium_throw.cpp (Group A: pass x0)
 // 0x7102f53a60 -- defined in fun_medium_throw.cpp (Group C: naked asm)
-
-namespace std { namespace __1 {
-template<bool> struct __vector_base_common {
-    [[noreturn]] static void __throw_out_of_range();
-};
-}}
-
