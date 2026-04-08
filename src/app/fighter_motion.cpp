@@ -1677,3 +1677,178 @@ u32 get_energy_max_frame() {
 }
 
 } // namespace app::rocketbelt
+
+// ════════════════════════════════════════════════════════════════════════════
+// MECHAKOOPA weapon param accessors (Bowser Jr. Mechakoopa)
+// All read from FighterParamAccessor2 singleton → +0xd20 → +0x198 → offset
+// [derived: FPA2+0xd20 is Bowser Jr. character param block,
+//  +0x198 is mechakoopa weapon sub-params pointer]
+// ════════════════════════════════════════════════════════════════════════════
+
+// Helper: load mechakoopa param base pointer
+static inline u8* mechakoopa_params() {
+    u8* pa = reinterpret_cast<u8*>(DAT_71052bb3b0);
+    u8* char_params = *reinterpret_cast<u8**>(pa + 0xd20);
+    return *reinterpret_cast<u8**>(char_params + 0x198);
+}
+
+namespace app::mechakoopa {
+
+// 0x71016611e0 (24B) — burst frame before explosion
+// [derived: *(*(FPA2+0xd20+0x198)) — double deref at base, +0x0]
+u32 MECHAKOOPA_BURST_FRAME() {
+    return *reinterpret_cast<u32*>(mechakoopa_params());
+}
+
+// 0x7101661200 (24B) — countdown frame before activation
+// [derived: *(FPA2+0xd20+0x198) + 0x4]
+u32 MECHAKOOPA_COUNT_DOWN_FRAME() {
+    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x4);
+}
+
+// 0x71016612e0 (24B) — hit points
+// [derived: *(FPA2+0xd20+0x198) + 0x8]
+u32 MECHAKOOPA_HP() {
+    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x8);
+}
+
+// 0x71016612a0 (24B) — gravity acceleration
+// [derived: *(FPA2+0xd20+0x198) + 0x10]
+u32 MECHAKOOPA_GRAVITY() {
+    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x10);
+}
+
+// 0x7101661320 (24B) — limit speed Y
+// [derived: *(FPA2+0xd20+0x198) + 0x14]
+u32 MECHAKOOPA_LIMIT_SPEED_Y() {
+    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x14);
+}
+
+// 0x7101661360 (24B) — shoot speed X
+// [derived: *(FPA2+0xd20+0x198) + 0x18]
+u32 MECHAKOOPA_SHOOT_SPEED_X() {
+    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x18);
+}
+
+// 0x7101661380 (24B) — shoot brake deceleration
+// [derived: *(FPA2+0xd20+0x198) + 0x1c]
+u32 MECHAKOOPA_SHOOT_BRAKE() {
+    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x1c);
+}
+
+// 0x71016612c0 (24B) — bound speed threshold
+// [derived: *(FPA2+0xd20+0x198) + 0x20]
+u32 MECHAKOOPA_BOUND_SPEED_THRESHOLD() {
+    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x20);
+}
+
+// 0x71016613a0 (24B) — bound speed X
+// [derived: *(FPA2+0xd20+0x198) + 0x24]
+u32 MECHAKOOPA_BOUND_SPEED_X() {
+    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x24);
+}
+
+// 0x71016613c0 (24B) — bound speed Y
+// [derived: *(FPA2+0xd20+0x198) + 0x28]
+u32 MECHAKOOPA_BOUND_SPEED_Y() {
+    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x28);
+}
+
+// 0x71016613e0 (24B) — bound brake
+// [derived: *(FPA2+0xd20+0x198) + 0x2c]
+u32 MECHAKOOPA_BOUND_BRAKE() {
+    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x2c);
+}
+
+// 0x7101661300 (24B) — walk speed X
+// [derived: *(FPA2+0xd20+0x198) + 0x30]
+u32 MECHAKOOPA_SPEED_X() {
+    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x30);
+}
+
+// 0x7101661400 (24B) — turn count
+// [derived: *(FPA2+0xd20+0x198) + 0x34]
+u32 MECHAKOOPA_TURN_NUM() {
+    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x34);
+}
+
+// 0x7101661260 (24B) — hop speed X
+// [derived: *(FPA2+0xd20+0x198) + 0x38]
+u32 MECHAKOOPA_HOP_SPEED_X() {
+    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x38);
+}
+
+// 0x7101661280 (24B) — hop speed Y
+// [derived: *(FPA2+0xd20+0x198) + 0x3c]
+u32 MECHAKOOPA_HOP_SPEED_Y() {
+    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x3c);
+}
+
+// 0x7101661220 (24B) — hop burst frame
+// [derived: *(FPA2+0xd20+0x198) + 0x40]
+u32 MECHAKOOPA_HOP_BURST_FRAME() {
+    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x40);
+}
+
+// 0x7101661420 (24B) — dead burst frame
+// [derived: *(FPA2+0xd20+0x198) + 0x44]
+u32 MECHAKOOPA_DEAD_BURST_FRAME() {
+    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x44);
+}
+
+// 0x7101661240 (24B) — hop lost frame
+// [derived: *(FPA2+0xd20+0x198) + 0x48]
+u32 MECHAKOOPA_HOP_LOST_FRAME() {
+    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x48);
+}
+
+// 0x7101661520 (24B) — stop speed multiplier
+// [derived: *(FPA2+0xd20+0x198) + 0x4c]
+u32 MECHAKOOPA_STOP_SPEED_MUL() {
+    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x4c);
+}
+
+// 0x7101661540 (24B) — stop brake
+// [derived: *(FPA2+0xd20+0x198) + 0x50]
+u32 MECHAKOOPA_STOP_BRAKE() {
+    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x50);
+}
+
+} // namespace app::mechakoopa
+
+// ════════════════════════════════════════════════════════════════════════════
+// HOLYWATER weapon param accessors (Simon/Richter Belmont)
+// Branch on FighterKind: 0x44 (Richter) uses FPA2+0xf50, others use +0xf18
+// Then → +0x240 → final offset
+// [derived: FPA2+0xf18 = Simon params, FPA2+0xf50 = Richter params (echo),
+//  +0x240 = holywater sub-params, offsets for reflect shield properties]
+// ════════════════════════════════════════════════════════════════════════════
+
+// Helper: load holywater param base by fighter kind
+static inline u8* holywater_params(s32 fighter_kind) {
+    u8* pa = reinterpret_cast<u8*>(DAT_71052bb3b0);
+    u8* char_params = *reinterpret_cast<u8**>(pa + (fighter_kind == 0x44 ? 0xf50 : 0xf18));
+    return *reinterpret_cast<u8**>(char_params + 0x240);
+}
+
+namespace app::holywater {
+
+// 0x7101670dd0 (40B) — reflect shield gravity acceleration
+// [derived: FPA2+0xf18/0xf50 → +0x240 → +0x18]
+u32 HOLYWATER_REFLECT_SHIELD_GRAVITY_ACCEL(s32 fighter_kind) {
+    return *reinterpret_cast<u32*>(holywater_params(fighter_kind) + 0x18);
+}
+
+// 0x7101670e00 (40B) — reflect shield gravity accel max
+// [derived: FPA2+0xf18/0xf50 → +0x240 → +0x1c]
+u32 HOLYWATER_REFLECT_SHIELD_GRAVITY_ACCEL_MAX(s32 fighter_kind) {
+    return *reinterpret_cast<u32*>(holywater_params(fighter_kind) + 0x1c);
+}
+
+// 0x7101670e30 (40B) — reflect shield rotation speed
+// [derived: FPA2+0xf18/0xf50 → +0x240 → +0x20]
+u32 HOLYWATER_REFLECT_SHIELD_ROT_SPEED(s32 fighter_kind) {
+    return *reinterpret_cast<u32*>(holywater_params(fighter_kind) + 0x20);
+}
+
+} // namespace app::holywater
