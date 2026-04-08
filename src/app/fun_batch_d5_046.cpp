@@ -101,7 +101,7 @@ void FUN_71015cb5d0(void *param_1, int param_2, float param_3) {
 void FUN_71015cb6b0(void *param_1) {
     if ((param_1 != (void*)0) && (*(u32*)((u8*)param_1 + 8) >> 0x1c == 4)) {
         auto *m = *(s64**)(*(s64*)((u8*)param_1 + 400) + 0x220);
-        reinterpret_cast<void(*)(void*, s64)>((*reinterpret_cast<void***>(m))[0x520/8])(m, 0);
+        reinterpret_cast<void(*)(void*, int)>((*reinterpret_cast<void***>(m))[0x520/8])(m, 0);
     }
 }
 
