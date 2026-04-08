@@ -905,7 +905,7 @@ u32 FUN_71001925f0(s64 param_1)
     if ((uVar1 >> 28 & 1) == 0) return 0x1c;
     if ((uVar1 >> 29 & 1) == 0) return 0x1d;
     if ((uVar1 >> 30 & 1) == 0) return 0x1e;
-    return (s32)uVar1 < 0 ? 0xfffffffdU : 0x1f;
+    return (s32)uVar1 >= 0 ? 0x1f : 0xfffffffdU;
 }
 
 // 0x71001dfee0
