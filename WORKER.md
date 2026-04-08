@@ -2,18 +2,15 @@
 
 ## Model: Opus
 
-## Task: New decomp — EffectModule + SoundModule functions
+## Task: Continue effect/sound decomp + expand to AttackModule
 
-### Context
-327 undecompiled effect functions, 198 undecompiled sound functions. EffectModule.h has 91 vtable methods.
+20 effect/sound functions so far. Keep going, and expand into AttackModule (195 vtable methods available).
 
-### Approach
-1. Search for named undecompiled EffectModule/SoundModule functions
-2. Decompile in Ghidra, write C++ using module headers
-3. Focus on small functions (<200B) first
+### Target Files
+- `src/app/fighter_effects.cpp` (append — effects + sound)
+- `src/app/fighter_attack.cpp` (new file — AttackModule functions)
 
-### Target: src/app/fighter_effects.cpp (new file)
-### Headers: EffectModule.h, SoundModule.h, BattleObjectModuleAccessor.h
+### Headers: EffectModule.h, SoundModule.h, AttackModule.h, BattleObjectModuleAccessor.h
 ### Derivation Chains MANDATORY
 ### Do NOT use naked asm.
 
@@ -23,5 +20,5 @@
 
 python tools/compare_bytes.py FUN_name
 mcp__ghidra__search_functions_by_name("effect")
-mcp__ghidra__search_functions_by_name("sound")
+mcp__ghidra__search_functions_by_name("attack")
 ```
