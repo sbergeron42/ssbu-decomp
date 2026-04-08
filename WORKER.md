@@ -1,14 +1,14 @@
-# Worker: pool-c
+# Worker: pool-d
 
 ## Model: Opus
 
-## Task: Continue fighter status decomp — next batch
+## Task: Continue fighter motion + kinetic energy decomp
 
-You've produced 168 fighter status functions so far. Keep going — same approach.
+You've produced 10 motion + 38 kinetic energy functions. Keep expanding.
 
-### Target: src/app/fighter_status.cpp (append)
-### Focus: Named undecompiled functions related to fighter status, AI, params, ACMD
-### Headers: StatusModule.h, WorkModule.h, MotionModule.h, BattleObjectModuleAccessor.h
+### Target: src/app/fighter_motion.cpp (append)
+### Focus: Named undecompiled MotionModule, KineticModule, AttackModule functions
+### Headers: MotionModule.h, KineticModule.h, AttackModule.h, BattleObjectModuleAccessor.h
 ### Derivation Chains MANDATORY
 ### Do NOT use naked asm.
 
