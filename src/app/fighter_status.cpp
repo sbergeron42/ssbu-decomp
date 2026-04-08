@@ -86,6 +86,16 @@ float pow_7102276350(float base, s32 exp) {
     return (float)pow((double)base, (double)exp);
 }
 
+// ── 0x7102276140 -- app::sv_math::bezier_curve (80B) ────────────────
+// [derived: cubic Bezier B(t) = (1-t)³p0 + 3(1-t)²t·p1 + 3(1-t)t²·p2 + t³·p3]
+float bezier_curve_7102276140(float p0, float p1, float p2, float p3, float t) {
+    float u = 1.0f - t;
+    return u * u * u * p0 +
+           u * t * 3.0f * u * p1 +
+           t * t * t * p3 +
+           u * t * 3.0f * t * p2;
+}
+
 // ════════════════════════════════════════════════════════════════════
 // sv_system — lua state field accessors
 // These read fields from the scripting context struct at *(L - 8)

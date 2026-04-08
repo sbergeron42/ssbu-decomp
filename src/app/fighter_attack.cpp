@@ -244,6 +244,280 @@ extern "C" u8 check_stat_dogs_blind_own(u64 L) { return (*(u8*)(AI_STATE(L) + 0x
 // 0x7100361a00 — check_stat_target_invisible (byte load at +0x60, bit 6)
 extern "C" u8 check_stat_target_invisible(u64 L) { return (*(u8*)(AI_STATE(L) + 0x60) >> 6) & 1; }
 
+// ---- AI check_stat — status/state queries (comparisons, multi-field) -------
+// These check higher-level fighter state: status_kind (+0x74), action category (+0x64),
+// situation (+0xd8), and composite conditions for "free to act" logic.
+//
+// AI fighter state struct additions (partial):
+//   +0x10 [inferred: fighter BattleObject pointer]
+//   +0x2c [inferred: sub_status_kind, s32 — ground_free2 excludes 0x17]
+//   +0x55 bits 0-1 [derived: final smash active, from check_stat_final name]
+//   +0x5e bit 4 [inferred: super armor active]
+//   +0x64 [inferred: action_category flags, u32 — ground=0x99, air=0xe00]
+//   +0x74 [derived: status_kind, s32 — used by all status comparisons]
+//   +0xd0 [inferred: ground collision data pointer]
+//     +0x5c bit 5 [inferred: platform passthrough available]
+//   +0xd8 [inferred: situation_kind, s32 — 0 = ground]
+//   +0x11c [inferred: invincible timer, s32 — > 0 means invincible]
+
+// 0x7100361390 — check_stat_final (bits 0-1 of +0x55)
+// [derived: final smash active or pending, from Ghidra function name]
+extern "C" bool check_stat_final(u64 L) {
+    return (*(u8*)(AI_STATE(L) + 0x55) & 3) != 0;
+}
+// 0x71003613f0 — check_stat_invincible_l (complex invincibility check, 92B)
+// [derived: checks invincible flag, super armor, timer, and special statuses]
+extern "C" bool check_stat_invincible_l(u64 L) {
+    u64 ai = AI_STATE(L);
+    if (((*(u8*)(ai + 0x55) >> 5) & 1) == 0) {
+        return false;
+    }
+    if (((*(u8*)(ai + 0x5e) >> 4) & 1) != 0) {
+        return true;
+    }
+    if (*(s32*)(ai + 0x11c) > 0) {
+        return true;
+    }
+    s32 status = *(s32*)(ai + 0x74);
+    // NOTE: orr operand order mismatch — upstream emits orr w0,w8,w9 vs NX orr w0,w9,w8
+    return (u32)(status - 0x11) < 2 || status == 0xb;
+}
+// 0x71003614d0 — check_stat_dash (status_kind == 3)
+extern "C" bool check_stat_dash(u64 L) {
+    return *(s32*)(AI_STATE(L) + 0x74) == 3;
+}
+// 0x71003614f0 — check_stat_down (status_kind == 4)
+extern "C" bool check_stat_down(u64 L) {
+    return *(s32*)(AI_STATE(L) + 0x74) == 4;
+}
+// 0x7100361510 — check_stat_piyo (status_kind in [9, 10, 11] — dizzy)
+extern "C" bool check_stat_piyo(u64 L) {
+    return (u32)(*(s32*)(AI_STATE(L) + 0x74) - 9) < 3;
+}
+// 0x7100361530 — check_stat_dragoon (status_kind == 0x11)
+extern "C" bool check_stat_dragoon(u64 L) {
+    return *(s32*)(AI_STATE(L) + 0x74) == 0x11;
+}
+// 0x7100361550 — check_stat_genesis (status_kind == 0x12)
+extern "C" bool check_stat_genesis(u64 L) {
+    return *(s32*)(AI_STATE(L) + 0x74) == 0x12;
+}
+// 0x7100361570 — check_stat_catch (status_kind == 0xc — grab)
+extern "C" bool check_stat_catch(u64 L) {
+    return *(s32*)(AI_STATE(L) + 0x74) == 0xc;
+}
+// 0x71003615b0 — check_stat_guard (status_kind == 0x1a — shield)
+extern "C" bool check_stat_guard(u64 L) {
+    return *(s32*)(AI_STATE(L) + 0x74) == 0x1a;
+}
+// 0x71003615f0 — check_stat_floor_pass (80B, platform passthrough / GroundModule query)
+// [derived: grounded + platform bit → true; else if fighter ground type >= 4, tail-calls GroundModule vtable[0x9f]]
+// +0x10 → +0x3a [inferred: ground type byte, >= 4 means special ground handling]
+// +0x10 → +0x20 = accessor → +0x58 = GroundModule → vtable[0x9f] (offset 0x4f8)
+extern "C" bool check_stat_floor_pass(u64 L) {
+    u64 ai = AI_STATE(L);
+    if (*(s32*)(ai + 0xd8) == 0) {
+        if ((*(u8*)(*(u64*)(ai + 0xd0) + 0x5c) >> 5) & 1) {
+            return true;
+        }
+    }
+    u64 fighter = *(u64*)(ai + 0x10);
+    if (*(u8*)(fighter + 0x3a) >= 4) {
+        u64 acc = *(u64*)(fighter + 0x20);
+        u64 ground = *(u64*)(acc + 0x58);
+        u64* vt = *(u64**)ground;
+        return reinterpret_cast<bool(*)(u64)>(vt[0x9f])(ground);
+    }
+    return false;
+}
+// 0x7100361670 — check_stat_ground_free (88B, can act on ground)
+// [derived: true if fighter is free to act while grounded]
+// +0x54 bit 30 [inferred: action_lock, blocks all free checks]
+// +0x54 bit 0 [derived: air flag, from check_stat_air]
+// +0x58 bit 7 [inferred: special ground action pending]
+extern "C" bool check_stat_ground_free(u64 L) {
+    u64 ai = AI_STATE(L);
+    u32 flags = *(u32*)(ai + 0x54);
+    if ((flags >> 30) & 1) {
+        return false;
+    }
+    if (*(s32*)(ai + 0x74) == 1) {
+        return true;
+    }
+    if ((~*(u32*)(ai + 0x64) & 0x99) == 0) {
+        return true;
+    }
+    if (!(flags & 1)) {
+        u32 b58 = *(u8*)(ai + 0x58);
+#ifdef MATCHING_HACK_NX_CLANG
+        asm("" : "+r"(b58));
+#endif
+        if (b58 & 0x80) return true;
+    }
+    return false;
+}
+// 0x71003616d0 — check_stat_ground_free2 (100B, ground free with sub-status filter)
+// [derived: like ground_free but excludes sub_status 0x17]
+// +0x2c [inferred: sub_status_kind, value 0x17 excluded]
+extern "C" bool check_stat_ground_free2(u64 L) {
+    u64 ai = AI_STATE(L);
+    u32 flags = *(u32*)(ai + 0x54);
+    if ((flags >> 30) & 1) {
+        return false;
+    }
+    if (*(s32*)(ai + 0x74) == 1 && *(s32*)(ai + 0x2c) != 0x17) {
+        return true;
+    }
+    if ((~*(u32*)(ai + 0x64) & 0x99) == 0) {
+        return true;
+    }
+    if (!(flags & 1)) {
+        u32 b58 = *(u8*)(ai + 0x58);
+#ifdef MATCHING_HACK_NX_CLANG
+        asm("" : "+r"(b58));
+#endif
+        if (b58 & 0x80) return true;
+    }
+    return false;
+}
+// 0x7100361740 — check_stat_air_free (88B, can act in air)
+// [derived: true if fighter is free to act while airborne]
+// Uses air bitmask 0xe00 instead of ground bitmask 0x99
+extern "C" bool check_stat_air_free(u64 L) {
+    u64 ai = AI_STATE(L);
+    u32 flags = *(u32*)(ai + 0x54);
+    if ((flags >> 30) & 1) {
+        return false;
+    }
+    if (*(s32*)(ai + 0x74) == 2) {
+        return true;
+    }
+    if ((~*(u32*)(ai + 0x64) & 0xe00) == 0) {
+        return true;
+    }
+    if (flags & 1) {
+        u32 b58 = *(u8*)(ai + 0x58);
+#ifdef MATCHING_HACK_NX_CLANG
+        asm("" : "+r"(b58));
+#endif
+        if (b58 & 0x80) return true;
+    }
+    return false;
+}
+
+// ---- AI state queries — skill/spirits/character status, misc ---------------
+// These continue the AI state struct at AI_STATE(L):
+//   +0x28 [derived: fighter_kind, FighterKind enum, from check_chr_stat]
+//   +0x68 [derived: character_status flags, u32, from check_chr_stat]
+//   +0x6c [derived: skill_status flags, u32, from check_skill_stat]
+//   +0x70 [derived: spirits_event_status flags, u32, from check_spirits_event_stat]
+//   +0x80 [inferred: pos_x, f32, from check_cliffable]
+//   +0xd0 [inferred: ground collision data pointer]
+//     +0x20 [inferred: cliff_left_x, f32]
+//     +0x30 [inferred: cliff_right_x, f32]
+//     +0x5c [inferred: ground flags — bit5: passable, bit6: cliff_left, bit7: cliff_right]
+//   +0xe8 [inferred: current shield HP, f32]
+//   +0xec [inferred: max shield HP, f32]
+//   +0x1f4 [inferred: secondary fighter_kind, u32]
+
+extern "C" void FUN_7100358c20(u64, s32);
+
+// 0x7100361a20 — check_skill_stat (24B, bitmask test at +0x6c)
+// [derived: tests skill status flags against param mask]
+extern "C" bool check_skill_stat(u64 L, u32 mask) {
+    return (*(u32*)(AI_STATE(L) + 0x6c) & mask) != 0;
+}
+// 0x7100361a40 — check_spirits_event_stat (24B, bitmask test at +0x70)
+// [derived: tests spirits event status flags against param mask]
+extern "C" bool check_spirits_event_stat(u64 L, u32 mask) {
+    return (*(u32*)(AI_STATE(L) + 0x70) & mask) != 0;
+}
+// 0x7100361a60 — check_chr_stat (56B, character-specific status check)
+// [derived: checks fighter_kind match (or -1 for any), then tests character status mask at +0x68]
+extern "C" bool check_chr_stat(u64 L, u32 mask, s32 kind) {
+    u64 ai = AI_STATE(L);
+    if ((kind == -1 || *(s32*)(ai + 0x28) == kind) &&
+        (*(u32*)(ai + 0x68) & mask) != 0) {
+        return true;
+    }
+    return false;
+}
+// 0x7100361b50 — check_passable (24B, platform passthrough flag)
+// [derived: reads bit 5 from ground_data->0x5c, same field as check_stat_floor_pass]
+extern "C" u8 check_passable(u64 L) {
+    return (*(u8*)(*(u64*)(AI_STATE(L) + 0xd0) + 0x5c) >> 5) & 1;
+}
+// 0x7100361b70 — shield_rate (20B, current shield health ratio)
+// [derived: divides current shield HP by max shield HP]
+extern "C" f32 shield_rate(u64 L) {
+    u64 ai = AI_STATE(L);
+    return *(f32*)(ai + 0xe8) / *(f32*)(ai + 0xec);
+}
+// 0x7100361ce0 — is_sp_u_available (16B, tail-call)
+// [derived: checks if up-special is available, passes AI state + mode 0]
+extern "C" void is_sp_u_available(u64 L) {
+    FUN_7100358c20(AI_STATE(L), 0);
+}
+// 0x7100361cf0 — is_sp_u_weaken_available (16B, tail-call)
+// [derived: checks if weakened up-special is available, passes AI state + mode 1]
+extern "C" void is_sp_u_weaken_available(u64 L) {
+    FUN_7100358c20(AI_STATE(L), 1);
+}
+// 0x7100361ad0 — check_cliffable (68B, cliff grab availability)
+// [derived: checks if fighter is near enough to cliff edge to grab it]
+// Compares pos_x to midpoint of cliff left/right, selects appropriate side flag
+extern "C" bool check_cliffable(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 ai = *(u64*)(ctx + 0x168);
+    u64 ground = *(u64*)(ai + 0xd0);
+    u32 mask = 0x40;
+    if ((*(f32*)(ground + 0x20) + *(f32*)(ground + 0x30)) * 0.5f <= *(f32*)(ai + 0x80)) {
+        mask = 0x80;
+    }
+    return (mask & *(u32*)(ground + 0x5c)) != 0;
+}
+// 0x7100361b20 — check_cliffable_floor_lr (44B, cliff grab direction check)
+// [derived: checks cliff availability in specified direction]
+// dir > 0 → check left cliff (bit 6), else check right cliff (bit 7)
+extern "C" bool check_cliffable_floor_lr(u64 L, f32 dir) {
+    u32 mask = 0x40;
+    if (!(dir > 0.0f)) {
+        mask = 0x80;
+    }
+    return (*(u32*)(*(u64*)(AI_STATE(L) + 0xd0) + 0x5c) & mask) != 0;
+}
+// 0x71003611f0 — is_valid_target (84B, target validity check)
+// [derived: validates that AI target is not self and not in invincible state (bit 3 of +0x55)]
+// +0xc50 [inferred: target battle_object_id, s32, in ctx]
+// +0x160 [inferred: own battle_object_id, s32, in ctx]
+extern "C" bool is_valid_target(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    if (*(s32*)(ctx + 0xc50) < 0 || *(s32*)(ctx + 0xc50) == *(s32*)(ctx + 0x160)) {
+        return false;
+    }
+    return (*(u8*)(info + 0x55) & 8) == 0;
+}
+// 0x7100361d70 — check_use_command (88B, command input active check)
+// [derived: checks if current fighter is using a command input (motion input)]
+// +0x28 [derived: fighter_kind, FighterKind]
+// +0x1f4 [inferred: secondary fighter_kind, u32]
+// +0x198 [inferred: command_id, s16, in ctx — 0x6038/0x6046 are specific command IDs]
+extern "C" bool check_use_command(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 ai = *(u64*)(ctx + 0x168);
+    if ((*(u32*)(ai + 0x28) & 0xfffffffe) == 0x3c) {
+        return true;
+    }
+    if ((*(u32*)(ai + 0x1f4) & 0xfffffffe) == 0x3c) {
+        s16 cmd = *(s16*)(ctx + 0x198);
+        if (cmd == 0x6038 || cmd == 0x6046) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // ---- Boss manager queries (leaf, singleton access) -------------------------
 
 // lib::Singleton<app::BossManager>::instance_
