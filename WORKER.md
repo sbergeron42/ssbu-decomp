@@ -1,20 +1,18 @@
-# Worker: pool-b
+# Worker: pool-c
 
 ## Model: Opus
 
-## Task: Fix N-quality — batch_d5 -O0 jemalloc functions
+## Task: Fix N-quality — more optnone stubs + batch_d5
 
-### Proven techniques (USE THESE):
-- `__attribute__((optnone))` for -O0 compiled functions
-- `__attribute__((visibility("hidden")))` on extern globals
-- `__atomic_load_n(&var, __ATOMIC_ACQUIRE)` for CXA-guard patterns
-- `#pragma clang loop unroll(disable)` to prevent unwanted unrolling
-- Inline intermediate variables to avoid extra stack spills at -O0
+### Your techniques from last round worked — keep using them:
+- `__attribute__((optnone))` for -O0 stubs
+- Correct function signatures
+- Hidden visibility on externs
 
 ### Target Files
-- `src/app/fun_batch_d5_020.cpp` — 94 N-quality
-- `src/app/fun_batch_d5_018.cpp` — 84 N-quality
-- `src/app/fun_batch_d5_019.cpp` — 82 N-quality
+- `src/app/fun_batch_d5_021.cpp` — 80 N-quality
+- `src/app/fun_batch_d5_023.cpp` — 62 N-quality
+- `src/app/fun_batch_d5_016.cpp` — 48 N-quality
 
 ### Method per function
 1. `python tools/compare_bytes.py FUN_name`
