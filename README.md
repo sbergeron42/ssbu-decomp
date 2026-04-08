@@ -68,6 +68,19 @@ Struct headers use derivation comments to show how each field name was determine
 Fields tagged `[derived: ...]` trace back to binary-proven function names.
 Fields tagged `[inferred: ...]` are usage-pattern guesses — verify before building on them.
 
+## Compiler Gap: NX Clang vs Upstream
+
+The original binary was compiled with **Nintendo's proprietary NX Clang fork** (based on Clang/LLVM 8.0.0 from SDK 8.2.1). This project uses **upstream Clang 8.0.0** for decomp, which produces identical output for small leaf functions but diverges significantly on non-trivial code.
+
+**Measured divergence:** Compiling zstd v1.3.7 (confirmed same version as in-binary) with upstream Clang 8.0.0 produces functions with identical sizes but 0% instruction match — different register allocation, instruction selection, and code layout. This is not a post-processing gap; it's a fundamental backend divergence in Nintendo's LLVM fork.
+
+**What this means:**
+- **Small functions** (accessors, thunks, simple dispatchers): upstream Clang matches. These make up the bulk of current verified matches.
+- **Library code** (~6-15MB of jemalloc, zstd, Lua, curl, NintendoSDK): can be identified and typed using upstream source, but cannot be byte-matched without the NX compiler. These functions are tracked as identified but non-matching.
+- **Complex game logic** (state machines, physics, AI): requires manual decomp guided by Ghidra, iterating on source until the upstream compiler output matches. Some will never match due to irreducible compiler differences.
+
+Byte-matched progress reflects the subset of the binary where upstream Clang produces identical output to NX Clang.
+
 ## Build Info
 
 | Property | Value |
@@ -76,7 +89,8 @@ Fields tagged `[inferred: ...]` are usage-pattern guesses — verify before buil
 | Platform | Nintendo Switch (NX64 / AArch64) |
 | Engine | cross2app (Bandai Namco) |
 | SDK | NintendoSDK 8.2.1 |
-| Compiler | Upstream Clang 8.0.0 |
+| Original compiler | NX Clang (proprietary LLVM fork, SDK 8.2.1) |
+| Decomp compiler | Upstream Clang 8.0.0 |
 | .text size | ~60 MB |
 
 ## Building
