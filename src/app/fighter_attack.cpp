@@ -518,6 +518,178 @@ extern "C" bool check_use_command(u64 L) {
     return false;
 }
 
+// ---- AI command input step checkers ----------------------------------------
+// These check if a specific motion input command step is active, based on
+// fighter_kind (+0x28) and character_status bits (+0x68/+0x69).
+// Names reflect traditional fighting game numpad notation (214 = QCB, 623 = DP, etc.)
+
+// 0x7100361ec0 — check_command_41236_step (92B)
+// [derived: half-circle forward command step, 3-way kind switch]
+extern "C" bool check_command_41236_step(u64 L) {
+    u64 ai = AI_STATE(L);
+    s32 kind = *(s32*)(ai + 0x28);
+    if (kind == 6) {
+        if ((*(u8*)(ai + 0x69) >> 2) & 1) return true;
+    } else if (kind == 0x3d) {
+        if ((*(u8*)(ai + 0x68) >> 4) & 1) return true;
+    } else if (kind == 0x3c && ((*(u8*)(ai + 0x68) >> 4) & 1)) {
+        return true;
+    }
+    return false;
+}
+// 0x7100361f20 — check_command_214_step (92B)
+// [derived: quarter-circle back command step]
+extern "C" bool check_command_214_step(u64 L) {
+    u64 ai = AI_STATE(L);
+    s32 kind = *(s32*)(ai + 0x28);
+    if (kind == 0x55) {
+        if ((*(u8*)(ai + 0x68) >> 4) & 1) return true;
+    } else if (kind == 0x3d) {
+        if ((*(u8*)(ai + 0x68) >> 5) & 1) return true;
+    } else if (kind == 0x3c && ((*(u8*)(ai + 0x68) >> 5) & 1)) {
+        return true;
+    }
+    return false;
+}
+// 0x7100361f80 — check_command_623_step (92B)
+// [derived: dragon punch command step]
+extern "C" bool check_command_623_step(u64 L) {
+    u64 ai = AI_STATE(L);
+    s32 kind = *(s32*)(ai + 0x28);
+    if (kind == 0x55) {
+        if ((*(u8*)(ai + 0x68) >> 5) & 1) return true;
+    } else if (kind == 0x3d) {
+        if ((*(u8*)(ai + 0x68) >> 6) & 1) return true;
+    } else if (kind == 0x3c && ((*(u8*)(ai + 0x68) >> 6) & 1)) {
+        return true;
+    }
+    return false;
+}
+// 0x7100361fe0 — check_command_236236_step (44B)
+// [derived: double quarter-circle forward command step]
+extern "C" bool check_command_236236_step(u64 L) {
+    u64 ai = AI_STATE(L);
+    if (*(s32*)(ai + 0x28) == 0x55) {
+        u32 b68 = *(u8*)(ai + 0x68);
+#ifdef MATCHING_HACK_NX_CLANG
+        asm("" : "+r"(b68));
+#endif
+        if (b68 & 0x80) return true;
+    }
+    return false;
+}
+// 0x7100362010 — check_command_21416_step (44B)
+// [derived: 21416 command step]
+extern "C" bool check_command_21416_step(u64 L) {
+    u64 ai = AI_STATE(L);
+    if (*(s32*)(ai + 0x28) == 0x55 && (*(u8*)(ai + 0x69) & 1)) {
+        return true;
+    }
+    return false;
+}
+// 0x7100362040 — check_command_214214_step (44B)
+// [derived: double quarter-circle back command step]
+extern "C" bool check_command_214214_step(u64 L) {
+    u64 ai = AI_STATE(L);
+    if (*(s32*)(ai + 0x28) == 0x55 && ((*(u8*)(ai + 0x69) >> 1) & 1)) {
+        return true;
+    }
+    return false;
+}
+// 0x7100362070 — check_command_23634_step (44B)
+// [derived: 23634 command step]
+extern "C" bool check_command_23634_step(u64 L) {
+    u64 ai = AI_STATE(L);
+    if (*(s32*)(ai + 0x28) == 0x55 && ((*(u8*)(ai + 0x69) >> 2) & 1)) {
+        return true;
+    }
+    return false;
+}
+
+// ---- AI target state queries (target info via FUN_7100314030) ---------------
+// Target info struct mirrors the local AI state but for the opponent.
+// Obtained by calling FUN_7100314030(BattleObjectWorld, ctx + 0xc50).
+// Field layout matches the AI state struct at the same offsets.
+
+// 0x71003666e0 — check_target_stat_air (44B, word load, bit 0)
+extern "C" u32 check_target_stat_air(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    return *(u32*)(info + 0x54) & 1;
+}
+// 0x7100366710 — check_target_stat_build_up (44B, byte load, bit 3)
+extern "C" u8 check_target_stat_build_up(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    return (*(u8*)(info + 0x54) >> 3) & 1;
+}
+// 0x7100366740 — check_target_stat_attention (44B, byte load, bit 6)
+extern "C" u8 check_target_stat_attention(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    return (*(u8*)(info + 0x54) >> 6) & 1;
+}
+// 0x7100366770 — check_target_stat_final (48B, byte load, bits 0-1)
+extern "C" bool check_target_stat_final(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    return (*(u8*)(info + 0x55) & 3) != 0;
+}
+// 0x71003667a0 — check_target_stat_dead (44B, byte load, bit 3)
+extern "C" u8 check_target_stat_dead(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    return (*(u8*)(info + 0x55) >> 3) & 1;
+}
+// 0x71003667d0 — check_target_stat_invincible (44B, byte load, bit 5)
+extern "C" u8 check_target_stat_invincible(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    return (*(u8*)(info + 0x55) >> 5) & 1;
+}
+// 0x71003668b0 — check_target_stat_reflect (44B, byte load at +0x56, bit 2)
+extern "C" u8 check_target_stat_reflect(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    return (*(u8*)(info + 0x56) >> 2) & 1;
+}
+// 0x71003668e0 — check_target_stat_unguarded_hind (44B, byte load at +0x56, bit 5)
+extern "C" u8 check_target_stat_unguarded_hind(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    return (*(u8*)(info + 0x56) >> 5) & 1;
+}
+// 0x7100366910 — check_target_stat_unguarded (44B, byte load at +0x56, bit 6)
+extern "C" u8 check_target_stat_unguarded(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    return (*(u8*)(info + 0x56) >> 6) & 1;
+}
+// 0x7100366940 — check_target_stat_combo (44B, byte load at +0x56, bit 7)
+extern "C" u8 check_target_stat_combo(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    return *(u8*)(info + 0x56) >> 7;
+}
+// 0x7100366970 — check_target_stat_no_counter (44B, byte load at +0x57, bit 5)
+extern "C" u8 check_target_stat_no_counter(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    return (*(u8*)(info + 0x57) >> 5) & 1;
+}
+// 0x71003669a0 — check_target_stat_down (48B, status_kind == 4)
+extern "C" bool check_target_stat_down(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    return *(s32*)(info + 0x74) == 4;
+}
+// 0x71003669d0 — check_target_stat_fall_sp (48B, status_kind == 0x10)
+extern "C" bool check_target_stat_fall_sp(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    return *(s32*)(info + 0x74) == 0x10;
+}
+
 // ---- Boss manager queries (leaf, singleton access) -------------------------
 
 // lib::Singleton<app::BossManager>::instance_
