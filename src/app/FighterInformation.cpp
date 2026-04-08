@@ -103,7 +103,7 @@ f32 FighterInformation__hit_point_impl(FighterInformation* fi) {
     f32 result = max_hp - damage;
     f32 zero = 0.0f;
 #ifdef MATCHING_HACK_NX_CLANG
-    asm("fmax %s0, %s1, %s2" : "=w"(result) : "w"(result), "w"(zero));
+    asm volatile("fmax %s0, %s1, %s2" : "=w"(result) : "w"(result), "w"(zero));
 #else
     result = result > zero ? result : zero;
 #endif

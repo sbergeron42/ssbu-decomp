@@ -2,29 +2,27 @@
 
 ## Model: Opus
 
-## Task: Fix N-quality — more optnone stubs + batch_d5
+## Task: Near-miss function fixes — struct offsets, asm volatile, visibility
 
-### Your techniques from last round worked — keep using them:
-- `__attribute__((optnone))` for -O0 stubs
-- Correct function signatures
-- Hidden visibility on externs
+### Completed fixes (this session)
+1. **FUN_71001b7b90** (fun_med_final_b_005.cpp): wrong struct offset `param_1[2]` → `param_1[1]` — 88%→100%
+2. **FUN_71001b7bb0** (fun_med_final_b_005.cpp): same offset fix — 88%→100%
+3. **FighterInformation__hit_point_impl**: non-volatile `asm("fmax")` silently compiled to `fmaxnm`; `asm volatile` fixes both encoding AND instruction ordering — 85%→100%
+4. **BossManager__notify_on_boss_defeat_impl**: `DAT_7104f73b70` missing `visibility("hidden")` caused ADRP+LDR(GOT) instead of ADRP+ADD — +2 instructions matched
 
-### Target Files
-- `src/app/fun_batch_d5_021.cpp` — 80 N-quality
-- `src/app/fun_batch_d5_023.cpp` — 62 N-quality
-- `src/app/fun_batch_d5_016.cpp` — 48 N-quality
+### Findings — batch_d5 files are ceiling-limited
+The original task files (d5_021, d5_023, d5_016) contain **only** 12-byte `bl __throw_out_of_range` thunks at 67% (BL relocation is the sole diff). CSV sizes (264/352/224) are wrong. No further improvement possible.
 
-### Method per function
-1. `python tools/compare_bytes.py FUN_name`
-2. `mcp__ghidra__decompile_function_by_address("0x71XXXXXXXXX")`
-3. Fix with optnone + signature corrections
-4. Re-compare. 3 attempts max.
+### Techniques that work
+- `asm volatile` prevents Clang 8 from silently replacing inline fmax with fmaxnm
+- `visibility("hidden")` on data externs → ADRP+ADD instead of ADRP+LDR(GOT)
+- Struct field offset corrections (binary decode → verify → fix)
 
-### NO naked asm. Idiomatic C++ only.
+### What doesn't work
+- `visibility("hidden")` on `DAT_710593a3a8` (store_l2c_table files) — makes things worse (47/49→44/49). Original uses ADRP+LDR direct page access, not ADRP+ADD.
+- Changing `>= 5` to `> 4` equivalent — disrupts prologue scheduling
+- Moving asm barriers to influence register order in add — disrupts scheduling
 
-### Quick Reference
-```
-/c/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -Ilib/NintendoSDK/include -Ilib/NintendoSDK/include/stubs -c src/app/FILE.cpp -o build/FILE.o
-
-python tools/compare_bytes.py FUN_name
-```
+### Remaining near-miss analysis
+Most 1-instruction-off functions are BL relocation diffs (unfixable at .o level).
+Register allocation diffs (add operand order, comparison order) are NX Clang fork divergences.

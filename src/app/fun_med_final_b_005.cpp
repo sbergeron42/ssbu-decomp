@@ -206,9 +206,9 @@ u64 FUN_71001b7b70(u64 *param_1) {
     return 0;
 }
 
-// FUN_71001b7b90 — return *param_1 if param_1[2] in {1,6}, else 0 (u32 field variant)
+// FUN_71001b7b90 — return *param_1 if param_1[1] in {1,6}, else 0 (u32 field variant)
 u32 FUN_71001b7b90(u64 *param_1) {
-    u32 state = (u32)param_1[2];
+    u32 state = (u32)param_1[1];
     if (state == 1 || state == 6) {
         return (u32)param_1[0];
     }
@@ -217,7 +217,7 @@ u32 FUN_71001b7b90(u64 *param_1) {
 
 // FUN_71001b7bb0 — same as above, alternate entry
 u32 FUN_71001b7bb0(u64 *param_1) {
-    u32 state = (u32)param_1[2];
+    u32 state = (u32)param_1[1];
     if (state == 1 || state == 6) {
         return (u32)param_1[0];
     }
