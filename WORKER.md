@@ -2,19 +2,32 @@
 
 ## Model: Opus
 
-## Task: Remaining stub conversions (48-100 byte range) toward 75%
+## Task: Fighter status + AI decomp — community priority #1
 
-Continue from last session — 656 stubs remaining. Focus on 48-100 byte functions.
+## Strategy
+Fighter state machines are the #1 community request. Moveset modders need to understand status transitions, AI decision logic, and ACMD integration. Use types-first approach: recover struct layouts from cross-referencing, then decomp functions using typed access.
 
-### Approach
-1. Find N-quality functions that are 48-100 bytes in batch/easy/med_final files
-2. Decompile in Ghidra, write correct C++
-3. Compare bytes, fix to match
+## Targets
+1. **fighter_status.cpp** — Continue adding check_stat_*, AI target, command step functions
+2. **fighter_attack.cpp** — AI check_stat bitfield readers, attack data dispatchers
+3. **New: fighter_ai.cpp** — AI decision functions (188 undecompiled, 91 KB)
+4. **Named fighter functions** — 1,124 undecompiled functions with "fighter" in name
 
-### NO naked asm. Derivation chains on new offsets.
+## Approach
+- Use Ghidra to decompile each function
+- Cross-reference with existing struct headers in include/app/
+- Use BattleObjectModuleAccessor field access, NOT raw offsets
+- Derive field names with provenance tags [derived: ...] or [inferred: ...]
+- 3-attempt limit per function, skip if register allocation won't match
 
-### Quick Reference
-```
-python tools/compare_bytes.py FUN_name
-/c/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -Ilib/NintendoSDK/include -Ilib/NintendoSDK/include/stubs -c src/app/FILE.cpp -o build/FILE.o
-```
+## File Territory
+- src/app/fighter_status.cpp
+- src/app/fighter_attack.cpp
+- src/app/fighter_ai.cpp (new)
+- include/app/ (struct updates only)
+
+## Quality Rules
+- Write C++ a Bandai Namco dev would write — use struct headers
+- No naked asm
+- No shallow variable renames without struct access
+- Document derivation chains for every field name
