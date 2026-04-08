@@ -747,7 +747,44 @@ void is_sp_u_weaken_available_7100361cf0(void* L) {
     FUN_7100358c20(mod, 1);
 }
 
+// ════════════════════════════════════════════════════════════════════
+// More stat module accessors (fighter param reads)
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x710036b9e0 -- jump_g_mul (16B) ────────────────────────────
+f32 jump_g_mul_710036b9e0(void* L) { return *reinterpret_cast<f32*>(STAT_MODULE(L) + 0x204); }
+
+// ── 0x710036b9f0 -- jump_g (16B) ───────────────────────────────
+f32 jump_g_710036b9f0(void* L) { return *reinterpret_cast<f32*>(STAT_MODULE(L) + 0x218); }
+
+// ── 0x710036ba00 -- fall_speed_y_max (16B) ──────────────────────
+f32 fall_speed_y_max_710036ba00(void* L) { return *reinterpret_cast<f32*>(STAT_MODULE(L) + 0x228); }
+
+// ── 0x710036ba10 -- dive_speed_y_max (16B) ──────────────────────
+f32 dive_speed_y_max_710036ba10(void* L) { return *reinterpret_cast<f32*>(STAT_MODULE(L) + 0x22c); }
+
+// ── 0x710036ba70 -- escape_air_cancel_frame (16B) ───────────────
+f32 escape_air_cancel_frame_710036ba70(void* L) { return *reinterpret_cast<f32*>(STAT_MODULE(L) + 0x234); }
+
 #undef STAT_MODULE
+
+// ════════════════════════════════════════════════════════════════════
+// Global singleton reads / misc 16B accessors
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x710036b3d0 -- scroll_x (16B) ─────────────────────────────
+// [derived: BattleObjectWorld singleton → f32 at +0x20]
+f32 scroll_x_710036b3d0() {
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(DAT_71052b7558) + 0x20);
+}
+
+// ── 0x71003681d0 -- set_no_return_frame (16B) ───────────────────
+// ldur x8,[x0,#-8]; neg w9,w1; strh w9,[x8,#0xc7c]; ret
+// [derived: writes negated value as s16 to scripting context +0xc7c]
+void set_no_return_frame_71003681d0(void* L, s32 val) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    *reinterpret_cast<s16*>(ctx + 0xc7c) = (s16)(-val);
+}
 
 // ════════════════════════════════════════════════════════════════════
 // sv_item — item utility functions
