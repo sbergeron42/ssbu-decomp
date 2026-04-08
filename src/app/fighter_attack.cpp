@@ -763,6 +763,31 @@ extern "C" u8 check_target_stat_specialflag_hoist(u64 L) {
     return *(u8*)(info + 0x5c) >> 7;
 }
 
+// 0x7100366d30 — check_target_chr_stat (96B, character-specific target status check)
+// [derived: like check_chr_stat but for target fighter]
+extern "C" bool check_target_chr_stat(u64 L, u32 mask, s32 kind) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    if ((kind == -1 || *(s32*)(info + 0x28) == kind) &&
+        (*(u32*)(info + 0x68) & mask) != 0) {
+        return true;
+    }
+    return false;
+}
+// 0x7100366d90 — target_width (68B, target fighter width)
+// [derived: returns target's collision width (param_base->0xb2c * scale), or 3.0 if no battle object]
+// +0x20 [inferred: target BattleObject pointer]
+// +0xb2c [inferred: base collision width, f32, in BattleObject]
+// +0xc0 [inferred: scale, f32]
+extern "C" f32 target_width(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    if (*(u64*)(info + 0x20) != 0) {
+        return *(f32*)(*(u64*)(info + 0x20) + 0xb2c) * *(f32*)(info + 0xc0);
+    }
+    return 3.0f;
+}
+
 // ---- Boss manager queries (leaf, singleton access) -------------------------
 
 // lib::Singleton<app::BossManager>::instance_
