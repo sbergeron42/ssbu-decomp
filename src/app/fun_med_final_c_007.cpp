@@ -1,5 +1,11 @@
 // MEDIUM framed_vtable_call batch 007 (0x710214f810 – 0x7102162700)
 // Named FighterSpecializer / WeaponSpecializer / FighterSnakeFinalModule calls
+//
+// lua_bind calling convention:
+//   x8 = object pointer (Fighter*, Weapon*, etc.)
+//   x0 = param_2 (s64, typically a lua state pointer)
+//   x10 = value to store at param_2+0x10
+//   Additional args (bool, etc.) in x1, x2, ...
 
 #include <stdint.h>
 typedef uint32_t u32;
@@ -22,7 +28,7 @@ void final_end_exec(Fighter *);
 void final_end_exit(Fighter *);
 }
 namespace FighterSpecializer_Luigi {
-void delete_plunger(Fighter *, bool);
+void delete_plunger(Fighter *, u32);
 }
 namespace WeaponSpecializer_LuigiPlunger {
 void modify_physics_param(Weapon *);
@@ -62,225 +68,128 @@ void initialize_reticle(BattleObjectModuleAccessor *);
 }
 }
 
-#define NAMED_CALL_2(fn, T1, T2) \
-u32 fn(T1 param_1, s64 param_2) { \
+// lua_bind wrapper: object in x8, param_2 in x0, in_x10 in x10
+#define LUA_BIND_WRAP(fn_name, ObjType, call_expr) \
+u32 fn_name(s64 param_2) { \
+    register ObjType* obj asm("x8"); \
+    asm volatile("" : "+r"(obj)); \
     register u64 in_x10 asm("x10"); \
     asm volatile("" : "+r"(in_x10)); \
     *(u64 *)(param_2 + 0x10) = in_x10; \
-    app::fn(param_1); \
+    call_expr; \
     return 0; \
 }
 
-// 0x710214f810 -- FighterSpecializer_Fox
-u32 FUN_710214f810(app::Fighter *param_1, s64 param_2) {
-    register u64 in_x10 asm("x10"); asm volatile("" : "+r"(in_x10));
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    app::FighterSpecializer_Fox::final_ready_exec(param_1); return 0; }
+// 0x710214f810 -- FighterSpecializer_Fox::final_ready_exec
+LUA_BIND_WRAP(FUN_710214f810, app::Fighter, app::FighterSpecializer_Fox::final_ready_exec(obj))
 
 // 0x710214f950
-u32 FUN_710214f950(app::Fighter *param_1, s64 param_2) {
-    register u64 in_x10 asm("x10"); asm volatile("" : "+r"(in_x10));
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    app::FighterSpecializer_Fox::final_ready_exit(param_1); return 0; }
+LUA_BIND_WRAP(FUN_710214f950, app::Fighter, app::FighterSpecializer_Fox::final_ready_exit(obj))
 
 // 0x710214fa10
-u32 FUN_710214fa10(app::Fighter *param_1, s64 param_2) {
-    register u64 in_x10 asm("x10"); asm volatile("" : "+r"(in_x10));
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    app::FighterSpecializer_Fox::final_scene01_init(param_1); return 0; }
+LUA_BIND_WRAP(FUN_710214fa10, app::Fighter, app::FighterSpecializer_Fox::final_scene01_init(obj))
 
 // 0x710214fad0
-u32 FUN_710214fad0(app::Fighter *param_1, s64 param_2) {
-    register u64 in_x10 asm("x10"); asm volatile("" : "+r"(in_x10));
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    app::FighterSpecializer_Fox::final_scene01_exec_fix_pos(param_1); return 0; }
+LUA_BIND_WRAP(FUN_710214fad0, app::Fighter, app::FighterSpecializer_Fox::final_scene01_exec_fix_pos(obj))
 
 // 0x710214fb90
-u32 FUN_710214fb90(app::Fighter *param_1, s64 param_2) {
-    register u64 in_x10 asm("x10"); asm volatile("" : "+r"(in_x10));
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    app::FighterSpecializer_Fox::final_scene01_exit(param_1); return 0; }
+LUA_BIND_WRAP(FUN_710214fb90, app::Fighter, app::FighterSpecializer_Fox::final_scene01_exit(obj))
 
 // 0x710214fc50
-u32 FUN_710214fc50(app::Fighter *param_1, s64 param_2) {
-    register u64 in_x10 asm("x10"); asm volatile("" : "+r"(in_x10));
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    app::FighterSpecializer_Fox::final_end_init(param_1); return 0; }
+LUA_BIND_WRAP(FUN_710214fc50, app::Fighter, app::FighterSpecializer_Fox::final_end_init(obj))
 
 // 0x710214fd10
-u32 FUN_710214fd10(app::Fighter *param_1, s64 param_2) {
-    register u64 in_x10 asm("x10"); asm volatile("" : "+r"(in_x10));
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    app::FighterSpecializer_Fox::final_end_exec(param_1); return 0; }
+LUA_BIND_WRAP(FUN_710214fd10, app::Fighter, app::FighterSpecializer_Fox::final_end_exec(obj))
 
 // 0x710214fdd0
-u32 FUN_710214fdd0(app::Fighter *param_1, s64 param_2) {
-    register u64 in_x10 asm("x10"); asm volatile("" : "+r"(in_x10));
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    app::FighterSpecializer_Fox::final_end_exit(param_1); return 0; }
+LUA_BIND_WRAP(FUN_710214fdd0, app::Fighter, app::FighterSpecializer_Fox::final_end_exit(obj))
 
 // 0x7102153610 -- FighterSpecializer_Luigi::delete_plunger(Fighter*, bool)
-u32 FUN_7102153610(app::Fighter *param_1, s64 param_2, bool param_3)
+u32 FUN_7102153610(s64 param_2, u32 param_3)
 {
+    register app::Fighter* obj asm("x8");
+    asm volatile("" : "+r"(obj));
     register u64 in_x10 asm("x10");
     asm volatile("" : "+r"(in_x10));
     *(u64 *)(param_2 + 0x10) = in_x10;
-    app::FighterSpecializer_Luigi::delete_plunger(param_1, param_3);
+    app::FighterSpecializer_Luigi::delete_plunger(obj, param_3);
     return 0;
 }
 
 // 0x71021536d0 -- WeaponSpecializer_LuigiPlunger::modify_physics_param
-u32 FUN_71021536d0(app::Weapon *param_1, s64 param_2) {
-    register u64 in_x10 asm("x10"); asm volatile("" : "+r"(in_x10));
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    app::WeaponSpecializer_LuigiPlunger::modify_physics_param(param_1); return 0; }
+LUA_BIND_WRAP(FUN_71021536d0, app::Weapon, app::WeaponSpecializer_LuigiPlunger::modify_physics_param(obj))
 
 // 0x7102153790 -- WeaponSpecializer_LuigiPlunger::modify_physics_param_2nd
-u32 FUN_7102153790(app::Weapon *param_1, s64 param_2) {
-    register u64 in_x10 asm("x10"); asm volatile("" : "+r"(in_x10));
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    app::WeaponSpecializer_LuigiPlunger::modify_physics_param_2nd(param_1); return 0; }
+LUA_BIND_WRAP(FUN_7102153790, app::Weapon, app::WeaponSpecializer_LuigiPlunger::modify_physics_param_2nd(obj))
 
 // 0x7102157540 -- FighterSpecializer_Peach::special_lw_check_num_of_item
-u32 FUN_7102157540(app::FighterModuleAccessor *param_1, s64 param_2) {
-    register u64 in_x10 asm("x10"); asm volatile("" : "+r"(in_x10));
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    app::FighterSpecializer_Peach::special_lw_check_num_of_item(param_1); return 0; }
+LUA_BIND_WRAP(FUN_7102157540, app::FighterModuleAccessor, app::FighterSpecializer_Peach::special_lw_check_num_of_item(obj))
 
 // 0x7102157720 -- FighterSpecializer_Peach::final_rand_create_item
-u32 FUN_7102157720(app::FighterModuleAccessor *param_1, s64 param_2) {
-    register u64 in_x10 asm("x10"); asm volatile("" : "+r"(in_x10));
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    app::FighterSpecializer_Peach::final_rand_create_item(param_1); return 0; }
+LUA_BIND_WRAP(FUN_7102157720, app::FighterModuleAccessor, app::FighterSpecializer_Peach::final_rand_create_item(obj))
 
 // 0x7102157b90 -- FighterSpecializer_Popo::init_lr_special_s_partner
-u32 FUN_7102157b90(app::BattleObjectModuleAccessor *param_1, s64 param_2) {
-    register u64 in_x10 asm("x10"); asm volatile("" : "+r"(in_x10));
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    app::FighterSpecializer_Popo::init_lr_special_s_partner(param_1); return 0; }
+LUA_BIND_WRAP(FUN_7102157b90, app::BattleObjectModuleAccessor, app::FighterSpecializer_Popo::init_lr_special_s_partner(obj))
 
 // 0x7102157c50 -- FighterSpecializer_Popo::init_lr_special_hi_cliff_comp
-u32 FUN_7102157c50(app::BattleObjectModuleAccessor *param_1, s64 param_2) {
-    register u64 in_x10 asm("x10"); asm volatile("" : "+r"(in_x10));
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    app::FighterSpecializer_Popo::init_lr_special_hi_cliff_comp(param_1); return 0; }
+LUA_BIND_WRAP(FUN_7102157c50, app::BattleObjectModuleAccessor, app::FighterSpecializer_Popo::init_lr_special_hi_cliff_comp(obj))
 
 // 0x7102157d10 -- FighterSpecializer_Popo::change_status_special_s_partner
-u32 FUN_7102157d10(app::BattleObjectModuleAccessor *param_1, s64 param_2) {
-    register u64 in_x10 asm("x10"); asm volatile("" : "+r"(in_x10));
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    app::FighterSpecializer_Popo::change_status_special_s_partner(param_1); return 0; }
+LUA_BIND_WRAP(FUN_7102157d10, app::BattleObjectModuleAccessor, app::FighterSpecializer_Popo::change_status_special_s_partner(obj))
 
 // 0x7102157ee0 -- FighterSpecializer_Popo::init_final_partner
-u32 FUN_7102157ee0(app::BattleObjectModuleAccessor *param_1, s64 param_2) {
-    register u64 in_x10 asm("x10"); asm volatile("" : "+r"(in_x10));
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    app::FighterSpecializer_Popo::init_final_partner(param_1); return 0; }
+LUA_BIND_WRAP(FUN_7102157ee0, app::BattleObjectModuleAccessor, app::FighterSpecializer_Popo::init_final_partner(obj))
 
 // 0x71021580c0 -- FighterSpecializer_Popo::start_partner_turn
-u32 FUN_71021580c0(app::Fighter *param_1, s64 param_2) {
-    register u64 in_x10 asm("x10"); asm volatile("" : "+r"(in_x10));
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    app::FighterSpecializer_Popo::start_partner_turn(param_1); return 0; }
+LUA_BIND_WRAP(FUN_71021580c0, app::Fighter, app::FighterSpecializer_Popo::start_partner_turn(obj))
 
 // 0x7102158530 -- FighterSpecializer_Popo::start_final_popo
-u32 FUN_7102158530(app::Fighter *param_1, s64 param_2) {
-    register u64 in_x10 asm("x10"); asm volatile("" : "+r"(in_x10));
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    app::FighterSpecializer_Popo::start_final_popo(param_1); return 0; }
+LUA_BIND_WRAP(FUN_7102158530, app::Fighter, app::FighterSpecializer_Popo::start_final_popo(obj))
 
 // 0x71021585f0 -- FighterSpecializer_Popo::start_final_popo_camera
-u32 FUN_71021585f0(app::Fighter *param_1, s64 param_2) {
-    register u64 in_x10 asm("x10"); asm volatile("" : "+r"(in_x10));
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    app::FighterSpecializer_Popo::start_final_popo_camera(param_1); return 0; }
+LUA_BIND_WRAP(FUN_71021585f0, app::Fighter, app::FighterSpecializer_Popo::start_final_popo_camera(obj))
 
 // 0x71021587a0 -- FighterSpecializer_Popo::enable_partner_catch_transition
-u32 FUN_71021587a0(app::Fighter *param_1, s64 param_2) {
-    register u64 in_x10 asm("x10"); asm volatile("" : "+r"(in_x10));
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    app::FighterSpecializer_Popo::enable_partner_catch_transition(param_1); return 0; }
+LUA_BIND_WRAP(FUN_71021587a0, app::Fighter, app::FighterSpecializer_Popo::enable_partner_catch_transition(obj))
 
 // 0x7102158860 -- FighterSpecializer_Popo::end_final_deactivated_iceberg
-u32 FUN_7102158860(app::Fighter *param_1, s64 param_2) {
-    register u64 in_x10 asm("x10"); asm volatile("" : "+r"(in_x10));
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    app::FighterSpecializer_Popo::end_final_deactivated_iceberg(param_1); return 0; }
+LUA_BIND_WRAP(FUN_7102158860, app::Fighter, app::FighterSpecializer_Popo::end_final_deactivated_iceberg(obj))
 
-// 0x710215db90 -- FighterSpecializer_Falco
-u32 FUN_710215db90(app::Fighter *param_1, s64 param_2) {
-    register u64 in_x10 asm("x10"); asm volatile("" : "+r"(in_x10));
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    app::FighterSpecializer_Falco::final_start_init(param_1); return 0; }
+// 0x710215db90 -- FighterSpecializer_Falco::final_start_init
+LUA_BIND_WRAP(FUN_710215db90, app::Fighter, app::FighterSpecializer_Falco::final_start_init(obj))
 
 // 0x710215dc50
-u32 FUN_710215dc50(app::Fighter *param_1, s64 param_2) {
-    register u64 in_x10 asm("x10"); asm volatile("" : "+r"(in_x10));
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    app::FighterSpecializer_Falco::final_start_exit(param_1); return 0; }
+LUA_BIND_WRAP(FUN_710215dc50, app::Fighter, app::FighterSpecializer_Falco::final_start_exit(obj))
 
 // 0x710215dd10
-u32 FUN_710215dd10(app::Fighter *param_1, s64 param_2) {
-    register u64 in_x10 asm("x10"); asm volatile("" : "+r"(in_x10));
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    app::FighterSpecializer_Falco::final_ready_init(param_1); return 0; }
+LUA_BIND_WRAP(FUN_710215dd10, app::Fighter, app::FighterSpecializer_Falco::final_ready_init(obj))
 
 // 0x710215ddd0
-u32 FUN_710215ddd0(app::Fighter *param_1, s64 param_2) {
-    register u64 in_x10 asm("x10"); asm volatile("" : "+r"(in_x10));
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    app::FighterSpecializer_Falco::final_ready_exec(param_1); return 0; }
+LUA_BIND_WRAP(FUN_710215ddd0, app::Fighter, app::FighterSpecializer_Falco::final_ready_exec(obj))
 
 // 0x710215df10
-u32 FUN_710215df10(app::Fighter *param_1, s64 param_2) {
-    register u64 in_x10 asm("x10"); asm volatile("" : "+r"(in_x10));
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    app::FighterSpecializer_Falco::final_ready_exit(param_1); return 0; }
+LUA_BIND_WRAP(FUN_710215df10, app::Fighter, app::FighterSpecializer_Falco::final_ready_exit(obj))
 
 // 0x710215dfd0
-u32 FUN_710215dfd0(app::Fighter *param_1, s64 param_2) {
-    register u64 in_x10 asm("x10"); asm volatile("" : "+r"(in_x10));
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    app::FighterSpecializer_Falco::final_scene01_init(param_1); return 0; }
+LUA_BIND_WRAP(FUN_710215dfd0, app::Fighter, app::FighterSpecializer_Falco::final_scene01_init(obj))
 
 // 0x710215e090
-u32 FUN_710215e090(app::Fighter *param_1, s64 param_2) {
-    register u64 in_x10 asm("x10"); asm volatile("" : "+r"(in_x10));
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    app::FighterSpecializer_Falco::final_scene01_exec_fix_pos(param_1); return 0; }
+LUA_BIND_WRAP(FUN_710215e090, app::Fighter, app::FighterSpecializer_Falco::final_scene01_exec_fix_pos(obj))
 
 // 0x710215e150
-u32 FUN_710215e150(app::Fighter *param_1, s64 param_2) {
-    register u64 in_x10 asm("x10"); asm volatile("" : "+r"(in_x10));
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    app::FighterSpecializer_Falco::final_scene01_exit(param_1); return 0; }
+LUA_BIND_WRAP(FUN_710215e150, app::Fighter, app::FighterSpecializer_Falco::final_scene01_exit(obj))
 
 // 0x710215e210
-u32 FUN_710215e210(app::Fighter *param_1, s64 param_2) {
-    register u64 in_x10 asm("x10"); asm volatile("" : "+r"(in_x10));
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    app::FighterSpecializer_Falco::final_end_init(param_1); return 0; }
+LUA_BIND_WRAP(FUN_710215e210, app::Fighter, app::FighterSpecializer_Falco::final_end_init(obj))
 
 // 0x710215e2d0
-u32 FUN_710215e2d0(app::Fighter *param_1, s64 param_2) {
-    register u64 in_x10 asm("x10"); asm volatile("" : "+r"(in_x10));
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    app::FighterSpecializer_Falco::final_end_exec(param_1); return 0; }
+LUA_BIND_WRAP(FUN_710215e2d0, app::Fighter, app::FighterSpecializer_Falco::final_end_exec(obj))
 
 // 0x710215e390
-u32 FUN_710215e390(app::Fighter *param_1, s64 param_2) {
-    register u64 in_x10 asm("x10"); asm volatile("" : "+r"(in_x10));
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    app::FighterSpecializer_Falco::final_end_exit(param_1); return 0; }
+LUA_BIND_WRAP(FUN_710215e390, app::Fighter, app::FighterSpecializer_Falco::final_end_exit(obj))
 
 // 0x7102162550 -- FighterSnakeFinalModule::end_final
-u32 FUN_7102162550(app::BattleObjectModuleAccessor *param_1, s64 param_2) {
-    register u64 in_x10 asm("x10"); asm volatile("" : "+r"(in_x10));
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    app::FighterSnakeFinalModule::end_final(param_1); return 0; }
+LUA_BIND_WRAP(FUN_7102162550, app::BattleObjectModuleAccessor, app::FighterSnakeFinalModule::end_final(obj))
 
 // 0x7102162700 -- FighterSnakeFinalModule::initialize_reticle
-u32 FUN_7102162700(app::BattleObjectModuleAccessor *param_1, s64 param_2) {
-    register u64 in_x10 asm("x10"); asm volatile("" : "+r"(in_x10));
-    *(u64 *)(param_2 + 0x10) = in_x10;
-    app::FighterSnakeFinalModule::initialize_reticle(param_1); return 0; }
+LUA_BIND_WRAP(FUN_7102162700, app::BattleObjectModuleAccessor, app::FighterSnakeFinalModule::initialize_reticle(obj))
