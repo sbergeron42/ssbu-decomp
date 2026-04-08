@@ -10,6 +10,7 @@
 extern "C" double pow(double, double);
 extern "C" float powf(float, float);
 extern "C" void FUN_710067de90(void*, u64, s32, s32, u32);
+extern "C" void FUN_710068e1c0(void*);  // get_item_lift_motion_rate_mul helper
 
 // ______ External data ____________________________________________
 
@@ -39,6 +40,11 @@ extern "C" __attribute__((visibility("hidden"))) f32 DAT_7104471970;
 
 // StageManager singleton (adrp 0x7105329000 + 0x9d8)
 extern "C" __attribute__((visibility("hidden"))) void* DAT_710532999d8;  // intentionally wrong name for unique symbol
+
+// .rodata float constants for get_fov calculation
+// [derived: get_fov multiplies by DAT_7104471fbc and divides by DAT_7104470d10]
+extern "C" __attribute__((visibility("hidden"))) f32 DAT_7104471fbc;
+extern "C" __attribute__((visibility("hidden"))) f32 DAT_7104470d10;
 
 // GroundCollisionLine zero-constant pointer (adrp 0x71052a7000 + 0xa80)
 extern "C" __attribute__((visibility("hidden"))) void* DAT_71052a7a80;
@@ -952,3 +958,238 @@ Float4 camera_range_7102282ea0() {
     r.d = *reinterpret_cast<f32*>(base + 0xc2c);
     return r;
 }
+
+// ════════════════════════════════════════════════════════════════════
+// sv_math — vector math utilities (NEON-accelerated by compiler)
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x7102275a20 -- app::sv_math::is_zero (40B) ───────────────────
+// fcmp s0,epsilon_neg; cset gt; fcmp s0,epsilon_pos; cset mi; and
+// [derived: returns true if value is between negative and positive epsilon]
+bool is_zero_7102275a20(f32 v) {
+    return (v > DAT_7104470f68) && (v < DAT_7104471970);
+}
+
+// ── 0x7102275ad0 -- app::sv_math::vec2_length_square (24B) ────────
+// movi v2,#0; mov lanes; fmul v0.4S; faddp v0.2S
+// [derived: squared magnitude of 2D vector]
+f32 vec2_length_square_7102275ad0(f32 x, f32 y) {
+    return x * x + y * y;
+}
+
+// ── 0x7102275a50 -- app::sv_math::vec2_is_zero (44B) ──────────────
+// fcmeq v0.4S,v2.4S,#0; ext; and; tst; cset
+// [derived: true if both x and y are exactly 0.0]
+bool vec2_is_zero_7102275a50(f32 x, f32 y) {
+    return x == 0.0f && y == 0.0f;
+}
+
+// ── 0x7102275d10 -- app::sv_math::vec2_dot (36B) ──────────────────
+// movi; mov lanes; fmul v0.4S; faddp v0.2S
+// [derived: dot product of two 2D vectors]
+f32 vec2_dot_7102275d10(f32 x, f32 y, f32 a, f32 b) {
+    return x * a + y * b;
+}
+
+// ── 0x7102275da0 -- app::sv_math::vec3_is_zero (48B) ──────────────
+// fcmeq v0.4S,v3.4S,#0; ext; and; tst; cset
+// [derived: true if all three components are exactly 0.0]
+bool vec3_is_zero_7102275da0(f32 x, f32 y, f32 z) {
+    return x == 0.0f && y == 0.0f && z == 0.0f;
+}
+
+// ── 0x7102275dd0 -- app::sv_math::vec3_length (44B) ───────────────
+// fmul v0.4S; ext; fadd; faddp; fsqrt v0.4S
+// [derived: magnitude of 3D vector]
+f32 vec3_length_7102275dd0(f32 x, f32 y, f32 z) {
+    return __builtin_sqrtf(x * x + y * y + z * z);
+}
+
+// ── 0x7102275e00 -- app::sv_math::vec3_length_square (36B) ────────
+// fmul v0.4S; ext; fadd; faddp
+// [derived: squared magnitude of 3D vector]
+f32 vec3_length_square_7102275e00(f32 x, f32 y, f32 z) {
+    return x * x + y * y + z * z;
+}
+
+// ── 0x7102275e30 -- app::sv_math::vec3_dot (52B) ──────────────────
+// fmul; ext; fadd; faddp (same pattern as vec3_length_square but with two vectors)
+// [derived: dot product of two 3D vectors]
+f32 vec3_dot_7102275e30(f32 x1, f32 y1, f32 z1, f32 x2, f32 y2, f32 z2) {
+    return x1 * x2 + y1 * y2 + z1 * z2;
+}
+
+// ── 0x7102275f50 -- app::sv_math::vec3_distance (64B) ─────────────
+// fsub; fmul; ext; fadd; faddp; fsqrt
+// [derived: Euclidean distance between two 3D points]
+f32 vec3_distance_7102275f50(f32 x1, f32 y1, f32 z1, f32 x2, f32 y2, f32 z2) {
+    f32 dx = x1 - x2;
+    f32 dy = y1 - y2;
+    f32 dz = z1 - z2;
+    return __builtin_sqrtf(dx * dx + dy * dy + dz * dz);
+}
+
+// ── 0x7102275f90 -- app::sv_math::vec3_lerp (44B) ─────────────────
+// fsub v1.4S; fmla v0.4S,v1.4S,v6.S[0]
+// [derived: linear interpolation between two 3D points by factor t]
+float4 vec3_lerp_7102275f90(f32 x1, f32 y1, f32 z1, f32 x2, f32 y2, f32 z2, f32 t) {
+    float4 a = {x1, y1, z1, 0.0f};
+    float4 b = {x2, y2, z2, 0.0f};
+    return a + (b - a) * t;
+}
+
+// ── 0x7102275cd0 -- app::sv_math::vec2_reflection (52B) ───────────
+// fmul; faddp (dot); fmla pattern
+// [derived: reflects direction vector across normal: N - 2*dot(D,N)*D]
+float4 vec2_reflection_7102275cd0(f32 dx, f32 dy, f32 nx, f32 ny) {
+    f32 dot = dx * nx + dy * ny;
+    f32 scale = dot + dot;
+    float4 r = {nx - dx * scale, ny - dy * scale, 0.0f - 0.0f * scale, 0.0f - 0.0f * scale};
+    return r;
+}
+
+// ── 0x7102275a80 -- app::sv_math::vec2_length (68B) ───────────────
+// fmul; faddp; frsqrte; frsqrts (x2 Newton-Raphson); fcmeq; bic
+// [derived: length of 2D vector using reciprocal sqrt approximation]
+f32 vec2_length_7102275a80(f32 x, f32 y) {
+    return __builtin_sqrtf(x * x + y * y);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// sv_information — stage and game state queries
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x7102282290 -- app::sv_fighter_util::get_world_move_seed (24B) ─
+// ldr d0,[BattleObjectWorld+0x20]; movi d1,#0; mov v0.D[1],v1.D[0]
+// [derived: returns u64 seed from BattleObjectWorld singleton at +0x20]
+u64 get_world_move_seed_7102282290() {
+    return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(DAT_71052b7558) + 0x20);
+}
+
+// ── 0x710227ece0 -- app::sv_information::is_stage_can_dead_back (28B)
+// [derived: tail-calls vtable[0x31] on StageManager sub-object at +0x128]
+u64 is_stage_can_dead_back_710227ece0() {
+    void* instance = *reinterpret_cast<void**>(DAT_710532999d8);
+    void* sub = reinterpret_cast<void*>(reinterpret_cast<u8*>(instance) + 0x128);
+    void** vt = *reinterpret_cast<void***>(sub);
+    return reinterpret_cast<u64(*)(void*)>(vt[0x188 / 8])(sub);
+}
+
+// ── 0x710227eca0 -- app::sv_information::is_stage_can_dead_front (60B)
+// [derived: checks FighterManager+0xc0 != 0x20 first, then vtable[0x30] on stage]
+u64 is_stage_can_dead_front_710227eca0() {
+    void* fm = *reinterpret_cast<void**>(DAT_71052b84f8);
+    if (*reinterpret_cast<s8*>(reinterpret_cast<u8*>(fm) + 0xc0) == 0x20) {
+        return 0;
+    }
+    void* instance = *reinterpret_cast<void**>(DAT_710532999d8);
+    void* sub = reinterpret_cast<void*>(reinterpret_cast<u8*>(instance) + 0x128);
+    void** vt = *reinterpret_cast<void***>(sub);
+    return reinterpret_cast<u64(*)(void*)>(vt[0x180 / 8])(sub);
+}
+
+// ── 0x71022846d0 -- app::sv_stage::is_horizontal_reverse_enabled (28B)
+// [derived: tail-calls vtable[0x33] on StageManager sub-object at +0x128]
+u64 is_horizontal_reverse_enabled_71022846d0() {
+    void* instance = *reinterpret_cast<void**>(DAT_710532999d8);
+    void* sub = reinterpret_cast<void*>(reinterpret_cast<u8*>(instance) + 0x128);
+    void** vt = *reinterpret_cast<void***>(sub);
+    return reinterpret_cast<u64(*)(void*)>(vt[0x198 / 8])(sub);
+}
+
+// ── 0x71022846f0 -- app::sv_stage::is_vertical_reverse_enabled (28B)
+// [derived: tail-calls vtable[0x34] on StageManager sub-object at +0x128]
+u64 is_vertical_reverse_enabled_71022846f0() {
+    void* instance = *reinterpret_cast<void**>(DAT_710532999d8);
+    void* sub = reinterpret_cast<void*>(reinterpret_cast<u8*>(instance) + 0x128);
+    void** vt = *reinterpret_cast<void***>(sub);
+    return reinterpret_cast<u64(*)(void*)>(vt[0x1a0 / 8])(sub);
+}
+
+// ── 0x710227ebb0 -- app::sv_information::stage_id (52B) ───────────
+// [derived: checks StageManager not null, +0x17c != -1, then vtable[0] on +0x128]
+u64 stage_id_710227ebb0() {
+    void** mgr_ptr = reinterpret_cast<void**>(DAT_710532999d8);
+    if (mgr_ptr == nullptr) return 0xffffffff;
+    void* instance = *mgr_ptr;
+    if (*reinterpret_cast<s32*>(reinterpret_cast<u8*>(instance) + 0x17c) == -1) {
+        return 0xffffffff;
+    }
+    void* sub = reinterpret_cast<void*>(reinterpret_cast<u8*>(instance) + 0x128);
+    void** vt = *reinterpret_cast<void***>(sub);
+    return reinterpret_cast<u64(*)(void*)>(vt[0])(sub);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// sv_fighter_util — fighter parameter queries
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x71022820f0 -- app::sv_fighter_util::get_item_lift_motion_rate_mul (28B)
+// ldur x8,[x0,#-8]; ldr x0,[x8,#0x1a0]; bl FUN_710068e1c0
+// [derived: gets module accessor from lua state, calls helper]
+void get_item_lift_motion_rate_mul_71022820f0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0);
+    FUN_710068e1c0(acc);
+}
+
+// ── 0x7102282700 -- app::sv_fighter_util::get_kirifuda_position (28B)
+// [derived: tail-calls vtable[0xF] on StageManager sub-object at +0x128]
+u64 get_kirifuda_position_7102282700(void* L, s32 param) {
+    void* instance = *reinterpret_cast<void**>(DAT_710532999d8);
+    void* sub = reinterpret_cast<void*>(reinterpret_cast<u8*>(instance) + 0x128);
+    void** vt = *reinterpret_cast<void***>(sub);
+    return reinterpret_cast<u64(*)(void*, s32)>(vt[0x78 / 8])(sub, param);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// sv_camera_manager — FOV accessor
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x7102282ec0 -- app::sv_camera_manager::get_fov (44B) ────────
+// ldr s0,[mgr+0xdac]; fmul s0,s0,rodata; fdiv s0,s0,rodata
+// [derived: camera FOV converted from internal units]
+f32 get_fov_7102282ec0() {
+    void* mgr = *reinterpret_cast<void**>(DAT_71052b7f00);
+    f32 raw = *reinterpret_cast<f32*>(reinterpret_cast<u8*>(mgr) + 0xdac);
+    return (raw * DAT_7104471fbc) / DAT_7104470d10;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// sv_ground_collision_line — collision geometry accessors
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x7102284910 -- app::sv_ground_collision_line::get_normal (28B) ─
+// [derived: returns float4 normal vector from collision line+0xa0, or zero]
+float4 get_normal_7102284910(void* line) {
+    float4* zero = reinterpret_cast<float4*>(DAT_71052a7a80);
+    if (line != nullptr) {
+        return *reinterpret_cast<float4*>(reinterpret_cast<u8*>(line) + 0xa0);
+    }
+    return *zero;
+}
+
+// ── 0x7102284a50 -- app::sv_ground_collision_line::get_left_pos (52B)
+// [derived: returns position from left vertex pointer at +0x88, offset +0x10]
+float4 get_left_pos_7102284a50(void* line) {
+    if (line != nullptr) {
+        void* left = *reinterpret_cast<void**>(reinterpret_cast<u8*>(line) + 0x88);
+        if (left != nullptr) {
+            return *reinterpret_cast<float4*>(reinterpret_cast<u8*>(left) + 0x10);
+        }
+    }
+    return *reinterpret_cast<float4*>(DAT_71052a7a80);
+}
+
+// ── 0x7102284a90 -- app::sv_ground_collision_line::get_right_pos (52B)
+// [derived: returns position from right vertex pointer at +0x90, offset +0x10]
+float4 get_right_pos_7102284a90(void* line) {
+    if (line != nullptr) {
+        void* right = *reinterpret_cast<void**>(reinterpret_cast<u8*>(line) + 0x90);
+        if (right != nullptr) {
+            return *reinterpret_cast<float4*>(reinterpret_cast<u8*>(right) + 0x10);
+        }
+    }
+    return *reinterpret_cast<float4*>(DAT_71052a7a80);
+}
+
