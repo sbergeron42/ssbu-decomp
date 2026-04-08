@@ -1,16 +1,19 @@
-# Worker: pool-d
+# Worker: pool-e
 
 ## Model: Opus
 
-## Task: Continue fighter motion decomp — expand MotionModule coverage
+## Task: New decomp — EffectModule + SoundModule functions
 
-You produced 10 fighter motion functions last round. Keep going — there are 852 undecompiled.
+### Context
+327 undecompiled effect functions, 198 undecompiled sound functions — both heavily used by modders. EffectModule.h has 91 vtable methods, SoundModule header exists.
 
 ### Approach
-Search for named undecompiled MotionModule functions. Focus on small ones (<200B) that use the existing 128 vtable methods in MotionModule.h.
+1. Search for named undecompiled EffectModule/SoundModule functions
+2. Decompile in Ghidra, write C++ using module headers
+3. Focus on small functions (<200B) first
 
-### Target: src/app/fighter_motion.cpp (append to existing)
-### Headers: MotionModule.h, BattleObjectModuleAccessor.h
+### Target: src/app/fighter_effects.cpp (new file)
+### Headers: EffectModule.h, SoundModule.h, BattleObjectModuleAccessor.h
 ### Derivation Chains MANDATORY
 ### Do NOT use naked asm.
 
@@ -19,5 +22,6 @@ Search for named undecompiled MotionModule functions. Focus on small ones (<200B
 /c/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -Ilib/NintendoSDK/include -Ilib/NintendoSDK/include/stubs -c src/app/FILE.cpp -o build/FILE.o
 
 python tools/compare_bytes.py FUN_name
-mcp__ghidra__search_functions_by_name("motion")
+mcp__ghidra__search_functions_by_name("effect")
+mcp__ghidra__search_functions_by_name("sound")
 ```
