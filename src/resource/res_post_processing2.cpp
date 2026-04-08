@@ -315,19 +315,11 @@ void* FUN_7103546d90(u64* param_1) {
     }
 }
 
-// ============================================================================
 // FUN_71035461f0 — process_directory_file_loads
-// For a given LoadedDirectory, iterates its child_path_indices vector. For each
-// filepath index, looks up the loaded filepath/data tables, checks the ARC
-// file info tables for region/locale overrides, and either queues a file load
-// (via FUN_7103546000) or marks the file for batch loading. Returns the count
-// of files queued/marked.
-// [derived: param_1 = ResServiceNX*, param_2 = LoadedDirectory*]
-// [derived: param_3 = priority, param_4 = skip_enqueue flag (bit 0)]
-// [derived: uses LoadedArc tables: dir_infos, folder_offsets, file_infos, etc.]
-// [derived: region/language checks via DAT_7105331f28+0xD8/0xDC (ResServiceNX fields)]
-// Address: 0x71035461f0 (1,472 bytes)
-// ============================================================================
+// REMOVED: duplicate definition — canonical version is in res_remaining_large.cpp
+// (with proper ResServiceNX*/LoadedDirectory* typing)
+
+#if 0  // Duplicate removed — see res_remaining_large.cpp
 int FUN_71035461f0(long param_1, u32* param_2, u32 param_3, u32 param_4) {
     LoadedDirectory* dir = (LoadedDirectory*)param_2;
 
@@ -661,6 +653,7 @@ int FUN_71035461f0(long param_1, u32* param_2, u32 param_3, u32 param_4) {
 
     return local_count;
 }
+#endif  // Duplicate FUN_71035461f0
 
 // ============================================================================
 // FUN_7103549f00 — fiber_pool_get_or_create

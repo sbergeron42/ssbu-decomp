@@ -109,54 +109,13 @@ void FUN_7103547110(u64* param_1) {
     }
 }
 
-// ============================================================================
 // FUN_71035481d0 — set_state_recursive
-// Sets a u32 value at +0x68 on a task node. Acquires a spinlock at +0x58
-// (atomic exchange), then walks a linked list at +0x50 (next at +0x48)
-// and recursively applies the same state to each child. Releases the spinlock.
-// [derived: ExclusiveMonitorPass = LDAXRB/STXRB spinlock pattern]
-// [derived: +0x50 = child list head, +0x48 = next pointer in child node]
-// [derived: +0x68 = state/status field, +0x58 = spinlock byte]
-// Address: 0x71035481d0 (112 bytes)
-// ============================================================================
-void FUN_71035481d0(long param_1, u32 param_2) {
-    *(u32*)(param_1 + 0x68) = param_2;
+// REMOVED: duplicate definition — canonical version is in res_pipeline_large.cpp
+// (with proper PrioritySlot* typing)
 
-    // Acquire spinlock at +0x58
-    u8* lock = (u8*)(param_1 + 0x58);
-    u8 old;
-    do {
-        old = __atomic_exchange_n(lock, 1, __ATOMIC_ACQUIRE);
-    } while (old & 1);
-
-    // Walk linked list at +0x50, applying state to each child
-    for (long child = *(long*)(param_1 + 0x50); child != 0; child = *(long*)(child + 0x48)) {
-        FUN_71035481d0(child, param_2);
-    }
-
-    // Release spinlock (store-release byte)
-    __atomic_store_n(lock, (u8)0, __ATOMIC_RELEASE);
-}
-
-// ============================================================================
 // FUN_7103546180 — count_and_queue_directory_loads_recursive
-// Calls FUN_71035461f0 to process this directory, then iterates child_folders
-// (CppVector<LoadedDirectory*> at +0x28/+0x30) and recursively processes each.
-// Returns total count of queued load requests.
-// [derived: LoadedDirectory.child_folders at +0x28 (start) and +0x30 (end)]
-// [derived: param_4 controls whether FUN_71035461f0 enqueues to task dispatch]
-// Address: 0x7103546180 (112 bytes)
-// ============================================================================
-int FUN_7103546180(long param_1, u64* param_2, u32 param_3, u32 param_4) {
-    int count = FUN_71035461f0(param_1, (u32*)param_2, param_3, param_4 & 1);
-    u64* child = *(u64**)(((u8*)param_2) + 0x28);
-    u64* child_end = *(u64**)(((u8*)param_2) + 0x30);
-    while (child != child_end) {
-        count += FUN_7103546180(param_1, (u64*)*child, param_3, 0);
-        child++;
-    }
-    return count;
-}
+// REMOVED: duplicate definition — canonical version is in res_remaining_large.cpp
+// (with proper ResServiceNX*/LoadedDirectory* typing)
 
 // ============================================================================
 // FUN_71035467b0 — alloc_pool_entry_and_semaphore
@@ -210,86 +169,8 @@ LAB_sema_done:
     entry[1] = (u64)sema;
 }
 
-// ============================================================================
 // FUN_7103546000 — queue_single_file_load
-// Queues a single file load request. Checks the filepath/data tables in
-// filesystem_info, and if the file needs loading, allocates a task entry
-// from the task dispatch pool and links it into the appropriate ResList.
-// [derived: param_1 = ResServiceNX*, +0xd0 = filesystem_info]
-// [derived: +0x50 = task_dispatch pool, +0x58..+0xc8 = res_lists[5]]
-// [derived: param_2 = filepath_index, param_3 = priority (0-4)]
-// Address: 0x7103546000 (384 bytes)
-// ============================================================================
-void FUN_7103546000(long param_1, u32 param_2, u32 param_3) {
-    if (param_2 == 0xffffff) return;
-
-    long fs_info = *(long*)(param_1 + 0xd0);
-    lock_71039c1490(*(void**)fs_info);
-
-    u32* filepath = nullptr;
-    long* data_entry = nullptr;
-    bool invalid = true;
-
-    if (param_2 < *(u32*)(fs_info + 0x18)) {
-        filepath = (u32*)(*(long*)(fs_info + 8) + (u64)param_2 * 8);
-        if ((u8)filepath[1] != 0) {
-            u32 data_idx = *filepath;
-            if (*(u8*)(*(long*)(fs_info + 0x10) + (u64)data_idx * 0x18 + 0xc) != 0) {
-                data_entry = nullptr;
-                if (data_idx != 0xffffff) {
-                    data_entry = (long*)(*(long*)(fs_info + 0x10) + (u64)data_idx * 0x18);
-                }
-                invalid = (filepath == nullptr);
-                goto LAB_unlock;
-            }
-        }
-    }
-
-    data_entry = nullptr;
-    invalid = true;
-
-LAB_unlock:
-    unlock_71039c14a0(*(void**)fs_info);
-
-    if (invalid || data_entry == nullptr || *data_entry != 0) return;
-
-    // [derived: LoadedData.state at +0x0D accessed atomically — ldarb/stlrb in binary]
-    u8* state_ptr = (u8*)((u8*)data_entry + 0xd);
-    u8 state = __atomic_load_n(state_ptr, __ATOMIC_ACQUIRE);
-    if (state != 0) {
-        if (state != 1) return;
-        u8 prio = *(u8*)((u8*)data_entry + 0xf) & 7;
-        if (!((s32)param_3 < (s32)prio)) return;
-    }
-
-    if (*(s32*)(param_1 + 0xe0) != 2) {
-        *(u32*)(param_1 + 0xe0) = 1;
-    }
-
-    if (state == 0) {
-        __atomic_store_n(state_ptr, (u8)1, __ATOMIC_RELEASE);
-    }
-
-    long* task = (long*)FUN_7103546d90((u64*)(*(u64*)(param_1 + 0x50)));
-    task[0] = 0;
-    task[1] = 0;
-    task[2] = 0xffffff00000001LL;
-    task[3] = 0xffffff;
-
-    long list_base = param_1 + (u64)param_3 * 0x18;
-    *(u8*)((u8*)data_entry + 0xf) = (*(u8*)((u8*)data_entry + 0xf) & 0xf8) | ((u8)param_3 & 7);
-    *(u32*)((u8*)task + 0x14) = param_2;
-
-    u64* list_end = *(u64**)(list_base + 0x68);
-    task[0] = list_base + 0x60;
-    task[1] = (long)list_end;
-    *(long**)(list_base + 0x68) = task;
-    *list_end = (u64)task;
-    *(long*)(list_base + 0x58) = *(long*)(list_base + 0x58) + 1;
-
-    *(u8*)(param_1 + 0xe7) = 1;
-    *(u8*)(param_1 + 0xe4) = 1;
-}
+// REMOVED: duplicate definition — canonical version is in res_remaining_large.cpp
 
 // ============================================================================
 // FUN_7103546b00 — swap_any_like
