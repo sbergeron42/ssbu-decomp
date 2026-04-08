@@ -688,6 +688,65 @@ f32 shield_rate_7100361b70(void* L) {
     return cur / max;
 }
 
+// ════════════════════════════════════════════════════════════════════
+// AI stat module — simple float/int field reads (16B each)
+// Same *(L-8)+0x168 module, but direct field loads (no bit extraction)
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x7100361b90 -- damage_reaction_mul (16B) ────────────────────
+f32 damage_reaction_mul_7100361b90(void* L) { return *reinterpret_cast<f32*>(STAT_MODULE(L) + 0xfc); }
+
+// ── 0x7100361bb0 -- height (16B) ────────────────────────────────
+f32 height_7100361bb0(void* L) { return *reinterpret_cast<f32*>(STAT_MODULE(L) + 0xc8); }
+
+// ── 0x7100361bc0 -- pos_x (16B) ─────────────────────────────────
+f32 pos_x_7100361bc0(void* L) { return *reinterpret_cast<f32*>(STAT_MODULE(L) + 0x80); }
+
+// ── 0x7100361bd0 -- pos_y (16B) ─────────────────────────────────
+f32 pos_y_7100361bd0(void* L) { return *reinterpret_cast<f32*>(STAT_MODULE(L) + 0x84); }
+
+// ── 0x7100361be0 -- speed_x (16B) ───────────────────────────────
+f32 speed_x_7100361be0(void* L) { return *reinterpret_cast<f32*>(STAT_MODULE(L) + 0xa0); }
+
+// ── 0x7100361bf0 -- speed_y (16B) ───────────────────────────────
+f32 speed_y_7100361bf0(void* L) { return *reinterpret_cast<f32*>(STAT_MODULE(L) + 0xa4); }
+
+// ── 0x7100361c00 -- scale (16B) ─────────────────────────────────
+f32 scale_7100361c00(void* L) { return *reinterpret_cast<f32*>(STAT_MODULE(L) + 0xc0); }
+
+// ── 0x7100361c50 -- motion_rate (16B) ───────────────────────────
+f32 motion_rate_7100361c50(void* L) { return *reinterpret_cast<f32*>(STAT_MODULE(L) + 0x50); }
+
+// ── 0x7100361d00 -- damage (16B) ────────────────────────────────
+f32 damage_7100361d00(void* L) { return *reinterpret_cast<f32*>(STAT_MODULE(L) + 0xe0); }
+
+// ── 0x7100361d10 -- hp (16B) ────────────────────────────────────
+f32 hp_7100361d10(void* L) { return *reinterpret_cast<f32*>(STAT_MODULE(L) + 0xe4); }
+
+// ── 0x7100361d20 -- lr (16B) ────────────────────────────────────
+f32 lr_7100361d20(void* L) { return *reinterpret_cast<f32*>(STAT_MODULE(L) + 0xc4); }
+
+// ════════════════════════════════════════════════════════════════════
+// AI stat module — tail-call dispatchers (20B each)
+// ════════════════════════════════════════════════════════════════════
+
+extern "C" void FUN_7100358c20(void*, s32);
+
+// ── 0x7100361ce0 -- is_sp_u_available (20B) ─────────────────────
+// [derived: loads stat module, tail-calls with param 0]
+void is_sp_u_available_7100361ce0(void* L) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    void* mod = *reinterpret_cast<void**>(ctx + 0x168);
+    FUN_7100358c20(mod, 0);
+}
+
+// ── 0x7100361cf0 -- is_sp_u_weaken_available (20B) ──────────────
+void is_sp_u_weaken_available_7100361cf0(void* L) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    void* mod = *reinterpret_cast<void**>(ctx + 0x168);
+    FUN_7100358c20(mod, 1);
+}
+
 #undef STAT_MODULE
 
 // ════════════════════════════════════════════════════════════════════
