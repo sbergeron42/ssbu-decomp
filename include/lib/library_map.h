@@ -15,7 +15,7 @@
 // 0x7103993580-0x710399a4e0  nus3audio / XDSP audio DSP (~25 functions)
 // 0x710399d650-0x710399f0b0  LZ4 v1.8.x (5 functions identified)
 // 0x710399f530-0x710399f880  XXH64 (3 functions, used by zstd v0.7)
-// 0x71039a0150-0x71039a1580  zstd common (FSE/HUF shared helpers)
+// 0x71039a0150-0x71039a9e00  zstd modern (FSE/HUF + ZSTD_decompressBlock_internal)
 // 0x71039a3ca0-0x71039af860  zstd v0.4 legacy chain + helpers
 // 0x71039afb20-0x71039b6370  zstd v0.5 legacy chain + helpers
 // 0x71039b86d0-0x71039bbed0  zstd v0.6 legacy chain + helpers

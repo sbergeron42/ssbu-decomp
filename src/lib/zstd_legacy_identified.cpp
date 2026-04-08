@@ -58,11 +58,12 @@
 //  standard FSE: build decoding table from normalized counts, then stream-decode]
 
 // 0x71039a0f50 (328 bytes)
-// FSE_buildDTable_raw or FSE helper
-// [derived: small utility in FSE range, between FSE_decompress and FSE_buildDTable]
+// FSE_buildDTable — builds FSE decoding table from normalized counts
+// [derived: confirmed by ZSTD_decompressBlock_internal analysis; called during
+//  sequence header decoding for LL/OF/ML tables]
 
 // 0x71039a10a0 (1248 bytes)
-// FSE_buildDTable or FSE_decompress_wksp
+// FSE_decompress_wksp or related entropy helper
 // [derived: mid-size function in FSE helper range]
 
 // 0x71039a3ca0 (456 bytes)
@@ -74,15 +75,18 @@
 // ZSTD_copy_match variant (similar to 0x71039a3ca0)
 
 // 0x71039a89d0 (556 bytes)
-// ZSTDv04 entropy helper (likely FSE_buildDTable_rle or normalizeCount)
+// HUF_decompress_variant1 — Huffman decompression variant
+// [derived: called from ZSTD_decompressBlock_internal for literal decoding;
+//  one of multiple HUF decode paths depending on stream count/size]
 
 // 0x71039a8c00 (4600 bytes)
-// ZSTDv04_HUF_decompress4X — Huffman 4-stream parallel decoder
-// [derived: large HUF function size, positioned after HUF_readDTableX4]
+// HUF_decompress4X — Huffman 4-stream parallel decoder
+// [derived: called from ZSTD_decompressBlock_internal for compressed literals;
+//  largest HUF function, handles 4 independent bitstreams]
 
 // 0x71039a9e00 (3420 bytes)
-// ZSTDv04 sequences decoder or decompressSequences
-// [derived: large function between HUF_decompress and decompressBlock]
+// HUF_decompress_variant2 — Huffman decompression variant
+// [derived: called from ZSTD_decompressBlock_internal as alternate decode path]
 
 // 0x71039ac3d0 (8180 bytes)
 // ZSTDv04 large helper (likely decompressSequencesLong or similar)
@@ -257,5 +261,14 @@
 // UNIDENTIFIED IN ZSTD RANGE
 // =====================================================================
 
-// 0x71039a1580 (10012 bytes) — very large, likely ZSTD_decompressBlock (modern/main)
+// 0x71039a1580 (10012 bytes)
+// ZSTD_decompressBlock_internal — modern zstd block decompressor (v0.8+/0xFD2FB528)
+// [derived: ZSTD_decodeLiteralsBlock + ZSTD_decodeSeqHeaders + ZSTD_decompressSequences
+//  fully inlined at -O2. Evidence:
+//  - Error codes: -20 (corruption_detected), -72 (srcSize_wrong), -30 (dict_corrupted)
+//  - Literal type dispatch: byte[0] & 3 → set_basic/set_rle/set_compressed/set_repeat
+//  - FSE max symbols: 35 (MaxLL), 31 (MaxOff), 52 (MaxML) — exact zstd constants
+//  - Three interleaved FSE states + offset repeat history[3]
+//  - 1<<24 window size heuristic from zstd_decompress.c:1746
+//  Source: lib/zstd/decompress/zstd_decompress.c:1715]
 // 0x71039b7740 (668 bytes) — 668-byte pattern, likely v0.5/v0.6 boundary helper
