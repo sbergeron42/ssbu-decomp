@@ -1,27 +1,30 @@
-# Worker: pool-e
+# Worker: pool-c
 
 ## Model: Opus
 
-## Task: Fix N-quality functions to match — idiomatic C++ only
+## Task: New decomp — fighter state machine functions (StatusModule area)
 
-### Target Files
-- `src/app/fun_med_final_c_007.cpp` — 33 N-quality functions
-- `src/app/fun_batch_d5_049.cpp` — 32 N-quality functions
-- `src/app/fun_batch_d_009.cpp` — 32 N-quality functions
+### Context
+1,151 undecompiled fighter state machine functions with community names. The Skyline/HDR modding community has deep knowledge of fighter status kinds. Our StatusModule, WorkModule, and MotionModule headers are already built with vtable methods.
 
-### Method per function
-1. `python tools/compare_bytes.py FUN_name` — see what doesn't match
-2. `mcp__ghidra__decompile_function_by_address("0x71XXXXXXXXX")` — see what binary does
-3. Fix source to match (types, control flow, expressions)
-4. Re-compare. 3 attempts max.
+### Approach
+1. Start with small named StatusModule functions (under 200 bytes)
+2. Use `mcp__ghidra__search_functions_by_name("status")` to find targets
+3. Decompile in Ghidra, write C++ using StatusModule.h/WorkModule.h/MotionModule.h
+4. Use the existing vtable method wrappers — `mod->method_name()` not `VT(mod)[slot]`
 
-### Rules
-- **NO naked asm.** Idiomatic C++ only.
-- **NO blind patterns.** Check each function individually.
-- Derivation chains on any new offset tags
+### Target Area
+Functions in the 0x71020xxxxx range with names containing: status_, StatusKind, change_status, is_situation, get_status
+
+### Headers: include/app/modules/StatusModule.h, WorkModule.h, MotionModule.h, BattleObjectModuleAccessor.h
+### Derivation Chains MANDATORY
+### Output: src/app/fighter_status.cpp
+### Do NOT use naked asm.
 
 ### Quick Reference
 ```
-python tools/compare_bytes.py FUN_name
 /c/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -Ilib/NintendoSDK/include -Ilib/NintendoSDK/include/stubs -c src/app/FILE.cpp -o build/FILE.o
+
+python tools/compare_bytes.py FUN_name
+mcp__ghidra__search_functions_by_name("status")
 ```
