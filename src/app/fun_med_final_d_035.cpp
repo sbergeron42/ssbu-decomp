@@ -50,8 +50,8 @@ void FUN_7102b24abc(void) { abort(); }
 // 0x0000007102b3b0dc  size=12 — calls abort
 void FUN_7102b3b0dc(void) { abort(); }
 
-// 0x0000007102b6d568  size=1784
-long FUN_7102b6d568(long param_1) { (void)param_1; return 0; }
+// 0x0000007102b6d568  size=12 — calls noreturn
+void FUN_7102b6d568(void) { abort(); }
 
 // 0x0000007102b6f0dc  size=12 — calls abort
 void FUN_7102b6f0dc(void) { abort(); }

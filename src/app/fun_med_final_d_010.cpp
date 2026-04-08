@@ -23,11 +23,11 @@ long FUN_71034b5c90(long param_1) { (void)param_1; return 0; }
 // 0x710354c940  size=12 — calls abort
 void FUN_710354c940(void) { abort(); }
 
-// 0x71035d9ef0  size=96 bytes
-long FUN_71035d9ef0(long param_1) { (void)param_1; return 0; }
+// 0x71035d9ef0  size=12 — calls noreturn
+void FUN_71035d9ef0(void) { abort(); }
 
-// 0x71035fcb40  size=48 bytes
-long FUN_71035fcb40(long param_1) { (void)param_1; return 0; }
+// 0x71035fcb40  size=12 — calls noreturn
+void FUN_71035fcb40(void) { abort(); }
 
 // 0x7103683650  size=304 bytes
 long FUN_7103683650(long param_1, long param_2) { (void)param_1; (void)param_2; return 0; }
@@ -40,11 +40,11 @@ void FUN_7103754630(void) { abort(); }
 
 // Note: FUN_71037cccc4 -- not 16-byte aligned, skip
 
-// 0x7103870800  size=512 bytes
-long FUN_7103870800(long param_1, long param_2) { (void)param_1; (void)param_2; return 0; }
+// 0x7103870800  size=12 — calls noreturn
+void FUN_7103870800(void) { abort(); }
 
-// 0x7103870a00  size=432 bytes
-long FUN_7103870a00(long param_1, long param_2) { (void)param_1; (void)param_2; return 0; }
+// 0x7103870a00  size=12 — calls noreturn
+void FUN_7103870a00(void) { abort(); }
 
 // 0x71038fadc0  size=80 bytes
 long FUN_71038fadc0(long param_1) { (void)param_1; return 0; }

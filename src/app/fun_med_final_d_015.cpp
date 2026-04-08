@@ -53,8 +53,8 @@ long FUN_710356b980(long param_1) { (void)param_1; return 0; }
 // 0x710356bb30  size=12 â€” calls abort (pure virtual stub)
 void FUN_710356bb30(void) { abort(); }
 
-// 0x710356bb40  size=48 bytes
-long FUN_710356bb40(long param_1) { (void)param_1; return 0; }
+// 0x710356bb40  size=12 — calls noreturn
+void FUN_710356bb40(void) { abort(); }
 
 // 0x71035848b0  size=128 bytes
 long FUN_71035848b0(long param_1) { (void)param_1; return 0; }
@@ -80,8 +80,8 @@ long FUN_71035993e0(long param_1) { (void)param_1; return 0; }
 // 0x710359c1c0  size=224 bytes
 long FUN_710359c1c0(long param_1, long param_2) { (void)param_1; (void)param_2; return 0; }
 
-// 0x710359c2a0  size=48 bytes
-long FUN_710359c2a0(long param_1) { (void)param_1; return 0; }
+// 0x710359c2a0  size=12 — calls noreturn
+void FUN_710359c2a0(void) { abort(); }
 
 // 0x710359cec0  size=432 bytes
 long FUN_710359cec0(long param_1, long param_2) { (void)param_1; (void)param_2; return 0; }
