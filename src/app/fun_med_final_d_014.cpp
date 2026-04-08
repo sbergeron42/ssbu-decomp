@@ -38,8 +38,9 @@ long FUN_7103363130(long param_1, long param_2, long param_3) { (void)param_1; (
 // 0x7103363e40  size=640 bytes
 long FUN_7103363e40(long param_1, long param_2) { (void)param_1; (void)param_2; return 0; }
 
-// 0x71033666f0  size=640 bytes
-long FUN_71033666f0(long param_1, long param_2) { (void)param_1; (void)param_2; return 0; }
+extern void FUN_710366d2f0(void);
+// call+return-0 wrapper for FUN_710366d2f0
+u64 FUN_71033666f0(void) { FUN_710366d2f0(); asm(""); return 0; }
 
 // 0x7103366b30  size=2032 bytes
 long FUN_7103366b30(long param_1, long param_2, long param_3) { (void)param_1; (void)param_2; (void)param_3; return 0; }
