@@ -2,26 +2,23 @@
 
 ## Model: Opus
 
-## Task: Fix N-quality functions to match — idiomatic C++ only
+## Task: ResLoadingThread cleanup + resource service polish
 
-### Target Files
-- `src/app/fun_med_final_c_007.cpp` — 33 N-quality functions
-- `src/app/fun_batch_d5_049.cpp` — 32 N-quality functions
-- `src/app/fun_batch_d_009.cpp` — 32 N-quality functions
+### Goal
+Make the resource service decomp presentable for the community. This is what they asked for — clean it up and ship it.
 
-### Method per function
-1. `python tools/compare_bytes.py FUN_name` — see what doesn't match
-2. `mcp__ghidra__decompile_function_by_address("0x71XXXXXXXXX")` — see what binary does
-3. Fix source to match (types, control flow, expressions)
-4. Re-compare. 3 attempts max.
+### Tasks
+1. **ResLoadingThread.cpp cleanup**: Ensure every code path has a comment explaining what it does. Add section headers. Make it readable even though it doesn't byte-match.
+2. **Remove duplicate functions**: Check for any remaining duplicate definitions across res_*.cpp files
+3. **Rename FUN_ symbols**: Where comments already have semantic names, rename the actual function symbols (e.g., `FUN_710353d5e0` → `copy_dir_child_paths`)
+4. **Verify all resource files compile cleanly**: Single-file compile each res_*.cpp
 
-### Rules
-- **NO naked asm.** Idiomatic C++ only.
-- **NO blind patterns.** Check each function individually.
-- Derivation chains on any new offset tags
+### Files
+- `src/resource/ResLoadingThread.cpp` — main cleanup target
+- `src/resource/res_*.cpp` — all resource source files
+- `include/resource/*.h` — verify header consistency
 
 ### Quick Reference
 ```
-python tools/compare_bytes.py FUN_name
-/c/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -Ilib/NintendoSDK/include -Ilib/NintendoSDK/include/stubs -c src/app/FILE.cpp -o build/FILE.o
+/c/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -Ilib/NintendoSDK/include -Ilib/NintendoSDK/include/stubs -c src/resource/FILE.cpp -o build/FILE.o
 ```
