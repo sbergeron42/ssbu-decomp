@@ -26,6 +26,17 @@ bool is_hammer_motion(u64 hash) {
     return h == 0x101acf6ce8 || h == 0x1052425d86 || h == 0x10c092e91b;
 }
 
+// 0x71006946c0 (44 bytes)
+// Returns true if fighter has a valid entry_id (WorkModule::get_int(0x10000000) != -1)
+// [derived: work_module vtable[19] called with hash 0x10000000, compared to -1]
+bool is_valid_entry_id(BattleObjectModuleAccessor* acc) {
+    WorkModule* wm = static_cast<WorkModule*>(acc->work_module);
+    return wm->get_int(0x10000000) != -1;
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
+}
+
 // 0x710068e160 (16 bytes)
 // Returns true if status kind is in the hammer range (0xd9..0xdf)
 // [derived: literal SUB #0xd9, CMP #7 in binary]
