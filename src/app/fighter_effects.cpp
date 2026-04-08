@@ -283,3 +283,74 @@ extern "C" u64 get_break_sound_hash(void* acc) {
     }
     return result;
 }
+
+// ---- WeaponSpecializer_DemonBlaster effect management -----------------------
+// Kazuya's blaster weapon: beam, shot, and head effects tracked via work ints.
+// All three functions share the same pattern:
+// 1. Get WorkModule (+0x50) and EffectModule (+0x140) via Weapon accessor (+0x20)
+// 2. Read effect handle from work int
+// 3. If handle != 0: detach or kill based on bool param
+// 4. Clear the work int via set_int(0, work_var)
+
+// 0x71033dbb00 (172 bytes) — WeaponSpecializer_DemonBlaster::remove_beam_effect
+// work var: 0x1000000b [inferred: beam effect handle]
+extern "C" void remove_beam_effect(void* weapon, bool detach_flag) {
+    u64 acc = *(u64*)((u8*)weapon + 0x20);
+    void* work = *(void**)(acc + 0x50);
+    void* effect = *(void**)(acc + 0x140);
+    void** wvt = *(void***)work;
+    void** evt = *(void***)effect;
+    s32 handle = reinterpret_cast<s32(*)(void*, s32)>(wvt[0x98 / 8])(work, 0x1000000b);
+    if (handle != 0) {
+        if (detach_flag) {
+            // EffectModule::detach (vtable[33], offset 0x108)
+            reinterpret_cast<void(*)(void*, s32, s32)>(evt[0x108 / 8])(effect, handle, 5);
+        } else {
+            // EffectModule::kill (vtable[27], offset 0xd8)
+            reinterpret_cast<void(*)(void*, s32, bool, bool)>(evt[0xd8 / 8])(effect, handle, true, true);
+        }
+        // WorkModule::set_int(0, work_var)
+        wvt = *(void***)work;
+        reinterpret_cast<void(*)(void*, s32, s32)>(wvt[0xa0 / 8])(work, 0, 0x1000000b);
+    }
+}
+
+// 0x71033dbbb0 (172 bytes) — WeaponSpecializer_DemonBlaster::remove_shot_effect
+// work var: 0x1000000c [inferred: shot effect handle]
+extern "C" void remove_shot_effect(void* weapon, bool detach_flag) {
+    u64 acc = *(u64*)((u8*)weapon + 0x20);
+    void* work = *(void**)(acc + 0x50);
+    void* effect = *(void**)(acc + 0x140);
+    void** wvt = *(void***)work;
+    void** evt = *(void***)effect;
+    s32 handle = reinterpret_cast<s32(*)(void*, s32)>(wvt[0x98 / 8])(work, 0x1000000c);
+    if (handle != 0) {
+        if (detach_flag) {
+            reinterpret_cast<void(*)(void*, s32, s32)>(evt[0x108 / 8])(effect, handle, 5);
+        } else {
+            reinterpret_cast<void(*)(void*, s32, bool, bool)>(evt[0xd8 / 8])(effect, handle, false, true);
+        }
+        wvt = *(void***)work;
+        reinterpret_cast<void(*)(void*, s32, s32)>(wvt[0xa0 / 8])(work, 0, 0x1000000c);
+    }
+}
+
+// 0x71033dbc60 (172 bytes) — WeaponSpecializer_DemonBlaster::remove_head_effect
+// work var: 0x1000000d [inferred: head effect handle]
+extern "C" void remove_head_effect(void* weapon, bool detach_flag) {
+    u64 acc = *(u64*)((u8*)weapon + 0x20);
+    void* work = *(void**)(acc + 0x50);
+    void* effect = *(void**)(acc + 0x140);
+    void** wvt = *(void***)work;
+    void** evt = *(void***)effect;
+    s32 handle = reinterpret_cast<s32(*)(void*, s32)>(wvt[0x98 / 8])(work, 0x1000000d);
+    if (handle != 0) {
+        if (detach_flag) {
+            reinterpret_cast<void(*)(void*, s32, s32)>(evt[0x108 / 8])(effect, handle, 5);
+        } else {
+            reinterpret_cast<void(*)(void*, s32, bool, bool)>(evt[0xd8 / 8])(effect, handle, true, true);
+        }
+        wvt = *(void***)work;
+        reinterpret_cast<void(*)(void*, s32, s32)>(wvt[0xa0 / 8])(work, 0, 0x1000000d);
+    }
+}
