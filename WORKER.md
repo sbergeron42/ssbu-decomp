@@ -1,27 +1,26 @@
-# Worker: pool-e
+# Worker: pool-b
 
 ## Model: Opus
 
-## Task: Fix N-quality functions to match — idiomatic C++ only
+## Task: SIZE_DIFF investigation — second sample set
 
-### Target Files
-- `src/app/fun_med_final_c_007.cpp` — 33 N-quality functions
-- `src/app/fun_batch_d5_049.cpp` — 32 N-quality functions
-- `src/app/fun_batch_d_009.cpp` — 32 N-quality functions
+Same task as pool-a but with a different sample. Compare notes.
 
-### Method per function
-1. `python tools/compare_bytes.py FUN_name` — see what doesn't match
-2. `mcp__ghidra__decompile_function_by_address("0x71XXXXXXXXX")` — see what binary does
-3. Fix source to match (types, control flow, expressions)
-4. Re-compare. 3 attempts max.
+### Investigation steps
+1. Pick 10 SIZE_DIFF functions — prioritize DIFFERENT source file types than pool-a:
+   - fun_batch_c_* functions
+   - fun_medium_* functions
+   - fun_hard_* functions
+   - Named module functions (StatusModule, WorkModule, etc.)
+2. For each: what's in the original binary after our function ends?
+3. Document the pattern. Is it always the same cause?
 
-### Rules
-- **NO naked asm.** Idiomatic C++ only.
-- **NO blind patterns.** Check each function individually.
-- Derivation chains on any new offset tags
-
-### Quick Reference
+### Tools
 ```
 python tools/compare_bytes.py FUN_name
-/c/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -Ilib/NintendoSDK/include -Ilib/NintendoSDK/include/stubs -c src/app/FILE.cpp -o build/FILE.o
+/c/llvm-8.0.0/bin/llvm-objdump.exe -d --no-show-raw-insn --start-address=ADDR --stop-address=END data/main.elf
+grep FUN_name data/functions.csv
 ```
+
+### Deliverable
+A report: what causes SIZE_DIFF for YOUR samples, proposed fix.
