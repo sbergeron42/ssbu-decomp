@@ -338,6 +338,173 @@ f32 rebound_speed_y_add_71016595a0() {
 }
 
 // ════════════════════════════════════════════════════════════════════
+// Additional simple accessors (FighterManager / ItemManager)
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x71015ce620 -- is_ready_go (20B) ─────────────────────────────
+// [derived: FighterManager deref → byte at +0xd2]
+u8 is_ready_go_71015ce620() {
+    void* mgr = *reinterpret_cast<void**>(DAT_71052b84f8);
+    return *reinterpret_cast<u8*>(reinterpret_cast<u8*>(mgr) + 0xd2);
+}
+
+// ItemManager singleton (adrp 0x71052c3000 + 0x70)
+extern "C" __attribute__((visibility("hidden"))) void* DAT_71052c3070;
+
+// ── 0x71015ca910 -- get_num_of_active_item (20B) ──────────────────
+// [derived: ItemManager → inner array at +0x70 → indexed load by item kind]
+u64 get_num_of_active_item_71015ca910(s32 idx) {
+    u8* mgr = reinterpret_cast<u8*>(DAT_71052c3070);
+    u64* arr = *reinterpret_cast<u64**>(mgr + 0x70);
+    return arr[idx];
+}
+
+// ── 0x71015ca8f0 -- get_num_of_ownered_active_item (20B) ─────────
+// [derived: param shuffle through ItemManager singleton, tail call]
+extern "C" u64 FUN_71015dab40(void*, s32, u64);
+
+u64 get_num_of_ownered_active_item_71015ca8f0(s32 kind, u64 param) {
+    return FUN_71015dab40(DAT_71052c3070, kind, param);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// Tail-call thunks (8B each — set extra param and forward)
+// ════════════════════════════════════════════════════════════════════
+
+extern "C" void FUN_710160e690(void*, u64, s32);
+extern "C" void FUN_71015c8ee0(void*, u64, s32);
+
+// ── 0x71015c3060 -- get_assist_respawn_position (8B) ──────────────
+// mov w2,#1; b target
+void get_assist_respawn_position_71015c3060(void* p0, u64 p1) {
+    FUN_710160e690(p0, p1, 1);
+}
+
+// ── 0x71015c8ed0 -- create_weapon (8B) ────────────────────────────
+// mov w2,#-1; b target
+void create_weapon_71015c8ed0(void* p0, u64 p1) {
+    FUN_71015c8ee0(p0, p1, -1);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// Item/weapon param accessors — ParamAccessor+0x13b0 sub-object
+// [derived: adrp+ldr DAT_71052bb3b0 → +0x13b0 → field at offset]
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x7101669000 -- ignition (20B) ───────────────────────────────
+f32 ignition_7101669000() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x13b0);
+    return *reinterpret_cast<f32*>(sub + 0x75c);
+}
+
+// ── 0x7101669020 -- flashing_frame_before_life_over (20B) ────────
+u32 flashing_frame_before_life_over_7101669020(void) {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x13b0);
+    return *reinterpret_cast<u32*>(sub + 0x760);
+}
+
+// ── 0x7101669060 -- lost (20B) ───────────────────────────────────
+u32 lost_7101669060() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x13b0);
+    return *reinterpret_cast<u32*>(sub + 0x768);
+}
+
+// ── 0x71016690a0 -- gravity_accel (20B) ──────────────────────────
+f32 gravity_accel_71016690a0() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x13b0);
+    return *reinterpret_cast<f32*>(sub + 0x770);
+}
+
+// ── 0x71016690c0 -- gravity_accel_max (20B) ──────────────────────
+f32 gravity_accel_max_71016690c0() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x13b0);
+    return *reinterpret_cast<f32*>(sub + 0x774);
+}
+
+// ── 0x71016690e0 -- gravity_frame (20B) ──────────────────────────
+u32 gravity_frame_71016690e0() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x13b0);
+    return *reinterpret_cast<u32*>(sub + 0x778);
+}
+
+// ── 0x7101669100 -- flashing_frame_before_life (20B) ─────────────
+u32 flashing_frame_before_life_7101669100() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x13b0);
+    return *reinterpret_cast<u32*>(sub + 0x77c);
+}
+
+// ── 0x710166e110 -- flash_start_frame (20B) ──────────────────────
+u32 flash_start_frame_710166e110() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x13b0);
+    return *reinterpret_cast<u32*>(sub + 0x51c);
+}
+
+// ── 0x710166e190 -- camera_range_damag_mul_start_rate (20B) ──────
+f32 camera_range_damag_mul_start_rate_710166e190() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x13b0);
+    return *reinterpret_cast<f32*>(sub + 0x530);
+}
+
+// ── 0x710166e1b0 -- camera_range_damag_mul_end_rate (20B) ────────
+f32 camera_range_damag_mul_end_rate_710166e1b0() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x13b0);
+    return *reinterpret_cast<f32*>(sub + 0x534);
+}
+
+// ── 0x710166e1d0 -- camera_range_damag_mul_min (20B) ─────────────
+f32 camera_range_damag_mul_min_710166e1d0() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x13b0);
+    return *reinterpret_cast<f32*>(sub + 0x538);
+}
+
+// ── 0x710166e1f0 -- camera_range_damag_mul_max (20B) ─────────────
+f32 camera_range_damag_mul_max_710166e1f0() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x13b0);
+    return *reinterpret_cast<f32*>(sub + 0x53c);
+}
+
+// ── 0x710166e210 -- generate_continuous_forbid_frame (20B) ───────
+u32 generate_continuous_forbid_frame_710166e210() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x13b0);
+    return *reinterpret_cast<u32*>(sub + 0x540);
+}
+
+// ── 0x710166e250 -- jostle_touch_ground_frame (20B) ──────────────
+u32 jostle_touch_ground_frame_710166e250() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x13b0);
+    return *reinterpret_cast<u32*>(sub + 0x554);
+}
+
+// ── 0x710166e270 -- jostle_up_touch_ground_frame (20B) ───────────
+u32 jostle_up_touch_ground_frame_710166e270() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x13b0);
+    return *reinterpret_cast<u32*>(sub + 0x55c);
+}
+
+// ── Other ParamAccessor sub-objects ──────────────────────────────
+
+// ── 0x710166f720 -- POWERESA_SHAPE_TYPE (20B) ───────────────────
+// [derived: ParamAccessor+0xc78 sub-object → u32 at +0x3a0]
+u32 POWERESA_SHAPE_TYPE_710166f720() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0xc78);
+    return *reinterpret_cast<u32*>(sub + 0x3a0);
+}
+
+// ── 0x710166fc60 -- get_energy_max_frame (20B) ──────────────────
+// [derived: ParamAccessor+0x50 sub-object → f32 at +0xefc]
+f32 get_energy_max_frame_710166fc60() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x50);
+    return *reinterpret_cast<f32*>(sub + 0xefc);
+}
+
+// ── 0x710165d480 -- EXPLOSIONBOMB_WIRE_ROT_SPEED (20B) ──────────
+// [derived: ParamAccessor+0x3f0 sub-object → u32 at +0x120]
+u32 EXPLOSIONBOMB_WIRE_ROT_SPEED_710165d480() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x3f0);
+    return *reinterpret_cast<u32*>(sub + 0x120);
+}
+
+// ════════════════════════════════════════════════════════════════════
 // sv_item — item utility functions
 // ════════════════════════════════════════════════════════════════════
 
