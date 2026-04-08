@@ -23,4 +23,11 @@
 [[noreturn]] void FUN_7101f3775c() { abort(); }
 
 // 0x7101f99bac
+
+namespace std { namespace __1 {
+template<bool> struct __vector_base_common {
+    [[noreturn]] static void __throw_out_of_range();
+};
+}}
+
 [[noreturn]] void FUN_7101f99bac() { abort(); }

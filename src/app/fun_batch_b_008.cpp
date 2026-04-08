@@ -44,4 +44,11 @@ u64 FUN_7101005830() { return 0; }
 [[noreturn]] void FUN_710106040c() { abort(); }
 
 // 0x710106050c
+
+namespace std { namespace __1 {
+template<bool> struct __vector_base_common {
+    [[noreturn]] static void __throw_out_of_range();
+};
+}}
+
 [[noreturn]] void FUN_710106050c() { abort(); }

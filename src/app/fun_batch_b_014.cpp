@@ -52,6 +52,13 @@ void FUN_71016158b0(s64 *param_1)
 }
 
 // addr-TBD-71016158d0
+
+namespace std { namespace __1 {
+template<bool> struct __vector_base_common {
+    [[noreturn]] static void __throw_out_of_range();
+};
+}}
+
 u32 FUN_71016158d0(s64 *param_1)
 {
   return (*(u32(*)(void))(*param_1 + 0xc0))();

@@ -9,7 +9,11 @@
 
 // ---- External declarations -----------------------------------------------
 
-[[noreturn]] extern "C" void abort();
+namespace std { namespace __1 {
+template<bool> struct __vector_base_common {
+    [[noreturn]] static void __throw_out_of_range();
+};
+}}
 
 extern "C" void FUN_7101502850(u64);
 extern "C" void FUN_7101755480(u64, s32);
@@ -52,43 +56,43 @@ u32 FUN_7101fc73c0(lua_State *param_1) { app::sv_animcmd::THROW_ITEM_OFFSET(para
 // 0x7101fc73e0
 u32 FUN_7101fc73e0(lua_State *param_1) { app::sv_animcmd::THROW_ITEM_OFFSET_arg4(param_1); return 0; }
 
-// ---- abort() thunks -------------------------------------------------------
+// ---- std::__1::__vector_base_common<true>::__throw_out_of_range() thunks -------------------------------------------------------
 
 // 0x710147d138
-[[noreturn]] void FUN_710147d138(void) { abort(); }
+[[noreturn]] void FUN_710147d138(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 
 // 0x710154a078
-[[noreturn]] void FUN_710154a078(void) { abort(); }
+[[noreturn]] void FUN_710154a078(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 
 // 0x7101486d10
-[[noreturn]] void FUN_7101486d10(void) { abort(); }
+[[noreturn]] void FUN_7101486d10(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 
 // 0x7101851e28
-[[noreturn]] void FUN_7101851e28(void) { abort(); }
+[[noreturn]] void FUN_7101851e28(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 
 // 0x7101851f9c
-[[noreturn]] void FUN_7101851f9c(void) { abort(); }
+[[noreturn]] void FUN_7101851f9c(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 
 // 0x710185258c
-[[noreturn]] void FUN_710185258c(void) { abort(); }
+[[noreturn]] void FUN_710185258c(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 
 // 0x7101b32944
-[[noreturn]] void FUN_7101b32944(void) { abort(); }
+[[noreturn]] void FUN_7101b32944(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 
 // 0x7101b3385c
-[[noreturn]] void FUN_7101b3385c(void) { abort(); }
+[[noreturn]] void FUN_7101b3385c(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 
 // 0x7101b33aa0
-[[noreturn]] void FUN_7101b33aa0(void) { abort(); }
+[[noreturn]] void FUN_7101b33aa0(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 
 // 0x7101ba3e14
-[[noreturn]] void FUN_7101ba3e14(void) { abort(); }
+[[noreturn]] void FUN_7101ba3e14(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 
 // 0x7101bfe5b0
-[[noreturn]] void FUN_7101bfe5b0(void) { abort(); }
+[[noreturn]] void FUN_7101bfe5b0(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 
 // 0x7101e66128
-[[noreturn]] void FUN_7101e66128(void) { abort(); }
+[[noreturn]] void FUN_7101e66128(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 
 // ---- Simple vtable dispatchers --------------------------------------------
 

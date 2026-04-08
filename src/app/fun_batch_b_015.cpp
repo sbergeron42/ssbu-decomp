@@ -40,4 +40,11 @@ void FUN_710184b8d0(s64 param_1, u64 *param_2)
 // ── Trivial no-op ─────────────────────────────────────────────────────────────
 
 // addr-TBD-710184b8f0
+
+namespace std { namespace __1 {
+template<bool> struct __vector_base_common {
+    [[noreturn]] static void __throw_out_of_range();
+};
+}}
+
 void FUN_710184b8f0() {}

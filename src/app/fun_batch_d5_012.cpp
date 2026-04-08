@@ -94,4 +94,11 @@
 [[noreturn]] void FUN_7100ff55ec(void) { abort(); }
 
 // 0x710108ec4c
+
+namespace std { namespace __1 {
+template<bool> struct __vector_base_common {
+    [[noreturn]] static void __throw_out_of_range();
+};
+}}
+
 [[noreturn]] void FUN_710108ec4c(void) { abort(); }

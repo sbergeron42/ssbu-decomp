@@ -164,6 +164,13 @@ extern u64 DAT_7104ad9bc0[];
 
 // 0x71025b2a60
 // Table lookup: return one of 9 entries from DAT_7104ad9bc0[0..8], or sentinel
+
+namespace std { namespace __1 {
+template<bool> struct __vector_base_common {
+    [[noreturn]] static void __throw_out_of_range();
+};
+}}
+
 u64 FUN_71025b2a60(s32 param_1)
 {
   if ((u32)(param_1 - 1) < 9) {

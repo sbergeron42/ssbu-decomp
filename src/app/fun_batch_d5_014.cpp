@@ -131,6 +131,13 @@ void FUN_7101886de0(s64 param_1)
 }
 
 // 0x7101ee92f0 — write 0x8ffff... sentinel, bounds-checked array write to +0xb8 slot
+
+namespace std { namespace __1 {
+template<bool> struct __vector_base_common {
+    [[noreturn]] static void __throw_out_of_range();
+};
+}}
+
 void FUN_7101ee92f0(s64 param_1)
 {
     s32 iVar1 = *(s32 *)(param_1 + 0x108);

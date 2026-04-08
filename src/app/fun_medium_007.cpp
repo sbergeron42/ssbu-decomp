@@ -5,7 +5,11 @@
 
 // ---- External declarations -----------------------------------------------
 
-extern "C" [[noreturn]] void abort();
+namespace std { namespace __1 {
+template<bool> struct __vector_base_common {
+    [[noreturn]] static void __throw_out_of_range();
+};
+}}
 extern "C" void* memset(void*, int, u64);
 
 // nn::os
@@ -52,31 +56,31 @@ extern u8   DAT_00006e48;
 // 7100d9e8a4
 [[noreturn]] void FUN_7100d9e8a4()
 {
-    abort();
+    std::__1::__vector_base_common<true>::__throw_out_of_range();
 }
 
 // 7100fbe214
 [[noreturn]] void FUN_7100fbe214()
 {
-    abort();
+    std::__1::__vector_base_common<true>::__throw_out_of_range();
 }
 
 // 7100655f50
 [[noreturn]] void FUN_7100655f50()
 {
-    abort();
+    std::__1::__vector_base_common<true>::__throw_out_of_range();
 }
 
 // 710065f6a0
 [[noreturn]] void FUN_710065f6a0()
 {
-    abort();
+    std::__1::__vector_base_common<true>::__throw_out_of_range();
 }
 
 // 7100621458
 [[noreturn]] void FUN_7100621458()
 {
-    abort();
+    std::__1::__vector_base_common<true>::__throw_out_of_range();
 }
 
 // 71000338f0

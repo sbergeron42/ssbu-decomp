@@ -90,6 +90,13 @@ u32 FUN_7101fc2ca0(lua_State *param_1) { app::sv_animcmd::RUMBLE_ALL(param_1); r
 // ---- Vtable dispatcher ---------------------------------------------------
 
 // 0x7101008df0 — double-deref via *(param_2+0x20)+0x50, vtable +0x110 with const 0x200000e2
+
+namespace std { namespace __1 {
+template<bool> struct __vector_base_common {
+    [[noreturn]] static void __throw_out_of_range();
+};
+}}
+
 u64 FUN_7101008df0(u64 param_1, s64 param_2)
 {
     s64 *plVar1 = *(s64 **)(*(s64 *)(param_2 + 0x20) + 0x50);

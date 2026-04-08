@@ -140,6 +140,13 @@ void FUN_710151a4c0(void)
 }
 
 // 0x71014d3a30 — dispatch to FUN_710150b040 with dereferenced global
+
+namespace std { namespace __1 {
+template<bool> struct __vector_base_common {
+    [[noreturn]] static void __throw_out_of_range();
+};
+}}
+
 void FUN_71014d3a30(void)
 {
     FUN_710150b040(*DAT_71052c2760);

@@ -6,7 +6,11 @@
 
 // ---- External declarations -----------------------------------------------
 
-[[noreturn]] extern "C" void abort();
+namespace std { namespace __1 {
+template<bool> struct __vector_base_common {
+    [[noreturn]] static void __throw_out_of_range();
+};
+}}
 extern "C" s32  __cxa_guard_acquire(s64 *);
 extern "C" void __cxa_guard_release(s64 *);
 
@@ -83,37 +87,37 @@ extern "C" u64  DAT_71052c45c0;
 // ---- Abort thunks -----------------------------------------------------------
 
 // 0x71005f1d8c
-[[noreturn]] void FUN_71005f1d8c(void) { abort(); }
+[[noreturn]] void FUN_71005f1d8c(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 // 0x71007a92cc
-[[noreturn]] void FUN_71007a92cc(void) { abort(); }
+[[noreturn]] void FUN_71007a92cc(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 // 0x7100868bdc
-[[noreturn]] void FUN_7100868bdc(void) { abort(); }
+[[noreturn]] void FUN_7100868bdc(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 // 0x7100a8582c
-[[noreturn]] void FUN_7100a8582c(void) { abort(); }
+[[noreturn]] void FUN_7100a8582c(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 // 0x7100bef66c
-[[noreturn]] void FUN_7100bef66c(void) { abort(); }
+[[noreturn]] void FUN_7100bef66c(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 // 0x7100d43bfc
-[[noreturn]] void FUN_7100d43bfc(void) { abort(); }
+[[noreturn]] void FUN_7100d43bfc(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 // 0x7100d4806c
-[[noreturn]] void FUN_7100d4806c(void) { abort(); }
+[[noreturn]] void FUN_7100d4806c(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 // 0x7100d48abc
-[[noreturn]] void FUN_7100d48abc(void) { abort(); }
+[[noreturn]] void FUN_7100d48abc(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 // 0x7100d55a4c
-[[noreturn]] void FUN_7100d55a4c(void) { abort(); }
+[[noreturn]] void FUN_7100d55a4c(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 // 0x7100d7dcac
-[[noreturn]] void FUN_7100d7dcac(void) { abort(); }
+[[noreturn]] void FUN_7100d7dcac(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 // 0x7100e68ddc
-[[noreturn]] void FUN_7100e68ddc(void) { abort(); }
+[[noreturn]] void FUN_7100e68ddc(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 // 0x7100f1df6c
-[[noreturn]] void FUN_7100f1df6c(void) { abort(); }
+[[noreturn]] void FUN_7100f1df6c(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 // 0x7100f9a29c
-[[noreturn]] void FUN_7100f9a29c(void) { abort(); }
+[[noreturn]] void FUN_7100f9a29c(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 // 0x7100fc297c
-[[noreturn]] void FUN_7100fc297c(void) { abort(); }
+[[noreturn]] void FUN_7100fc297c(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 // 0x710112eb8c
-[[noreturn]] void FUN_710112eb8c(void) { abort(); }
+[[noreturn]] void FUN_710112eb8c(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 // 0x710133164c
-[[noreturn]] void FUN_710133164c(void) { abort(); }
+[[noreturn]] void FUN_710133164c(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 
 // ---- Vtable dispatcher ------------------------------------------------------
 
@@ -176,7 +180,7 @@ u64 FUN_7101fe4960(s64 *p1, s64 p2)
 // ---- Abort thunk ------------------------------------------------------------
 
 // 0x710083a2ec
-[[noreturn]] void FUN_710083a2ec(void) { abort(); }
+[[noreturn]] void FUN_710083a2ec(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 
 // ---- PTR_ConstantZero guard init --------------------------------------------
 
@@ -360,38 +364,38 @@ u64 FUN_7101ff71e0(s64 *p1)
 // ---- Abort thunks -----------------------------------------------------------
 
 // 0x71003bca0c
-[[noreturn]] void FUN_71003bca0c(void) { abort(); }
+[[noreturn]] void FUN_71003bca0c(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 // 0x71005c9b8c
-[[noreturn]] void FUN_71005c9b8c(void) { abort(); }
+[[noreturn]] void FUN_71005c9b8c(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 // 0x7100c7d1d4
-[[noreturn]] void FUN_7100c7d1d4(void) { abort(); }
+[[noreturn]] void FUN_7100c7d1d4(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 // 0x7100e36084
-[[noreturn]] void FUN_7100e36084(void) { abort(); }
+[[noreturn]] void FUN_7100e36084(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 // 0x7100e36a5c
-[[noreturn]] void FUN_7100e36a5c(void) { abort(); }
+[[noreturn]] void FUN_7100e36a5c(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 // 0x7100e917f4
-[[noreturn]] void FUN_7100e917f4(void) { abort(); }
+[[noreturn]] void FUN_7100e917f4(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 // 0x7100fe4514
-[[noreturn]] void FUN_7100fe4514(void) { abort(); }
+[[noreturn]] void FUN_7100fe4514(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 // 0x71010125b4
-[[noreturn]] void FUN_71010125b4(void) { abort(); }
+[[noreturn]] void FUN_71010125b4(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 // 0x710106a1ec
-[[noreturn]] void FUN_710106a1ec(void) { abort(); }
+[[noreturn]] void FUN_710106a1ec(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 // 0x710106a41c
-[[noreturn]] void FUN_710106a41c(void) { abort(); }
+[[noreturn]] void FUN_710106a41c(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 // 0x71010e0f94
-[[noreturn]] void FUN_71010e0f94(void) { abort(); }
+[[noreturn]] void FUN_71010e0f94(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 // 0x71010fc544
-[[noreturn]] void FUN_71010fc544(void) { abort(); }
+[[noreturn]] void FUN_71010fc544(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 // 0x710117a454
-[[noreturn]] void FUN_710117a454(void) { abort(); }
+[[noreturn]] void FUN_710117a454(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 // 0x71011e2c74
-[[noreturn]] void FUN_71011e2c74(void) { abort(); }
+[[noreturn]] void FUN_71011e2c74(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 // 0x7101202e94
-[[noreturn]] void FUN_7101202e94(void) { abort(); }
+[[noreturn]] void FUN_7101202e94(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 // 0x7101234794
-[[noreturn]] void FUN_7101234794(void) { abort(); }
+[[noreturn]] void FUN_7101234794(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 // 0x71012e61d4
-[[noreturn]] void FUN_71012e61d4(void) { abort(); }
+[[noreturn]] void FUN_71012e61d4(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 // 0x7101b20ec0
-[[noreturn]] void FUN_7101b20ec0(void) { abort(); }
+[[noreturn]] void FUN_7101b20ec0(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }

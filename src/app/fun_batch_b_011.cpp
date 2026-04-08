@@ -202,4 +202,11 @@
 [[noreturn]] void FUN_71013003f4() { abort(); }
 
 // 0x710130068c
+
+namespace std { namespace __1 {
+template<bool> struct __vector_base_common {
+    [[noreturn]] static void __throw_out_of_range();
+};
+}}
+
 [[noreturn]] void FUN_710130068c() { abort(); }

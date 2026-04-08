@@ -1,4 +1,9 @@
 #include "types.h"
+namespace std { namespace __1 {
+template<bool> struct __vector_base_common {
+    [[noreturn]] static void __throw_out_of_range();
+};
+}}
 
 // MEDIUM-tier FUN_* decompilation -- pool-c range 0x7102000000-0x7103FFFFFF
 // Batch 001: 18 functions (scene dispatch, readiness check, state machines,

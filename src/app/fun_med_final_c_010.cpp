@@ -1,7 +1,12 @@
 // MEDIUM batch 010 (0x7102302984 – 0x71023ed1e0)
-// call-wrappers, __cxa_guard inits, abort(), scene-type hash dispatch, bool checks
+// call-wrappers, __cxa_guard inits, std::__1::__vector_base_common<true>::__throw_out_of_range(), scene-type hash dispatch, bool checks
 
 #include <stdint.h>
+namespace std { namespace __1 {
+template<bool> struct __vector_base_common {
+    [[noreturn]] static void __throw_out_of_range();
+};
+}}
 typedef uint8_t  u8;
 typedef uint32_t u32;
 typedef uint64_t u64;
@@ -127,12 +132,12 @@ CXA_GUARD_3LEVEL(FUN_7102330180, DAT_71053238a8, DAT_71053238b0)
 // 0x7102330300
 CXA_GUARD_3LEVEL(FUN_7102330300, DAT_71053238b8, DAT_71053238c0)
 
-// ---- abort() wrappers ----
+// ---- std::__1::__vector_base_common<true>::__throw_out_of_range() wrappers ----
 
 // 0x7102338ffc
-[[noreturn]] void FUN_7102338ffc(void) { abort(); }
+[[noreturn]] void FUN_7102338ffc(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 // 0x7102343934
-[[noreturn]] void FUN_7102343934(void) { abort(); }
+[[noreturn]] void FUN_7102343934(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 
 // ---- float computation ----
 
@@ -143,18 +148,18 @@ float FUN_710234fd88(s64 /*unused*/[2], float param_2)
     return -(fVar1 + -1.0f);
 }
 
-// ---- more abort() wrappers ----
+// ---- more std::__1::__vector_base_common<true>::__throw_out_of_range() wrappers ----
 
 // 0x7102350de8
-[[noreturn]] void FUN_7102350de8(void) { abort(); }
+[[noreturn]] void FUN_7102350de8(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 // 0x71023510e8
-[[noreturn]] void FUN_71023510e8(void) { abort(); }
+[[noreturn]] void FUN_71023510e8(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 // 0x7102351178
-[[noreturn]] void FUN_7102351178(void) { abort(); }
+[[noreturn]] void FUN_7102351178(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 // 0x7102351208
-[[noreturn]] void FUN_7102351208(void) { abort(); }
+[[noreturn]] void FUN_7102351208(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 // 0x7102351298
-[[noreturn]] void FUN_7102351298(void) { abort(); }
+[[noreturn]] void FUN_7102351298(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 
 // ---- more 3-level guards ----
 
@@ -375,10 +380,10 @@ u32 FUN_71023967d8(void)
     return 0;
 }
 
-// ---- abort() ----
+// ---- std::__1::__vector_base_common<true>::__throw_out_of_range() ----
 
 // 0x710239e04c
-[[noreturn]] void FUN_710239e04c(void) { abort(); }
+[[noreturn]] void FUN_710239e04c(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 
 // ---- more 3-level guards ----
 
@@ -393,10 +398,10 @@ CXA_GUARD_3LEVEL(FUN_71023b0060, DAT_7105323a18, DAT_7105323a20)
 // 0x71023b6b90
 CXA_GUARD_3LEVEL(FUN_71023b6b90, DAT_7105323a88, DAT_7105323a90)
 
-// ---- abort() ----
+// ---- std::__1::__vector_base_common<true>::__throw_out_of_range() ----
 
 // 0x71023c8f6c
-[[noreturn]] void FUN_71023c8f6c(void) { abort(); }
+[[noreturn]] void FUN_71023c8f6c(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 
 // ---- simple call-wrappers ----
 

@@ -85,6 +85,13 @@ extern u8 DAT_7105157768;
 
 // 0x7102f747f0
 // Sets param_2[0] = vtable ptr, copies 2 fields from param_1 struct
+
+namespace std { namespace __1 {
+template<bool> struct __vector_base_common {
+    [[noreturn]] static void __throw_out_of_range();
+};
+}}
+
 void FUN_7102f747f0(s64 param_1, u64 *param_2)
 {
   u64 uVar1;

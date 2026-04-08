@@ -160,6 +160,13 @@ u64 *FUN_71017f3c50(void)
 }
 
 // 0x71017f4d20 — same inner guard, different outer guard, pointer DAT_7105323720
+
+namespace std { namespace __1 {
+template<bool> struct __vector_base_common {
+    [[noreturn]] static void __throw_out_of_range();
+};
+}}
+
 u64 *FUN_71017f4d20(void)
 {
     if (!(DAT_7105323718 & 1)) {

@@ -10,7 +10,11 @@
 
 // ---- External declarations -----------------------------------------------
 
-[[noreturn]] extern "C" void abort();
+namespace std { namespace __1 {
+template<bool> struct __vector_base_common {
+    [[noreturn]] static void __throw_out_of_range();
+};
+}}
 
 extern "C" void FUN_71014f8940(u64);
 extern "C" void FUN_71014fe660(u64);
@@ -21,28 +25,28 @@ extern "C" void FUN_710377ab90(s64);
 extern "C" u64 *DAT_71052c2760;
 extern "C" u8   DAT_710593a988[];
 
-// ---- abort() thunks -------------------------------------------------------
+// ---- std::__1::__vector_base_common<true>::__throw_out_of_range() thunks -------------------------------------------------------
 
 // 0x71003bcdfc
-[[noreturn]] void FUN_71003bcdfc(void) { abort(); }
+[[noreturn]] void FUN_71003bcdfc(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 
 // 0x71004afac0
-[[noreturn]] void FUN_71004afac0(void) { abort(); }
+[[noreturn]] void FUN_71004afac0(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 
 // 0x7101485e30
-[[noreturn]] void FUN_7101485e30(void) { abort(); }
+[[noreturn]] void FUN_7101485e30(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 
 // 0x71014867b0
-[[noreturn]] void FUN_71014867b0(void) { abort(); }
+[[noreturn]] void FUN_71014867b0(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 
 // 0x7101541b8c
-[[noreturn]] void FUN_7101541b8c(void) { abort(); }
+[[noreturn]] void FUN_7101541b8c(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 
 // 0x71018594bc
-[[noreturn]] void FUN_71018594bc(void) { abort(); }
+[[noreturn]] void FUN_71018594bc(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 
 // 0x7101d2de80
-[[noreturn]] void FUN_7101d2de80(void) { abort(); }
+[[noreturn]] void FUN_7101d2de80(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 
 // ---- Global-dispatch wrappers (via *DAT_71052c2760) ----------------------
 

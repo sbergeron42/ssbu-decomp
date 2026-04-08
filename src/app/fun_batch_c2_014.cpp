@@ -69,6 +69,13 @@
 }
 
 // 0x7102baf78c
+
+namespace std { namespace __1 {
+template<bool> struct __vector_base_common {
+    [[noreturn]] static void __throw_out_of_range();
+};
+}}
+
 [[noreturn]] void FUN_7102baf78c()
 {
   abort();

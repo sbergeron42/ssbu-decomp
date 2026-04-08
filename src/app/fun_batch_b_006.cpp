@@ -133,4 +133,11 @@ extern u8 PTR_LAB_7105028988;
 u64 FUN_7101043990() { return 0; }
 
 // 0x710105bc40 -- original is mov x0,xzr; ret (return 0 stub)
+
+namespace std { namespace __1 {
+template<bool> struct __vector_base_common {
+    [[noreturn]] static void __throw_out_of_range();
+};
+}}
+
 u64 FUN_710105bc40() { return 0; }

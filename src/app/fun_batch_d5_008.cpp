@@ -2,7 +2,7 @@
 
 // MEDIUM-tier FUN_* functions — mixed 0x7100-0x7101 range, batch d5-008
 // Pool-d worker: auto-generated from Ghidra decompilation
-// Includes: abort() thunks, strcmp comparator, call wrappers, in_x10 vtable wrappers,
+// Includes: std::__1::__vector_base_common<true>::__throw_out_of_range() thunks, strcmp comparator, call wrappers, in_x10 vtable wrappers,
 //           vtable dispatchers, bounds-checked dispatch, deref-chain vtable dispatchers
 
 // NOTE: FUN_7101fe09a4 and FUN_7101fe6684 carry a value in AArch64 register X10 that
@@ -10,28 +10,32 @@
 
 // ---- External declarations -----------------------------------------------
 
-[[noreturn]] extern "C" void abort();
+namespace std { namespace __1 {
+template<bool> struct __vector_base_common {
+    [[noreturn]] static void __throw_out_of_range();
+};
+}}
 extern "C" int strcmp(const char *, const char *);
 
 extern "C" void FUN_710337a860(u64, u64, u64);
 extern "C" void FUN_7103778500(u64, s64);
 
-// ---- abort() thunks -------------------------------------------------------
+// ---- std::__1::__vector_base_common<true>::__throw_out_of_range() thunks -------------------------------------------------------
 
 // 0x7101482cf0
-[[noreturn]] void FUN_7101482cf0(void) { abort(); }
+[[noreturn]] void FUN_7101482cf0(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 
 // 0x710148e970
-[[noreturn]] void FUN_710148e970(void) { abort(); }
+[[noreturn]] void FUN_710148e970(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 
 // 0x7101a0124c
-[[noreturn]] void FUN_7101a0124c(void) { abort(); }
+[[noreturn]] void FUN_7101a0124c(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 
 // 0x7101b3388c
-[[noreturn]] void FUN_7101b3388c(void) { abort(); }
+[[noreturn]] void FUN_7101b3388c(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 
 // 0x7101bfe104
-[[noreturn]] void FUN_7101bfe104(void) { abort(); }
+[[noreturn]] void FUN_7101bfe104(void) { std::__1::__vector_base_common<true>::__throw_out_of_range(); }
 
 // ---- Utility wrappers ----------------------------------------------------
 
@@ -93,7 +97,7 @@ void FUN_7101b79d30(u64 param_1, s64 param_2, u32 param_3, u32 param_4)
         FUN_7103778500(param_1, param_2 + (s64)(s32)param_3 * 0xd90 + (s64)(s32)param_4 * 0x10 + 0x818);
         return;
     }
-    abort();
+    std::__1::__vector_base_common<true>::__throw_out_of_range();
 }
 
 // ---- Deref-chain vtable dispatchers ---------------------------------------

@@ -114,4 +114,11 @@ namespace app {
 // ---- sv_animcmd lua_bind wrapper -----------------------------------------
 
 // 0x7101fc11c0
+
+namespace std { namespace __1 {
+template<bool> struct __vector_base_common {
+    [[noreturn]] static void __throw_out_of_range();
+};
+}}
+
 u32 FUN_7101fc11c0(lua_State *param_1) { app::sv_animcmd::CHECK_FINISH_CAMERA_IF_NOT_HP_MODE(param_1); return 0; }

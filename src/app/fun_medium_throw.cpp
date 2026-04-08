@@ -1,4 +1,9 @@
 #include "types.h"
+namespace std { namespace __1 {
+template<bool> struct __vector_base_common {
+    [[noreturn]] static void __throw_out_of_range();
+};
+}}
 
 // FUN_* MEDIUM tier -- __throw_out_of_range wrappers (pool-e)
 // These call FUN_71039c0d80 = std::__1::__vector_base_common<true>::__throw_out_of_range

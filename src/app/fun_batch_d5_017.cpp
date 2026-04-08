@@ -323,6 +323,13 @@ u64 *FUN_71017f4f90(void)
 }
 
 // 0x71017f50e0 — outer: DAT_7105323738 → DAT_7105323740
+
+namespace std { namespace __1 {
+template<bool> struct __vector_base_common {
+    [[noreturn]] static void __throw_out_of_range();
+};
+}}
+
 u64 *FUN_71017f50e0(void)
 {
     if (!(__atomic_load_n((u8*)&DAT_7105323738, __ATOMIC_ACQUIRE) & 1)) {

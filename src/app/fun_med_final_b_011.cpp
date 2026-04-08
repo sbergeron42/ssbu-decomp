@@ -2,6 +2,11 @@
 // Address range: 0x71003b22c0 – 0x71003ee260
 // Mostly cxa_guard singletons, noreturn stubs, vtable dispatchers
 #include "types.h"
+namespace std { namespace __1 {
+template<bool> struct __vector_base_common {
+    [[noreturn]] static void __throw_out_of_range();
+};
+}}
 
 // ── forward declarations ──────────────────────────────────────────────────
 

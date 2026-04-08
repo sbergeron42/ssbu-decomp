@@ -238,6 +238,13 @@ void FUN_71014ca730(s64 param_1)
 }
 
 // 0x710181e9f0 — check vtable field==7, zero field, conditionally call two helpers
+
+namespace std { namespace __1 {
+template<bool> struct __vector_base_common {
+    [[noreturn]] static void __throw_out_of_range();
+};
+}}
+
 bool FUN_710181e9f0(s64 param_1)
 {
     s64 lVar2 = *(s64 *)(param_1 + 0x58);

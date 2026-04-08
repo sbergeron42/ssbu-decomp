@@ -270,6 +270,13 @@ void FUN_71002b38e0(u64* param_1, u32 param_2, s32 param_3)
 // ---- Complex lookup ---------------------------------------------------------
 
 // 71001e0900 -- language/locale lookup: check flag, index into array or return default
+
+namespace std { namespace __1 {
+template<bool> struct __vector_base_common {
+    [[noreturn]] static void __throw_out_of_range();
+};
+}}
+
 u16 FUN_71001e0900()
 {
     if (*(u8*)PTR_DAT_71052a3da8 == 0)

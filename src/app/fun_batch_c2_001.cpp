@@ -129,3 +129,10 @@
 
 // 0x7102e2a9fc -- defined in fun_medium_throw.cpp (Group A: pass x0)
 // 0x7102f53a60 -- defined in fun_medium_throw.cpp (Group C: naked asm)
+
+namespace std { namespace __1 {
+template<bool> struct __vector_base_common {
+    [[noreturn]] static void __throw_out_of_range();
+};
+}}
+

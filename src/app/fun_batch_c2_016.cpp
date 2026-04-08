@@ -123,6 +123,13 @@
 }
 
 // 0x71029dbfc4
+
+namespace std { namespace __1 {
+template<bool> struct __vector_base_common {
+    [[noreturn]] static void __throw_out_of_range();
+};
+}}
+
 [[noreturn]] void FUN_71029dbfc4()
 {
   abort();

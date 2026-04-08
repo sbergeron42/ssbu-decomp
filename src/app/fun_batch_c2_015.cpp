@@ -124,6 +124,13 @@ extern "C" void* memcpy(void*, const void*, u64);
 
 // 0x71024d702c
 // Copies 0xa0 bytes from param_2 to param_1
+
+namespace std { namespace __1 {
+template<bool> struct __vector_base_common {
+    [[noreturn]] static void __throw_out_of_range();
+};
+}}
+
 void FUN_71024d702c(void *param_1, void *param_2)
 {
   memcpy(param_1, param_2, 0xa0);

@@ -151,6 +151,13 @@ extern void *PTR_LAB_71050b9f88;
 
 // 0x7102407130
 // Initialises 2-field object: sets vtable ptr then copies one field from param_1
+
+namespace std { namespace __1 {
+template<bool> struct __vector_base_common {
+    [[noreturn]] static void __throw_out_of_range();
+};
+}}
+
 void FUN_7102407130(s64 param_1, u64 *param_2)
 {
   *param_2 = (u64)&PTR_LAB_71050b9f88;
