@@ -1177,6 +1177,7 @@ void FUN_7102fece10(f32 param_1, s64 param_2)
 }
 
 // 0x71039bc200
+__attribute__((optnone))
 u64 FUN_71039bc200(u64 *param_1, u32 *param_2, u64 param_3)
 {
     u32 uVar1;

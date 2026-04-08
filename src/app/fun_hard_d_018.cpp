@@ -38,12 +38,14 @@ void FUN_710013bb30(s64 param_1, Tick param_2)
 }
 
 // 0x710392af50 — extract 4-bit field from upper word (bits 32-35) (48 bytes)
+__attribute__((optnone))
 u64 FUN_710392af50(u64 param_1)
 {
     return (param_1 >> 0x20) & 0xf;
 }
 
 // 0x7103930300 — jemalloc arena setup: chain 4 helpers into param_4/param_5 outputs (48 bytes)
+__attribute__((optnone))
 void FUN_7103930300(u64 param_1, u64 param_2, u64 param_3, u32 *param_4, u8 *param_5)
 {
     u64 uVar3 = FUN_7103930530(param_1, &DAT_7106d49678, param_2, param_3, 1);

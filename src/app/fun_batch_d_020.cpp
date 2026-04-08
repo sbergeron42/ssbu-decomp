@@ -30,18 +30,21 @@ u64 FUN_71037b0a90(u32 *param_1, u32 *param_2)
 }
 
 // 0x710392ec50 -- wrapper: FUN_710392ed30(param_1) (48 bytes)
+__attribute__((optnone))
 void FUN_710392ec50(u64 param_1)
 {
     FUN_710392ed30(param_1);
 }
 
 // 0x710393ea00 -- call FUN_710393ead0(1) (48 bytes)
+__attribute__((optnone))
 void FUN_710393ea00(void)
 {
     FUN_710393ead0(1);
 }
 
 // 0x710393e2c0 -- hash wrapper: FUN_710393e310(param_1, 8, 0xd50dcc1b, param_2) (64 bytes)
+__attribute__((optnone))
 void FUN_710393e2c0(u64 param_1, u64 param_2)
 {
     FUN_710393e310(param_1, 8, 0xd50dcc1b, param_2);

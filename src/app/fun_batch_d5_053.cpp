@@ -154,6 +154,7 @@ void FUN_71038cebd0(u32 param_1, u64 *param_2) {
 // ---- 0x71039* remaining ----
 
 // 0x71039293e0 — call + mutex_unlock (64B)
+__attribute__((optnone))
 s32 FUN_71039293e0(u64 param_1, s64 param_2) {
     u64 uVar2 = FUN_7103927b30(param_1);
     FUN_7103929450(uVar2, param_2 + 0x60);
@@ -161,6 +162,7 @@ s32 FUN_71039293e0(u64 param_1, s64 param_2) {
 }
 
 // 0x710392f460 — call + mutex_unlock (64B)
+__attribute__((optnone))
 s32 FUN_710392f460(u64 param_1, s64 param_2) {
     u64 uVar2 = FUN_710392eec0(param_1);
     FUN_710392fe90(uVar2, param_2 + 0x60);
@@ -168,34 +170,40 @@ s32 FUN_710392f460(u64 param_1, s64 param_2) {
 }
 
 // 0x710392f710 — two-call wrapper (64B)
+__attribute__((optnone))
 void FUN_710392f710(u64 param_1, s64 param_2) {
     u64 uVar1 = FUN_710392eec0(param_1);
     FUN_710392fde0(uVar1, param_2 + 0x60);
 }
 
 // 0x710392f7f0 — call, return result < 1 (64B)
+__attribute__((optnone))
 bool FUN_710392f7f0(s64 param_1, u64 param_2) {
     s32 iVar1 = FUN_7103957720((u64 *)(param_1 + 0xc0), (u64 *)param_2);
     return iVar1 < 1;
 }
 
 // 0x7103930530 — pass offset to sub-call (64B)
+__attribute__((optnone))
 void FUN_7103930530(s64 param_1, u64 param_2) {
     FUN_7103930570((s64)(0x1a30 + param_1), param_2);
 }
 
 // 0x71039320f0 — two-call wrapper (64B)
+__attribute__((optnone))
 void FUN_71039320f0(u64 param_1, s64 param_2) {
     u64 uVar1 = FUN_710392eec0(param_1);
     FUN_710392fe00(uVar1, param_2 + 0x60);
 }
 
 // 0x71039359a0 — pass offset to sub-call (48B)
+__attribute__((optnone))
 void FUN_71039359a0(s64 param_1) {
     FUN_7103930570((s64)(0x1a20 + param_1), 1);
 }
 
 // 0x710393e720 — sum two calls (64B)
+__attribute__((optnone))
 s64 FUN_710393e720(u64 param_1) {
     s64 lVar1 = FUN_710393cfe0(param_1);
     s64 lVar2 = FUN_710393ca80(param_1);
@@ -203,6 +211,7 @@ s64 FUN_710393e720(u64 param_1) {
 }
 
 // 0x710393f250 — call + index stride 0x98 (64B)
+__attribute__((optnone))
 s64 FUN_710393f250(s64 param_1, u64 param_2) {
     u8 local_30[16];
     u64 local_20 = param_2;
@@ -212,6 +221,7 @@ s64 FUN_710393f250(s64 param_1, u64 param_2) {
 }
 
 // 0x7103950f90 — call + mutex_unlock (64B)
+__attribute__((optnone))
 s32 FUN_7103950f90(u64 param_1, s64 param_2) {
     u64 uVar2 = FUN_7103951470(param_1);
     FUN_7103951540(uVar2, param_2 + 0x60);
@@ -219,24 +229,28 @@ s32 FUN_7103950f90(u64 param_1, s64 param_2) {
 }
 
 // 0x7103951050 — two-call wrapper (64B)
+__attribute__((optnone))
 void FUN_7103951050(u64 param_1, s64 param_2) {
     u64 uVar1 = FUN_7103951470(param_1);
     FUN_71039514d0(uVar1, param_2 + 0x60);
 }
 
 // 0x7103951350 — call + deref u64 (48B)
+__attribute__((optnone))
 u64 FUN_7103951350(u64 param_1) {
     u64 *puVar1 = FUN_7103951400(param_1);
     return *puVar1;
 }
 
 // 0x7103951380 — call + deref u32 (48B)
+__attribute__((optnone))
 u32 FUN_7103951380(u64 param_1) {
     u32 *puVar1 = FUN_71039513b0(param_1);
     return *puVar1;
 }
 
 // 0x7103951560 — pthread_mutex_trylock (48B)
+__attribute__((optnone))
 bool FUN_7103951560(s64 param_1) {
     return pthread_mutex_trylock((void *)(param_1 + 0x40)) != 0;
 }

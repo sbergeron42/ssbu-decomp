@@ -102,18 +102,21 @@ void FUN_71037bd590(u64 param_1)
 }
 
 // 0x7103938a80 -- table lookup by param, call FUN_7103945810 (112 bytes)
+__attribute__((optnone))
 void FUN_7103938a80(s64 param_1)
 {
     FUN_7103945810(*(u64 *)(DAT_00007d80 + param_1));
 }
 
 // 0x710395d8d0 -- wrapper: call FUN_710395cc80(p, 0, 1) (112 bytes)
+__attribute__((optnone))
 void FUN_710395d8d0(u64 param_1)
 {
     FUN_710395cc80(param_1, 0, 1);
 }
 
 // 0x7103979cbc -- field call at param1+0x38 with param1+0x60 (120 bytes)
+__attribute__((optnone))
 u64 FUN_7103979cbc(s64 param_1)
 {
     (*(void (*)(s64))(*(s64 *)(param_1 + 0x38)))(param_1 + 0x60);
@@ -130,6 +133,7 @@ u8 FUN_71034d9c70(u64 param_1, s64 param_2)
 }
 
 // 0x7103999620 -- memcpy 0x1b4 bytes from *param_4 to param_2 (128 bytes)
+__attribute__((optnone))
 u32 FUN_7103999620(u64 param_1, void *param_2, u64 param_3, u64 *param_4)
 {
     memcpy(param_2, (void *)*param_4, 0x1b4);
@@ -179,6 +183,7 @@ u64 FUN_71037c6940(s64 param_1, void *param_2, u64 param_3)
 }
 
 // 0x7103979c34 -- field call at param1+0x30 with param1+0x60 (136 bytes)
+__attribute__((optnone))
 u64 FUN_7103979c34(s64 param_1)
 {
     (*(void (*)(s64))(*(s64 *)(param_1 + 0x30)))(param_1 + 0x60);

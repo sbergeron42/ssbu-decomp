@@ -183,15 +183,19 @@ void FUN_710395fcf0(u64 param_1, u32 param_2) {
 // ===========================================================================
 
 // 0x7103929120 -- wrapper: nn::os::sched_getcpu() (28 bytes)
+__attribute__((optnone))
 void FUN_7103929120(void) { asm volatile("b 1f\n1:"); asm volatile("b 1f\n1:"); nn::os::sched_getcpu(); asm volatile(""); }
 
 // 0x7103933610 -- wrapper: nn::os::sched_getcpu() (28 bytes)
+__attribute__((optnone))
 void FUN_7103933610(void) { asm volatile("b 1f\n1:"); asm volatile("b 1f\n1:"); nn::os::sched_getcpu(); asm volatile(""); }
 
 // 0x7103951bb0 -- wrapper: nn::os::sched_getcpu() (28 bytes)
+__attribute__((optnone))
 void FUN_7103951bb0(void) { asm volatile("b 1f\n1:"); asm volatile("b 1f\n1:"); nn::os::sched_getcpu(); asm volatile(""); }
 
 // 0x710395d1c0 -- wrapper: nn::os::sched_getcpu() (28 bytes)
+__attribute__((optnone))
 void FUN_710395d1c0(void) { asm volatile("b 1f\n1:"); asm volatile("b 1f\n1:"); nn::os::sched_getcpu(); asm volatile(""); }
 
 // ===========================================================================
@@ -199,6 +203,7 @@ void FUN_710395d1c0(void) { asm volatile("b 1f\n1:"); asm volatile("b 1f\n1:"); 
 // ===========================================================================
 
 // 0x710395fbe0 -- wrapper: nn::os::GetCurrentThread() (discards result) (20 bytes)
+__attribute__((optnone))
 void FUN_710395fbe0(void) { nn::os::GetCurrentThread(); asm volatile(""); }
 
 // 0x710395fb80 -- store GetCurrentThread() result to global (28 bytes)
@@ -206,33 +211,43 @@ void FUN_710395fbe0(void) { nn::os::GetCurrentThread(); asm volatile(""); }
 void FUN_710395fb80(void) { DAT_7106dd40b8 = nn::os::GetCurrentThread(); asm volatile(""); }
 
 // 0x7103929470 -- wrapper: call FUN_71039295c0() (20 bytes)
+__attribute__((optnone))
 void FUN_7103929470(void) { FUN_71039295c0(); asm volatile(""); }
 
 // 0x7103929490 -- wrapper: call FUN_71039294b0() (20 bytes)
+__attribute__((optnone))
 void FUN_7103929490(void) { FUN_71039294b0(); asm volatile(""); }
 
 // 0x710392abd0 -- wrapper: call FUN_710392abf0() (20 bytes)
+__attribute__((optnone))
 void FUN_710392abd0(void) { FUN_710392abf0(); asm volatile(""); }
 
 // 0x71039353c0 -- wrapper: FUN_710392ed50(&DAT_7106d4a668) (24 bytes)
+__attribute__((optnone))
 void FUN_71039353c0(void) { FUN_710392ed50(DAT_7106d4a668); asm volatile(""); }
 
 // 0x7103935440 -- wrapper: FUN_710392ed50(&DAT_7106d4a670) (24 bytes)
+__attribute__((optnone))
 void FUN_7103935440(void) { FUN_710392ed50(DAT_7106d4a670); asm volatile(""); }
 
 // 0x710393fa80 -- wrapper: FUN_710393fb50(1) (24 bytes)
+__attribute__((optnone))
 void FUN_710393fa80(void) { FUN_710393fb50(1); asm volatile(""); }
 
 // 0x7103944810 -- wrapper: call FUN_7103944a60() (20 bytes)
+__attribute__((optnone))
 void FUN_7103944810(void) { FUN_7103944a60(); asm volatile(""); }
 
 // 0x7103949530 -- wrapper: call FUN_7103949660() (20 bytes)
+__attribute__((optnone))
 void FUN_7103949530(void) { FUN_7103949660(); asm volatile(""); }
 
 // 0x710395f730 -- wrapper: call FUN_710395f750() (20 bytes)
+__attribute__((optnone))
 void FUN_710395f730(void) { FUN_710395f750(); asm volatile(""); }
 
 // 0x710392b210 -- read errno via __errno_location (24 bytes)
+__attribute__((optnone))
 s32 FUN_710392b210(void) { return *__errno_location(); }
 
 // 0x71038d70c0 -- call FUN_71038d7000 with abs() of *param_1 (32 bytes)

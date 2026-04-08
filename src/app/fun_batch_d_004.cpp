@@ -52,6 +52,7 @@ extern u8 DAT_710593aa18[];
 // ---- Functions ---------------------------------------------------------------
 
 // 0x710395f890 -- no-op
+__attribute__((optnone))
 void FUN_710395f890(void)
 {
     return;

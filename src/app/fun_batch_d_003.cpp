@@ -240,6 +240,7 @@ u64 FUN_71037b09d0(u8 param_1[16], u32 param_2, s64 param_3)
 }
 
 // 0x71039505b0 -- wrapper: nn::os::sched_getcpu()
+__attribute__((optnone))
 void FUN_71039505b0(void)
 {
     nn::os::sched_getcpu();
