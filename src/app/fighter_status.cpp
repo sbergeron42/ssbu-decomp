@@ -547,6 +547,13 @@ u32 check_stat_build_up_7100361330(void* L) {
     return (STAT_MODULE(L)[0x54] >> 3) & 1;
 }
 
+// ── 0x7100361350 -- check_stat_gorogoro (32B) ───────────────────
+// [derived: bits 5+17 of +0x54 u32 — gorogoro (rolling) multi-flag check]
+bool check_stat_gorogoro_7100361350(void* L) {
+    u8* mod = STAT_MODULE(L);
+    return (*reinterpret_cast<u32*>(mod + 0x54) & 0x80020) != 0;
+}
+
 // ── 0x7100361370 -- check_stat_attention (20B) ───────────────────
 u32 check_stat_attention_7100361370(void* L) {
     return (STAT_MODULE(L)[0x54] >> 6) & 1;
@@ -562,6 +569,21 @@ u32 check_stat_final_act_71003613b0(void* L) {
 // ── 0x71003613d0 -- check_stat_invincible (20B) ─────────────────
 u32 check_stat_invincible_71003613d0(void* L) {
     return (STAT_MODULE(L)[0x55] >> 5) & 1;
+}
+
+// ── 0x71003613f0 -- check_stat_invincible_l (92B) ───────────────
+// [derived: extended invincible check — invincible flag + level/status checks]
+// +0x55 bit5: invincible base flag
+// +0x5e bit4: invincible-L override flag
+// +0x11c (s32): invincible level counter
+// +0x74 (s32): status kind — 0x11/0x12 = special invincible, 0xb = another
+bool check_stat_invincible_l_71003613f0(void* L) {
+    u8* mod = STAT_MODULE(L);
+    if (((mod[0x55] >> 5) & 1) == 0) return false;
+    if (((mod[0x5e] >> 4) & 1) != 0) return true;
+    if (*reinterpret_cast<s32*>(mod + 0x11c) > 0) return true;
+    s32 status = *reinterpret_cast<s32*>(mod + 0x74);
+    return (u32)(status - 0x11) < 2 || status == 0xb;
 }
 
 // -- Flags byte at +0x56 --
@@ -2060,6 +2082,14 @@ u32 check_stat_down_71003614f0(void* L) {
     return *reinterpret_cast<s32*>(reinterpret_cast<u8*>(ai) + 0x74) == 4;
 }
 
+// ── 0x7100361510 -- app::ai::check_stat_piyo (28B) ──────────────
+// [derived: compares stat_type(+0x74) in range [9,11] — dizzy/stunned states]
+bool check_stat_piyo_7100361510(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    return (u32)(*reinterpret_cast<s32*>(reinterpret_cast<u8*>(ai) + 0x74) - 9) < 3;
+}
+
 // ── 0x7100361530 -- app::ai::check_stat_dragoon (24B) ───────────
 // [derived: compares stat_type(+0x74) == 0x11 — using dragoon item]
 u32 check_stat_dragoon_7100361530(void* L) {
@@ -2090,6 +2120,67 @@ u32 check_stat_guard_71003615b0(void* L) {
     void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
     void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
     return *reinterpret_cast<s32*>(reinterpret_cast<u8*>(ai) + 0x74) == 0x1a;
+}
+
+// ── 0x71003615f0 -- app::ai::check_stat_floor_pass (80B) ────────
+// [derived: +0xd8 (s32): ground state, +0xd0->+0x5c bit5: passable flag,
+//  +0x10->+0x3a (u8): sub-type, +0x10->+0x20->+0x58->vtable[0x4f8/8] dispatch]
+u32 check_stat_floor_pass_71003615f0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    u8* mod = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    if (*reinterpret_cast<s32*>(mod + 0xd8) == 0) {
+        if ((*reinterpret_cast<u8*>(*reinterpret_cast<u64*>(mod + 0xd0) + 0x5c) >> 5) & 1) {
+            return 1;
+        }
+    }
+    u8* sub = reinterpret_cast<u8*>(*reinterpret_cast<u64*>(mod + 0x10));
+    if (sub[0x3a] > 3) {
+        u64 obj = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(*reinterpret_cast<u64*>(sub + 0x20) + 0x58) + 0x4f8);
+        return reinterpret_cast<u64(*)(void)>(obj)();
+    }
+    return 0;
+}
+
+// ── 0x7100361670 -- app::ai::check_stat_ground_free (88B) ───────
+// [derived: composite ground-free check — statue flag, status kind, inverted bitmask, air+sign check]
+// +0x54 bit30: statue/frozen flag, +0x74: status kind (1=ground),
+// +0x64: inverted flags (0x99 mask), +0x54 bit0: air, +0x58 bit7: sign bit
+u32 check_stat_ground_free_7100361670(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    u8* mod = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    if ((*reinterpret_cast<u32*>(mod + 0x54) >> 30) & 1) return 0;
+    if (*reinterpret_cast<s32*>(mod + 0x74) == 1) return 1;
+    if ((~*reinterpret_cast<u32*>(mod + 0x64) & 0x99) == 0) return 1;
+    if ((*reinterpret_cast<u32*>(mod + 0x54) & 1) == 0 && (mod[0x58] >> 7))
+        return 1;
+    return 0;
+}
+
+// ── 0x71003616d0 -- app::ai::check_stat_ground_free2 (100B) ────
+// [derived: like ground_free but with additional status!=0x17 check for status kind 1]
+u32 check_stat_ground_free2_71003616d0(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    u8* mod = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    if ((*reinterpret_cast<u32*>(mod + 0x54) >> 30) & 1) return 0;
+    if (*reinterpret_cast<s32*>(mod + 0x74) == 1 && *reinterpret_cast<s32*>(mod + 0x2c) != 0x17)
+        return 1;
+    if ((~*reinterpret_cast<u32*>(mod + 0x64) & 0x99) == 0) return 1;
+    if ((*reinterpret_cast<u32*>(mod + 0x54) & 1) == 0 && (mod[0x58] >> 7))
+        return 1;
+    return 0;
+}
+
+// ── 0x7100361740 -- app::ai::check_stat_air_free (88B) ──────────
+// [derived: like ground_free but for air — status kind 2, inverted mask 0xe00, air+sign]
+u32 check_stat_air_free_7100361740(void* L) {
+    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
+    u8* mod = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(ctx) + 0x168);
+    if ((*reinterpret_cast<u32*>(mod + 0x54) >> 30) & 1) return 0;
+    if (*reinterpret_cast<s32*>(mod + 0x74) == 2) return 1;
+    if ((~*reinterpret_cast<u32*>(mod + 0x64) & 0xe00) == 0) return 1;
+    if ((*reinterpret_cast<u32*>(mod + 0x54) & 1) != 0 && (mod[0x58] >> 7))
+        return 1;
+    return 0;
 }
 
 // ── 0x7100361a20 -- app::ai::check_skill_stat (24B) ─────────────
