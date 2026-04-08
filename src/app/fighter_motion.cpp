@@ -1852,3 +1852,112 @@ u32 HOLYWATER_REFLECT_SHIELD_ROT_SPEED(s32 fighter_kind) {
 }
 
 } // namespace app::holywater
+
+// ════════════════════════════════════════════════════════════════════════════
+// PEACH PEACHDAIKON weapon param accessors
+// FPA2+0x348 (Peach char params) → +0x158 (daikon sub-params) → field
+// [derived: same pattern as DAISY (FPA2+0x380→+0x158) but for Peach fighter]
+// ════════════════════════════════════════════════════════════════════════════
+
+static inline u8* peach_daikon_params() {
+    u8* pa = reinterpret_cast<u8*>(DAT_71052bb3b0);
+    u8* char_params = *reinterpret_cast<u8**>(pa + 0x348);
+    return *reinterpret_cast<u8**>(char_params + 0x158);
+}
+
+namespace app::peachdaikon {
+
+// PROB accessors — probability weights for each daikon variant
+// 0x7101668c90 (24B) [derived: FPA2+0x348→+0x158→+0x40]
+u32 PEACH_PEACHDAIKON_DAIKON_1_PROB() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x40); }
+// 0x7101668cb0 (24B) [derived: +0x44]
+u32 PEACH_PEACHDAIKON_DAIKON_2_PROB() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x44); }
+// 0x7101668cd0 (24B) [derived: +0x48]
+u32 PEACH_PEACHDAIKON_DAIKON_3_PROB() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x48); }
+// 0x7101668cf0 (24B) [derived: +0x4c]
+u32 PEACH_PEACHDAIKON_DAIKON_4_PROB() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x4c); }
+// 0x7101668d10 (24B) [derived: +0x50]
+u32 PEACH_PEACHDAIKON_DAIKON_5_PROB() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x50); }
+// 0x7101668d30 (24B) [derived: +0x54]
+u32 PEACH_PEACHDAIKON_DAIKON_6_PROB() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x54); }
+// 0x7101668d50 (24B) [derived: +0x58]
+u32 PEACH_PEACHDAIKON_DAIKON_7_PROB() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x58); }
+// 0x7101668d70 (24B) [derived: +0x5c]
+u32 PEACH_PEACHDAIKON_DAIKON_8_PROB() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x5c); }
+
+// POWER accessors — damage power for each daikon variant
+// 0x7101668d90 (24B) [derived: +0x20]
+u32 PEACH_PEACHDAIKON_DAIKON_1_POWER() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x20); }
+// 0x7101668db0 (24B) [derived: +0x24]
+u32 PEACH_PEACHDAIKON_DAIKON_2_POWER() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x24); }
+// 0x7101668dd0 (24B) [derived: +0x28]
+u32 PEACH_PEACHDAIKON_DAIKON_3_POWER() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x28); }
+// 0x7101668df0 (24B) [derived: +0x2c]
+u32 PEACH_PEACHDAIKON_DAIKON_4_POWER() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x2c); }
+// 0x7101668e10 (24B) [derived: +0x30]
+u32 PEACH_PEACHDAIKON_DAIKON_5_POWER() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x30); }
+// 0x7101668e30 (24B) [derived: +0x34]
+u32 PEACH_PEACHDAIKON_DAIKON_6_POWER() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x34); }
+// 0x7101668e50 (24B) [derived: +0x38]
+u32 PEACH_PEACHDAIKON_DAIKON_7_POWER() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x38); }
+// 0x7101668e70 (24B) [derived: +0x3c]
+u32 PEACH_PEACHDAIKON_DAIKON_8_POWER() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x3c); }
+
+} // namespace app::peachdaikon
+
+// ════════════════════════════════════════════════════════════════════════════
+// DOLL weapon param accessors (Mr. Game & Watch? / item)
+// FPA2+0xc08 → +0x178 (doll sub-params) → field
+// [derived: Ghidra shows FPA2+0xc08 is character/item param block,
+//  +0x178 is doll weapon sub-params. SHAPE_TYPE uses +0x1c0 instead]
+// ════════════════════════════════════════════════════════════════════════════
+
+static inline u8* doll_params() {
+    u8* pa = reinterpret_cast<u8*>(DAT_71052bb3b0);
+    u8* char_params = *reinterpret_cast<u8**>(pa + 0xc08);
+    return *reinterpret_cast<u8**>(char_params + 0x178);
+}
+
+static inline u8* doll_shape_params() {
+    u8* pa = reinterpret_cast<u8*>(DAT_71052bb3b0);
+    u8* char_params = *reinterpret_cast<u8**>(pa + 0xc08);
+    return *reinterpret_cast<u8**>(char_params + 0x1c0);
+}
+
+namespace app::doll {
+
+// 0x710165c510 (24B) — base speed Y [derived: +0x0, double deref]
+u32 DOLL_SPEED_Y() { return *reinterpret_cast<u32*>(doll_params()); }
+// 0x710165c530 (24B) — rotation speed Z [derived: +0x8]
+u32 DOLL_ROT_SPEED_Z() { return *reinterpret_cast<u32*>(doll_params() + 0x8); }
+// 0x710165c3f0 (24B) — reaction multiplier [derived: +0xc]
+u32 DOLL_REACTION_MUL() { return *reinterpret_cast<u32*>(doll_params() + 0xc); }
+// 0x710165c450 (24B) — smash max speed X [derived: +0x10]
+u32 DOLL_SMASH_MAX_SPEED_X() { return *reinterpret_cast<u32*>(doll_params() + 0x10); }
+// 0x710165c470 (24B) — smash max speed Y [derived: +0x14]
+u32 DOLL_SMASH_MAX_SPEED_Y() { return *reinterpret_cast<u32*>(doll_params() + 0x14); }
+// 0x710165c430 (24B) — smash accel Y [derived: +0x20]
+u32 DOLL_SMASH_ACCEL_Y() { return *reinterpret_cast<u32*>(doll_params() + 0x20); }
+// 0x710165c4f0 (24B) — rotation speed min [derived: +0x24]
+u32 DOLL_ROT_SPEED_MIN() { return *reinterpret_cast<u32*>(doll_params() + 0x24); }
+// 0x710165c4d0 (24B) — rotation speed max [derived: +0x28]
+u32 DOLL_ROT_SPEED_MAX() { return *reinterpret_cast<u32*>(doll_params() + 0x28); }
+// 0x710165c4b0 (24B) — power min [derived: +0x2c]
+u32 DOLL_POWER_MIN() { return *reinterpret_cast<u32*>(doll_params() + 0x2c); }
+// 0x710165c490 (24B) — power max [derived: +0x30]
+u32 DOLL_POWER_MAX() { return *reinterpret_cast<u32*>(doll_params() + 0x30); }
+// 0x710165c3d0 (24B) — life [derived: +0x34]
+u32 DOLL_LIFE() { return *reinterpret_cast<u32*>(doll_params() + 0x34); }
+// 0x710165c410 (24B) — life decay multiplier [derived: +0x38]
+u32 DOLL_LIFE_DEC_MUL() { return *reinterpret_cast<u32*>(doll_params() + 0x38); }
+// 0x710165c630 (24B) — min degree Y [derived: +0x3c]
+u32 DOLL_MIN_DEGREE_Y() { return *reinterpret_cast<u32*>(doll_params() + 0x3c); }
+// 0x710165c610 (24B) — max degree Y [derived: +0x40]
+u32 DOLL_MAX_DEGREE_Y() { return *reinterpret_cast<u32*>(doll_params() + 0x40); }
+// 0x710165c550 (24B) — rotation Z ratio [derived: +0x44]
+u32 DOLL_ROT_Z_RATIO() { return *reinterpret_cast<u32*>(doll_params() + 0x44); }
+// 0x710165c5f0 (24B) — shape type (different sub-struct at +0x1c0)
+// [derived: FPA2+0xc08→+0x1c0→+0x0 — separate sub-struct from main doll params]
+u32 DOLL_SHAPE_TYPE() { return *reinterpret_cast<u32*>(doll_shape_params()); }
+
+} // namespace app::doll
