@@ -234,15 +234,28 @@ def main():
     lines.append("/* Places functions at original addresses for byte-matching */")
     lines.append("")
 
-    # Define external symbols at their original addresses
+    # Separate function-address symbols from data-address symbols
+    # FUN_ symbols are defined as absolute (branch targets use BL, not ADRP)
+    # DAT_/PTR_ symbols need actual sections placed at their address so
+    # ADRP+LDR relocations can compute page-relative offsets
     lines.append("/* External symbol definitions */")
+    fun_syms = []
+    data_syms = []
     ext_count = 0
     for sym in sorted(undefined):
-        m = re.match(r'(FUN|DAT|PTR_DAT)_([0-9a-fA-F]+)', sym)
+        m = re.match(r'(FUN|DAT|PTR_DAT|PTR_LAB|LAB|PTR_\w+|UNK|switchN)_([0-9a-fA-F]+)', sym)
         if m:
             addr = int(m.group(2), 16)
-            lines.append("PROVIDE(%s = 0x%x);" % (sym, addr))
+            prefix = m.group(1)
+            if prefix == 'FUN':
+                fun_syms.append((sym, addr))
+            else:
+                data_syms.append((sym, addr))
             ext_count += 1
+
+    # FUN symbols as absolute PROVIDE (branches resolve fine)
+    for sym, addr in fun_syms:
+        lines.append("PROVIDE(%s = 0x%x);" % (sym, addr))
 
     lines.append("")
     lines.append("SECTIONS {")
@@ -256,6 +269,16 @@ def main():
         lines.append("  /* %s */" % short)
         lines.append("  . = 0x%x;" % orig_addr)
         lines.append("  %s : SUBALIGN(4) { *(%s) }" % (section_name, section_name))
+
+    # Place DAT/PTR symbols as actual 8-byte sections at their original addresses
+    # This allows ADRP+LDR (page-relative) relocations to resolve correctly
+    if data_syms:
+        lines.append("")
+        lines.append("  /* Data symbol stubs — placed at original addresses */")
+        data_syms.sort(key=lambda x: x[1])
+        for sym, addr in data_syms:
+            lines.append("  . = 0x%x;" % addr)
+            lines.append("  .data.%s : { PROVIDE(%s = .); QUAD(0); }" % (sym, sym))
 
     # Catch-all for remaining sections (after all addressed functions)
     lines.append("")
