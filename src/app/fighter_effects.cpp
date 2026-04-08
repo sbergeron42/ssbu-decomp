@@ -354,3 +354,32 @@ extern "C" void remove_head_effect(void* weapon, bool detach_flag) {
         reinterpret_cast<void(*)(void*, s32, s32)>(wvt[0xa0 / 8])(work, 0, 0x1000000d);
     }
 }
+
+// ---- Remove effect flushing (Kirby copy / Jigglypuff specializers) ----------
+
+// 0x7100ba32e0 (132 bytes) — FighterSpecializer_Kirby::purin_remove_effect_flushing
+// Checks work flag 0x21000011, if set removes common effect and clears flag
+// +0x50 [derived: WorkModule at accessor+0x50]
+// +0x140 [derived: EffectModule at accessor+0x140]
+// WorkModule::is_flag(0x21000011) [derived: vtable offset 0x108]
+// EffectModule::remove_common(0x75da53379) [derived: vtable offset 0x238, slot 71]
+// WorkModule::off_flag(0x21000011) [derived: vtable offset 0x120]
+extern "C" void purin_remove_effect_flushing(BattleObjectModuleAccessor* acc) {
+    WorkModule* work = static_cast<WorkModule*>(acc->work_module);
+    EffectModule* effect = static_cast<EffectModule*>(acc->effect_module);
+    if (work->is_flag(0x21000011)) {
+        effect->remove_common(0x75da53379ULL);
+        work->off_flag(0x21000011);
+    }
+}
+
+// 0x7100fe0290 (132 bytes) — FighterSpecializer_Purin::special_n_remove_effect_flushing
+// Identical logic to purin_remove_effect_flushing — Jigglypuff's own implementation
+extern "C" void special_n_remove_effect_flushing(BattleObjectModuleAccessor* acc) {
+    WorkModule* work = static_cast<WorkModule*>(acc->work_module);
+    EffectModule* effect = static_cast<EffectModule*>(acc->effect_module);
+    if (work->is_flag(0x21000011)) {
+        effect->remove_common(0x75da53379ULL);
+        work->off_flag(0x21000011);
+    }
+}
