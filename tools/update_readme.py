@@ -24,18 +24,20 @@ TOTAL_FUNCTIONS = 39635
 
 
 def get_compiled_count():
-    """Count unique function symbols across all .o files in build/."""
-    seen = set()
-    for obj_name in os.listdir(BUILD_DIR):
-        if not obj_name.endswith('.o'):
-            continue
-        result = subprocess.run([OBJDUMP, "-t", str(BUILD_DIR / obj_name)],
-                              capture_output=True, text=True)
-        for line in result.stdout.split('\n'):
-            if 'F .text' in line:
-                name = line.split()[-1]
-                seen.add(name)
-    return len(seen)
+    """Count compiled functions from CSV (M + N quality entries).
+
+    This is address-deduplicated — each binary address counts once.
+    Previously counted .o symbols which overcounted due to duplicate
+    definitions across compilation units.
+    """
+    count = 0
+    with open(FUNCTIONS_CSV) as f:
+        reader = csv.reader(f)
+        next(reader)  # skip header
+        for row in reader:
+            if row[1] in ('M', 'N'):
+                count += 1
+    return count
 
 
 def get_verify_stats():
@@ -59,7 +61,17 @@ def main():
     check_only = '--check' in sys.argv
 
     compiled = get_compiled_count()
-    verified, non_matching = get_verify_stats()
+    # Use CSV as canonical source for verified/non-matching counts
+    verified = 0
+    non_matching = 0
+    with open(FUNCTIONS_CSV) as f:
+        reader = csv.reader(f)
+        next(reader)
+        for row in reader:
+            if row[1] == 'M':
+                verified += 1
+            elif row[1] == 'N':
+                non_matching += 1
     total_decomp = compiled
     match_rate = verified * 100 / (verified + non_matching) if (verified + non_matching) > 0 else 0
 

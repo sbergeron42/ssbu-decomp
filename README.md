@@ -13,10 +13,9 @@ Targeting the final version: **patch 13.0.4**.
 | Category | Count | % of total |
 |----------|------:|------------|
 | **Total functions** | 39,635 | |
-| Verified (real C++) | 9,554 | 24.10% |
-| Verified (naked asm) | 569 | 1.44% |
-| Non-matching (WIP) | 3,331 | 8.40% |
-| **Total compiled** | **13,454** | **33.94%** |
+| Verified byte-identical | 10,123 | 25.54% |
+| Compiled (non-matching) | 3,331 | 8.40% |
+| **Total decompiled** | **13,454** | **33.94%** |
 | Undecompiled | 26,181 | 66.06% |
 
 ### By bytes (.text)
@@ -38,6 +37,20 @@ By bytes:       1.69M / 27.0M   ( 6.24% compiled,  1.75% verified)
 >
 > Naked asm functions (569) are binary-identical but not real source recovery
 > -- they are tracked separately from C++ decomp.
+
+### Counting methodology
+
+**Total functions (39,635):** Every function entry in `data/functions.csv`, derived from Ghidra analysis of the 13.0.4 binary. Function boundaries are Ghidra's best estimate — some may be over-sized (trailing alignment padding) or split (one function misidentified as two).
+
+**Compiled:** Count of unique CSV addresses where `verify_all.py` successfully matched a compiled `.o` symbol to an original binary address and compared bytes. This is address-deduplicated — if two `.o` symbols resolve to the same binary address, it counts as one. The `.o` file count (~676 files, ~16,000 symbols) is higher because of duplicate definitions across compilation units.
+
+**Verified (byte-identical):** Subset of compiled where every instruction matches the original binary after relocation patching. Relocations (BL/ADRP/ADD targets) are resolved in-place using symbol addresses from the CSV, so a function with correct instructions but unlinked `bl #0` still counts as verified if the relocation target is correct.
+
+**Non-matching:** Compiled but not byte-identical. Causes include: NX Clang register allocation divergence, prologue scheduling, shrink-wrapping, wrong source code, or missing code paths.
+
+**Match rate:** `verified / (verified + non-matching)` — percentage of compiled functions that byte-match. Does NOT include uncompiled functions in the denominator.
+
+**Tools:** `tools/verify_all.py --update` is the authoritative source. `tools/update_readme.py` reads from verify_all.py output + CSV. `tools/progress.py` provides an alternate view.
 
 ## Naming Provenance
 
