@@ -271,6 +271,40 @@ extern "C" bool is_boss_no_dead() {
     return *(u8*)(data + 0x14e) != 0;
 }
 
+// ---- AI stage/rule queries (leaf, singleton tail-call or field read) --------
+
+// lib::Singleton<app::FighterManager>::instance_
+// [derived: address 0x71052b84f8 from adrp+ldr in is_hp disassembly]
+extern "C" void* DAT_71052b84f8 HIDDEN;
+
+extern "C" u32 FUN_7100314d50(u32);
+extern "C" u32 FUN_7100314dc0(u32);
+
+// 0x710036b220 (32 bytes) — app::ai_stage::is_small
+// Reads stage param from BattleObjectWorld, passes to stage size check
+// DAT_71052b5fd8 [derived: BattleObjectWorld singleton, same as target_* functions]
+// +0x150 [inferred: stage param index, u32]
+extern "C" u32 is_small() {
+    u8* world = *(u8**)DAT_71052b5fd8;
+    return FUN_7100314d50(*(u32*)(world + 0x150));
+}
+
+// 0x710036b380 (32 bytes) — app::ai_stage::is_1on1
+// Same pattern as is_small but different check function
+extern "C" u32 is_1on1() {
+    u8* world = *(u8**)DAT_71052b5fd8;
+    return FUN_7100314dc0(*(u32*)(world + 0x150));
+}
+
+// 0x710036b680 (32 bytes) — app::ai_rule::is_hp
+// Returns true if HP mode is active (byte at FighterManager+0xc3)
+// DAT_71052b84f8 [derived: FighterManager singleton]
+// +0xc3 [inferred: HP mode flag, u8]
+extern "C" u8 is_hp() {
+    u8* mgr = *(u8**)DAT_71052b84f8;
+    return *(u8*)(mgr + 0xc3);
+}
+
 // ---- Camera query (leaf, singleton access) ---------------------------------
 
 // [inferred: camera mode/state pointer-to-pointer]
