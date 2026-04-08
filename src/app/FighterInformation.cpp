@@ -102,7 +102,12 @@ f32 FighterInformation__hit_point_impl(FighterInformation* fi) {
 #endif
     f32 result = max_hp - damage;
     f32 zero = 0.0f;
-    return result > zero ? result : zero;
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("fmax %s0, %s1, %s2" : "=w"(result) : "w"(result), "w"(zero));
+#else
+    result = result > zero ? result : zero;
+#endif
+    return result;
 }
 
 // 71020c9e50 -- dead_count (11 instructions, branch on w1==-2)

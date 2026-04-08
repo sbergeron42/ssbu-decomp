@@ -102,7 +102,7 @@ u32 FUN_71004a0a90(void* self, u64 param2, bool param3) {
 // ---------------------------------------------------------------------------
 // 0x71004a0fd0  288B  SetKeepPoseChangeMotion — phase accumulation + dispatch
 // ---------------------------------------------------------------------------
-void SetKeepPoseChangeMotion_4a0fd0(float rate, void* self) {
+void SetKeepPoseChangeMotion(float rate, void* self) {
     u8* s = reinterpret_cast<u8*>(self);
     u8 flag1 = s[0x250];
     if (!flag1 && !s[0x252]) return;
