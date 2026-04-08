@@ -2370,21 +2370,8 @@ f32 width_710036b810(void* L) {
 // AI check_stat — additional bitfield tests
 // ════════════════════════════════════════════════════════════════════
 
-// ── 0x7100361350 -- app::ai::check_stat_gorogoro (32B) ────────────
-// [derived: tests bits 0x80020 of ai_data(+0x168)->+0x54 (combined gorogoro flags)]
-u32 check_stat_gorogoro_7100361350(void* L) {
-    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
-    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
-    return (*reinterpret_cast<u32*>(reinterpret_cast<u8*>(ai) + 0x54) & 0x80020) != 0;
-}
-
-// ── 0x7100361510 -- app::ai::check_stat_piyo (28B) ────────────────
-// [derived: checks ai_data(+0x168)->+0x74 in range [9,11] (piyo status kinds)]
-u32 check_stat_piyo_7100361510(void* L) {
-    void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
-    void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
-    return static_cast<u32>(*reinterpret_cast<s32*>(reinterpret_cast<u8*>(ai) + 0x74) - 9) < 3;
-}
+// check_stat_gorogoro: see line ~552 (pool-a version with STAT_MODULE macro)
+// check_stat_piyo: see line ~584 (pool-a version)
 
 // ════════════════════════════════════════════════════════════════════
 // AI command step checks — fighting game input checks

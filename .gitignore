@@ -30,6 +30,9 @@ original/
 *.lock
 *.lock~
 
+# Generated stubs (regenerate with: python tools/gen_stubs.py)
+src/stubs/
+
 # Python
 __pycache__/
 *.pyc

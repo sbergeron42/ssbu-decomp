@@ -264,9 +264,7 @@ def main():
     lines.append("  .rodata : { *(.rodata .rodata.*) }")
     lines.append("  .data : { *(.data .data.*) }")
     lines.append("  .bss : { *(.bss .bss.*) }")
-    lines.append("  /DISCARD/ : { *(.dynsym) *(.gnu.hash) *(.dynstr) *(.hash)")
-    lines.append("               *(.dynamic) *(.rela.dyn) *(.got) *(.got.plt)")
-    lines.append("               *(.comment) *(.note*) *(.eh_frame*) }")
+    lines.append("  /DISCARD/ : { *(.comment) *(.note*) *(.eh_frame*) }")
     lines.append("}")
 
     with open(out, 'w') as f:
