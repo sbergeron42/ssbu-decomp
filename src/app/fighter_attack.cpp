@@ -160,3 +160,56 @@ extern "C" void set_stage_status_darz() {
 // set_slow_whole @ 0x71015c1690: SKIPPED — NX Clang generates frame for tail call thunks,
 // upstream Clang 8 optimizes to frameless leaf (20B vs 36B)
 // begin_scale_animation_simple @ 0x71015c1170: SKIPPED — same NX tail-call frame issue
+
+// ---- AI stat check (leaf) --------------------------------------------------
+
+// 0x7100361350 (32 bytes) — app::ai::check_stat_gorogoro
+// Checks rolling/tumbling state bitmask in battle object struct.
+// *(L-8) [derived: AI context from lua_State extra]
+// +0x168 [inferred: battle object pointer within AI context]
+// +0x54 [inferred: state flags, u32]
+// 0x80020 [inferred: bitmask for gorogoro (rolling/tumbling) states]
+extern "C" bool check_stat_gorogoro(u64 L) {
+    return (*(u32*)(*(u64*)(*(u64*)(L - 8) + 0x168) + 0x54) & 0x80020) != 0;
+}
+
+// ---- Boss manager queries (leaf, singleton access) -------------------------
+
+// lib::Singleton<app::BossManager>::instance_
+// [derived: address 0x71052b7ef8 from adrp+ldr in is_boss_stop disassembly]
+extern "C" void* DAT_71052b7ef8 HIDDEN;
+
+// 0x71015c8bf0 (40 bytes) — app::boss_private::is_boss_stop
+// Returns true if boss stop count > 0. BossManager at +8 → data at +0x164.
+// +0x8 [inferred: BossManager instance data pointer]
+// +0x164 [inferred: boss stop count, s32]
+extern "C" bool is_boss_stop() {
+    void* mgr = DAT_71052b7ef8;
+    if (mgr == nullptr) return false;
+    u8* data = *(u8**)((u8*)mgr + 8);
+    return *(s32*)(data + 0x164) > 0;
+}
+
+// 0x71015c8c20 (40 bytes) — app::boss_private::is_boss_no_dead
+// Returns true if boss no-dead flag is set.
+// +0x14e [inferred: no-dead flag, u8]
+extern "C" bool is_boss_no_dead() {
+    void* mgr = DAT_71052b7ef8;
+    if (mgr == nullptr) return false;
+    u8* data = *(u8**)((u8*)mgr + 8);
+    return *(u8*)(data + 0x14e) != 0;
+}
+
+// ---- Camera query (leaf, singleton access) ---------------------------------
+
+// [inferred: camera mode/state pointer-to-pointer]
+// [derived: address 0x71052b7f00 from adrp+ldr in is_photo_camera disassembly]
+extern "C" void* DAT_71052b7f00 HIDDEN;
+
+// 0x7100696bb0 (40 bytes) — app::FighterUtil::is_photo_camera
+// Returns true if current camera mode is photo (value 2 at *ptr + 4).
+// +0x4 [inferred: camera mode enum, s32, 2=photo]
+extern "C" bool is_photo_camera() {
+    if (DAT_71052b7f00 == nullptr) return false;
+    return *(s32*)(*(u8**)DAT_71052b7f00 + 4) == 2;
+}
