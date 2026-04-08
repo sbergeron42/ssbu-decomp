@@ -236,3 +236,155 @@ void set_energy_motion_speed_mul(BattleObjectModuleAccessor* acc, f32 mul) {
 }
 
 } // namespace app::WeaponSpecializer_ElementDiver
+
+namespace app::boss_private {
+
+// 0x71015c83f0 (88 bytes)
+// Disables both main (slot 0xc) and sub1 (slot 0xd) kinetic energies
+// [derived: get_energy called twice on same KineticModule, km saved in x19,
+//  first result in x20; both energy->enabled (at +0x30) set to 0]
+void unable_energy_all(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* e1 = km->get_energy(0xc);
+    KineticEnergy* e2 = km->get_energy(0xd);
+    e1->enabled = 0;
+    e2->enabled = 0;
+}
+
+} // namespace app::boss_private
+
+namespace app::kinetic_energy_outer {
+
+// 0x71015d00f0 (60 bytes)
+// Returns x speed from outer energy (slot 1)
+// [derived: get_energy(1) → energy->get_speed() vtable+0x20, return *(f32*)speed]
+f32 get_speed_x(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(1);
+    void* speed = energy->get_speed();
+    return *reinterpret_cast<f32*>(speed);
+}
+
+// 0x71015d0130 (60 bytes)
+// Returns y speed from outer energy (slot 1)
+// [derived: get_energy(1) → energy->get_speed() vtable+0x20, return *(f32*)(speed+4)]
+f32 get_speed_y(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(1);
+    void* speed = energy->get_speed();
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(speed) + 4);
+}
+
+} // namespace app::kinetic_energy_outer
+
+namespace app::kinetic_energy_gravity {
+
+// 0x71015d0280 (60 bytes)
+// Returns y speed from gravity energy (slot 2)
+// [derived: get_energy(2) → get_speed(), return *(f32*)(speed+4)]
+f32 get_speed_y(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(2);
+    void* speed = energy->get_speed();
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(speed) + 4);
+}
+
+} // namespace app::kinetic_energy_gravity
+
+namespace app::kinetic_energy_ground {
+
+// 0x71015d03b0 (60 bytes)
+// Returns y speed from ground energy (slot 3)
+// [derived: get_energy(3) → get_speed(), return *(f32*)(speed+4)]
+f32 get_speed_y(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(3);
+    void* speed = energy->get_speed();
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(speed) + 4);
+}
+
+} // namespace app::kinetic_energy_ground
+
+namespace app::kinetic_energy_control {
+
+// 0x71015d0470 (60 bytes)
+// Returns x speed from control energy (slot 4)
+// [derived: get_energy(4) → get_speed(), return *(f32*)speed]
+f32 get_speed_x(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(4);
+    void* speed = energy->get_speed();
+    return *reinterpret_cast<f32*>(speed);
+}
+
+// 0x71015d04b0 (60 bytes)
+// Returns y speed from control energy (slot 4)
+// [derived: get_energy(4) → get_speed(), return *(f32*)(speed+4)]
+f32 get_speed_y(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(4);
+    void* speed = energy->get_speed();
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(speed) + 4);
+}
+
+} // namespace app::kinetic_energy_control
+
+namespace app::kinetic_energy_motion {
+
+// 0x71015d07f0 (60 bytes)
+// Returns x speed from motion energy (slot 6)
+// [derived: get_energy(6) → get_speed(), return *(f32*)speed]
+f32 get_speed_x(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(6);
+    void* speed = energy->get_speed();
+    return *reinterpret_cast<f32*>(speed);
+}
+
+// 0x71015d0830 (60 bytes)
+// Returns y speed from motion energy (slot 6)
+// [derived: get_energy(6) → get_speed(), return *(f32*)(speed+4)]
+f32 get_speed_y(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(6);
+    void* speed = energy->get_speed();
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(speed) + 4);
+}
+
+} // namespace app::kinetic_energy_motion
+
+namespace app::kinetic_energy_stop {
+
+// 0x71015d0900 (60 bytes)
+// Returns x speed from stop energy (slot 7)
+// [derived: get_energy(7) → get_speed(), return *(f32*)speed]
+f32 get_speed_x(u8* L) {
+    KineticModule* km = item_kinetic(L);
+    KineticEnergy* energy = km->get_energy(7);
+    void* speed = energy->get_speed();
+    return *reinterpret_cast<f32*>(speed);
+}
+
+} // namespace app::kinetic_energy_stop
+
+namespace app::ai_param {
+
+// 0x710036ba00 (16 bytes)
+// Returns fall_speed_y_max from AI param block
+// [derived: *(obj-8)->0x168 is AI param ptr, +0x228 is fall_speed_y_max field]
+f32 fall_speed_y_max(u8* L) {
+    u8* obj = *reinterpret_cast<u8**>(L - 8);
+    u8* p = *reinterpret_cast<u8**>(obj + 0x168);
+    return *reinterpret_cast<f32*>(p + 0x228);
+}
+
+// 0x710036ba10 (16 bytes)
+// Returns dive_speed_y_max from AI param block
+// [derived: same base as fall_speed_y_max, offset +0x22c]
+f32 dive_speed_y_max(u8* L) {
+    u8* obj = *reinterpret_cast<u8**>(L - 8);
+    u8* p = *reinterpret_cast<u8**>(obj + 0x168);
+    return *reinterpret_cast<f32*>(p + 0x22c);
+}
+
+} // namespace app::ai_param
