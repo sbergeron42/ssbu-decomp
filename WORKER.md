@@ -2,23 +2,31 @@
 
 ## Model: Opus
 
-## Task: Continue effect/sound decomp + expand to AttackModule
+## Task: Item/weapon + parameter loading — community priority #4
 
-20 effect/sound functions so far. Keep going, and expand into AttackModule (195 vtable methods available).
+## Strategy
+Weapon parameters and item behavior are heavily used by modders who create custom fighters and items. Parameter loading is how the game reads .prc files, which modders replace constantly. Both areas have strong community knowledge to leverage.
 
-### Target Files
-- `src/app/fighter_effects.cpp` (append — effects + sound)
-- `src/app/fighter_attack.cpp` (new file — AttackModule functions)
+## Targets
+1. **weapon_params.cpp** — Continue weapon param accessor decomp. Already have BUDDYBOMB, PICKELBOMB, MECHAKOOPA, HOLYWATER, PEACH, DOLL, EXPLOSIONBOMB, LINKARROW. Target remaining weapon types.
+2. **Item functions** — 97 undecompiled (53 KB). Item spawning, behavior, collision.
+3. **Parameter loading** — 87 undecompiled (65 KB). ParamAccessor, prc file reading, hash lookups.
+4. **FighterParamAccessor2.cpp** — Existing file, extend with more param accessors.
 
-### Headers: EffectModule.h, SoundModule.h, AttackModule.h, BattleObjectModuleAccessor.h
-### Derivation Chains MANDATORY
-### Do NOT use naked asm.
+## Approach
+- Weapon params follow consistent patterns (see existing weapon_params.cpp)
+- Use Ghidra to identify param accessor vtable patterns
+- ItemModule vtable methods in include/app/modules/
+- Parameter loading may use hash40 lookups — cross-reference with community hash tables
 
-### Quick Reference
-```
-/c/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -Ilib/NintendoSDK/include -Ilib/NintendoSDK/include/stubs -c src/app/FILE.cpp -o build/FILE.o
+## File Territory
+- src/app/weapon_params.cpp
+- src/app/Item.cpp
+- src/app/ItemManager.cpp
+- src/app/FighterParamAccessor2.cpp
+- include/app/ (struct updates)
 
-python tools/compare_bytes.py FUN_name
-mcp__ghidra__search_functions_by_name("effect")
-mcp__ghidra__search_functions_by_name("attack")
-```
+## Quality Rules
+- Weapon params are templated patterns — document the template
+- No naked asm
+- Use existing module headers for vtable dispatch
