@@ -9,6 +9,7 @@
 
 extern "C" double pow(double, double);
 extern "C" float powf(float, float);
+extern "C" void FUN_710067de90(void*, u64, s32, s32, u32);
 
 // ______ External data ____________________________________________
 
@@ -29,13 +30,30 @@ extern "C" __attribute__((visibility("hidden"))) void* DAT_71052b7f00;
 // [derived: get_delta_frame loads u32 and ucvtf to float]
 extern "C" __attribute__((visibility("hidden"))) u32 DAT_710523c004;
 
-// ______ Struct returns ___________________________________________
+// FighterManager singleton (adrp 0x71052b8000 + 0x4f8)
+extern "C" __attribute__((visibility("hidden"))) void* DAT_71052b84f8;
+
+// .rodata float constants for is_zero epsilon check
+extern "C" __attribute__((visibility("hidden"))) f32 DAT_7104470f68;
+extern "C" __attribute__((visibility("hidden"))) f32 DAT_7104471970;
+
+// StageManager singleton (adrp 0x7105329000 + 0x9d8)
+extern "C" __attribute__((visibility("hidden"))) void* DAT_710532999d8;  // intentionally wrong name for unique symbol
+
+// GroundCollisionLine zero-constant pointer (adrp 0x71052a7000 + 0xa80)
+extern "C" __attribute__((visibility("hidden"))) void* DAT_71052a7a80;
+
+// ______ Struct/vector returns _____________________________________
 
 // 4-float HFA for dead_range / camera_range returns
 // [derived: disassembly returns in s0-s3 (HFA calling convention)]
 struct Float4 {
     f32 a, b, c, d;
 };
+
+// 128-bit SIMD vector for functions that return via q0 register
+// [derived: ldr q0,[x8,#offset]; ret pattern in camera accessors]
+typedef float float4 __attribute__((vector_size(16)));
 
 // ════════════════════════════════════════════════════════════════════
 // sv_math — scalar math utilities
@@ -162,6 +180,613 @@ u32 is_floor_passable_7102284a30(void* line) {
 }
 
 // ════════════════════════════════════════════════════════════════════
+// Fighter status queries (FighterManager tail calls)
+// ════════════════════════════════════════════════════════════════════
+
+extern "C" void FUN_710067a5c0(void*);
+extern "C" void FUN_710067a3a0(void*, s32);
+
+// ── 0x71015cd530 -- app::fighter::is_absolutely_final_status (16B) ─
+// [derived: tail call through FighterManager singleton to impl]
+void is_absolutely_final_status_71015cd530() {
+    void* mgr = *reinterpret_cast<void**>(DAT_71052b84f8);
+    FUN_710067a5c0(mgr);
+}
+
+// ── 0x71015cd4d0 -- app::fighter::is_final_status_or_standby (20B) ─
+// [derived: tail call with extra param w1=1]
+void is_final_status_or_standby_71015cd4d0() {
+    void* mgr = *reinterpret_cast<void**>(DAT_71052b84f8);
+    FUN_710067a3a0(mgr, 1);
+}
+
+// ── 0x71015cdfe0 -- app::fighter::get_category (8B) ───────────────
+// lsr w0,w0,#0x1c; ret — extracts top 4 bits (category nibble) from object ID
+u32 get_category_71015cdfe0(u32 id) {
+    return id >> 28;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// self_param accessors — dispatch through FighterParamAccessor singleton
+// ════════════════════════════════════════════════════════════════════
+
+// FighterParamAccessor singleton (adrp 0x71052c3000 + 0x1e0)
+extern "C" __attribute__((visibility("hidden"))) void* DAT_71052c31e0;
+
+extern "C" f32 FUN_7101602a30(void*, s32, u64);
+extern "C" s32 FUN_7101602b90(void*, s32, u64);
+extern "C" u64 FUN_7101602da0(void*, s32, u64);
+
+// ── 0x71015c4c10 -- self_param_float (20B) ────────────────────────
+// [derived: loads singleton, shuffles params, tail calls float accessor]
+f32 self_param_float_71015c4c10(s32 kind, u64 hash) {
+    return FUN_7101602a30(DAT_71052c31e0, kind, hash);
+}
+
+// ── 0x71015c4c30 -- self_param_int (20B) ──────────────────────────
+s32 self_param_int_71015c4c30(s32 kind, u64 hash) {
+    return FUN_7101602b90(DAT_71052c31e0, kind, hash);
+}
+
+// ── 0x71015c4c50 -- self_param_hash (20B) ─────────────────────────
+u64 self_param_hash_71015c4c50(s32 kind, u64 hash) {
+    return FUN_7101602da0(DAT_71052c31e0, kind, hash);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// Bound/physics param accessors — all read from ParamAccessor+0x12d0 sub-object
+// [derived: adrp+ldr DAT_71052bb3b0 → +0x12d0 → field offset]
+// ════════════════════════════════════════════════════════════════════
+
+// ParamAccessor singleton (adrp 0x71052bb000 + 0x3b0)
+extern "C" __attribute__((visibility("hidden"))) void* DAT_71052bb3b0;
+
+// ── 0x71016593a0 -- init_bound_frame (20B) ────────────────────────
+u32 init_bound_frame_71016593a0() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x12d0);
+    return *reinterpret_cast<u32*>(sub + 0x230);
+}
+
+// ── 0x71016593c0 -- special_lw_gravity (20B) ─────────────────────
+f32 special_lw_gravity_71016593c0() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x12d0);
+    return *reinterpret_cast<f32*>(sub + 0x234);
+}
+
+// ── 0x71016593e0 -- special_lw_speed_y_max (20B) ─────────────────
+f32 special_lw_speed_y_max_71016593e0() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x12d0);
+    return *reinterpret_cast<f32*>(sub + 0x238);
+}
+
+// ── 0x7101659400 -- length_gravity (20B) ──────────────────────────
+f32 length_gravity_7101659400() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x12d0);
+    return *reinterpret_cast<f32*>(sub + 0x240);
+}
+
+// ── 0x7101659420 -- length_speed_y_max (20B) ─────────────────────
+f32 length_speed_y_max_7101659420() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x12d0);
+    return *reinterpret_cast<f32*>(sub + 0x244);
+}
+
+// ── 0x7101659440 -- length_angle_x_velocity (20B) ────────────────
+f32 length_angle_x_velocity_7101659440() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x12d0);
+    return *reinterpret_cast<f32*>(sub + 0x260);
+}
+
+// ── 0x7101659460 -- length_angle_y_velocity (20B) ────────────────
+f32 length_angle_y_velocity_7101659460() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x12d0);
+    return *reinterpret_cast<f32*>(sub + 0x264);
+}
+
+// ── 0x7101659480 -- length_angle_z_velocity (20B) ────────────────
+f32 length_angle_z_velocity_7101659480() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x12d0);
+    return *reinterpret_cast<f32*>(sub + 0x268);
+}
+
+// ── 0x71016594a0 -- side_gravity (20B) ───────────────────────────
+f32 side_gravity_71016594a0() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x12d0);
+    return *reinterpret_cast<f32*>(sub + 0x26c);
+}
+
+// ── 0x71016594c0 -- side_speed_y_max (20B) ───────────────────────
+f32 side_speed_y_max_71016594c0() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x12d0);
+    return *reinterpret_cast<f32*>(sub + 0x270);
+}
+
+// ── 0x71016594e0 -- side_angle_x_velocity (20B) ──────────────────
+f32 side_angle_x_velocity_71016594e0() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x12d0);
+    return *reinterpret_cast<f32*>(sub + 0x28c);
+}
+
+// ── 0x7101659500 -- side_angle_y_velocity (20B) ──────────────────
+f32 side_angle_y_velocity_7101659500() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x12d0);
+    return *reinterpret_cast<f32*>(sub + 0x290);
+}
+
+// ── 0x7101659520 -- side_angle_z_velocity (20B) ──────────────────
+f32 side_angle_z_velocity_7101659520() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x12d0);
+    return *reinterpret_cast<f32*>(sub + 0x294);
+}
+
+// ── 0x7101659560 -- flashing_frame_before_life_over (20B) ────────
+u32 flashing_frame_before_life_over_7101659560() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x12d0);
+    return *reinterpret_cast<u32*>(sub + 0x2a4);
+}
+
+// ── 0x7101659580 -- rebound_speed_x_add (20B) ───────────────────
+f32 rebound_speed_x_add_7101659580() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x12d0);
+    return *reinterpret_cast<f32*>(sub + 0x2a8);
+}
+
+// ── 0x71016595a0 -- rebound_speed_y_add (20B) ───────────────────
+f32 rebound_speed_y_add_71016595a0() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x12d0);
+    return *reinterpret_cast<f32*>(sub + 0x2ac);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// Additional simple accessors (FighterManager / ItemManager)
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x71015ce620 -- is_ready_go (20B) ─────────────────────────────
+// [derived: FighterManager deref → byte at +0xd2]
+u8 is_ready_go_71015ce620() {
+    void* mgr = *reinterpret_cast<void**>(DAT_71052b84f8);
+    return *reinterpret_cast<u8*>(reinterpret_cast<u8*>(mgr) + 0xd2);
+}
+
+// ItemManager singleton (adrp 0x71052c3000 + 0x70)
+extern "C" __attribute__((visibility("hidden"))) void* DAT_71052c3070;
+
+// ── 0x71015ca910 -- get_num_of_active_item (20B) ──────────────────
+// [derived: ItemManager → inner array at +0x70 → indexed load by item kind]
+u64 get_num_of_active_item_71015ca910(s32 idx) {
+    u8* mgr = reinterpret_cast<u8*>(DAT_71052c3070);
+    u64* arr = *reinterpret_cast<u64**>(mgr + 0x70);
+    return arr[idx];
+}
+
+// ── 0x71015ca8f0 -- get_num_of_ownered_active_item (20B) ─────────
+// [derived: param shuffle through ItemManager singleton, tail call]
+extern "C" u64 FUN_71015dab40(void*, s32, u64);
+
+u64 get_num_of_ownered_active_item_71015ca8f0(s32 kind, u64 param) {
+    return FUN_71015dab40(DAT_71052c3070, kind, param);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// Tail-call thunks (8B each — set extra param and forward)
+// ════════════════════════════════════════════════════════════════════
+
+extern "C" void FUN_710160e690(void*, u64, s32);
+extern "C" void FUN_71015c8ee0(void*, u64, s32);
+
+// ── 0x71015c3060 -- get_assist_respawn_position (8B) ──────────────
+// mov w2,#1; b target
+void get_assist_respawn_position_71015c3060(void* p0, u64 p1) {
+    FUN_710160e690(p0, p1, 1);
+}
+
+// ── 0x71015c8ed0 -- create_weapon (8B) ────────────────────────────
+// mov w2,#-1; b target
+void create_weapon_71015c8ed0(void* p0, u64 p1) {
+    FUN_71015c8ee0(p0, p1, -1);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// Item/weapon param accessors — ParamAccessor+0x13b0 sub-object
+// [derived: adrp+ldr DAT_71052bb3b0 → +0x13b0 → field at offset]
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x7101669000 -- ignition (20B) ───────────────────────────────
+f32 ignition_7101669000() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x13b0);
+    return *reinterpret_cast<f32*>(sub + 0x75c);
+}
+
+// ── 0x7101669020 -- flashing_frame_before_life_over (20B) ────────
+u32 flashing_frame_before_life_over_7101669020(void) {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x13b0);
+    return *reinterpret_cast<u32*>(sub + 0x760);
+}
+
+// ── 0x7101669060 -- lost (20B) ───────────────────────────────────
+u32 lost_7101669060() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x13b0);
+    return *reinterpret_cast<u32*>(sub + 0x768);
+}
+
+// ── 0x71016690a0 -- gravity_accel (20B) ──────────────────────────
+f32 gravity_accel_71016690a0() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x13b0);
+    return *reinterpret_cast<f32*>(sub + 0x770);
+}
+
+// ── 0x71016690c0 -- gravity_accel_max (20B) ──────────────────────
+f32 gravity_accel_max_71016690c0() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x13b0);
+    return *reinterpret_cast<f32*>(sub + 0x774);
+}
+
+// ── 0x71016690e0 -- gravity_frame (20B) ──────────────────────────
+u32 gravity_frame_71016690e0() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x13b0);
+    return *reinterpret_cast<u32*>(sub + 0x778);
+}
+
+// ── 0x7101669100 -- flashing_frame_before_life (20B) ─────────────
+u32 flashing_frame_before_life_7101669100() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x13b0);
+    return *reinterpret_cast<u32*>(sub + 0x77c);
+}
+
+// ── 0x710166e110 -- flash_start_frame (20B) ──────────────────────
+u32 flash_start_frame_710166e110() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x13b0);
+    return *reinterpret_cast<u32*>(sub + 0x51c);
+}
+
+// ── 0x710166e190 -- camera_range_damag_mul_start_rate (20B) ──────
+f32 camera_range_damag_mul_start_rate_710166e190() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x13b0);
+    return *reinterpret_cast<f32*>(sub + 0x530);
+}
+
+// ── 0x710166e1b0 -- camera_range_damag_mul_end_rate (20B) ────────
+f32 camera_range_damag_mul_end_rate_710166e1b0() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x13b0);
+    return *reinterpret_cast<f32*>(sub + 0x534);
+}
+
+// ── 0x710166e1d0 -- camera_range_damag_mul_min (20B) ─────────────
+f32 camera_range_damag_mul_min_710166e1d0() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x13b0);
+    return *reinterpret_cast<f32*>(sub + 0x538);
+}
+
+// ── 0x710166e1f0 -- camera_range_damag_mul_max (20B) ─────────────
+f32 camera_range_damag_mul_max_710166e1f0() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x13b0);
+    return *reinterpret_cast<f32*>(sub + 0x53c);
+}
+
+// ── 0x710166e210 -- generate_continuous_forbid_frame (20B) ───────
+u32 generate_continuous_forbid_frame_710166e210() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x13b0);
+    return *reinterpret_cast<u32*>(sub + 0x540);
+}
+
+// ── 0x710166e250 -- jostle_touch_ground_frame (20B) ──────────────
+u32 jostle_touch_ground_frame_710166e250() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x13b0);
+    return *reinterpret_cast<u32*>(sub + 0x554);
+}
+
+// ── 0x710166e270 -- jostle_up_touch_ground_frame (20B) ───────────
+u32 jostle_up_touch_ground_frame_710166e270() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x13b0);
+    return *reinterpret_cast<u32*>(sub + 0x55c);
+}
+
+// ── Other ParamAccessor sub-objects ──────────────────────────────
+
+// ── 0x710166f720 -- POWERESA_SHAPE_TYPE (20B) ───────────────────
+// [derived: ParamAccessor+0xc78 sub-object → u32 at +0x3a0]
+u32 POWERESA_SHAPE_TYPE_710166f720() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0xc78);
+    return *reinterpret_cast<u32*>(sub + 0x3a0);
+}
+
+// ── 0x710166fc60 -- get_energy_max_frame (20B) ──────────────────
+// [derived: ParamAccessor+0x50 sub-object → f32 at +0xefc]
+f32 get_energy_max_frame_710166fc60() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x50);
+    return *reinterpret_cast<f32*>(sub + 0xefc);
+}
+
+// ── 0x710165d480 -- EXPLOSIONBOMB_WIRE_ROT_SPEED (20B) ──────────
+// [derived: ParamAccessor+0x3f0 sub-object → u32 at +0x120]
+u32 EXPLOSIONBOMB_WIRE_ROT_SPEED_710165d480() {
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_71052bb3b0) + 0x3f0);
+    return *reinterpret_cast<u32*>(sub + 0x120);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// check_stat_* — AI/item status bit-field accessors
+// All read from scripting context *(L-8)+0x168, then extract a single
+// bit from a flags byte. [derived: consistent pattern across 28 functions]
+// ════════════════════════════════════════════════════════════════════
+
+// Helper: read the AI stat module from lua state
+#define STAT_MODULE(L) \
+    (*reinterpret_cast<u8**>(*reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8) + 0x168))
+
+// -- Flags byte at +0x54 --
+
+// ── 0x71003612f0 -- check_stat_air (20B) ─────────────────────────
+// ldr w8,[x8,#0x54]; and w0,w8,#1 — bit 0 via 32-bit load
+u32 check_stat_air_71003612f0(void* L) {
+    u8* mod = STAT_MODULE(L);
+    return *reinterpret_cast<u32*>(mod + 0x54) & 1;
+}
+
+// ── 0x7100361310 -- check_stat_build_max (20B) ───────────────────
+u32 check_stat_build_max_7100361310(void* L) {
+    return (STAT_MODULE(L)[0x54] >> 2) & 1;
+}
+
+// ── 0x7100361330 -- check_stat_build_up (20B) ────────────────────
+u32 check_stat_build_up_7100361330(void* L) {
+    return (STAT_MODULE(L)[0x54] >> 3) & 1;
+}
+
+// ── 0x7100361370 -- check_stat_attention (20B) ───────────────────
+u32 check_stat_attention_7100361370(void* L) {
+    return (STAT_MODULE(L)[0x54] >> 6) & 1;
+}
+
+// -- Flags byte at +0x55 --
+
+// ── 0x71003613b0 -- check_stat_final_act (20B) ──────────────────
+u32 check_stat_final_act_71003613b0(void* L) {
+    return (STAT_MODULE(L)[0x55] >> 1) & 1;
+}
+
+// ── 0x71003613d0 -- check_stat_invincible (20B) ─────────────────
+u32 check_stat_invincible_71003613d0(void* L) {
+    return (STAT_MODULE(L)[0x55] >> 5) & 1;
+}
+
+// -- Flags byte at +0x56 --
+
+// ── 0x7100361470 -- check_stat_sp_dir (20B) ─────────────────────
+u32 check_stat_sp_dir_7100361470(void* L) {
+    return (STAT_MODULE(L)[0x56] >> 4) & 1;
+}
+
+// ── 0x7100361490 -- check_stat_unguarded_hind (20B) ─────────────
+u32 check_stat_unguarded_hind_7100361490(void* L) {
+    return (STAT_MODULE(L)[0x56] >> 5) & 1;
+}
+
+// ── 0x71003614b0 -- check_stat_unguarded (20B) ──────────────────
+u32 check_stat_unguarded_71003614b0(void* L) {
+    return (STAT_MODULE(L)[0x56] >> 6) & 1;
+}
+
+// -- Flags word/byte at +0x58 --
+
+// ── 0x71003617a0 -- check_stat_touch_u (20B) ────────────────────
+u32 check_stat_touch_u_71003617a0(void* L) {
+    return (STAT_MODULE(L)[0x58] >> 2) & 1;
+}
+
+// ── 0x71003617c0 -- check_stat_touch_l (20B) ────────────────────
+// ldr w8,[x8,#0x58]; and w0,w8,#1 — bit 0 via 32-bit load
+u32 check_stat_touch_l_71003617c0(void* L) {
+    u8* mod = STAT_MODULE(L);
+    return *reinterpret_cast<u32*>(mod + 0x58) & 1;
+}
+
+// ── 0x71003617e0 -- check_stat_touch_r (20B) ────────────────────
+u32 check_stat_touch_r_71003617e0(void* L) {
+    return (STAT_MODULE(L)[0x58] >> 1) & 1;
+}
+
+// ── 0x7100361800 -- check_stat_cannot_catch_cliff (20B) ──────────
+u32 check_stat_cannot_catch_cliff_7100361800(void* L) {
+    return (STAT_MODULE(L)[0x58] >> 4) & 1;
+}
+
+// ── 0x7100361820 -- check_stat_dive (20B) ────────────────────────
+u32 check_stat_dive_7100361820(void* L) {
+    return (STAT_MODULE(L)[0x58] >> 5) & 1;
+}
+
+// -- Flags byte at +0x59 --
+
+// ── 0x7100361840 -- check_stat_unable_cliff_xlu (20B) ───────────
+u32 check_stat_unable_cliff_xlu_7100361840(void* L) {
+    return (STAT_MODULE(L)[0x59] >> 1) & 1;
+}
+
+// ── 0x7100361860 -- check_stat_unable_escape_air (20B) ──────────
+u32 check_stat_unable_escape_air_7100361860(void* L) {
+    return (STAT_MODULE(L)[0x59] >> 2) & 1;
+}
+
+// ── 0x71003618a0 -- check_stat_unable_special (20B) ─────────────
+u32 check_stat_unable_special_71003618a0(void* L) {
+    return (STAT_MODULE(L)[0x59] >> 4) & 1;
+}
+
+// ── 0x71003618c0 -- check_stat_unable_jump (20B) ────────────────
+u32 check_stat_unable_jump_71003618c0(void* L) {
+    return (STAT_MODULE(L)[0x59] >> 5) & 1;
+}
+
+// ── 0x71003618e0 -- check_stat_unable_shield (20B) ──────────────
+u32 check_stat_unable_shield_71003618e0(void* L) {
+    return (STAT_MODULE(L)[0x59] >> 6) & 1;
+}
+
+// -- Flags word/byte at +0x5c --
+
+// ── 0x7100361900 -- check_stat_have (20B) ────────────────────────
+// ldr w8,[x8,#0x5c]; and w0,w8,#1 — bit 0 via 32-bit load
+u32 check_stat_have_7100361900(void* L) {
+    u8* mod = STAT_MODULE(L);
+    return *reinterpret_cast<u32*>(mod + 0x5c) & 1;
+}
+
+// ── 0x7100361920 -- check_stat_put_bomb (20B) ───────────────────
+u32 check_stat_put_bomb_7100361920(void* L) {
+    return (STAT_MODULE(L)[0x5c] >> 1) & 1;
+}
+
+// ── 0x7100361940 -- check_stat_can_use_superleaf (20B) ──────────
+u32 check_stat_can_use_superleaf_7100361940(void* L) {
+    return (STAT_MODULE(L)[0x5c] >> 4) & 1;
+}
+
+// ── 0x7100361960 -- check_stat_can_use_rocketbelt (20B) ─────────
+u32 check_stat_can_use_rocketbelt_7100361960(void* L) {
+    return (STAT_MODULE(L)[0x5c] >> 5) & 1;
+}
+
+// -- Flags byte at +0x5d --
+
+// ── 0x7100361980 -- check_stat_have_throw (20B) ─────────────────
+u32 check_stat_have_throw_7100361980(void* L) {
+    return (STAT_MODULE(L)[0x5d] >> 4) & 1;
+}
+
+// ── 0x71003619a0 -- check_stat_have_shoot (20B) ─────────────────
+u32 check_stat_have_shoot_71003619a0(void* L) {
+    return (STAT_MODULE(L)[0x5d] >> 5) & 1;
+}
+
+// ── 0x71003619c0 -- check_stat_have_swing (20B) ─────────────────
+u32 check_stat_have_swing_71003619c0(void* L) {
+    return (STAT_MODULE(L)[0x5d] >> 6) & 1;
+}
+
+// -- Flags byte at +0x60 --
+
+// ── 0x71003619e0 -- check_stat_dogs_blind_own (20B) ─────────────
+u32 check_stat_dogs_blind_own_71003619e0(void* L) {
+    return (STAT_MODULE(L)[0x60] >> 4) & 1;
+}
+
+// ── 0x7100361a00 -- check_stat_target_invisible (20B) ───────────
+u32 check_stat_target_invisible_7100361a00(void* L) {
+    return (STAT_MODULE(L)[0x60] >> 6) & 1;
+}
+
+// -- Float accessor --
+
+// ── 0x7100361b70 -- shield_rate (20B) ────────────────────────────
+// ldp s0,s1,[x8,#0xe8]; fdiv s0,s0,s1 — ratio of two floats
+// [derived: current shield / max shield from AI stat module]
+f32 shield_rate_7100361b70(void* L) {
+    u8* mod = STAT_MODULE(L);
+    f32 cur = *reinterpret_cast<f32*>(mod + 0xe8);
+    f32 max = *reinterpret_cast<f32*>(mod + 0xec);
+    return cur / max;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// AI stat module — simple float/int field reads (16B each)
+// Same *(L-8)+0x168 module, but direct field loads (no bit extraction)
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x7100361b90 -- damage_reaction_mul (16B) ────────────────────
+f32 damage_reaction_mul_7100361b90(void* L) { return *reinterpret_cast<f32*>(STAT_MODULE(L) + 0xfc); }
+
+// ── 0x7100361bb0 -- height (16B) ────────────────────────────────
+f32 height_7100361bb0(void* L) { return *reinterpret_cast<f32*>(STAT_MODULE(L) + 0xc8); }
+
+// ── 0x7100361bc0 -- pos_x (16B) ─────────────────────────────────
+f32 pos_x_7100361bc0(void* L) { return *reinterpret_cast<f32*>(STAT_MODULE(L) + 0x80); }
+
+// ── 0x7100361bd0 -- pos_y (16B) ─────────────────────────────────
+f32 pos_y_7100361bd0(void* L) { return *reinterpret_cast<f32*>(STAT_MODULE(L) + 0x84); }
+
+// ── 0x7100361be0 -- speed_x (16B) ───────────────────────────────
+f32 speed_x_7100361be0(void* L) { return *reinterpret_cast<f32*>(STAT_MODULE(L) + 0xa0); }
+
+// ── 0x7100361bf0 -- speed_y (16B) ───────────────────────────────
+f32 speed_y_7100361bf0(void* L) { return *reinterpret_cast<f32*>(STAT_MODULE(L) + 0xa4); }
+
+// ── 0x7100361c00 -- scale (16B) ─────────────────────────────────
+f32 scale_7100361c00(void* L) { return *reinterpret_cast<f32*>(STAT_MODULE(L) + 0xc0); }
+
+// ── 0x7100361c50 -- motion_rate (16B) ───────────────────────────
+f32 motion_rate_7100361c50(void* L) { return *reinterpret_cast<f32*>(STAT_MODULE(L) + 0x50); }
+
+// ── 0x7100361d00 -- damage (16B) ────────────────────────────────
+f32 damage_7100361d00(void* L) { return *reinterpret_cast<f32*>(STAT_MODULE(L) + 0xe0); }
+
+// ── 0x7100361d10 -- hp (16B) ────────────────────────────────────
+f32 hp_7100361d10(void* L) { return *reinterpret_cast<f32*>(STAT_MODULE(L) + 0xe4); }
+
+// ── 0x7100361d20 -- lr (16B) ────────────────────────────────────
+f32 lr_7100361d20(void* L) { return *reinterpret_cast<f32*>(STAT_MODULE(L) + 0xc4); }
+
+// ════════════════════════════════════════════════════════════════════
+// AI stat module — tail-call dispatchers (20B each)
+// ════════════════════════════════════════════════════════════════════
+
+extern "C" void FUN_7100358c20(void*, s32);
+
+// ── 0x7100361ce0 -- is_sp_u_available (20B) ─────────────────────
+// [derived: loads stat module, tail-calls with param 0]
+void is_sp_u_available_7100361ce0(void* L) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    void* mod = *reinterpret_cast<void**>(ctx + 0x168);
+    FUN_7100358c20(mod, 0);
+}
+
+// ── 0x7100361cf0 -- is_sp_u_weaken_available (20B) ──────────────
+void is_sp_u_weaken_available_7100361cf0(void* L) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    void* mod = *reinterpret_cast<void**>(ctx + 0x168);
+    FUN_7100358c20(mod, 1);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// More stat module accessors (fighter param reads)
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x710036b9e0 -- jump_g_mul (16B) ────────────────────────────
+f32 jump_g_mul_710036b9e0(void* L) { return *reinterpret_cast<f32*>(STAT_MODULE(L) + 0x204); }
+
+// ── 0x710036b9f0 -- jump_g (16B) ───────────────────────────────
+f32 jump_g_710036b9f0(void* L) { return *reinterpret_cast<f32*>(STAT_MODULE(L) + 0x218); }
+
+// ── 0x710036ba00 -- fall_speed_y_max (16B) ──────────────────────
+f32 fall_speed_y_max_710036ba00(void* L) { return *reinterpret_cast<f32*>(STAT_MODULE(L) + 0x228); }
+
+// ── 0x710036ba10 -- dive_speed_y_max (16B) ──────────────────────
+f32 dive_speed_y_max_710036ba10(void* L) { return *reinterpret_cast<f32*>(STAT_MODULE(L) + 0x22c); }
+
+// ── 0x710036ba70 -- escape_air_cancel_frame (16B) ───────────────
+f32 escape_air_cancel_frame_710036ba70(void* L) { return *reinterpret_cast<f32*>(STAT_MODULE(L) + 0x234); }
+
+#undef STAT_MODULE
+
+// ════════════════════════════════════════════════════════════════════
+// Global singleton reads / misc 16B accessors
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x710036b3d0 -- scroll_x (16B) ─────────────────────────────
+// [derived: BattleObjectWorld singleton → f32 at +0x20]
+f32 scroll_x_710036b3d0() {
+    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(DAT_71052b7558) + 0x20);
+}
+
+// ── 0x71003681d0 -- set_no_return_frame (16B) ───────────────────
+// ldur x8,[x0,#-8]; neg w9,w1; strh w9,[x8,#0xc7c]; ret
+// [derived: writes negated value as s16 to scripting context +0xc7c]
+void set_no_return_frame_71003681d0(void* L, s32 val) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    *reinterpret_cast<s16*>(ctx + 0xc7c) = (s16)(-val);
+}
+
+// ════════════════════════════════════════════════════════════════════
 // sv_item — item utility functions
 // ════════════════════════════════════════════════════════════════════
 
@@ -267,8 +892,39 @@ void RUMBLE_DUMMY_71022b0190(void* L) {
 }
 
 // ════════════════════════════════════════════════════════════════════
-// sv_camera_manager — camera/dead range accessors
-// These return 4-float HFA structs from the battle scene manager
+// sv_camera_manager — q0-return accessors (128-bit SIMD vector return)
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x7102283240 -- app::sv_camera_manager::get_pos (20B) ─────────
+// [derived: returns camera position as 128-bit vector from manager+0xd30]
+float4 get_pos_7102283240() {
+    void* mgr = *reinterpret_cast<void**>(DAT_71052b7f00);
+    return *reinterpret_cast<float4*>(reinterpret_cast<u8*>(mgr) + 0xd30);
+}
+
+// ── 0x7102283260 -- app::sv_camera_manager::get_target (20B) ──────
+// [derived: returns camera target as 128-bit vector from manager+0xd20]
+float4 get_target_7102283260() {
+    void* mgr = *reinterpret_cast<void**>(DAT_71052b7f00);
+    return *reinterpret_cast<float4*>(reinterpret_cast<u8*>(mgr) + 0xd20);
+}
+
+// ── 0x7102283280 -- app::sv_camera_manager::get_internal_pos (20B) ─
+// [derived: returns internal camera position from manager+0xec0]
+float4 get_internal_pos_7102283280() {
+    void* mgr = *reinterpret_cast<void**>(DAT_71052b7f00);
+    return *reinterpret_cast<float4*>(reinterpret_cast<u8*>(mgr) + 0xec0);
+}
+
+// ── 0x71022832a0 -- app::sv_camera_manager::get_internal_target (20B)
+// [derived: returns internal camera target from manager+0xeb0]
+float4 get_internal_target_71022832a0() {
+    void* mgr = *reinterpret_cast<void**>(DAT_71052b7f00);
+    return *reinterpret_cast<float4*>(reinterpret_cast<u8*>(mgr) + 0xeb0);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// sv_camera_manager — HFA struct accessors (s0-s3 return)
 // ════════════════════════════════════════════════════════════════════
 
 // ── 0x7102282810 -- app::sv_camera_manager::dead_range (32B) ──────
