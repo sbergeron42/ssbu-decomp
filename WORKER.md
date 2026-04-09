@@ -2,31 +2,44 @@
 
 ## Model: Opus
 
-## Task: Item/weapon + parameter loading — community priority #4
+## Task: Item/weapon + Lua medium functions — targeting 130+ KB
 
-## Strategy
-Weapon parameters and item behavior are heavily used by modders who create custom fighters and items. Parameter loading is how the game reads .prc files, which modders replace constantly. Both areas have strong community knowledge to leverage.
+## Targets (by size, descending)
+### Lua/ACMD (92 KB)
+1. lua_ai_path_builder (4,388 bytes @ 0x71017e88d0)
+2. lua_copy (2,212 bytes @ 0x71038f29d0)
+3. luaopen_string (1,892 bytes @ 0x7103917450)
+4. luaL_loadfilex (1,760 bytes @ 0x71038f7ae0)
+5. ~~LuaModule (1,640 bytes @ 0x710372d390)
+6. pop_lua_stack (1,324 bytes @ 0x710372e420)
+7. luaL_setfuncs (1,304 bytes @ 0x71038f8f60)
 
-## Targets
-1. **weapon_params.cpp** — Continue weapon param accessor decomp. Already have BUDDYBOMB, PICKELBOMB, MECHAKOOPA, HOLYWATER, PEACH, DOLL, EXPLOSIONBOMB, LINKARROW. Target remaining weapon types.
-2. **Item functions** — 97 undecompiled (53 KB). Item spawning, behavior, collision.
-3. **Parameter loading** — 87 undecompiled (65 KB). ParamAccessor, prc file reading, hash lookups.
-4. **FighterParamAccessor2.cpp** — Existing file, extend with more param accessors.
+NOTE: Skip lua_ai_init (62,524 bytes) — too large for this round.
+
+### Item (42 KB)
+1. ItemManager (6,428 bytes @ 0x71015d2260)
+2. lot_create_item (5,716 bytes @ 0x71015bcde0)
+3. final_rand_create_item (5,024 bytes @ 0x7100e8aef0)
+4. ResetHaveItemConstraintNode (2,728 bytes @ 0x7100473480)
+5. item_generate_position_in_rect (2,140 bytes @ 0x71015ce870)
+
+Continue weapon_params.cpp for smaller accessors between the big targets.
 
 ## Approach
-- Weapon params follow consistent patterns (see existing weapon_params.cpp)
-- Use Ghidra to identify param accessor vtable patterns
-- ItemModule vtable methods in include/app/modules/
-- Parameter loading may use hash40 lookups — cross-reference with community hash tables
+- Lua functions in 0x71038f-0x71039x may be -O0 → try __attribute__((optnone))
+- Continue building on L2CValue.h from prior round
+- ItemManager constructor reveals struct layout — prioritize it
+- lot_create_item is the item spawn function — high modder value
 
 ## File Territory
-- src/app/weapon_params.cpp
+- src/app/lua_acmd.cpp (continue)
+- src/app/weapon_params.cpp (continue)
 - src/app/Item.cpp
 - src/app/ItemManager.cpp
-- src/app/FighterParamAccessor2.cpp
+- include/lib/L2CValue.h (continue)
 - include/app/ (struct updates)
 
 ## Quality Rules
-- Weapon params are templated patterns — document the template
+- Use optnone for -O0 Lua functions
 - No naked asm
-- Use existing module headers for vtable dispatch
+- 3-attempt limit per function
