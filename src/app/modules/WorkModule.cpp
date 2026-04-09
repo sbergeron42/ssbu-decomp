@@ -151,8 +151,7 @@ void WorkModule__enable_transition_term_group_impl(BattleObjectModuleAccessor* a
 
 // 710208dcf0  unable_transition_term_group [vt+0x148]
 void WorkModule__enable_transition_term_group_impl_2(BattleObjectModuleAccessor* a, u64 group) {
-    auto* m = WM(a);
-    reinterpret_cast<void(*)(WorkModule*, u64)>(m->_vt[0x148/8])(m, group);
+    WM(a)->unable_transition_term_group((s32)group);
 }
 
 // 710208dd00  clear_transition_term_group [vt+0x150]
@@ -182,8 +181,7 @@ void WorkModule__unable_transition_term_group_ex_impl(BattleObjectModuleAccessor
 
 // 710208dd50  unable_transition_term_group_ex_all [vt+0x178]
 void WorkModule__unable_transition_term_group_ex_all_impl(BattleObjectModuleAccessor* a, u64 group) {
-    auto* m = WM(a);
-    reinterpret_cast<void(*)(WorkModule*, u64)>(m->_vt[0x178/8])(m, group);
+    WM(a)->unable_transition_term_group_ex_all((s32)group);
 }
 
 // --- Transition term operations ---
@@ -212,8 +210,7 @@ void WorkModule__clear_transition_term_impl(BattleObjectModuleAccessor* a) {
 
 // 710208dda0  is_enable_transition_term_forbid [vt+0x1a0]
 void WorkModule__v0x1a0(BattleObjectModuleAccessor* a, u64 p1) {
-    auto* m = WM(a);
-    reinterpret_cast<void(*)(WorkModule*, u64)>(m->_vt[0x1a0/8])(m, p1);
+    WM(a)->is_enable_transition_term_forbid((s32)p1);
 }
 
 // 710208ddb0  enable_transition_term_forbid [vt+0x1a8]
@@ -223,8 +220,7 @@ void WorkModule__enable_transition_term_forbid_impl(BattleObjectModuleAccessor* 
 
 // 710208ddc0  unable_transition_term_forbid [vt+0x1b0]
 void WorkModule__v0x1b0(BattleObjectModuleAccessor* a, u64 p1) {
-    auto* m = WM(a);
-    reinterpret_cast<void(*)(WorkModule*, u64)>(m->_vt[0x1b0/8])(m, p1);
+    WM(a)->unable_transition_term_forbid((s32)p1);
 }
 
 // 710208ddd0  enable_transition_term_forbid_group [vt+0x1b8]
@@ -234,8 +230,7 @@ void WorkModule__enable_transition_term_forbid_group_impl(BattleObjectModuleAcce
 
 // 710208dde0  unable_transition_term_forbid_group [vt+0x1c0]
 void WorkModule__v0x1c0(BattleObjectModuleAccessor* a, u64 p1) {
-    auto* m = WM(a);
-    reinterpret_cast<void(*)(WorkModule*, u64)>(m->_vt[0x1c0/8])(m, p1);
+    WM(a)->unable_transition_term_forbid_group((s32)p1);
 }
 
 // 710208ddf0  clear_transition_term_forbid [vt+0x1c8]
@@ -250,8 +245,7 @@ void WorkModule__enable_transition_term_forbid_indivi_impl(BattleObjectModuleAcc
 
 // 710208de10  unable_transition_term_forbid_indivi [vt+0x200]
 void WorkModule__v0x200(BattleObjectModuleAccessor* a, u64 p1) {
-    auto* m = WM(a);
-    reinterpret_cast<void(*)(WorkModule*, u64)>(m->_vt[0x200/8])(m, p1);
+    WM(a)->unable_transition_term_forbid_indivi((s32)p1);
 }
 
 // --- Misc operations ---
