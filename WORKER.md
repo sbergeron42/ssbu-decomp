@@ -2,20 +2,25 @@
 
 ## Model: Opus
 
-## Task: Effect template functions — 33 remaining, ~75 KB
+## Task: Effect template functions — 25 remaining, ~55 KB
 
-## Progress (25/68 complete)
+## Progress (33/68 complete)
 - 4 perfect byte matches: EFFECT_REMOVE_ATTR, EFFECT_OFF_HANDLE, LAST_EFFECT_SET_WORK_INT, EFFECT_OFF
 - 3 dispatch patterns: kill_all/kill_kind, req_on_joint, req_follow
 - New patterns: LAST_EFFECT_SET_* family, EFFECT_DETACH_KIND
+- FLW_POS family (4 functions): float-position req_follow variant, 14-param call
+- FOLLOW_COLOR/ALPHA: req_follow → handle → set_color/set_alpha vtable call
+- LAST_PARTICLE_SET_COLOR, LAST_EFFECT_SET_OFFSET_TO_CAMERA_FLAT
 - CSE divergence: upstream Clang CSEs DAT_7104861960 loads, ~85-95% size
 
 ## Continue with
-- EFFECT_FLIP, EFFECT_FOLLOW_FLIP, FOOT_EFFECT_FLIP, LANDING_EFFECT_FLIP (need shared arg parser FUN_7102288620)
-- EFFECT_FLW_POS, EFFECT_FLW_POS_NO_STOP, EFFECT_FLW_POS_UNSYNC_VIS
-- EFFECT_FOLLOW_COLOR, EFFECT_FOLLOW_ALPHA, EFFECT_FOLLOW_RND family
-- EFFECT_BRANCH_SITUATION, EFFECT_COLOR, EFFECT_ALPHA
-- EFFECT_WORK_R, EFFECT_GLOBAL family
+- EFFECT_FOLLOW_FLIP, EFFECT_FOLLOW_FLIP_arg13, EFFECT_FOLLOW_NO_STOP_FLIP (motion flip check + hash swap)
+- EFFECT_FOLLOW_FLIP_COLOR, EFFECT_FOLLOW_FLIP_ALPHA (flip + color/alpha)
+- EFFECT_FOLLOW_RND, EFFECT_FOLLOW_RND_WORK, EFFECT_FOLLOW_FLIP_RND (inline XOR-shift RNG)
+- EFFECT_FOLLOW_LIGHT (3976B, complex)
+- FUN_7102288620 (shared 16-arg parser) needed by: EFFECT, EFFECT_FLIP, EFFECT_COLOR, EFFECT_COLOR_WORK, EFFECT_ALPHA, EFFECT_FLIP_ALPHA, EFFECT_WORK_R, EFFECT_BRANCH_SITUATION
+- EFFECT_GLOBAL family (needs FUN_710228ea70)
+- FOOT_EFFECT, LANDING_EFFECT, DOWN_EFFECT (complex unique patterns)
 
 ## File Territory
 - src/app/sv_animcmd_effect.cpp (continue)
