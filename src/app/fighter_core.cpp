@@ -1,4 +1,6 @@
 #include "types.h"
+#include "app/FighterManager.h"
+#include "app/FighterEntry.h"
 
 // Fighter core utility functions — pool-b
 // Contains param lookups, fighter kind mappings, and core fighter helpers
@@ -127,7 +129,7 @@ extern "C" u64 FUN_710066cd40(u64 param_1) {
 // Maps a 40-bit param hash to a (type_info, field_ptr) pair in a fighter param struct.
 // Returns (&PTR_LAB_710523bba0, nullptr) if hash is not recognized.
 // The struct spans ~0x628 bytes; 292 f32 fields, 26+25 int fields, 19 bool/u8 fields.
-// [derived: Ghidra FUN_71006f3b00 � binary search over 369 param hash values]
+// [derived: Ghidra FUN_71006f3b00 � binary search over 369 param hash values]
 // ============================================================================
 
 struct ParamEntry {
@@ -530,4 +532,226 @@ extern "C" ParamEntry FUN_71006f3b00(char* param_1, u64 param_2) {
     }
     return result;
 }
+
+// ============================================================================
+// FighterManager utility functions
+// ============================================================================
+
+#define HIDDEN2 __attribute__((visibility("hidden")))
+
+// FighterManager singleton
+// [derived: all FighterManager:: functions dereference this global]
+namespace lib { extern "C" void* Singleton_app_FighterManager_instance_ asm("_ZN3lib9SingletonIN3app14FighterManagerEE9instance_E") HIDDEN2; }
+#define FM_INSTANCE (reinterpret_cast<app::FighterManager*>(lib::Singleton_app_FighterManager_instance_))
+
+extern "C" [[noreturn]] void abort();
+extern "C" void FUN_7100653490(void* entry, s32 param);  // deactivate entry helper [HARD, simd_complex]
+extern "C" void FUN_7100649540(u64 battle_object, s32 enable, s32 rate, s32 duration, s32 param_5);  // slow control [HARD, complex_tail_call]
+
+// ============================================================================
+// is_loaded_fighter
+// Address: 0x7101653310 | Size: 68 bytes
+// Returns 1 if the fighter at entry_id is loaded and not flagged as unloaded.
+// [derived: Ghidra FUN_7101653310 — checks singleton, bounds, entry ptr, unload flag]
+// ============================================================================
+
+// NOTE: Upstream Clang 8 reorders the param check before the singleton load.
+// NX Clang checks singleton first. Structurally correct, ordering mismatch only.
+extern "C" u64 FUN_7101653310(s32 entry_id) {
+    using namespace app;
+    if (FM_INSTANCE != nullptr && (u32)entry_id < 8) {
+        FighterEntry* entry = reinterpret_cast<FighterEntry*>(FM_INSTANCE->data->entries[entry_id]);
+        if (entry != nullptr && entry->is_unloaded != 1) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+// ============================================================================
+// is_activate_fighter
+// Address: 0x7101653500 | Size: 72 bytes
+// Returns true if the fighter entry at entry_id exists and has entry_type == 6 (active).
+// [derived: Ghidra FUN_7101653500 — aborts on OOB, checks entry_type]
+// ============================================================================
+
+extern "C" bool FUN_7101653500(s32 entry_id) {
+    using namespace app;
+    if ((u32)entry_id >= 8) {
+        abort();
+    }
+    FighterEntry* entry = reinterpret_cast<FighterEntry*>(FM_INSTANCE->data->entries[entry_id]);
+    if (entry != nullptr) {
+        return entry->entry_type == 6;
+    }
+    return false;
+}
+
+// ============================================================================
+// deactivate_fighter
+// Address: 0x7101653550 | Size: 68 bytes
+// Deactivates a fighter entry if it is currently active (entry_type == 6).
+// [derived: Ghidra FUN_7101653550 — calls FUN_7100653490 to perform deactivation]
+// ============================================================================
+
+extern "C" void FUN_7101653550(s32 entry_id) {
+    using namespace app;
+    if ((u32)entry_id >= 8) {
+        abort();
+    }
+    FighterEntry* entry = reinterpret_cast<FighterEntry*>(FM_INSTANCE->data->entries[entry_id]);
+    if (entry->entry_type == 6) {
+        FUN_7100653490(entry, 1);
+    }
+}
+
+// ============================================================================
+// set_fighter_slow
+// Address: 0x7101652920 | Size: 184 bytes
+// Sets slow-motion on a fighter (and its partner if present).
+// [derived: Ghidra FUN_7101652920 — reads current_index to pick active slot,
+//  calls FUN_7100649540 to apply slow, checks partner_flags bit 1 for partner]
+// ============================================================================
+
+extern "C" void FUN_7101652920(s32 entry_id, s32 rate, s32 duration) {
+    using namespace app;
+    if (entry_id == -1) return;
+    if ((u32)entry_id >= 8) {
+        abort();
+    }
+    FighterEntry* entry = reinterpret_cast<FighterEntry*>(FM_INSTANCE->data->entries[entry_id]);
+    if (entry != nullptr && entry->entry_type == 6) {
+        u64 battle_object = reinterpret_cast<u64>(entry->slots[entry->current_index]);
+        FUN_7100649540(battle_object, 1, rate, duration, 0);
+        if ((entry->partner_flags >> 1) & 1) {
+            u64 partner = reinterpret_cast<u64>(entry->slots[1]);
+            FUN_7100649540(partner, 1, rate, duration, 0);
+        }
+    }
+}
+
+// ============================================================================
+// cancel_fighter_slow
+// Address: 0x71016529e0 | Size: 164 bytes
+// Cancels slow-motion on a fighter (and its partner if present).
+// [derived: Ghidra FUN_71016529e0 — same structure as set_fighter_slow but
+//  passes (0,0,0,0) to FUN_7100649540 instead of (1,rate,duration,0)]
+// ============================================================================
+
+extern "C" void FUN_71016529e0(s32 entry_id) {
+    using namespace app;
+    if (entry_id == -1) return;
+    if ((u32)entry_id >= 8) {
+        abort();
+    }
+    FighterEntry* entry = reinterpret_cast<FighterEntry*>(FM_INSTANCE->data->entries[entry_id]);
+    if (entry != nullptr && entry->entry_type == 6) {
+        u64 battle_object = reinterpret_cast<u64>(entry->slots[entry->current_index]);
+        FUN_7100649540(battle_object, 0, 0, 0, 0);
+        if ((entry->partner_flags >> 1) & 1) {
+            u64 partner = reinterpret_cast<u64>(entry->slots[1]);
+            FUN_7100649540(partner, 0, 0, 0, 0);
+        }
+    }
+}
+
+// ============================================================================
+// ItemManager utility functions
+// ============================================================================
+
+// ItemManager singleton
+// [derived: all ItemManager:: functions dereference this global]
+namespace lib { extern "C" void* Singleton_app_ItemManager_instance_ asm("_ZN3lib9SingletonIN3app11ItemManagerEE9instance_E") HIDDEN2; }
+#define IM_INSTANCE (reinterpret_cast<u8*>(lib::Singleton_app_ItemManager_instance_))
+
+// Invalid item battle object ID
+#define INVALID_ITEM_ID 0x50000000u
+
+// ============================================================================
+// find_active_item_from_id
+// Address: 0x71015ca930 | Size: 92 bytes
+// Finds an active item by battle object ID. Returns module accessor ptr (+0x98)
+// or nullptr if not found.
+// [derived: Ghidra FUN_71015ca930 — iterates active item list at IM+0x28..+0x30,
+//  checks item+0x90->+0x18 == 0 (alive) and item+8 == id]
+// ============================================================================
+
+extern "C" u64 FUN_71015ca930(u32 object_id) {
+    u64 found = 0;
+    if (object_id != INVALID_ITEM_ID) {
+        u64* begin = *reinterpret_cast<u64**>(IM_INSTANCE + 0x28);
+        u64* end   = *reinterpret_cast<u64**>(IM_INSTANCE + 0x30);
+        for (u64* it = begin; it != end; ++it) {
+            u64 item = *it;
+            // Check alive: *(item+0x90)->+0x18 == 0
+            if (*(u8*)(*(u64*)(item + 0x90) + 0x18) == 0 &&
+                *(u32*)(item + 0x8) == object_id) {
+                found = item;
+                break;
+            }
+        }
+    }
+    // [derived: original uses csel for branchless return]
+    u64 addr = found + 0x98;
+    return (found != 0) ? addr : 0;
+}
+
+// ============================================================================
+// remove_item_from_id
+// Address: 0x71015ca990 | Size: 88 bytes
+// Removes an item by battle object ID via vtable call at +0x520.
+// [derived: Ghidra FUN_71015ca990 — iterates item list at IM+0x10..+0x18,
+//  finds matching item+8, calls vtable[0x520/8] to remove]
+// ============================================================================
+
+extern "C" void FUN_71015ca990(u32 object_id) {
+    if (object_id == INVALID_ITEM_ID) return;
+    u64* begin = *reinterpret_cast<u64**>(IM_INSTANCE + 0x10);
+    u64* end   = *reinterpret_cast<u64**>(IM_INSTANCE + 0x18);
+    for (u64* it = begin; it != end; ++it) {
+        u64 item = *it;
+        if (*(u32*)(item + 0x8) == object_id) {
+            if (item != 0) {
+                auto fn = *reinterpret_cast<void(**)(u64, s32)>(*(u64*)item + 0x520);
+                fn(item, 0);
+            }
+            return;
+        }
+    }
+}
+
+// ============================================================================
+// get_item_kind
+// Address: 0x71015cf3d0 | Size: 140 bytes
+// Gets the item kind for a given battle object ID. Returns -1 if not found.
+// [derived: Ghidra FUN_71015cf3d0 — iterates active items, checks category
+//  nibble at +0xa0 >> 28 == 4 for deep deref, else returns 10]
+// ============================================================================
+
+extern "C" s32 FUN_71015cf3d0(u32 object_id) {
+    if (object_id == INVALID_ITEM_ID) return -1;
+    u64* begin = *reinterpret_cast<u64**>(IM_INSTANCE + 0x28);
+    u64* end   = *reinterpret_cast<u64**>(IM_INSTANCE + 0x30);
+    for (u64* it = begin; it != end; ++it) {
+        u64 item = *it;
+        // Check alive and matching ID
+        if (*(u8*)(*(u64*)(item + 0x90) + 0x18) != 0) continue;
+        if (*(u32*)(item + 0x8) != object_id) continue;
+        // Found matching active item
+        if ((*(u32*)(item + 0xa0) >> 28) == 4) {
+            // Category 4: read item kind from deep deref chain
+            // item+0x228 -> +0x220 -> +0xc
+            u64 p1 = *(u64*)(item + 0x228);
+            u64 p2 = *(u64*)(p1 + 0x220);
+            return *(s32*)(p2 + 0xc);
+        }
+        return 10;
+    }
+    return -1;
+}
+
+#undef HIDDEN2
+#undef FM_INSTANCE
+#undef IM_INSTANCE
+#undef INVALID_ITEM_ID
 

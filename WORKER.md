@@ -10,19 +10,33 @@
 - change_status_lost (108B) — 100%, set_force_flashing (124B) — 100%
 - 5 more item utility functions (N-quality)
 - Key: asm("") barriers, u32 vs u64 for hash constants, csel vs branch divergence
+- is_activate_fighter (72B) — 83% match, ADRP-only diffs
+- deactivate_fighter (68B) — 76% match, ADRP-only diffs
+- set_fighter_slow (184B) — 80% match, prologue+ADRP diffs
+- cancel_fighter_slow (164B) — 80% match, prologue+ADRP diffs
+- get_item_kind (140B) — 94% match, ADRP-only diffs
+- remove_item_from_id (88B) — 91% match, ADRP-only diffs
+- find_active_item_from_id (92B) — 70% match, NX csel epilogue diff
+- is_loaded_fighter (68B) — N-quality, NX condition ordering divergence
 
 ## Continue with
 - More small item/fighter utility functions (100-200B, vtable-chain pattern)
 - fighter_status.cpp AI functions
 - Look for hash-to-value switch pattern functions (these match well)
+- Try: is_fighter_enabled (88B), get_fighter_entry_id (172B), item_throw (136B)
 
 ## Skipped (don't retry)
 - NEON functions (heal_fighters, chase_fighter, escape_from_fighter)
 - Ghidra jump table failures (save_aura_ball_status)
 - Global-ref functions (is_boss_battle etc.) — ADRP mismatch
+- is_loaded_fighter — NX reorders singleton check before param check
 
 ## File Territory
 - src/app/fighter_core.cpp, fighter_status.cpp, fighter_attack.cpp
 
 ## Quality Rules
 - No naked asm, 3-attempt limit, derivation chains
+
+## FighterEntry struct updates
+- +0x591F partner_flags (bit 1 = has partner) [derived: set_fighter_slow]
+- +0x5935 is_unloaded (1 = unloaded) [derived: is_loaded_fighter]
