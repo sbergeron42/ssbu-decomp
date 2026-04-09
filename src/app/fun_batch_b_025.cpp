@@ -1,6 +1,7 @@
 #include "types.h"
 #include "app/BattleObjectModuleAccessor.h"
 #include "app/modules/KineticModule.h"
+#include "app/modules/WorkModule.h"
 
 // Batch decompiled via Ghidra MCP -- pool-b, batch 025
 // Fighter core functions (0x71003 range) + sv_kinetic_energy readers (0x71022 range)
@@ -99,10 +100,11 @@ void FUN_71003dcdd0(u8* param_1, s32 param_2) {
     u8* entries = *reinterpret_cast<u8**>(param_1 + 0x78);
     u8* entry = entries + (long)param_2 * 0x150;
     if (*(entry + 0x148) != 0) {
-        // +0x38 from *(param_1+8) is posture module
-        void** posture = *reinterpret_cast<void***>(*reinterpret_cast<u64*>(param_1 + 8) + 0x38);
+        // *(param_1+8) is BattleObjectModuleAccessor, +0x38 = posture_module
+        app::BattleObjectModuleAccessor* acc = *reinterpret_cast<app::BattleObjectModuleAccessor**>(param_1 + 8);
+        u8* posture = reinterpret_cast<u8*>(acc->posture_module);
         void** pvt = *reinterpret_cast<void***>(posture);
-        u32 val = reinterpret_cast<u32(*)(void**)>(pvt[0xb0/8])(posture);
+        u32 val = reinterpret_cast<u32(*)(u8*)>(pvt[0xb0/8])(posture);
         *reinterpret_cast<u32*>(entry + 0x144) = val;
     }
 }
@@ -164,11 +166,13 @@ void FUN_71003d0380(u8* param_1, u64 param_2, u64 param_3) {
 // [derived: Ghidra FUN_71003f6e30 — +0xd0 module vt[0x70/8] check,
 //  vt[0x428/8](module, param_2, 0xb, 1), store at +0xb4]
 void FUN_71003f6e30(u8* param_1, u32 param_2) {
-    void** module = *reinterpret_cast<void***>(*reinterpret_cast<u64*>(param_1 + 8) + 0xd0);
+    // *(param_1+8) is BattleObjectModuleAccessor, +0xd0 = link_module
+    app::BattleObjectModuleAccessor* acc = *reinterpret_cast<app::BattleObjectModuleAccessor**>(param_1 + 8);
+    u8* module = reinterpret_cast<u8*>(acc->link_module);
     void** mvt = *reinterpret_cast<void***>(module);
-    u64 flag = reinterpret_cast<u64(*)(void**)>(mvt[0x70/8])(module);
+    u64 flag = reinterpret_cast<u64(*)(u8*)>(mvt[0x70/8])(module);
     if ((flag & 1) != 0) {
-        reinterpret_cast<void(*)(void**, u32, s32, s32)>(mvt[0x428/8])(
+        reinterpret_cast<void(*)(u8*, u32, s32, s32)>(mvt[0x428/8])(
             module, param_2, 0xb, 1);
         *reinterpret_cast<u32*>(param_1 + 0xb4) = param_2;
     }
@@ -179,11 +183,13 @@ void FUN_71003f6e30(u8* param_1, u32 param_2) {
 // [derived: Ghidra FUN_71003f7000 — +0xd0 module vt[0x70/8] check,
 //  vt[0x428/8](module, param_2, 10, 1), store at +0x2b4]
 void FUN_71003f7000(u8* param_1, u32 param_2) {
-    void** module = *reinterpret_cast<void***>(*reinterpret_cast<u64*>(param_1 + 8) + 0xd0);
+    // *(param_1+8) is BattleObjectModuleAccessor, +0xd0 = link_module
+    app::BattleObjectModuleAccessor* acc = *reinterpret_cast<app::BattleObjectModuleAccessor**>(param_1 + 8);
+    u8* module = reinterpret_cast<u8*>(acc->link_module);
     void** mvt = *reinterpret_cast<void***>(module);
-    u64 flag = reinterpret_cast<u64(*)(void**)>(mvt[0x70/8])(module);
+    u64 flag = reinterpret_cast<u64(*)(u8*)>(mvt[0x70/8])(module);
     if ((flag & 1) != 0) {
-        reinterpret_cast<void(*)(void**, u32, s32, s32)>(mvt[0x428/8])(
+        reinterpret_cast<void(*)(u8*, u32, s32, s32)>(mvt[0x428/8])(
             module, param_2, 10, 1);
         *reinterpret_cast<u32*>(param_1 + 0x2b4) = param_2;
     }

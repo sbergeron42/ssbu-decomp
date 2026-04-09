@@ -1,4 +1,6 @@
 #include "types.h"
+#include "app/BattleObjectModuleAccessor.h"
+#include "app/modules/WorkModule.h"
 
 // Batch decompiled via Ghidra MCP -- pool-b, batch 026
 // sv_information / sv_fighter_util functions — FighterInformation field readers
@@ -37,9 +39,8 @@ namespace lib {
 //  FM→entries[id]+0xf8→+0x6e]
 u8 FUN_710227ed00(u8* L) {
     u8* ctx = *reinterpret_cast<u8**>(L - 8);
-    u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
-    u8* work = *reinterpret_cast<u8**>(acc + 0x50);
-    u32 id = reinterpret_cast<u32(*)(u8*, u32)>(VT(work)[0x98/8])(work, 0x10000000);
+    app::BattleObjectModuleAccessor* acc = *reinterpret_cast<app::BattleObjectModuleAccessor**>(ctx + 0x1a0);
+    u32 id = (u32)acc->work_module->get_int(0x10000000);
     if (id < 8) {
         u8* fm = FM_DATA;
         u8* entry = *reinterpret_cast<u8**>(fm + (long)(s32)id * 8 + 0x20);
@@ -55,9 +56,8 @@ u8 FUN_710227ed00(u8* L) {
 //  reads +0x384 (=900 decimal) as u32]
 u32 FUN_710227ef00(u8* L) {
     u8* ctx = *reinterpret_cast<u8**>(L - 8);
-    u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
-    u8* work = *reinterpret_cast<u8**>(acc + 0x50);
-    u32 id = reinterpret_cast<u32(*)(u8*, u32)>(VT(work)[0x98/8])(work, 0x10000000);
+    app::BattleObjectModuleAccessor* acc = *reinterpret_cast<app::BattleObjectModuleAccessor**>(ctx + 0x1a0);
+    u32 id = (u32)acc->work_module->get_int(0x10000000);
     if (id < 8) {
         u8* fm = FM_DATA;
         u8* entry = *reinterpret_cast<u8**>(fm + (long)(s32)id * 8 + 0x20);
@@ -73,9 +73,8 @@ u32 FUN_710227ef00(u8* L) {
 //  same pattern, reads +0x7c as u32]
 u32 FUN_7102281890(u8* L) {
     u8* ctx = *reinterpret_cast<u8**>(L - 8);
-    u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
-    u8* work = *reinterpret_cast<u8**>(acc + 0x50);
-    u32 id = reinterpret_cast<u32(*)(u8*, u32)>(VT(work)[0x98/8])(work, 0x10000000);
+    app::BattleObjectModuleAccessor* acc = *reinterpret_cast<app::BattleObjectModuleAccessor**>(ctx + 0x1a0);
+    u32 id = (u32)acc->work_module->get_int(0x10000000);
     if (id < 8) {
         u8* fm = FM_DATA;
         u8* entry = *reinterpret_cast<u8**>(fm + (long)(s32)id * 8 + 0x20);
@@ -91,9 +90,8 @@ u32 FUN_7102281890(u8* L) {
 //  if set calls FUN_71006798f0(FM, id)]
 u64 FUN_710227eea0(u8* L) {
     u8* ctx = *reinterpret_cast<u8**>(L - 8);
-    u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
-    u8* work = *reinterpret_cast<u8**>(acc + 0x50);
-    u32 id = reinterpret_cast<u32(*)(u8*, u32)>(VT(work)[0x98/8])(work, 0x10000000);
+    app::BattleObjectModuleAccessor* acc = *reinterpret_cast<app::BattleObjectModuleAccessor**>(ctx + 0x1a0);
+    u32 id = (u32)acc->work_module->get_int(0x10000000);
     u8* fm = FM_DATA;
     if (*(fm + 0xcd) != 0) {
         return FUN_71006798f0(FM_RAW, id);
@@ -107,9 +105,8 @@ u64 FUN_710227eea0(u8* L) {
 //  → abort, check FM+0xcd, read +0x370 from FighterInfo]
 u32 FUN_710227ee30(u8* L) {
     u8* ctx = *reinterpret_cast<u8**>(L - 8);
-    u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
-    u8* work = *reinterpret_cast<u8**>(acc + 0x50);
-    u32 id = reinterpret_cast<u32(*)(u8*, u32)>(VT(work)[0x98/8])(work, 0x10000000);
+    app::BattleObjectModuleAccessor* acc = *reinterpret_cast<app::BattleObjectModuleAccessor**>(ctx + 0x1a0);
+    u32 id = (u32)acc->work_module->get_int(0x10000000);
     if (id >= 8) {
         abort();
     }
@@ -128,9 +125,8 @@ u32 FUN_710227ee30(u8* L) {
 //  to +0x38C (on_rebirth in FighterInformationData), if false clears +0xA42]
 void FUN_71022819a0(u8* L, u8 param_2) {
     u8* ctx = *reinterpret_cast<u8**>(L - 8);
-    u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
-    u8* work = *reinterpret_cast<u8**>(acc + 0x50);
-    u32 id = reinterpret_cast<u32(*)(u8*, u32)>(VT(work)[0x98/8])(work, 0x10000000);
+    app::BattleObjectModuleAccessor* acc = *reinterpret_cast<app::BattleObjectModuleAccessor**>(ctx + 0x1a0);
+    u32 id = (u32)acc->work_module->get_int(0x10000000);
     if (id < 8) {
         u8* fm = FM_DATA;
         u8* entry = *reinterpret_cast<u8**>(fm + (long)(s32)id * 8 + 0x20);
@@ -151,10 +147,10 @@ void FUN_71022819a0(u8* L, u8 param_2) {
 //  control_module(+0x48)→vtable[0x2e0/8](ctl, hash, 0x50000000)]
 void FUN_7102281a20(u8* L) {
     u8* ctx = *reinterpret_cast<u8**>(L - 8);
-    u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = *reinterpret_cast<app::BattleObjectModuleAccessor**>(ctx + 0x1a0);
     FUN_710067de90(FM_RAW,
                    0x10456d7c11ULL, 0, 0, 0x50000000);
-    u8* control = *reinterpret_cast<u8**>(acc + 0x48);
+    u8* control = reinterpret_cast<u8*>(acc->fighter_control_module);
     reinterpret_cast<void(*)(u8*, u64, u32)>(VT(control)[0x2e0/8])(
         control, 0x10456d7c11ULL, 0x50000000);
 }
@@ -164,14 +160,14 @@ void FUN_7102281a20(u8* L) {
 // [derived: Ghidra app::sv_battle_object::set_power_mul_region_attr_info
 //  — attack_module (+0xA0) vtable[0x318/8] read, vtable[0x320/8] write.
 //  Uses 18-byte stack buffer (u64+u64+u8+u8 padded)]
-void FUN_7102283d10(u8* param_1, u8* param_2) {
+void FUN_7102283d10(app::BattleObjectModuleAccessor* param_1, app::BattleObjectModuleAccessor* param_2) {
     u64 local_40 = 0;
     u8 local_38 = 0;
     u64 local_30 = 0;
     u8 local_28 = 0;
-    u8* atk2 = *reinterpret_cast<u8**>(param_2 + 0xa0);
+    u8* atk2 = reinterpret_cast<u8*>(param_2->attack_module);
     reinterpret_cast<void(*)(u8*, void*)>(VT(atk2)[0x318/8])(atk2, &local_40);
-    u8* atk1 = *reinterpret_cast<u8**>(param_1 + 0xa0);
+    u8* atk1 = reinterpret_cast<u8*>(param_1->attack_module);
     reinterpret_cast<void(*)(u8*, void*)>(VT(atk1)[0x320/8])(atk1, &local_40);
 }
 

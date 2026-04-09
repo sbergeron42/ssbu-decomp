@@ -3,6 +3,7 @@
 
 #include "types.h"
 #include "app/BattleObjectModuleAccessor.h"
+#include "app/modules/WorkModule.h"
 
 #define VT(m) (*reinterpret_cast<void***>(m))
 
@@ -25,9 +26,11 @@ bool FUN_7100479590_479590(void** module, u32 param) {
 // All instructions match but frame pointer scheduling differs.
 // ---------------------------------------------------------------------------
 void FUN_71006ebba0_6ebba0(void* self, u32 param) {
-    void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(self) + 0x8);
-    void** wm = *reinterpret_cast<void***>(reinterpret_cast<u8*>(acc) + 0x50);
-    u32 val = reinterpret_cast<u32(*)(void**, u64, u64)>(VT(wm)[0x250 / 8])(
+    app::BattleObjectModuleAccessor* acc = *reinterpret_cast<app::BattleObjectModuleAccessor**>(
+        reinterpret_cast<u8*>(self) + 0x8);
+    app::WorkModule* wm = acc->work_module;
+    // vt[0x250/8] is an unknown slot between get_param_int and get_param_int64
+    u32 val = reinterpret_cast<u32(*)(app::WorkModule*, u64, u64)>(wm->_vt[0x250 / 8])(
         wm, 0x6e5ec7051ULL, 0x1a99c94c70ULL);
     *reinterpret_cast<u32*>(reinterpret_cast<u8*>(self) + 0x14) = param;
     *reinterpret_cast<u32*>(reinterpret_cast<u8*>(self) + 0x18) = val;
@@ -39,12 +42,12 @@ void FUN_71006ebba0_6ebba0(void* self, u32 param) {
 // Returns true only if initial check passes and all 3 flags are clear.
 // ---------------------------------------------------------------------------
 bool FUN_71006988b0_6988b0(app::BattleObjectModuleAccessor* acc) {
-    void** wm = reinterpret_cast<void**>(acc->work_module);
+    app::WorkModule* wm = acc->work_module;
     if (FUN_710068f7a0(acc) & 1) {
         u32 base_flag = 0x20000087;
-        if (!(reinterpret_cast<u32(*)(void**, u32)>(VT(wm)[0x108 / 8])(wm, base_flag) & 1)) {
-            if (!(reinterpret_cast<u32(*)(void**, u32)>(VT(wm)[0x108 / 8])(wm, base_flag + 0x16) & 1)) {
-                if (__builtin_expect(!(reinterpret_cast<u32(*)(void**, u32)>(VT(wm)[0x108 / 8])(wm, base_flag + 0x39) & 1), 0)) {
+        if (!(wm->is_flag(base_flag) & 1)) {
+            if (!(wm->is_flag(base_flag + 0x16) & 1)) {
+                if (__builtin_expect(!(wm->is_flag(base_flag + 0x39) & 1), 0)) {
                     return true;
                 }
             }
@@ -71,17 +74,14 @@ u64 FUN_7100694c70_694c70(int kind) {
 // 0x7101655610  48B  is_visible_backshield  [VERIFIED 100%]
 // ---------------------------------------------------------------------------
 bool FUN_7101655610_1655610(app::BattleObjectModuleAccessor* acc) {
-    void** wm = reinterpret_cast<void**>(acc->work_module);
-    bool flag = reinterpret_cast<bool(*)(void**, u32)>(VT(wm)[0x108 / 8])(wm, 0x2000007d);
-    return !flag;
+    return !acc->work_module->is_flag(0x2000007d);
 }
 
 // ---------------------------------------------------------------------------
 // 0x7101655640  32B  is_force_visible_backshield  [VERIFIED 100%]
 // ---------------------------------------------------------------------------
 bool FUN_7101655640_1655640(app::BattleObjectModuleAccessor* acc) {
-    void** wm = reinterpret_cast<void**>(acc->work_module);
-    return reinterpret_cast<bool(*)(void**, u32)>(VT(wm)[0x108 / 8])(wm, 0x2000007e);
+    return acc->work_module->is_flag(0x2000007e);
 }
 
 // ---------------------------------------------------------------------------
