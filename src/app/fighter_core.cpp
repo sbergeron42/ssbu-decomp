@@ -1320,6 +1320,81 @@ extern "C" bool is_normal_gravity_71015ce6d0() {
     return *(bow + 0x59) != 0;
 }
 
+// ════════════════════════════════════════════════════════════════════
+// HOLYWATER param readers — all 40 bytes, leaf, CSEL pattern
+// Pattern: FPA2 load → csel (0x44=Richter → 0xf50, else → 0xf18) → +0x240 → +OFFSET
+// [derived: Ghidra — FPA2 singleton, community-named params]
+// ════════════════════════════════════════════════════════════════════
+
+#define HOLYWATER_PARAM(funcname, final_offset) \
+extern "C" f32 funcname(s32 fighter_kind) { \
+    u8* fpa2 = FPA2_INSTANCE; \
+    s64 off = (fighter_kind == 0x44) ? 0xf50 : 0xf18; \
+    u64 p = *reinterpret_cast<u64*>(fpa2 + off); \
+    u64 q = *reinterpret_cast<u64*>(p + 0x240); \
+    return *reinterpret_cast<f32*>(q + final_offset); \
+}
+
+// Offsets from Ghidra decompilation — all use the same FPA2→[csel]→+0x240 chain
+HOLYWATER_PARAM(HOLYWATER_TRANSLATE_OFFSET_X_7101671010, 0x00)   // 0x7101671010 — translate X (double deref = offset 0)
+HOLYWATER_PARAM(HOLYWATER_TRANSLATE_OFFSET_Y_7101671040, 0x04)   // 0x7101671040 — translate Y
+HOLYWATER_PARAM(HOLYWATER_ROT_SPEED_7101670da0, 0x08)            // 0x7101670da0 — rotation speed
+HOLYWATER_PARAM(HOLYWATER_REFLECT_GRAVITY_ACCEL_7101670dd0, 0x18)// 0x7101670dd0 — reflect shield gravity accel
+HOLYWATER_PARAM(HOLYWATER_REFLECT_GRAVITY_MAX_7101670e00, 0x1c)  // 0x7101670e00 — reflect shield gravity max
+HOLYWATER_PARAM(HOLYWATER_REFLECT_ROT_SPEED_7101670e30, 0x20)    // 0x7101670e30 — reflect shield rotation speed
+HOLYWATER_PARAM(HOLYWATER_HP_7101670e60, 0x24)                   // 0x7101670e60 — hit points
+HOLYWATER_PARAM(HOLYWATER_HIT_DEC_HP_7101670e90, 0x28)           // 0x7101670e90 — HP decrease on hit
+HOLYWATER_PARAM(HOLYWATER_HIT_HOP_SPEED_Y_7101671070, 0x2c)      // 0x7101671070 — hit hop speed Y
+HOLYWATER_PARAM(HOLYWATER_HIT_SPEED_X_MUL_71016710a0, 0x30)      // 0x71016710a0 — hit speed X multiplier
+HOLYWATER_PARAM(HOLYWATER_HIT_HOP_FALL_ACCEL_71016710d0, 0x34)   // 0x71016710d0 — hit hop after fall accel
+HOLYWATER_PARAM(HOLYWATER_HIT_HOP_SPEED_Y_MAX_7101671100, 0x38)  // 0x7101671100 — hit hop speed Y max
+HOLYWATER_PARAM(HOLYWATER_LIFE_FRAME_7101670ec0, 0x3c)           // 0x7101670ec0 — life frame
+HOLYWATER_PARAM(HOLYWATER_FIRE_PILLAR_LIFE_7101670ef0, 0x40)     // 0x7101670ef0 — fire pillar life frame
+HOLYWATER_PARAM(HOLYWATER_FIRE_PILLAR_SPEED_Y_7101670f20, 0x44)  // 0x7101670f20 — fire pillar speed Y
+HOLYWATER_PARAM(HOLYWATER_FIRE_PILLAR_GRAVITY_7101670f50, 0x48)  // 0x7101670f50 — fire pillar gravity
+HOLYWATER_PARAM(HOLYWATER_FIRE_PILLAR_GRAVITY_MAX_7101670f80, 0x4c) // 0x7101670f80
+HOLYWATER_PARAM(HOLYWATER_FIRE_PILLAR_SCALE_MIN_7101670fb0, 0x50)// 0x7101670fb0
+HOLYWATER_PARAM(HOLYWATER_THROW_ANGLE_SIDE_7101670fe0, 0x54)     // 0x7101670fe0
+
+#undef HOLYWATER_PARAM
+
+// ════════════════════════════════════════════════════════════════════
+// Item/boss leaf functions — misc 40-byte targets
+// ════════════════════════════════════════════════════════════════════
+
+// 0x71015c2720 (40B) — app::item::throw_attack
+// [derived: Ghidra — chain deref lua[-8]→+0x1a0→+0x190→+0x220, bl FUN_71015aba90]
+extern "C" void FUN_71015aba90(u64 item_data, void* vec, s32 flag);
+extern "C" void throw_attack_71015c2720(void* L, f32 p2, void* vec, f32 p4) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
+    u8* sub = *reinterpret_cast<u8**>(acc + 0x190);
+    u64 item = *reinterpret_cast<u64*>(sub + 0x220);
+    FUN_71015aba90(item, vec, 0);
+#ifdef MATCHING_HACK_NX_CLANG
+    asm(""); // prevent tail call optimization — target uses bl not b
+#endif
+}
+
+// 0x71016555e0 (40B) — app::backshield::is_enable_backshield
+// [derived: Ghidra — module at acc+0x138, vtable[0x68/8=13](), return ~result & 1]
+extern "C" u32 is_enable_backshield_71016555e0(u8* acc) {
+    u8* mod = *reinterpret_cast<u8**>(acc + 0x138);
+    void** vt = *reinterpret_cast<void***>(mod);
+    u32 val = reinterpret_cast<u32(*)(u8*)>(vt[0x68/8])(mod);
+    return ~val & 1;
+}
+
+// 0x710166fc80 (40B) — app::rocketbelt::is_enable_rocketbelt_eject (leaf)
+// [derived: Ghidra — if acc+8 >> 28 != 0 return true, else check acc→+0x40→+0x129]
+extern "C" bool is_enable_rocketbelt_eject_710166fc80(u8* acc) {
+    // Target: cbnz branches to end (return true), main path is fallthrough
+    if ((*reinterpret_cast<u32*>(acc + 8) >> 0x1c) == 0) {
+        return *(*reinterpret_cast<u8**>(acc + 0x40) + 0x129) != 0;
+    }
+    return true;
+}
+
 #undef BOW_INSTANCE
 #undef SM_INSTANCE
 #undef HIDDEN2
