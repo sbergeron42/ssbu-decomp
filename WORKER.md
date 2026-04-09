@@ -5,16 +5,17 @@
 ## Task: Stage + camera — continue
 
 ## Progress
-- 37 functions total (camera + stage + boss wrappers)
+- 57 functions total (camera + stage + boss + ground)
 - StageWufuIsland constructor (1,832B), ~CameraQuake (3,088B)
-- 16 camera leaf functions this round
+- 16 camera leaf functions (prior round)
+- 20 new leaf functions this round:
+  - 6 matching: lr_to_stage_center, is_looking_at_stage_center, get_rotation_with_calc_camera_direction, get_area_down, get_rhombus_down_y, is_enable_capture_baitocrane
+  - 14 compiled with NX Clang prologue/optimization diffs
 
 ## Continue with
-- ~StageWufuIsland destructor (2,700B)
-- ~~StageBase destructor (2,572B)
-- set_camera_param (2,344B), set_pause_camera_param (3,996B)
-- CHECK_VALID_START_CAMERA (2,812B)
-- More stage/camera leaf functions
+- ~StageWufuIsland destructor (2,700B) — complex, deferred
+- set_camera_param (2,344B), set_pause_camera_param (3,996B) — param binary search pattern
+- More leaf functions from camera/stage/boss territory
 
 ## Skipped
 - create_stage (114,600B), StageBase ctor (14,820B) — too large
