@@ -3842,8 +3842,9 @@ extern "C" void FOOT_EFFECT_FLIP(lua_State* param_1) {
 
                 eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
                 struct { u64 xy; u64 z; } sec_pos = { sec_pos_xy, sec_pos_z };
+                u64 sec_effect_hash = 0x14a422ea56ULL;
                 reinterpret_cast<void(*)(void*, u64, u64, void*, void*, void*, void*, bool, u32, u32, s32, f32)>
-                    (eff->_vt[0x70 / 8])(eff, 0x14a422ea56ULL, out.hash2, &sec_pos, &out.rot_xy, &out.scale_xy, &out.color_xy, false, terrain_flag, alt_hash, 0, rate);
+                    (eff->_vt[0x70 / 8])(eff, sec_effect_hash, out.hash2, &sec_pos, &out.rot_xy, &out.scale_xy, &out.color_xy, false, terrain_flag, alt_hash, 0, rate);
             }
 
             // Check terrain[0x10] flag
@@ -4443,8 +4444,9 @@ extern "C" void FOOT_EFFECT(lua_State* param_1) {
                 u32 param_val2 = *(u32*)(param_base + 0x162c);
                 eff->preset_limit_num(param_val2);
                 eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+                u64 sec_effect_hash = 0x14a422ea56ULL;
                 reinterpret_cast<void(*)(void*, u64, u64, void*, void*, void*, void*, bool, u32, u32, s32, f32)>
-                    (eff->_vt[0x70 / 8])(eff, 0x14a422ea56ULL, out.hash2, &sec_pos, &out.rot_xy, &out.scale_xy, &out.color_xy, false, terrain_flag, 0, 0, rate);
+                    (eff->_vt[0x70 / 8])(eff, sec_effect_hash, out.hash2, &sec_pos, &out.rot_xy, &out.scale_xy, &out.color_xy, false, terrain_flag, 0, 0, rate);
             }
 
             // Check terrain[0x10] flag
