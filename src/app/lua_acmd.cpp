@@ -734,6 +734,104 @@ lib::L2CValue operator_div_7103735a50(lib::L2CValue* this_, lib::L2CValue* other
     return ret;
 }
 
+// 0x7103735730 (240 bytes) — operator-: subtraction
+// [derived: Ghidra shows same-type int→sub, same-type float→fsub,
+//  cross-type int/float→scvtf+fsub, table→metamethod dispatch]
+lib::L2CValue operator_sub_7103735730(lib::L2CValue* this_, lib::L2CValue* other) {
+    lib::L2CValue ret;
+    s32 t1 = this_->type;
+    s32 t2 = other->type;
+    if (t1 == t2) {
+        if (t1 == 5) goto metamethod;
+        if (t1 != 3) {
+            if (t1 == 2) {
+                s64 a = this_->int_val;
+                s64 b = other->int_val;
+                ret.type = 2;
+                ret.int_val = a - b;
+                return ret;
+            }
+            ret.type = 2;
+            ret.raw = 0;
+            return ret;
+        }
+        f32 result = this_->float_val - other->float_val;
+        ret.type = 3;
+        ret.float_val = result;
+        return ret;
+    }
+    {
+        f32 a, b;
+        if (t1 == 2 && t2 == 3) {
+            a = (f32)this_->int_val;
+            b = other->float_val;
+        } else if (t1 == 3 && t2 == 2) {
+            a = this_->float_val;
+            b = (f32)other->int_val;
+        } else {
+            if (t1 != 5 && t2 != 5) {
+                ret.type = 3;
+                ret.float_val = 0.0f;
+                return ret;
+            }
+metamethod:
+            FUN_71037347d0(&ret, this_, 0x5b58a6ff4ULL, other);
+            return ret;
+        }
+        ret.type = 3;
+        ret.float_val = a - b;
+        return ret;
+    }
+}
+
+// 0x7103735820 (244 bytes) — operator*: multiplication
+// [derived: Ghidra shows same-type int→mul, same-type float→fmul,
+//  cross-type int/float→scvtf+fmul, table→metamethod dispatch]
+lib::L2CValue operator_mul_7103735820(lib::L2CValue* this_, lib::L2CValue* other) {
+    lib::L2CValue ret;
+    s32 t1 = this_->type;
+    s32 t2 = other->type;
+    if (t1 == t2) {
+        if (t1 == 5) goto metamethod;
+        if (t1 != 3) {
+            if (t1 != 2) {
+                ret.type = 2;
+                ret.raw = 0;
+                return ret;
+            }
+            s64 a = this_->int_val;
+            s64 b = other->int_val;
+            ret.type = 2;
+            ret.int_val = b * a;
+            return ret;
+        }
+        f32 result = this_->float_val * other->float_val;
+        ret.type = 3;
+        ret.float_val = result;
+        return ret;
+    }
+    if (t1 == 2 && t2 == 3) {
+        f32 result = other->float_val * (f32)this_->int_val;
+        ret.type = 3;
+        ret.float_val = result;
+        return ret;
+    }
+    if (t1 == 3 && t2 == 2) {
+        f32 result = this_->float_val * (f32)other->int_val;
+        ret.type = 3;
+        ret.float_val = result;
+        return ret;
+    }
+    if (t1 != 5 && t2 != 5) {
+        ret.type = 3;
+        ret.float_val = 0.0f;
+        return ret;
+    }
+metamethod:
+    FUN_71037347d0(&ret, this_, 0x5ad88d0e8ULL, other);
+    return ret;
+}
+
 // ============================================================
 // Binary bitwise operators — all follow as_integer(a) OP as_integer(b) → type 2
 // as_integer pattern: type 7/2 → raw u64, type 3 → (u64)(s64)float, else 0
@@ -994,6 +1092,176 @@ void* find_metatable_7103733ea0(u8* this_, u64* hash) {
 // ============================================================
 void ShowError_wrapper_7103754e50(u32 error_code) {
     nn::err::ShowError(error_code);
+}
+
+// ============================================================
+// L2CValue::as_bool() — type-dependent truthiness check
+// 0x7103735f30 (96 bytes)
+// [derived: Ghidra shows switch on type tag with per-type truthiness]
+// type 0 (nil): false
+// type 1 (bool): val > 0
+// type 2/7 (int/hash): val != 0
+// type 3 (float): val != 0.0f
+// default (ptr/table/func/string): true
+// ============================================================
+u8 as_bool_7103735f30(u32* this_) {
+    u8 result = 0;
+    switch (*this_) {
+    case 0:
+        break;
+    case 1:
+        return (u8)(*reinterpret_cast<s32*>(reinterpret_cast<u8*>(this_) + 8) > 0);
+    case 2:
+    case 7:
+        return *reinterpret_cast<s64*>(reinterpret_cast<u8*>(this_) + 8) != 0;
+    case 3:
+        return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(this_) + 8) != 0.0f;
+    default:
+        result = 1;
+        break;
+    }
+    return result;
+}
+
+// ============================================================
+// math_fmod — modulo with integer fast-path
+// 0x7103733180 (288 bytes)
+// [derived: Ghidra shows integer sdiv/msub path when both are int/hash
+//  with divisor > 0; otherwise float path via fmodf]
+// Integer modulo: result = a - (a / b) * b (Python-style: b must be > 0)
+// Float modulo: fmodf(a_float, b_float)
+// ============================================================
+lib::L2CValue math_fmod_7103733180(lib::L2CValue* p1, lib::L2CValue* p2) {
+    lib::L2CValue ret;
+    s32 t1 = p1->type;
+    f32 fval2 = 0.0f;
+    if (t1 == 7) goto check_int_path;
+    if (t1 == 3) goto float_p1;
+    if (t1 != 2) goto float_path_default;
+check_int_path:
+    {
+        s32 t2 = p2->type;
+        if (t2 == 7 || t2 == 2) {
+            s64 b = p2->int_val;
+            if (b < 1) {
+                ret.type = 2;
+                ret.raw = 0;
+                return ret;
+            }
+            s64 a;
+            if (t1 == 7 || t1 == 2) {
+                a = p1->int_val;
+            } else if (t1 == 3) {
+                a = (s64)p1->float_val;
+            } else {
+                a = 0;
+            }
+            s64 q = 0;
+            if (b != 0) {
+                q = a / b;
+            }
+            ret.type = 2;
+            ret.int_val = a - q * b;
+            return ret;
+        }
+    }
+    // Float path: extract p1 as float
+    {
+        f32 fval1;
+        if (t1 == 7 || t1 == 2) {
+            fval1 = (f32)p1->int_val;
+        } else if (t1 == 3) {
+float_p1:
+            fval1 = p1->float_val;
+        } else {
+float_path_default:
+            fval1 = 0.0f;
+        }
+        // Extract p2 as float
+        {
+            s32 t2 = p2->type;
+            if (t2 == 7 || t2 == 2) {
+                fval2 = (f32)p2->int_val;
+            } else if (t2 == 3) {
+                fval2 = p2->float_val;
+            }
+        }
+        fval2 = fmodf(fval1, fval2);
+        asm volatile("");
+        ret.type = 3;
+        ret.float_val = fval2;
+        return ret;
+    }
+}
+
+// ============================================================
+// operator% — Python-style modulo (result has same sign as divisor)
+// 0x7103735920 (292 bytes)
+// [derived: Ghidra shows integer path with sign correction: if signs differ
+//  and remainder != 0, add divisor to get Python semantics. Float path
+//  uses fmodf with same sign correction.]
+// ============================================================
+lib::L2CValue operator_mod_7103735920(lib::L2CValue* this_, lib::L2CValue* other) {
+    lib::L2CValue ret;
+    s32 t1 = this_->type;
+    f32 fval2 = 0.0f;
+    if (t1 == 7) goto check_int_path;
+    if (t1 == 3) goto float_p1;
+    if (t1 != 2) goto float_path_default;
+check_int_path:
+    {
+        s32 t2 = other->type;
+        if (t2 == 7 || t2 == 2) {
+            u64 b = other->uint_val;
+            if ((s64)b > 0) {
+                u64 a = this_->uint_val;
+                s64 q = 0;
+                if (b != 0) {
+                    q = (s64)a / (s64)b;
+                }
+                s64 rem = (s64)a - q * (s64)b;
+                ret.type = 2;
+                // Python-style sign correction: result has same sign as divisor
+                // [derived: ccmp+csel pattern in binary — conditional zero of divisor]
+                u64 adj = ((s64)(a ^ b) < 0 && rem != 0) ? b : 0;
+                ret.int_val = (s64)adj + rem;
+                return ret;
+            }
+            ret.type = 2;
+            ret.raw = 0;
+            return ret;
+        }
+    }
+    // Float path
+    {
+        f32 fval1;
+        if (t1 == 7 || t1 == 2) {
+            fval1 = (f32)this_->int_val;
+        } else if (t1 == 3) {
+float_p1:
+            fval1 = this_->float_val;
+        } else {
+float_path_default:
+            fval1 = 0.0f;
+        }
+        {
+            s32 t2 = other->type;
+            if (t2 == 7 || t2 == 2) {
+                fval2 = (f32)other->int_val;
+            } else if (t2 == 3) {
+                fval2 = other->float_val;
+            }
+        }
+        f32 fmod_result = fmodf(fval1, fval2);
+        f32 adjusted = fval2 + fmod_result;
+        if (fval2 * fmod_result >= 0.0f) {
+            adjusted = fmod_result;
+        }
+        asm volatile("");
+        ret.type = 3;
+        ret.float_val = adjusted;
+        return ret;
+    }
 }
 
 // ============================================================
