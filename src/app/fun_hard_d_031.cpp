@@ -23,7 +23,7 @@ extern "C" void  FUN_7103951cd0(u64);
 extern "C" void  FUN_7103951d20(u64);
 extern "C" void  FUN_7103951de0(u64);
 extern "C" void  FUN_7103953390(u64);
-extern "C" u32   FUN_71039521d0(u32);
+extern "C" u64   FUN_71039521d0(u32);
 extern "C" u32   FUN_7103953450(u64);
 extern "C" void  FUN_71037c90e0(u64, u64);
 extern "C" void  FUN_7103958740(u64);

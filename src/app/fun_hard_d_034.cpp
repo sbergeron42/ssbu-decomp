@@ -151,11 +151,122 @@ void FUN_710395f480(u64 param_1) {
 }
 
 // ════════════════════════════════════════════════════════════════════
-// 96-byte conditional functions
+// Arithmetic operators (in-place)
 // ════════════════════════════════════════════════════════════════════
 
-// 0x710395f670 — conditional dispatch with flag check (96 bytes)
-// [derived: Ghidra — placeholder, needs decompilation]
+// 0x7103957760 — in-place add (64 bytes)
+// [derived: Ghidra — *param_1 += *param_2]
+__attribute__((optnone)) extern "C"
+void FUN_7103957760(s64* param_1, s64* param_2) {
+    *param_1 = *param_1 + *param_2;
+}
 
-// 0x710395f6d0 — conditional dispatch with flag check (96 bytes)
-// [derived: Ghidra — placeholder, needs decompilation]
+// 0x71039577a0 — in-place subtract (64 bytes)
+// [derived: Ghidra — *param_1 -= *param_2]
+__attribute__((optnone)) extern "C"
+void FUN_71039577a0(s64* param_1, s64* param_2) {
+    *param_1 = *param_1 - *param_2;
+}
+
+// 0x7103957810 — in-place divide by 200 (64 bytes)
+// [derived: Ghidra — *param_1 /= 200]
+__attribute__((optnone)) extern "C"
+void FUN_7103957810(u64* param_1) {
+    *param_1 = *param_1 / 200;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// Bitfield extractors and mask operations
+// ════════════════════════════════════════════════════════════════════
+
+// 0x7103953210 — extract 4-bit field at bits 32-35 (64 bytes)
+// [derived: Ghidra — (param_1 >> 32) & 0xF]
+__attribute__((optnone)) extern "C"
+u64 FUN_7103953210(u64 param_1) {
+    return (param_1 >> 32) & 0xF;
+}
+
+// 0x7103953250 — clear lower 32 bits (96 bytes)
+// [derived: Ghidra — param_1 & 0xFFFFFFFF00000000]
+__attribute__((optnone)) extern "C"
+u64 FUN_7103953250(u64 param_1) {
+    return param_1 & 0xFFFFFFFF00000000ULL;
+}
+
+// 0x710395c2f0 — extract 4-bit field at bits 32-35 (same as FUN_7103953210) (64 bytes)
+// [derived: Ghidra — identical logic, different compilation unit]
+__attribute__((optnone)) extern "C"
+u64 FUN_710395c2f0(u64 param_1) {
+    return (param_1 >> 32) & 0xF;
+}
+
+// 0x710395c330 — clear lower 32 bits (same as FUN_7103953250) (96 bytes)
+// [derived: Ghidra — identical logic, different compilation unit]
+__attribute__((optnone)) extern "C"
+u64 FUN_710395c330(u64 param_1) {
+    return param_1 & 0xFFFFFFFF00000000ULL;
+}
+
+// 0x7103958370 — extract 4-bit field at bits 32-35 (third instance) (64 bytes)
+// [derived: Ghidra — identical logic, third compilation unit]
+__attribute__((optnone)) extern "C"
+u64 FUN_7103958370(u64 param_1) {
+    return (param_1 >> 32) & 0xF;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// No-op / empty functions
+// ════════════════════════════════════════════════════════════════════
+
+// 0x7103957e00 — empty function (64 bytes)
+__attribute__((optnone)) extern "C"
+void FUN_7103957e00(void) {
+}
+
+// 0x7103957e70 — empty function (64 bytes)
+__attribute__((optnone)) extern "C"
+void FUN_7103957e70(void) {
+}
+
+// 0x710395ee40 — empty function (80 bytes)
+// [derived: Ghidra — no-op, called during resource handle init sequences]
+__attribute__((optnone)) extern "C"
+void FUN_710395ee40(u64 param_1) {
+}
+
+// ════════════════════════════════════════════════════════════════════
+// Conditional dispatch (resource init)
+// ════════════════════════════════════════════════════════════════════
+
+extern "C" u64   FUN_710395f730(void);
+extern "C" u64   FUN_710395eeb0(u64);
+extern "C" s32   FUN_710395fa30(void);
+extern "C" void  FUN_710395f210(u64);
+extern "C" u8    DAT_7105296238 HIDDEN;
+extern "C" u32   DAT_7106dd40b4 HIDDEN;
+
+// 0x710395f6d0 — check if resource system initialized, init if needed (96 bytes)
+// [derived: Ghidra — if fa30==0: call f210 to init, set flag; return was-already-init]
+__attribute__((optnone)) extern "C"
+bool FUN_710395f6d0(void) {
+    s32 result = FUN_710395fa30();
+    if (result == 0) {
+        FUN_710395f210((u64)&DAT_7105296238);
+        DAT_7106dd40b4 = 1;
+    }
+    return result != 0;
+}
+
+// 0x710395f670 — allocate resource handle with init guard (96 bytes)
+// [derived: Ghidra — if !f6d0: allocate via f730, set flag via eeb0; else 0]
+__attribute__((optnone)) extern "C"
+u64 FUN_710395f670(void) {
+    u8 flag = FUN_710395f6d0();
+    if (flag & 1) {
+        return 0;
+    }
+    u64 handle = FUN_710395f730();
+    u8* p = (u8*)FUN_710395eeb0(handle);
+    *p = 1;
+    return handle;
+}
