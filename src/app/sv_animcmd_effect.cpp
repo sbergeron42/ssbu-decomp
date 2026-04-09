@@ -23,6 +23,23 @@ extern "C" u64 BattleObjectWorld_instance HIDDEN;  // lib::Singleton<app::Battle
 extern "C" void FUN_710228ea70(u64, u64, u64, void*, s32);
 extern "C" void FUN_7102288620(void*, void*, u64);
 extern "C" u64 ConstantZero HIDDEN;  // PTR_ConstantZero_71052a7a88
+extern "C" u32 DAT_71052381c0 HIDDEN;  // XOR-shift128 PRNG state[0]
+extern "C" u32 DAT_71052381c4 HIDDEN;  // XOR-shift128 PRNG state[1]
+extern "C" u32 DAT_71052381c8 HIDDEN;  // XOR-shift128 PRNG state[2]
+extern "C" u32 DAT_71052381cc HIDDEN;  // XOR-shift128 PRNG state[3]
+extern "C" f32 DAT_7104472710 HIDDEN;  // PRNG normalization ≈ 1/(2^32)
+
+// Singletons for FOOT/LANDING/DOWN effects
+namespace lib {
+    template<typename T> struct Singleton { static T* instance_; };
+}
+namespace app {
+    struct StageManager;
+    struct FighterParamAccessor2;
+}
+// Explicit instantiation declarations (linker resolves these)
+extern template app::StageManager* lib::Singleton<app::StageManager>::instance_;
+extern template app::FighterParamAccessor2* lib::Singleton<app::FighterParamAccessor2>::instance_;
 
 // Control struct for FUN_7102288620 / FUN_710228ea70
 // FUN_7102288620 reads nargs and L from this struct via the pointer passed as arg 2
@@ -2824,6 +2841,1014 @@ void EFFECT_FLIP_ALPHA(lua_State* param_1) {
     eff = *(void***)(acc + 0x140);
     reinterpret_cast<void(*)(void*, u32, f32)>((*(void***)eff)[0x308 / 8])(eff, handle, alpha);
 
+    acmd_consume(L);
+}
+
+// 0x710228b030 — EFFECT
+// 16-arg ACMD effect command: 2 hashes + pos + rot + rate + scale + color + follow
+// Same as EFFECT_ATTR but without attr_hash (17th arg), passes 0 for attr position
+void EFFECT(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    if (param_1 == nullptr) {
+#ifdef MATCHING_HACK_NX_CLANG
+        __builtin_trap();
+#endif
+    }
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    int nargs = acmd_nargs(L);
+
+    u64 hash1 = 0, hash2 = 0;
+    f32 a3 = 0, a4 = 0, a6 = 0, a7 = 0, a8 = 0, a9 = 0;
+    f32 a10 = 0, a11 = 0, a12 = 0, a13 = 0, a14 = 0, a15 = 0;
+    u64 a5_int = 0;
+    bool a16 = false;
+
+    if (nargs >= 1) {
+        hash1 = FUN_71038f4000(param_1, 1, 0);
+        if (nargs >= 2) {
+            hash2 = FUN_71038f4000(param_1, 2, 0);
+            if (nargs >= 3) {
+                a3 = acmd_read_float(L, 0x30);
+                if (nargs >= 4) {
+                    a4 = acmd_read_float(L, 0x40);
+                    if (nargs >= 5) {
+                        f32 a5f = acmd_read_float(L, 0x50);
+                        a5_int = (u64)(u32)a5f;
+                        if (nargs >= 6) {
+                            a6 = acmd_read_float(L, 0x60);
+                            if (nargs >= 7) {
+                                a7 = acmd_read_float(L, 0x70);
+                                if (nargs >= 8) {
+                                    a8 = acmd_read_float(L, 0x80);
+                                    if (nargs >= 9) {
+                                        a9 = acmd_read_float(L, 0x90);
+                                        if (nargs >= 10) {
+                                            a10 = acmd_read_float(L, 0xa0);
+                                            if (nargs >= 11) {
+                                                a11 = acmd_read_float(L, 0xb0);
+                                                if (nargs >= 12) {
+                                                    a12 = acmd_read_float(L, 0xc0);
+                                                    if (nargs >= 13) {
+                                                        a13 = acmd_read_float(L, 0xd0);
+                                                        if (nargs >= 14) {
+                                                            a14 = acmd_read_float(L, 0xe0);
+                                                            if (nargs >= 15) {
+                                                                a15 = acmd_read_float(L, 0xf0);
+                                                                if (nargs >= 16) {
+                                                                    a16 = acmd_read_bool(L, 0x100);
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    struct { f32 x; f32 y; u64 z; } vec_pos   = { a3, a4, a5_int };
+    struct { f32 x; f32 y; u64 z; } vec_rot   = { a6, a7, (u64)(u32)a8 };
+    struct { f32 x; f32 y; u64 z; } vec_scale  = { a10, a11, (u64)(u32)a12 };
+    struct { f32 x; f32 y; u64 z; } vec_color  = { a13, a14, (u64)(u32)a15 };
+
+    void** eff = *(void***)(acc + 0x140);
+    void** vt = *(void***)eff;
+    reinterpret_cast<void(*)(void*, u64, u64, void*, void*, void*, void*, bool, s32, s32, s32, f32)>
+        (vt[0x70 / 8])(eff, hash1, hash2, &vec_pos, &vec_rot, &vec_scale, &vec_color, a16, 0, 0, 0, a9);
+
+    acmd_consume(L);
+}
+
+// 0x710228fb30 — EFFECT_WORK_R
+// Like EFFECT but all position/rotation/scale/color values are WorkModule indices (integers)
+// Reads floats then truncates to u32 for all vector components
+void EFFECT_WORK_R(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    if (param_1 == nullptr) {
+#ifdef MATCHING_HACK_NX_CLANG
+        __builtin_trap();
+#endif
+    }
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    int nargs = acmd_nargs(L);
+
+    // Group 1: hashes + pos (args 1-5)
+    u64 hash1 = 0, hash2 = 0;
+    u64 a3 = 0, a4 = 0, a5 = 0;
+    if (nargs >= 1) {
+        hash1 = FUN_71038f4000(param_1, 1, 0);
+        if (nargs >= 2) {
+            hash2 = FUN_71038f4000(param_1, 2, 0);
+            if (nargs >= 3) {
+                a3 = (u64)(u32)acmd_read_float(L, 0x30);
+                if (nargs >= 4) {
+                    a4 = (u64)(u32)acmd_read_float(L, 0x40);
+                    if (nargs >= 5) {
+                        a5 = (u64)(u32)acmd_read_float(L, 0x50);
+                    }
+                }
+            }
+        }
+    }
+    struct { u32 x; u32 y; u64 z; } vec_pos = { (u32)a3, (u32)a4, a5 };
+
+    // Group 2: rot (args 6-8)
+    u64 a6 = 0, a7 = 0, a8 = 0;
+    if (nargs >= 6) {
+        a6 = (u64)(u32)acmd_read_float(L, 0x60);
+        if (nargs >= 7) {
+            a7 = (u64)(u32)acmd_read_float(L, 0x70);
+            if (nargs >= 8) {
+                a8 = (u64)(u32)acmd_read_float(L, 0x80);
+            }
+        }
+    }
+    struct { u32 x; u32 y; u64 z; } vec_rot = { (u32)a6, (u32)a7, a8 };
+
+    // Group 3: rate + scale (args 9-12)
+    u64 rate_int = 0;
+    u64 a10 = 0, a11 = 0, a12 = 0;
+    if (nargs >= 9) {
+        rate_int = (u64)(u32)acmd_read_float(L, 0x90);
+        if (nargs >= 10) {
+            a10 = (u64)(u32)acmd_read_float(L, 0xa0);
+            if (nargs >= 11) {
+                a11 = (u64)(u32)acmd_read_float(L, 0xb0);
+                if (nargs >= 12) {
+                    a12 = (u64)(u32)acmd_read_float(L, 0xc0);
+                }
+            }
+        }
+    }
+    struct { u32 x; u32 y; u64 z; } vec_scale = { (u32)a10, (u32)a11, a12 };
+
+    // Group 4: color (args 13-15) + follow (arg 16)
+    u64 a13 = 0, a14 = 0, a15 = 0;
+    if (nargs >= 13) {
+        a13 = (u64)(u32)acmd_read_float(L, 0xd0);
+        if (nargs >= 14) {
+            a14 = (u64)(u32)acmd_read_float(L, 0xe0);
+            if (nargs >= 15) {
+                a15 = (u64)(u32)acmd_read_float(L, 0xf0);
+            }
+        }
+    }
+    struct { u32 x; u32 y; u64 z; } vec_color = { (u32)a13, (u32)a14, a15 };
+
+    bool follow = false;
+    if (nargs >= 16) {
+        follow = acmd_read_bool(L, 0x100);
+    }
+
+    void** eff = *(void***)(acc + 0x140);
+    void** vt = *(void***)eff;
+    reinterpret_cast<void(*)(void*, u64, u64, void*, void*, void*, void*, bool, s32, s32, s32, f32)>
+        (vt[0x70 / 8])(eff, hash1, hash2, &vec_pos, &vec_rot, &vec_scale, &vec_color, follow, 0, 0, 0, (f32)(u32)rate_int);
+
+    acmd_consume(L);
+}
+
+// 0x71022a1a20 — EFFECT_BRANCH_SITUATION
+// Like EFFECT but selects hash based on ground/air situation
+// Args: 1=ground_hash, 2=air_hash, 3=joint_hash, 4-17=pos/rot/rate/scale/color/follow
+void EFFECT_BRANCH_SITUATION(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    u64 saved_top = *(u64*)(L + 0x10);
+    u64 saved_base = **(u64**)(L + 0x20);
+
+    // Check situation via EffectModule vtable[125] (offset 0x3E8)
+    void** eff_check = *(void***)(acc + 0x140);
+    u32 situation = reinterpret_cast<u32(*)(void*)>((*(void***)eff_check)[1000 / 8])(eff_check);
+
+    if (param_1 == nullptr) {
+#ifdef MATCHING_HACK_NX_CLANG
+        __builtin_trap();
+#endif
+    }
+
+    int nargs = (int)((saved_top - (saved_base + 0x10)) >> 4);
+
+    // Select hash based on situation bit 0:
+    // Ground (bit0=0) → read arg 1; Air (bit0=1) → read arg 2
+    u64 hash1 = 0;
+    if ((s32)(situation & 1) < nargs) {
+        s32 hash_arg = 1;
+        if ((situation & 1) != 0) {
+            hash_arg = 2;
+        }
+        hash1 = FUN_71038f4000(param_1, hash_arg, 0);
+    }
+
+    u64 hash2 = 0;
+    f32 a4 = 0, a5 = 0, a7 = 0, a8 = 0, a9 = 0, a10 = 0;
+    f32 a11 = 0, a12 = 0, a13 = 0, a14 = 0, a15 = 0, a16 = 0;
+    u64 a6_int = 0;
+    bool a17 = false;
+
+    if (nargs >= 3) {
+        hash2 = FUN_71038f4000(param_1, 3, 0);
+        if (nargs >= 4) {
+            a4 = acmd_read_float(L, 0x40);
+            if (nargs >= 5) {
+                a5 = acmd_read_float(L, 0x50);
+                if (nargs >= 6) {
+                    f32 a6f = acmd_read_float(L, 0x60);
+                    a6_int = (u64)(u32)a6f;
+                    if (nargs >= 7) {
+                        a7 = acmd_read_float(L, 0x70);
+                        if (nargs >= 8) {
+                            a8 = acmd_read_float(L, 0x80);
+                            if (nargs >= 9) {
+                                a9 = acmd_read_float(L, 0x90);
+                                if (nargs >= 10) {
+                                    a10 = acmd_read_float(L, 0xa0);
+                                    if (nargs >= 11) {
+                                        a11 = acmd_read_float(L, 0xb0);
+                                        if (nargs >= 12) {
+                                            a12 = acmd_read_float(L, 0xc0);
+                                            if (nargs >= 13) {
+                                                a13 = acmd_read_float(L, 0xd0);
+                                                if (nargs >= 14) {
+                                                    a14 = acmd_read_float(L, 0xe0);
+                                                    if (nargs >= 15) {
+                                                        a15 = acmd_read_float(L, 0xf0);
+                                                        if (nargs >= 16) {
+                                                            a16 = acmd_read_float(L, 0x100);
+                                                            if (nargs >= 17) {
+                                                                a17 = acmd_read_bool(L, 0x110);
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    struct { f32 x; f32 y; u64 z; } vec_pos   = { a4, a5, a6_int };
+    struct { f32 x; f32 y; u64 z; } vec_rot   = { a7, a8, (u64)(u32)a9 };
+    struct { f32 x; f32 y; u64 z; } vec_scale  = { a11, a12, (u64)(u32)a13 };
+    struct { f32 x; f32 y; u64 z; } vec_color  = { a14, a15, (u64)(u32)a16 };
+
+    void** eff = *(void***)(acc + 0x140);
+    void** vt = *(void***)eff;
+    reinterpret_cast<void(*)(void*, u64, u64, void*, void*, void*, void*, bool, s32, s32, s32, f32)>
+        (vt[0x70 / 8])(eff, hash1, hash2, &vec_pos, &vec_rot, &vec_scale, &vec_color, a17, 0, 0, 0, a10);
+
+    acmd_consume(L);
+}
+
+// ---------------------------------------------------------------------------
+// XOR-shift128 PRNG inline step
+// Uses global state DAT_71052381c0-cc, returns new random u32
+// ---------------------------------------------------------------------------
+static inline u32 xorshift128_next() {
+    u32 t = DAT_71052381c0 ^ (DAT_71052381c0 << 11);
+    DAT_71052381c0 = DAT_71052381c4;
+    DAT_71052381c4 = DAT_71052381c8;
+    t = t ^ (t >> 8) ^ DAT_71052381cc ^ (DAT_71052381cc >> 19);
+    DAT_71052381c8 = DAT_71052381cc;
+    DAT_71052381cc = t;
+    return t;
+}
+
+// Apply RNG offset: base + range * random * norm - range * 0.5
+static inline f32 apply_rng(f32 base, f32 range, u32 rng) {
+    return base + range * (f32)rng * DAT_7104472710 + range * -0.5f;
+}
+
+// 0x710229e280 — EFFECT_FOLLOW_RND
+// Like EFFECT_FOLLOW but with XOR-shift128 random offsets on position and rotation
+// Args: 1-2=hashes, 3-5=offset(int), 6-8=rot(float), 9=scale, 10-15=rng ranges, 16=follow
+void EFFECT_FOLLOW_RND(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    if (param_1 == nullptr) {
+#ifdef MATCHING_HACK_NX_CLANG
+        __builtin_trap();
+#endif
+    }
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    int nargs = acmd_nargs(L);
+
+    // Group 1: hashes + offset (args 1-5, offsets as integers)
+    u64 hash1 = 0, hash2 = 0;
+    u64 off_x = 0, off_y = 0, off_z = 0;
+    if (nargs >= 1) {
+        hash1 = FUN_71038f4000(param_1, 1, 0);
+        if (nargs >= 2) {
+            hash2 = FUN_71038f4000(param_1, 2, 0);
+            if (nargs >= 3) {
+                off_x = (u64)(u32)acmd_read_float(L, 0x30);
+                if (nargs >= 4) {
+                    off_y = (u64)(u32)acmd_read_float(L, 0x40);
+                    if (nargs >= 5) {
+                        off_z = (u64)(u32)acmd_read_float(L, 0x50);
+                    }
+                }
+            }
+        }
+    }
+    // Pack offset: x as float (for later RNG math), y as int
+    struct { f32 x; u32 y; u64 z; } off_vec = { (f32)(u32)off_x, (u32)off_y, off_z };
+
+    // Group 2: rotation (args 6-8, as floats)
+    f32 rot_x = 0.0f, rot_y = 0.0f, rot_z_f = 0.0f;
+    if (nargs >= 6) {
+        rot_x = acmd_read_float(L, 0x60);
+        if (nargs >= 7) {
+            rot_y = acmd_read_float(L, 0x70);
+            if (nargs >= 8) {
+                rot_z_f = acmd_read_float(L, 0x80);
+            }
+        }
+    }
+    struct { f32 x; f32 y; u64 z; } rot_vec = { rot_x, rot_y, (u64)(u32)rot_z_f };
+
+    // Arg 9: scale
+    f32 scale = 0.0f;
+    if (nargs >= 9) {
+        scale = acmd_read_float(L, 0x90);
+    }
+
+    // Follow setup defaults
+    u32 flags = 0x8000;
+
+    // Arg 10: RNG range for offset_x
+    f32 range = 0.0f;
+    if (nargs >= 10) {
+        range = acmd_read_float(L, 0xa0);
+    }
+    // PRNG step + apply to offset_x
+    u32 rng = xorshift128_next();
+    off_vec.x = apply_rng((f32)(u32)off_x, range, rng);
+
+    // Arg 11: RNG range for offset_y
+    range = 0.0f;
+    if (nargs >= 11) {
+        range = acmd_read_float(L, 0xb0);
+    }
+    rng = xorshift128_next();
+    f32 off_y_f = (f32)(u32)off_y;
+    off_vec.y = (u32)apply_rng(off_y_f, range, rng);
+
+    // Arg 12: RNG range for offset_z
+    range = 0.0f;
+    if (nargs >= 12) {
+        range = acmd_read_float(L, 0xc0);
+    }
+    rng = xorshift128_next();
+    off_vec.z = (u64)(u32)apply_rng((f32)(u32)off_z, range, rng);
+
+    // Arg 13: RNG range for rot_x
+    range = 0.0f;
+    if (nargs >= 13) {
+        range = acmd_read_float(L, 0xd0);
+    }
+    rng = xorshift128_next();
+    rot_vec.x = apply_rng(rot_x, range, rng);
+
+    // Arg 14: RNG range for rot_y
+    range = 0.0f;
+    if (nargs >= 14) {
+        range = acmd_read_float(L, 0xe0);
+    }
+    rng = xorshift128_next();
+    rot_vec.y = apply_rng(rot_y, range, rng);
+
+    // Arg 15: RNG range for rot_z
+    range = 0.0f;
+    if (nargs >= 15) {
+        range = acmd_read_float(L, 0xf0);
+    }
+    rng = xorshift128_next();
+    rot_vec.z = (u64)(u32)apply_rng(rot_z_f, range, rng);
+
+    // Arg 16: follow flag
+    if (nargs >= 16) {
+        bool follow = acmd_read_bool(L, 0x100);
+        if (follow) flags = 0xc000;
+    }
+
+    // EffectModule::req_follow (vtable[16], offset 0x80)
+    void** eff = *(void***)(acc + 0x140);
+    void** vt = *(void***)eff;
+    reinterpret_cast<void(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, s32, s32, s32, f32)>
+        (vt[0x80 / 8])(eff, hash1, hash2, &off_vec, &rot_vec, 0, (u64)flags, 0, (s32)-1, 0, 0, 0, scale);
+
+    acmd_consume(L);
+}
+
+// 0x710229f0e0 — EFFECT_FOLLOW_RND_WORK
+// Like EFFECT_FOLLOW_RND but all offsets/rotations as work indices (integers)
+// Reads arg 1 hash twice (once to prime, once for the vtable call)
+void EFFECT_FOLLOW_RND_WORK(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    int nargs = acmd_nargs(L);
+
+    // Prime read of arg 1 (result discarded for WORK variant)
+    if (nargs >= 1 && param_1 != nullptr) {
+        FUN_71038f4000(param_1, 1, 0);
+    }
+
+    // Group 1: hash2 + offset (args 2-5, all as integers)
+    u64 hash2 = 0;
+    u64 off_x = 0, off_y = 0, off_z = 0;
+    if (nargs >= 2) {
+        hash2 = FUN_71038f4000(param_1, 2, 0);
+        if (nargs >= 3) {
+            off_x = (u64)(u32)acmd_read_float(L, 0x30);
+            if (nargs >= 4) {
+                off_y = (u64)(u32)acmd_read_float(L, 0x40);
+                if (nargs >= 5) {
+                    off_z = (u64)(u32)acmd_read_float(L, 0x50);
+                }
+            }
+        }
+    }
+    struct { f32 x; u32 y; u64 z; } off_vec = { (f32)(u32)off_x, (u32)off_y, off_z };
+
+    // Group 2: rotation (args 6-8, as integers)
+    u64 rot_x = 0, rot_y = 0, rot_z = 0;
+    if (nargs >= 6) {
+        rot_x = (u64)(u32)acmd_read_float(L, 0x60);
+        if (nargs >= 7) {
+            rot_y = (u64)(u32)acmd_read_float(L, 0x70);
+            if (nargs >= 8) {
+                rot_z = (u64)(u32)acmd_read_float(L, 0x80);
+            }
+        }
+    }
+    struct { u32 x; u32 y; u64 z; } rot_vec = { (u32)rot_x, (u32)rot_y, rot_z };
+
+    // Arg 9: scale
+    f32 scale = 0.0f;
+    if (nargs >= 9) {
+        scale = acmd_read_float(L, 0x90);
+    }
+
+    // Follow setup defaults
+    u32 follow_flags = 0x8000;
+
+    // Re-read hash1 from arg 1
+    u64 hash1 = 0;
+    if (nargs >= 1) {
+        hash1 = FUN_71038f4000(param_1, 1, 0);
+    }
+
+    // Arg 10: RNG range for offset_x
+    f32 range = 0.0f;
+    if (nargs >= 10) {
+        range = acmd_read_float(L, 0xa0);
+    }
+    u32 rng = xorshift128_next();
+    off_vec.x = apply_rng((f32)(u32)off_x, range, rng);
+
+    // Arg 11: RNG range for offset_y
+    range = 0.0f;
+    if (nargs >= 11) {
+        range = acmd_read_float(L, 0xb0);
+    }
+    rng = xorshift128_next();
+    off_vec.y = (u32)apply_rng((f32)(u32)off_y, range, rng);
+
+    // Arg 12: RNG range for offset_z
+    range = 0.0f;
+    if (nargs >= 12) {
+        range = acmd_read_float(L, 0xc0);
+    }
+    rng = xorshift128_next();
+    off_vec.z = (u64)(u32)apply_rng((f32)(u32)off_z, range, rng);
+
+    // Arg 13: RNG range for rot_x
+    range = 0.0f;
+    if (nargs >= 13) {
+        range = acmd_read_float(L, 0xd0);
+    }
+    rng = xorshift128_next();
+    rot_vec.x = (u32)apply_rng((f32)(u32)rot_x, range, rng);
+
+    // Arg 14: RNG range for rot_y
+    range = 0.0f;
+    if (nargs >= 14) {
+        range = acmd_read_float(L, 0xe0);
+    }
+    rng = xorshift128_next();
+    rot_vec.y = (u32)apply_rng((f32)(u32)rot_y, range, rng);
+
+    // Arg 15: RNG range for rot_z
+    range = 0.0f;
+    if (nargs >= 15) {
+        range = acmd_read_float(L, 0xf0);
+    }
+    rng = xorshift128_next();
+    rot_vec.z = (u64)(u32)apply_rng((f32)(u32)rot_z, range, rng);
+
+    // Arg 16: follow flag
+    if (nargs >= 16) {
+        bool follow = acmd_read_bool(L, 0x100);
+        if (follow) follow_flags = 0xc000;
+    }
+
+    // EffectModule::req_follow (vtable[16], offset 0x80)
+    void** eff = *(void***)(acc + 0x140);
+    void** vt = *(void***)eff;
+    reinterpret_cast<void(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, s32, s32, s32, f32)>
+        (vt[0x80 / 8])(eff, hash1, hash2, &off_vec, &rot_vec, 0, (u64)follow_flags, 0, (s32)-1, 0, 0, 0, scale);
+
+    acmd_consume(L);
+}
+
+// 0x710229ff20 — EFFECT_FOLLOW_FLIP_RND
+// Like EFFECT_FOLLOW_RND but with MotionModule flip check + hash swap
+// Args: 1=ground_hash, 2=air_hash, 3=joint_hash, 4-9=off/rot(float),
+//       10=scale, 11-16=rng ranges, 17=follow
+void EFFECT_FOLLOW_FLIP_RND(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    int nargs = acmd_nargs(L);
+
+    // Read joint hash (arg 3)
+    u64 joint_hash = 0;
+    if (param_1 == nullptr) {
+        // Null path: read from constant address
+#ifdef MATCHING_HACK_NX_CLANG
+        __builtin_trap();
+#endif
+    } else {
+        if (nargs >= 3) {
+            joint_hash = FUN_71038f4000(param_1, 3, 0);
+        }
+    }
+
+    // Read offsets as floats (args 4-6)
+    f32 off_x = 0.0f, off_y = 0.0f, off_z_f = 0.0f;
+    if (nargs >= 4) {
+        off_x = acmd_read_float(L, 0x40);
+        if (nargs >= 5) {
+            off_y = acmd_read_float(L, 0x50);
+            if (nargs >= 6) {
+                off_z_f = acmd_read_float(L, 0x60);
+                if (nargs >= 7) {
+                    // Read rotations as floats (args 7-9)
+                    f32 rot_x_val = acmd_read_float(L, 0x70);
+                    f32 rot_y_val = 0.0f;
+                    f32 rot_z_val = 0.0f;
+                    f32 scale_val = 0.0f;
+                    if (nargs >= 8) {
+                        rot_y_val = acmd_read_float(L, 0x80);
+                        if (nargs >= 9) {
+                            rot_z_val = acmd_read_float(L, 0x90);
+                            if (nargs >= 10) {
+                                scale_val = acmd_read_float(L, 0xa0);
+                            }
+                        }
+                    }
+
+                    // Pack rotation
+                    struct { f32 x; f32 y; u64 z; } rot_vec = { rot_x_val, rot_y_val, (u64)(u32)rot_z_val };
+
+                    // Arg 11: RNG range for off_x
+                    f32 range_off_x = 0.0f;
+                    if (nargs >= 11) {
+                        range_off_x = acmd_read_float(L, 0xb0);
+                    }
+
+                    // PRNG step + apply offset_x
+                    u32 rng = xorshift128_next();
+                    f32 new_off_x = apply_rng(off_x, range_off_x, rng);
+
+                    // Arg 12: RNG range for off_y
+                    f32 range_off_y = 0.0f;
+                    if (nargs >= 12) {
+                        range_off_y = acmd_read_float(L, 0xc0);
+                    }
+                    rng = xorshift128_next();
+                    f32 new_off_y = apply_rng(off_y, range_off_y, rng);
+
+                    // Arg 13: RNG range for off_z
+                    f32 range_off_z = 0.0f;
+                    if (nargs >= 13) {
+                        range_off_z = acmd_read_float(L, 0xd0);
+                    }
+                    rng = xorshift128_next();
+                    f32 new_off_z_f = apply_rng(off_z_f, range_off_z, rng);
+
+                    // Pack offset with randomization applied
+                    struct { f32 x; f32 y; u64 z; } off_vec = { new_off_x, new_off_y, (u64)(u32)new_off_z_f };
+
+                    // Arg 14: RNG range for rot_x
+                    f32 range_rot_x = 0.0f;
+                    if (nargs >= 14) {
+                        range_rot_x = acmd_read_float(L, 0xe0);
+                    }
+                    rng = xorshift128_next();
+                    rot_vec.x = apply_rng(rot_x_val, range_rot_x, rng);
+
+                    // Arg 15: RNG range for rot_y
+                    f32 range_rot_y = 0.0f;
+                    if (nargs >= 15) {
+                        range_rot_y = acmd_read_float(L, 0xf0);
+                    }
+                    rng = xorshift128_next();
+                    rot_vec.y = apply_rng(rot_y_val, range_rot_y, rng);
+
+                    // Arg 16: RNG range for rot_z
+                    f32 range_rot_z = 0.0f;
+                    if (nargs >= 16) {
+                        range_rot_z = acmd_read_float(L, 0x100);
+                    }
+                    rng = xorshift128_next();
+                    rot_vec.z = (u64)(u32)apply_rng(rot_z_val, range_rot_z, rng);
+
+                    // Arg 17: follow flag
+                    u32 follow_flags = 0x8000;
+                    if (nargs >= 17) {
+                        bool follow = acmd_read_bool(L, 0x110);
+                        if (follow) follow_flags = 0xc000;
+                    }
+
+                    // Check MotionModule flip state (vtable offset 0x390)
+                    void** motion = *(void***)(acc + 0x88);
+                    u64 is_flip = reinterpret_cast<u64(*)(void*)>((*(void***)motion)[0x390 / 8])(motion);
+
+                    // Select hash based on flip
+                    u64 hash1;
+                    u64 alt_hash = 0;
+                    if ((is_flip & 1) == 0) {
+                        // Not flipped: use arg 1
+                        if (nargs >= 1) {
+                            hash1 = FUN_71038f4000(param_1, 1, 0);
+                        } else {
+                            hash1 = 0;
+                        }
+                    } else {
+                        // Flipped: use arg 2
+                        if (nargs >= 2) {
+                            hash1 = FUN_71038f4000(param_1, 2, 0);
+                            if (nargs >= 18) {
+                                alt_hash = FUN_71038f4000(param_1, 0x12, 0);
+                            }
+                        } else {
+                            hash1 = 0;
+                        }
+                    }
+
+                    // EffectModule::req_follow (vtable[16], offset 0x80)
+                    void** eff = *(void***)(acc + 0x140);
+                    void** vt = *(void***)eff;
+                    reinterpret_cast<void(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, u64, s32, s32, f32)>
+                        (vt[0x80 / 8])(eff, hash1, joint_hash, &off_vec, &rot_vec, 0, (u64)follow_flags, 0, (s32)-1, alt_hash, 0, 0, scale_val);
+
+                    acmd_consume(L);
+                    return;
+                }
+            }
+        }
+    }
+
+    // Fallback: not enough args - pack with defaults and call
+    struct { f32 x; f32 y; u64 z; } off_vec_def = { off_x, off_y, (u64)(u32)off_z_f };
+    struct { f32 x; f32 y; u64 z; } rot_vec_def = { 0.0f, 0.0f, 0 };
+    u32 follow_flags = 0x8000;
+
+    // Check MotionModule flip state
+    void** motion = *(void***)(acc + 0x88);
+    u64 is_flip = reinterpret_cast<u64(*)(void*)>((*(void***)motion)[0x390 / 8])(motion);
+
+    u64 hash1;
+    u64 alt_hash = 0;
+    if ((is_flip & 1) == 0) {
+        if (param_1 == nullptr) {
+#ifdef MATCHING_HACK_NX_CLANG
+            __builtin_trap();
+#endif
+        }
+        if (nargs >= 1) {
+            hash1 = FUN_71038f4000(param_1, 1, 0);
+        } else {
+            hash1 = 0;
+        }
+    } else {
+        if (nargs >= 2) {
+            hash1 = FUN_71038f4000(param_1, 2, 0);
+            if (nargs >= 18) {
+                alt_hash = FUN_71038f4000(param_1, 0x12, 0);
+            }
+        } else {
+            hash1 = 0;
+        }
+    }
+
+    void** eff = *(void***)(acc + 0x140);
+    void** vt = *(void***)eff;
+    reinterpret_cast<void(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, u64, s32, s32, f32)>
+        (vt[0x80 / 8])(eff, hash1, joint_hash, &off_vec_def, &rot_vec_def, 0, (u64)follow_flags, 0, (s32)-1, alt_hash, 0, 0, 0.0f);
+
+    acmd_consume(L);
+}
+
+// 0x71022989b0 (688 bytes) — LANDING_EFFECT
+// Uses FUN_7102288620 shared parser, checks landing enabled, terrain lookup via StageManager
+void LANDING_EFFECT(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+
+    acmd_effect_ctrl ctrl;
+    ctrl.hash = 0;
+    ctrl.flag = 0;
+    ctrl.nargs = (u32)((*(u64*)(L + 0x10) - (**(u64**)(L + 0x20) + 0x10)) >> 4);
+    ctrl.L = param_1;
+
+    // Check EffectModule::is_landing_enabled (vtable[0x3d8/8])
+    void** eff_check = *(void***)(acc + 0x140);
+    u64 enabled = reinterpret_cast<u64(*)(void*)>((*(void***)eff_check)[0x3d8 / 8])(eff_check);
+    if ((enabled & 1) == 0) goto landing_consume;
+
+    acmd_effect_out out;
+    FUN_7102288620(&out, &ctrl, 0);
+
+    // GroundModule::get_terrain_kind (vtable[0x478/8]) with arg 8
+    {
+        void** ground = *(void***)(acc + 0x58);
+        int terrain_kind = reinterpret_cast<int(*)(void*, int)>((*(void***)ground)[0x478 / 8])(ground, 8);
+
+        u32 terrain_flag = 0;
+        if (terrain_kind != 0) {
+            u64 stage_mgr = (u64)lib::Singleton<app::StageManager>::instance_;
+            u64 terrain_this = stage_mgr + 0x128;
+            u64 terrain_data = reinterpret_cast<u64(*)(u64, int)>(*(u64*)(*(u64*)terrain_this + 0x1f8))(terrain_this, terrain_kind);
+
+            // Check terrain[0x40] flag — if false, disable effect
+            if (*(u8*)(terrain_data + 0x40) == 0) {
+                out.hash1 = 0x425cbfc4fULL;
+            }
+
+            terrain_flag = (terrain_kind == 10 || terrain_kind == 0x2b) ? 0x4000000u : 0u;
+        }
+
+        // First req_on_joint call with primary hash
+        void** eff = *(void***)(acc + 0x140);
+        u64 hash1_masked = out.hash1 & 0xffffffffffULL;
+        if (hash1_masked == 0xe3c234564ULL || hash1_masked == 0x14a422ea56ULL || hash1_masked == 0x11b722b99fULL) {
+            u64 fpa2 = (u64)lib::Singleton<app::FighterParamAccessor2>::instance_;
+            u32 param_val = *(u32*)(*(u64*)(fpa2 + 0x50) + 0x162c);
+            reinterpret_cast<void(*)(void*, u32)>((*(void***)eff)[0x438 / 8])(eff, param_val);
+            eff = *(void***)(acc + 0x140);
+        }
+        f32 rate = *(f32*)&out.rate_bits;
+        reinterpret_cast<void(*)(void*, u64, u64, void*, void*, void*, void*, bool, u32, u32, s32, f32)>
+            ((*(void***)eff)[0x70 / 8])(eff, out.hash1, out.hash2, &out.pos_xy, &out.rot_xy, &out.scale_xy, &out.color_xy, out.follow_flag, 0, 0, 0, rate);
+
+        // Second req_on_joint with terrain's secondary hash (terrain_data[0x48])
+        if (terrain_kind != 0) {
+            u64 stage_mgr2 = (u64)lib::Singleton<app::StageManager>::instance_;
+            u64 terrain_this2 = stage_mgr2 + 0x128;
+            u64 terrain_data2 = reinterpret_cast<u64(*)(u64, int)>(*(u64*)(*(u64*)terrain_this2 + 0x1f8))(terrain_this2, terrain_kind);
+
+            eff = *(void***)(acc + 0x140);
+            u64 secondary_hash = *(u64*)(terrain_data2 + 0x48);
+            u64 sec_masked = secondary_hash & 0xffffffffffULL;
+            if (sec_masked == 0xe3c234564ULL || sec_masked == 0x14a422ea56ULL || sec_masked == 0x11b722b99fULL) {
+                u64 fpa2 = (u64)lib::Singleton<app::FighterParamAccessor2>::instance_;
+                u32 param_val = *(u32*)(*(u64*)(fpa2 + 0x50) + 0x162c);
+                reinterpret_cast<void(*)(void*, u32)>((*(void***)eff)[0x438 / 8])(eff, param_val);
+                eff = *(void***)(acc + 0x140);
+                secondary_hash = *(u64*)(terrain_data2 + 0x48);
+            }
+            reinterpret_cast<void(*)(void*, u64, u64, void*, void*, void*, void*, bool, u32, u32, s32, f32)>
+                ((*(void***)eff)[0x70 / 8])(eff, secondary_hash, out.hash2, &out.pos_xy, &out.rot_xy, &out.scale_xy, &out.color_xy, out.follow_flag, terrain_flag, 0, 0, rate);
+        }
+    }
+
+landing_consume:
+    acmd_consume(L);
+}
+
+// 0x7102298c60 (828 bytes) — LANDING_EFFECT_FLIP
+// Like LANDING_EFFECT but with MotionModule flip check for hash swap
+void LANDING_EFFECT_FLIP(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+
+    acmd_effect_ctrl ctrl;
+    ctrl.hash = 0;
+    ctrl.flag = 0;
+    int nargs = (int)((*(u64*)(L + 0x10) - (**(u64**)(L + 0x20) + 0x10)) >> 4);
+    ctrl.nargs = (u32)nargs;
+    ctrl.L = param_1;
+
+    // Check EffectModule::is_landing_enabled (vtable[0x3d8/8])
+    void** eff_check = *(void***)(acc + 0x140);
+    u64 enabled = reinterpret_cast<u64(*)(void*)>((*(void***)eff_check)[0x3d8 / 8])(eff_check);
+    if ((enabled & 1) == 0) goto landing_flip_consume;
+
+    {
+        acmd_effect_out out;
+        FUN_7102288620(&out, &ctrl, 1);  // mode 1 = flip-aware parsing
+
+        // MotionModule flip check (vtable[0x390/8])
+        void** motion = *(void***)(acc + 0x88);
+        u64 is_flip = reinterpret_cast<u64(*)(void*)>((*(void***)motion)[0x390 / 8])(motion);
+
+        u32 alt_hash = 0;
+        if ((is_flip & 1) == 0) {
+            // Not flipped: use arg 1
+            if (nargs >= 1) {
+                out.hash1 = FUN_71038f4000(param_1, 1, 0);
+            } else {
+                out.hash1 = 0;
+            }
+        } else {
+            // Flipped: use arg 2
+            if (nargs >= 2) {
+                out.hash1 = FUN_71038f4000(param_1, 2, 0);
+                if (nargs >= 18) {
+                    alt_hash = (u32)FUN_71038f4000(param_1, 0x12, 0);
+                }
+            } else {
+                out.hash1 = 0;
+                alt_hash = 0;
+            }
+        }
+
+        // GroundModule::get_terrain_kind
+        void** ground = *(void***)(acc + 0x58);
+        int terrain_kind = reinterpret_cast<int(*)(void*, int)>((*(void***)ground)[0x478 / 8])(ground, 8);
+
+        u32 terrain_flag = 0;
+        if (terrain_kind != 0) {
+            u64 stage_mgr = (u64)lib::Singleton<app::StageManager>::instance_;
+            u64 terrain_this = stage_mgr + 0x128;
+            u64 terrain_data = reinterpret_cast<u64(*)(u64, int)>(*(u64*)(*(u64*)terrain_this + 0x1f8))(terrain_this, terrain_kind);
+
+            if (*(u8*)(terrain_data + 0x40) == 0) {
+                out.hash1 = 0x425cbfc4fULL;
+            }
+            terrain_flag = (terrain_kind == 10 || terrain_kind == 0x2b) ? 0x4000000u : 0u;
+        }
+
+        // First req_on_joint
+        void** eff = *(void***)(acc + 0x140);
+        u64 hash1_masked = out.hash1 & 0xffffffffffULL;
+        if (hash1_masked == 0xe3c234564ULL || hash1_masked == 0x14a422ea56ULL || hash1_masked == 0x11b722b99fULL) {
+            u64 fpa2 = (u64)lib::Singleton<app::FighterParamAccessor2>::instance_;
+            u32 param_val = *(u32*)(*(u64*)(fpa2 + 0x50) + 0x162c);
+            reinterpret_cast<void(*)(void*, u32)>((*(void***)eff)[0x438 / 8])(eff, param_val);
+            eff = *(void***)(acc + 0x140);
+        }
+        f32 rate = *(f32*)&out.rate_bits;
+        reinterpret_cast<void(*)(void*, u64, u64, void*, void*, void*, void*, bool, u32, u32, s32, f32)>
+            ((*(void***)eff)[0x70 / 8])(eff, out.hash1, out.hash2, &out.pos_xy, &out.rot_xy, &out.scale_xy, &out.color_xy, out.follow_flag, 0, alt_hash, 0, rate);
+
+        // Second req_on_joint with terrain secondary hash
+        if (terrain_kind != 0) {
+            u64 stage_mgr2 = (u64)lib::Singleton<app::StageManager>::instance_;
+            u64 terrain_this2 = stage_mgr2 + 0x128;
+            u64 terrain_data2 = reinterpret_cast<u64(*)(u64, int)>(*(u64*)(*(u64*)terrain_this2 + 0x1f8))(terrain_this2, terrain_kind);
+
+            eff = *(void***)(acc + 0x140);
+            u64 secondary_hash = *(u64*)(terrain_data2 + 0x48);
+            u64 sec_masked = secondary_hash & 0xffffffffffULL;
+            if (sec_masked == 0xe3c234564ULL || sec_masked == 0x14a422ea56ULL || sec_masked == 0x11b722b99fULL) {
+                u64 fpa2 = (u64)lib::Singleton<app::FighterParamAccessor2>::instance_;
+                u32 param_val = *(u32*)(*(u64*)(fpa2 + 0x50) + 0x162c);
+                reinterpret_cast<void(*)(void*, u32)>((*(void***)eff)[0x438 / 8])(eff, param_val);
+                eff = *(void***)(acc + 0x140);
+                secondary_hash = *(u64*)(terrain_data2 + 0x48);
+            }
+            reinterpret_cast<void(*)(void*, u64, u64, void*, void*, void*, void*, bool, u32, u32, s32, f32)>
+                ((*(void***)eff)[0x70 / 8])(eff, secondary_hash, out.hash2, &out.pos_xy, &out.rot_xy, &out.scale_xy, &out.color_xy, out.follow_flag, terrain_flag, alt_hash, 0, rate);
+        }
+    }
+
+landing_flip_consume:
+    acmd_consume(L);
+}
+
+// 0x7102298640 (880 bytes) — FOOT_EFFECT_FLIP
+// Like LANDING_EFFECT_FLIP but for foot effects: vtable[0x3d0/8], terrain[0x18],
+// plus special case for hash 0xe3c234564 with FighterParamAccessor2 position
+void FOOT_EFFECT_FLIP(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    u64 wrapper = *(u64*)(L - 8);
+    u64 acc = *(u64*)(wrapper + 0x1a0);
+
+    acmd_effect_ctrl ctrl;
+    ctrl.hash = 0;
+    ctrl.flag = 0;
+    int nargs = (int)((*(u64*)(L + 0x10) - (**(u64**)(L + 0x20) + 0x10)) >> 4);
+    ctrl.nargs = (u32)nargs;
+    ctrl.L = param_1;
+
+    // Check EffectModule::is_foot_enabled (vtable[0x3d0/8])
+    void** eff_check = *(void***)(acc + 0x140);
+    u64 enabled = reinterpret_cast<u64(*)(void*)>((*(void***)eff_check)[0x3d0 / 8])(eff_check);
+    if ((enabled & 1) == 0) goto foot_flip_consume;
+
+    {
+        acmd_effect_out out;
+        FUN_7102288620(&out, &ctrl, 1);
+
+        // MotionModule flip check
+        void** motion = *(void***)(acc + 0x88);
+        u64 is_flip = reinterpret_cast<u64(*)(void*)>((*(void***)motion)[0x390 / 8])(motion);
+
+        u32 alt_hash = 0;
+        if ((is_flip & 1) == 0) {
+            if (nargs >= 1) {
+                out.hash1 = FUN_71038f4000(param_1, 1, 0);
+            } else {
+                out.hash1 = 0;
+            }
+        } else {
+            if (nargs >= 2) {
+                out.hash1 = FUN_71038f4000(param_1, 2, 0);
+                if (nargs >= 18) {
+                    alt_hash = (u32)FUN_71038f4000(param_1, 0x12, 0);
+                }
+            } else {
+                out.hash1 = 0;
+                alt_hash = 0;
+            }
+        }
+
+        // GroundModule::get_terrain_kind
+        void** ground = *(void***)(acc + 0x58);
+        int terrain_kind = reinterpret_cast<int(*)(void*, int)>((*(void***)ground)[0x478 / 8])(ground, 8);
+
+        if (terrain_kind != 0) {
+            u64 stage_mgr = (u64)lib::Singleton<app::StageManager>::instance_;
+            u64 terrain_this = stage_mgr + 0x128;
+            u64 terrain_data = reinterpret_cast<u64(*)(u64, int)>(*(u64*)(*(u64*)terrain_this + 0x1f8))(terrain_this, terrain_kind);
+
+            u32 terrain_flag = (terrain_kind == 10 || terrain_kind == 0x2b) ? 0x4000000u : 0u;
+
+            u64 terrain_hash = *(u64*)(terrain_data + 0x18);
+            u64 th_masked = terrain_hash & 0xffffffffffULL;
+
+            void** eff = *(void***)(acc + 0x140);
+            if (th_masked == 0xe3c234564ULL || th_masked == 0x14a422ea56ULL || th_masked == 0x11b722b99fULL) {
+                u64 fpa2 = (u64)lib::Singleton<app::FighterParamAccessor2>::instance_;
+                u32 param_val = *(u32*)(*(u64*)(fpa2 + 0x50) + 0x162c);
+                reinterpret_cast<void(*)(void*, u32)>((*(void***)eff)[0x438 / 8])(eff, param_val);
+                eff = *(void***)(acc + 0x140);
+                terrain_hash = *(u64*)(terrain_data + 0x18);
+            }
+
+            f32 rate = *(f32*)&out.rate_bits;
+            reinterpret_cast<void(*)(void*, u64, u64, void*, void*, void*, void*, bool, u32, u32, s32, f32)>
+                ((*(void***)eff)[0x70 / 8])(eff, terrain_hash, out.hash2, &out.pos_xy, &out.rot_xy, &out.scale_xy, &out.color_xy, out.follow_flag, terrain_flag, alt_hash, 0, rate);
+
+            // Special case: hash 0xe3c234564 with FighterParamAccessor2 position
+            if (*(u8*)(wrapper + 0x194) == 0 && (*(u64*)(terrain_data + 0x18) & 0xffffffffffULL) == 0xe3c234564ULL) {
+                u64 fpa2 = (u64)lib::Singleton<app::FighterParamAccessor2>::instance_;
+                u64 param_base = *(u64*)(fpa2 + 0x50);
+                // Read secondary position from param data
+                u64 sec_pos_xy = *(u64*)(param_base + 0x1630);
+                u64 sec_pos_z = (u64)*(u32*)(param_base + 0x1638);
+
+                eff = *(void***)(acc + 0x140);
+                u32 param_val = *(u32*)(param_base + 0x162c);
+                reinterpret_cast<void(*)(void*, u32)>((*(void***)eff)[0x438 / 8])(eff, param_val);
+
+                eff = *(void***)(acc + 0x140);
+                struct { u64 xy; u64 z; } sec_pos = { sec_pos_xy, sec_pos_z };
+                reinterpret_cast<void(*)(void*, u64, u64, void*, void*, void*, void*, bool, u32, u32, s32, f32)>
+                    ((*(void***)eff)[0x70 / 8])(eff, 0x14a422ea56ULL, out.hash2, &sec_pos, &out.rot_xy, &out.scale_xy, &out.color_xy, false, terrain_flag, alt_hash, 0, rate);
+            }
+
+            // Check terrain[0x10] flag
+            if (*(u8*)(terrain_data + 0x10) == 0) {
+                out.hash1 = 0x425cbfc4fULL;
+            }
+        }
+
+        // Fallback req_on_joint if hash != sentinel
+        if ((out.hash1 & 0xffffffffffULL) != 0x425cbfc4fULL) {
+            void** eff = *(void***)(acc + 0x140);
+            f32 rate = *(f32*)&out.rate_bits;
+            reinterpret_cast<void(*)(void*, u64, u64, void*, void*, void*, void*, bool, u32, u32, s32, f32)>
+                ((*(void***)eff)[0x70 / 8])(eff, out.hash1, out.hash2, &out.pos_xy, &out.rot_xy, &out.scale_xy, &out.color_xy, out.follow_flag, 0, alt_hash, 0, rate);
+        }
+    }
+
+foot_flip_consume:
     acmd_consume(L);
 }
 
