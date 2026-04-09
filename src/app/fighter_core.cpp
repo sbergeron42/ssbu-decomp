@@ -1395,6 +1395,67 @@ extern "C" bool is_enable_rocketbelt_eject_710166fc80(u8* acc) {
     return true;
 }
 
+// ════════════════════════════════════════════════════════════════════
+// Buddybomb param readers — all 20 bytes, pure leaf
+// Pattern: FPA2→+0x12d0→+OFFSET → return f32/u32
+// [derived: Ghidra — all use FPA2 singleton at +0x12d0. Community-named params.]
+// ════════════════════════════════════════════════════════════════════
+
+#define BUDDYBOMB_PARAM_F(funcname, final_offset) \
+extern "C" f32 funcname() { \
+    u8* fpa2 = FPA2_INSTANCE; \
+    u64 p = *reinterpret_cast<u64*>(fpa2 + 0x12d0); \
+    return *reinterpret_cast<f32*>(p + final_offset); \
+}
+#define BUDDYBOMB_PARAM_I(funcname, final_offset) \
+extern "C" u32 funcname() { \
+    u8* fpa2 = FPA2_INSTANCE; \
+    u64 p = *reinterpret_cast<u64*>(fpa2 + 0x12d0); \
+    return *reinterpret_cast<u32*>(p + final_offset); \
+}
+
+BUDDYBOMB_PARAM_I(init_bound_frame_71016593a0, 0x230)
+BUDDYBOMB_PARAM_F(special_lw_gravity_71016593c0, 0x234)
+BUDDYBOMB_PARAM_F(special_lw_speed_y_max_71016593e0, 0x238)
+BUDDYBOMB_PARAM_F(length_gravity_7101659400, 0x240)
+BUDDYBOMB_PARAM_F(length_speed_y_max_7101659420, 0x244)
+BUDDYBOMB_PARAM_F(length_angle_x_velocity_7101659440, 0x260)
+BUDDYBOMB_PARAM_F(length_angle_y_velocity_7101659460, 0x264)
+BUDDYBOMB_PARAM_F(length_angle_z_velocity_7101659480, 0x268)
+BUDDYBOMB_PARAM_F(side_gravity_71016594a0, 0x26c)
+BUDDYBOMB_PARAM_F(side_speed_y_max_71016594c0, 0x270)
+BUDDYBOMB_PARAM_F(side_angle_x_velocity_71016594e0, 0x28c)
+BUDDYBOMB_PARAM_F(side_angle_y_velocity_7101659500, 0x290)
+BUDDYBOMB_PARAM_F(side_angle_z_velocity_7101659520, 0x294)
+BUDDYBOMB_PARAM_I(life_7101659540, 0x2a0)
+BUDDYBOMB_PARAM_I(flashing_frame_7101659560, 0x2a4)
+BUDDYBOMB_PARAM_F(rebound_speed_x_add_7101659580, 0x2a8)
+BUDDYBOMB_PARAM_F(rebound_speed_y_add_71016595a0, 0x2ac)
+BUDDYBOMB_PARAM_F(bound_se_speed_less_71016595c0, 0x2b0)
+
+#undef BUDDYBOMB_PARAM_F
+#undef BUDDYBOMB_PARAM_I
+
+// ════════════════════════════════════════════════════════════════════
+// FighterManager singleton readers — 20B, pure leaf
+// ════════════════════════════════════════════════════════════════════
+
+// 0x71015ce4d0 (20B) — get_fighter_entry_count: FM→deref→+0xa0
+// [derived: Ghidra — FighterManager singleton, reads entry count at offset 0xa0]
+extern "C" u32 get_fighter_entry_count_71015ce4d0() {
+    u8* fm = reinterpret_cast<u8*>(lib::Singleton_app_FighterManager_instance_);
+    u8* data = *reinterpret_cast<u8**>(fm);
+    return *reinterpret_cast<u32*>(data + 0xa0);
+}
+
+// 0x71015ce620 (20B) — is_ready_go: FM→deref→+0xd2 (byte)
+// [derived: Ghidra — FighterManager singleton, reads bool at offset 0xd2]
+extern "C" u8 is_ready_go_71015ce620() {
+    u8* fm = reinterpret_cast<u8*>(lib::Singleton_app_FighterManager_instance_);
+    u8* data = *reinterpret_cast<u8**>(fm);
+    return *(data + 0xd2);
+}
+
 // 0x7102284580 (40B) — app::sv_item::is_boss_stop (same logic as 71015c8bf0, different TU)
 // [derived: Ghidra — identical BossManager singleton check]
 extern "C" bool is_boss_stop_7102284580() {
