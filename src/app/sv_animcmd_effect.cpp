@@ -2240,4 +2240,224 @@ void EFFECT_FOLLOW_NO_STOP_FLIP(lua_State* param_1) {
     acmd_consume(L);
 }
 
+// 0x710229b160 (2752 bytes) — EFFECT_FOLLOW_FLIP_COLOR
+// Combines FOLLOW_FLIP (motion flip + hash swap) with COLOR (3 RGB float args after req_follow).
+// Args: 1=hash_nf, 2=hash_flip, 3=bone_hash, 4-6=off_xyz(int), 7-9=rot_xyz(int),
+//       10=scale(float), 11=follow_flag(bool), 12=alt_hash(when flipped),
+//       13-15=RGB(float)
+void EFFECT_FOLLOW_FLIP_COLOR(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    if (param_1 == nullptr) {
+#ifdef MATCHING_HACK_NX_CLANG
+        __builtin_trap();
+#endif
+    }
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    int nargs = acmd_nargs(L);
+
+    u64 bone_hash = 0;
+    u64 off_x = 0, off_y = 0, off_z = 0;
+
+    if (nargs >= 1) {
+        FUN_71038f4000(param_1, 1, 0);  // side effect, result discarded
+        if (nargs >= 3) {
+            bone_hash = FUN_71038f4000(param_1, 3, 0);
+            if (nargs >= 4) {
+                f32 f4 = acmd_read_float(L, 0x40);
+                off_x = (u64)(u32)f4;
+                if (nargs >= 5) {
+                    f32 f5 = acmd_read_float(L, 0x50);
+                    off_y = (u64)(u32)f5;
+                    if (nargs >= 6) {
+                        f32 f6 = acmd_read_float(L, 0x60);
+                        off_z = (u64)(u32)f6;
+                    }
+                }
+            }
+        }
+    }
+
+    struct { u32 y; u32 x; u64 z; } off_vec = { (u32)off_y, (u32)off_x, off_z };
+
+    u64 rot_x = 0, rot_y = 0, rot_z = 0;
+    if (nargs >= 7) {
+        f32 f7 = acmd_read_float(L, 0x70);
+        rot_x = (u64)(u32)f7;
+        if (nargs >= 8) {
+            f32 f8 = acmd_read_float(L, 0x80);
+            rot_y = (u64)(u32)f8;
+            if (nargs >= 9) {
+                f32 f9 = acmd_read_float(L, 0x90);
+                rot_z = (u64)(u32)f9;
+            }
+        }
+    }
+
+    struct { u32 y; u32 x; u64 z; } rot_vec = { (u32)rot_y, (u32)rot_x, rot_z };
+
+    f32 scale_f = 0;
+    if (nargs >= 10) {
+        scale_f = acmd_read_float(L, 0xa0);
+    }
+
+    bool follow_flag = false;
+    if (nargs >= 11) {
+        follow_flag = acmd_read_bool(L, 0xb0);
+    }
+
+    u64 flags = follow_flag ? 0xc000ULL : 0x8000ULL;
+
+    // Check MotionModule flip state
+    void** motion = *(void***)(acc + 0x88);
+    u64 is_flip = reinterpret_cast<u64(*)(void*)>((*(void***)motion)[0x390 / 8])(motion);
+
+    u64 effect_hash;
+    u64 alt_hash = 0;
+    if ((is_flip & 1) == 0) {
+        if (nargs >= 1) {
+            effect_hash = FUN_71038f4000(param_1, 1, 0);
+        } else {
+            effect_hash = 0;
+        }
+    } else {
+        if (nargs >= 2) {
+            effect_hash = FUN_71038f4000(param_1, 2, 0);
+            if (nargs >= 12) {
+                alt_hash = FUN_71038f4000(param_1, 0xc, 0);
+            }
+        } else {
+            effect_hash = 0;
+        }
+    }
+
+    // req_follow → returns handle
+    void** eff = *(void***)(acc + 0x140);
+    u32 handle = reinterpret_cast<u32(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, u64, s32, s32, s32, f32)>
+        ((*(void***)eff)[0x80 / 8])(eff, effect_hash, bone_hash, &off_vec, &rot_vec, 0, flags, 0, (s32)-1, alt_hash, 0, 0, 0, scale_f);
+
+    // Read RGB: args 13-15 (offsets 0xd0, 0xe0, 0xf0)
+    f32 r = 0, g = 0, b = 0;
+    if (nargs >= 13) {
+        r = acmd_read_float(L, 0xd0);
+        if (nargs >= 14) {
+            g = acmd_read_float(L, 0xe0);
+            if (nargs >= 15) {
+                b = acmd_read_float(L, 0xf0);
+            }
+        }
+    }
+
+    // EffectModule::set_color (vtable offset 0x2F8)
+    eff = *(void***)(acc + 0x140);
+    reinterpret_cast<void(*)(void*, u32, f32, f32, f32)>((*(void***)eff)[0x2f8 / 8])(eff, handle, r, g, b);
+
+    acmd_consume(L);
+}
+
+// 0x71022a1100 (2328 bytes) — EFFECT_FOLLOW_FLIP_ALPHA
+// Combines FOLLOW_FLIP (motion flip + hash swap) with ALPHA (1 float arg after req_follow).
+// Same arg layout as EFFECT_FOLLOW_FLIP_COLOR but arg 13=alpha, calls vtable 0x308
+void EFFECT_FOLLOW_FLIP_ALPHA(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    if (param_1 == nullptr) {
+#ifdef MATCHING_HACK_NX_CLANG
+        __builtin_trap();
+#endif
+    }
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    int nargs = acmd_nargs(L);
+
+    u64 bone_hash = 0;
+    u64 off_x = 0, off_y = 0, off_z = 0;
+
+    if (nargs >= 1) {
+        FUN_71038f4000(param_1, 1, 0);  // side effect, result discarded
+        if (nargs >= 3) {
+            bone_hash = FUN_71038f4000(param_1, 3, 0);
+            if (nargs >= 4) {
+                f32 f4 = acmd_read_float(L, 0x40);
+                off_x = (u64)(u32)f4;
+                if (nargs >= 5) {
+                    f32 f5 = acmd_read_float(L, 0x50);
+                    off_y = (u64)(u32)f5;
+                    if (nargs >= 6) {
+                        f32 f6 = acmd_read_float(L, 0x60);
+                        off_z = (u64)(u32)f6;
+                    }
+                }
+            }
+        }
+    }
+
+    struct { u32 y; u32 x; u64 z; } off_vec = { (u32)off_y, (u32)off_x, off_z };
+
+    u64 rot_x = 0, rot_y = 0, rot_z = 0;
+    if (nargs >= 7) {
+        f32 f7 = acmd_read_float(L, 0x70);
+        rot_x = (u64)(u32)f7;
+        if (nargs >= 8) {
+            f32 f8 = acmd_read_float(L, 0x80);
+            rot_y = (u64)(u32)f8;
+            if (nargs >= 9) {
+                f32 f9 = acmd_read_float(L, 0x90);
+                rot_z = (u64)(u32)f9;
+            }
+        }
+    }
+
+    struct { u32 y; u32 x; u64 z; } rot_vec = { (u32)rot_y, (u32)rot_x, rot_z };
+
+    f32 scale_f = 0;
+    if (nargs >= 10) {
+        scale_f = acmd_read_float(L, 0xa0);
+    }
+
+    bool follow_flag = false;
+    if (nargs >= 11) {
+        follow_flag = acmd_read_bool(L, 0xb0);
+    }
+
+    u64 flags = follow_flag ? 0xc000ULL : 0x8000ULL;
+
+    // Check MotionModule flip state
+    void** motion = *(void***)(acc + 0x88);
+    u64 is_flip = reinterpret_cast<u64(*)(void*)>((*(void***)motion)[0x390 / 8])(motion);
+
+    u64 effect_hash;
+    u64 alt_hash = 0;
+    if ((is_flip & 1) == 0) {
+        if (nargs >= 1) {
+            effect_hash = FUN_71038f4000(param_1, 1, 0);
+        } else {
+            effect_hash = 0;
+        }
+    } else {
+        if (nargs >= 2) {
+            effect_hash = FUN_71038f4000(param_1, 2, 0);
+            if (nargs >= 12) {
+                alt_hash = FUN_71038f4000(param_1, 0xc, 0);
+            }
+        } else {
+            effect_hash = 0;
+        }
+    }
+
+    // req_follow → returns handle
+    void** eff = *(void***)(acc + 0x140);
+    u32 handle = reinterpret_cast<u32(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, u64, s32, s32, s32, f32)>
+        ((*(void***)eff)[0x80 / 8])(eff, effect_hash, bone_hash, &off_vec, &rot_vec, 0, flags, 0, (s32)-1, alt_hash, 0, 0, 0, scale_f);
+
+    // Read alpha: arg 13 (offset 0xd0)
+    f32 alpha = 0.0f;
+    if (nargs >= 13) {
+        alpha = acmd_read_float(L, 0xd0);
+    }
+
+    // EffectModule::set_alpha_last (vtable offset 0x308)
+    eff = *(void***)(acc + 0x140);
+    reinterpret_cast<void(*)(void*, u32, f32)>((*(void***)eff)[0x308 / 8])(eff, handle, alpha);
+
+    acmd_consume(L);
+}
+
 }} // namespace app::sv_animcmd

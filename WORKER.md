@@ -2,9 +2,9 @@
 
 ## Model: Opus
 
-## Task: Effect template functions — 25 remaining, ~55 KB
+## Task: Effect template functions — 21 remaining, ~46 KB
 
-## Progress (33/68 complete)
+## Progress (38/68 complete)
 - 4 perfect byte matches: EFFECT_REMOVE_ATTR, EFFECT_OFF_HANDLE, LAST_EFFECT_SET_WORK_INT, EFFECT_OFF
 - 3 dispatch patterns: kill_all/kill_kind, req_on_joint, req_follow
 - New patterns: LAST_EFFECT_SET_* family, EFFECT_DETACH_KIND
