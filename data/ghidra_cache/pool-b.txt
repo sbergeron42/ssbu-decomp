@@ -1,0 +1,159 @@
+== pool-b Ghidra cache (session 2026-04-09) ==
+
+== 0x71015ce830 item_generate_position (40B) ==
+undefined1 [16] app::stage::item_generate_position(void) {
+  undefined1 auVar1 [16];
+  undefined8 local_20; undefined8 uStack_18;
+  local_20 = 0; uStack_18 = 0;
+  FUN_71015dc450(&local_20);
+  auVar1._8_8_ = uStack_18; auVar1._0_8_ = local_20;
+  return auVar1;
+}
+
+== 0x710167acf0 is_loaded_metamon_fighter (68B) ==
+undefined8 app::metamon::is_loaded_metamon_fighter(int param_1) {
+  long lVar1;
+  if ((((lib::Singleton<app::FighterManager>::instance_ != (long *)0x0) && ((uint)param_1 < 8)) &&
+      (lVar1 = *(long *)(*lib::Singleton<app::FighterManager>::instance_ + (long)param_1 * 8 + 0x20), lVar1 != 0)) &&
+      (*(char *)(lVar1 + 0x5935) != '\x01')) {
+    return 1;
+  }
+  return 0;
+}
+
+== 0x710165ef50 LINK_LINKBOMB_LINKBOMB_IS_EXPLODE_WHEN_HIT_FIGHTER (76B) ==
+undefined4 app::linkbomb::LINK_LINKBOMB_LINKBOMB_IS_EXPLODE_WHEN_HIT_FIGHTER(int param_1) {
+  if (param_1 == 0x78) {
+    return *(undefined4*)(*(long*)(*(long*)(FighterParamAccessor2::instance_ + 0xe0) + 0x1a8) + 0x44);
+  }
+  if (param_1 == 0x7b) {
+    return *(undefined4*)(*(long*)(*(long*)(FighterParamAccessor2::instance_ + 0xa80) + 0x248) + 0x14);
+  }
+  return *(undefined4*)(*(long*)(*(long*)(FighterParamAccessor2::instance_ + 0x578) + 0x218) + 0x14);
+}
+
+== 0x7101670090 get_float_battle_object_param_fly_top_angle_lw (76B) ==
+void app::sandbag::get_float_battle_object_param_fly_top_angle_lw(void) {
+  undefined1 local_20 [16];
+  local_20 = (**(code**)(*(long*)*DAT_71052b7540 + 0x10))((long*)*DAT_71052b7540, 0x10b66ba281);
+  (**(code**)(local_20._0_8_ + 0x38))(local_20);
+}
+
+== 0x71016700e0 get_float_battle_object_param_fly_top_angle_hi (76B) ==
+Same as lw but hash = 0x1028085ae6
+
+== 0x71015c08c0 create_item_simple (104B) ==
+long app::item::create_item_simple(lua_State *param_1, ItemKind param_2, float p3..p9) {
+  Complex param setup, calls FUN_71015b5d00
+}
+
+== 0x71015ce7c0 is_exist_item_generate_position (104B) ==
+StageManager vtable chain check
+
+== 0x7101646d40 item_throw (136B) ==
+ItemManager iterator, NEON vector copy, calls FUN_71015aba90
+
+== 0x7101647d90 make_list_fighter (136B) ==
+ItemManager iterator with linked list
+
+== 0x7101653740 get_light_fighter_kind (144B) ==
+Hash resolve via FUN_7103262bf0
+
+== 0x7101653800 get_dark_fighter_kind (144B) ==
+Same as light but +0x248/+0x250
+
+== 0x7102284150 get_item_hold_kind (144B) ==
+guard-acquired singleton, vtable call
+
+== 0x7102284270 is_sub_fighter (148B) ==
+guard-acquired singleton, vtable call
+
+== 0x71016439a0 create_item_have (152B) ==
+Builds item, sets up ownership
+
+== 0x7102282110 get_item_swing_motion_rate (140B) ==
+FPA2 deref + switch on 5 cases
+
+== 0x7102284310 create_item_init_normal_safe_pos (132B) ==
+Stack struct build, calls FUN_71015db0b0
+
+== 0x7102284b20 ATTACK (96B) ==
+Lua animcmd dispatch + stack cleanup
+
+== 0x710166a170 get_battle_object_id_from_grid_pos (148B) ==
+Grid lookup via FUN_71031809f0
+
+=== SESSION 2026-04-09 NEW RESULTS ===
+
+== 0x71015ca180 — get_fighter_entry_id (172B) ==
+app::fighter::get_fighter_entry_id(uint param_1)
+ASM: lsr w8,w0,#0x1c / cbnz → ret 0xffffffff
+     bl 0x71003ac560 (get_battle_object_from_id)
+     cbz x0 → fallback / ldrb [x0,#0x3a] / cmp #3 / b.hi → good path
+     Singleton guard at 0x71052b6100 / ldarb / tbz → cxa_guard_acquire
+     Init: FUN_71003a9ab0, set vtable PTR_LAB_7104f61078, cxa_guard_release
+     Good path: ldrb [x0,#0x3a] / cmp #4 / b.cc → ret 0xffffffff / else ldr w0,[x0,#0x10]
+
+== 0x71015c79e0 — common_param_float (64B) ==
+app::boss_private::common_param_float(ItemKind param_1, BossCommonParamFloat param_2)
+ASM: adrp x8,0x71052c3000 / ldr [x8,#0x1e0] → ItemParamAccessor singleton
+     ldr x8,[x8] / add x9,x8,sxtw(w0)<<3 / ldr [x9,#0xef8]
+     cbz → fmov s0,wzr; ret
+     sxtw x9,w0 / mov w10,#0x64 / madd x8,x9,x10,x8
+     mov w9,#0x3188 / movk w9,#7,LSL#16 → 0x73188
+     add x8,x8,w1 uxtw #2 / ldr s0,[x8,x9] / ret
+
+== 0x71015c6ea0 — distance_x (92B) ==
+app::target::distance_x(lua_State*)
+ASM: work_mod=[lua-8]+0x1a0→+0x50 / posture_mod=+0x38
+     work→vt[0xb](0xb) → s8 / posture→vt[0xc]() → ldr s0,[x0]
+     fabd s0,s8,s0 → absolute difference
+
+== 0x71015c6f00 — distance_y (92B) ==
+Same but: orr w1,wzr,#0xc → param 0xc / ldr s0,[x0,#4] → y offset
+
+== 0x71015c84b0 — send_event_on_boss_finish (84B) ==
+app::boss_private::send_event_on_boss_finish(lua_State*, Hash40)
+Calls FUN_71003ab390, checks BossManager singleton, calls FUN_71004eb4b0
+
+== 0x71015c55c0 — init_explosion_no_damage (144B) ==
+app::item::init_explosion_no_damage(lua_State*)
+work_mod→vt[0x14](work, ItemParamAccessor→[+0x72ffc], 0x10000010)
+attack_mod→vt[0x1a](attack, 2, 0)
+work_mod→vt[0x22](work, 0x20000017)
+
+== 0x71015c1570 — disable_area (136B) ==
+app::item::disable_area(lua_State*, int)
+If param_2==3: special path via [base+0x90]→vt chain
+Else: [base+0x158]→vt[0x18] call
+
+== 0x71015c7810 — is_looking_at_target (120B) — NAN check pattern
+== 0x71015c7890 — self_param_float (160B) — hash literals, lerp pattern
+== 0x71015ce0b0 — find_fighter_entry_id (412B) — very complex, skip
+
+=== SESSION 2026-04-09 BATCH 2 ===
+
+== 0x71022087b0 — sv_kinetic::disable_energy_pair (96B) ==
+Gets kinetic_module (+0x68 from accessor). Two vtable[12](0xc) and vtable[12](0xd) calls.
+Stores 0 at result+0x30 for each. Returns 0.
+ASM: stp x20,x19 / ldur x8,[x0,#-8] / ldr x8,[x8,#0x1a0] / ldr x19,[x8,#0x68]
+     kinetic→vt[0x60/8](kinetic, 0xc) → result1 (x20)
+     kinetic→vt[0x60/8](kinetic, 0xd) → result2 (x0)
+     strb wzr,[x20,#0x30] / strb wzr,[x0,#0x30] / mov w0,wzr
+
+== 0x7102208890 — sv_kinetic::enable_energy_pair (96B) ==
+Identical to above but stores 1 at +0x30. Returns 0.
+ASM: mov w8,#1 / strb w8,[x20,#0x30] / strb w8,[x0,#0x30] / mov w0,wzr
+
+== 0x71022086b0 — sv_kinetic::clear_energy_pair (128B) ==
+Gets kinetic_module (+0x68). vtable[12](0xc)→plVar1, vtable[12](0xd)→plVar2.
+Then plVar1→vt[9]() and plVar2→vt[9]() (clear calls). Returns 0.
+
+== 0x710221e7c0 — sv_kinetic::get_energy_flag (160B) ==
+Gets kinetic_module (+0x68). vtable[12](kinetic,1)→result.
+Reads byte at result+0x30. Writes to lua stack at [param+0x10]:
+  *puVar3 = (uint)(byte)(result+0x30), puVar3[2]=1, *(param+0x10)+=0x10. Returns 1.
+
+== 0x7102203910 — sv_item::init_explosion_no_damage_2 (160B) ==
+Same pattern as 0x71015c55c0: work_module, IPA[0x72ffc], attack clear, work flag.
+(Different TU due to non-hidden FPA2 access)

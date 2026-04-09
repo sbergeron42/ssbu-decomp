@@ -897,3 +897,17 @@ extern "C" bool is_photo_camera() {
     if (DAT_71052b7f00 == nullptr) return false;
     return *(s32*)(*(u8**)DAT_71052b7f00 + 4) == 2;
 }
+
+// ---- Boss common param (leaf, indexed array lookup from ItemParamAccessor) ---
+
+// 0x71015c79e0 (64 bytes) — app::boss_private::common_param_float
+// Reads a float from the boss common param table indexed by ItemKind and param slot.
+// [derived: common_param_float (community name) — check pointer at kind*8+0xef8,
+//  then read float at kind*100+param*4+0x73188]
+f32 common_param_float_71015c79e0(s32 kind, u32 param_idx) {
+    u8* acc = *(u8**)DAT_71052c31e0;
+    if (*(u64*)(acc + (s64)kind * 8 + 0xef8) == 0) {
+        return 0.0f;
+    }
+    return *(f32*)(acc + (s64)kind * 100 + (u64)param_idx * 4 + 0x73188);
+}
