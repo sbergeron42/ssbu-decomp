@@ -10,6 +10,10 @@ extern "C" float cosf(float);
 extern "C" float tanf(float);
 extern "C" float acosf(float);
 extern "C" float sqrtf(float);
+extern "C" float atan2f(float, float);
+extern "C" float fmodf(float, float);
+extern "C" float logf(float);
+extern "C" float log10f(float);
 
 namespace app::lua_bind {
 
@@ -599,6 +603,62 @@ lib::L2CValue math_sqrt_71037332a0(lib::L2CValue* param) {
     return ret;
 }
 
+// 0x7103733000 (140 bytes) — math_atan: arc tangent (2-arg, uses atan2f)
+// [derived: Ghidra shows atan2f(__y, __x) with two as_number extractions]
+lib::L2CValue math_atan_7103733000(lib::L2CValue* p1, lib::L2CValue* p2) {
+    lib::L2CValue ret;
+    u32 t1 = p1->type;
+    f32 y;
+    if (t1 == 7 || t1 == 2) {
+        y = (f32)p1->int_val;
+    } else if (t1 == 3) {
+        y = p1->float_val;
+    } else {
+        y = 0.0f;
+    }
+    u32 t2 = p2->type;
+    f32 x = 0.0f;
+    if (t2 == 7 || t2 == 2) {
+        x = (f32)p2->int_val;
+    } else if (t2 == 3) {
+        x = p2->float_val;
+    }
+    f32 result = atan2f(y, x);
+    asm volatile("");
+    ret.type = 3;
+    ret.float_val = result;
+    return ret;
+}
+
+// 0x7103733310 (184 bytes) — math_log: logarithm with base
+// [derived: Ghidra shows log10f special case when base==10.0, else logf(val)/logf(base)]
+lib::L2CValue math_log_7103733310(lib::L2CValue* p1, lib::L2CValue* p2) {
+    lib::L2CValue ret;
+    u32 t1 = p1->type;
+    f32 value = 0.0f;
+    if (t1 == 7 || t1 == 2) {
+        value = (f32)p1->int_val;
+    } else if (t1 == 3) {
+        value = p1->float_val;
+    }
+    u32 t2 = p2->type;
+    f32 base = 0.0f;
+    if (t2 == 7 || t2 == 2) {
+        base = (f32)p2->int_val;
+    } else if (t2 == 3) {
+        base = p2->float_val;
+    }
+    if (base == 10.0f) {
+        value = log10f(value);
+    } else {
+        value = logf(value) / logf(base);
+    }
+    asm volatile("");
+    ret.type = 3;
+    ret.float_val = value;
+    return ret;
+}
+
 // 0x7103734f50 (72 bytes) — operator~: bitwise NOT
 // as_integer pattern → mvn → return type=2
 lib::L2CValue operator_not_7103734f50(lib::L2CValue* param) {
@@ -614,6 +674,194 @@ lib::L2CValue operator_not_7103734f50(lib::L2CValue* param) {
     }
     ret.type = 2;
     ret.raw = ~val;
+    return ret;
+}
+
+// ============================================================
+// Metamethod dispatch — called when either operand is type 5 (table)
+// FUN_71037347d0(result, left, metamethod_hash, right)
+// ============================================================
+
+extern "C" void FUN_71037347d0(lib::L2CValue*, lib::L2CValue*, u64, lib::L2CValue*);
+
+// ============================================================
+// Binary arithmetic operators — mixed int/float with table metamethod fallback
+// ============================================================
+
+// 0x7103735a50 (168 bytes) — operator/: division (always float)
+// [derived: Ghidra + disasm, if either table → metamethod, else as_number/as_number → fdiv]
+lib::L2CValue operator_div_7103735a50(lib::L2CValue* this_, lib::L2CValue* other) {
+    lib::L2CValue ret;
+    u32 t1 = this_->type;
+    if (t1 == 5) {
+        FUN_71037347d0(&ret, this_, 0x5ad88d7e8ULL, other);
+        return ret;
+    }
+    u32 t2 = other->type;
+    if (t2 == 5) {
+        FUN_71037347d0(&ret, this_, 0x5ad88d7e8ULL, other);
+        return ret;
+    }
+    f32 b = 0.0f;
+    f32 a;
+    if (t1 == 7 || t1 == 2) {
+        a = (f32)this_->int_val;
+    } else if (t1 == 3) {
+        a = this_->float_val;
+    } else {
+        a = 0.0f;
+    }
+    if (t2 == 7 || t2 == 2) {
+        b = (f32)other->int_val;
+    } else if (t2 == 3) {
+        b = other->float_val;
+    }
+    ret.type = 3;
+    ret.float_val = a / b;
+    return ret;
+}
+
+// ============================================================
+// Binary bitwise operators — all follow as_integer(a) OP as_integer(b) → type 2
+// as_integer pattern: type 7/2 → raw u64, type 3 → (u64)(s64)float, else 0
+// ============================================================
+
+// 0x7103735b00 (124 bytes) — operator&: bitwise AND
+lib::L2CValue operator_and_7103735b00(lib::L2CValue* this_, lib::L2CValue* other) {
+    lib::L2CValue ret;
+    u64 a, b;
+    u32 t1 = this_->type;
+    if (t1 == 7 || t1 == 2) {
+        a = this_->uint_val;
+    } else if (t1 == 3) {
+        a = (u64)(s64)this_->float_val;
+    } else {
+        a = 0;
+    }
+    u32 t2 = other->type;
+    if (t2 == 7 || t2 == 2) {
+        b = other->uint_val;
+    } else if (t2 == 3) {
+        b = (u64)(s64)other->float_val;
+    } else {
+        b = 0;
+    }
+    u64 result = b & a;
+    asm volatile("");
+    ret.type = 2;
+    ret.raw = result;
+    return ret;
+}
+
+// 0x7103735b80 (124 bytes) — operator|: bitwise OR
+lib::L2CValue operator_or_7103735b80(lib::L2CValue* this_, lib::L2CValue* other) {
+    lib::L2CValue ret;
+    u64 a, b;
+    u32 t1 = this_->type;
+    if (t1 == 7 || t1 == 2) {
+        a = this_->uint_val;
+    } else if (t1 == 3) {
+        a = (u64)(s64)this_->float_val;
+    } else {
+        a = 0;
+    }
+    u32 t2 = other->type;
+    if (t2 == 7 || t2 == 2) {
+        b = other->uint_val;
+    } else if (t2 == 3) {
+        b = (u64)(s64)other->float_val;
+    } else {
+        b = 0;
+    }
+    u64 result = b | a;
+    asm volatile("");
+    ret.type = 2;
+    ret.raw = result;
+    return ret;
+}
+
+// 0x7103735c00 (124 bytes) — operator^: bitwise XOR
+lib::L2CValue operator_xor_7103735c00(lib::L2CValue* this_, lib::L2CValue* other) {
+    lib::L2CValue ret;
+    u64 a, b;
+    u32 t1 = this_->type;
+    if (t1 == 7 || t1 == 2) {
+        a = this_->uint_val;
+    } else if (t1 == 3) {
+        a = (u64)(s64)this_->float_val;
+    } else {
+        a = 0;
+    }
+    u32 t2 = other->type;
+    if (t2 == 7 || t2 == 2) {
+        b = other->uint_val;
+    } else if (t2 == 3) {
+        b = (u64)(s64)other->float_val;
+    } else {
+        b = 0;
+    }
+    u64 result = b ^ a;
+    asm volatile("");
+    ret.type = 2;
+    ret.raw = result;
+    return ret;
+}
+
+// 0x7103735c80 (124 bytes) — operator<<: left shift
+// [derived: Ghidra shows (long)lVar2 << (ulong & 0x3f)]
+lib::L2CValue operator_lsh_7103735c80(lib::L2CValue* this_, lib::L2CValue* other) {
+    lib::L2CValue ret;
+    s64 a;
+    u64 b;
+    u32 t1 = this_->type;
+    if (t1 == 7 || t1 == 2) {
+        a = this_->int_val;
+    } else if (t1 == 3) {
+        a = (s64)this_->float_val;
+    } else {
+        a = 0;
+    }
+    u32 t2 = other->type;
+    if (t2 == 7 || t2 == 2) {
+        b = other->uint_val;
+    } else if (t2 == 3) {
+        b = (u64)(s64)other->float_val;
+    } else {
+        b = 0;
+    }
+    s64 result = a << (b & 0x3f);
+    asm volatile("");
+    ret.type = 2;
+    ret.int_val = result;
+    return ret;
+}
+
+// 0x7103735d00 (124 bytes) — operator>>: arithmetic right shift
+// [derived: Ghidra shows (long)lVar2 >> (ulong & 0x3f)]
+lib::L2CValue operator_rsh_7103735d00(lib::L2CValue* this_, lib::L2CValue* other) {
+    lib::L2CValue ret;
+    s64 a;
+    u64 b;
+    u32 t1 = this_->type;
+    if (t1 == 7 || t1 == 2) {
+        a = this_->int_val;
+    } else if (t1 == 3) {
+        a = (s64)this_->float_val;
+    } else {
+        a = 0;
+    }
+    u32 t2 = other->type;
+    if (t2 == 7 || t2 == 2) {
+        b = other->uint_val;
+    } else if (t2 == 3) {
+        b = (u64)(s64)other->float_val;
+    } else {
+        b = 0;
+    }
+    s64 result = a >> (b & 0x3f);
+    asm volatile("");
+    ret.type = 2;
+    ret.int_val = result;
     return ret;
 }
 
