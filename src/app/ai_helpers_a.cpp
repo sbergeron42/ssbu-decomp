@@ -319,3 +319,43 @@ void set_action_id_none_376330(u64 L) {
     }
     *(u16*)(ctx + 0x198) = 0;
 }
+
+// ---- app::ai_system — button/mode control (32B functions) ----
+
+// Button mask lookup table
+// [derived: adrp 0x7104538000 + 0xfec = DAT_7104538fec, indexed by ControlPadButtonKind]
+extern "C" u32 DAT_7104538fec[] HIDDEN;
+
+// ---------------------------------------------------------------------------
+// 0x7100376310 — add_button (32B)
+// [derived: app::ai_system::add_button in Ghidra]
+// ORs button bitmask into AI button state at ctx + 0xc40
+// ---------------------------------------------------------------------------
+void add_button_376310(u64 L, s32 kind) {
+    u64 ctx = AI_CTX(L);
+    *(u32*)(ctx + 0xc40) |= DAT_7104538fec[kind];
+}
+
+// ---------------------------------------------------------------------------
+// 0x7100376360 — change_mode_action (32B)
+// [derived: app::ai_system::change_mode_action in Ghidra]
+// Double-deref: *(*(ctx)) → mode struct; sets byte +0x39 if +0x38 != 0
+// ---------------------------------------------------------------------------
+void change_mode_action_376360(u64 L) {
+    u64 ctx = AI_CTX(L);
+    u64 mode = *(u64*)(*(u64*)ctx);
+    if (*(u8*)(mode + 0x38) != 0) {
+        *(u8*)(mode + 0x39) = 1;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// 0x71003763a0 — change_mode (32B)
+// [derived: app::ai_system::change_mode in Ghidra]
+// Non-leaf: calls FUN_71002d8ef0(ctx, mode, -1, 0) to switch AI mode
+// ---------------------------------------------------------------------------
+extern void FUN_71002d8ef0(u64, u32, u32, u32);
+__attribute__((disable_tail_calls))
+void change_mode_3763a0(u64 L, u32 mode) {
+    FUN_71002d8ef0(AI_CTX(L), mode, 0xFFFFFFFF, 0);
+}
