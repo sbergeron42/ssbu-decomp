@@ -21,7 +21,37 @@ extern "C" u64 FUN_7103907950(u64, void*);
 extern "C" u8 DAT_7104861960[] HIDDEN;
 extern "C" u64 BattleObjectWorld_instance HIDDEN;  // lib::Singleton<app::BattleObjectWorld>::instance_
 extern "C" void FUN_710228ea70(u64, u64, u64, void*, s32);
+extern "C" void FUN_7102288620(void*, void*, u64);
 extern "C" u64 ConstantZero HIDDEN;  // PTR_ConstantZero_71052a7a88
+
+// Control struct for FUN_7102288620 / FUN_710228ea70
+// FUN_7102288620 reads nargs and L from this struct via the pointer passed as arg 2
+struct acmd_effect_ctrl {
+    u64 hash;         // +0x00
+    u32 nargs;        // +0x08
+    u32 _pad;         // +0x0c
+    lua_State* L;     // +0x10
+    u8 flag;          // +0x18
+};
+
+// Output struct from FUN_7102288620 — 16-arg EFFECT parsed data
+// Laid out as 13 u64s (104 bytes). Vectors stored inline as {u32_x, u32_y, u64_z}.
+struct acmd_effect_out {
+    u64 hash1;           // [0] +0x00
+    u64 hash2;           // [1] +0x08
+    u64 pos_xy;          // [2] +0x10 = CONCAT44(pos_y, pos_x)
+    u64 pos_z;           // [3] +0x18
+    u64 rot_xy;          // [4] +0x20 = CONCAT44(rot_y, rot_x)
+    u64 rot_z;           // [5] +0x28
+    u32 rate_bits;       // [6] +0x30 (rate as raw f32 bits)
+    u32 _pad1;           // +0x34
+    u64 _reserved;       // [7] +0x38
+    u64 scale_xy;        // [8] +0x40
+    u64 scale_z;         // [9] +0x48
+    u64 color_xy;        // [10] +0x50
+    u64 color_z;         // [11] +0x58
+    bool follow_flag;    // [12] +0x60
+};
 
 // ---------------------------------------------------------------------------
 // Inline helpers for ACMD arg reading
@@ -2560,6 +2590,239 @@ void EFFECT_FOLLOW_FLIP_arg13(lua_State* param_1) {
     void** vt = *(void***)eff;
     reinterpret_cast<void(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, u64, s32, s32, s32, f32)>
         (vt[0x80 / 8])(eff, effect_hash, bone_hash, &off_vec, &rot_vec, 0, flags, joint_hash, (s32)-1, alt_hash, 0, 0, 0, scale_f);
+
+    acmd_consume(L);
+}
+
+// 0x710229d0a0 (932 bytes) — EFFECT_COLOR
+// Parses 16 EFFECT args via FUN_7102288620, calls req_on_joint, then reads 3 extra
+// float args (17-19) for RGB and calls set_color (vtable offset 0x2F8)
+void EFFECT_COLOR(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    int nargs = acmd_nargs(L);
+
+    acmd_effect_ctrl ctrl;
+    ctrl.hash = 0;
+    ctrl.flag = 0;
+    ctrl.nargs = (u32)nargs;
+    ctrl.L = param_1;
+
+    acmd_effect_out out;
+    FUN_7102288620(&out, &ctrl, 0);
+
+    // req_on_joint → returns handle
+    void** eff = *(void***)(acc + 0x140);
+    f32 rate = *(f32*)&out.rate_bits;
+    u32 handle = reinterpret_cast<u32(*)(void*, u64, u64, void*, void*, void*, void*, bool, u64, u64, s32, f32)>
+        ((*(void***)eff)[0x70 / 8])(eff, out.hash1, out.hash2, &out.pos_xy, &out.rot_xy, &out.scale_xy, &out.color_xy, out.follow_flag, 0, 0, 0, rate);
+
+    // Read RGB: args 17-19 (offsets 0x110, 0x120, 0x130)
+    f32 r = 0, g = 0, b = 0;
+    eff = *(void***)(acc + 0x140);
+
+    if (param_1 == nullptr) {
+        // null path — dead code
+    } else if (nargs >= 17) {
+        r = acmd_read_float(L, 0x110);
+        if (nargs >= 18) {
+            g = acmd_read_float(L, 0x120);
+            if (nargs >= 19) {
+                b = acmd_read_float(L, 0x130);
+            }
+        }
+    }
+
+    // EffectModule::set_color (vtable offset 0x2F8)
+    reinterpret_cast<void(*)(void*, u32, f32, f32, f32)>((*(void***)eff)[0x2f8 / 8])(eff, handle, r, g, b);
+
+    acmd_consume(L);
+}
+
+// 0x710229d450 (932 bytes) — EFFECT_COLOR_WORK
+// Identical to EFFECT_COLOR
+void EFFECT_COLOR_WORK(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    int nargs = acmd_nargs(L);
+
+    acmd_effect_ctrl ctrl;
+    ctrl.hash = 0;
+    ctrl.flag = 0;
+    ctrl.nargs = (u32)nargs;
+    ctrl.L = param_1;
+
+    acmd_effect_out out;
+    FUN_7102288620(&out, &ctrl, 0);
+
+    void** eff = *(void***)(acc + 0x140);
+    f32 rate = *(f32*)&out.rate_bits;
+    u32 handle = reinterpret_cast<u32(*)(void*, u64, u64, void*, void*, void*, void*, bool, u64, u64, s32, f32)>
+        ((*(void***)eff)[0x70 / 8])(eff, out.hash1, out.hash2, &out.pos_xy, &out.rot_xy, &out.scale_xy, &out.color_xy, out.follow_flag, 0, 0, 0, rate);
+
+    f32 r = 0, g = 0, b = 0;
+    eff = *(void***)(acc + 0x140);
+
+    if (param_1 == nullptr) {
+        // null path — dead code
+    } else if (nargs >= 17) {
+        r = acmd_read_float(L, 0x110);
+        if (nargs >= 18) {
+            g = acmd_read_float(L, 0x120);
+            if (nargs >= 19) {
+                b = acmd_read_float(L, 0x130);
+            }
+        }
+    }
+
+    reinterpret_cast<void(*)(void*, u32, f32, f32, f32)>((*(void***)eff)[0x2f8 / 8])(eff, handle, r, g, b);
+
+    acmd_consume(L);
+}
+
+// 0x710229d800 (476 bytes) — EFFECT_ALPHA
+// Parses 16 EFFECT args via FUN_7102288620, calls req_on_joint, then reads 1 extra
+// float arg (17) for alpha and calls set_alpha_last (vtable offset 0x308)
+void EFFECT_ALPHA(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    int nargs = acmd_nargs(L);
+
+    acmd_effect_ctrl ctrl;
+    ctrl.hash = 0;
+    ctrl.flag = 0;
+    ctrl.nargs = (u32)nargs;
+    ctrl.L = param_1;
+
+    acmd_effect_out out;
+    FUN_7102288620(&out, &ctrl, 0);
+
+    // req_on_joint → returns handle
+    void** eff = *(void***)(acc + 0x140);
+    f32 rate = *(f32*)&out.rate_bits;
+    u32 handle = reinterpret_cast<u32(*)(void*, u64, u64, void*, void*, void*, void*, bool, u64, u64, s32, f32)>
+        ((*(void***)eff)[0x70 / 8])(eff, out.hash1, out.hash2, &out.pos_xy, &out.rot_xy, &out.scale_xy, &out.color_xy, out.follow_flag, 0, 0, 0, rate);
+
+    // Read alpha: arg 17 (offset 0x110)
+    f32 alpha = 0.0f;
+
+    if (param_1 == nullptr) {
+        // null path — dead code
+    } else if (nargs >= 17) {
+        alpha = acmd_read_float(L, 0x110);
+    }
+
+    // EffectModule::set_alpha_last (vtable offset 0x308)
+    eff = *(void***)(acc + 0x140);
+    reinterpret_cast<void(*)(void*, u32, f32)>((*(void***)eff)[0x308 / 8])(eff, handle, alpha);
+
+    acmd_consume(L);
+}
+
+// 0x71022973a0 (380 bytes) — EFFECT_FLIP
+// Calls FUN_7102288620 in flip mode (mode=1), checks MotionModule flip state,
+// swaps hash arg, then calls req_on_joint (vtable 0x70)
+void EFFECT_FLIP(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    int nargs = acmd_nargs(L);
+
+    acmd_effect_ctrl ctrl;
+    ctrl.hash = 0;
+    ctrl.flag = 0;
+    ctrl.nargs = (u32)nargs;
+    ctrl.L = param_1;
+
+    acmd_effect_out out;
+    FUN_7102288620(&out, &ctrl, 1);  // mode=1 for flip (shifts arg indices by 1)
+
+    // Check MotionModule flip state (vtable[0x390/8] at acc+0x88)
+    void** motion = *(void***)(acc + 0x88);
+    u64 is_flip = reinterpret_cast<u64(*)(void*)>((*(void***)motion)[0x390 / 8])(motion);
+
+    u64 alt_hash = 0;
+    if ((is_flip & 1) == 0) {
+        // Not flipped: hash from arg 1
+        if (nargs >= 1) {
+            out.hash1 = FUN_71038f4000(param_1, 1, 0);
+        } else {
+            out.hash1 = 0;
+        }
+    } else {
+        // Flipped: hash from arg 2, alt_hash from arg 18
+        if (nargs >= 2) {
+            out.hash1 = FUN_71038f4000(param_1, 2, 0);
+            if (nargs >= 18) {
+                alt_hash = FUN_71038f4000(param_1, 0x12, 0);
+            }
+        } else {
+            out.hash1 = 0;
+        }
+    }
+
+    // req_on_joint with parsed args + alt_hash
+    void** eff = *(void***)(acc + 0x140);
+    f32 rate = *(f32*)&out.rate_bits;
+    reinterpret_cast<void(*)(void*, u64, u64, void*, void*, void*, void*, bool, u64, u64, s32, f32)>
+        ((*(void***)eff)[0x70 / 8])(eff, out.hash1, out.hash2, &out.pos_xy, &out.rot_xy, &out.scale_xy, &out.color_xy, out.follow_flag, 0, alt_hash, 0, rate);
+
+    acmd_consume(L);
+}
+
+// 0x71022a0ea0 (596 bytes) — EFFECT_FLIP_ALPHA
+// Like EFFECT_FLIP but reads alpha at arg 19 (offset 0x130) and calls set_alpha_last
+void EFFECT_FLIP_ALPHA(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    int nargs = acmd_nargs(L);
+
+    acmd_effect_ctrl ctrl;
+    ctrl.hash = 0;
+    ctrl.flag = 0;
+    ctrl.nargs = (u32)nargs;
+    ctrl.L = param_1;
+
+    acmd_effect_out out;
+    FUN_7102288620(&out, &ctrl, 1);
+
+    // Check MotionModule flip state
+    void** motion = *(void***)(acc + 0x88);
+    u64 is_flip = reinterpret_cast<u64(*)(void*)>((*(void***)motion)[0x390 / 8])(motion);
+
+    u64 alt_hash = 0;
+    if ((is_flip & 1) == 0) {
+        if (nargs >= 1) {
+            out.hash1 = FUN_71038f4000(param_1, 1, 0);
+        } else {
+            out.hash1 = 0;
+        }
+    } else {
+        if (nargs >= 2) {
+            out.hash1 = FUN_71038f4000(param_1, 2, 0);
+            if (nargs >= 18) {
+                alt_hash = FUN_71038f4000(param_1, 0x12, 0);
+            }
+        } else {
+            alt_hash = 0;
+            out.hash1 = 0;
+        }
+    }
+
+    // req_on_joint → returns handle
+    void** eff = *(void***)(acc + 0x140);
+    f32 rate = *(f32*)&out.rate_bits;
+    u32 handle = reinterpret_cast<u32(*)(void*, u64, u64, void*, void*, void*, void*, bool, u64, u64, s32, f32)>
+        ((*(void***)eff)[0x70 / 8])(eff, out.hash1, out.hash2, &out.pos_xy, &out.rot_xy, &out.scale_xy, &out.color_xy, out.follow_flag, 0, alt_hash, 0, rate);
+
+    // Read alpha: arg 19 (offset 0x130, since flip mode shifts by 1)
+    f32 alpha = 0.0f;
+    if (nargs >= 19) {
+        alpha = acmd_read_float(L, 0x130);
+    }
+
+    // EffectModule::set_alpha_last (vtable offset 0x308)
+    eff = *(void***)(acc + 0x140);
+    reinterpret_cast<void(*)(void*, u32, f32)>((*(void***)eff)[0x308 / 8])(eff, handle, alpha);
 
     acmd_consume(L);
 }

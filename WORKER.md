@@ -2,9 +2,9 @@
 
 ## Model: Opus
 
-## Task: Effect template functions — 21 remaining, ~46 KB
+## Task: Effect template functions — 16 remaining, ~40 KB
 
-## Progress (38/68 complete)
+## Progress (44/68 complete)
 - 4 perfect byte matches: EFFECT_REMOVE_ATTR, EFFECT_OFF_HANDLE, LAST_EFFECT_SET_WORK_INT, EFFECT_OFF
 - 3 dispatch patterns: kill_all/kill_kind, req_on_joint, req_follow
 - New patterns: LAST_EFFECT_SET_* family, EFFECT_DETACH_KIND
@@ -18,8 +18,9 @@
 - EFFECT_FOLLOW_FLIP_COLOR, EFFECT_FOLLOW_FLIP_ALPHA (flip + color/alpha)
 - EFFECT_FOLLOW_RND, EFFECT_FOLLOW_RND_WORK, EFFECT_FOLLOW_FLIP_RND (inline XOR-shift RNG)
 - EFFECT_FOLLOW_LIGHT (3976B, complex)
-- FUN_7102288620 (shared 16-arg parser) needed by: EFFECT, EFFECT_FLIP, EFFECT_COLOR, EFFECT_COLOR_WORK, EFFECT_ALPHA, EFFECT_FLIP_ALPHA, EFFECT_WORK_R, EFFECT_BRANCH_SITUATION
-- EFFECT_GLOBAL family (needs FUN_710228ea70)
+- FUN_7102288620 used as extern: EFFECT_COLOR/WORK, EFFECT_ALPHA, EFFECT_FLIP, EFFECT_FLIP_ALPHA done
+- Remaining FUN_7102288620 users: EFFECT (3624B), EFFECT_WORK_R (3216B), EFFECT_BRANCH_SITUATION (3664B)
+- EFFECT_GLOBAL family (needs FUN_710228ea70 + EffectManager singleton)
 - FOOT_EFFECT, LANDING_EFFECT, DOWN_EFFECT (complex unique patterns)
 
 ## File Territory
