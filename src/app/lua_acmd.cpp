@@ -165,4 +165,79 @@ void FUN_710376a190(u8** node) {
     FUN_710392e590(node);
 }
 
+// ============================================================
+// L2CAgent constructor — stores vtable + lua_state, zeros fields
+// 0x710372da00 (32 bytes)
+// ============================================================
+
+// L2CAgent vtable at 0x710523be40
+extern "C" __attribute__((visibility("hidden"))) void* DAT_710523be40;
+
+// lib::L2CAgent::L2CAgent(lua_State*)
+void L2CAgent_710372da00(u8* this_, void* ls) {
+    *reinterpret_cast<void**>(this_) = &DAT_710523be40;
+    *reinterpret_cast<void**>(this_ + 8) = ls;
+    *reinterpret_cast<u64*>(this_ + 0x10) = 0;
+    *reinterpret_cast<u64*>(this_ + 0x18) = 0;
+    *reinterpret_cast<u64*>(this_ + 0x20) = 0;
+    *reinterpret_cast<u64*>(this_ + 0x28) = 0;
+    *reinterpret_cast<u32*>(this_ + 0x30) = 0x3f800000u;  // 1.0f as raw bits
+}
+
+// ============================================================
+// L2CValue type accessors — check type tag, return converted value
+// ============================================================
+
+// 0x7103734b80 (56 bytes) — as_integer: type 7/2 → raw, type 3 → fcvtzs
+s64 as_integer_7103734b80(u32* this_) {
+    u32 type = *this_;
+    if (type == 7 || type == 2) {
+        return *reinterpret_cast<s64*>(reinterpret_cast<u8*>(this_) + 8);
+    }
+    if (type == 3) {
+        return (s64)*reinterpret_cast<f32*>(reinterpret_cast<u8*>(this_) + 8);
+    }
+    return 0;
+}
+
+// 0x7103734f10 (56 bytes) — as_number: type 7/2 → scvtf, type 3 → raw float
+f32 as_number_7103734f10(u32* this_) {
+    u32 type = *this_;
+    if (type == 7 || type == 2) {
+        return (f32)*reinterpret_cast<s64*>(reinterpret_cast<u8*>(this_) + 8);
+    }
+    if (type == 3) {
+        return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(this_) + 8);
+    }
+    return 0.0f;
+}
+
+// 0x7103735ff0 (52 bytes) — as_string: type 8 → check SSO, return ptr
+// SSO string: byte[0] & 1 ? heap (ptr at +0x10) : inline (data at +0x1)
+extern "C" __attribute__((visibility("hidden"))) char DAT_7104866c2e;  // empty string ""
+
+const char* as_string_7103735ff0(u32* this_) {
+    if (*this_ != 8) return &DAT_7104866c2e;
+    u8* str = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(this_) + 8);
+    if (str[0] & 1) {
+        return *reinterpret_cast<const char**>(str + 0x10);
+    }
+    return reinterpret_cast<const char*>(str + 1);
+}
+
+// ============================================================
+// sort — wrapper for L2CAgent lua sort
+// 0x710372e9f0 (32 bytes)
+// ============================================================
+
+extern "C" void FUN_710372ea10(void*, void*);
+
+void sort_710372e9f0(void* this_, void* p1) {
+    u8* ls = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(p1) + 8);
+    u8* base = *reinterpret_cast<u8**>(ls + 8);
+    void* count = *reinterpret_cast<void**>(ls + 0x10);
+    FUN_710372ea10(base + 0x10, count);
+    asm volatile("");
+}
+
 } // namespace app::lua_bind
