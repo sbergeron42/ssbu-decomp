@@ -1,27 +1,25 @@
-# Worker: pool-c
+# Worker: pool-d
 
 ## Model: Opus
 
-## Task: Stage + camera — continue
+## Task: Game core + params — continue
 
 ## Progress
-- 57 functions total (camera + stage + boss + ground)
-- StageWufuIsland constructor (1,832B), ~CameraQuake (3,088B)
-- 16 camera leaf functions (prior round)
-- 20 new leaf functions this round:
-  - 6 matching: lr_to_stage_center, is_looking_at_stage_center, get_rotation_with_calc_camera_direction, get_area_down, get_rhombus_down_y, is_enable_capture_baitocrane
-  - 14 compiled with NX Clang prologue/optimization diffs
+- populate_parameters_for_hash40 (13,536B) — compiled, N-quality (85% size match)
+- 6 prior functions: apply_lift_param, sub_rage_system, get_magic_ball_param, UpdateParams, global_param_init_sets_team_flag, nnMain
+- Ghidra size mislabeling found on 2 functions
 
 ## Continue with
-- ~StageWufuIsland destructor (2,700B) — complex, deferred
-- set_camera_param (2,344B), set_pause_camera_param (3,996B) — param binary search pattern
-- More leaf functions from camera/stage/boss territory
+- read_file (17,488B) — 20 versioned deserialization sections, hard but attempt it
+- Look for more medium param functions
+- Any game core functions reachable from nnMain
 
-## Skipped
-- create_stage (114,600B), StageBase ctor (14,820B) — too large
+## Deferred
+- game_tick (15,376B) — impossible, 94-case switches
+- round_manager_update (29,496B) — jump table, too large
 
 ## File Territory
-- src/app/camera_functions.cpp, StageManager.cpp, StageWufuIsland.cpp
+- src/app/param_loading.cpp, game_core.cpp, global_param_init.cpp
 
 ## Quality Rules
-- No naked asm, 3-attempt limit
+- No naked asm, 3-attempt limit, N-quality is fine for large functions
