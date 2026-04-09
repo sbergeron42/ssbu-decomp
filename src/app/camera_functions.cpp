@@ -846,3 +846,201 @@ extern "C" float4 get_rotation_with_calc_camera_direction(void) {
     return r;
 }
 } // namespace app::dragoonsight
+
+// ---- Camera/stage dead area and range getters (leaf, vector return in v0) ----
+
+// 0x71015cb9e0 (44 bytes) — app::camera::get_dead_area
+// Leaf: returns 4 floats from camera data at +0xc30..+0xc3c
+// [derived: disasm shows ldr s0 + ld1 {v0.s}[1-3] per-element load pattern]
+namespace app::camera {
+extern "C" float4 get_dead_area(void) {
+    u8* inner = *(u8**)DAT_71052b7f00;
+    float4 r;
+    r[0] = *(float*)(inner + 0xc30);
+    r[1] = *(float*)(inner + 0xc34);
+    r[2] = *(float*)(inner + 0xc38);
+    r[3] = *(float*)(inner + 0xc3c);
+    return r;
+}
+} // namespace app::camera
+
+// 0x710164c1d0 (44 bytes) — app::shiokarazu::get_dead_range
+// [derived: same per-element pattern, reads +0xc30..+0xc3c]
+namespace app::shiokarazu {
+extern "C" float4 get_dead_range(void) {
+    u8* inner = *(u8**)DAT_71052b7f00;
+    float4 r;
+    r[0] = *(float*)(inner + 0xc30);
+    r[1] = *(float*)(inner + 0xc34);
+    r[2] = *(float*)(inner + 0xc38);
+    r[3] = *(float*)(inner + 0xc3c);
+    return r;
+}
+} // namespace app::shiokarazu
+
+// 0x710164c230 (44 bytes) — app::shiokarazu::get_shrinked_dead_range
+// [derived: reads +0xc50..+0xc5c]
+namespace app::shiokarazu {
+extern "C" float4 get_shrinked_dead_range(void) {
+    u8* inner = *(u8**)DAT_71052b7f00;
+    float4 r;
+    r[0] = *(float*)(inner + 0xc50);
+    r[1] = *(float*)(inner + 0xc54);
+    r[2] = *(float*)(inner + 0xc58);
+    r[3] = *(float*)(inner + 0xc5c);
+    return r;
+}
+} // namespace app::shiokarazu
+
+// ---- Stage info tail-call functions ----
+
+// 0x71015cf0d0 (56 bytes) — app::stage::get_smashball_rect
+// Calls stage_info vtable[0x130/8] which returns CameraRect (HFA: s0-s3),
+// packs result into float4 (v0) for return.
+// [derived: disasm shows blr to vtable, then mov v0.s[1..3] to pack HFA into v0]
+namespace app::stage {
+extern "C" float4 get_smashball_rect(void) {
+    u8* inner = *(u8**)SM_INSTANCE;
+    u8* stage_info = inner + 0x128;
+    void** vt = *(void***)stage_info;
+    struct R4f { float a, b, c, d; };
+    R4f result = reinterpret_cast<R4f(*)(void*)>(vt[0x130/8])(stage_info);
+    float4 r;
+    r[0] = result.a;
+    r[1] = result.b;
+    r[2] = result.c;
+    r[3] = result.d;
+    return r;
+}
+} // namespace app::stage
+
+// ---- Camera position and z-axis functions ----
+
+// 0x7101642f90 (32 bytes) — app::androssshot::is_valid_pos_z
+// Leaf: checks if param_1 < cam_data[0xec8] - param_2
+// [derived: disasm shows ldr from DAT_71052b7f00+0xec8, fsub, fcmp]
+namespace app::androssshot {
+extern "C" bool is_valid_pos_z(float param_1, float param_2) {
+    u8* cam = *(u8**)DAT_71052b7f00;
+    return param_1 < *(float*)(cam + 0xec8) - param_2;
+}
+} // namespace app::androssshot
+
+// ---- Item/Boss module accessor leaf functions ----
+
+// 0x7101647870 (40 bytes) — app::lioleus::get_area_down
+// Gets module at +0xc0, calls vtable[0x1d8/8](mod, 0), returns result+4 (float)
+// [derived: disasm shows ldr x0,[x0,#0xc0]; vtable[0x1d8/8](mod,0); ldr s0,[x0,#4]]
+namespace app::lioleus {
+extern "C" float get_area_down(u64 accessor) {
+    void** mod = *(void***)(accessor + 0xc0);
+    u8* result = reinterpret_cast<u8*(*)(void**, s32)>(
+        ((void**)*mod)[0x1d8/8])(mod, 0);
+    return *(float*)(result + 4);
+}
+} // namespace app::lioleus
+
+// 0x7101655410 (40 bytes) — app::masterhand::get_rhombus_down_y
+// Gets ground module at +0x58, calls vtable[0xb8/8](mod, 1), returns result+0x14 (float)
+// [derived: disasm shows ldr x0,[x0,#0x58]; vtable[0xb8/8](mod,1); ldr s0,[x0,#0x14]]
+namespace app::masterhand {
+extern "C" float get_rhombus_down_y(u64 accessor) {
+    void** mod = *(void***)(accessor + 0x58);
+    u8* result = reinterpret_cast<u8*(*)(void**, s32)>(
+        ((void**)*mod)[0xb8/8])(mod, 1);
+    return *(float*)(result + 0x14);
+}
+} // namespace app::masterhand
+
+// 0x71016433a0 (44 bytes) — app::baitocrane::is_enable_capture_baitocrane
+// Gets posture module at +0x38, calls vtable[0x118/8](), checks result <= 1.0
+// [derived: disasm shows ldr x0,[x0,#0x38]; vtable[0x118/8]; fcmp s0,#1.0; cset w0,ls]
+namespace app::baitocrane {
+extern "C" bool is_enable_capture_baitocrane(u64 accessor) {
+    void** posture = *(void***)(accessor + 0x38);
+    float val = reinterpret_cast<float(*)(void**)>(
+        ((void**)*posture)[0x118/8])(posture);
+    return val <= 1.0f;
+}
+} // namespace app::baitocrane
+
+// ---- Ground collision line getters ----
+
+// Zero constant vector for null-check fallback
+// PTR_ConstantZero_71052a7a80 [derived: 128-bit zero constant, used by ground functions]
+extern "C" u8 PTR_ConstantZero_71052a7a80 HIDDEN;
+
+// 0x71015cbc40 (28 bytes) — app::ground::get_normal
+// Returns vector at GroundCollisionLine+0xa0, or zero if null
+// [derived: disasm shows cbz for null check, ldr q0,[x0,#0xa0] or ldr q0,[PTR_Zero]]
+namespace app::ground {
+extern "C" float4 get_normal(u8* line) {
+    u8* p = (u8*)&PTR_ConstantZero_71052a7a80;
+    if (line != nullptr) {
+        p = line + 0xa0;
+    }
+    return *(float4*)p;
+}
+} // namespace app::ground
+
+// 0x71015ccf90 (32 bytes) — app::ground::get_left_point
+// Returns vector at *(line+0x88)+0x10, or zero if null
+namespace app::ground {
+extern "C" float4 get_left_point(u8* line) {
+    if (line != nullptr) {
+        return *(float4*)(*(u8**)(line + 0x88) + 0x10);
+    }
+    return *(float4*)&PTR_ConstantZero_71052a7a80;
+}
+} // namespace app::ground
+
+// 0x71015ccfb0 (32 bytes) — app::ground::get_right_point
+// Returns vector at *(line+0x90)+0x10, or zero if null
+namespace app::ground {
+extern "C" float4 get_right_point(u8* line) {
+    if (line != nullptr) {
+        return *(float4*)(*(u8**)(line + 0x90) + 0x10);
+    }
+    return *(float4*)&PTR_ConstantZero_71052a7a80;
+}
+} // namespace app::ground
+
+// 0x71015ccfd0 (48 bytes) — app::ground::get_up_point
+// Returns point from left or right endpoint — whichever has higher y
+// [derived: disasm shows fcmp of +0x14 offsets (y-coordinate), fcsel with gt condition]
+namespace app::ground {
+extern "C" float4 get_up_point(u8* line) {
+    if (line != nullptr) {
+        u8* left = *(u8**)(line + 0x88);
+        u8* right = *(u8**)(line + 0x90);
+        float left_y = *(float*)(left + 0x14);
+        float right_y = *(float*)(right + 0x14);
+        u8* result = left;
+        if (left_y > right_y) {
+            result = right;
+        }
+        return *(float4*)(result + 0x10);
+    }
+    return *(float4*)&PTR_ConstantZero_71052a7a80;
+}
+} // namespace app::ground
+
+// 0x71015cd000 (48 bytes) — app::ground::get_down_point
+// Returns point from left or right endpoint — whichever has lower y
+// [derived: disasm shows opposite condition from get_up_point]
+namespace app::ground {
+extern "C" float4 get_down_point(u8* line) {
+    if (line != nullptr) {
+        u8* left = *(u8**)(line + 0x88);
+        u8* right = *(u8**)(line + 0x90);
+        float left_y = *(float*)(left + 0x14);
+        float right_y = *(float*)(right + 0x14);
+        u8* result = right;
+        if (left_y > right_y) {
+            result = left;
+        }
+        return *(float4*)(result + 0x10);
+    }
+    return *(float4*)&PTR_ConstantZero_71052a7a80;
+}
+} // namespace app::ground
