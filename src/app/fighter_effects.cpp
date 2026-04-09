@@ -14,6 +14,7 @@
 extern "C" void special_n_req_effect_dash_smoke(void*);
 extern "C" void FUN_71015c1770(void*, u32, u64, u32, void*, u64, u32);
 extern "C" void FUN_71015b08c0(u64);
+extern "C" bool FUN_710068f7a0(void*);  // [inferred: checks damage module + dead effect eligibility, 1420 bytes]
 
 // Global data pointers — HIDDEN avoids GOT indirection, matching original adrp+ldr
 extern "C" void* DAT_71052b8450 HIDDEN;  // [inferred: Joker (Jack) specializer data ptr-to-ptr]
@@ -451,3 +452,39 @@ extern "C" void init_log_attack_info(u64 acc) {
 // access pattern and control flow don't match (12%), needs more analysis
 // set_head_effect @ 0x71033dc010: SKIPPED — req_follow parameter passing and vector
 // constant loading don't match (7%), needs req_follow signature investigation
+
+// ---- Camera revert thunks (4 bytes each — single tail branch) -------------
+
+extern "C" void FUN_710160dea0();
+
+// 0x71016459c0 (4 bytes) — app::flyandhand::revert_camera
+// Thunk: tail-branches to shared camera revert implementation
+// [derived: target 0x710160dea0 is the actual revert_camera logic]
+extern "C" void revert_camera() { FUN_710160dea0(); }
+
+// 0x7101651d80 (4 bytes) — app::crazyhand::revert_camera
+// Thunk: identical to flyandhand version
+extern "C" void revert_camera_7101651d80() { FUN_710160dea0(); }
+
+// ---- Dead effect check ----------------------------------------------------
+
+// 0x71006988b0 (128 bytes) — app::FighterUtil::check_hit_dead_effect
+// Checks if a fighter should display a hit-dead visual effect.
+// Calls FUN_710068f7a0 (damage module eligibility check), then tests 3 work flags.
+// Returns true only if the eligibility check passes AND none of the 3 flags are set.
+// +0x50 [derived: WorkModule at accessor+0x50]
+// WorkModule::is_flag(0x108) [derived: vtable slot 33]
+// 0x20000087 [inferred: work flag — blocks dead effect]
+// 0x2000009d [inferred: work flag — blocks dead effect (= 0x20000087 + 0x16)]
+// 0x200000c0 [inferred: work flag — blocks dead effect (= 0x20000087 + 0x39)]
+extern "C" bool check_hit_dead_effect(BattleObjectModuleAccessor* acc) {
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
+    WorkModule* work = static_cast<WorkModule*>(acc->work_module);
+    if (!FUN_710068f7a0(acc)) return false;
+    if (work->is_flag(0x20000087)) return false;
+    if (work->is_flag(0x2000009d)) return false;
+    if (work->is_flag(0x200000c0)) return false;
+    return true;
+}

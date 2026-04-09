@@ -1,33 +1,33 @@
-# Worker: pool-b
+# Worker: pool-c
 
 ## Model: Opus
 
-## Task: Fighter status + AI decomp — community priority #1
+## Task: Stage + camera + effects decomp — community priority #2
 
 ## Strategy
-Fighter state machines are the #1 community request. Moveset modders need to understand status transitions, AI decision logic, and ACMD integration. Use types-first approach: recover struct layouts from cross-referencing, then decomp functions using typed access.
+Stage modding is a growing community area. Stage loading, gimmick events, camera control, and visual effects are all interconnected. Types-first: recover StageManager, GimmickEvent, CameraModule structs, then decomp functions.
 
 ## Targets
-1. **fighter_status.cpp** — Continue adding check_stat_*, AI target, command step functions
-2. **fighter_attack.cpp** — AI check_stat bitfield readers, attack data dispatchers
-3. **New: fighter_ai.cpp** — AI decision functions (188 undecompiled, 91 KB)
-4. **Named fighter functions** — 1,124 undecompiled functions with "fighter" in name
+1. **Stage functions** — 92 undecompiled (178 KB). create_stage (115 KB!) is the biggest single function — skip it, focus on smaller stage helpers first.
+2. **Effect functions** — 122 undecompiled (134 KB). EffectModule vtable methods, particle spawning.
+3. **Camera functions** — 92 undecompiled (41 KB). CameraModule vtable methods.
+4. **GimmickEvent** — Multiple GimmickEvent*.cpp files exist. Continue filling in missing functions.
 
 ## Approach
-- Use Ghidra to decompile each function
-- Cross-reference with existing struct headers in include/app/
-- Use BattleObjectModuleAccessor field access, NOT raw offsets
-- Derive field names with provenance tags [derived: ...] or [inferred: ...]
-- 3-attempt limit per function, skip if register allocation won't match
+- Use Ghidra to decompile, cross-reference with existing headers
+- StageManager struct needs investigation — check include/app/ for existing layout
+- Camera/Effect modules have vtable headers in include/app/modules/
+- Focus on functions modders call: effect spawning, camera shake, stage queries
 
 ## File Territory
-- src/app/fighter_status.cpp
-- src/app/fighter_attack.cpp
-- src/app/fighter_ai.cpp (new)
-- include/app/ (struct updates only)
+- src/app/StageManager.cpp
+- src/app/Gimmick*.cpp
+- src/app/fighter_effects.cpp
+- src/app/graphics_functions.cpp
+- src/app/particle_functions.cpp
+- include/app/ (struct updates)
 
 ## Quality Rules
-- Write C++ a Bandai Namco dev would write — use struct headers
+- Use module vtable method wrappers from headers
 - No naked asm
-- No shallow variable renames without struct access
-- Document derivation chains for every field name
+- Document derivation chains
