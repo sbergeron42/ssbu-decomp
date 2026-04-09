@@ -135,3 +135,75 @@ Sets float at item_data+0x27c, dispatches vtable[0x120/8] or [0x110/8] based on 
 
 === 0x71015c22f0 (64B) app::item::calc_offset_with_gravity (lua_State version) ===
 Gets posture module from accessor+0x38, vtable[0x60/8] for position, calls FUN_710160e340.
+
+== Session 2026-04-09 (batch 7) ==
+
+=== 0x7102282ef0 (296B) app::sv_camera_manager::convert_pos_dead_range_gravity ===
+Takes lua_State*, float x, float y, int param_4.
+Gets BattleObjectWorld singleton. If +0x5c==0 && +0x59==0 (gravity active):
+  Subtracts origin at BattleObjectWorld+0x10 (packed as u64: lo=x, hi=y).
+  atan2f(dy, dx), angle = DAT_710447198c - angle.
+  Selects fVar9 = either -cam+0xc30 or +cam+0xc34 based on sign.
+  Newton-Raphson sqrt approx (frsqrte/frsqrts x2), magnitude = sqrt(dx*dx+dy*dy).
+  Result: x = fVar9 * (angle / (fVar9 / -gravity_y)), y = gravity_y + magnitude.
+Gets WorkModule from lua accessor chain (+0x1a0 → +0x50), vtable[0x60/8](result_y, mod, param_4).
+Returns {result_x, result_y} packed as u64.
+
+=== 0x7102283020 (196B) app::sv_camera_manager::restore_pos_dead_range_gravity ===
+Takes lua_State*, float x, float y, int param_4.
+If BattleObjectWorld+0x5c==0 && +0x59==0 (gravity active):
+  gravity_y = BattleObjectWorld+0x14.
+  fVar4 = sinf(x / -gravity_y), fVar5 = cosf(x / -gravity_y).
+  result_x = fVar4 * (y - gravity_y), result_y = gravity_y + (y - gravity_y) * fVar5.
+Gets WorkModule, vtable[0x60/8] dispatch.
+Returns {result_x, result_y}.
+
+=== 0x71026242f0 (300B) change_camera_range ===
+Takes (self, u32 index). Bounds-checks index against array at self+0xc8 (size = (+0xd0 - +0xc8) >> 3).
+Copies 4 u64s from array[index]+0x8..+0x20 to self+0xf8..+0x110.
+BST lookup in StageManager singleton+0x1c0 → +0x50 tree, searching for self+0x8 (entity ID).
+Copies range to found_node+0x28 → +0x460..+0x478.
+If entity ID matches tree+0x20 (active camera): direct-write to camera+0xa8→+8 sub-object
+with fallback to FUN_710317b2e0.
+
+=== 0x7102624420 (292B) change_dead_range ===
+Same structure as change_camera_range. Reads from array[index]+0x28..+0x40 instead.
+Writes to self+0x118..+0x130 and found_node+0x28 → +0x480..+0x498.
+Same active camera direct-write pattern. Uses tree+0xa8→+8 (offset 8 instead of *).
+
+=== 0x7102282810 (32B) app::sv_camera_manager::dead_range ===
+Returns *(float*)(*DAT_71052b7f00 + 0xc30). Single field read.
+
+=== 0x71015c8450 (84B) app::boss_private::send_event_on_start_boss_entry ===
+If param_1 != 0x50000000: iterates ItemManager active list (+0x28..+0x30),
+for each item: if item+0x90→+0x18 == 0 && item+0x8 == param_1, calls FUN_71015b52c0(item).
+
+=== 0x71015c84b0 (84B) app::boss_private::send_event_on_boss_finish ===
+Gets battle object id from lua accessor chain (+0x190).
+If BossManager singleton != 0: calls FUN_71004eb4b0(BossManager+8, obj_id+8, obj_id+0xc, param_2).
+
+=== 0x71015ca930 (92B) app::item_manager::find_active_item_from_id ===
+If param_1 != 0x50000000: iterates ItemManager+0x28..+0x30,
+finds item where +0x90→+0x18==0 && +0x8==param_1. Returns item+0x98 or 0.
+
+=== 0x71015ca990 (88B) app::item_manager::remove_item_from_id ===
+If param_1 != 0x50000000: iterates ItemManager+0x10..+0x18,
+finds item where *(item+8)==param_1. Calls vtable[0x520/8](item, 0).
+
+=== 0x71015cbb60 (36B) app::camera::target_pos ===
+Returns NEON_ext(*DAT_71052b7f00 + 0xeb0, same, 8, 1). Swaps upper/lower halves of 128-bit.
+
+=== 0x71015cbd50 (76B) app::ground::get_near_pos ===
+Given GroundCollisionLine* and Vector2f*: reads endpoints at line+0x88→+0x10 and line+0x90→+0x10.
+Computes squared distances to input point. Returns closer endpoint. Returns zero vec if line==null.
+
+=== 0x71015cfc70 (36B) app::math2::reflection_2d ===
+Vector reflection: result = v - 2*(v·n)*n for 4-component vectors.
+dot = v.x*n.x + v.y*n.y, result[i] = v[i] - 2*dot*n[i] for all 4 components.
+
+=== 0x71015cfcb0 (80B) app::math2::bezier_curve ===
+Cubic bezier: B(t) = (1-t)³*p0 + 3*(1-t)²*t*p1 + 3*(1-t)*t²*p2 + t³*p3.
+Pure float arithmetic, 5 params (p0,p1,p2,p3,t), returns float.
+
+=== 0x71015c5c40 (16B) app::target::search_range ===
+Tail-calls FUN_71015c5c50(param_1, 5, param_6, 1). Ignores params 2-5.

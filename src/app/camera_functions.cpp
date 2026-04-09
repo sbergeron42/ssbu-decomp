@@ -2181,3 +2181,310 @@ extern "C" u32 length_gravity(void) {
     return *(u32*)(*(u8**)(fpa + 0x12d0) + 0x240);
 }
 }} // namespace app::buddybomb
+
+// ---- Batch 7: camera/stage/item functions ----
+
+// ---- camera::target_pos ----
+
+// 0x71015cbb60 (36 bytes) — app::camera::target_pos
+// Returns camera target position from singleton+0xeb0, zeroing the w component.
+// Assembly: ext v2,v0,v0,#8 → mov v2.S[1],0 → mov v0.D[1],v2.D[0] = zero w of float4.
+// DAT_71052b7f00 [derived: camera/stage parameter singleton]
+// +0xeb0 [inferred: camera target position, Vector4f {x,y,z,w}]
+// [derived: Ghidra disasm at 0x71015cbb60]
+namespace app { namespace camera {
+extern "C" float4 target_pos(void) {
+    u8* inner = *(u8**)DAT_71052b7f00;
+    float4 v = *(float4*)(inner + 0xeb0);
+    v[3] = 0.0f;
+    return v;
+}
+}} // namespace app::camera
+
+// ---- math2::reflection_2d ----
+
+// 0x71015cfc70 (36 bytes) — app::math2::reflection_2d
+// NEON vector reflection: result = v - 2*(v·n)*n
+// Computes 2D dot product (faddp on lower 2 lanes) then applies to all 4 components.
+// Uses full float4 vector ops: fmul.4S, faddp.2S, fadd.4S, fmul.4S, fsub.4S.
+// [derived: Ghidra disasm at 0x71015cfc70]
+namespace app { namespace math2 {
+extern "C" float4 reflection_2d(const float4* v_ptr, const float4* n_ptr) {
+    float4 v = *v_ptr;
+    float4 n = *n_ptr;
+    float4 prod = v * n;
+    float dot = prod[0] + prod[1];
+    float two_dot = dot + dot;
+    float4 scale = {two_dot, two_dot, two_dot, two_dot};
+    return v - n * scale;
+}
+}} // namespace app::math2
+
+// ---- math2::bezier_curve ----
+
+// 0x71015cfcb0 (80 bytes) — app::math2::bezier_curve
+// Cubic Bezier: B(t) = (1-t)³p0 + 3(1-t)²t·p1 + 3(1-t)t²·p2 + t³p3
+// Computation order from disasm: t³, 3t, s=1-t, then accumulate terms in reverse.
+// [derived: Ghidra disasm at 0x71015cfcb0]
+namespace app { namespace math2 {
+extern "C" float bezier_curve(float p0, float p1, float p2, float p3, float t) {
+    float t2 = t * t;
+    float t3 = t2 * t;
+    float three_t = t * 3.0f;
+    float s = 1.0f - t;
+    // t³ * p3
+    float acc = t3 * p3;
+    // s * 3t² * p2
+    float three_t2 = three_t * t;
+    acc += s * three_t2 * p2;
+    // s² * 3t * p1
+    float s_three_t = three_t * s;
+    acc += s * s_three_t * p1;
+    // s³ * p0
+    float s2 = s * s;
+    acc += s * s2 * p0;
+    return acc;
+}
+}} // namespace app::math2
+
+// ---- boss_private::send_event_on_start_boss_entry ----
+
+// 0x71015c8450 (84 bytes) — app::boss_private::send_event_on_start_boss_entry
+// Iterates ItemManager active item list (+0x28..+0x30 as u64*[]),
+// finds item with matching battle_object_id, dispatches event.
+// +0x90 → +0x18 [inferred: is_dead/removed flag, u8 — skip if set]
+// +0x8 [derived: battle_object_id, u32 — matches against param]
+// FUN_71015b52c0 [inferred: on_start_boss_entry event handler]
+// [derived: Ghidra decompilation at 0x71015c8450]
+extern "C" void FUN_71015b52c0(void*);
+
+namespace app { namespace boss_private {
+extern "C" void send_event_on_start_boss_entry(u32 battle_object_id) {
+    if (battle_object_id == 0x50000000) return;
+    u8* im = (u8*)DAT_71052c25b0;
+    u64* begin = *(u64**)(im + 0x28);
+    u64* end   = *(u64**)(im + 0x30);
+    for (u64* it = begin; it != end; ++it) {
+        u8* item = (u8*)*it;
+        if (*(u8*)(*(u8**)(item + 0x90) + 0x18) != 0) continue;
+        if (*(u32*)(item + 0x8) == battle_object_id) {
+            FUN_71015b52c0(item);
+            return;
+        }
+    }
+}
+}} // namespace app::boss_private
+
+// ---- boss_private::send_event_on_boss_finish ----
+
+// 0x71015c84b0 (84 bytes) — app::boss_private::send_event_on_boss_finish
+// Gets battle object from lua accessor chain, dispatches to BossManager.
+// FUN_71003ab390 [inferred: get_battle_object_from_accessor — takes output buf + entry_id]
+// DAT_71052b7ef8 [derived: lib::Singleton<app::BossManager>::instance_, adrp 0x71052b7000+0xef8]
+// FUN_71004eb4b0 [inferred: BossManager::on_boss_finish dispatch]
+// [derived: Ghidra disasm at 0x71015c84b0]
+extern "C" void FUN_71003ab390(void*, u32);
+extern "C" void* DAT_71052b7ef8 HIDDEN;  // lib::Singleton<app::BossManager>::instance_
+extern "C" void FUN_71004eb4b0(void*, u32, u32, u64);
+
+namespace app { namespace boss_private {
+extern "C" void send_event_on_boss_finish(u8* lua_state, u64 hash40) {
+    u8 buf[16];
+    u8* accessor = *(u8**)(lua_state - 8);
+    FUN_71003ab390(buf, *(u32*)(accessor + 0x190));
+    u8* boss_mgr = (u8*)DAT_71052b7ef8;
+    if (boss_mgr != 0) {
+        u8* obj = *(u8**)(buf + 8);
+        u32 w1 = *(u32*)(obj + 8);
+        u32 w2 = *(u32*)(obj + 0xc);
+#ifdef MATCHING_HACK_NX_CLANG
+        asm("");
+#endif
+        FUN_71004eb4b0(*(void**)(boss_mgr + 8), w1, w2, hash40);
+    }
+}
+}} // namespace app::boss_private
+
+// ---- item_manager::find_active_item_from_id ----
+
+// 0x71015ca930 (92 bytes) — app::item_manager::find_active_item_from_id
+// Iterates ItemManager active list (+0x28..+0x30), finds item by battle_object_id.
+// Returns item+0x98 (BattleObjectModuleAccessor*) or 0 if not found.
+// +0x90 → +0x18 [inferred: is_dead flag, skip if set]
+// +0x8 [derived: battle_object_id]
+// [derived: Ghidra decompilation at 0x71015ca930]
+namespace app { namespace item_manager {
+extern "C" u64 find_active_item_from_id(u32 battle_object_id) {
+    u8* found = 0;
+    if (battle_object_id != 0x50000000) {
+        u8* im = (u8*)DAT_71052c25b0;
+        u64* begin = *(u64**)(im + 0x28);
+        u64* end   = *(u64**)(im + 0x30);
+        for (u64* it = begin; it != end; ++it) {
+            u8* item = (u8*)*it;
+            if (*(u8*)(*(u8**)(item + 0x90) + 0x18) != 0) continue;
+            if (*(u32*)(item + 0x8) == battle_object_id) {
+                found = item;
+                break;
+            }
+        }
+    }
+    if (!found) return 0;
+    return (u64)(found + 0x98);
+}
+}} // namespace app::item_manager
+
+// ---- item_manager::remove_item_from_id ----
+
+// 0x71015ca990 (88 bytes) — app::item_manager::remove_item_from_id
+// Iterates ItemManager pending remove list (+0x10..+0x18), finds by battle_object_id.
+// Calls vtable[0x520/8](item, 0) to trigger removal.
+// +0x10 [inferred: pending item list begin pointer]
+// +0x18 [inferred: pending item list end pointer]
+// *(item+8) == battle_object_id [derived: id comparison pattern]
+// [derived: Ghidra decompilation at 0x71015ca990]
+namespace app { namespace item_manager {
+extern "C" void remove_item_from_id(u32 battle_object_id) {
+    if (battle_object_id == 0x50000000) return;
+    u8* im = (u8*)DAT_71052c25b0;
+    u64* begin = *(u64**)(im + 0x10);
+    u64* end   = *(u64**)(im + 0x18);
+    for (u64* it = begin; it != end; ++it) {
+        u8* item = (u8*)*it;
+        if (*(u32*)(item + 0x8) == battle_object_id) {
+            if (item != 0) {
+                void** vt = *(void***)item;
+                reinterpret_cast<void(*)(void*, s32)>(vt[0x520/8])(item, 0);
+            }
+            return;
+        }
+    }
+}
+}} // namespace app::item_manager
+
+// ---- ground::get_near_pos ----
+
+// 0x71015cbd50 (76 bytes) — app::ground::get_near_pos
+// Returns the closer of two collision line endpoints to a given position.
+// Uses NEON float4 ops for distance: fsub.4S, fmul.4S, faddp.2S, fcmp, csel on pointers.
+// line+0x88/+0x90 [derived: endpoint struct pointers], +0x10 [derived: position within endpoint]
+// PTR_ConstantZero_71052a7a80 [derived: pointer to 128-bit zero constant]
+// [derived: Ghidra disasm at 0x71015cbd50]
+namespace app { namespace ground {
+extern "C" float4 get_near_pos(u8* line, const float4* pos) {
+    if (!line) {
+        return *(float4*)&PTR_ConstantZero_71052a7a80;
+    }
+    u8* ep0 = *(u8**)(line + 0x88) + 0x10;
+    u8* ep1 = *(u8**)(line + 0x90) + 0x10;
+    float4 d0 = *(float4*)ep0 - *pos;
+    float4 d1 = *(float4*)ep1 - *pos;
+    d0 = d0 * d0;
+    d1 = d1 * d1;
+    float dist0 = d0[0] + d0[1];
+    float dist1 = d1[0] + d1[1];
+    if (dist0 < dist1) {
+        return *(float4*)ep0;
+    }
+    return *(float4*)ep1;
+}
+}} // namespace app::ground
+
+// ---- sv_camera_manager::restore_pos_dead_range_gravity ----
+
+// DAT_71052b7558 [derived: lib::Singleton<app::BattleObjectWorld>::instance_, adrp 0x71052b7000+0x558]
+// Used by convert/restore_pos_dead_range_gravity and is_flat_stage.
+extern "C" void* DAT_71052b7558 HIDDEN;
+
+// 0x7102283020 (196 bytes) — app::sv_camera_manager::restore_pos_dead_range_gravity
+// Reverses gravity rotation: given (angle, radius) in gravity space,
+// converts back to world-space (x, y) using sin/cos.
+// If gravity not active (BattleObjectWorld+0x5c!=0 || +0x59!=0), passes through unchanged.
+// Then dispatches to WorkModule vtable[0x60/8] (set_float).
+// DAT_71052b7558 [derived: lib::Singleton<app::BattleObjectWorld>::instance_, adrp 0x71052b7000+0x558]
+// +0x5c [inferred: gravity disabled flag], +0x59 [inferred: gravity override flag]
+// +0x14 [inferred: gravity_y, float — vertical component of gravity origin]
+// [derived: Ghidra disasm at 0x7102283020]
+extern "C" float sinf(float);
+extern "C" float cosf(float);
+
+namespace app { namespace sv_camera_manager {
+extern "C" float4 restore_pos_dead_range_gravity(u8* lua_state, float x, float y, s32 param_4) {
+    u8* acc_ptr = *(u8**)(lua_state - 8);
+    u8* accessor = *(u8**)(acc_ptr + 0x1a0);
+    float4 result = {0.0f, 0.0f, 0.0f, 0.0f};
+    result[0] = x;
+    result[1] = y;
+    u8* bow = (u8*)DAT_71052b7558;
+    if (*(u8*)(bow + 0x5c) == 0 && *(u8*)(bow + 0x59) == 0) {
+        float gravity_y = *(float*)(bow + 0x14);
+        float diff = y - gravity_y;
+        float angle = x / -gravity_y;
+        float s = sinf(angle);
+        result[0] = s * diff;
+        float c = cosf(angle);
+        result[1] = gravity_y + diff * c;
+    }
+    // Dispatch to WorkModule vtable[0x60/8]
+    u8** work_mod = *(u8***)(accessor + 0x50);
+    reinterpret_cast<void(*)(u8**, float, s32)>(
+        (*(void***)work_mod)[0x60/8])(work_mod, result[1], param_4);
+    return result;
+}
+}} // namespace app::sv_camera_manager
+
+// ---- sv_camera_manager::convert_pos_dead_range_gravity ----
+
+// 0x7102282ef0 (296 bytes) — app::sv_camera_manager::convert_pos_dead_range_gravity
+// Converts world-space (x, y) to gravity-space (angle, radius) for dead range.
+// Uses atan2f for angle, NEON frsqrte/frsqrts Newton-Raphson sqrt for distance.
+// If gravity not active, passes through unchanged.
+// DAT_71052b7558 [derived: lib::Singleton<app::BattleObjectWorld>::instance_]
+// DAT_710447198c [inferred: float constant, angle reference (pi/2 or similar)]
+// +0x10 [inferred: gravity origin, packed as {x:f32, y:f32}]
+// +0xc30 [inferred: dead range negative extent], +0xc34 [inferred: dead range positive extent]
+// [derived: Ghidra disasm at 0x7102282ef0]
+extern "C" float DAT_710447198c HIDDEN;
+
+namespace app { namespace sv_camera_manager {
+extern "C" float4 convert_pos_dead_range_gravity(u8* lua_state, float x, float y, s32 param_4) {
+    u8* acc_ptr = *(u8**)(lua_state - 8);
+    u8* accessor = *(u8**)(acc_ptr + 0x1a0);
+    float4 disp = {0.0f, 0.0f, 0.0f, 0.0f};
+    float4 result = {0.0f, 0.0f, 0.0f, 0.0f};
+    result[0] = x;
+    result[1] = y;
+    u8* bow = (u8*)DAT_71052b7558;
+    if (*(u8*)(bow + 0x5c) == 0 && *(u8*)(bow + 0x59) == 0) {
+        // Subtract gravity origin
+        float ox = *(float*)(bow + 0x10);
+        float oy = *(float*)(bow + 0x14);  // origin.y is at +0x14 in the 128-bit load
+        float dx = x - ox;
+        float dy = y - oy;
+        disp[0] = dx;
+        disp[1] = dy;
+        u8* cam = *(u8**)DAT_71052b7f00;
+        // Compute angle
+        float angle = atan2f(dy, dx);
+        angle = DAT_710447198c - angle;
+        // Select extent based on angle sign
+        float neg_ext = -*(float*)(cam + 0xc30);
+        float pos_ext = *(float*)(cam + 0xc34);
+        float extent = (angle < 0.0f) ? neg_ext : pos_ext;
+        float gravity_y = *(float*)(bow + 0x14);
+        float neg_gravity = -gravity_y;
+        float ratio = extent / neg_gravity;
+        float scaled_angle = angle / ratio;
+        result[0] = extent * scaled_angle;
+        // Compute magnitude via Newton-Raphson rsqrt (NEON frsqrte + 2x frsqrts)
+        float dist_sq = dx * dx + dy * dy;
+        float magnitude = __builtin_sqrtf(dist_sq);
+        result[1] = gravity_y + magnitude;
+    }
+    // Dispatch to WorkModule vtable[0x60/8]
+    u8** work_mod = *(u8***)(accessor + 0x50);
+    reinterpret_cast<void(*)(u8**, float, s32)>(
+        (*(void***)work_mod)[0x60/8])(work_mod, result[1], param_4);
+    return result;
+}
+}} // namespace app::sv_camera_manager
