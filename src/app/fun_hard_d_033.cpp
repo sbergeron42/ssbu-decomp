@@ -23,9 +23,9 @@ extern "C" u64   FUN_710395eba0(u64);
 extern "C" u64   FUN_710395eee0(u64);
 extern "C" void  FUN_710395ef30(u64);
 extern "C" u32   FUN_7103952190(u64);
-extern "C" u32   FUN_71039521d0(u32);
-extern "C" void  FUN_710395d760(u64);
-extern "C" u64   FUN_710395d7a0(void);
+extern "C" u64   FUN_71039521d0(u32);
+extern "C" u32   FUN_710395d760(u64);
+extern "C" u64   FUN_710395d7a0(u32);
 extern "C" void  FUN_710395faf0(u64, u64);
 extern "C" void  FUN_710395a6a0(s32*, u64, s32, u32, u64);
 extern "C" void  FUN_710395aa80(s32*);
@@ -142,20 +142,20 @@ void FUN_710395ef00(u64 param_1) {
 // Two-call-and-return wrappers (64 bytes)
 // ════════════════════════════════════════════════════════════════════
 
-// 0x7103951e60 — call FUN_7103952190, then return FUN_71039521d0 result (64 bytes)
-// [derived: Ghidra — sequential dispatch, passes result of first to second]
+// 0x7103951e60 — chained lookup: map handle to index, then index to table entry (64 bytes)
+// [derived: Ghidra — FUN_7103952190 returns byte index, FUN_71039521d0 reads table]
 __attribute__((optnone)) extern "C"
 u64 FUN_7103951e60(u64 param_1) {
-    FUN_7103952190(param_1);
-    return FUN_71039521d0(0);
+    u32 idx = FUN_7103952190(param_1);
+    return FUN_71039521d0(idx);
 }
 
-// 0x710395d430 — call FUN_710395d760, then return FUN_710395d7a0 result (64 bytes)
-// [derived: Ghidra — same pattern as FUN_7103951e60]
+// 0x710395d430 — chained lookup: same pattern as FUN_7103951e60, different table (64 bytes)
+// [derived: Ghidra — FUN_710395d760 returns byte index, FUN_710395d7a0 reads table]
 __attribute__((optnone)) extern "C"
 u64 FUN_710395d430(u64 param_1) {
-    FUN_710395d760(param_1);
-    return FUN_710395d7a0();
+    u32 idx = FUN_710395d760(param_1);
+    return FUN_710395d7a0(idx);
 }
 
 // 0x710395f210 — wrapper with global context arg (48 bytes)
@@ -272,8 +272,8 @@ void FUN_710395e090(u64 param_1, s64 param_2) {
 __attribute__((optnone)) extern "C"
 u32 FUN_710395e850(u64 param_1) {
     if (param_1 <= 0x1000) {
-        FUN_710395d760(param_1);
-        return FUN_710395d7a0();
+        u32 idx = FUN_710395d760(param_1);
+        return FUN_710395d7a0(idx);
     } else {
         return FUN_710395e8b0(param_1 - 0x1000, param_1);
     }
