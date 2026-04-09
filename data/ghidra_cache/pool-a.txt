@@ -465,3 +465,79 @@ LOG_ROT_Z_RATIO @ 0x710165f2a0: +0x44 (float)
 
 LOG_SHAPE_TYPE 24B (FPA2→+0xc08→+0x190→+field):
 LOG_SHAPE_TYPE @ 0x710165f340: +0x0 (u32)
+
+=== FighterSpecializer_Reflet — Chrom article functions ===
+
+--- get_final_chrom_pos @ 0x710100d090 (76 bytes) ---
+float4 (BattleObjectModuleAccessor* acc)
+article_module->get_article(5) → article+8 → accessor+0x38 → posture->pos()
+Fallback: PTR_ConstantZero_71052a7a88
+ASM: stp/mov/ldr x0,[x0,#0x98]/get_article(5)/cbz/posture->pos()/adrp zero/ldr q0,[x0]/ret
+
+--- set_final_chrom_pos @ 0x710100d0e0 (76 bytes) ---
+void (BattleObjectModuleAccessor* acc, float4 pos_in_q0)
+str q0,[sp] → article->get_article(5) → posture->set_pos(&stack_vec)
+ASM: sub sp,0x20/str q0,[sp]/get_article(5)/posture->set_pos(sp)/ret
+
+--- get_final_chrom_lr @ 0x710100d130 (68 bytes) ---
+f32 (BattleObjectModuleAccessor* acc)
+article->get_article(5) → posture->lr() [TAIL CALL via br x1]
+Fallback: fmov s0,wzr (return 0.0f)
+ASM: stp/get_article(5)/cbz/ldr x1,[x8,#0xb0]/ldp/br x1 OR fmov s0,wzr/ldp/ret
+
+--- set_final_chrom_lr @ 0x710100d180 (116 bytes) ---
+void (BattleObjectModuleAccessor* acc, f32 lr_in_s0)
+Saves d8=s0, x19=posture. set_lr(lr), then TAIL CALL update_rot_y_lr()
+ASM: str d8/str x19/get_article(5)/set_lr(d8→s0)/update_rot_y_lr() tail call via br x1
+
+--- set_final_chrom_joint_rotate @ 0x710100d200 (100 bytes) ---
+void (BattleObjectModuleAccessor* acc, u64 hash_in_x1, float4 rot_in_q0)
+str q0,[sp], saves x19=hash. model_module->set_joint_rotate(hash, &stack_rot, 0, 0)
+ASM: sub sp,0x30/str q0,[sp]/get_article(5)/model->set_joint_rotate(x19,sp,0,0)/ret
+
+--- get_magickind @ 0x7101006b60 (108 bytes) ---
+s32 (BattleObjectModuleAccessor* acc, s32 work_id)
+work_module->get_int(work_id) → bit flags → magic kind
+Priority: bit7→7, bit0→0, bit4→4, bit5→5, bit6→6, else→-1
+ASM: ldr x0,[x0,#0x50]/get_int()/tbnz #7/tbnz #0/tbnz #4/tbnz #5/tst #0x40/csinv
+
+--- get_active_thunder_num @ 0x710100be80 (216 bytes) ---
+int (BattleObjectModuleAccessor* acc, int param_2)
+Loops over article type 2, counts active articles matching status param_2
+art_mod->get_num(2), for each: get_article_from_no(2,i), check active, check status
+
+--- check_special_lw_pos @ 0x710100bf60 (176 bytes) ---
+uint (BattleObjectModuleAccessor* acc)
+Gets position from posture, joint offset from model, ground check via ground_module vtable 0x618
+
+--- create_burner_effect @ 0x710105e210 (128 bytes) ---
+FighterSpecializer_Robot: effect_module->req_follow with hash constants
+
+--- is_ownered_item @ 0x710105e290 (140 bytes) ---
+FighterSpecializer_Robot: iterates ItemManager singleton, checks ownership
+
+=== sv_information / sv_fighter_util — FighterInformation field readers ===
+
+--- is_dead_up_force_crush @ 0x710227ed00 (84 bytes) ---
+u8 (lua_State* L)
+L→accessor→work_module→get_int(0x10000000)→entry_id, FM→entries[id]→+0xf8→+0x6e (ldrb)
+ASM: stp/mov/ldur/ldr chain/get_int(0x10000000)/cmp #8/b.cs abort/adrp FM/ldr/add sxtw#3/ldr+0x20/ldr+0xf8/ldrb+0x6e/ldp/ret
+
+--- sleep_time_mul @ 0x710227ef00 (84 bytes) ---
+f32 (lua_State* L)
+Same chain as above, reads +0x384 (ldr s0) instead of +0x6e
+
+--- get_dead_up_star_fall_prob @ 0x7102281890 (84 bytes) ---
+u32 (lua_State* L)
+Same chain, reads +0x7c (ldr w0)
+
+--- get_default_fighter_param_walk_speed_max @ 0x71022822b0 (72 bytes) ---
+f32 (lua_State* L) — LEAF on fast path, abort-only frame
+*(L-8)+0x198=fighter_kind, bounds check <0x5e, FPA2 index table at +0x14f0 (stride 12), param at +8 (stride 0x628), field +0x10
+ASM: ldur/ldrsw+0x198/cmp #0x5e/b.hs/adrp FPA2/madd kind*12+fpa2/ldr data/ldr+8/mov 0x628/ldrsw+0x14f0/madd idx*0x628+base/ldr s0,+0x10/ret
+
+--- get_default_fighter_param_ground_brake @ 0x7102282300 (72 bytes) ---
+Same as walk_speed_max, field +0x20
+
+--- get_default_fighter_param_air_brake_x @ 0x7102282370 (72 bytes) ---
+Same, field +0x64
