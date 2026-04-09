@@ -2096,3 +2096,88 @@ extern "C" float4 get_internal_target(void) {
     return *(float4*)(cam + 0xeb0);
 }
 }} // namespace app::sv_camera_manager
+
+// ---- Batch 6: more boss/item leaf functions ----
+
+// 0x7101652f20 (28 bytes) — app::kiila::can_exist
+// Returns true if ItemManager stage data +0xc78 == 0.
+// [derived: Ghidra decompilation at 0x7101652f20]
+namespace app { namespace kiila {
+extern "C" bool can_exist_7101652f20(void) {
+    u8* inst = (u8*)DAT_71052c25b0;
+    return *(u64*)(*(u8**)(inst + 0x58) + 0xc78) == 0;
+}
+}} // namespace app::kiila
+
+// 0x71016538e0 (24 bytes) — app::kiiladarzmanager::stop_ingame_se
+// Sets a flag byte at DAT_7105328f50+1 to 1.
+// [derived: Ghidra decompilation at 0x71016538e0]
+extern "C" void* DAT_7105328f50 HIDDEN;
+
+namespace app { namespace kiiladarzmanager {
+extern "C" void stop_ingame_se(void) {
+    *(u8*)(*(u8**)DAT_7105328f50 + 1) = 1;
+}
+}} // namespace app::kiiladarzmanager
+
+// 0x7101654bf0 (24 bytes) — app::marxchaseeye::adjust_model_constraint_posture
+// Dispatches ModelModule vtable[0x3b0/8] with (module, 0, 0).
+// [derived: Ghidra decompilation at 0x7101654bf0]
+// ItemModuleAccessor+0xd0: ModelModule*
+namespace app { namespace marxchaseeye {
+extern "C" void adjust_model_constraint_posture(u8* acc) {
+    void** model = *(void***)(acc + 0xd0);
+    reinterpret_cast<void(*)(void**, s32, s32)>(
+        (*(void***)model)[0x3b0/8])(model, 0, 0);
+}
+}} // namespace app::marxchaseeye
+
+// 0x7101655110 (24 bytes) — app::masterhand::adjust_model_constraint_posture
+// Identical to marxchaseeye variant.
+// [derived: Ghidra decompilation at 0x7101655110]
+namespace app { namespace masterhand {
+extern "C" void adjust_model_constraint_posture_7101655110(u8* acc) {
+    void** model = *(void***)(acc + 0xd0);
+    reinterpret_cast<void(*)(void**, s32, s32)>(
+        (*(void***)model)[0x3b0/8])(model, 0, 0);
+}
+}} // namespace app::masterhand
+
+// ---- buddybomb param readers ----
+// All read from FighterParamAccessor2 singleton at instance+0x12d0 pointer + field offset.
+// [derived: Ghidra decompilations at 0x71016593a0..0x7101659400]
+
+// FighterParamAccessor2::instance_ [derived: Ghidra singleton label]
+extern "C" void* DAT_71052b5fc8 HIDDEN;  // lib::Singleton<app::FighterParamAccessor2>::instance_
+
+// 0x71016593a0 (20 bytes) — app::buddybomb::init_bound_frame
+namespace app { namespace buddybomb {
+extern "C" u32 init_bound_frame(void) {
+    u8* fpa = (u8*)DAT_71052b5fc8;
+    return *(u32*)(*(u8**)(fpa + 0x12d0) + 0x230);
+}
+}} // namespace app::buddybomb
+
+// 0x71016593c0 (20 bytes) — app::buddybomb::special_lw_gravity
+namespace app { namespace buddybomb {
+extern "C" u32 special_lw_gravity(void) {
+    u8* fpa = (u8*)DAT_71052b5fc8;
+    return *(u32*)(*(u8**)(fpa + 0x12d0) + 0x234);
+}
+}} // namespace app::buddybomb
+
+// 0x71016593e0 (20 bytes) — app::buddybomb::special_lw_speed_y_max
+namespace app { namespace buddybomb {
+extern "C" u32 special_lw_speed_y_max(void) {
+    u8* fpa = (u8*)DAT_71052b5fc8;
+    return *(u32*)(*(u8**)(fpa + 0x12d0) + 0x238);
+}
+}} // namespace app::buddybomb
+
+// 0x7101659400 (20 bytes) — app::buddybomb::length_gravity
+namespace app { namespace buddybomb {
+extern "C" u32 length_gravity(void) {
+    u8* fpa = (u8*)DAT_71052b5fc8;
+    return *(u32*)(*(u8**)(fpa + 0x12d0) + 0x240);
+}
+}} // namespace app::buddybomb
