@@ -1,32 +1,35 @@
-# Worker: pool-e
+# Worker: pool-b
 
 ## Model: Opus
 
-## Task: Item/weapon + parameter loading — community priority #4
+## Task: Fighter + game core medium functions — targeting 100+ KB
 
-## Strategy
-Weapon parameters and item behavior are heavily used by modders who create custom fighters and items. Parameter loading is how the game reads .prc files, which modders replace constantly. Both areas have strong community knowledge to leverage.
+## Targets (by size, descending)
+1. get_entry_in_fighter_param_kind_struct (15,848 bytes @ 0x71006f3b00)
+2. create_status_script_for_projectile_article (15,648 bytes @ 0x71033abee0)
+3. save_aura_ball_status (13,348 bytes @ 0x7100c5e1a0)
+4. load_fighter? (7,776 bytes @ 0x71017e6510)
+5. heal_fighters (3,644 bytes @ 0x7101676250)
+6. get_fighter_id_from_fighter_kind? (3,604 bytes @ 0x710066cd40)
+7. chase_fighter (3,148 bytes @ 0x7101672f90)
+8. escape_from_fighter (2,700 bytes @ 0x7101672500)
 
-## Targets
-1. **weapon_params.cpp** — Continue weapon param accessor decomp. Already have BUDDYBOMB, PICKELBOMB, MECHAKOOPA, HOLYWATER, PEACH, DOLL, EXPLOSIONBOMB, LINKARROW. Target remaining weapon types.
-2. **Item functions** — 97 undecompiled (53 KB). Item spawning, behavior, collision.
-3. **Parameter loading** — 87 undecompiled (65 KB). ParamAccessor, prc file reading, hash lookups.
-4. **FighterParamAccessor2.cpp** — Existing file, extend with more param accessors.
+Plus continue fighter_status.cpp AI functions from prior round.
 
 ## Approach
-- Weapon params follow consistent patterns (see existing weapon_params.cpp)
-- Use Ghidra to identify param accessor vtable patterns
-- ItemModule vtable methods in include/app/modules/
-- Parameter loading may use hash40 lookups — cross-reference with community hash tables
+- Use Ghidra to decompile each target
+- These are LARGE functions — focus on understanding structure first
+- Cross-reference with existing fighter struct headers
+- For switch/case dispatchers, identify the dispatch pattern before writing code
+- 3-attempt limit — if register alloc won't match, document and move on as N-quality
 
 ## File Territory
-- src/app/weapon_params.cpp
-- src/app/Item.cpp
-- src/app/ItemManager.cpp
-- src/app/FighterParamAccessor2.cpp
+- src/app/fighter_status.cpp
+- src/app/fighter_attack.cpp
+- src/app/fighter_core.cpp (new — for game core fighter functions)
 - include/app/ (struct updates)
 
 ## Quality Rules
-- Weapon params are templated patterns — document the template
+- Use BattleObjectModuleAccessor struct access
 - No naked asm
-- Use existing module headers for vtable dispatch
+- Document derivation chains
