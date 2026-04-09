@@ -299,6 +299,61 @@ void set_speed_lr_71015d2220(void* item, f32 val) {
 }
 
 // ============================================================
+// Pattern D: 72-byte — get_sub + vtable dispatch on sub
+// ============================================================
+
+// 71015d0540 — mul_accel: sub(4) → sub->vt[0x60/8](sub, vec)
+void mul_accel_71015d0540(void* item, void* vec) {
+    void* sub = KM_GET_SUB(item, 4);
+    reinterpret_cast<void(*)(void*, void*)>(VT(sub)[0x60/8])(sub, vec);
+    asm volatile("");
+}
+
+// ============================================================
+// Pattern E: 64-byte — get_sub + ldp/stp 16-byte copy
+// ============================================================
+
+struct U128 { u64 a, b; };
+
+// 71015d1430 — set_accel: sub(7), copy 16B from vec to +0x40
+void set_accel_71015d1430(void* item, void* vec) {
+    u8* sub = reinterpret_cast<u8*>(KM_GET_SUB(item, 7));
+    *reinterpret_cast<U128*>(sub + 0x40) = *reinterpret_cast<U128*>(vec);
+}
+
+// 71015d1470 — set_stable_speed: sub(7), copy 16B from vec to +0x50
+void set_stable_speed_71015d1470(void* item, void* vec) {
+    u8* sub = reinterpret_cast<u8*>(KM_GET_SUB(item, 7));
+    *reinterpret_cast<U128*>(sub + 0x50) = *reinterpret_cast<U128*>(vec);
+}
+
+// 71015d1570 — set_limit_speed: sub(7), copy 16B from vec to +0x70
+void set_limit_speed_71015d1570(void* item, void* vec) {
+    u8* sub = reinterpret_cast<u8*>(KM_GET_SUB(item, 7));
+    *reinterpret_cast<U128*>(sub + 0x70) = *reinterpret_cast<U128*>(vec);
+}
+
+// ============================================================
+// Pattern F: 64-byte — get_sub + strb flag
+// ============================================================
+
+// 71015d1dd0 — sleep_speed: sub(12)->0xb8 = val & 1
+void sleep_speed_71015d1dd0(void* item, u32 val) {
+    u8* sub = reinterpret_cast<u8*>(KM_GET_SUB(item, 12));
+    sub[0xb8] = val & 1;
+}
+
+// 71015d20f0 — sleep_speed: sub(13)->0xb8 = val & 1
+void sleep_speed_71015d20f0(void* item, u32 val) {
+    u8* sub = reinterpret_cast<u8*>(KM_GET_SUB(item, 13));
+    sub[0xb8] = val & 1;
+}
+
+// NOTE: Pattern G/H/I/J/K/L/M (76-100B NEON functions) skipped —
+// NX Clang generates NEON for adjacent float writes, upstream Clang doesn't.
+// These functions require NX Clang's vectorization behavior to byte-match.
+
+// ============================================================
 // Pattern A extra: 56-byte function — get_sub + clear multiple fields
 // ============================================================
 

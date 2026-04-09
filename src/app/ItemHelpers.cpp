@@ -362,9 +362,9 @@ u64 property_param_int_71015c4e40(void* item, u32 param_id) {
 f32 common_param_float_71015c4d40(void* item, u32 param_id) {
     u8* acc = item_accessor(item);
     u8* p3 = *reinterpret_cast<u8**>(*reinterpret_cast<u8**>(acc + 0x190) + 0x220);
-    s32 idx = *reinterpret_cast<s32*>(p3 + 0xc);
+    s64 idx = *reinterpret_cast<s32*>(p3 + 0xc);
     u8* base = *reinterpret_cast<u8**>(DAT_71052c31e0);
-    u8* entry = base + (u64)(u32)idx * 0x284 + (u64)param_id * 4;
+    u8* entry = base + idx * 0x284 + (u64)param_id * 4;
     return *reinterpret_cast<f32*>(entry + 0x3908);
 }
 
@@ -372,9 +372,9 @@ f32 common_param_float_71015c4d40(void* item, u32 param_id) {
 u32 common_param_int_71015c4d80(void* item, u32 param_id) {
     u8* acc = item_accessor(item);
     u8* p3 = *reinterpret_cast<u8**>(*reinterpret_cast<u8**>(acc + 0x190) + 0x220);
-    s32 idx = *reinterpret_cast<s32*>(p3 + 0xc);
+    s64 idx = *reinterpret_cast<s32*>(p3 + 0xc);
     u8* base = *reinterpret_cast<u8**>(DAT_71052c31e0);
-    u8* entry = base + (u64)(u32)idx * 0xac + (u64)param_id * 4;
+    u8* entry = base + idx * 0xac + (u64)param_id * 4;
     return *reinterpret_cast<u32*>(entry + 0x477c8);
 }
 
@@ -390,4 +390,139 @@ void set_action_probability_mul_2nd_71015c9570(void* item, f32 val) {
     if (val < 0.0f) return;
     FUN_71015b8600(item_trampoline_field(item));
     asm volatile("");
+}
+
+// ============================================================
+// have_no_set_team — accessor chain + FUN_71015aa610 (52B)
+// ============================================================
+
+extern "C" void FUN_71015aa610(void*, u32, u64, u32, u32, u32, u32);
+
+// 71015c26a0 — have_no_set_team: forward to FUN_71015aa610 with flags
+void have_no_set_team_71015c26a0(void* item, u32 p1, u64 p2) {
+    u8* acc = item_accessor(item);
+    void* obj = *reinterpret_cast<void**>(*reinterpret_cast<u8**>(acc + 0x190) + 0x220);
+    FUN_71015aa610(obj, p1, p2, 0, 0, 1, 0);
+    asm volatile("");
+}
+
+// ============================================================
+// common_param_int (boss variant) — guarded singleton read (60B)
+// ============================================================
+
+// 71015c7a20 — common_param_int: check guard, then read from param table
+u32 common_param_int_71015c7a20(s32 item_kind, u32 param_id) {
+    u8* base = *reinterpret_cast<u8**>(DAT_71052c31e0);
+    if (*reinterpret_cast<u64*>(base + (s64)item_kind * 8 + 0xef8) == 0) return 0;
+    return *reinterpret_cast<u32*>(base + (s64)item_kind * 0x20 + (u64)param_id * 4 + 0x7da48);
+}
+
+// ============================================================
+// common_param_hash — indexed hash lookup from global param table
+// ============================================================
+
+// 71015c4dc0 — common_param_hash: stride 0xf0, offset 0x59a08, u64 (60B, leaf)
+u64 common_param_hash_71015c4dc0(void* item, u32 param_id) {
+    u8* acc = item_accessor(item);
+    u8* p3 = *reinterpret_cast<u8**>(*reinterpret_cast<u8**>(acc + 0x190) + 0x220);
+    s64 idx = *reinterpret_cast<s32*>(p3 + 0xc);
+    u8* base = *reinterpret_cast<u8**>(DAT_71052c31e0);
+    u8* entry = base + idx * 0xf0 + (u64)param_id * 8;
+    return *reinterpret_cast<u64*>(entry + 0x59a08);
+}
+
+// ============================================================
+// Energy-from-param forwarders — call FUN_71015c7aa0 with constants
+// FUN_71015c7aa0(ls, kind, hash, speed[s0], inherit, copy_all,
+//                energy_idx, enable, enable2, no_boss[stack])
+// ============================================================
+
+extern "C" void FUN_71015c7aa0(void*, u32, u64, f32, u32, u32, u32, u32, u32, u8);
+
+// 71015c7a60 — main_energy_from_param: idx=0xC, inherit=0, no_boss=0 (52B)
+void main_energy_from_param_71015c7a60(void* ls, u32 kind, u64 hash, f32 speed) {
+    FUN_71015c7aa0(ls, kind, hash, speed, 0, 0, 0xc, 1, 1, 0);
+}
+
+// 71015c8040 — sub1_energy_from_param: idx=0xD, inherit=0, no_boss=0 (52B)
+void sub1_energy_from_param_71015c8040(void* ls, u32 kind, u64 hash, f32 speed) {
+    FUN_71015c7aa0(ls, kind, hash, speed, 0, 0, 0xd, 1, 1, 0);
+}
+
+// 71015c8080 — main_energy_from_param_inherit: idx=0xC, s0=0, inherit=1 (56B)
+void main_energy_from_param_inherit_71015c8080(void* ls, u32 kind, u64 hash) {
+    FUN_71015c7aa0(ls, kind, hash, 0.0f, 1, 0, 0xc, 1, 1, 0);
+}
+
+// 71015c80c0 — sub1_energy_from_param_inherit: idx=0xD, s0=0, inherit=1 (56B)
+void sub1_energy_from_param_inherit_71015c80c0(void* ls, u32 kind, u64 hash) {
+    FUN_71015c7aa0(ls, kind, hash, 0.0f, 1, 0, 0xd, 1, 1, 0);
+}
+
+// 71015c8100 — sub1_energy_from_param_inherit_all: idx=0xD, s0=0, inherit=1, copy_all=1 (56B)
+void sub1_energy_from_param_inherit_all_71015c8100(void* ls, u32 kind, u64 hash) {
+    FUN_71015c7aa0(ls, kind, hash, 0.0f, 1, 1, 0xd, 1, 1, 0);
+}
+
+// 71015c8140 — main_energy_from_param_no_boss: idx=0xC, enable=0, no_boss=1 (56B)
+void main_energy_from_param_no_boss_71015c8140(void* ls, u32 kind, u64 hash, f32 speed) {
+    FUN_71015c7aa0(ls, kind, hash, speed, 0, 0, 0xc, 0, 0, 1);
+}
+
+// 71015c8180 — sub1_energy_from_param_no_boss: idx=0xD, enable=0, no_boss=1 (56B)
+void sub1_energy_from_param_no_boss_71015c8180(void* ls, u32 kind, u64 hash, f32 speed) {
+    FUN_71015c7aa0(ls, kind, hash, speed, 0, 0, 0xd, 0, 0, 1);
+}
+
+// ============================================================
+// Small leaf functions — singletons, byte checks, accessor chains
+// ============================================================
+
+// BattleObjectWorld singleton (page 0x71052b7000 + 0x558)
+extern "C" __attribute__((visibility("hidden"))) void* DAT_71052b7558;
+
+// ItemCollisionManager singleton — (*DAT_71052c2958)
+extern "C" __attribute__((visibility("hidden"))) void* DAT_71052c2958;
+
+extern "C" void FUN_71015b8f40(void*, void*);
+extern "C" void FUN_71015b3c70(void*);
+
+// 71015ce6d0 — is_normal_gravity: check 2 byte fields on BattleObjectWorld (40B, leaf)
+u32 is_normal_gravity_71015ce6d0() {
+    u8* world = reinterpret_cast<u8*>(DAT_71052b7558);
+    if (world[0x5c] != 0) return 1;
+    return world[0x59] != 0 ? 1 : 0;
+}
+
+// 71015cafe0 — remove_ground_collision: singleton + accessor chain (48B)
+void remove_ground_collision_71015cafe0(void* item) {
+    u8* acc = item_accessor(item);
+    void* p3 = *reinterpret_cast<void**>(*reinterpret_cast<u8**>(acc + 0x190) + 0x220);
+    void* mgr = *reinterpret_cast<void**>(DAT_71052c2958);
+    FUN_71015b8f40(mgr, p3);
+    asm volatile("");
+}
+
+// 71015bfa60 — regist_life_status_ignore_lost: accessor chain → +0x90 → +0x110, call (44B)
+void regist_life_status_ignore_lost_71015bfa60(void* item) {
+    u8* acc = item_accessor(item);
+    u8* p3 = *reinterpret_cast<u8**>(*reinterpret_cast<u8**>(acc + 0x190) + 0x220);
+    u8* sub = *reinterpret_cast<u8**>(p3 + 0x90);
+    FUN_71015b3c70(sub + 0x110);
+    asm volatile("");
+}
+
+// 71015c81c0 — main_energy_from_param_inherit_no_boss: s0=0, inherit=1, no_boss=1 (60B)
+void main_energy_from_param_inherit_no_boss_71015c81c0(void* ls, u32 kind, u64 hash) {
+    FUN_71015c7aa0(ls, kind, hash, 0.0f, 1, 0, 0xc, 0, 0, 1);
+}
+
+// 71015c8200 — sub1_energy_from_param_inherit_no_boss: s0=0, inherit=1, no_boss=1 (60B)
+void sub1_energy_from_param_inherit_no_boss_71015c8200(void* ls, u32 kind, u64 hash) {
+    FUN_71015c7aa0(ls, kind, hash, 0.0f, 1, 0, 0xd, 0, 0, 1);
+}
+
+// 71015c8240 — sub1_energy_from_param_inherit_all_no_boss: all flags (60B)
+void sub1_energy_from_param_inherit_all_no_boss_71015c8240(void* ls, u32 kind, u64 hash) {
+    FUN_71015c7aa0(ls, kind, hash, 0.0f, 1, 1, 0xd, 0, 0, 1);
 }
