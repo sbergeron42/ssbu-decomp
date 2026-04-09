@@ -1,32 +1,36 @@
-# Worker: pool-e
+# Worker: pool-a
 
 ## Model: Opus
 
-## Task: Item/weapon + parameter loading — community priority #4
+## Task: Effect template functions — 68 functions, 120 KB
 
 ## Strategy
-Weapon parameters and item behavior are heavily used by modders who create custom fighters and items. Parameter loading is how the game reads .prc files, which modders replace constantly. Both areas have strong community knowledge to leverage.
+The EFFECT_* functions (FOOT_EFFECT, DOWN_EFFECT, EFFECT_FOLLOW_*, EFFECT_BRANCH_*, etc.) appear to share template patterns. If one matches, the pattern likely applies to many. This is the highest KB-per-effort ratio available.
 
-## Targets
-1. **weapon_params.cpp** — Continue weapon param accessor decomp. Already have BUDDYBOMB, PICKELBOMB, MECHAKOOPA, HOLYWATER, PEACH, DOLL, EXPLOSIONBOMB, LINKARROW. Target remaining weapon types.
-2. **Item functions** — 97 undecompiled (53 KB). Item spawning, behavior, collision.
-3. **Parameter loading** — 87 undecompiled (65 KB). ParamAccessor, prc file reading, hash lookups.
-4. **FighterParamAccessor2.cpp** — Existing file, extend with more param accessors.
+## Targets (by size, descending)
+1. FOOT_EFFECT (4,148 bytes @ 0x7102297600)
+2. DOWN_EFFECT (3,996 bytes @ 0x7102298fa0)
+3. EFFECT_FOLLOW_LIGHT (3,976 bytes @ 0x7102296410)
+4. EFFECT_FOLLOW_FLIP_RND (3,968 bytes @ 0x710229ff20)
+5. EFFECT_VARIATION (3,736 bytes @ 0x710228cc90)
+6. EFFECT_ATTR (3,716 bytes @ 0x710228db30)
+7. EFFECT_FOLLOW_RND (3,672 bytes @ 0x710229e280)
+8. EFFECT_BRANCH_SITUATION (3,664 bytes @ 0x71022a1a20)
+... and 60 more in the 0x71022xxxxx range
 
 ## Approach
-- Weapon params follow consistent patterns (see existing weapon_params.cpp)
-- Use Ghidra to identify param accessor vtable patterns
-- ItemModule vtable methods in include/app/modules/
-- Parameter loading may use hash40 lookups — cross-reference with community hash tables
+- Start with ONE function (e.g., EFFECT_VARIATION). Use Ghidra to decompile.
+- Identify the shared pattern/template across the group.
+- Once the template matches, apply it to all 68 functions.
+- These are ACMD effect dispatchers — cross-reference with existing fighter_effects.cpp.
+- Use EffectModule vtable methods from include/app/modules/EffectModule.h if available.
 
 ## File Territory
-- src/app/weapon_params.cpp
-- src/app/Item.cpp
-- src/app/ItemManager.cpp
-- src/app/FighterParamAccessor2.cpp
-- include/app/ (struct updates)
+- src/app/fighter_effects.cpp (extend existing)
+- src/app/effect_dispatchers.cpp (new, if too many for one file)
+- include/app/modules/ (struct updates)
 
 ## Quality Rules
-- Weapon params are templated patterns — document the template
+- Document the template pattern once, reference it for variants
 - No naked asm
-- Use existing module headers for vtable dispatch
+- 3-attempt limit per function
