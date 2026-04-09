@@ -1,31 +1,33 @@
-# Worker: pool-b
+# Worker: pool-c
 
 ## Model: Opus
 
-## Task: Fighter core — continue item/fighter utility functions
+## Task: Stage + camera — continue
 
-## Progress
-- get_fighter_id_from_fighter_kind (3,604B) — 100%, get_entry_in_fighter_param_kind_struct (15,848B) — 78%
-- change_status_lost (108B) — 100%, set_force_flashing (124B) — 100%
-- 10 item/fighter utility functions (get_item_kind 94%, remove_item_from_id 91%, etc.)
-- FighterEntry struct: +0x591F partner_flags, +0x5935 is_unloaded
-- Key: asm("") barriers, u32 vs u64, csel vs branch divergence
+## Progress (61 functions total)
+- 20 leaf functions from round 2 (3 perfect matches)
+- 4 new functions this round:
+  - is_camera_off_final2 (188B) — size match, prologue scheduling only diff
+  - get_final_camera_pos (196B) — size match, register alloc diff
+  - update_dead_up_camera_hit_first_distance_group (124B) — size match, tbz fixed
+  - camera (sv_module_access) (180B target, 184B compiled) — 1 instr diff (mov+add vs add sp)
+- Key patterns: do-while for cbz elimination, __builtin_expect for branch polarity, #pragma clang loop unroll(disable)
 
 ## Continue with
-- More small item/fighter utility functions (100-200B, vtable-chain pattern)
-- is_fighter_enabled (88B), get_fighter_entry_id (172B), item_throw (136B)
-- fighter_status.cpp AI functions
-- Hash-to-value switch pattern functions (match well)
+- set_camera_param (2,344B), set_pause_camera_param (3,996B) — param tree lookups
+- ~StageWufuIsland destructor (2,700B) — event listener cleanup
+- More camera leaf functions (set_camera_range variants, revert_camera)
+- Stage destructors (~StageFlatZoneX, ~StageNintendogs, ~StageStreetPass)
 
-## Skipped (don't retry)
-- NEON functions, Ghidra jump table failures, global-ref ADRP mismatches
-- is_loaded_fighter — NX reorders singleton check
+## Skipped
+- create_stage (114,600B), StageBase ctor (14,820B) — too large
+- IT_MOVE_CAMERA, is_clip_in_camera, is_dark_stage — shared_ptr refcount patterns
 
 ## File Territory
-- src/app/fighter_core.cpp, fighter_status.cpp, fighter_attack.cpp
+- src/app/camera_functions.cpp, StageManager.cpp, StageWufuIsland.cpp
 
 ## Quality Rules
-- No naked asm, 3-attempt limit, derivation chains
+- No naked asm, 3-attempt limit
 
 ## Quick Reference
 - Single-file compile: `C:/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -c src/app/FILE.cpp -o build/FILE.o`
@@ -36,13 +38,13 @@
 - **WARNING:** Do NOT use `build.bat` — it runs deprecated post-processors that inflate match counts
 
 ## Ghidra Cache
-- Save ALL Ghidra decompilation results to `data/ghidra_cache/pool-b.txt` (NOT /tmp — survives reboots)
+- Save ALL Ghidra decompilation results to `data/ghidra_cache/pool-c.txt` (NOT /tmp — survives reboots)
 - On session start, check if this file exists and read it to recover previous Ghidra work
 - Append new results after each `mcp__ghidra__decompile_function_by_address` call
 
 ## Commit Cadence
 - Commit every 15-20 functions or every 30 minutes, whichever comes first
-- Use descriptive commit messages: `pool-b: decomp MODULE functions (N new, M matching)`
+- Use descriptive commit messages: `pool-c: decomp MODULE functions (N new, M matching)`
 - If session crashes, uncommitted work will be auto-recovered by the launcher script
 
 ## Rewrite Quality Standard
