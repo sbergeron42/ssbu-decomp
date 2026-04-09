@@ -1,45 +1,28 @@
-# Worker: pool-e
+# Worker: pool-d
 
 ## Model: Opus
 
-## Task: Item/weapon + Lua medium functions — targeting 130+ KB
+## Task: Game core + params — continue
 
-## Targets (by size, descending)
-### Lua/ACMD (92 KB)
-1. lua_ai_path_builder (4,388 bytes @ 0x71017e88d0)
-2. lua_copy (2,212 bytes @ 0x71038f29d0)
-3. luaopen_string (1,892 bytes @ 0x7103917450)
-4. luaL_loadfilex (1,760 bytes @ 0x71038f7ae0)
-5. ~~LuaModule (1,640 bytes @ 0x710372d390)
-6. pop_lua_stack (1,324 bytes @ 0x710372e420)
-7. luaL_setfuncs (1,304 bytes @ 0x71038f8f60)
+## Progress from last session
+- 6 functions compiled (16.4 KB): apply_lift_param, sub_rage_system, get_magic_ball_param, UpdateParams, global_param_init_sets_team_flag, nnMain
+- Found Ghidra mislabeled sizes: apply_lift_param (92B not 11KB), sub_rage_system (180B not 13KB)
+- game_tick is actually resource handle cleanup, not game simulation tick
 
-NOTE: Skip lua_ai_init (62,524 bytes) — too large for this round.
+## Best remaining target
+- populate_parameters_for_hash40 (13,536B @ 0x71032ed9c0) — fully decompiled, no jump tables, ~15 repeated PRC binary search blocks. PRIORITIZE THIS.
 
-### Item (42 KB)
-1. ItemManager (6,428 bytes @ 0x71015d2260)
-2. lot_create_item (5,716 bytes @ 0x71015bcde0)
-3. final_rand_create_item (5,024 bytes @ 0x7100e8aef0)
-4. ResetHaveItemConstraintNode (2,728 bytes @ 0x7100473480)
-5. item_generate_position_in_rect (2,140 bytes @ 0x71015ce870)
-
-Continue weapon_params.cpp for smaller accessors between the big targets.
-
-## Approach
-- Lua functions in 0x71038f-0x71039x may be -O0 → try __attribute__((optnone))
-- Continue building on L2CValue.h from prior round
-- ItemManager constructor reveals struct layout — prioritize it
-- lot_create_item is the item spawn function — high modder value
+## Deferred
+- read_file (17,488B) — 20 versioned deserialization sections, hard
+- game_tick (15,376B) — impossible, 94-case switches
+- round_manager_update (29,496B) — jump table, 135K chars decompilation
 
 ## File Territory
-- src/app/lua_acmd.cpp (continue)
-- src/app/weapon_params.cpp (continue)
-- src/app/Item.cpp
-- src/app/ItemManager.cpp
-- include/lib/L2CValue.h (continue)
-- include/app/ (struct updates)
+- src/app/param_loading.cpp (continue)
+- src/app/game_core.cpp (continue)
+- src/app/global_param_init.cpp (continue)
 
 ## Quality Rules
-- Use optnone for -O0 Lua functions
 - No naked asm
-- 3-attempt limit per function
+- Large functions: document control flow even if match fails
+- 3-attempt limit, N-quality is fine
