@@ -1,12 +1,14 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python tools/verify_local.py:*)",
+      "Bash(python tools/verify_all.py:*)",
       "Bash(python tools/build.py:*)",
-      "Bash(python tools/compare_bytes.py:*)",
       "Bash(python tools/next_batch.py:*)",
+      "Bash(python tools/sync_assignments.py)",
       "Bash(python tools/progress.py)",
-      "Bash(C:/llvm-8.0.0/bin/clang++.exe:*)"
+      "Bash(python tools/compare_bytes.py:*)",
+      "Bash(bash tools/merge_worker.sh:*)",
+      "Bash(bash tools/launch_pools.sh:*)"
     ]
   }
 }

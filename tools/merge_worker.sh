@@ -42,11 +42,11 @@ echo ""
 echo "Merging..."
 git merge "$BRANCH" --no-edit
 
-# Rebuild
+# Rebuild (single build, save output)
 echo ""
 echo "Rebuilding..."
-cmd //c build.bat 2>&1 | grep -i "error:" | head -5
-ERRORS=$(cmd //c build.bat 2>&1 | grep -ci "error:")
+python tools/build.py 2>&1 | tee /tmp/merge_build_output.txt
+ERRORS=$(grep -ci "error:" /tmp/merge_build_output.txt 2>/dev/null || echo 0)
 if [ "$ERRORS" -gt 0 ]; then
     echo "BUILD FAILED with $ERRORS error(s). Aborting."
     echo "Fix the errors, then run: git merge --continue"
@@ -87,7 +87,7 @@ fi
 if [ "$NO_REBASE" != "--no-rebase" ]; then
     echo ""
     echo "Rebasing other worker branches..."
-    ALL_POOLS="pool-a pool-b pool-c"
+    ALL_POOLS="pool-a pool-b pool-c pool-d pool-e"
     for P in $ALL_POOLS; do
         if [ "$P" != "$POOL" ]; then
             if git rev-parse --verify "worker/$P" >/dev/null 2>&1; then

@@ -22,9 +22,10 @@ PROJECT_ROOT = Path(__file__).parent.parent
 ORIGINAL_ELF = PROJECT_ROOT / "data" / "main.elf"
 DECOMP_ELF = PROJECT_ROOT / "build" / "ssbu-decomp.elf"
 FUNCTIONS_CSV = PROJECT_ROOT / "data" / "functions.csv"
-CLANG = r"C:\llvm-8.0.0\bin\clang++.exe"
-LLD = r"C:\llvm-8.0.0\bin\ld.lld.exe"
-OBJDUMP = r"C:\llvm-8.0.0\bin\llvm-objdump.exe"
+_LLVM_DIR = os.environ.get("DECOMP_LLVM_DIR", r"C:\llvm-8.0.0")
+CLANG = os.path.join(_LLVM_DIR, "bin", "clang++.exe")
+LLD = os.path.join(_LLVM_DIR, "bin", "ld.lld.exe")
+OBJDUMP = os.path.join(_LLVM_DIR, "bin", "llvm-objdump.exe")
 CFLAGS = "-target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude"
 ELF_BASE = 0x7100000000
 
