@@ -121,6 +121,7 @@ void L2CValue_71037341a0(u32* this_, u64 hash) {
 // String functions (bare metal — no <string.h>)
 extern "C" unsigned long strlen(const char*);
 extern "C" void* memcpy(void* dst, const void* src, unsigned long n);
+extern "C" int memcmp(const void*, const void*, unsigned long);
 
 // lib::L2CValue::L2CValue(const char*) — string constructor
 // 0x71037341c0 (368 bytes)
@@ -479,6 +480,147 @@ u8 operator_le_7103734c70(u32* this_, u32* other) {
 }
 
 // ============================================================
+// operator==(L2CValue const&) — equality comparison
+// 0x7103734520 (680 bytes)
+// [derived: Ghidra shows same-type comparison per type tag,
+//  cross-type int/float promotion, table metamethod __eq,
+//  string SSO-aware length + byte comparison]
+// ============================================================
+
+extern "C" void FUN_71037347d0(lib::L2CValue*, lib::L2CValue*, u64, lib::L2CValue*);
+
+u8 operator_eq_7103734520(lib::L2CValue* this_, lib::L2CValue* other) {
+    s32 t1 = (s32)this_->type;
+    s32 t2 = (s32)other->type;
+    if (t1 != t2) {
+        // Different types
+        if (t1 == 0) {
+            // this is nil
+            if (t2 != 7 && t2 != 2) return 0;
+            s64 val = other->int_val;
+            return val == 0;
+        }
+        if (t1 == 7 || t1 == 2) {
+            // this is int/hash
+            if (t2 == 0) {
+                s64 val = this_->int_val;
+                return val == 0;
+            }
+            if (t2 == 7 || t2 == 2) return this_->raw == other->raw;
+        } else if (t2 == 0) {
+            // other is nil, this is something else
+            if (t1 != 7 && t1 != 2) return 0;
+            s64 val = this_->int_val;
+            return val == 0;
+        }
+        // Cross-type int/float promotion
+        if (t1 == 7 || t1 == 2) {
+            if (t2 == 3) {
+                f32 fv = other->float_val;
+                s64 iv = this_->int_val;
+                return iv == (s64)fv;
+            }
+            if (t1 != 3) return 0;
+        } else if (t1 != 3) {
+            if (t1 != 2) return 0;
+            // t1 == 2 handled above (int/hash check)
+            if (t2 == 3) {
+                f32 fv = other->float_val;
+                s64 iv = this_->int_val;
+                return iv == (s64)fv;
+            }
+            return 0;
+        }
+        // t1 == 3 (float), need t2 to be int/hash
+        if (t2 != 7 && t2 != 2) return 0;
+        f32 fv = this_->float_val;
+        s64 iv = other->int_val;
+        return iv == (s64)fv;
+    }
+
+    // Same types
+    u8 result = 1;
+    switch (t1) {
+    case 0:
+        break;
+    case 1:
+        result = (this_->bool_val == other->bool_val);
+        break;
+    case 3:
+        result = (this_->float_val == other->float_val);
+        break;
+    case 5: {
+        // Table: pointer equality or metamethod
+        if (this_->raw == other->raw) return 1;
+        lib::L2CValue temp;
+        FUN_71037347d0(&temp, this_, 0x4ea42772dULL, other);
+        // Inline as_bool on temp
+        result = 0;
+        u32 rt = temp.type;
+        if (rt == 0) {
+            // nil → false
+        } else if (rt == 1) {
+            result = ((s32)temp.bool_val > 0);
+        } else if (rt == 2 || rt == 7) {
+            result = (temp.raw != 0);
+        } else if (rt == 3) {
+            result = (temp.float_val != 0.0f);
+        } else if (rt == 8) {
+            // string length check
+            u8* str = reinterpret_cast<u8*>(temp.ptr_val);
+            u64 len;
+            if ((str[0] & 1) == 0) {
+                len = (u64)(str[0] >> 1);
+            } else {
+                len = *reinterpret_cast<u64*>(str + 8);
+            }
+            result = (len != 0);
+        } else {
+            result = 1;
+        }
+        dtor_L2CValue_7103733f20(reinterpret_cast<u32*>(&temp));
+        break;
+    }
+    case 8: {
+        // String: SSO-aware comparison
+        u8* s1 = reinterpret_cast<u8*>(this_->ptr_val);
+        u8* s2 = reinterpret_cast<u8*>(other->ptr_val);
+        u8 b1 = s1[0];
+        u8 b2 = s2[0];
+        // Get lengths
+        u64 len1 = (b1 & 1) == 0 ? (u64)(b1 >> 1) : *reinterpret_cast<u64*>(s1 + 8);
+        u64 len2 = (b2 & 1) == 0 ? (u64)(b2 >> 1) : *reinterpret_cast<u64*>(s2 + 8);
+        if (len1 != len2) return 0;
+        // Get data pointers
+        u8* d1 = (b1 & 1) == 0 ? s1 + 1 : *reinterpret_cast<u8**>(s1 + 0x10);
+        u8* d2 = (b2 & 1) == 0 ? s2 + 1 : *reinterpret_cast<u8**>(s2 + 0x10);
+        if ((b1 & 1) == 0) {
+            // Short string: byte-by-byte
+            if (len1 == 0) return 1;
+            s64 i = -(s64)(u64)(b1 >> 1);
+            u8* p = s1;
+            do {
+                p++;
+                if (*p != *d2) return 0;
+                d2++;
+                i++;
+            } while (i != 0);
+            return 1;
+        }
+        // Long string: memcmp
+        if (len1 != 0) {
+            return memcmp(d1, d2, len1) == 0;
+        }
+        return 1;
+    }
+    default:
+        result = (this_->raw == other->raw);
+        break;
+    }
+    return result;
+}
+
+// ============================================================
 // operator[] — L2CValue table index access (shrink-wrapped)
 // 0x7103735d80 (48 bytes)
 // Prologue is inside the type==5 branch (compiler shrink-wraps)
@@ -758,13 +900,6 @@ lib::L2CValue operator_not_7103734f50(lib::L2CValue* param) {
     ret.raw = ~val;
     return ret;
 }
-
-// ============================================================
-// Metamethod dispatch — called when either operand is type 5 (table)
-// FUN_71037347d0(result, left, metamethod_hash, right)
-// ============================================================
-
-extern "C" void FUN_71037347d0(lib::L2CValue*, lib::L2CValue*, u64, lib::L2CValue*);
 
 // ============================================================
 // Binary arithmetic operators — mixed int/float with table metamethod fallback
