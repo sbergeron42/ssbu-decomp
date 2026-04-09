@@ -393,6 +393,31 @@ void set_action_probability_mul_2nd_71015c9570(void* item, f32 val) {
 }
 
 // ============================================================
+// have_no_set_team — accessor chain + FUN_71015aa610 (52B)
+// ============================================================
+
+extern "C" void FUN_71015aa610(void*, u32, u64, u32, u32, u32, u32);
+
+// 71015c26a0 — have_no_set_team: forward to FUN_71015aa610 with flags
+void have_no_set_team_71015c26a0(void* item, u32 p1, u64 p2) {
+    u8* acc = item_accessor(item);
+    void* obj = *reinterpret_cast<void**>(*reinterpret_cast<u8**>(acc + 0x190) + 0x220);
+    FUN_71015aa610(obj, p1, p2, 0, 0, 1, 0);
+    asm volatile("");
+}
+
+// ============================================================
+// common_param_int (boss variant) — guarded singleton read (60B)
+// ============================================================
+
+// 71015c7a20 — common_param_int: check guard, then read from param table
+u32 common_param_int_71015c7a20(s32 item_kind, u32 param_id) {
+    u8* base = *reinterpret_cast<u8**>(DAT_71052c31e0);
+    if (*reinterpret_cast<u64*>(base + (s64)item_kind * 8 + 0xef8) == 0) return 0;
+    return *reinterpret_cast<u32*>(base + (s64)item_kind * 0x20 + (u64)param_id * 4 + 0x7da48);
+}
+
+// ============================================================
 // common_param_hash — indexed hash lookup from global param table
 // ============================================================
 
