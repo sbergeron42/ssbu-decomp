@@ -449,6 +449,44 @@ void sub1_energy_from_param_no_boss_71015c8180(void* ls, u32 kind, u64 hash, f32
     FUN_71015c7aa0(ls, kind, hash, speed, 0, 0, 0xd, 0, 0, 1);
 }
 
+// ============================================================
+// Small leaf functions — singletons, byte checks, accessor chains
+// ============================================================
+
+// BattleObjectWorld singleton (page 0x71052b7000 + 0x558)
+extern "C" __attribute__((visibility("hidden"))) void* DAT_71052b7558;
+
+// ItemCollisionManager singleton — (*DAT_71052c2958)
+extern "C" __attribute__((visibility("hidden"))) void* DAT_71052c2958;
+
+extern "C" void FUN_71015b8f40(void*, void*);
+extern "C" void FUN_71015b3c70(void*);
+
+// 71015ce6d0 — is_normal_gravity: check 2 byte fields on BattleObjectWorld (40B, leaf)
+u32 is_normal_gravity_71015ce6d0() {
+    u8* world = reinterpret_cast<u8*>(DAT_71052b7558);
+    if (world[0x5c] != 0) return 1;
+    return world[0x59] != 0 ? 1 : 0;
+}
+
+// 71015cafe0 — remove_ground_collision: singleton + accessor chain (48B)
+void remove_ground_collision_71015cafe0(void* item) {
+    u8* acc = item_accessor(item);
+    void* p3 = *reinterpret_cast<void**>(*reinterpret_cast<u8**>(acc + 0x190) + 0x220);
+    void* mgr = *reinterpret_cast<void**>(DAT_71052c2958);
+    FUN_71015b8f40(mgr, p3);
+    asm volatile("");
+}
+
+// 71015bfa60 — regist_life_status_ignore_lost: accessor chain → +0x90 → +0x110, call (44B)
+void regist_life_status_ignore_lost_71015bfa60(void* item) {
+    u8* acc = item_accessor(item);
+    u8* p3 = *reinterpret_cast<u8**>(*reinterpret_cast<u8**>(acc + 0x190) + 0x220);
+    u8* sub = *reinterpret_cast<u8**>(p3 + 0x90);
+    FUN_71015b3c70(sub + 0x110);
+    asm volatile("");
+}
+
 // 71015c81c0 — main_energy_from_param_inherit_no_boss: s0=0, inherit=1, no_boss=1 (60B)
 void main_energy_from_param_inherit_no_boss_71015c81c0(void* ls, u32 kind, u64 hash) {
     FUN_71015c7aa0(ls, kind, hash, 0.0f, 1, 0, 0xc, 0, 0, 1);
