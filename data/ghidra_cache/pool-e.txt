@@ -90,3 +90,21 @@
 ## 0x710372ced0 (128B) — wrapper: calls FUN_710372cf50(param1, &DAT_71042b1a84, stack_args)
 ## push_lua_stack (252B) — SKIP: switch statement, many cases
 ## L2CTable ctor (268B) — SKIP: vector alloc + loop init + OOM retry
+
+## 0x7103735f30 (96B) — as_bool: switch on type tag
+# Jump table dispatch (ldrsw): type 0→false, 1→val>0, 2/7→val!=0, 3→float!=0, default→true
+# 8% match — jump table encoding differs (2-byte entries vs original 4-byte)
+
+## 0x7103733180 (288B) — math_fmod: integer sdiv/msub + float fmodf
+# Integer path: if both int/hash and divisor > 0, compute a - (a/b)*b
+# Float path: fmodf(as_number(p1), as_number(p2))
+# 88% match — relocation + prologue scheduling only
+
+## 0x7103735920 (292B) — operator%: Python-style modulo
+# Integer path: like math_fmod but with sign correction (ccmp+csel pattern)
+# Float path: fmodf + sign correction (fcsel)
+# 71% match — prologue + ccmp encoding + register allocation diffs
+
+## 0x71037344a0 (116B) — operator bool: switch + string length check — SKIP: jump table
+## 0x710372db50 (436B) — CallFunctionByHash: hash table lookup + call — SKIP: too complex
+## 0x7103732a50 (296B) — ipairs: table iteration, copy ctors — SKIP: complex
