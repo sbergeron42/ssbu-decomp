@@ -496,4 +496,1040 @@ void EFFECT_FOLLOW(lua_State* param_1) {
     acmd_consume(L);
 }
 
+// 0x7102292910 (180 bytes) — EFFECT_REMOVE_ATTR
+// Args: 1=effect_hash
+// Calls EffectModule::remove_attr (vtable slot 26, offset 0xD0)
+void EFFECT_REMOVE_ATTR(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    int nargs = acmd_nargs(L);
+
+    u64 hash;
+
+    if (param_1 == nullptr) {
+        if (nargs >= 1) {
+#ifdef MATCHING_HACK_NX_CLANG
+            __builtin_trap();
+#endif
+        }
+        hash = 0;
+    } else if (nargs >= 1) {
+        hash = FUN_71038f4000(param_1, 1, 0);
+    } else {
+        hash = 0;
+    }
+
+    void** eff = *(void***)(acc + 0x140);
+    void** vt = *(void***)eff;
+    reinterpret_cast<void(*)(void*, u64, s32)>(vt[0xd0 / 8])(eff, hash, 0);
+
+    acmd_consume(L);
+}
+
+// 0x710229ce90 (520 bytes) — EFFECT_OFF_KIND_WORK
+// Args: 1=effect_hash, 2=is_trail(bool), 3=reset_flag(bool)
+// Like EFFECT_OFF_KIND but with null check at start (WORK variant)
+// Calls EffectModule::kill_kind (vtable slot 28, offset 0xE0)
+void EFFECT_OFF_KIND_WORK(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    if (param_1 == nullptr) {
+#ifdef MATCHING_HACK_NX_CLANG
+        __builtin_trap();
+#endif
+    }
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    int nargs = acmd_nargs(L);
+
+    u64 hash;
+    bool flag1, flag2;
+
+    if (nargs < 1) {
+        hash = 0;
+        flag1 = false;
+        flag2 = false;
+    } else {
+        hash = FUN_71038f4000(param_1, 1, 0);
+#ifdef MATCHING_HACK_NX_CLANG
+        asm("" : "+r"(nargs));
+#endif
+        if (nargs < 2) {
+            flag1 = false;
+            flag2 = false;
+        } else {
+            flag1 = acmd_read_bool(L, 0x20);
+            if (nargs < 3) {
+                flag2 = false;
+            } else {
+                flag2 = acmd_read_bool(L, 0x30);
+            }
+        }
+    }
+
+    void** eff = *(void***)(acc + 0x140);
+    void** vt = *(void***)eff;
+    reinterpret_cast<void(*)(void*, u64, bool, bool)>(vt[0xe0 / 8])(eff, hash, flag1, flag2);
+
+    acmd_consume(L);
+}
+
+// 0x7102290f90 (2016 bytes) — EFFECT_FOLLOW_WORK
+// Like EFFECT_FOLLOW but calls FUN_71038f4000(L,1,0) as side effect first,
+// then again at end to get actual hash. Offsets nested inside arg2 block,
+// rotations at top level.
+// Calls EffectModule::req_follow (vtable slot 16, offset 0x80)
+void EFFECT_FOLLOW_WORK(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    if (param_1 == nullptr) {
+#ifdef MATCHING_HACK_NX_CLANG
+        __builtin_trap();
+#endif
+    }
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    int nargs = acmd_nargs(L);
+
+    u64 hash2 = 0;
+    u64 off_x = 0, off_y = 0, off_z = 0;
+
+    if (nargs >= 1) {
+        FUN_71038f4000(param_1, 1, 0);  // side effect, result discarded
+        if (nargs >= 2) {
+            hash2 = FUN_71038f4000(param_1, 2, 0);
+            if (nargs >= 3) {
+                f32 f3 = acmd_read_float(L, 0x30);
+                off_x = (u64)(u32)f3;
+                if (nargs >= 4) {
+                    f32 f4 = acmd_read_float(L, 0x40);
+                    off_y = (u64)(u32)f4;
+                    if (nargs >= 5) {
+                        f32 f5 = acmd_read_float(L, 0x50);
+                        off_z = (u64)(u32)f5;
+                    }
+                }
+            }
+        }
+    }
+
+    // Pack offset vector
+    struct { u32 y; u32 x; u64 z; } off_vec = { (u32)off_y, (u32)off_x, off_z };
+
+    // Rotations: args 6-8 (top-level, not nested inside offset block)
+    u64 rot_x = 0, rot_y = 0, rot_z = 0;
+    if (nargs >= 6) {
+        f32 f6 = acmd_read_float(L, 0x60);
+        rot_x = (u64)(u32)f6;
+        if (nargs >= 7) {
+            f32 f7 = acmd_read_float(L, 0x70);
+            rot_y = (u64)(u32)f7;
+            if (nargs >= 8) {
+                f32 f8 = acmd_read_float(L, 0x80);
+                rot_z = (u64)(u32)f8;
+            }
+        }
+    }
+
+    // Pack rotation vector
+    struct { u32 y; u32 x; u64 z; } rot_vec = { (u32)rot_y, (u32)rot_x, rot_z };
+
+    // Scale: arg 9 (int via float)
+    f32 scale_f = 0;
+    if (nargs >= 9) {
+        scale_f = acmd_read_float(L, 0x90);
+    }
+
+    // Follow flag: arg 10
+    bool follow_flag = false;
+    if (nargs >= 10) {
+        follow_flag = acmd_read_bool(L, 0xa0);
+    }
+
+    u64 flags = follow_flag ? 0xc000ULL : 0x8000ULL;
+
+    // Get effect hash (arg 1, called again)
+    u64 hash1;
+    if (nargs >= 1) {
+        hash1 = FUN_71038f4000(param_1, 1, 0);
+    } else {
+        hash1 = 0;
+    }
+
+    void** eff = *(void***)(acc + 0x140);
+    void** vt = *(void***)eff;
+    reinterpret_cast<void(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, s32, s32, s32, f32)>
+        (vt[0x80 / 8])(eff, hash1, hash2, &off_vec, &rot_vec, 0, flags, 0, (s32)-1, 0, 0, 0, scale_f);
+
+    acmd_consume(L);
+}
+
+// 0x7102291770 (2132 bytes) — EFFECT_FOLLOW_VARIATION
+// Like EFFECT_FOLLOW_WORK + variation resolution via get_variation_effect_kind.
+// Arg 9 is scale as FLOAT (not int). Up to 11 args.
+// Calls EffectModule::req_follow (vtable slot 16, offset 0x80)
+void EFFECT_FOLLOW_VARIATION(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    if (param_1 == nullptr) {
+#ifdef MATCHING_HACK_NX_CLANG
+        __builtin_trap();
+#endif
+    }
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    int nargs = acmd_nargs(L);
+
+    u64 hash2 = 0;
+    u64 off_x = 0, off_y = 0, off_z = 0;
+
+    if (nargs >= 1) {
+        FUN_71038f4000(param_1, 1, 0);  // side effect, result discarded
+        if (nargs >= 2) {
+            hash2 = FUN_71038f4000(param_1, 2, 0);
+            if (nargs >= 3) {
+                f32 f3 = acmd_read_float(L, 0x30);
+                off_x = (u64)(u32)f3;
+                if (nargs >= 4) {
+                    f32 f4 = acmd_read_float(L, 0x40);
+                    off_y = (u64)(u32)f4;
+                    if (nargs >= 5) {
+                        f32 f5 = acmd_read_float(L, 0x50);
+                        off_z = (u64)(u32)f5;
+                    }
+                }
+            }
+        }
+    }
+
+    // Pack offset vector
+    struct { u32 y; u32 x; u64 z; } off_vec = { (u32)off_y, (u32)off_x, off_z };
+
+    // Rotations: args 6-8 (top-level)
+    f32 scale_f = 0;
+    u64 rot_x = 0, rot_y = 0, rot_z = 0;
+    if (nargs >= 6) {
+        f32 f6 = acmd_read_float(L, 0x60);
+        rot_x = (u64)(u32)f6;
+        if (nargs >= 7) {
+            f32 f7 = acmd_read_float(L, 0x70);
+            rot_y = (u64)(u32)f7;
+            if (nargs >= 8) {
+                f32 f8 = acmd_read_float(L, 0x80);
+                rot_z = (u64)(u32)f8;
+            }
+        }
+    }
+
+    // Pack rotation vector
+    struct { u32 y; u32 x; u64 z; } rot_vec = { (u32)rot_y, (u32)rot_x, rot_z };
+
+    // Scale: arg 9 as FLOAT (kept as float, unlike EFFECT_FOLLOW_WORK)
+    if (nargs >= 9) {
+        scale_f = acmd_read_float(L, 0x90);
+    }
+
+    // Follow flag: arg 10
+    bool follow_flag = false;
+    if (nargs >= 10) {
+        follow_flag = acmd_read_bool(L, 0xa0);
+    }
+
+    u64 flags = follow_flag ? 0xc000ULL : 0x8000ULL;
+
+    // Get effect hash (arg 1, called again)
+    void** eff = *(void***)(acc + 0x140);
+    u64 hash1;
+    if (nargs >= 1) {
+        hash1 = FUN_71038f4000(param_1, 1, 0);
+    } else {
+        hash1 = 0;
+    }
+
+    // Variation resolution: get_variation_effect_kind (vtable[0x2c0])
+    u64 var_kind = reinterpret_cast<u64(*)(void*, u64, s32)>((*(void***)eff)[0x2c0 / 8])(eff, hash1, -1);
+
+    u64 alt_hash;
+    if (nargs >= 11) {
+        // Re-read eff module and hash1 for second variation check
+        void** eff2 = *(void***)(acc + 0x140);
+        u64 hash1_again = FUN_71038f4000(param_1, 1, 0);
+        u64 var_kind0 = reinterpret_cast<u64(*)(void*, u64, s32)>((*(void***)eff2)[0x2c0 / 8])(eff2, hash1_again, 0);
+        if (((var_kind0 ^ var_kind) & 0xFFFFFFFFFFULL) == 0) {
+            alt_hash = FUN_71038f4000(param_1, 0xb, 0);
+        } else {
+            alt_hash = 0;
+        }
+    } else {
+        alt_hash = 0;
+    }
+
+    // EffectModule::req_follow (vtable[16], offset 0x80)
+    void** eff3 = *(void***)(acc + 0x140);
+    void** vt = *(void***)eff3;
+    reinterpret_cast<void(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, s32, s32, s32, s32, f32)>
+        (vt[0x80 / 8])(eff3, var_kind, hash2, &off_vec, &rot_vec, 0, flags, alt_hash, (s32)-1, 0, 0, 0, 0, scale_f);
+
+    acmd_consume(L);
+}
+
+// 0x710228db30 (3716 bytes) — EFFECT_ATTR
+// Args: 1=hash1, 2=hash2, 3-4=pos(float), 5=pos_z(int), 6-8=rot(float),
+//       9=rate(float), 10-12=scale(float), 13-15=color(float), 16=bool, 17=attr_hash
+// Calls EffectModule::req_on_joint with attr (vtable slot 14, offset 0x70)
+void EFFECT_ATTR(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    if (param_1 == nullptr) {
+#ifdef MATCHING_HACK_NX_CLANG
+        __builtin_trap();
+#endif
+    }
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    int nargs = acmd_nargs(L);
+
+    u64 hash1 = 0, hash2 = 0;
+    f32 a3 = 0, a4 = 0, a6 = 0, a7 = 0, a8 = 0, a9 = 0;
+    f32 a10 = 0, a11 = 0, a12 = 0, a13 = 0, a14 = 0, a15 = 0;
+    u64 a5_int = 0;
+    bool a16 = false;
+    u64 attr_hash = 0;
+
+    if (nargs >= 1) {
+        hash1 = FUN_71038f4000(param_1, 1, 0);
+        if (nargs >= 2) {
+            hash2 = FUN_71038f4000(param_1, 2, 0);
+            if (nargs >= 3) {
+                a3 = acmd_read_float(L, 0x30);
+                if (nargs >= 4) {
+                    a4 = acmd_read_float(L, 0x40);
+                    if (nargs >= 5) {
+                        f32 a5f = acmd_read_float(L, 0x50);
+                        a5_int = (u64)(u32)a5f;
+                        if (nargs >= 6) {
+                            a6 = acmd_read_float(L, 0x60);
+                            if (nargs >= 7) {
+                                a7 = acmd_read_float(L, 0x70);
+                                if (nargs >= 8) {
+                                    a8 = acmd_read_float(L, 0x80);
+                                    if (nargs >= 9) {
+                                        a9 = acmd_read_float(L, 0x90);
+                                        if (nargs >= 10) {
+                                            a10 = acmd_read_float(L, 0xa0);
+                                            if (nargs >= 11) {
+                                                a11 = acmd_read_float(L, 0xb0);
+                                                if (nargs >= 12) {
+                                                    a12 = acmd_read_float(L, 0xc0);
+                                                    if (nargs >= 13) {
+                                                        a13 = acmd_read_float(L, 0xd0);
+                                                        if (nargs >= 14) {
+                                                            a14 = acmd_read_float(L, 0xe0);
+                                                            if (nargs >= 15) {
+                                                                a15 = acmd_read_float(L, 0xf0);
+                                                                if (nargs >= 16) {
+                                                                    a16 = acmd_read_bool(L, 0x100);
+                                                                    if (nargs >= 17) {
+                                                                        attr_hash = FUN_71038f4000(param_1, 0x11, 0);
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Pack into 4 vector structs
+    struct { f32 x; f32 y; u64 z; } vec_pos   = { a3, a4, a5_int };
+    struct { f32 x; f32 y; u64 z; } vec_rot   = { a6, a7, (u64)(u32)a8 };
+    struct { f32 x; f32 y; u64 z; } vec_scale  = { a10, a11, (u64)(u32)a12 };
+    struct { f32 x; f32 y; u64 z; } vec_color  = { a13, a14, (u64)(u32)a15 };
+
+    // EffectModule::req_on_joint with attr (vtable[14], offset 0x70)
+    // rate (a9) in s0, attr_hash after bool on stack
+    void** eff = *(void***)(acc + 0x140);
+    void** vt = *(void***)eff;
+    reinterpret_cast<void(*)(void*, u64, u64, void*, void*, void*, void*, bool, u64, s32, s32, f32)>
+        (vt[0x70 / 8])(eff, hash1, hash2, &vec_pos, &vec_rot, &vec_scale, &vec_color, a16, attr_hash, 0, 0, a9);
+
+    acmd_consume(L);
+}
+
+// 0x71022a7f50 (180 bytes) — EFFECT_OFF_HANDLE
+// Args: 1=handle_hash
+// Calls EffectModule::kill_handle (vtable offset 0xC8)
+void EFFECT_OFF_HANDLE(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    int nargs = acmd_nargs(L);
+
+    u64 hash;
+
+    if (param_1 == nullptr) {
+        if (nargs >= 1) {
+#ifdef MATCHING_HACK_NX_CLANG
+            __builtin_trap();
+#endif
+        }
+        hash = 0;
+    } else if (nargs >= 1) {
+        hash = FUN_71038f4000(param_1, 1, 0);
+    } else {
+        hash = 0;
+    }
+
+    void** eff = *(void***)(acc + 0x140);
+    void** vt = *(void***)eff;
+    reinterpret_cast<void(*)(void*, u64, s32)>(vt[0xc8 / 8])(eff, hash, 0);
+
+    acmd_consume(L);
+}
+
+// 0x71022a5780 (224 bytes) — EFFECT_DETACH_KIND
+// Args: 1=effect_hash, 2=group_hash
+// Calls EffectModule::detach_kind (vtable offset 0x100)
+void EFFECT_DETACH_KIND(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    if (param_1 == nullptr) {
+#ifdef MATCHING_HACK_NX_CLANG
+        __builtin_trap();
+#endif
+    }
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    int nargs = acmd_nargs(L);
+
+    u64 hash1, hash2;
+    void** eff;
+
+    if (nargs < 1) {
+        eff = *(void***)(acc + 0x140);
+        hash1 = 0;
+        hash2 = 0;
+    } else {
+        hash1 = FUN_71038f4000(param_1, 1, 0);
+        eff = *(void***)(acc + 0x140);
+        if (nargs < 2) {
+            hash2 = 0;
+        } else {
+            hash2 = FUN_71038f4000(param_1, 2, 0);
+        }
+    }
+
+    reinterpret_cast<void(*)(void*, u64, u64)>((*(void***)eff)[0x100 / 8])(eff, hash1, hash2);
+
+    acmd_consume(L);
+}
+
+// 0x71022a5860 (224 bytes) — EFFECT_DETACH_KIND_WORK
+// Args: 1=effect_hash, 2=group_hash
+// Identical to EFFECT_DETACH_KIND (vtable offset 0x100)
+void EFFECT_DETACH_KIND_WORK(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    if (param_1 == nullptr) {
+#ifdef MATCHING_HACK_NX_CLANG
+        __builtin_trap();
+#endif
+    }
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    int nargs = acmd_nargs(L);
+
+    u64 hash1, hash2;
+    void** eff;
+
+    if (nargs < 1) {
+        eff = *(void***)(acc + 0x140);
+        hash1 = 0;
+        hash2 = 0;
+    } else {
+        hash1 = FUN_71038f4000(param_1, 1, 0);
+        eff = *(void***)(acc + 0x140);
+        if (nargs < 2) {
+            hash2 = 0;
+        } else {
+            hash2 = FUN_71038f4000(param_1, 2, 0);
+        }
+    }
+
+    reinterpret_cast<void(*)(void*, u64, u64)>((*(void***)eff)[0x100 / 8])(eff, hash1, hash2);
+
+    acmd_consume(L);
+}
+
+// 0x7102297520 (224 bytes) — EFFECT_LIGHT_END
+// Args: 1=light_hash(u32), 2=group_hash
+// Calls EffectModule::end_light (vtable offset 0x2E0)
+void EFFECT_LIGHT_END(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    int nargs = acmd_nargs(L);
+
+    u64 hash1, hash2;
+
+    if (param_1 == nullptr) {
+        if (nargs >= 1) {
+#ifdef MATCHING_HACK_NX_CLANG
+            __builtin_trap();
+#endif
+        }
+        hash1 = 0;
+        hash2 = 0;
+    } else if (nargs < 1) {
+        hash1 = 0;
+        hash2 = 0;
+    } else {
+        hash1 = FUN_71038f4000(param_1, 1, 0);
+        if (nargs < 2) {
+            hash2 = 0;
+        } else {
+            hash2 = FUN_71038f4000(param_1, 2, 0);
+        }
+    }
+
+    void** eff = *(void***)(acc + 0x140);
+    void** vt = *(void***)eff;
+    reinterpret_cast<void(*)(void*, u64, u64)>(vt[0x2e0 / 8])(eff, hash1, hash2);
+
+    acmd_consume(L);
+}
+
+// 0x71022a49a0 (340 bytes) — LAST_EFFECT_SET_RATE
+// Args: 1=rate(float)
+// Calls EffectModule::set_rate (vtable offset 0x338)
+void LAST_EFFECT_SET_RATE(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    int nargs = acmd_nargs(L);
+
+    f32 rate;
+
+    if (param_1 == nullptr) {
+        if (nargs >= 1) {
+#ifdef MATCHING_HACK_NX_CLANG
+            __builtin_trap();
+#endif
+        }
+        rate = 0.0f;
+    } else {
+        rate = 0.0f;
+        if (nargs >= 1) {
+            rate = acmd_read_float(L, 0x10);
+        }
+    }
+
+    void** eff = *(void***)(acc + 0x140);
+    void** vt = *(void***)eff;
+    reinterpret_cast<void(*)(void*, f32)>(vt[0x338 / 8])(eff, rate);
+
+    acmd_consume(L);
+}
+
+// 0x71022a4b00 (340 bytes) — LAST_EFFECT_SET_RATE_WORK
+// Identical to LAST_EFFECT_SET_RATE (vtable offset 0x338)
+void LAST_EFFECT_SET_RATE_WORK(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    int nargs = acmd_nargs(L);
+
+    f32 rate;
+
+    if (param_1 == nullptr) {
+        if (nargs >= 1) {
+#ifdef MATCHING_HACK_NX_CLANG
+            __builtin_trap();
+#endif
+        }
+        rate = 0.0f;
+    } else {
+        rate = 0.0f;
+        if (nargs >= 1) {
+            rate = acmd_read_float(L, 0x10);
+        }
+    }
+
+    void** eff = *(void***)(acc + 0x140);
+    void** vt = *(void***)eff;
+    reinterpret_cast<void(*)(void*, f32)>(vt[0x338 / 8])(eff, rate);
+
+    acmd_consume(L);
+}
+
+// 0x71022a52c0 (340 bytes) — LAST_EFFECT_SET_ALPHA
+// Args: 1=alpha(float)
+// Calls EffectModule::set_alpha (vtable offset 0x348)
+void LAST_EFFECT_SET_ALPHA(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    int nargs = acmd_nargs(L);
+
+    f32 alpha;
+
+    if (param_1 == nullptr) {
+        if (nargs >= 1) {
+#ifdef MATCHING_HACK_NX_CLANG
+            __builtin_trap();
+#endif
+        }
+        alpha = 0.0f;
+    } else {
+        alpha = 0.0f;
+        if (nargs >= 1) {
+            alpha = acmd_read_float(L, 0x10);
+        }
+    }
+
+    void** eff = *(void***)(acc + 0x140);
+    void** vt = *(void***)eff;
+    reinterpret_cast<void(*)(void*, f32)>(vt[0x348 / 8])(eff, alpha);
+
+    acmd_consume(L);
+}
+
+// 0x71022a5420 (284 bytes) — LAST_EFFECT_SET_DISABLE_SYSTEM_SLOW
+// Args: 1=disable(bool)
+// Calls EffectModule::set_disable_system_slow (vtable offset 0x350)
+void LAST_EFFECT_SET_DISABLE_SYSTEM_SLOW(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    int nargs = acmd_nargs(L);
+
+    bool flag;
+
+    if (param_1 == nullptr) {
+        if (nargs >= 1) {
+#ifdef MATCHING_HACK_NX_CLANG
+            __builtin_trap();
+#endif
+        }
+        flag = false;
+    } else if (nargs >= 1) {
+        flag = acmd_read_bool(L, 0x10);
+    } else {
+        flag = false;
+    }
+
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    void** eff = *(void***)(acc + 0x140);
+    void** vt = *(void***)eff;
+    reinterpret_cast<void(*)(void*, bool)>(vt[0x350 / 8])(eff, flag);
+
+    acmd_consume(L);
+}
+
+// 0x71022a56a0 (212 bytes) — LAST_EFFECT_SET_WORK_INT
+// Args: 1=work_var_hash
+// Gets last effect handle from EffectModule vtable[0x3A0], then
+// sets work int via WorkModule vtable[0xA0]
+void LAST_EFFECT_SET_WORK_INT(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    int nargs = acmd_nargs(L);
+
+    u64 hash;
+
+    if (param_1 == nullptr) {
+        if (nargs >= 1) {
+#ifdef MATCHING_HACK_NX_CLANG
+            __builtin_trap();
+#endif
+        }
+        hash = 0;
+    } else if (nargs >= 1) {
+        hash = FUN_71038f4000(param_1, 1, 0);
+    } else {
+        hash = 0;
+    }
+
+    // WorkModule at acc+0x50
+    void** work = *(void***)(acc + 0x50);
+
+    // EffectModule::get_last_handle (vtable[0x3A0])
+    void** eff = *(void***)(acc + 0x140);
+    u64 handle = reinterpret_cast<u64(*)(void*)>((*(void***)eff)[0x3a0 / 8])(eff);
+
+    // WorkModule::set_int (vtable[0xA0])
+    reinterpret_cast<void(*)(void*, u64, u64)>((*(void***)work)[0xa0 / 8])(work, handle, hash);
+
+    acmd_consume(L);
+}
+
+// 0x71022a4c60 (804 bytes) — LAST_EFFECT_SET_SCALE_W
+// Args: 1-3 = scale xyz (float→int)
+// Packs into vec3 struct, calls EffectModule::set_scale (vtable offset 0x340)
+void LAST_EFFECT_SET_SCALE_W(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    int nargs = acmd_nargs(L);
+
+    u64 a1 = 0, a2 = 0, a3 = 0;
+
+    if (param_1 == nullptr) {
+        if (nargs >= 1) {
+#ifdef MATCHING_HACK_NX_CLANG
+            __builtin_trap();
+#endif
+        }
+    } else if (nargs >= 1) {
+        f32 f1 = acmd_read_float(L, 0x10);
+        a1 = (u64)(u32)f1;
+        if (nargs >= 2) {
+            f32 f2 = acmd_read_float(L, 0x20);
+            a2 = (u64)(u32)f2;
+            if (nargs >= 3) {
+                f32 f3 = acmd_read_float(L, 0x30);
+                a3 = (u64)(u32)f3;
+            }
+        }
+    }
+
+    struct { u32 x; u32 y; u64 z; } scale_vec = { (u32)a1, (u32)a2, a3 };
+
+    void** eff = *(void***)(acc + 0x140);
+    void** vt = *(void***)eff;
+    reinterpret_cast<void(*)(void*, void*)>(vt[0x340 / 8])(eff, &scale_vec);
+
+    acmd_consume(L);
+}
+
+// 0x71022a4f90 (804 bytes) — LAST_EFFECT_SET_COLOR
+// Args: 1-3 = RGB color (float)
+// Gets last handle via vtable[0x3A0], then sets color via vtable[0x2F8]
+void LAST_EFFECT_SET_COLOR(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    int nargs = acmd_nargs(L);
+
+    f32 r = 0, g = 0, b = 0;
+
+    if (param_1 == nullptr) {
+        if (nargs >= 1) {
+#ifdef MATCHING_HACK_NX_CLANG
+            __builtin_trap();
+#endif
+        }
+    } else if (nargs >= 1) {
+        r = acmd_read_float(L, 0x10);
+        if (nargs >= 2) {
+            g = acmd_read_float(L, 0x20);
+            if (nargs >= 3) {
+                b = acmd_read_float(L, 0x30);
+            }
+        }
+    }
+
+    void** eff = *(void***)(acc + 0x140);
+    void** vt = *(void***)eff;
+    u64 handle = reinterpret_cast<u64(*)(void*)>(vt[0x3a0 / 8])(eff);
+    reinterpret_cast<void(*)(void*, u64, f32, f32, f32)>(vt[0x2f8 / 8])(eff, handle, r, g, b);
+
+    acmd_consume(L);
+}
+
+// 0x7102299f40 (2004 bytes) — EFFECT_FOLLOW_NO_STOP
+// Like EFFECT_FOLLOW but reads hashes in nested block, offsets nested,
+// rotations top-level. Flags: follow=0x4000, default=0.
+// Calls EffectModule::req_follow (vtable slot 16, offset 0x80)
+void EFFECT_FOLLOW_NO_STOP(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    if (param_1 == nullptr) {
+#ifdef MATCHING_HACK_NX_CLANG
+        __builtin_trap();
+#endif
+    }
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    int nargs = acmd_nargs(L);
+
+    u64 hash1 = 0, hash2 = 0;
+    u64 off_x = 0, off_y = 0, off_z = 0;
+
+    if (nargs >= 1) {
+        hash1 = FUN_71038f4000(param_1, 1, 0);
+        if (nargs >= 2) {
+            hash2 = FUN_71038f4000(param_1, 2, 0);
+            if (nargs >= 3) {
+                f32 f3 = acmd_read_float(L, 0x30);
+                off_x = (u64)(u32)f3;
+                if (nargs >= 4) {
+                    f32 f4 = acmd_read_float(L, 0x40);
+                    off_y = (u64)(u32)f4;
+                    if (nargs >= 5) {
+                        f32 f5 = acmd_read_float(L, 0x50);
+                        off_z = (u64)(u32)f5;
+                    }
+                }
+            }
+        }
+    }
+
+    struct { u32 y; u32 x; u64 z; } off_vec = { (u32)off_y, (u32)off_x, off_z };
+
+    u64 rot_x = 0, rot_y = 0, rot_z = 0;
+    if (nargs >= 6) {
+        f32 f6 = acmd_read_float(L, 0x60);
+        rot_x = (u64)(u32)f6;
+        if (nargs >= 7) {
+            f32 f7 = acmd_read_float(L, 0x70);
+            rot_y = (u64)(u32)f7;
+            if (nargs >= 8) {
+                f32 f8 = acmd_read_float(L, 0x80);
+                rot_z = (u64)(u32)f8;
+            }
+        }
+    }
+
+    struct { u32 y; u32 x; u64 z; } rot_vec = { (u32)rot_y, (u32)rot_x, rot_z };
+
+    f32 scale_f = 0;
+    if (nargs >= 9) {
+        scale_f = acmd_read_float(L, 0x90);
+    }
+
+    bool follow_flag = false;
+    if (nargs >= 10) {
+        follow_flag = acmd_read_bool(L, 0xa0);
+    }
+
+    u64 flags = follow_flag ? 0x4000ULL : 0;
+
+    void** eff = *(void***)(acc + 0x140);
+    void** vt = *(void***)eff;
+    reinterpret_cast<void(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, s32, s32, s32, f32)>
+        (vt[0x80 / 8])(eff, hash1, hash2, &off_vec, &rot_vec, 0, flags, 0, (s32)-1, 0, 0, 0, scale_f);
+
+    acmd_consume(L);
+}
+
+// 0x000000710229bc20 (2052 bytes) — EFFECT_FOLLOW_arg11
+// Like EFFECT_FOLLOW_NO_STOP but with arg11=alt_hash.
+// Flags: follow=0xc000, default=0x8000.
+// Calls EffectModule::req_follow (vtable slot 16, offset 0x80)
+void EFFECT_FOLLOW_arg11(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    if (param_1 == nullptr) {
+#ifdef MATCHING_HACK_NX_CLANG
+        __builtin_trap();
+#endif
+    }
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    int nargs = acmd_nargs(L);
+
+    u64 hash1 = 0, hash2 = 0;
+    u64 off_x = 0, off_y = 0, off_z = 0;
+
+    if (nargs >= 1) {
+        hash1 = FUN_71038f4000(param_1, 1, 0);
+        if (nargs >= 2) {
+            hash2 = FUN_71038f4000(param_1, 2, 0);
+            if (nargs >= 3) {
+                f32 f3 = acmd_read_float(L, 0x30);
+                off_x = (u64)(u32)f3;
+                if (nargs >= 4) {
+                    f32 f4 = acmd_read_float(L, 0x40);
+                    off_y = (u64)(u32)f4;
+                    if (nargs >= 5) {
+                        f32 f5 = acmd_read_float(L, 0x50);
+                        off_z = (u64)(u32)f5;
+                    }
+                }
+            }
+        }
+    }
+
+    struct { u32 y; u32 x; u64 z; } off_vec = { (u32)off_y, (u32)off_x, off_z };
+
+    u64 rot_x = 0, rot_y = 0, rot_z = 0;
+    if (nargs >= 6) {
+        f32 f6 = acmd_read_float(L, 0x60);
+        rot_x = (u64)(u32)f6;
+        if (nargs >= 7) {
+            f32 f7 = acmd_read_float(L, 0x70);
+            rot_y = (u64)(u32)f7;
+            if (nargs >= 8) {
+                f32 f8 = acmd_read_float(L, 0x80);
+                rot_z = (u64)(u32)f8;
+            }
+        }
+    }
+
+    struct { u32 y; u32 x; u64 z; } rot_vec = { (u32)rot_y, (u32)rot_x, rot_z };
+
+    f32 scale_f = 0;
+    if (nargs >= 9) {
+        scale_f = acmd_read_float(L, 0x90);
+    }
+
+    bool follow_flag = false;
+    if (nargs >= 10) {
+        follow_flag = acmd_read_bool(L, 0xa0);
+    }
+
+    u64 flags = follow_flag ? 0xc000ULL : 0x8000ULL;
+
+    u64 alt_hash;
+    if (nargs >= 11) {
+        alt_hash = FUN_71038f4000(param_1, 0xb, 0);
+    } else {
+        alt_hash = 0;
+    }
+
+    void** eff = *(void***)(acc + 0x140);
+    void** vt = *(void***)eff;
+    reinterpret_cast<void(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, s32, s32, s32, f32)>
+        (vt[0x80 / 8])(eff, hash1, hash2, &off_vec, &rot_vec, 0, flags, alt_hash, (s32)-1, 0, 0, 0, scale_f);
+
+    acmd_consume(L);
+}
+
+// 0x00000071022a5c50 (1996 bytes) — EFFECT_FOLLOW_NO_SCALE
+// Like EFFECT_FOLLOW but passes 1 as the no_scale flag (13th arg).
+// Flags: follow=0xc000, default=0x8000.
+// Calls EffectModule::req_follow (vtable slot 16, offset 0x80)
+void EFFECT_FOLLOW_NO_SCALE(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    if (param_1 == nullptr) {
+#ifdef MATCHING_HACK_NX_CLANG
+        __builtin_trap();
+#endif
+    }
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    int nargs = acmd_nargs(L);
+
+    u64 hash1 = 0, hash2 = 0;
+    u64 off_x = 0, off_y = 0, off_z = 0;
+
+    if (nargs >= 1) {
+        hash1 = FUN_71038f4000(param_1, 1, 0);
+        if (nargs >= 2) {
+            hash2 = FUN_71038f4000(param_1, 2, 0);
+            if (nargs >= 3) {
+                f32 f3 = acmd_read_float(L, 0x30);
+                off_x = (u64)(u32)f3;
+                if (nargs >= 4) {
+                    f32 f4 = acmd_read_float(L, 0x40);
+                    off_y = (u64)(u32)f4;
+                    if (nargs >= 5) {
+                        f32 f5 = acmd_read_float(L, 0x50);
+                        off_z = (u64)(u32)f5;
+                    }
+                }
+            }
+        }
+    }
+
+    struct { u32 y; u32 x; u64 z; } off_vec = { (u32)off_y, (u32)off_x, off_z };
+
+    u64 rot_x = 0, rot_y = 0, rot_z = 0;
+    if (nargs >= 6) {
+        f32 f6 = acmd_read_float(L, 0x60);
+        rot_x = (u64)(u32)f6;
+        if (nargs >= 7) {
+            f32 f7 = acmd_read_float(L, 0x70);
+            rot_y = (u64)(u32)f7;
+            if (nargs >= 8) {
+                f32 f8 = acmd_read_float(L, 0x80);
+                rot_z = (u64)(u32)f8;
+            }
+        }
+    }
+
+    struct { u32 y; u32 x; u64 z; } rot_vec = { (u32)rot_y, (u32)rot_x, rot_z };
+
+    f32 scale_f = 0;
+    if (nargs >= 9) {
+        scale_f = acmd_read_float(L, 0x90);
+    }
+
+    bool follow_flag = false;
+    if (nargs >= 10) {
+        follow_flag = acmd_read_bool(L, 0xa0);
+    }
+
+    u64 flags = follow_flag ? 0xc000ULL : 0x8000ULL;
+
+    void** eff = *(void***)(acc + 0x140);
+    void** vt = *(void***)eff;
+    // Note: 13th arg is 1 (no_scale flag), not 0
+    reinterpret_cast<void(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, s32, s32, s32, f32)>
+        (vt[0x80 / 8])(eff, hash1, hash2, &off_vec, &rot_vec, 0, flags, 0, (s32)-1, 0, 0, 1, scale_f);
+
+    acmd_consume(L);
+}
+
+// 0x7102291fd0 (2004 bytes) — EFFECT_FOLLOW_UNSYNC_VIS_WHOLE
+// Like EFFECT_FOLLOW_NO_STOP but flags: follow=0x40c000, default=0x408000.
+// The 0x40xxxx prefix marks unsync vis mode.
+// Calls EffectModule::req_follow (vtable slot 16, offset 0x80)
+void EFFECT_FOLLOW_UNSYNC_VIS_WHOLE(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    if (param_1 == nullptr) {
+#ifdef MATCHING_HACK_NX_CLANG
+        __builtin_trap();
+#endif
+    }
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    int nargs = acmd_nargs(L);
+
+    u64 hash1 = 0, hash2 = 0;
+    u64 off_x = 0, off_y = 0, off_z = 0;
+
+    if (nargs >= 1) {
+        hash1 = FUN_71038f4000(param_1, 1, 0);
+        if (nargs >= 2) {
+            hash2 = FUN_71038f4000(param_1, 2, 0);
+            if (nargs >= 3) {
+                f32 f3 = acmd_read_float(L, 0x30);
+                off_x = (u64)(u32)f3;
+                if (nargs >= 4) {
+                    f32 f4 = acmd_read_float(L, 0x40);
+                    off_y = (u64)(u32)f4;
+                    if (nargs >= 5) {
+                        f32 f5 = acmd_read_float(L, 0x50);
+                        off_z = (u64)(u32)f5;
+                    }
+                }
+            }
+        }
+    }
+
+    struct { u32 y; u32 x; u64 z; } off_vec = { (u32)off_y, (u32)off_x, off_z };
+
+    u64 rot_x = 0, rot_y = 0, rot_z = 0;
+    if (nargs >= 6) {
+        f32 f6 = acmd_read_float(L, 0x60);
+        rot_x = (u64)(u32)f6;
+        if (nargs >= 7) {
+            f32 f7 = acmd_read_float(L, 0x70);
+            rot_y = (u64)(u32)f7;
+            if (nargs >= 8) {
+                f32 f8 = acmd_read_float(L, 0x80);
+                rot_z = (u64)(u32)f8;
+            }
+        }
+    }
+
+    struct { u32 y; u32 x; u64 z; } rot_vec = { (u32)rot_y, (u32)rot_x, rot_z };
+
+    f32 scale_f = 0;
+    if (nargs >= 9) {
+        scale_f = acmd_read_float(L, 0x90);
+    }
+
+    // Flags: 0x408000 default, 0x40c000 for follow
+    u64 flags = 0x408000ULL;
+    bool follow_flag = false;
+    if (nargs >= 10) {
+        follow_flag = acmd_read_bool(L, 0xa0);
+        if (follow_flag) {
+            flags = 0x40c000ULL;
+        }
+    }
+
+    void** eff = *(void***)(acc + 0x140);
+    void** vt = *(void***)eff;
+    reinterpret_cast<void(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, s32, s32, s32, f32)>
+        (vt[0x80 / 8])(eff, hash1, hash2, &off_vec, &rot_vec, 0, flags, 0, (s32)-1, 0, 0, 0, scale_f);
+
+    acmd_consume(L);
+}
+
 }} // namespace app::sv_animcmd
