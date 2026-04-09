@@ -1134,6 +1134,194 @@ extern "C" void FUN_7101654bf0(u8* acc) {
     fn(mod, 0, 0);
 }
 
+// StageManager singleton
+// [derived: lib::Singleton<app::StageManager>::instance_ at adrp 0x7105329000+0x9d8]
+namespace lib { extern "C" void* Singleton_app_StageManager_instance_ asm("_ZN3lib9SingletonIN3app12StageManagerEE9instance_E") HIDDEN2; }
+#define SM_INSTANCE (reinterpret_cast<u8*>(lib::Singleton_app_StageManager_instance_))
+
+// ============================================================================
+// is_loaded_metamon_fighter
+// Address: 0x710167acf0 | Size: 68 bytes
+// Returns 1 if the metamon (Ditto) fighter at entry_id is loaded.
+// [derived: Ghidra FUN_710167acf0 — identical pattern to is_loaded_fighter
+//  (0x7101653310). Uses FighterManager singleton + FighterEntry.
+//  app::metamon namespace. Checks singleton, bounds, entry ptr, +0x5935 flag]
+// ============================================================================
+
+extern "C" u64 FUN_710167acf0(s32 entry_id) {
+    // Raw pointer chain matching target: adrp+ldr singleton → cbz → cmp bounds → deref
+    u8* fm = reinterpret_cast<u8*>(lib::Singleton_app_FighterManager_instance_);
+    if (fm == nullptr) return 0;
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
+    if ((u32)entry_id > 7) return 0;
+    u8* base = *reinterpret_cast<u8**>(fm);
+    u8* entry = *reinterpret_cast<u8**>(base + (s64)entry_id * 8 + 0x20);
+    if (entry == nullptr) return 0;
+    if (*(entry + 0x5935) == 1) return 0;
+    return 1;
+}
+
+// ============================================================================
+// LINK_LINKBOMB_LINKBOMB_IS_EXPLODE_WHEN_HIT_FIGHTER
+// Address: 0x710165ef50 | Size: 76 bytes
+// Returns explosion param value for Link Bomb based on fighter kind.
+// [derived: Ghidra FUN_710165ef50 — FPA2 triple-chain deref, branches on
+//  fighter_kind: 0x78=Link (+0xe0→+0x1a8→+0x44),
+//  0x7b=Young Link (+0xa80→+0x248→+0x14),
+//  else=Toon Link (+0x578→+0x218→+0x14)]
+// ============================================================================
+
+extern "C" u32 FUN_710165ef50(s32 fighter_kind) {
+    // Target: adrp for FPA2 page hoisted before cmp, ldr deferred per branch.
+    // Each branch accesses FPA2 independently to let compiler hoist common ADRP.
+    u8* fpa2;
+    if (fighter_kind == 0x78) {
+        fpa2 = FPA2_INSTANCE;
+        u64 p = *reinterpret_cast<u64*>(fpa2 + 0xe0);
+        return *reinterpret_cast<u32*>(*reinterpret_cast<u64*>(p + 0x1a8) + 0x44);
+    }
+    fpa2 = FPA2_INSTANCE;
+    if (fighter_kind == 0x7b) {
+        u64 p = *reinterpret_cast<u64*>(fpa2 + 0xa80);
+        return *reinterpret_cast<u32*>(*reinterpret_cast<u64*>(p + 0x248) + 0x14);
+    }
+    u64 p = *reinterpret_cast<u64*>(fpa2 + 0x578);
+    return *reinterpret_cast<u32*>(*reinterpret_cast<u64*>(p + 0x218) + 0x14);
+}
+
+// ============================================================================
+// is_exist_item_generate_position
+// Address: 0x71015ce7c0 | Size: 104 bytes
+// Returns 1 if the stage has item generation positions available.
+// [derived: Ghidra FUN_71015ce7c0 — StageManager singleton, gets sub-module at
+//  +0x128, calls vtable[0xe8/8] (has_positions bool) then vtable[0xf0/8] (count)]
+// ============================================================================
+
+extern "C" u32 FUN_71015ce7c0() {
+    // Target saves singleton page in x19 (callee-saved), vtable from data+0x128
+    u8* sm = SM_INSTANCE;
+    if (sm == nullptr) return 0;
+    u8* data = *reinterpret_cast<u8**>(sm);
+    // sub-object at +0x128: vtable ptr is at *(data+0x128), this ptr is data+0x128
+    void** vt = *reinterpret_cast<void***>(data + 0x128);
+    u32 has_pos = reinterpret_cast<u32(*)(u8*)>(vt[0xe8 / 8])(data + 0x128);
+    if ((has_pos & 1) == 0) return 0;
+    // Reload after call — compiler should reuse saved page register
+    sm = SM_INSTANCE;
+    data = *reinterpret_cast<u8**>(sm);
+    vt = *reinterpret_cast<void***>(data + 0x128);
+    s32 count = reinterpret_cast<s32(*)(u8*)>(vt[0xf0 / 8])(data + 0x128);
+    if (count < 1) return 0;
+    return 1;
+}
+
+// ============================================================================
+// item_generate_position
+// Address: 0x71015ce830 | Size: 40 bytes
+// Returns a default item generation position as a 128-bit vector (zeroed, then
+// filled by FUN_71015dc450).
+// [derived: Ghidra FUN_71015ce830 — zeros 16-byte local, calls FUN_71015dc450,
+//  returns result in q0 register]
+// ============================================================================
+
+typedef float float4 __attribute__((vector_size(16)));
+extern "C" void FUN_71015dc450(float4*);
+
+extern "C" float4 FUN_71015ce830() {
+    float4 result = {0.0f, 0.0f, 0.0f, 0.0f};
+    FUN_71015dc450(&result);
+    return result;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// LINK_LINKBOMB param readers — all 40 bytes, leaf functions
+// Pattern: if (fighter_kind == 0x78) return FPA2→+0xe0→+0x1a8→+OFFSET; else return 0.0f
+// [derived: Ghidra — all use FPA2 singleton, Link-only (0x78). Community-named params.]
+// ════════════════════════════════════════════════════════════════════
+
+// Helper macro for the repeated pattern
+#define LINKBOMB_PARAM_LINK_ONLY(funcname, offset) \
+extern "C" f32 funcname(s32 fighter_kind) { \
+    if (fighter_kind != 0x78) return 0.0f; \
+    u8* fpa2 = FPA2_INSTANCE; \
+    u64 p = *reinterpret_cast<u64*>(fpa2 + 0xe0); \
+    u64 q = *reinterpret_cast<u64*>(p + 0x1a8); \
+    return *reinterpret_cast<f32*>(q + offset); \
+}
+
+// 0x710165ee00 (40B) — blast wait frame count (as float)
+LINKBOMB_PARAM_LINK_ONLY(LINK_LINKBOMB_LINKBOMB_BLAST_WAIT_FRAME_710165ee00, 0x10)
+// 0x710165ed10 (40B) — minimum damage
+LINKBOMB_PARAM_LINK_ONLY(LINK_LINKBOMB_LINKBOMB_MIN_DAMAGE_710165ed10, 0x18)
+// 0x710165ed40 (40B) — maximum damage
+LINKBOMB_PARAM_LINK_ONLY(LINK_LINKBOMB_LINKBOMB_MAX_DAMAGE_710165ed40, 0x1c)
+// 0x710165ed70 (40B) — minimum damage speed
+LINKBOMB_PARAM_LINK_ONLY(LINK_LINKBOMB_LINKBOMB_MIN_DAMAGE_SPEED_710165ed70, 0x20)
+// 0x710165eda0 (40B) — maximum damage speed
+LINKBOMB_PARAM_LINK_ONLY(LINK_LINKBOMB_LINKBOMB_MAX_DAMAGE_SPEED_710165eda0, 0x24)
+// 0x710165edd0 (40B) — landing speed
+LINKBOMB_PARAM_LINK_ONLY(LINK_LINKBOMB_LINKBOMB_LANDING_SPEED_710165edd0, 0x28)
+// 0x710165ee30 (40B) — bound degree
+LINKBOMB_PARAM_LINK_ONLY(LINK_LINKBOMB_LINKBOMB_BOUND_DEGREE_710165ee30, 0x2c)
+// 0x710165ee60 (40B) — min bound speed X
+LINKBOMB_PARAM_LINK_ONLY(LINK_LINKBOMB_LINKBOMB_MIN_BOUND_SPEED_X_710165ee60, 0x30)
+// 0x710165ee90 (40B) — max bound speed X
+LINKBOMB_PARAM_LINK_ONLY(LINK_LINKBOMB_LINKBOMB_MAX_BOUND_SPEED_X_710165ee90, 0x34)
+// 0x710165eec0 (40B) — min bound speed Y
+LINKBOMB_PARAM_LINK_ONLY(LINK_LINKBOMB_LINKBOMB_MIN_BOUND_SPEED_Y_710165eec0, 0x38)
+// 0x710165eef0 (40B) — max bound speed Y
+LINKBOMB_PARAM_LINK_ONLY(LINK_LINKBOMB_LINKBOMB_MAX_BOUND_SPEED_Y_710165eef0, 0x3c)
+// 0x710165ef20 (40B) — bound speed X multiplier
+LINKBOMB_PARAM_LINK_ONLY(LINK_LINKBOMB_LINKBOMB_BOUND_SPEED_X_MUL_710165ef20, 0x40)
+
+#undef LINKBOMB_PARAM_LINK_ONLY
+
+// ════════════════════════════════════════════════════════════════════
+// Boss singleton leaf functions
+// ════════════════════════════════════════════════════════════════════
+
+// BossManager singleton
+// [derived: Ghidra 0x71052b7ef8 — lib::Singleton<app::BossManager>::instance_]
+extern "C" __attribute__((visibility("hidden"))) void* DAT_71052b7ef8_bm;
+asm(".set DAT_71052b7ef8_bm, _ZN3lib9SingletonIN3app11BossManagerEE9instance_E");
+
+// 0x71015c8bf0 (40B) — is_boss_stop: returns true if BossManager→inner→+0x164 > 0
+// [derived: Ghidra — BossManager singleton (+8=inner, +0x164=stop count). cmp+cset gt.]
+extern "C" bool is_boss_stop_71015c8bf0() {
+    u8* bm = reinterpret_cast<u8*>(DAT_71052b7ef8_bm);
+    if (bm == nullptr) return false;
+    u8* inner = *reinterpret_cast<u8**>(bm + 8);
+    return *reinterpret_cast<s32*>(inner + 0x164) > 0;
+}
+
+// 0x71015c8c20 (40B) — is_boss_no_dead: returns true if BossManager→inner→+0x14e != 0
+// [derived: Ghidra — BossManager singleton, reads byte at inner+0x14e (no_dead flag)]
+extern "C" bool is_boss_no_dead_71015c8c20() {
+    u8* bm = reinterpret_cast<u8*>(DAT_71052b7ef8_bm);
+    if (bm == nullptr) return false;
+    u8* inner = *reinterpret_cast<u8**>(bm + 8);
+    return *reinterpret_cast<u8*>(inner + 0x14e) != 0;
+}
+
+// BattleObjectWorld singleton
+// [derived: Ghidra — lib::Singleton<app::BattleObjectWorld>::instance_ at 0x71052c31c8ish]
+namespace lib { extern "C" void* Singleton_app_BattleObjectWorld_instance_
+    asm("_ZN3lib9SingletonIN3app17BattleObjectWorldEE9instance_E")
+    __attribute__((visibility("hidden"))); }
+#define BOW_INSTANCE (reinterpret_cast<u8*>(lib::Singleton_app_BattleObjectWorld_instance_))
+
+// 0x71015ce6d0 (40B) — is_normal_gravity: checks two flags in BattleObjectWorld
+// [derived: Ghidra — if byte at +0x5c != 0 return true, else return byte at +0x59 != 0]
+extern "C" bool is_normal_gravity_71015ce6d0() {
+    u8* bow = BOW_INSTANCE;
+    if (*(bow + 0x5c) != 0) return true;
+    return *(bow + 0x59) != 0;
+}
+
+#undef BOW_INSTANCE
+#undef SM_INSTANCE
 #undef HIDDEN2
 #undef FM_INSTANCE
 #undef IM_INSTANCE

@@ -3001,4 +3001,214 @@ void set_scale_speed_mul_71015c1d80(void* L, f32 mul) {
 
 // NOTE: DAISY/DOLL/EXPLOSIONBOMB param functions (0x710165xxxx) need non-hidden
 // FPA2 singleton access (GOT-style double deref). They belong in a separate TU
+
+// ── 0x71015c55c0 -- app::item::init_explosion_no_damage (144B) ──
+// [derived: init_explosion_no_damage (community name) — 3 vtable calls:
+//  work_module->set_int(item_param_accessor[0x72ffc], 0x10000010),
+//  attack_module->clear_all(2, 0),
+//  work_module->on_flag(0x20000017)]
+void init_explosion_no_damage_71015c55c0(void* L) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
+
+    void* work_mod = *reinterpret_cast<void**>(acc + 0x50);
+    void** wvt = *reinterpret_cast<void***>(work_mod);
+    u8* ipa = *reinterpret_cast<u8**>(DAT_71052c31e0);
+    u32 param_val = *reinterpret_cast<u32*>(ipa + 0x72ffc);
+    reinterpret_cast<void(*)(void*, u32, u32)>(wvt[0xa0/8])(work_mod, param_val, 0x10000010u);
+
+    ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
+    void* attack_mod = *reinterpret_cast<void**>(acc + 0xb0);
+    void** avt = *reinterpret_cast<void***>(attack_mod);
+    reinterpret_cast<void(*)(void*, s32, s32)>(avt[0xd0/8])(attack_mod, 2, 0);
+
+    wvt = *reinterpret_cast<void***>(work_mod);
+    reinterpret_cast<void(*)(void*, u32)>(wvt[0x110/8])(work_mod, 0x20000017u);
+}
+
+// ── 0x71015c1570 -- app::item::disable_area (136B) ──────────────
+// [derived: disable_area (community name) — if kind==3, checks sub-module count
+//  via vtable chain from [item_data+0x90]; if count>=4, clears byte and calls
+//  area disable. Otherwise uses [item_data+0x158] directly.]
+void disable_area_71015c1570(void* L, s32 param_2) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
+    u8* ptr = *reinterpret_cast<u8**>(acc + 0x190);
+    u8* item_data = *reinterpret_cast<u8**>(ptr + 0x220);
+
+    if (param_2 != 3) {
+        void* area_mod = *reinterpret_cast<void**>(item_data + 0x158);
+        void** vt = *reinterpret_cast<void***>(area_mod);
+        reinterpret_cast<void(*)(void*, s32, s32, s32)>(vt[0xc0/8])(area_mod, param_2, 0, -1);
+        return;
+    }
+    u8* mod = *reinterpret_cast<u8**>(item_data + 0x90);
+    void* sub = *reinterpret_cast<void**>(*reinterpret_cast<u64*>(mod) + 0xc0);
+    void** sub_vt = *reinterpret_cast<void***>(sub);
+    s32 count = reinterpret_cast<s32(*)(void*)>(sub_vt[0xb8/8])(sub);
+    if (count < 4) return;
+    *(u8*)(mod + 0x1c) = 0;
+    sub = *reinterpret_cast<void**>(*reinterpret_cast<u64*>(mod) + 0xc0);
+    sub_vt = *reinterpret_cast<void***>(sub);
+    reinterpret_cast<void(*)(void*, s32, s32, s32)>(sub_vt[0xc0/8])(sub, 3, 0, -1);
+}
+
+// ── 0x71015c6ea0 -- app::target::distance_x (92B) ──────────────
+// [derived: distance_x (community name) — gets target x from work_module(0xb),
+//  self x from posture_module->get_pos(), returns absolute difference]
+f32 distance_x_71015c6ea0(void* L) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
+    void* work_mod = *reinterpret_cast<void**>(acc + 0x50);
+    void* posture_mod = *reinterpret_cast<void**>(acc + 0x38);
+
+    void** wvt = *reinterpret_cast<void***>(work_mod);
+    f32 target_x = reinterpret_cast<f32(*)(void*, s32)>(wvt[0x58/8])(work_mod, 0xb);
+
+    void** pvt = *reinterpret_cast<void***>(posture_mod);
+    f32* pos = reinterpret_cast<f32*>(reinterpret_cast<u64(*)(void*)>(pvt[0x60/8])(posture_mod));
+
+    return __builtin_fabsf(target_x - pos[0]);
+}
+
+// ── 0x71015c6f00 -- app::target::distance_y (92B) ──────────────
+// [derived: distance_y (community name) — same as distance_x but reads
+//  work_module(0xc) for target y and pos[1] for self y]
+f32 distance_y_71015c6f00(void* L) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
+    void* work_mod = *reinterpret_cast<void**>(acc + 0x50);
+    void* posture_mod = *reinterpret_cast<void**>(acc + 0x38);
+
+    void** wvt = *reinterpret_cast<void***>(work_mod);
+    f32 target_y = reinterpret_cast<f32(*)(void*, s32)>(wvt[0x58/8])(work_mod, 0xc);
+
+    void** pvt = *reinterpret_cast<void***>(posture_mod);
+    f32* pos = reinterpret_cast<f32*>(reinterpret_cast<u64(*)(void*)>(pvt[0x60/8])(posture_mod));
+
+    return __builtin_fabsf(target_y - pos[1]);
+}
 // where DAT_71052bb3b0 is declared without __attribute__((visibility("hidden"))).
+
+// ════════════════════════════════════════════════════════════════════
+// sv_fighter_util — item motion rate lookups
+// ════════════════════════════════════════════════════════════════════
+
+// FighterParamAccessor2 singleton (via C++ mangled name)
+// [derived: lib::Singleton<app::FighterParamAccessor2>::instance_ for sv_fighter_util functions]
+namespace lib_sv {
+    extern "C" void* Singleton_app_FighterParamAccessor2_instance_sv
+        asm("_ZN3lib9SingletonIN3app22FighterParamAccessor2EE9instance_E")
+        __attribute__((visibility("hidden")));
+}
+#define FPA2_SV (reinterpret_cast<u8*>(lib_sv::Singleton_app_FighterParamAccessor2_instance_sv))
+
+// ── 0x7102282110 -- app::sv_fighter_util::get_item_swing_motion_rate (140B) ──
+// Returns motion rate float for item swing animation based on fighter param index
+// and swing type (0-4). Each fighter has a 0x14-byte entry with 5 floats.
+// Returns 1.0f if swing_type >= 5.
+// [derived: Ghidra FUN_7102282110 — FPA2+0x50→+4000 (0xFA0) base table,
+//  indexed by fighter_param_idx * 0x14 + swing_type * 4. Switch on swing_type.]
+f32 get_item_swing_motion_rate_7102282110(void* L, s32 fighter_param_idx, s32 swing_type) {
+    // Target uses ldrsw jump table (NX Clang), upstream uses ldrb — can't match jump table encoding.
+    // Code is structurally correct.
+    if ((u32)swing_type > 4) return 1.0f;
+    u8* fpa2 = FPA2_SV;
+    u8* table = reinterpret_cast<u8*>(*reinterpret_cast<u64*>(*reinterpret_cast<u64*>(fpa2 + 0x50) + 0xfa0));
+    f32* entry = reinterpret_cast<f32*>(table + (s64)fighter_param_idx * 20);
+    switch (swing_type) {
+    case 0: return entry[0];
+    case 1: return entry[1];
+    case 2: return entry[2];
+    case 3: return entry[3];
+    case 4: return entry[4];
+    }
+    __builtin_unreachable();
+}
+
+#undef FPA2_SV
+
+// ════════════════════════════════════════════════════════════════════
+// sv_kinetic — energy enable/disable/clear via KineticModule vtable
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x71022087b0 -- sv_kinetic::disable_energy_pair (96B) ────────
+// Disables kinetic energy for entries 0xc and 0xd by clearing flag at +0x30.
+// [derived: Ghidra FUN_71022087b0 — kinetic_module (+0x68) → vtable[0x60/8=12]
+//  with params 0xc, 0xd → strb wzr at result+0x30. Returns 0]
+u64 FUN_71022087b0(void* L) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
+    u8* kinetic = *reinterpret_cast<u8**>(acc + 0x68);
+    void** kvt = *reinterpret_cast<void***>(kinetic);
+
+    // vtable[12] = get_energy_controller(index)
+    u8* e1 = reinterpret_cast<u8*>(reinterpret_cast<u64(*)(u8*, s32)>(kvt[0x60/8])(kinetic, 0xc));
+    u8* e2 = reinterpret_cast<u8*>(reinterpret_cast<u64(*)(u8*, s32)>(kvt[0x60/8])(kinetic, 0xd));
+
+    *(e1 + 0x30) = 0;  // disable flag
+    *(e2 + 0x30) = 0;
+    return 0;
+}
+
+// ── 0x7102208890 -- sv_kinetic::enable_energy_pair (96B) ─────────
+// Enables kinetic energy for entries 0xc and 0xd by setting flag at +0x30 to 1.
+// [derived: Ghidra FUN_7102208890 — identical to 71022087b0 but stores 1]
+u64 FUN_7102208890(void* L) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
+    u8* kinetic = *reinterpret_cast<u8**>(acc + 0x68);
+    void** kvt = *reinterpret_cast<void***>(kinetic);
+
+    u8* e1 = reinterpret_cast<u8*>(reinterpret_cast<u64(*)(u8*, s32)>(kvt[0x60/8])(kinetic, 0xc));
+    u8* e2 = reinterpret_cast<u8*>(reinterpret_cast<u64(*)(u8*, s32)>(kvt[0x60/8])(kinetic, 0xd));
+
+    *(e1 + 0x30) = 1;  // enable flag
+    *(e2 + 0x30) = 1;
+    return 0;
+}
+
+// ── 0x71022086b0 -- sv_kinetic::clear_energy_pair (128B) ─────────
+// Clears kinetic energy controllers 0xc and 0xd via vtable[9] call.
+// [derived: Ghidra FUN_71022086b0 — kinetic_module → vtable[12](0xc,0xd)
+//  → then result→vtable[0x48/8=9]() clear call on each. Returns 0]
+u64 FUN_71022086b0(void* L) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
+    u8* kinetic = *reinterpret_cast<u8**>(acc + 0x68);
+    void** kvt = *reinterpret_cast<void***>(kinetic);
+
+    u8* e1 = reinterpret_cast<u8*>(reinterpret_cast<u64(*)(u8*, s32)>(kvt[0x60/8])(kinetic, 0xc));
+    u8* e2 = reinterpret_cast<u8*>(reinterpret_cast<u64(*)(u8*, s32)>(kvt[0x60/8])(kinetic, 0xd));
+
+    // vtable[9] = clear() on energy controller
+    void** vt1 = *reinterpret_cast<void***>(e1);
+    reinterpret_cast<void(*)(u8*)>(vt1[0x48/8])(e1);
+    void** vt2 = *reinterpret_cast<void***>(e2);
+    reinterpret_cast<void(*)(u8*)>(vt2[0x48/8])(e2);
+    return 0;
+}
+
+// ── 0x710221e7c0 -- sv_kinetic::get_energy_flag (160B) ───────────
+// Gets the enable flag from kinetic energy controller 1 and pushes to lua stack.
+// [derived: Ghidra FUN_710221e7c0 — kinetic_module → vtable[12](kinetic,1)
+//  → ldrb result+0x30 → store (uint)byte to lua stack, advance stack ptr. Returns 1]
+u64 FUN_710221e7c0(void* L) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
+    u8* kinetic = *reinterpret_cast<u8**>(acc + 0x68);
+    void** kvt = *reinterpret_cast<void***>(kinetic);
+
+    u8* energy = reinterpret_cast<u8*>(reinterpret_cast<u64(*)(u8*, s32)>(kvt[0x60/8])(kinetic, 1));
+
+    // Read enable flag at +0x30
+    u32 flag = *(u8*)(energy + 0x30);
+
+    // Push to lua stack: [param+0x10] points to stack slot
+    u32* stack = *reinterpret_cast<u32**>(reinterpret_cast<u8*>(L) + 0x10);
+    stack[0] = flag;
+    stack[2] = 1;  // type tag
+    *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) += 0x10;
+    return 1;
+}
