@@ -1,30 +1,37 @@
-# Worker: pool-c
+# Worker: pool-d
 
 ## Model: Opus
 
-## Task: Stage + camera — continue
+## Task: BST entry manager + stage functions — 0x710317xxxx range
 
-## Progress (61 functions total)
-- 20 leaf functions from round 2 (3 perfect matches)
-- 4 new functions this round:
-  - is_camera_off_final2 (188B) — size match, prologue scheduling only diff
-  - get_final_camera_pos (196B) — size match, register alloc diff
-  - update_dead_up_camera_hit_first_distance_group (124B) — size match, tbz fixed
-  - camera (sv_module_access) (180B target, 184B compiled) — 1 instr diff (mov+add vs add sp)
-- Key patterns: do-while for cbz elimination, __builtin_expect for branch polarity, #pragma clang loop unroll(disable)
+## Progress (22 functions total from prior + this session)
+- 8 param reader functions from prior session (all compiled)
+- 14 new functions this session:
+  - 7 BST-at-0x58 set/clear functions (all size-match): FUN_7103176f70, 7103177160, 7103177250, 7103177430, 7103177520, 7103177610, 7103177850
+  - 1 BST-at-0x58 set+check+notify: FUN_7103177060 (248B vs 256B, 8B short — 2 extra optimizations)
+  - 1 fiber switch: FUN_710317f0a0 (88B size-match, likely byte-match after linking)
+  - 3 stage reversal BST-at-0x50: FUN_71031796f0, 7103179860, 71031799e0 (16B short — GOT/guard patterns)
+  - 1 death boundary: FUN_710317b2e0 (244B vs 264B)
+  - 1 team param: FUN_710317b3f0 (280B vs 312B — NEON ABI mismatch)
+
+## Key patterns discovered
+- BST-at-0x58 manager struct: +0x20 current_id, +0x38 mode, +0x58 BST root
+- BST node: left[0], right[8], ..., key[0x20], value[0x28]
+- Set/clear functions follow template: BST lookup → set field → if match + mode<3 → second lookup → notify via vtable[6]
+- Stage reversal uses BST-at-0x50, dispatches to Stage_Rev string table and FUN_710240cd00
+- Team param function uses NEON v0 for first arg (not integer), ldarb for guard acquisition
 
 ## Continue with
-- set_camera_param (2,344B), set_pause_camera_param (3,996B) — param tree lookups
-- ~StageWufuIsland destructor (2,700B) — event listener cleanup
-- More camera leaf functions (set_camera_range variants, revert_camera)
-- Stage destructors (~StageFlatZoneX, ~StageNintendogs, ~StageStreetPass)
+- More uncompiled HARD functions in 0x710317xxxx range (~20 remaining)
+- FUN_7103177960 (960B) — larger BST function
+- FUN_710317c0f0 (2160B), FUN_710317dc70 (848B set_offset), FUN_710317dfc0 (960B set_zone)
+- SituationLink (1588B), StageColorCorrectionController (704B)
 
 ## Skipped
-- create_stage (114,600B), StageBase ctor (14,820B) — too large
-- IT_MOVE_CAMERA, is_clip_in_camera, is_dark_stage — shared_ptr refcount patterns
+- FUN_7103176e64 (244B), FUN_71031776ec (356B) — listed as functions but Ghidra shows only abort(), likely alignment padding
 
 ## File Territory
-- src/app/camera_functions.cpp, StageManager.cpp, StageWufuIsland.cpp
+- src/app/param_loading.cpp
 
 ## Quality Rules
 - No naked asm, 3-attempt limit
@@ -38,13 +45,13 @@
 - **WARNING:** Do NOT use `build.bat` — it runs deprecated post-processors that inflate match counts
 
 ## Ghidra Cache
-- Save ALL Ghidra decompilation results to `data/ghidra_cache/pool-c.txt` (NOT /tmp — survives reboots)
+- Save ALL Ghidra decompilation results to `data/ghidra_cache/pool-d.txt` (NOT /tmp — survives reboots)
 - On session start, check if this file exists and read it to recover previous Ghidra work
 - Append new results after each `mcp__ghidra__decompile_function_by_address` call
 
 ## Commit Cadence
 - Commit every 15-20 functions or every 30 minutes, whichever comes first
-- Use descriptive commit messages: `pool-c: decomp MODULE functions (N new, M matching)`
+- Use descriptive commit messages: `pool-d: decomp MODULE functions (N new, M matching)`
 - If session crashes, uncommitted work will be auto-recovered by the launcher script
 
 ## Rewrite Quality Standard

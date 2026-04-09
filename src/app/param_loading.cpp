@@ -5886,3 +5886,852 @@ void FUN_7103189b00(s64 param_1, s64 param_2, u32 param_3) {
         FUN_710314fff0(s, (void*)(param_1 + 0x158));
     }
 }
+
+// ════════════════════════════════════════════════════════════════════
+// BST entry manager functions
+// ════════════════════════════════════════════════════════════════════
+// These functions operate on a manager struct with a std::map-like BST
+// at +0x58, keyed by battle object ID. Each BST node stores a pointer
+// to a large per-fighter entry struct at node+0x28 (the map value).
+//
+// Manager layout (BST-0x58 group):
+//   +0x20: u64 current_id  [derived: compared with param_2 in all 8 functions]
+//   +0x38: s32 mode         [derived: checked < 3 for notification path]
+//   +0x58: BST root         [derived: std::map __begin_node_]
+//
+// Entry struct has observer pointers at fixed offsets (e.g., +0x440, +0x480, etc.)
+// Each observer is called via vtable[6] (offset 0x30) with a pointer to the field.
+//
+// Pattern: set/clear a field → if current fighter and mode < 3 → notify observer
+// ════════════════════════════════════════════════════════════════════
+
+[[noreturn]] extern "C" void abort();
+
+// nn::os TLS for fiber context switching
+extern "C" void nn__os__SetTlsValue(u32, u64) __asm("_ZN2nn2os11SetTlsValueEjm");
+// phx::Fiber switch
+extern "C" void phx__Fiber__switch_to_fiber(void*) __asm("_ZN3phx5Fiber15switch_to_fiberEPS0_");
+// TLS slot for fiber guard
+extern "C" __attribute__((visibility("hidden"))) u32 DAT_710532e484;
+
+// Stage reversal functions
+extern "C" void FUN_710240cd00(u32);
+extern "C" void FUN_7103736ce0(const char*, void*, u32);
+extern "C" __attribute__((visibility("hidden"))) void* PTR_s_StRev_None_710523bf40[];
+extern "C" __attribute__((visibility("hidden"))) s64* DAT_7105328f40;
+
+// Team param functions
+extern "C" void FUN_710317b530(u64, s64);
+extern "C" __attribute__((visibility("hidden"))) u8 DAT_71052c41ba;
+extern "C" __attribute__((visibility("hidden"))) u8 DAT_71052c41bb;
+extern "C" __attribute__((visibility("hidden"))) u8 DAT_71052c41b8;
+extern "C" __attribute__((visibility("hidden"))) u8 DAT_71052c45b4;
+
+// ════════════════════════════════════════════════════════════════════
+// 0x7103176f70 — BST-0x58: clear u64 at entry+0x410, notify via entry+0x440
+// Size: 220 bytes
+// [derived: Ghidra decompilation, BST traversal at manager+0x58]
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+void FUN_7103176f70(s64 param_1, u64 param_2) {
+    // BST lookup #1
+    s64* parent = (s64*)(param_1 + 0x58);
+    s64* result = parent;
+    if ((s64*)*parent != nullptr) {
+        s64* node = (s64*)*parent;
+        result = (s64*)(param_1 + 0x58);
+        do {
+            s64* cur;
+            while (cur = node, param_2 < (u64)cur[4]) {
+                node = (s64*)*cur;
+                result = cur;
+                if ((s64*)*cur == nullptr) goto found1;
+            }
+            if (param_2 <= (u64)cur[4]) break;
+            result = cur + 1;
+            node = (s64*)*result;
+        } while ((s64*)*result != nullptr);
+    }
+found1:
+    *(u64*)(*(s64*)(*result + 0x28) + 0x410) = 0;
+
+    if (*(u64*)(param_1 + 0x20) != param_2 || *(s32*)(param_1 + 0x38) > 2)
+        return;
+
+    // BST lookup #2
+    if ((s64*)*parent != nullptr) {
+        result = (s64*)(param_1 + 0x58);
+        s64* node = (s64*)*parent;
+        do {
+            while (param_2 < (u64)node[4]) {
+                s64* left = (s64*)*node;
+                parent = node;
+                result = node;
+                node = left;
+                if (left == nullptr) goto found2;
+            }
+            parent = result;
+            if (param_2 <= (u64)node[4]) break;
+            result = node + 1;
+            node = (s64*)*result;
+            parent = result;
+        } while (node != nullptr);
+    }
+found2:
+    s64* observer = *(s64**)(*(s64*)(*parent + 0x28) + 0x440);
+    if (observer == nullptr) abort();
+    ((void(*)(s64*, s64))(*(s64**)observer)[0x30/8])(observer, *(s64*)(*parent + 0x28) + 0x410);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x7103177060 — BST-0x58: set u8 at entry+0x450, check+notify via entry+0x480
+// Size: 256 bytes
+// [derived: Ghidra decompilation, sets flag then conditionally fires+clears]
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+void FUN_7103177060(s64 param_1, u64 param_2) {
+    // BST lookup #1
+    s64* sentinel = (s64*)(param_1 + 0x58);
+    s64* result = sentinel;
+    if ((s64*)*sentinel != nullptr) {
+        s64* node = (s64*)*sentinel;
+        result = (s64*)(param_1 + 0x58);
+        do {
+            s64* cur;
+            while (cur = node, param_2 < (u64)cur[4]) {
+                node = (s64*)*cur;
+                result = cur;
+                if ((s64*)*cur == nullptr) goto found1;
+            }
+            if (param_2 <= (u64)cur[4]) break;
+            result = cur + 1;
+            node = (s64*)*result;
+        } while ((s64*)*result != nullptr);
+    }
+found1:
+    *(u8*)(*(s64*)(*result + 0x28) + 0x450) = 1;
+
+    if (*(u64*)(param_1 + 0x20) == param_2 && *(s32*)(param_1 + 0x38) < 3) {
+        // BST lookup #2
+        if ((s64*)*sentinel != nullptr) {
+            result = (s64*)(param_1 + 0x58);
+            s64* node = (s64*)*sentinel;
+            do {
+                while (param_2 < (u64)node[4]) {
+                    s64* left = (s64*)*node;
+                    sentinel = node;
+                    result = node;
+                    node = left;
+                    if (left == nullptr) goto found2;
+                }
+                sentinel = result;
+                if (param_2 <= (u64)node[4]) break;
+                result = node + 1;
+                node = (s64*)*result;
+                sentinel = result;
+            } while (node != nullptr);
+        }
+    found2:
+        s64 entry = *(s64*)(*sentinel + 0x28);
+        if (*(u8*)(entry + 0x450) != 0) {
+            if (*(s64**)(entry + 0x480) == nullptr) abort();
+            ((void(*)(void))(*(s64**)(*(s64*)(entry + 0x480)))[0x30/8])();
+            *(u8*)(entry + 0x450) = 0;
+        }
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x7103177160 — BST-0x58: set u8 at entry+0x490, notify via entry+0x4c0
+// Size: 224 bytes
+// [derived: Ghidra decompilation]
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+void FUN_7103177160(s64 param_1, u64 param_2) {
+    s64* parent = (s64*)(param_1 + 0x58);
+    s64* result = parent;
+    if ((s64*)*parent != nullptr) {
+        s64* node = (s64*)*parent;
+        result = (s64*)(param_1 + 0x58);
+        do {
+            s64* cur;
+            while (cur = node, param_2 < (u64)cur[4]) {
+                node = (s64*)*cur;
+                result = cur;
+                if ((s64*)*cur == nullptr) goto found1;
+            }
+            if (param_2 <= (u64)cur[4]) break;
+            result = cur + 1;
+            node = (s64*)*result;
+        } while ((s64*)*result != nullptr);
+    }
+found1:
+    *(u8*)(*(s64*)(*result + 0x28) + 0x490) = 1;
+
+    if (*(u64*)(param_1 + 0x20) != param_2 || *(s32*)(param_1 + 0x38) > 2)
+        return;
+
+    if ((s64*)*parent != nullptr) {
+        result = (s64*)(param_1 + 0x58);
+        s64* node = (s64*)*parent;
+        do {
+            while (param_2 < (u64)node[4]) {
+                s64* left = (s64*)*node;
+                parent = node;
+                result = node;
+                node = left;
+                if (left == nullptr) goto found2;
+            }
+            parent = result;
+            if (param_2 <= (u64)node[4]) break;
+            result = node + 1;
+            node = (s64*)*result;
+            parent = result;
+        } while (node != nullptr);
+    }
+found2:
+    s64* observer = *(s64**)(*(s64*)(*parent + 0x28) + 0x4c0);
+    if (observer == nullptr) abort();
+    ((void(*)(s64*, s64))(*(s64**)observer)[0x30/8])(observer, *(s64*)(*parent + 0x28) + 0x490);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x7103177250 — BST-0x58: clear u8 at entry+0x490, notify via entry+0x4c0
+// Size: 220 bytes
+// [derived: Ghidra decompilation — identical to 0x7103177160 but writes 0]
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+void FUN_7103177250(s64 param_1, u64 param_2) {
+    s64* parent = (s64*)(param_1 + 0x58);
+    s64* result = parent;
+    if ((s64*)*parent != nullptr) {
+        s64* node = (s64*)*parent;
+        result = (s64*)(param_1 + 0x58);
+        do {
+            s64* cur;
+            while (cur = node, param_2 < (u64)cur[4]) {
+                node = (s64*)*cur;
+                result = cur;
+                if ((s64*)*cur == nullptr) goto found1;
+            }
+            if (param_2 <= (u64)cur[4]) break;
+            result = cur + 1;
+            node = (s64*)*result;
+        } while ((s64*)*result != nullptr);
+    }
+found1:
+    *(u8*)(*(s64*)(*result + 0x28) + 0x490) = 0;
+
+    if (*(u64*)(param_1 + 0x20) != param_2 || *(s32*)(param_1 + 0x38) > 2)
+        return;
+
+    if ((s64*)*parent != nullptr) {
+        result = (s64*)(param_1 + 0x58);
+        s64* node = (s64*)*parent;
+        do {
+            while (param_2 < (u64)node[4]) {
+                s64* left = (s64*)*node;
+                parent = node;
+                result = node;
+                node = left;
+                if (left == nullptr) goto found2;
+            }
+            parent = result;
+            if (param_2 <= (u64)node[4]) break;
+            result = node + 1;
+            node = (s64*)*result;
+            parent = result;
+        } while (node != nullptr);
+    }
+found2:
+    s64* observer = *(s64**)(*(s64*)(*parent + 0x28) + 0x4c0);
+    if (observer == nullptr) abort();
+    ((void(*)(s64*, s64))(*(s64**)observer)[0x30/8])(observer, *(s64*)(*parent + 0x28) + 0x490);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x7103177430 — BST-0x58: clear u8 at entry+0x560, notify via entry+0x590
+// Size: 220 bytes
+// [derived: Ghidra decompilation — same pattern, different offsets]
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+void FUN_7103177430(s64 param_1, u64 param_2) {
+    s64* parent = (s64*)(param_1 + 0x58);
+    s64* result = parent;
+    if ((s64*)*parent != nullptr) {
+        s64* node = (s64*)*parent;
+        result = (s64*)(param_1 + 0x58);
+        do {
+            s64* cur;
+            while (cur = node, param_2 < (u64)cur[4]) {
+                node = (s64*)*cur;
+                result = cur;
+                if ((s64*)*cur == nullptr) goto found1;
+            }
+            if (param_2 <= (u64)cur[4]) break;
+            result = cur + 1;
+            node = (s64*)*result;
+        } while ((s64*)*result != nullptr);
+    }
+found1:
+    *(u8*)(*(s64*)(*result + 0x28) + 0x560) = 0;
+
+    if (*(u64*)(param_1 + 0x20) != param_2 || *(s32*)(param_1 + 0x38) > 2)
+        return;
+
+    if ((s64*)*parent != nullptr) {
+        result = (s64*)(param_1 + 0x58);
+        s64* node = (s64*)*parent;
+        do {
+            while (param_2 < (u64)node[4]) {
+                s64* left = (s64*)*node;
+                parent = node;
+                result = node;
+                node = left;
+                if (left == nullptr) goto found2;
+            }
+            parent = result;
+            if (param_2 <= (u64)node[4]) break;
+            result = node + 1;
+            node = (s64*)*result;
+            parent = result;
+        } while (node != nullptr);
+    }
+found2:
+    s64* observer = *(s64**)(*(s64*)(*parent + 0x28) + 0x590);
+    if (observer == nullptr) abort();
+    ((void(*)(s64*, s64))(*(s64**)observer)[0x30/8])(observer, *(s64*)(*parent + 0x28) + 0x560);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x7103177520 — BST-0x58: set u32=1 at entry+0x5a0, notify via entry+0x5d0
+// Size: 224 bytes
+// [derived: Ghidra decompilation]
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+void FUN_7103177520(s64 param_1, u64 param_2) {
+    s64* parent = (s64*)(param_1 + 0x58);
+    s64* result = parent;
+    if ((s64*)*parent != nullptr) {
+        s64* node = (s64*)*parent;
+        result = (s64*)(param_1 + 0x58);
+        do {
+            s64* cur;
+            while (cur = node, param_2 < (u64)cur[4]) {
+                node = (s64*)*cur;
+                result = cur;
+                if ((s64*)*cur == nullptr) goto found1;
+            }
+            if (param_2 <= (u64)cur[4]) break;
+            result = cur + 1;
+            node = (s64*)*result;
+        } while ((s64*)*result != nullptr);
+    }
+found1:
+    *(u32*)(*(s64*)(*result + 0x28) + 0x5a0) = 1;
+
+    if (*(u64*)(param_1 + 0x20) != param_2 || *(s32*)(param_1 + 0x38) > 2)
+        return;
+
+    if ((s64*)*parent != nullptr) {
+        result = (s64*)(param_1 + 0x58);
+        s64* node = (s64*)*parent;
+        do {
+            while (param_2 < (u64)node[4]) {
+                s64* left = (s64*)*node;
+                parent = node;
+                result = node;
+                node = left;
+                if (left == nullptr) goto found2;
+            }
+            parent = result;
+            if (param_2 <= (u64)node[4]) break;
+            result = node + 1;
+            node = (s64*)*result;
+            parent = result;
+        } while (node != nullptr);
+    }
+found2:
+    s64* observer = *(s64**)(*(s64*)(*parent + 0x28) + 0x5d0);
+    if (observer == nullptr) abort();
+    ((void(*)(s64*, s64))(*(s64**)observer)[0x30/8])(observer, *(s64*)(*parent + 0x28) + 0x5a0);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x7103177610 — BST-0x58: clear u32 at entry+0x5a0, notify via entry+0x5d0
+// Size: 220 bytes
+// [derived: Ghidra decompilation — pair with 0x7103177520]
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+void FUN_7103177610(s64 param_1, u64 param_2) {
+    s64* parent = (s64*)(param_1 + 0x58);
+    s64* result = parent;
+    if ((s64*)*parent != nullptr) {
+        s64* node = (s64*)*parent;
+        result = (s64*)(param_1 + 0x58);
+        do {
+            s64* cur;
+            while (cur = node, param_2 < (u64)cur[4]) {
+                node = (s64*)*cur;
+                result = cur;
+                if ((s64*)*cur == nullptr) goto found1;
+            }
+            if (param_2 <= (u64)cur[4]) break;
+            result = cur + 1;
+            node = (s64*)*result;
+        } while ((s64*)*result != nullptr);
+    }
+found1:
+    *(u32*)(*(s64*)(*result + 0x28) + 0x5a0) = 0;
+
+    if (*(u64*)(param_1 + 0x20) != param_2 || *(s32*)(param_1 + 0x38) > 2)
+        return;
+
+    if ((s64*)*parent != nullptr) {
+        result = (s64*)(param_1 + 0x58);
+        s64* node = (s64*)*parent;
+        do {
+            while (param_2 < (u64)node[4]) {
+                s64* left = (s64*)*node;
+                parent = node;
+                result = node;
+                node = left;
+                if (left == nullptr) goto found2;
+            }
+            parent = result;
+            if (param_2 <= (u64)node[4]) break;
+            result = node + 1;
+            node = (s64*)*result;
+            parent = result;
+        } while (node != nullptr);
+    }
+found2:
+    s64* observer = *(s64**)(*(s64*)(*parent + 0x28) + 0x5d0);
+    if (observer == nullptr) abort();
+    ((void(*)(s64*, s64))(*(s64**)observer)[0x30/8])(observer, *(s64*)(*parent + 0x28) + 0x5a0);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x7103177850 — BST-0x58: set 3 fields at entry+0x780..+0x798
+// Size: 260 bytes
+// [derived: Ghidra decompilation — multi-field write + conditional notify]
+// Params: (u32 lo, u32 hi, u32 kind, s64 this, u64 key)
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+void FUN_7103177850(u32 param_1, u32 param_2, u32 param_3, s64 param_4, u64 param_5) {
+    // BST lookup #1
+    s64* sentinel = (s64*)(param_4 + 0x58);
+    s64* result = sentinel;
+    if ((s64*)*sentinel != nullptr) {
+        s64* node = (s64*)*sentinel;
+        result = (s64*)(param_4 + 0x58);
+        do {
+            s64* cur;
+            while (cur = node, param_5 < (u64)cur[4]) {
+                node = (s64*)*cur;
+                result = cur;
+                if ((s64*)*cur == nullptr) goto found1;
+            }
+            if (param_5 <= (u64)cur[4]) break;
+            result = cur + 1;
+            node = (s64*)*result;
+        } while ((s64*)*result != nullptr);
+    }
+found1:;
+    s64 entry = *(s64*)(*result + 0x28);
+    *(u64*)(entry + 0x798) = (u64)param_3;
+    *(u64*)(entry + 0x790) = ((u64)param_2 << 32) | (u64)param_1;
+    if (*(u8*)(entry + 0x780) == 0) {
+        *(u8*)(entry + 0x780) = 1;
+    }
+
+    if (*(u64*)(param_4 + 0x20) == param_5 && *(s32*)(param_4 + 0x38) < 3) {
+        // BST lookup #2
+        if ((s64*)*sentinel != nullptr) {
+            result = (s64*)(param_4 + 0x58);
+            s64* node = (s64*)*sentinel;
+            do {
+                while (param_5 < (u64)node[4]) {
+                    s64* left = (s64*)*node;
+                    sentinel = node;
+                    result = node;
+                    node = left;
+                    if (left == nullptr) goto found2;
+                }
+                sentinel = result;
+                if (param_5 <= (u64)node[4]) break;
+                result = node + 1;
+                node = (s64*)*result;
+                sentinel = result;
+            } while (node != nullptr);
+        }
+    found2:
+        entry = *(s64*)(*sentinel + 0x28);
+        if (*(u8*)(entry + 0x780) != 0) {
+            s64* observer = *(s64**)(entry + 0x7c0);
+            if (observer == nullptr) abort();
+            ((void(*)(s64*, s64))(*(s64**)observer)[0x30/8])(observer, entry + 0x790);
+        }
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x710317f0a0 — phx::Fiber switch with TLS guard
+// Size: 96 bytes
+// [derived: Ghidra decompilation — sets TLS=1, switches fiber, sets TLS=0]
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+void FUN_710317f0a0(s64 param_1) {
+    s64 fiber_data = *(s64*)(param_1 + 8);
+    if (DAT_710532e484 != 0xFFFFFFFFu) {
+        nn__os__SetTlsValue(DAT_710532e484, 1);
+    }
+    phx__Fiber__switch_to_fiber(*(void**)(fiber_data + 8));
+    if (DAT_710532e484 != 0xFFFFFFFFu) {
+        nn__os__SetTlsValue(DAT_710532e484, 0);
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// Stage reversal functions — BST at manager+0x50
+// ════════════════════════════════════════════════════════════════════
+// Manager layout (BST-0x50 group):
+//   +0x20: u64 current_id
+//   +0x50: BST root
+//
+// Entry layout:
+//   +0x08: s32 mode (0=clear, 1=rev)
+//   +0x0c: u32 clear_param
+//   +0x10: u32 rev_index
+//   +0x14: u8  has_duration
+//   +0x18: u32 duration
+
+// ════════════════════════════════════════════════════════════════════
+// 0x71031796f0 — stage reversal: set mode=0 (clear), apply
+// Size: 368 bytes
+// [derived: Ghidra decompilation]
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+void FUN_71031796f0(s64 param_1, u64 param_2, u32 param_3) {
+    s64* cur;
+    s64* left;
+    s64 stage_data;
+
+    // BST lookup #1 at +0x50
+    s64* sentinel = (s64*)(param_1 + 0x50);
+    s64* result = sentinel;
+    if ((s64*)*sentinel != nullptr) {
+        s64* node = (s64*)*sentinel;
+        result = (s64*)(param_1 + 0x50);
+        do {
+            while (cur = node, (u64)cur[4] <= param_2) {
+                if (param_2 <= (u64)cur[4]) goto found1;
+                result = cur + 1;
+                node = (s64*)*result;
+                if ((s64*)*result == nullptr) goto found1;
+                cur = node;
+            }
+            node = (s64*)*cur;
+            result = cur;
+        } while ((s64*)*cur != nullptr);
+    }
+found1:;
+    s64 entry = *(s64*)(*result + 0x28);
+    *(s32*)(entry + 8) = 0;
+    *(u32*)(entry + 0xc) = param_3;
+    *(u8*)(entry + 0x14) = 0;
+
+    if (*(u64*)(param_1 + 0x20) != param_2)
+        return;
+
+    // BST lookup #2
+    if ((s64*)*sentinel != nullptr) {
+        result = (s64*)(param_1 + 0x50);
+        s64* node = (s64*)*sentinel;
+        do {
+            while ((u64)node[4] <= param_2) {
+                s64* prev = result;
+                if (param_2 <= (u64)node[4]) { result = prev; goto found2; }
+                result = node + 1;
+                node = (s64*)*result;
+                if (node == nullptr) goto found2;
+            }
+            left = (s64*)*node;
+            result = node;
+            node = left;
+        } while (left != nullptr);
+    }
+found2:;
+    entry = *(s64*)(*result + 0x28);
+    if (*(s32*)(entry + 8) == 1) {
+        u32 rev_idx = *(u32*)(entry + 0x10);
+        if (*(u8*)(entry + 0x14) == 0) {
+            if (rev_idx > 10) return;
+            stage_data = *DAT_7105328f40;
+            if (*(u8*)(stage_data + 0x494) != 0) goto set_rev;
+            FUN_7103736ce0("Stage_Rev", PTR_s_StRev_None_710523bf40[rev_idx], 500);
+        } else {
+            if (rev_idx > 10) return;
+            stage_data = *DAT_7105328f40;
+            if (*(u8*)(stage_data + 0x494) != 0) goto set_rev;
+            FUN_7103736ce0("Stage_Rev", PTR_s_StRev_None_710523bf40[rev_idx],
+                           *(u32*)(entry + 0x18));
+        }
+    set_rev:
+        *(u32*)(stage_data + 0x490) = rev_idx;
+        return;
+    }
+    if (*(s32*)(entry + 8) == 0) {
+        FUN_710240cd00(*(u32*)(entry + 0xc));
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x7103179860 — stage reversal: set mode=1, rev_index=param_3
+// Size: 384 bytes
+// [derived: Ghidra decompilation — identical structure to 0x71031796f0]
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+void FUN_7103179860(s64 param_1, u64 param_2, u32 param_3) {
+    s64* cur;
+    s64* left;
+    s64 stage_data;
+
+    s64* sentinel = (s64*)(param_1 + 0x50);
+    s64* result = sentinel;
+    if ((s64*)*sentinel != nullptr) {
+        s64* node = (s64*)*sentinel;
+        result = (s64*)(param_1 + 0x50);
+        do {
+            while (cur = node, (u64)cur[4] <= param_2) {
+                if (param_2 <= (u64)cur[4]) goto found1;
+                result = cur + 1;
+                node = (s64*)*result;
+                if ((s64*)*result == nullptr) goto found1;
+                cur = node;
+            }
+            node = (s64*)*cur;
+            result = cur;
+        } while ((s64*)*cur != nullptr);
+    }
+found1:;
+    s64 entry = *(s64*)(*result + 0x28);
+    *(s32*)(entry + 8) = 1;
+    *(u32*)(entry + 0x10) = param_3;
+    *(u8*)(entry + 0x14) = 0;
+
+    if (*(u64*)(param_1 + 0x20) != param_2)
+        return;
+
+    if ((s64*)*sentinel != nullptr) {
+        result = (s64*)(param_1 + 0x50);
+        s64* node = (s64*)*sentinel;
+        do {
+            while ((u64)node[4] <= param_2) {
+                s64* prev = result;
+                if (param_2 <= (u64)node[4]) { result = prev; goto found2; }
+                result = node + 1;
+                node = (s64*)*result;
+                if (node == nullptr) goto found2;
+            }
+            left = (s64*)*node;
+            result = node;
+            node = left;
+        } while (left != nullptr);
+    }
+found2:;
+    entry = *(s64*)(*result + 0x28);
+    if (*(s32*)(entry + 8) == 1) {
+        u32 rev_idx = *(u32*)(entry + 0x10);
+        if (*(u8*)(entry + 0x14) == 0) {
+            if (rev_idx > 10) return;
+            stage_data = *DAT_7105328f40;
+            if (*(u8*)(stage_data + 0x494) != 0) goto set_rev;
+            FUN_7103736ce0("Stage_Rev", PTR_s_StRev_None_710523bf40[rev_idx], 500);
+        } else {
+            if (rev_idx > 10) return;
+            stage_data = *DAT_7105328f40;
+            if (*(u8*)(stage_data + 0x494) != 0) goto set_rev;
+            FUN_7103736ce0("Stage_Rev", PTR_s_StRev_None_710523bf40[rev_idx],
+                           *(u32*)(entry + 0x18));
+        }
+    set_rev:
+        *(u32*)(stage_data + 0x490) = rev_idx;
+        return;
+    }
+    if (*(s32*)(entry + 8) == 0) {
+        FUN_710240cd00(*(u32*)(entry + 0xc));
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x71031799e0 — stage reversal: set mode=1, rev_index=param_3, duration=param_4
+// Size: 384 bytes
+// [derived: Ghidra decompilation — adds duration param]
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+void FUN_71031799e0(s64 param_1, u64 param_2, u32 param_3, u32 param_4) {
+    s64* cur;
+    s64* left;
+    s64 stage_data;
+
+    s64* sentinel = (s64*)(param_1 + 0x50);
+    s64* result = sentinel;
+    if ((s64*)*sentinel != nullptr) {
+        s64* node = (s64*)*sentinel;
+        result = (s64*)(param_1 + 0x50);
+        do {
+            while (cur = node, (u64)cur[4] <= param_2) {
+                if (param_2 <= (u64)cur[4]) goto found1;
+                result = cur + 1;
+                node = (s64*)*result;
+                if ((s64*)*result == nullptr) goto found1;
+                cur = node;
+            }
+            node = (s64*)*cur;
+            result = cur;
+        } while ((s64*)*cur != nullptr);
+    }
+found1:;
+    s64 entry = *(s64*)(*result + 0x28);
+    *(s32*)(entry + 8) = 1;
+    *(u32*)(entry + 0x10) = param_3;
+    *(u32*)(entry + 0x18) = param_4;
+    *(u8*)(entry + 0x14) = 1;
+
+    if (*(u64*)(param_1 + 0x20) != param_2)
+        return;
+
+    if ((s64*)*sentinel != nullptr) {
+        result = (s64*)(param_1 + 0x50);
+        s64* node = (s64*)*sentinel;
+        do {
+            while ((u64)node[4] <= param_2) {
+                s64* prev = result;
+                if (param_2 <= (u64)node[4]) { result = prev; goto found2; }
+                result = node + 1;
+                node = (s64*)*result;
+                if (node == nullptr) goto found2;
+            }
+            left = (s64*)*node;
+            result = node;
+            node = left;
+        } while (left != nullptr);
+    }
+found2:;
+    entry = *(s64*)(*result + 0x28);
+    if (*(s32*)(entry + 8) == 1) {
+        u32 rev_idx = *(u32*)(entry + 0x10);
+        if (*(u8*)(entry + 0x14) == 0) {
+            if (rev_idx > 10) return;
+            stage_data = *DAT_7105328f40;
+            if (*(u8*)(stage_data + 0x494) != 0) goto set_rev;
+            FUN_7103736ce0("Stage_Rev", PTR_s_StRev_None_710523bf40[rev_idx], 500);
+        } else {
+            if (rev_idx > 10) return;
+            stage_data = *DAT_7105328f40;
+            if (*(u8*)(stage_data + 0x494) != 0) goto set_rev;
+            FUN_7103736ce0("Stage_Rev", PTR_s_StRev_None_710523bf40[rev_idx],
+                           *(u32*)(entry + 0x18));
+        }
+    set_rev:
+        *(u32*)(stage_data + 0x490) = rev_idx;
+        return;
+    }
+    if (*(s32*)(entry + 8) == 0) {
+        FUN_710240cd00(*(u32*)(entry + 0xc));
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x710317b2e0 — set death boundary coordinates
+// Size: 272 bytes
+// [derived: Ghidra decompilation — writes camera/death rect from param_2 to
+//  DAT_71052b7f00 singleton, choosing offset by param_1[0] (player index)]
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+void FUN_710317b2e0(s32* param_1, u64* param_2) {
+    s64* bounds_ptr = (s64*)DAT_71052b7f00;
+    s64 inner = *bounds_ptr;
+    // [derived: inner+0xa80 = base offset vector, inner+0xc60 = shift vector]
+    f32 offset_x = *(f32*)(inner + 0xa80) + *(f32*)(inner + 0xc60);
+    f32 offset_y = *((f32*)(inner + 0xa80) + 1) + *((f32*)(inner + 0xc60) + 1);
+
+    if (*param_1 == 0) {
+        // Player 0: write to +0xc00, +0xc20, +0xc40
+        u64 v1 = param_2[1];
+        *(u64*)(inner + 0xc00) = param_2[0];
+        *(u64*)(inner + 0xc08) = v1;
+        *(f32*)(inner + 0xc20) = *(f32*)(inner + 0xc00) + offset_x;
+        *(f32*)(inner + 0xc24) = *(f32*)(inner + 0xc04) + offset_x;
+        *(f32*)(inner + 0xc28) = *(f32*)(inner + 0xc08) + offset_y;
+        *(f32*)(inner + 0xc2c) = *(f32*)(inner + 0xc0c) + offset_y;
+        inner = *bounds_ptr;
+        u64 v2 = param_2[2];
+        *(u64*)(inner + 0xc48) = param_2[3];
+        *(u64*)(inner + 0xc40) = v2;
+    } else {
+        // Player 1+: write to +0xc10, +0xc30, +0xc50
+        u64 v1 = param_2[1];
+        *(u64*)(inner + 0xc10) = param_2[0];
+        *(u64*)(inner + 0xc18) = v1;
+        *(f32*)(inner + 0xc30) = *(f32*)(inner + 0xc10) + offset_x;
+        *(f32*)(inner + 0xc34) = *(f32*)(inner + 0xc14) + offset_x;
+        *(f32*)(inner + 0xc38) = *(f32*)(inner + 0xc18) + offset_y;
+        *(f32*)(inner + 0xc3c) = *(f32*)(inner + 0xc1c) + offset_y;
+        inner = *bounds_ptr;
+        u64 v2 = param_2[2];
+        *(u64*)(inner + 0xc58) = param_2[3];
+        *(u64*)(inner + 0xc50) = v2;
+    }
+
+    // Copy 32 bytes from param_2 into param_1
+    u64 c3 = param_2[3];
+    u64 c0 = param_2[0];
+    u64 c1 = param_2[1];
+    *(u64*)((u8*)param_1 + 0x68) = param_2[2];
+    *(u64*)((u8*)param_1 + 0x70) = c3;
+    *(u64*)((u8*)param_1 + 0x58) = c0;
+    *(u64*)((u8*)param_1 + 0x60) = c1;
+
+    if (*(u8*)((u8*)param_1 + 0x54) == 0) {
+        *(u8*)((u8*)param_1 + 0x54) = 1;
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x710317b3f0 — team param flag toggle
+// Size: 320 bytes
+// [derived: Ghidra decompilation — checks team settings, toggles flag on
+//  linked fighter entries at param_2[0]+0x78 and param_2[1]+0x78]
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+void FUN_710317b3f0(u64 param_1, s64* param_2) {
+    s64 flag = param_2[2];
+
+    ensure_team_param_init();
+
+    bool team_enabled;
+    if (DAT_71052c41ba != 0 && DAT_71052c41bb != 0) {
+        team_enabled = true;
+    } else {
+        team_enabled = (DAT_71052c45b4 == 1 && DAT_71052c41b8 != 0 && DAT_71052c41bb != 0);
+    }
+
+    if ((u8)flag == 0) {
+        if (team_enabled) {
+            *(u8*)(param_2 + 2) = 1;
+            *(u8*)(param_2[0] + 0x78) = 1;
+            *(u8*)(param_2[1] + 0x78) = 1;
+        }
+    } else {
+        if (!team_enabled) {
+            *(u8*)(param_2 + 2) = 0;
+            *(u8*)(param_2[0] + 0x78) = 0;
+            *(u8*)(param_2[1] + 0x78) = 0;
+        }
+    }
+
+    FUN_710317b530(param_1, param_2[0]);
+    FUN_710317b530(param_1, param_2[1]);
+}
