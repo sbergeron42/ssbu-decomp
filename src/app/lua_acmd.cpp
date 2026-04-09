@@ -59,6 +59,48 @@ void L2CValue_71037340c0(u32* this_, u32 val) {
     *reinterpret_cast<u32*>(reinterpret_cast<u8*>(this_) + 8) = val & 1;
 }
 
+// lib::L2CValue::L2CValue(int) — signed int constructor
+// 0x71037340e0 (20 bytes)
+// [derived: Ghidra type signature L2CValue(int), sign-extends w1 to x8]
+void L2CValue_71037340e0(u32* this_, s32 val) {
+    *this_ = 2;
+    *reinterpret_cast<s64*>(reinterpret_cast<u8*>(this_) + 8) = (s64)val;
+}
+
+// lib::L2CValue::L2CValue(unsigned int) — unsigned int constructor
+// 0x7103734100 (20 bytes)
+// [derived: Ghidra type signature L2CValue(uint), zero-extends w1 to x8]
+void L2CValue_7103734100(u32* this_, u32 val) {
+    *this_ = 2;
+    *reinterpret_cast<u64*>(reinterpret_cast<u8*>(this_) + 8) = (u64)val;
+}
+
+// lib::L2CValue::L2CValue(L2CTable*) — table constructor, increments refcount
+// 0x7103734160 (28 bytes)
+// [derived: type=5, refcount at table+0x0]
+void L2CValue_7103734160(u32* this_, u8* table) {
+    *this_ = 5;
+    *reinterpret_cast<u8**>(reinterpret_cast<u8*>(this_) + 8) = table;
+    *reinterpret_cast<s32*>(table) += 1;
+}
+
+// lib::L2CValue::L2CValue(L2CInnerFunctionBase*) — inner function constructor, increments refcount
+// 0x7103734180 (28 bytes)
+// [derived: type=6, refcount at func+0x8]
+void L2CValue_7103734180(u32* this_, u8* func) {
+    *this_ = 6;
+    *reinterpret_cast<u8**>(reinterpret_cast<u8*>(this_) + 8) = func;
+    *reinterpret_cast<s32*>(func + 8) += 1;
+}
+
+// lib::L2CValue::L2CValue(Hash40) — hash constructor
+// 0x71037341a0 (16 bytes)
+// [derived: type=7, stores raw hash value]
+void L2CValue_71037341a0(u32* this_, u64 hash) {
+    *this_ = 7;
+    *reinterpret_cast<u64*>(reinterpret_cast<u8*>(this_) + 8) = hash & 0xFFFFFFFFFFULL;
+}
+
 // ============================================================
 // SetLuaStateAccessor — copies module pointers from accessor to lua state
 // 0x71003ab220 (364 bytes)
@@ -231,6 +273,123 @@ const char* as_string_7103735ff0(u32* this_) {
         return *reinterpret_cast<const char**>(str + 0x10);
     }
     return reinterpret_cast<const char*>(str + 1);
+}
+
+// ============================================================
+// ~L2CValue destructor — handles refcounting and freeing for types 5/6/8
+// 0x7103733f20 (164 bytes)
+// Type 5 (table): decrement refcount at +0, if zero call table cleanup + free
+// Type 6 (inner func): decrement refcount at +8, if zero free
+// Type 8 (inner string): free heap buffer if SSO, then free string struct
+// ============================================================
+
+extern "C" void FUN_7103733900(void*);  // L2CTable destructor/cleanup
+
+void dtor_L2CValue_7103733f20(u32* this_) {
+    u32 type = *this_;
+    u8* ptr;
+    if (type == 8) goto handle_8;
+    if (type == 6) goto handle_6;
+    if (type != 5) return;
+    // type 5: table — decrement refcount at +0, cleanup + free if zero
+    ptr = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(this_) + 8);
+    {
+        s32 rc = --*reinterpret_cast<s32*>(ptr);
+        if (!ptr || rc > 0) return;
+    }
+    FUN_7103733900(ptr);
+    asm volatile("");
+    FUN_710392e590(ptr);
+    return;
+handle_8:
+    // type 8: inner string — free heap buffer if SSO, then free struct
+    ptr = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(this_) + 8);
+    if (!ptr) return;
+    if ((ptr[0] & 1) != 0) {
+        void* heap = *reinterpret_cast<void**>(ptr + 0x10);
+        if (heap) FUN_710392e590(heap);
+    }
+    FUN_710392e590(ptr);
+    return;
+handle_6:
+    // type 6: inner function — decrement refcount at +8, free if zero
+    ptr = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(this_) + 8);
+    {
+        s32 rc = --*reinterpret_cast<s32*>(ptr + 8);
+        if (!ptr || rc > 0) return;
+    }
+    FUN_710392e590(ptr);
+}
+
+// ============================================================
+// operator<(L2CValue const&) — less-than comparison
+// 0x7103734bc0 (172 bytes)
+// Same-type int: signed compare; same-type float: ordered compare
+// Cross-type int/float: convert int to float then compare
+// ============================================================
+
+u8 operator_lt_7103734bc0(u32* this_, u32* other) {
+    u32 t1 = *this_;
+    u32 t2 = *other;
+    if (t1 == t2) {
+        if (t1 == 3) {
+            f32 a = *reinterpret_cast<f32*>(reinterpret_cast<u8*>(this_) + 8);
+            f32 b = *reinterpret_cast<f32*>(reinterpret_cast<u8*>(other) + 8);
+            return a < b;
+        }
+        if (t1 == 2) {
+            return *reinterpret_cast<s64*>(reinterpret_cast<u8*>(this_) + 8) <
+                   *reinterpret_cast<s64*>(reinterpret_cast<u8*>(other) + 8);
+        }
+        return 0;
+    }
+    if (t1 == 2 && t2 == 3) {
+        f32 a = (f32)*reinterpret_cast<s64*>(reinterpret_cast<u8*>(this_) + 8);
+        f32 b = *reinterpret_cast<f32*>(reinterpret_cast<u8*>(other) + 8);
+        return b > a;
+    }
+    u8 result = 0;
+    if (t1 == 3 && t2 == 2) {
+        f32 a = *reinterpret_cast<f32*>(reinterpret_cast<u8*>(this_) + 8);
+        f32 b = (f32)*reinterpret_cast<s64*>(reinterpret_cast<u8*>(other) + 8);
+        result = a < b;
+    }
+    return result;
+}
+
+// ============================================================
+// operator<=(L2CValue const&) — less-than-or-equal comparison
+// 0x7103734c70 (172 bytes)
+// Same pattern as operator< with le/ge/ls condition codes
+// ============================================================
+
+u8 operator_le_7103734c70(u32* this_, u32* other) {
+    u32 t1 = *this_;
+    u32 t2 = *other;
+    if (t1 == t2) {
+        if (t1 == 3) {
+            f32 a = *reinterpret_cast<f32*>(reinterpret_cast<u8*>(this_) + 8);
+            f32 b = *reinterpret_cast<f32*>(reinterpret_cast<u8*>(other) + 8);
+            return a <= b;
+        }
+        if (t1 == 2) {
+            return *reinterpret_cast<s64*>(reinterpret_cast<u8*>(this_) + 8) <=
+                   *reinterpret_cast<s64*>(reinterpret_cast<u8*>(other) + 8);
+        }
+        return 0;
+    }
+    if (t1 == 2 && t2 == 3) {
+        f32 a = (f32)*reinterpret_cast<s64*>(reinterpret_cast<u8*>(this_) + 8);
+        f32 b = *reinterpret_cast<f32*>(reinterpret_cast<u8*>(other) + 8);
+        return b >= a;
+    }
+    u8 result = 0;
+    if (t1 == 3 && t2 == 2) {
+        f32 a = *reinterpret_cast<f32*>(reinterpret_cast<u8*>(this_) + 8);
+        f32 b = (f32)*reinterpret_cast<s64*>(reinterpret_cast<u8*>(other) + 8);
+        result = a <= b;
+    }
+    return result;
 }
 
 // ============================================================
