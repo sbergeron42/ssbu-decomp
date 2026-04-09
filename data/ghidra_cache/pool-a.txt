@@ -236,3 +236,152 @@ Calls EffectModule::req_follow (vtable[0x80/8]) with full param set
 - terrain_data+0x70 flag check (not +0x10 like LANDING, not +0x40 like FOOT)
 - FPA2 hash check for special param setting
 - No secondary FPA2 effect (unlike FOOT_EFFECT)
+
+=== BATCH: AI helper functions (pool-a round 6) ===
+
+=== floor_moves @ 0x7100367e90 (20B) ===
+app::ai::floor_moves(lua_State *L)
+return *(undefined1 (*) [16])(*(long *)(*(long *)(*(long *)(L + -8) + 0x168) + 0xd0) + 0x10);
+
+=== predict_landing_frame @ 0x71003694f0 (20B) ===
+app::ai::predict_landing_frame(lua_State *L)
+return (float)*(int *)(*(long *)(*(long *)(L + -8) + 0x168) + 0x274);
+
+=== current_id @ 0x710036b200 (20B) ===
+app::ai_stage::current_id(void)
+return *(u32 *)(*DAT_71052b5fd8 + 0x150);
+
+=== zako2_search_range @ 0x710036c140 (20B) ===
+app::ai_param::zako2_search_range(lua_State *L)
+return *(u32 *)(*DAT_71052b60e8 + 0x78);
+
+=== training_smash_interval @ 0x710036c160 (20B) ===
+app::ai_param::training_smash_interval(lua_State *L)
+return *(u32 *)(*DAT_71052b60e8 + 0x7c);
+
+=== training_special_interval @ 0x710036c180 (20B) ===
+app::ai_param::training_special_interval(lua_State *L)
+return *(u32 *)(*DAT_71052b60e8 + 0x80);
+
+=== challenger_guard_rate @ 0x710036c1a0 (20B) ===
+app::ai_param::challenger_guard_rate(lua_State *L)
+return *(u32 *)(*DAT_71052b60e8 + 0x84);
+
+=== status_prev @ 0x7100376a00 (20B) ===
+app::analyst::status_prev(lua_State *L)
+return *(u32 *)(**(long **)(*(long *)(L + -8) + 0x170) + 0x10);
+
+=== status_count @ 0x7100376ac0 (20B) ===
+app::analyst::status_count(lua_State *L)
+return *(u32 *)(**(long **)(*(long *)(L + -8) + 0x170) + 0x14);
+
+=== chanced_frame @ 0x7100376b90 (20B) ===
+app::analyst::chanced_frame(lua_State *L)
+return *(u32 *)(**(long **)(*(long *)(L + -8) + 0x170) + 0x1c);
+
+=== dead_top @ 0x710036b180 (24B) ===
+app::ai_camera::dead_top(void)
+return *(u32 *)(*(long *)(*DAT_71052b5fd8 + 200) + 0x10);
+
+=== dead_bottom @ 0x710036b1a0 (24B) ===
+app::ai_camera::dead_bottom(void)
+return *(u32 *)(*(long *)(*DAT_71052b5fd8 + 200) + 0x14);
+
+=== dead_left @ 0x710036b1c0 (24B) ===
+app::ai_camera::dead_left(void)
+return *(u32 *)(*(long *)(*DAT_71052b5fd8 + 200) + 8);
+
+=== dead_right @ 0x710036b1e0 (24B) ===
+app::ai_camera::dead_right(void)
+return *(u32 *)(*(long *)(*DAT_71052b5fd8 + 200) + 0xc);
+
+=== sp_u_high @ 0x710036b8f0 (24B) ===
+app::ai_param::sp_u_high(lua_State *L)
+return *(u32 *)(*(long *)(L + -8) + (long)*(int *)(*(long *)(*(long *)(L + -8) + 0x168) + 0x240) * 4 + 0xad0);
+
+=== sp_u_length @ 0x710036b910 (24B) ===
+app::ai_param::sp_u_length(lua_State *L)
+return *(u32 *)(*(long *)(L + -8) + (long)*(int *)(*(long *)(*(long *)(L + -8) + 0x168) + 0x240) * 4 + 0xae0);
+
+=== return_sp_u_cliff_x @ 0x710036b930 (24B) ===
+same pattern, offset 0xb34
+
+=== return_sp_u_cliff_y @ 0x710036b950 (24B) ===
+same pattern, offset 0xb44
+
+=== return_goal_x @ 0x710036b970 (24B) ===
+same pattern, offset 0xb54
+
+=== return_goal_x_strict @ 0x710036b990 (24B) ===
+same pattern, offset 0xb64
+
+=== return_goal_pad_x_strict @ 0x710036b9b0 (24B) ===
+same pattern, offset 0xb74
+
+=== set_action_id_none @ 0x7100376330 (24B) ===
+app::ai_system::set_action_id_none(lua_State *L)
+lVar1 = *(long *)(L + -8);
+if (*(short *)(lVar1 + 0x198) != 0) { *(short *)(lVar1 + 0x19a) = *(short *)(lVar1 + 0x198); }
+*(u16 *)(lVar1 + 0x198) = 0;
+
+=== reset_stick @ 0x71003762f0 (24B) ===
+app::ai_system::reset_stick(lua_State *L)
+lVar1 = *(long *)(L + -8);
+uVar2 = *(u64 *)PTR_ConstantZero_71052a7a80;
+*(u64 *)(lVar1 + 0xc38) = *(u64 *)(PTR_ConstantZero_71052a7a80 + 8);
+*(u64 *)(lVar1 + 0xc30) = uVar2;
+
+=== is_in_transition @ 0x710036b470 (28B) ===
+app::ai_stage::is_in_transition(lua_State *L)
+return *(int *)(*lib::Singleton<app::StageManager>::instance_ + 0xbc) != 0;
+
+=== add_button @ 0x7100376310 (32B) ===
+app::ai_system::add_button(lua_State *L, ControlPadButtonKind kind)
+*(u32 *)(*(long *)(L + -8) + 0xc40) |= (&DAT_7104538fec)[(int)kind];
+
+=== floor_width @ 0x7100367910 (28B) ===
+app::ai::floor_width(lua_State *L)
+lVar1 = *(long *)(*(long *)(*(long *)(L + -8) + 0x168) + 0xd0);
+return fabsf(*(float *)(lVar1 + 0x30) - *(float *)(lVar1 + 0x20));
+
+=== floor_center @ 0x7100367930 (36B) ===
+app::ai::floor_center(lua_State *L)
+lVar1 = *(long *)(*(long *)(*(long *)(L + -8) + 0x168) + 0xd0);
+return (*(float *)(lVar1 + 0x30) + *(float *)(lVar1 + 0x20)) * 0.5f;
+
+=== air_high @ 0x710036b8b0 (32B) ===
+app::ai_param::air_high(lua_State *L)
+return (*(float *)(*(long *)(L + -8) + 0xb04) + -3.0f) * *(float *)(*(long *)(*(long *)(L + -8) + 0x168) + 0x200);
+
+=== air_length @ 0x710036b8d0 (32B) ===
+app::ai_param::air_length(lua_State *L)
+return (*(float *)(*(long *)(L + -8) + 0xb08) + -3.0f) * *(float *)(*(long *)(*(long *)(L + -8) + 0x168) + 0x1fc);
+
+=== change_mode_action @ 0x7100376360 (32B) ===
+app::ai_system::change_mode_action(lua_State *L)
+if (*(char *)(*(long *)**(u64 **)(L + -8) + 0x38) != 0)
+    *(u8 *)(*(long *)**(u64 **)(L + -8) + 0x39) = 1;
+
+=== change_mode @ 0x71003763a0 (32B) ===
+app::ai_system::change_mode(lua_State *L, Mode mode)
+FUN_71002d8ef0(*(u64 *)(L + -8), mode, 0xffffffff, 0);
+
+=== most_earliest_weapon @ 0x710036b030 (36B) ===
+app::ai_weapon::most_earliest_weapon(lua_State *L)
+lVar1 = FUN_71003596f0(*(u64 *)(*(long *)(L + -8) + 0x168));
+if (lVar1 != 0) lVar1 = *(long *)(lVar1 + 8);
+return lVar1;
+
+=== width @ 0x710036b540 (52B) ===
+app::ai_dangerzone::width(int idx)
+if ((u32)idx < 0x38) { lVar1 = *(*DAT_71052b5fd8+0xc0) + idx*0x14; return *(float*)(lVar1+8)-*(float*)(lVar1+4); }
+return 0.0f;
+
+=== check_over_ground_distance_current_lr @ 0x7100367ae0 (24B) ===
+app::ai::check_over_ground_distance_current_lr(lua_State *L, float dist)
+FUN_71002eeb20(dist, DAT_7104471e0c, *(long *)(L + -8) + 0x180, 1);
+
+=== get_target_vector @ 0x710036ad10 (24B) ===
+app::ai_deprecated::get_target_vector(lua_State *L, float scale)
+lVar1 = *(long *)(L + -8);
+FUN_7100358a80(*(float *)(lVar1 + 0xc20) * scale, *(u64 *)(lVar1 + 0x168), lVar1 + 0xc50);
