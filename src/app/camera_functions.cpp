@@ -655,3 +655,392 @@ extern "C" void entry_to_stage(u32 param_1) {
     FUN_710315f230(*(u64*)(*(u8**)SM_INSTANCE + 0x1e0), &event);
 }
 } // namespace app::st_shell
+
+// ---- Stage center / facing utility functions ----
+
+// 0x71015cf110 (124 bytes) — app::stage::lr_to_stage_center
+// Gets battle object posture, computes stage center from stage_info vtable[0x140/8],
+// returns 1.0f if position <= center, -1.0f if position > center.
+// [derived: disasm shows posture at +0x38, vtable[0x60/8] for pos, vtable[0x140/8] for stage bounds]
+// [derived: fcsel s0,s1,s0,gt — ordered greater-than check, returns -1.0f when pos > center]
+namespace app::stage {
+extern "C" float lr_to_stage_center(u64 lua_state) {
+    u8* battle_obj = *(u8**)(*(u8**)(lua_state - 8) + 0x1a0);
+    void** posture = *(void***)(battle_obj + 0x38);
+    u8* stage_info = *(u8**)SM_INSTANCE + 0x128;
+    void** si_vt = *(void***)stage_info;
+    float* bounds = reinterpret_cast<float*(*)(void*)>(si_vt[0x140/8])(stage_info);
+    float* pos = reinterpret_cast<float*(*)(void**)>(((void**)*posture)[0x60/8])(posture);
+    float px = *pos;
+    float center = *bounds + (bounds[1] - *bounds) * 0.5f;
+    if (px > center) {
+        return -1.0f;
+    }
+    return 1.0f;
+}
+} // namespace app::stage
+
+// 0x71015cf190 (156 bytes) — app::stage::is_looking_at_stage_center
+// Same center computation, checks if facing direction matches the lr toward center.
+// [derived: disasm shows fcsel s8,s1,s0,gt — saves lr in d8 across vtable[0xb0/8] call]
+namespace app::stage {
+extern "C" bool is_looking_at_stage_center(u64 lua_state) {
+    u8* battle_obj = *(u8**)(*(u8**)(lua_state - 8) + 0x1a0);
+    void** posture = *(void***)(battle_obj + 0x38);
+    u8* stage_info = *(u8**)SM_INSTANCE + 0x128;
+    void** si_vt = *(void***)stage_info;
+    float* bounds = reinterpret_cast<float*(*)(void*)>(si_vt[0x140/8])(stage_info);
+    float* pos = reinterpret_cast<float*(*)(void**)>(((void**)*posture)[0x60/8])(posture);
+    float px = *pos;
+    float center = *bounds + (bounds[1] - *bounds) * 0.5f;
+    float lr;
+    if (px > center) {
+        lr = -1.0f;
+    } else {
+        lr = 1.0f;
+    }
+    float facing = reinterpret_cast<float(*)(void**)>(((void**)*posture)[0xb0/8])(posture);
+    return facing == lr;
+}
+} // namespace app::stage
+
+// ---- Dead-up camera hit distance group ----
+
+// 0x71022802f0 (120 bytes) — app::sv_fighter_util::get_dead_up_camera_hit_my_distance_group
+// Gets work module float, compares against FighterParamAccessor2 thresholds to return group 0/1/2.
+// [derived: disasm shows FighterParamAccessor2 → [+0x50] → [+0x10c8] for threshold pair]
+// [derived: fcmp+b.pl for >=thresh_lo, fcmp+b.le (!gt) for <=thresh_hi]
+namespace app::sv_fighter_util {
+extern "C" u64 get_dead_up_camera_hit_my_distance_group(u64 lua_state) {
+    u8* battle_obj = *(u8**)(*(u8**)(lua_state - 8) + 0x1a0);
+    void** work = *(void***)(battle_obj + 0x50);
+    u8* param_sub = *(u8**)((u8*)DAT_71052bb3b0 + 0x50);
+    float* thresholds = *(float**)(param_sub + 0x10c8);
+    float thresh_lo = thresholds[0];
+    float thresh_hi = thresholds[1];
+    float val = reinterpret_cast<float(*)(void**, u64, s32)>(
+        ((void**)*work)[0x270/8])(work, 0x1bf2c4c8e6ULL, 0);
+    if (val < thresh_lo) {
+        return 0;
+    }
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
+    if (val > thresh_hi) {
+        return 2;
+    }
+    return 1;
+}
+} // namespace app::sv_fighter_util
+
+// ---- Stage restart scroll ----
+
+// 0x710227ffd0 (160 bytes) — app::sv_fighter_util::stage_restart_scroll
+// Gets posture position, adds stage_info scroll offset (returned as float4 in v0),
+// builds new position on stack, calls set_pos.
+// [derived: disasm shows posture+0x38 vtable[0x60/8] for pos (returns ptr),
+//  stage_info vtable[0x58/8] returns offset as float4 in v0,
+//  ldr q1 loads pos as vector, component-wise fadd, posture vtable[0x70/8] sets pos]
+namespace app::sv_fighter_util {
+extern "C" void stage_restart_scroll(u64 lua_state) {
+    u8* battle_obj = *(u8**)(*(u8**)(lua_state - 8) + 0x1a0);
+    void** posture = *(void***)(battle_obj + 0x38);
+    float4* pos = reinterpret_cast<float4*(*)(void**)>(((void**)*posture)[0x60/8])(posture);
+    u8* stage_info = *(u8**)SM_INSTANCE + 0x128;
+    void** si_vt = *(void***)stage_info;
+    float4 offset = reinterpret_cast<float4(*)(void*)>(si_vt[0x58/8])(stage_info);
+    float4 p = *pos;
+    float4 new_pos = {0};
+    new_pos[0] = p[0] + offset[0];
+    new_pos[1] = p[1] + offset[1];
+    new_pos[2] = p[2] + offset[2];
+    reinterpret_cast<void(*)(void**, float4*)>(((void**)*posture)[0x70/8])(posture, &new_pos);
+}
+} // namespace app::sv_fighter_util
+
+// ---- CHECK_VALID_START_CAMERA wrappers ----
+
+// 0x71022b1740 — inner implementation (2812 bytes, complex)
+extern "C" void FUN_71022b1740(void*, u64);
+
+// 0x71022b2240 (144 bytes) — app::sv_animcmd::CHECK_VALID_START_CAMERA
+// Lua wrapper: sets up param struct on stack, calls FUN_71022b1740, cleans lua stack.
+// [derived: disasm shows pre-check + do-while loop pattern for stack cleanup,
+//  base computed as **(L+0x20)+0x10, argc = (top - base) >> 4]
+namespace app::sv_animcmd {
+extern "C" void CHECK_VALID_START_CAMERA(u64 lua_state) {
+    struct {
+        u64 val;        // +0x00
+        u32 argc;       // +0x08
+        u64 state;      // +0x10
+        u8 done;        // +0x18
+    } params;
+    params.val = 0;
+    u64 base = *(u64*)*(u64*)(lua_state + 0x20) + 0x10;
+    params.state = lua_state;
+    params.done = 0;
+    params.argc = (u32)((*(u64*)(lua_state + 0x10) - base) >> 4);
+    FUN_71022b1740(&params, *(u64*)(*(u8**)(lua_state - 8) + 0x1a0));
+    base = *(u64*)*(u64*)(lua_state + 0x20) + 0x10;
+    u64 top = *(u64*)(lua_state + 0x10);
+    if (top < base) {
+        do {
+            *(u64*)(lua_state + 0x10) = top + 0x10;
+            *(u32*)(top + 8) = 0;
+            top = *(u64*)(lua_state + 0x10);
+        } while (top < base);
+    }
+    *(u64*)(lua_state + 0x10) = base;
+}
+} // namespace app::sv_animcmd
+
+// 0x71022b22d0 (144 bytes) — app::sv_animcmd::CHECK_VALID_START_CAMERA_arg8
+// Identical structure to CHECK_VALID_START_CAMERA
+namespace app::sv_animcmd {
+extern "C" void CHECK_VALID_START_CAMERA_arg8(u64 lua_state) {
+    struct {
+        u64 val;
+        u32 argc;
+        u64 state;
+        u8 done;
+    } params;
+    params.val = 0;
+    u64 base = *(u64*)*(u64*)(lua_state + 0x20) + 0x10;
+    params.state = lua_state;
+    params.done = 0;
+    params.argc = (u32)((*(u64*)(lua_state + 0x10) - base) >> 4);
+    FUN_71022b1740(&params, *(u64*)(*(u8**)(lua_state - 8) + 0x1a0));
+    base = *(u64*)*(u64*)(lua_state + 0x20) + 0x10;
+    u64 top = *(u64*)(lua_state + 0x10);
+    if (top < base) {
+        do {
+            *(u64*)(lua_state + 0x10) = top + 0x10;
+            *(u32*)(top + 8) = 0;
+            top = *(u64*)(lua_state + 0x10);
+        } while (top < base);
+    }
+    *(u64*)(lua_state + 0x10) = base;
+}
+} // namespace app::sv_animcmd
+
+// ---- Camera direction calculation ----
+
+// 0x710165d190 (132 bytes) — app::dragoonsight::get_rotation_with_calc_camera_direction
+// Computes rotation from camera direction vector using atan2f.
+// [derived: disasm shows ldr q1,[x19,#0xed0] for vector load, dup s0,v1.s[1] for dy,
+//  dup s1,v1.s[2] for dz, fabs s1 for |dz|, bl atan2f, then reload and negate dx]
+extern "C" float DAT_7104471fbc HIDDEN;  // [inferred: radians-to-degrees conversion constant]
+extern "C" float DAT_7104470d10 HIDDEN;  // [inferred: degree scale divisor]
+extern "C" float atan2f(float, float);
+
+namespace app::dragoonsight {
+extern "C" float4 get_rotation_with_calc_camera_direction(void) {
+    u8* cam = *(u8**)DAT_71052b7f00;
+    float4 v = *(float4*)(cam + 0xed0);
+    float angle_y = atan2f(v[1], __builtin_fabsf(v[2]));
+    v = *(float4*)(cam + 0xed0);
+    float angle_x = atan2f(-v[0], __builtin_fabsf(v[2]));
+    float4 r = {0};
+    r[0] = (angle_y * DAT_7104471fbc) / DAT_7104470d10;
+    r[1] = (angle_x * DAT_7104471fbc) / DAT_7104470d10;
+    return r;
+}
+} // namespace app::dragoonsight
+
+// ---- Camera/stage dead area and range getters (leaf, vector return in v0) ----
+
+// 0x71015cb9e0 (44 bytes) — app::camera::get_dead_area
+// Leaf: returns 4 floats from camera data at +0xc30..+0xc3c
+// [derived: disasm shows ldr s0 + ld1 {v0.s}[1-3] per-element load pattern]
+namespace app::camera {
+extern "C" float4 get_dead_area(void) {
+    u8* inner = *(u8**)DAT_71052b7f00;
+    float4 r;
+    r[0] = *(float*)(inner + 0xc30);
+    r[1] = *(float*)(inner + 0xc34);
+    r[2] = *(float*)(inner + 0xc38);
+    r[3] = *(float*)(inner + 0xc3c);
+    return r;
+}
+} // namespace app::camera
+
+// 0x710164c1d0 (44 bytes) — app::shiokarazu::get_dead_range
+// [derived: same per-element pattern, reads +0xc30..+0xc3c]
+namespace app::shiokarazu {
+extern "C" float4 get_dead_range(void) {
+    u8* inner = *(u8**)DAT_71052b7f00;
+    float4 r;
+    r[0] = *(float*)(inner + 0xc30);
+    r[1] = *(float*)(inner + 0xc34);
+    r[2] = *(float*)(inner + 0xc38);
+    r[3] = *(float*)(inner + 0xc3c);
+    return r;
+}
+} // namespace app::shiokarazu
+
+// 0x710164c230 (44 bytes) — app::shiokarazu::get_shrinked_dead_range
+// [derived: reads +0xc50..+0xc5c]
+namespace app::shiokarazu {
+extern "C" float4 get_shrinked_dead_range(void) {
+    u8* inner = *(u8**)DAT_71052b7f00;
+    float4 r;
+    r[0] = *(float*)(inner + 0xc50);
+    r[1] = *(float*)(inner + 0xc54);
+    r[2] = *(float*)(inner + 0xc58);
+    r[3] = *(float*)(inner + 0xc5c);
+    return r;
+}
+} // namespace app::shiokarazu
+
+// ---- Stage info tail-call functions ----
+
+// 0x71015cf0d0 (56 bytes) — app::stage::get_smashball_rect
+// Calls stage_info vtable[0x130/8] which returns CameraRect (HFA: s0-s3),
+// packs result into float4 (v0) for return.
+// [derived: disasm shows blr to vtable, then mov v0.s[1..3] to pack HFA into v0]
+namespace app::stage {
+extern "C" float4 get_smashball_rect(void) {
+    u8* inner = *(u8**)SM_INSTANCE;
+    u8* stage_info = inner + 0x128;
+    void** vt = *(void***)stage_info;
+    struct R4f { float a, b, c, d; };
+    R4f result = reinterpret_cast<R4f(*)(void*)>(vt[0x130/8])(stage_info);
+    float4 r;
+    r[0] = result.a;
+    r[1] = result.b;
+    r[2] = result.c;
+    r[3] = result.d;
+    return r;
+}
+} // namespace app::stage
+
+// ---- Camera position and z-axis functions ----
+
+// 0x7101642f90 (32 bytes) — app::androssshot::is_valid_pos_z
+// Leaf: checks if param_1 < cam_data[0xec8] - param_2
+// [derived: disasm shows ldr from DAT_71052b7f00+0xec8, fsub, fcmp]
+namespace app::androssshot {
+extern "C" bool is_valid_pos_z(float param_1, float param_2) {
+    u8* cam = *(u8**)DAT_71052b7f00;
+    return param_1 < *(float*)(cam + 0xec8) - param_2;
+}
+} // namespace app::androssshot
+
+// ---- Item/Boss module accessor leaf functions ----
+
+// 0x7101647870 (40 bytes) — app::lioleus::get_area_down
+// Gets module at +0xc0, calls vtable[0x1d8/8](mod, 0), returns result+4 (float)
+// [derived: disasm shows ldr x0,[x0,#0xc0]; vtable[0x1d8/8](mod,0); ldr s0,[x0,#4]]
+namespace app::lioleus {
+extern "C" float get_area_down(u64 accessor) {
+    void** mod = *(void***)(accessor + 0xc0);
+    u8* result = reinterpret_cast<u8*(*)(void**, s32)>(
+        ((void**)*mod)[0x1d8/8])(mod, 0);
+    return *(float*)(result + 4);
+}
+} // namespace app::lioleus
+
+// 0x7101655410 (40 bytes) — app::masterhand::get_rhombus_down_y
+// Gets ground module at +0x58, calls vtable[0xb8/8](mod, 1), returns result+0x14 (float)
+// [derived: disasm shows ldr x0,[x0,#0x58]; vtable[0xb8/8](mod,1); ldr s0,[x0,#0x14]]
+namespace app::masterhand {
+extern "C" float get_rhombus_down_y(u64 accessor) {
+    void** mod = *(void***)(accessor + 0x58);
+    u8* result = reinterpret_cast<u8*(*)(void**, s32)>(
+        ((void**)*mod)[0xb8/8])(mod, 1);
+    return *(float*)(result + 0x14);
+}
+} // namespace app::masterhand
+
+// 0x71016433a0 (44 bytes) — app::baitocrane::is_enable_capture_baitocrane
+// Gets posture module at +0x38, calls vtable[0x118/8](), checks result <= 1.0
+// [derived: disasm shows ldr x0,[x0,#0x38]; vtable[0x118/8]; fcmp s0,#1.0; cset w0,ls]
+namespace app::baitocrane {
+extern "C" bool is_enable_capture_baitocrane(u64 accessor) {
+    void** posture = *(void***)(accessor + 0x38);
+    float val = reinterpret_cast<float(*)(void**)>(
+        ((void**)*posture)[0x118/8])(posture);
+    return val <= 1.0f;
+}
+} // namespace app::baitocrane
+
+// ---- Ground collision line getters ----
+
+// Zero constant vector for null-check fallback
+// PTR_ConstantZero_71052a7a80 [derived: 128-bit zero constant, used by ground functions]
+extern "C" u8 PTR_ConstantZero_71052a7a80 HIDDEN;
+
+// 0x71015cbc40 (28 bytes) — app::ground::get_normal
+// Returns vector at GroundCollisionLine+0xa0, or zero if null
+// [derived: disasm shows cbz for null check, ldr q0,[x0,#0xa0] or ldr q0,[PTR_Zero]]
+namespace app::ground {
+extern "C" float4 get_normal(u8* line) {
+    u8* p = (u8*)&PTR_ConstantZero_71052a7a80;
+    if (line != nullptr) {
+        p = line + 0xa0;
+    }
+    return *(float4*)p;
+}
+} // namespace app::ground
+
+// 0x71015ccf90 (32 bytes) — app::ground::get_left_point
+// Returns vector at *(line+0x88)+0x10, or zero if null
+namespace app::ground {
+extern "C" float4 get_left_point(u8* line) {
+    if (line != nullptr) {
+        return *(float4*)(*(u8**)(line + 0x88) + 0x10);
+    }
+    return *(float4*)&PTR_ConstantZero_71052a7a80;
+}
+} // namespace app::ground
+
+// 0x71015ccfb0 (32 bytes) — app::ground::get_right_point
+// Returns vector at *(line+0x90)+0x10, or zero if null
+namespace app::ground {
+extern "C" float4 get_right_point(u8* line) {
+    if (line != nullptr) {
+        return *(float4*)(*(u8**)(line + 0x90) + 0x10);
+    }
+    return *(float4*)&PTR_ConstantZero_71052a7a80;
+}
+} // namespace app::ground
+
+// 0x71015ccfd0 (48 bytes) — app::ground::get_up_point
+// Returns point from left or right endpoint — whichever has higher y
+// [derived: disasm shows fcmp of +0x14 offsets (y-coordinate), fcsel with gt condition]
+namespace app::ground {
+extern "C" float4 get_up_point(u8* line) {
+    if (line != nullptr) {
+        u8* left = *(u8**)(line + 0x88);
+        u8* right = *(u8**)(line + 0x90);
+        float left_y = *(float*)(left + 0x14);
+        float right_y = *(float*)(right + 0x14);
+        u8* result = left;
+        if (left_y > right_y) {
+            result = right;
+        }
+        return *(float4*)(result + 0x10);
+    }
+    return *(float4*)&PTR_ConstantZero_71052a7a80;
+}
+} // namespace app::ground
+
+// 0x71015cd000 (48 bytes) — app::ground::get_down_point
+// Returns point from left or right endpoint — whichever has lower y
+// [derived: disasm shows opposite condition from get_up_point]
+namespace app::ground {
+extern "C" float4 get_down_point(u8* line) {
+    if (line != nullptr) {
+        u8* left = *(u8**)(line + 0x88);
+        u8* right = *(u8**)(line + 0x90);
+        float left_y = *(float*)(left + 0x14);
+        float right_y = *(float*)(right + 0x14);
+        u8* result = right;
+        if (left_y > right_y) {
+            result = left;
+        }
+        return *(float4*)(result + 0x10);
+    }
+    return *(float4*)&PTR_ConstantZero_71052a7a80;
+}
+} // namespace app::ground
