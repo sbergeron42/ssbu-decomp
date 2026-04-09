@@ -142,4 +142,27 @@ void is_enable_couple_tech_for_lua(BattleObjectModuleAccessor* a) {
 }
 
 
+// ============================================================
+// Binary tree node destructors — used by Lua hash table internals
+// Pattern: if null return; recurse(left); recurse(right); free(self)
+// All 56 bytes, same structure with different function addresses
+// ============================================================
+extern "C" void FUN_710392e590(void*);  // je_aligned_free
+
+// 0x7103716100 (56 bytes)
+void FUN_7103716100(u8** node) {
+    if (!node) return;
+    FUN_7103716100(reinterpret_cast<u8**>(*node));
+    FUN_7103716100(reinterpret_cast<u8**>(node[1]));
+    FUN_710392e590(node);
+}
+
+// 0x710376a190 (56 bytes)
+void FUN_710376a190(u8** node) {
+    if (!node) return;
+    FUN_710376a190(reinterpret_cast<u8**>(*node));
+    FUN_710376a190(reinterpret_cast<u8**>(node[1]));
+    FUN_710392e590(node);
+}
+
 } // namespace app::lua_bind
