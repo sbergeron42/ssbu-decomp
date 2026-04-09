@@ -361,3 +361,50 @@ extern "C" float get_camera_clip_bounds(void) {
     float c = *(float*)(base + 0xdc8);
     return val - a * b * c;
 }
+
+// 0x7101644820 (52 bytes) — app::devil::get_stage_devil_position
+// Tail-call: stage_info vtable[0x120/8]
+namespace app::devil {
+extern "C" void get_stage_devil_position(void) {
+    u8* inner = *(u8**)SM_INSTANCE;
+    u8* stage_info = inner + 0x128;
+    void** vt = *(void***)stage_info;
+    reinterpret_cast<void(*)(void*)>(vt[0x120/8])(stage_info);
+}
+} // namespace app::devil
+
+// 0x7101653890 (52 bytes) — app::kiiladarzmanager::set_stage_floating_plates_visibility
+// Conditional tail-call: stage_info vtable[0x228/8] with different args
+namespace app::kiiladarzmanager {
+extern "C" void set_stage_floating_plates_visibility(bool show, s32 param_2) {
+    u8* inner = *(u8**)SM_INSTANCE;
+    u8* stage_info = inner + 0x128;
+    void** vt = *(void***)stage_info;
+    if (show) {
+        reinterpret_cast<void(*)(void*, s32)>(vt[0x228/8])(stage_info, 7);
+    } else {
+        reinterpret_cast<void(*)(void*, s32, s32)>(vt[0x228/8])(stage_info, 6, param_2);
+    }
+}
+} // namespace app::kiiladarzmanager
+
+// 0x710165cad0 (56 bytes) — app::dragoonset::get_stage_dragoon_camera_rectangle
+// Tail-call: stage_info vtable[0x128/8]
+namespace app::dragoonset {
+extern "C" void get_stage_dragoon_camera_rectangle(void) {
+    u8* inner = *(u8**)SM_INSTANCE;
+    u8* stage_info = inner + 0x128;
+    void** vt = *(void***)stage_info;
+    reinterpret_cast<void(*)(void*)>(vt[0x128/8])(stage_info);
+}
+} // namespace app::dragoonset
+
+// 0x71015c8d50 (44 bytes) — app::boss_private::set_stage_sh
+// Gets module at +0x78 from battle object, calls vtable[0x330/8] with arg=1
+namespace app::boss_private {
+extern "C" void set_stage_sh(u64 lua_state) {
+    u8* battle_obj = *(u8**)(*(u8**)(lua_state - 8) + 0x1a0);
+    void** module = *(void***)(battle_obj + 0x78);
+    reinterpret_cast<void(*)(void**, s32)>(((void**)*module)[0x330/8])(module, 1);
+}
+} // namespace app::boss_private
