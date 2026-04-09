@@ -1,0 +1,238 @@
+=== PLAY_LANDING_SE @ 0x71022b4690 (172 bytes) ===
+void app::sv_animcmd::PLAY_LANDING_SE(lua_State *param_1)
+{
+  undefined8 uVar1;
+  long *plVar2;
+  ulong uVar3;
+  long lVar4;
+
+  if (param_1 == (lua_State *)0x0) {
+    halt_baddata();
+  }
+  lVar4 = *(long *)(*(long *)(param_1 + -8) + 0x1a0);
+  if ((int)((ulong)(*(long *)(param_1 + 0x10) - (**(long **)(param_1 + 0x20) + 0x10)) >> 4) < 1) {
+    uVar1 = 0;
+  }
+  else {
+    uVar1 = FUN_71038f4000(param_1,1,0);
+  }
+  plVar2 = *(long **)(lVar4 + 0x148);
+  (**(code **)(*plVar2 + 0x120))(plVar2,uVar1);
+  lVar4 = **(long **)(param_1 + 0x20);
+  uVar3 = *(ulong *)(param_1 + 0x10);
+  while (uVar3 < lVar4 + 0x10U) {
+    *(ulong *)(param_1 + 0x10) = uVar3 + 0x10;
+    *(undefined4 *)(uVar3 + 8) = 0;
+    uVar3 = *(ulong *)(param_1 + 0x10);
+  }
+  *(ulong *)(param_1 + 0x10) = lVar4 + 0x10U;
+  return;
+}
+
+=== REG_LANDING_SE @ 0x71022b4bc0 (172 bytes) ===
+void app::sv_animcmd::REG_LANDING_SE(lua_State *param_1)
+{
+  undefined8 uVar1;
+  long *plVar2;
+  ulong uVar3;
+  long lVar4;
+
+  if (param_1 == (lua_State *)0x0) {
+    halt_baddata();
+  }
+  lVar4 = *(long *)(*(long *)(param_1 + -8) + 0x1a0);
+  if ((int)((ulong)(*(long *)(param_1 + 0x10) - (**(long **)(param_1 + 0x20) + 0x10)) >> 4) < 1) {
+    uVar1 = 0;
+  }
+  else {
+    uVar1 = FUN_71038f4000(param_1,1,0);
+  }
+  plVar2 = *(long **)(lVar4 + 0x148);
+  (**(code **)(*plVar2 + 0x1c8))(plVar2,uVar1);
+  lVar4 = **(long **)(param_1 + 0x20);
+  uVar3 = *(ulong *)(param_1 + 0x10);
+  while (uVar3 < lVar4 + 0x10U) {
+    *(ulong *)(param_1 + 0x10) = uVar3 + 0x10;
+    *(undefined4 *)(uVar3 + 8) = 0;
+    uVar3 = *(ulong *)(param_1 + 0x10);
+  }
+  *(ulong *)(param_1 + 0x10) = lVar4 + 0x10U;
+  return;
+}
+
+=== REMOVE_FINAL_SCREEN_EFFECT @ 0x710228af60 (196 bytes) ===
+void app::sv_animcmd::REMOVE_FINAL_SCREEN_EFFECT(lua_State *param_1)
+{
+  undefined8 uVar1;
+  int iVar2;
+  ulong uVar3;
+  long lVar4;
+
+  iVar2 = (int)((ulong)(*(long *)(param_1 + 0x10) - (**(long **)(param_1 + 0x20) + 0x10)) >> 4);
+  if (param_1 == (lua_State *)0x0) {
+    if (0 < iVar2) {
+      halt_baddata();
+    }
+  }
+  else if (0 < iVar2) {
+    uVar1 = FUN_71038f4000(param_1,1,0);
+    goto LAB_710228afb4;
+  }
+  uVar1 = 0;
+LAB_710228afb4:
+  lVar4 = *(long *)(DAT_71052b7710 + 8);
+  (**(code **)(**(long **)(lVar4 + 0x3a0) + 0x1f0))(*(long **)(lVar4 + 0x3a0),uVar1);
+  *(undefined1 *)(lVar4 + 0x438) = 0;
+  *(undefined8 *)(lVar4 + 0x43c) = 0;
+  *(undefined4 *)(lVar4 + 0x444) = 0;
+  lVar4 = **(long **)(param_1 + 0x20);
+  uVar3 = *(ulong *)(param_1 + 0x10);
+  while (uVar3 < lVar4 + 0x10U) {
+    *(ulong *)(param_1 + 0x10) = uVar3 + 0x10;
+    *(undefined4 *)(uVar3 + 8) = 0;
+    uVar3 = *(ulong *)(param_1 + 0x10);
+  }
+  *(ulong *)(param_1 + 0x10) = lVar4 + 0x10U;
+  return;
+}
+
+=== EFFECT_GLOBAL_BACK_GROUND @ 0x710228f460 (420 bytes) ===
+void app::sv_animcmd::EFFECT_GLOBAL_BACK_GROUND(lua_State *param_1)
+{
+  float *pfVar1;
+  float fVar2;
+  uint uVar3;
+  bool bVar4;
+  uint uVar5;
+  long lVar6;
+  ulong uVar7;
+  int iVar8;
+  float fVar9;
+  undefined8 local_40;
+  int local_38;
+  lua_State *local_30;
+  undefined1 local_28;
+  
+  local_40 = 0;
+  local_28 = 0;
+  iVar8 = (int)((ulong)(*(long *)(param_1 + 0x10) - (**(long **)(param_1 + 0x20) + 0x10)) >> 4);
+  local_38 = iVar8;
+  local_30 = param_1;
+  uVar5 = FUN_710228ea70(*(undefined8 *)PTR_ConstantZero_71052a7a88,0x3f800000,
+                         *(undefined8 *)(*(long *)(param_1 + -8) + 0x1a0),&local_40,0x2000000);
+  if (iVar8 < 10) goto LAB_710228f5c0;
+  pfVar1 = (float *)(**(long **)(param_1 + 0x20) + 0xa0);
+  if (*(float **)(param_1 + 0x10) <= pfVar1) {
+    pfVar1 = (float *)&DAT_7104861960;
+  }
+  fVar2 = pfVar1[2];
+  if (fVar2 == 0.0) { bVar4 = false; }
+  else {
+    if (fVar2 == 2.66247e-44) { /* tag 0x13 int */ 
+      if (*(long *)pfVar1 != 0) { fVar9 = (float)*(long *)pfVar1; if (fVar9 != 0.0) goto truthy; }
+      bVar4 = false;
+    }
+    else if (fVar2 == 1.4013e-45) { /* tag 1 bool */ bVar4 = *pfVar1 != 0.0; }
+    else {
+      if (((uint)fVar2 & 0xf) == 3) { fVar9 = *pfVar1; if (fVar9 != 0.0) goto truthy; bVar4 = false; }
+      else { truthy: if (fVar2 == 4.2039e-45) { bVar4 = !NAN(*pfVar1) && *pfVar1 != 0.0; } else bVar4 = true; }
+    }
+  }
+  if (0 < (int)uVar5) {
+    lVar6 = *lib::Singleton<lib::EffectManager>::instance_ + (ulong)(uVar5 >> 0x18) * 0x300;
+    if ((lVar6 != 0) && (*(uint *)(lVar6 + 4) == uVar5)) {
+      lVar6 = *lib::Singleton<lib::EffectManager>::instance_ + (ulong)(uVar5 >> 0x18) * 0x300;
+      uVar3 = *(uint *)(lVar6 + 0x26c);
+      uVar5 = uVar3 | 0x1000000;
+      if (!bVar4) { uVar5 = uVar3 & 0xfeffffff; }
+      *(uint *)(lVar6 + 0x26c) = uVar5;
+    }
+  }
+LAB_710228f5c0:
+  /* stack cleanup epilog */
+}
+
+=== EFFECT_GLOBAL_BACK_GROUND_CENTER_TOP_NODE @ 0x710228f610 (644 bytes) ===
+[NEON-heavy vector math for camera position interpolation + same EffectManager flag pattern]
+
+=== EFFECT_GLOBAL_BACK_GROUND_CUT_IN_CENTER_POS @ 0x710228f8a0 (432 bytes) ===
+[Same as EFFECT_GLOBAL_BACK_GROUND but reads pos from FighterCutInManager+0x2f0 and rate from +0x340]
+
+=== LAST_EFFECT_SET_TOP_OFFSET @ 0x71022a82a0 (632 bytes) ===
+[Reads 2 float args, gets posture pos via PostureModule vtable[12], adds offsets, sets via EffectModule vtable[0x74/0x2a]]
+
+=== SCREEN_EFFECT_SLOW_WHOLE @ 0x71022a8010 (648 bytes) ===
+[Reads 2 args (slow_kind u8, frame_count s32), updates BattleObjectSlow fields, slot allocation loop in DAT_71052c2610]
+
+=== BACK_GROUND_EFFECT_STAGE_SET_HIDING_FOR_DIRECTION @ 0x71022a7c90 (692 bytes) ===
+[Reads 2 bool args, iterates StageManager stage list, updates visibility state with callback]
+
+=== EFFECT_GLOBAL_BACK_GROUND @ 0x710228f460 (420 bytes) ===
+- Creates acmd_effect_ctrl: hash=0, flag=0, nargs, L
+- Calls FUN_710228ea70(ConstantZero, 0x3f800000, acc, &ctrl, 0x2000000) → returns handle (u32)
+- If nargs >= 10: reads bool arg 10 at stack offset 0xa0 (acmd_read_bool inline)
+- Uses lib::Singleton<lib::EffectManager>::instance_ to look up effect:
+  effect_ptr = *instance_ + (handle >> 24) * 0x300
+  if effect_ptr != 0 && effect_ptr[1] == handle:
+    flags = *(u32*)(effect_ptr + 0x26c)
+    if bool: flags |= 0x1000000
+    else: flags &= ~0x1000000
+    *(u32*)(effect_ptr + 0x26c) = flags
+- acmd_consume
+
+=== EFFECT_GLOBAL_BACK_GROUND_CUT_IN_CENTER_POS @ 0x710228f8a0 (432 bytes) ===
+- Same as EFFECT_GLOBAL_BACK_GROUND but reads position from:
+  *lib::Singleton<app::FighterCutInManager>::instance_ + 0x2f0
+  instead of ConstantZero
+- Also needs FighterCutInManager singleton declaration
+
+=== LAST_EFFECT_SET_TOP_OFFSET @ 0x71022a82a0 (632 bytes) ===
+- Get acc, nargs, 3-way null check
+- Read 2 float args (offsets 0x10, 0x20) using acmd_read_float
+- PostureModule (acc+0x38) vtable[0x60/8] → returns position ptr (u64* with x,y,z)
+- Adds float offsets to posture x,y
+- EffectModule vtable[0x3a0/8] → get last effect handle
+- EffectModule vtable[0x150/8] → set effect position
+- acmd_consume
+
+=== EFFECT_GLOBAL_BACK_GROUND_CENTER_TOP_NODE @ 0x710228f610 (644 bytes) ===
+[NEON-heavy: vector normalize + weighted interpolation of camera→target position]
+Key refs: DAT_71052b7f00 (camera controller), FighterCutInManager+0x300 (center pos), +0x340 (rate)
+Camera mode check: *(lVar6+4) == 4 || 7 → vector math path, else → use +0x300 directly
+Same EffectManager flag post-processing as EFFECT_GLOBAL_BACK_GROUND
+
+=== EFFECT_FOLLOW_arg12 @ 0x710229c430 (2116 bytes) ===
+12-arg EFFECT_FOLLOW variant:
+- arg1,2: hashes (FUN_71038f4000)
+- arg3-5: pos floats (acmd_read_float at 0x30, 0x40, 0x50)
+- arg6-8: rot floats (at 0x60, 0x70, 0x80)
+- arg9: rate float (at 0x90, but tag==3 uses u32 directly)
+- arg10: bool follow flag (acmd_read_bool at 0xa0)
+  - if follow, local_88 = 0xC000 instead of 0x8000
+- arg11: alt_hash (FUN_71038f4000 arg 0xb)
+- arg12: joint_kind (FUN_71038f4000 arg 0xc, abort if >8)
+Uses PTR_FUN_7104f68c38 function pointer table indexed by joint_kind
+Calls EffectModule::req_follow (vtable[0x80/8]) with full param set
+
+=== FOOT_EFFECT @ 0x7102297600 (4148 bytes) ===
+- EffectModule vtable[0x3d0/8] enable check first (if disabled → skip to consume)
+- Inline 16-arg reading (does NOT use FUN_7102288620)
+- GroundModule vtable[0x478/8](8) → terrain_kind
+- StageManager singleton → terrain_data via vtable[0x1f8/8]
+- FPA2 hash check (0xe3c234564, 0x14a422ea56, 0x11b722b99f) → set param
+- req_on_joint (vtable[0x70/8]) with terrain secondary hash at terrain_data+0x48
+  (wait, looking at Ghidra code: it uses +0x18 for the secondary hash in the second call)
+- Special FPA2 secondary effect if *(lVar14+0x194)==0 and hash==0xe3c234564:
+  Reads FPA2 params at +0x1630,+0x1638, flips x if motion is certain kind
+- terrain_data+0x10 check for sentinel
+
+=== DOWN_EFFECT @ 0x7102298fa0 (3996 bytes) ===
+- No EffectModule enable check at start
+- Unconditional null check → halt_baddata
+- Inline 16-arg reading (does NOT use FUN_7102288620)
+- GroundModule vtable[0x478/8](8) → terrain_kind
+- StageManager → terrain_data
+- Secondary hash from terrain_data+0x78 (not +0x48 like LANDING/FOOT)
+- terrain_data+0x70 flag check (not +0x10 like LANDING, not +0x40 like FOOT)
+- FPA2 hash check for special param setting
+- No secondary FPA2 effect (unlike FOOT_EFFECT)

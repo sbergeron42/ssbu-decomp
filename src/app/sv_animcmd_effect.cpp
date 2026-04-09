@@ -20,7 +20,8 @@ extern "C" u64 FUN_71038f4000(lua_State*, s32, s32);
 extern "C" u64 FUN_7103907950(u64, void*);
 extern "C" u8 DAT_7104861960[] HIDDEN;
 extern "C" u64 BattleObjectWorld_instance HIDDEN;  // lib::Singleton<app::BattleObjectWorld>::instance_
-extern "C" void FUN_710228ea70(u64, u64, u64, void*, s32);
+extern "C" void* DAT_71052b7710 HIDDEN;  // [inferred: screen effect manager data ptr]
+extern "C" u32 FUN_710228ea70(u64, u64, u64, void*, s32);
 extern "C" void FUN_7102288620(void*, void*, u64);
 extern "C" u64 ConstantZero HIDDEN;  // PTR_ConstantZero_71052a7a88
 extern "C" u32 DAT_71052381c0 HIDDEN;  // XOR-shift128 PRNG state[0]
@@ -28,6 +29,8 @@ extern "C" u32 DAT_71052381c4 HIDDEN;  // XOR-shift128 PRNG state[1]
 extern "C" u32 DAT_71052381c8 HIDDEN;  // XOR-shift128 PRNG state[2]
 extern "C" u32 DAT_71052381cc HIDDEN;  // XOR-shift128 PRNG state[3]
 extern "C" f32 DAT_7104472710 HIDDEN;  // PRNG normalization ≈ 1/(2^32)
+extern "C" void* PTR_FUN_7104f68c38[] HIDDEN;  // joint resolve function table (9 entries, indexed 0-8)
+extern "C" [[noreturn]] void abort();
 
 // Singletons for FOOT/LANDING/DOWN effects
 namespace lib {
@@ -36,10 +39,20 @@ namespace lib {
 namespace app {
     struct StageManager;
     struct FighterParamAccessor2;
+    struct FighterCutInManager;
+}
+namespace lib {
+    struct EffectManager;
 }
 // Explicit instantiation declarations (linker resolves these)
 extern template app::StageManager* lib::Singleton<app::StageManager>::instance_;
 extern template app::FighterParamAccessor2* lib::Singleton<app::FighterParamAccessor2>::instance_;
+extern template app::FighterCutInManager* lib::Singleton<app::FighterCutInManager>::instance_;
+extern template lib::EffectManager* lib::Singleton<lib::EffectManager>::instance_;
+
+extern "C" u64 DAT_71052c2610 HIDDEN;   // [inferred: slow effect slot array base]
+extern "C" void FUN_710260ccd0(u64);      // StageManager::reset_hiding (called on bg effect disable)
+extern "C" u64 DAT_71052b7f00 HIDDEN;   // [inferred: camera/view data ptr]
 
 // Control struct for FUN_7102288620 / FUN_710228ea70
 // FUN_7102288620 reads nargs and L from this struct via the pointer passed as arg 2
@@ -3849,6 +3862,483 @@ void FOOT_EFFECT_FLIP(lua_State* param_1) {
     }
 
 foot_flip_consume:
+    acmd_consume(L);
+}
+
+// 0x710228af60 (196 bytes) — REMOVE_FINAL_SCREEN_EFFECT
+// Args: 1=effect_hash
+// Uses global screen effect manager (DAT_71052b7710), not accessor
+// Calls vtable[0x1f0/8] on sub-object at +0x3a0, then clears state fields
+void REMOVE_FINAL_SCREEN_EFFECT(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    int nargs = acmd_nargs(L);
+
+    u64 hash;
+    if (param_1 == nullptr) {
+        if (nargs >= 1) {
+#ifdef MATCHING_HACK_NX_CLANG
+            __builtin_trap();
+#endif
+        }
+        hash = 0;
+    } else if (nargs >= 1) {
+        hash = FUN_71038f4000(param_1, 1, 0);
+    } else {
+        hash = 0;
+    }
+
+    // DAT_71052b7710 → offset +8 → screen effect manager instance
+    // +0x3a0 = effect sub-object, vtable[0x1f0/8] = remove_screen_effect
+    u64 mgr = *(u64*)((u8*)DAT_71052b7710 + 8);
+    void** sub_obj = *(void***)(mgr + 0x3a0);
+    reinterpret_cast<void(*)(void*, u64)>((*(void***)sub_obj)[0x1f0 / 8])(sub_obj, hash);
+
+    // Clear screen effect state
+    *(u8*)(mgr + 0x438) = 0;
+    *(u64*)(mgr + 0x43c) = 0;
+    *(u32*)(mgr + 0x444) = 0;
+
+    acmd_consume(L);
+}
+
+// 0x71022b4690 (172 bytes) — PLAY_LANDING_SE
+// Args: 1=se_hash
+// Calls SoundModule vtable[0x120/8] (play_landing_se)
+// +0x148 = SoundModule [derived: accessor offset map]
+void PLAY_LANDING_SE(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    if (param_1 == nullptr) {
+#ifdef MATCHING_HACK_NX_CLANG
+        __builtin_trap();
+#endif
+    }
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    int nargs = acmd_nargs(L);
+
+    u64 hash;
+    if (nargs < 1) {
+        hash = 0;
+    } else {
+        hash = FUN_71038f4000(param_1, 1, 0);
+    }
+
+    void** snd = *(void***)(acc + 0x148);  // SoundModule [derived: accessor offset map]
+    reinterpret_cast<void(*)(void*, u64)>((*(void***)snd)[0x120 / 8])(snd, hash);
+
+    acmd_consume(L);
+}
+
+// 0x71022b4bc0 (172 bytes) — REG_LANDING_SE
+// Args: 1=se_hash
+// Calls SoundModule vtable[0x1c8/8] (reg_landing_se)
+// +0x148 = SoundModule [derived: accessor offset map]
+void REG_LANDING_SE(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    if (param_1 == nullptr) {
+#ifdef MATCHING_HACK_NX_CLANG
+        __builtin_trap();
+#endif
+    }
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    int nargs = acmd_nargs(L);
+
+    u64 hash;
+    if (nargs < 1) {
+        hash = 0;
+    } else {
+        hash = FUN_71038f4000(param_1, 1, 0);
+    }
+
+    void** snd = *(void***)(acc + 0x148);  // SoundModule [derived: accessor offset map]
+    reinterpret_cast<void(*)(void*, u64)>((*(void***)snd)[0x1c8 / 8])(snd, hash);
+
+    acmd_consume(L);
+}
+
+// 0x710228f460 (420 bytes) — EFFECT_GLOBAL_BACK_GROUND
+// Calls FUN_710228ea70 with ConstantZero pos, 1.0f rate, flag=0x2000000
+// If nargs >= 10, reads bool arg 10 → sets/clears bit 0x1000000 on EffectManager entry
+// EffectManager: *instance_ is entries base, each entry 0x300 bytes
+//   entry+4 = handle validation, entry+0x26c = flags
+void EFFECT_GLOBAL_BACK_GROUND(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+
+    acmd_effect_ctrl ctrl;
+    ctrl.hash = 0;
+    ctrl.flag = 0;
+    int nargs = (int)((*(u64*)(L + 0x10) - (**(u64**)(L + 0x20) + 0x10)) >> 4);
+    ctrl.nargs = (u32)nargs;
+    ctrl.L = param_1;
+
+    u32 handle = FUN_710228ea70(ConstantZero, 0x3f800000, acc, &ctrl, 0x2000000);
+
+    if (nargs >= 10) {
+        bool bg_flag = acmd_read_bool(L, 0xa0);
+
+        if ((s32)handle > 0) {
+            u64 em = *(u64*)lib::Singleton<lib::EffectManager>::instance_;
+            u64 entry = em + (u64)(handle >> 24) * 0x300;
+            if (entry != 0 && *(u32*)(entry + 4) == handle) {
+                entry = *(u64*)lib::Singleton<lib::EffectManager>::instance_ + (u64)(handle >> 24) * 0x300;
+                u32 flags = *(u32*)(entry + 0x26c);
+                u32 new_flags;
+                if (bg_flag) {
+                    new_flags = flags | 0x1000000;
+                } else {
+                    new_flags = flags & 0xfeffffff;
+                }
+                *(u32*)(entry + 0x26c) = new_flags;
+            }
+        }
+    }
+
+    acmd_consume(L);
+}
+
+// 0x710228f8a0 (432 bytes) — EFFECT_GLOBAL_BACK_GROUND_CUT_IN_CENTER_POS
+// Like EFFECT_GLOBAL_BACK_GROUND but reads pos from FighterCutInManager+0x2f0
+// and rate from FighterCutInManager+0x340
+void EFFECT_GLOBAL_BACK_GROUND_CUT_IN_CENTER_POS(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+
+    acmd_effect_ctrl ctrl;
+    ctrl.hash = 0;
+    ctrl.flag = 0;
+    int nargs = (int)((*(u64*)(L + 0x10) - (**(u64**)(L + 0x20) + 0x10)) >> 4);
+    ctrl.nargs = (u32)nargs;
+    ctrl.L = param_1;
+
+    u64 cutin = (u64)lib::Singleton<app::FighterCutInManager>::instance_;
+    u64 pos = *(u64*)(cutin + 0x2f0);
+    u32 rate = *(u32*)(cutin + 0x340);
+    u32 handle = FUN_710228ea70(pos, rate, acc, &ctrl, 0x2000000);
+
+    if (nargs >= 10) {
+        bool bg_flag = acmd_read_bool(L, 0xa0);
+
+        if ((s32)handle > 0) {
+            u64 em = *(u64*)lib::Singleton<lib::EffectManager>::instance_;
+            u64 entry = em + (u64)(handle >> 24) * 0x300;
+            if (entry != 0 && *(u32*)(entry + 4) == handle) {
+                entry = *(u64*)lib::Singleton<lib::EffectManager>::instance_ + (u64)(handle >> 24) * 0x300;
+                u32 flags = *(u32*)(entry + 0x26c);
+                u32 new_flags;
+                if (bg_flag) {
+                    new_flags = flags | 0x1000000;
+                } else {
+                    new_flags = flags & 0xfeffffff;
+                }
+                *(u32*)(entry + 0x26c) = new_flags;
+            }
+        }
+    }
+
+    acmd_consume(L);
+}
+
+// 0x71022a82a0 (632 bytes) — LAST_EFFECT_SET_TOP_OFFSET
+// Reads 2 float args (x,y offsets), gets posture position via PostureModule vtable[12],
+// adds offsets, then sets effect position via EffectModule::set_pos(last_handle, pos)
+// +0x38 = PostureModule [derived: accessor offset map]
+// +0x140 = EffectModule [derived: accessor offset map]
+void LAST_EFFECT_SET_TOP_OFFSET(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+
+    u64 base = **(u64**)(L + 0x20) + 0x10;
+    int nargs = (int)((*(u64*)(L + 0x10) - base) >> 4);
+
+    f32 offset_x, offset_y;
+    if (param_1 == nullptr) {
+        if (nargs >= 1) {
+#ifdef MATCHING_HACK_NX_CLANG
+            __builtin_trap();
+#endif
+        }
+        offset_x = 0.0f;
+        offset_y = 0.0f;
+    } else if (nargs < 1) {
+        offset_x = 0.0f;
+        offset_y = 0.0f;
+    } else {
+        offset_x = acmd_read_float(L, 0x10);
+        offset_y = 0.0f;
+        if (nargs >= 2) {
+            offset_y = acmd_read_float(L, 0x20);
+        }
+    }
+
+    // PostureModule vtable[12] (offset 0x60) → get_pos() returns Vec3* (x,y,z)
+    void** posture = *(void***)(acc + 0x38);
+    u64* pos = reinterpret_cast<u64*(*)(void*)>((*(void***)posture)[0x60 / 8])(posture);
+
+    // pos[0] = {f32 x, f32 y}, pos[1] = {f32 z, ...}
+    f32 pos_x = *(f32*)pos;
+    f32 pos_y = *((f32*)pos + 1);
+    u64 pos_z_raw = pos[1];
+
+    struct { f32 x; f32 y; u64 z; } out_pos;
+    out_pos.x = offset_x + pos_x;
+    out_pos.y = offset_y + pos_y;
+    out_pos.z = pos_z_raw;
+
+    // EffectModule: vtable[0x3a0/8] = get_last_handle(), vtable[0x150/8] = set_pos(handle, pos)
+    void** eff = *(void***)(acc + 0x140);
+    u32 last_handle = reinterpret_cast<u32(*)(void*)>((*(void***)eff)[0x3a0 / 8])(eff);
+    reinterpret_cast<void(*)(void*, u32, void*)>((*(void***)eff)[0x150 / 8])(eff, last_handle, &out_pos);
+
+    acmd_consume(L);
+}
+
+// 0x71022a8010 (648 bytes) — SCREEN_EFFECT_SLOW_WHOLE
+// Reads 2 args: 1=slow_kind (u8), 2=frame_count (s32)
+// Updates BattleObjectSlow max frame, allocates slot in slow effect array
+// DAT_71052b7710+8 = BattleObjectSlow instance
+// DAT_71052c2610 = slow effect slot array (16 slots × 2 bytes: {active, kind})
+void SCREEN_EFFECT_SLOW_WHOLE(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    int nargs = acmd_nargs(L);
+
+    u8 slow_kind;
+    s32 frame_count;
+    if (param_1 == nullptr) {
+        if (nargs >= 1) {
+#ifdef MATCHING_HACK_NX_CLANG
+            __builtin_trap();
+#endif
+        }
+        slow_kind = 0;
+        frame_count = 0;
+    } else if (nargs < 1) {
+        slow_kind = 0;
+        frame_count = 0;
+    } else {
+        slow_kind = (u8)FUN_71038f4000(param_1, 1, 0);
+        if (nargs < 2) {
+            frame_count = 0;
+        } else {
+            frame_count = (s32)FUN_71038f4000(param_1, 2, 0);
+        }
+    }
+
+    u64 slow = *(u64*)((u8*)DAT_71052b7710 + 8);  // BattleObjectSlow instance
+
+    // Update max frame count
+    if (*(s32*)(slow + 0x450) < frame_count) {
+        *(s32*)(slow + 0x450) = frame_count;
+    }
+
+    // If no slot assigned yet (0xFF), find a free slot
+    if (*(u8*)(slow + 0x454) == 0xFF) {
+        u64 slots = DAT_71052c2610;
+        u8 slot_id = 0xFF;
+
+        // Search 16 slots for an empty one (active == 0)
+        for (s32 i = 0; i < 16; i++) {
+            u8* slot = (u8*)(slots + 0x20 + i * 2);
+            if (*slot == 0) {
+                *slot = 1;
+                *(u8*)(slots + 0x20 + i * 2 + 1) = slow_kind;
+                *(u8*)(slots + 0x40) = 1;
+                slot_id = (u8)i;
+                break;
+            }
+        }
+
+        *(u8*)(slow + 0x454) = slot_id;
+    }
+
+    acmd_consume(L);
+}
+
+// 0x71022a7c90 (692 bytes) — BACK_GROUND_EFFECT_STAGE_SET_HIDING_FOR_DIRECTION
+// Reads 2 bool args: arg1 = enable flag, arg2 = direction flag
+// If enable: iterates StageManager stage objects, updates visibility state
+// If disable: calls FUN_710260ccd0 to reset hiding
+// DAT_71052b7710+8 = BattleObjectSlow, +0x448 = bg_hiding_active flag
+void BACK_GROUND_EFFECT_STAGE_SET_HIDING_FOR_DIRECTION(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    u64 top = *(u64*)(L + 0x10);
+    u64 base_entry = **(u64**)(L + 0x20) + 0x10;
+    int nargs = (int)((top - base_entry) >> 4);
+
+    bool enable = false;
+    bool direction = false;
+
+    if (param_1 == nullptr) {
+        if (nargs >= 1) {
+#ifdef MATCHING_HACK_NX_CLANG
+            __builtin_trap();
+#endif
+        }
+    } else if (nargs >= 1) {
+        enable = acmd_read_bool(L, 0x10);
+        if (enable) {
+            if (nargs < 2) {
+                direction = false;
+            } else {
+                direction = acmd_read_bool(L, 0x20);
+            }
+
+            u64 slow = *(u64*)((u8*)DAT_71052b7710 + 8);
+
+            if (*(u8*)(slow + 0x448) == 0) {
+                u64 stage_mgr = (u64)lib::Singleton<app::StageManager>::instance_;
+
+                // Iterate stage objects: +0x210 = begin ptr, +0x218 = end ptr
+                u64* iter = *(u64**)(stage_mgr + 0x210);
+                u64* end = *(u64**)(stage_mgr + 0x218);
+
+                while (iter != end) {
+                    u64 obj = *iter;
+                    u32 old_state = *(u32*)(obj + 0x38);
+                    u32 counter = *(u32*)(obj + 0x2c);
+                    *(u32*)(obj + 0x2c) = counter + 1;
+
+                    u32 new_state;
+                    if (*(s32*)(obj + 0x34) >= 1) {
+                        new_state = 3;
+                    } else if (*(s32*)(obj + 0x30) >= 1) {
+                        new_state = 2;
+                    } else {
+                        new_state = (counter >> 31) ^ 1;
+                    }
+                    *(u32*)(obj + 0x38) = new_state;
+
+                    if (old_state != new_state) {
+                        struct { u32 old_st; u32 new_st; u32 dir_inv; } cb_data;
+                        cb_data.old_st = old_state;
+                        cb_data.new_st = new_state;
+                        cb_data.dir_inv = direction ^ 1;
+                        reinterpret_cast<void(*)(u64, void*)>(*(u64*)(*(u64*)obj + 0x20))(obj, &cb_data);
+                    }
+                    iter++;
+                }
+
+                // Update stage hide counter and activate if first time
+                s32 hide_count = *(s32*)(stage_mgr + 0x168);
+                *(s32*)(stage_mgr + 0x168) = hide_count + 1;
+
+                if (hide_count == 0) {
+                    u64 active_stage = *(u64*)(stage_mgr + 0x148);
+                    *(u64*)(stage_mgr + 0x160) = active_stage;
+                    if (active_stage != 0 && *(u8*)(active_stage + 0x3c5) == 0) {
+                        *(u8*)(active_stage + 0x3c5) = 1;
+                        reinterpret_cast<void(*)(void)>(*(u64*)(*(u64*)active_stage + 0x5c0))();
+                    }
+                }
+
+                *(u8*)(slow + 0x448) = 1;
+            }
+
+            goto bg_consume;
+        }
+    }
+
+    // Disable path: reset hiding if active
+    {
+        u64 slow = *(u64*)((u8*)DAT_71052b7710 + 8);
+        if (*(u8*)(slow + 0x448) != 0) {
+            FUN_710260ccd0((u64)lib::Singleton<app::StageManager>::instance_);
+            *(u8*)(slow + 0x448) = 0;
+        }
+    }
+
+bg_consume:
+    acmd_consume(L);
+}
+
+// 0x710229c430 (2116 bytes) — EFFECT_FOLLOW_arg12
+// Like EFFECT_FOLLOW_arg11 but with arg12=joint_kind (indexes function pointer table).
+// arg12 is bounded 0-8 (abort if >= 9). Calls PTR_FUN_7104f68c38[joint_kind](acc)
+// to resolve joint id, which replaces the hardcoded -1 in EFFECT_FOLLOW_arg11.
+// Flags: follow=0xc000, default=0x8000.
+// Calls EffectModule::req_follow (vtable slot 16, offset 0x80)
+void EFFECT_FOLLOW_arg12(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    if (param_1 == nullptr) {
+#ifdef MATCHING_HACK_NX_CLANG
+        __builtin_trap();
+#endif
+    }
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    int nargs = acmd_nargs(L);
+
+    u64 hash1 = 0, hash2 = 0;
+    u64 off_x = 0, off_y = 0, off_z = 0;
+
+    if (nargs >= 1) {
+        hash1 = FUN_71038f4000(param_1, 1, 0);
+        if (nargs >= 2) {
+            hash2 = FUN_71038f4000(param_1, 2, 0);
+            if (nargs >= 3) {
+                f32 f3 = acmd_read_float(L, 0x30);
+                off_x = (u64)(u32)f3;
+                if (nargs >= 4) {
+                    f32 f4 = acmd_read_float(L, 0x40);
+                    off_y = (u64)(u32)f4;
+                    if (nargs >= 5) {
+                        f32 f5 = acmd_read_float(L, 0x50);
+                        off_z = (u64)(u32)f5;
+                    }
+                }
+            }
+        }
+    }
+
+    struct { u32 y; u32 x; u64 z; } off_vec = { (u32)off_y, (u32)off_x, off_z };
+
+    u64 rot_x = 0, rot_y = 0, rot_z = 0;
+    if (nargs >= 6) {
+        f32 f6 = acmd_read_float(L, 0x60);
+        rot_x = (u64)(u32)f6;
+        if (nargs >= 7) {
+            f32 f7 = acmd_read_float(L, 0x70);
+            rot_y = (u64)(u32)f7;
+            if (nargs >= 8) {
+                f32 f8 = acmd_read_float(L, 0x80);
+                rot_z = (u64)(u32)f8;
+            }
+        }
+    }
+
+    struct { u32 y; u32 x; u64 z; } rot_vec = { (u32)rot_y, (u32)rot_x, rot_z };
+
+    f32 rate_f = 0;
+    if (nargs >= 9) {
+        rate_f = acmd_read_float(L, 0x90);
+    }
+
+    bool follow_flag = false;
+    if (nargs >= 10) {
+        follow_flag = acmd_read_bool(L, 0xa0);
+    }
+
+    u64 flags = follow_flag ? 0xc000ULL : 0x8000ULL;
+
+    u64 alt_hash = 0;
+    u32 joint_kind = 0;
+    if (nargs >= 11) {
+        alt_hash = FUN_71038f4000(param_1, 0xb, 0);
+        if (nargs >= 12) {
+            joint_kind = (u32)FUN_71038f4000(param_1, 0xc, 0);
+            if (joint_kind >= 9) {
+                abort();
+            }
+        }
+    }
+
+    // Resolve joint via function pointer table
+    // PTR_FUN_7104f68c38[joint_kind](acc) → returns joint id
+    u32 joint_result = reinterpret_cast<u32(*)(u64)>(PTR_FUN_7104f68c38[joint_kind])(acc);
+
+    void** eff = *(void***)(acc + 0x140);
+    void** vt = *(void***)eff;
+    reinterpret_cast<void(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, s32, s32, s32, s32, f32)>
+        (vt[0x80 / 8])(eff, hash1, hash2, &off_vec, &rot_vec, 0, flags, alt_hash, (s32)joint_result, 0, 0, 0, 0, rate_f);
+
     acmd_consume(L);
 }
 
