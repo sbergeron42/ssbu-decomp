@@ -119,7 +119,7 @@ float FUN_710205ccd0(app::BattleObjectModuleAccessor* acc) {
 // [derived: MotionModule__end_frame_from_hash_impl (.dynsym) -> slot 49 (0x188/8)]
 float FUN_710205cce0(app::BattleObjectModuleAccessor* acc, u64 p1) {
     MotionModule* mod = static_cast<MotionModule*>(acc->motion_module);
-    return reinterpret_cast<float(*)(MotionModule*, u64)>(mod->_vt[49])(mod, p1);
+    return mod->end_frame_from_hash_f32(p1);
 }
 
 // 0x710205ccf0 (20 bytes) — MotionModule::set_frame_2nd [slot 50]

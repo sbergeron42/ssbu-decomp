@@ -1,38 +1,39 @@
-# Worker: pool-b
+# Worker: pool-d
 
 ## Model: Opus
 
-## Task: Fighter core + sv_kinetic_energy — continue game-logic utility functions
+## Task: Game core + params — continue (misc remaining targets)
 
-## Progress (104 functions total)
-- 82 functions from previous sessions
-- 22 new functions this round (batch 025):
-  - 2 relocation-only matches: FUN_71003e5ba0 (BST delete), FUN_71003de250 (IsAttack/container reset)
-  - 9 high-match (79-85%): sv_kinetic_energy readers (speed_x/y/xy/xyz, accel/brake/stable/limit xy),
-    FUN_71003f8c50, FUN_71003dd500 (GetOffset2)
-  - 11 non-matching but correct logic: flag toggle, BattleObject activate/deactivate,
-    conditional vtable dispatchers, destructors, effect spawn
-  - Key insight: sv_kinetic functions use float registers (LDR S) in binary but our u32 reads
-    use integer registers (LDR W). Float vs int register selection is a type-system difference.
+## Progress
+- Previous sessions: param_loading.cpp (6824 lines), game_core.cpp (185 lines), global_param_init.cpp (2339 lines)
+- Previous batches: fun_batch_d_001-020, fun_batch_d2_001-008, fun_batch_d3_001-023, fun_batch_d4_001-026, fun_batch_d5_001-054
+- Previous hard batches: fun_hard_d_001-029, fun_hard_d3_001, fun_med_final_d_001-043
+- Current round: misc remaining EASY/HARD functions (allocator hooks, effect cleanup, destructors, optnone wrappers)
 
 ## Continue with
-- Fighter core named functions: SetGrCollisionMode (160B), SetInvalidInvincible (176B),
-  IsFlagFromNo (164B), IsIgnoreDistance (200B), SetAttackCameraQuakeForced (164B)
-- CancelMainColor (128B), CreateArticles (128B), ResetSafePos (100B)
-- calc_reaction_frame (152B) — DamageTransactorImpl param lookup
-- More sv_kinetic_energy functions in 0x71022 range
+- Remaining EASY/HARD targets from next_batch.py
+- FUN_7100228110/7100228130 (32B) — allocator dispatch hooks
+- FUN_7101958da0/710195f150 (96B) — effect cleanup (chain of accessor reads)
+- FUN_7101b799b0 (80B) — destructor with sub-object cleanup
+- FUN_7103600360/7103609340 (80B) — destructor patterns
+- 0x71039500 cluster — optnone wrappers (simple thunks, bool returns, index dispatch)
+- FUN_7103946160 (80B) — jemalloc background_thread check
 
 ## Skipped
-- Set2ndPrecede (92B), Set2ndDisableCollision (92B) — cxa_guard_acquire pattern
-- GenerateArticleForTarget (180B) — complex article creation with multiple fallback paths
-- FUN_71003fd310 (96B) — effect module call, 0% match (param type mismatch)
+- 4-byte EASY stubs (FUN_7100407e0c etc.) — actually large scene init functions, CSV sizes wrong
+- FUN_7100155670 (12B listed but actually huge) — CSV size mismatch
+- FUN_71001c0740 — networking (nn::socket), complex
+- FUN_7102f77000 — deque container manipulation, too complex
+- FUN_7101d0b940 — ldaxr/stlxr atomic refcount, can't match CAS
 
 ## File Territory
-- src/app/fun_batch_b_*.cpp (batch files)
-- src/app/fighter_core.cpp
+- src/app/param_loading.cpp, game_core.cpp, global_param_init.cpp
+- src/app/fun_hard_d_030.cpp+ (new batch files)
 
 ## Quality Rules
 - No naked asm, 3-attempt limit
+- Struct access over raw offsets where headers exist
+- Derivation chains for named fields
 
 ## Quick Reference
 - Single-file compile: `C:/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -c src/app/FILE.cpp -o build/FILE.o`
@@ -43,13 +44,13 @@
 - **WARNING:** Do NOT use `build.bat` — it runs deprecated post-processors that inflate match counts
 
 ## Ghidra Cache
-- Save ALL Ghidra decompilation results to `data/ghidra_cache/pool-b.txt` (NOT /tmp — survives reboots)
+- Save ALL Ghidra decompilation results to `data/ghidra_cache/pool-d.txt` (NOT /tmp — survives reboots)
 - On session start, check if this file exists and read it to recover previous Ghidra work
 - Append new results after each `mcp__ghidra__decompile_function_by_address` call
 
 ## Commit Cadence
 - Commit every 15-20 functions or every 30 minutes, whichever comes first
-- Use descriptive commit messages: `pool-b: decomp MODULE functions (N new, M matching)`
+- Use descriptive commit messages: `pool-d: decomp MODULE functions (N new, M matching)`
 - If session crashes, uncommitted work will be auto-recovered by the launcher script
 
 ## Rewrite Quality Standard

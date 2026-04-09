@@ -48,6 +48,7 @@ struct MotionModule {
     void set_frame_sync_anim_cmd(f32 f, bool p1, bool p2, bool p3) { ((void(*)(MotionModule*,f32,bool,bool,bool))_vt[47])(this,f,p1,p2,p3); }
     f32 end_frame() { return ((f32(*)(MotionModule*))_vt[48])(this); }
     void* end_frame_from_hash(u64 p1) { return ((void*(*)(MotionModule*,u64))_vt[49])(this,p1); }
+    f32 end_frame_from_hash_f32(u64 p1) { return ((f32(*)(MotionModule*,u64))_vt[49])(this,p1); }
     void set_frame_2nd(bool p1) { ((void(*)(MotionModule*,bool))_vt[50])(this,p1); }
     f32 frame_2nd() { return ((f32(*)(MotionModule*))_vt[51])(this); }
 
@@ -106,16 +107,21 @@ struct MotionModule {
 
     // -- partial motion [100-113] --
     void add_motion_partial(u64 p1, u64 p2, f32 p3, bool p4, bool p5, bool p6, bool p7, bool p8) { ((void(*)(MotionModule*,u64,u64,f32,bool,bool,bool,bool,bool))_vt[100])(this,p1,p2,p3,p4,p5,p6,p7,p8); }
+    void add_motion_partial_ext(u64 p1, u64 p2, f32 p3, f32 p4, f32 p5, bool p6, bool p7, bool p8, bool p9, bool p10) { ((void(*)(MotionModule*,u64,u64,f32,f32,f32,bool,bool,bool,bool,bool))_vt[100])(this,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10); }
     void remove_motion_partial(u64 p1, bool p2) { ((void(*)(MotionModule*,u64,bool))_vt[101])(this,p1,p2); }
     void* remove_motion_partial_comp(u64 p1) { return ((void*(*)(MotionModule*,u64))_vt[103])(this,p1); }
     void* motion_kind_partial(u64 p1) { return ((void*(*)(MotionModule*,u64))_vt[104])(this,p1); }
     bool is_end_partial(u64 p1) { return ((bool(*)(MotionModule*,u64))_vt[105])(this,p1); }
     void* end_frame_partial(u64 p1) { return ((void*(*)(MotionModule*,u64))_vt[106])(this,p1); }
+    f32 end_frame_partial_f32(u64 p1) { return ((f32(*)(MotionModule*,u64))_vt[106])(this,p1); }
     f32 rate_2nd_partial(u64 p1) { return ((f32(*)(MotionModule*,u64))_vt[107])(this,p1); }
     void set_rate_partial(u64 p1) { ((void(*)(MotionModule*,u64))_vt[107])(this,p1); }
     void* rate_partial(u64 p1) { return ((void*(*)(MotionModule*,u64))_vt[108])(this,p1); }
+    f32 rate_partial_f32(u64 p1) { return ((f32(*)(MotionModule*,u64))_vt[108])(this,p1); }
     void* frame_partial(u64 p1) { return ((void*(*)(MotionModule*,u64))_vt[109])(this,p1); }
+    f32 frame_partial_f32(u64 p1) { return ((f32(*)(MotionModule*,u64))_vt[109])(this,p1); }
     void* prev_frame_partial(u64 p1) { return ((void*(*)(MotionModule*,u64))_vt[110])(this,p1); }
+    f32 prev_frame_partial_f32(u64 p1) { return ((f32(*)(MotionModule*,u64))_vt[110])(this,p1); }
     void set_frame_partial(u64 p1, bool p2) { ((void(*)(MotionModule*,u64,bool))_vt[111])(this,p1,p2); }
     void set_frame_partial_sync_anim_cmd(u64 p1, bool p2) { ((void(*)(MotionModule*,u64,bool))_vt[112])(this,p1,p2); }
     bool is_flag_start_1_frame_partial(u64 p1) { return ((bool(*)(MotionModule*,u64))_vt[113])(this,p1); }
@@ -138,10 +144,12 @@ struct MotionModule {
     // -- frame/rate misc [126-137] --
     void set_frame_looped_flag() { ((void(*)(MotionModule*))_vt[126])(this); }
     void* whole_rate() { return ((void*(*)(MotionModule*))_vt[126])(this); }
+    f32 whole_rate_f32() { return ((f32(*)(MotionModule*))_vt[126])(this); }
     bool is_flag_disable_change_motion() { return ((bool(*)(MotionModule*))_vt[127])(this); }
     void set_whole_rate() { ((void(*)(MotionModule*))_vt[127])(this); }
     void set_flag_disable_change_motion() { ((void(*)(MotionModule*))_vt[130])(this); }
     void update_rate() { ((void(*)(MotionModule*))_vt[130])(this); }
+    f32 update_rate_f32() { return ((f32(*)(MotionModule*))_vt[130])(this); }
     void set_recalc_ik(bool p1) { ((void(*)(MotionModule*,bool))_vt[132])(this,p1); }
     void set_no_comp(bool p1) { ((void(*)(MotionModule*,bool))_vt[135])(this,p1); }
     void set_no_comp_2nd(bool p1) { ((void(*)(MotionModule*,bool))_vt[135])(this,p1); }

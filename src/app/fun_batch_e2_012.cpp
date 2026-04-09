@@ -1,4 +1,5 @@
 #include "types.h"
+#include "app/modules/StatusModule.h"
 
 // Batch E2 - 012: x9-register wrappers, state checkers, noreturn wrappers (0x7103 range)
 
@@ -104,8 +105,8 @@ u32 FUN_7103365f68(void)
 // acc+0x40 = status_module [derived: StatusModule__*_impl (.dynsym)]
 u8 FUN_71034324e0(u64 param_1, s64 param_2)
 {
-    s64 *status_mod = *(s64 **)(*(s64 *)(param_2 + 0x20) + 0x40);
-    s32 status_kind = reinterpret_cast<s32 (*)(s64 *)>(VT(status_mod)[0x110 / 8])(status_mod);
+    auto* status_mod = reinterpret_cast<app::StatusModule*>(*(void**)(*(s64 *)(param_2 + 0x20) + 0x40));
+    s32 status_kind = status_mod->vtbl->StatusKind(status_mod);
     return (u8)(status_kind != 0);
 }
 

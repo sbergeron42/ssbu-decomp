@@ -145,3 +145,103 @@ Address: 0x710317b3f0, Size: 320B
 - Check team flags (DAT_71052c41ba, DAT_71052c41bb, DAT_71052c45b4, DAT_71052c41b8)
 - Toggle param_2[2] flag and linked entries at param_2[0]+0x78, param_2[1]+0x78
 - Tail-calls FUN_710317b530 on both entries
+
+# Session: 2026-04-09 (batch hard-d-030/031) — effect cleanup, destructors, optnone wrappers
+
+== FUN_7100228110 — malloc dispatch hook (32B, -O2) ==
+ALREADY DECOMPED in camera_functions.cpp. Hook: DAT_71052b4450 → malloc fallback.
+
+== FUN_7100228130 — free dispatch hook (32B, -O2) ==
+ALREADY DECOMPED in camera_functions.cpp. Hook: DAT_71052b4458 → free fallback.
+
+== FUN_7101958da0 — effect cleanup, chain +0x58→+0x180→+0x80→+0x50 (96B, -O2) ==
+Chains through module accessor, calls FUN_71037759f0 on dereferenced handle.
+Looks up effect by hash via FUN_710330a4a0(DAT_710532e8b8+8, &DAT_7104544980).
+If found: FUN_7103563720(*EffectManager::instance_, result).
+Tail-calls FUN_71032e5640(DAT_710532e7c8).
+NON-MATCHING: 100B compiled vs 96B binary (1 extra instruction from EffectManager scheduling).
+
+== FUN_710195f150 — effect cleanup, chain +0x58→+0x170→+0x80→+0x50 (96B, -O2) ==
+Same as FUN_7101958da0 but offset +0x170 instead of +0x180.
+NON-MATCHING: same scheduling issue.
+
+== FUN_7101b799b0 — destructor: reset vtable, cleanup sub-objects, free self (80B, -O2) ==
+Sets vtable to PTR_LAB_71050655e0, nulls field +0x8.
+If sub-object: moves inner (+0x8) to cleanup slot (+0x10), frees inner, frees sub.
+Tail-calls FUN_710392e590(self).
+RELOCATION-ONLY MATCH: 74% (14/19 words, all diffs are ADRP/BL/B relocations).
+
+== FUN_7103600360 — __shared_weak_count destructor (80B, -O2) ==
+Sets vtable to PTR_FUN_7105232ae8, nulls field +0x18.
+If sub: FUN_7103607270(sub) + FUN_710392e590(sub).
+Tail-calls FUN_71039c2140(self).
+RELOCATION-ONLY MATCH: 72% (13/18 words, all diffs are relocations).
+
+== FUN_7103609340 — __shared_weak_count destructor variant (80B, -O2) ==
+Same as FUN_7103600360, vtable = PTR_FUN_7105232cf8.
+RELOCATION-ONLY MATCH: 72%.
+
+== FUN_7103946160 — jemalloc background_thread check (80B, -O2) ==
+Checks DAT_7106dd3f1d == 1, prints pthread warning.
+TOTAL MISMATCH: binary uses shrink-wrapped prologue (str x19 before stp x29/x30).
+
+== 0x71039500 cluster — optnone wrappers (48-96B each, -O0) ==
+Simple thunks: FUN_7103950670, 71039513b0, 7103951400, 71039514f0, 7103951bd0,
+  7103951c50, 7103951ca0, 7103951cf0, 7103951db0, 7103953360, 7103953420,
+  7103957aa0, 7103957c40, 7103958710
+Logic: FUN_7103950a80, 7103950ae0, 7103950e50, 7103951170, 7103951e00,
+  71039526e0, 7103952890, 71039533e0, 7103953eb0, 7103957bf0, 7103957cc0,
+  7103957d90, 7103958650, 710395b690
+NON-MATCHING: binary has 2 extra `b .+4` NOP-branches per wrapper (8 bytes)
+that optnone doesn't reproduce. Frame sizes also differ for logic functions.
+
+== FUN_710114c140 — vtable dispatch + tail-call (80B, -O2) ==
+Chain: param_2+0x20 → +0x98 → vtable[0x37](obj, 0x12, 0). Tail-calls FUN_7100dbaf50.
+RELOCATION-ONLY MATCH: 94% (16/17 words).
+
+== FUN_71030f6950 — state machine dispatch (176B, -O2) ==
+Reads state at this+0x4891. Cases: 4→vtable[0x1F], 5→vtable[0x20], 6→vtable[0x21].
+Stores result to +0x489c, clears state. Final: if +0x489d==4, propagate.
+NEAR-MATCH: 93% (41/44 — 3 prologue scheduling diffs, NX fork).
+
+== FUN_710003e2b0 — ~AnimTransformBasic destructor (76B, -O2) ==
+Sets vtable from DAT_71052a3480+0x10, cleans +0x30 and +0x28 via FUN_7100048dd0.
+RELOCATION-ONLY MATCH: 79% (15/19).
+
+== FUN_7100044cb0 — Map: dispatch to two sub-objects (72B, -O2) ==
+Calls FUN_710007a0e0 on +0xC8 and +0xD0 sub-objects. Second is tail-call.
+RELOCATION-ONLY MATCH: 89% (16/18).
+
+== FUN_7100047990 — AppendPane: circular list insert (72B, -O2) ==
+Allocates 0x18 node, self-links, inserts at head of list at param_1+0x18.
+NEAR-MATCH: 67% (12/18 — prologue scheduling diffs).
+
+== FUN_7100050020 — AnimatorEx ctor (64B, -O2) ==
+Calls parent ctor, init self-linked list at +0x48, sets vtable from DAT_71052a36d0+0x10.
+NON-MATCHING: 56% (body scheduling diffs).
+
+# Session: 2026-04-09 (batch hard-d-033) — more optnone wrappers + resource dispatch
+
+== 0x710395* cluster batch 2 — optnone wrappers (48-96B each, -O0) ==
+Simple thunks (48B): 710395bae0→bb10, 710395bb30→bb60, 710395bc20→bc50,
+  710395c440→c470, 710395d1e0→c840, 710395d240→d270, 710395d290→d2c0,
+  710395d2e0→d310, 710395d330→d360, 710395eb20→eb50, 710395eb70→eba0,
+  710395eeb0→eee0, 710395ef00→ef30
+
+Two-call-return (64B): 7103951e60→{7103952190,71039521d0}, 710395d430→{710395d760,710395d7a0}
+Two-arg wrapper: 710395f210→710395faf0(DAT_7106dd40b0,param_1)
+
+Conditional (80-96B):
+  710395a890 — if *p1==0: call a6a0(p1,p2,0,p3,p4)
+  710395a8f0 — if *p1==0: aa80+a4a0("\"%s\": [",p2)+aad0
+  710395a950 — if *p1==0: aa80+a4a0(DAT_710425d0a2)+aad0
+  710395b8a0 — call b990, null-check return
+  710395bba0 — if !b830: b850→bc20; else 0
+  710395bd70 — if !b830: b850→c410; else 58840(p2)→p2
+  710395c650 — c6b0(p1,~fec&1)+ea10+if fec-1: c700(fec-1,p1)
+  710395c6b0 — *d240(p1) = p2&1
+  710395e090 — if e0e0(p2+8)&1: ae10(p1,p2)
+  710395e850 — if p1<=0x1000: d760; else e8b0(p1-0x1000,p1)
+  710395ede0 — ee90+58840+*eeb0=1+*eba0(→eb70)=0+*eb20=1+ee40
+  710395f3c0 — if !f440: f460→f480; else 0
+  7103952a90 — if !0de0: 0e00→3330; else 58840(p2)→p2
