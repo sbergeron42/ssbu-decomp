@@ -1,50 +1,40 @@
-# Worker: pool-d
+# Worker: pool-e
 
 ## Model: Opus
 
-## Task: BST entry manager + stage functions + small scattered functions
+## Task: L2CValue/L2CAgent — continue decomp
 
-## Progress (26 functions total across all sessions)
-- 8 param reader functions from prior session (all compiled)
-- 14 BST entry manager + stage functions this session:
-  - 7 BST-at-0x58 set/clear (all size-match): 7103176f70, 7103177160, 7103177250, 7103177430, 7103177520, 7103177610, 7103177850
-  - 1 BST-at-0x58 set+check+notify: 7103177060 (248B vs 256B, 8B short)
-  - 1 fiber switch: 710317f0a0 (88B size-match, likely byte-match after linking)
-  - 3 stage reversal BST-at-0x50: 71031796f0, 7103179860, 71031799e0 (16B short)
-  - 1 death boundary: 710317b2e0 (244B vs 264B)
-  - 1 team param: 710317b3f0 (280B vs 312B — NEON ABI)
-- 4 small scattered functions (all size-match):
-  - FUN_7100082500 (76B), FUN_7100083d10 (76B) — float getter via vtable
-  - FUN_710048c1d0 (80B) — conditional vtable dispatch
-  - FUN_7100225b10 (84B) — mutex-locked field accessor
-
-## Key patterns discovered
-- BST-at-0x58 manager: +0x20 current_id, +0x38 mode, +0x58 BST root
-- BST node layout: left[0], right[8], ..., key[0x20], value[0x28]
-- Set/clear template: BST find → set field → if match + mode<3 → find again → notify via vtable[6]
-- Stage reversal: BST-at-0x50, dispatches to Stage_Rev table + FUN_710240cd00
-- Team param: uses NEON v0 for first arg, ldarb for guard, ccmp for && chains
-- All data globals need __attribute__((visibility("hidden"))) to avoid GOT indirection
+## Progress
+- Round 1: 10 L2CValue constructors, SetLuaStateAccessor, clear_lua_stack, etc.
+- Round 2: 8 L2CValue operators/math (bitwise, division, atan, log) — 7 matching
+- Round 3: 12 new functions (alloc helpers, copy ctor, tree ops, table cleanup)
+  - 6 relocation/prologue-only match: alloc_aligned16, alloc_with_retry, FUN_71037339b0, FUN_7103728a40, FUN_7103729440, FUN_71037293d0
+  - 6 structural diff (correct decomp): copy ctor, table cleanup, length, operator[], setmetatable, ShowError wrapper
 
 ## Continue with
-- FUN_710317b530 (320B) — float interpolation, calls FUN_710317b2e0
-- FUN_710317b000 (464B) — BST lookup + flag + camera request
-- FUN_710317cc20 (304B) — std::string comparison + update
-- Named: set_offset (848B), set_zone (960B), SituationLink (1588B)
-- Remaining small HARD targets are mostly jemalloc (skip per rules)
+- Fix non-matching functions (copy ctor 0x7103733fe0, table cleanup 0x7103733900, length 0x7103735ea0)
+- operator! (0x7103734fa0) — switch/jump table, may need different approach
+- push_lua_stack (0x710372e320, 252B) — switch on type, pushes to Lua stack
+- L2CTable ctor (0x71037337f0, 268B) — vector alloc + loop init
+- operator% (0x7103735920, 292B) — integer sdiv/msub + float fmodf
+- math_fmod (0x7103733180, 288B) — integer + float paths
+- ipairs (0x7103732a50, 296B)
 
 ## Skipped
-- FUN_7103176e64, FUN_71031776ec — Ghidra shows abort(), but CSV lists 244B/356B
-- All 0x710395xxxx functions — jemalloc 5.1.0 library code
+- math_min/max — binary discrepancy (removed in commit 65240a8)
+- operator+/- binary, operator* — table metamethod dispatch tail call
+- operator- unary — metatable OOM retry
+- math_deg/rad — constructs L2CValues, calls operator*
+- L2CValue(char*) — OOM retry + SSO alloc
 
 ## File Territory
-- src/app/param_loading.cpp
+- src/app/lua_acmd.cpp
 
 ## Quality Rules
 - No naked asm, 3-attempt limit
 
 ## Quick Reference
-- Single-file compile: `C:/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -c src/app/FILE.cpp -o build/FILE.o`
+- Single-file compile: `C:/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -Ilib/NintendoSDK/include -Ilib/NintendoSDK/include/stubs -c src/app/FILE.cpp -o build/FILE.o`
 - Compare bytes: `python tools/compare_bytes.py FUNCTION_NAME` (takes function name, NOT address)
 - Full build+verify: `python tools/build.py && python tools/verify_local.py --build` (only after batch is done)
 - Progress: `python tools/progress.py`
@@ -52,13 +42,13 @@
 - **WARNING:** Do NOT use `build.bat` — it runs deprecated post-processors that inflate match counts
 
 ## Ghidra Cache
-- Save ALL Ghidra decompilation results to `data/ghidra_cache/pool-d.txt` (NOT /tmp — survives reboots)
+- Save ALL Ghidra decompilation results to `data/ghidra_cache/pool-e.txt` (NOT /tmp — survives reboots)
 - On session start, check if this file exists and read it to recover previous Ghidra work
 - Append new results after each `mcp__ghidra__decompile_function_by_address` call
 
 ## Commit Cadence
 - Commit every 15-20 functions or every 30 minutes, whichever comes first
-- Use descriptive commit messages: `pool-d: decomp MODULE functions (N new, M matching)`
+- Use descriptive commit messages: `pool-e: decomp MODULE functions (N new, M matching)`
 - If session crashes, uncommitted work will be auto-recovered by the launcher script
 
 ## Rewrite Quality Standard

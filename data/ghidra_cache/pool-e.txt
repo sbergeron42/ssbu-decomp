@@ -26,5 +26,67 @@
 ## SKIPPED (complex, attempt later)
 # operator% (0x7103735920) — integer sdiv/msub + float fmodf, Python-style sign
 # math_fmod (0x7103733180) — integer + float paths
-# math_log (0x7103733310) — log10f special case + logf/logf/divide
-# math_min/max — tail-call to copy ctor
+# math_log (0x7103733310) — log10f special case + logf/logf/divide (DONE in last round)
+# math_min/max — tail-call to copy ctor (removed in commit 65240a8 — binary discrepancy)
+
+## Session 2 — 2026-04-09
+
+## 0x7103754e50 (8B) — nn::err::ShowError wrapper
+# void FUN_7103754e50(undefined4 param_1) { nn::err::ShowError(param_1); }
+
+## 0x7103733fe0 (224B) — L2CValue copy ctor
+# if type!=8: copy raw 8 bytes + bump refcount for type 5/6
+# if type==8: je_aligned_alloc(0x10, 0x18) with OOM retry, then basic_string copy ctor
+# refcount: type 5 at +0, type 6 at +8
+
+## 0x7103735ea0 (136B) — L2CValue::length()
+# type 8 (string): SSO check — (byte[0]&1)==0 ? byte[0]>>1 : *(ulong*)(ptr+8)
+# type 5 (table): vector size calculation with reverse scan for non-nil trailing elements
+# else: return 0
+
+## 0x7103735df0 (144B) — operator[](L2CValue const&)
+# type 5 only: if key is int/float (type 2/3) → FUN_71037339f0(table, index)
+# if key is hash (type 7) → FUN_7103733d50(table, &hash)
+# else → &DAT_710593a3a8
+
+## 0x710372e950 (152B) — setmetatable(L2CValue, L2CValue const&)
+# Stores this in param_4's table+0x38
+# if both param_3 and param_4 are type 5:
+#   release old metatable (refcount decr + cleanup if zero), set new metatable (refcount incr)
+# Then copy-construct result from param_3
+
+## 0x7103733900 (164B) — L2CTable::cleanup
+# Release metatable at +0x40 (refcount + recursive cleanup + free)
+# FUN_71037339b0(rb_tree root at +0x28) — destroy tree nodes
+# Reverse iterate vector at +0x8..+0x10, call ~L2CValue on each 0x10-sized element
+# Free vector buffer at +0x8
+
+## 0x71037339b0 — RB tree node destructor (recursive)
+# if null return; recurse(left=*node); recurse(right=node[1]); ~L2CValue(node+5); free(node)
+
+## 0x710373dfd0 (116B) — alloc_with_oom_retry(align, size)
+# if size==0 return 0; alloc=je_aligned_alloc(align,size);
+# if null && OOM handler: retry once; return alloc or 0
+
+## 0x710373df50 (120B) — alloc_with_oom_retry_aligned16(size)
+# if size==0 return size; alloc=je_aligned_alloc(0x10,size);
+# if null && OOM handler: retry once; return alloc or 0
+
+## 0x7103728a40 (116B) — linked list dual-cleanup destructor
+# Walk list at +0x40, free nodes; clear +0x30 (free if non-null)
+# Walk list at +0x18, free nodes; clear +0x8 (free if non-null)
+
+## 0x7103729440 (88B) — recursive_tree_visit(agent, node)
+# FUN_71037294a0(node); then for each child[0..node+0x20): recurse(agent, child_ptr)
+
+## 0x71037293d0 (108B) — recursive_tree_check(agent, node)
+# if FUN_710372aa60(node) fails, return 0
+# for each child: if recurse fails, return 0; return 1
+
+## 0x710376c930 (176B) — SKIP: tree iterator with vtable dispatch + jump table warning
+## 0x71037246b0 (180B) — SKIP: complex recursive tree cleanup with event/schedule systems
+## 0x7103722b90 (196B) — SKIP: nn::fs file operations
+## 0x7103721ea0 (208B) — SKIP: nn::fs directory operations
+## 0x710372ced0 (128B) — wrapper: calls FUN_710372cf50(param1, &DAT_71042b1a84, stack_args)
+## push_lua_stack (252B) — SKIP: switch statement, many cases
+## L2CTable ctor (268B) — SKIP: vector alloc + loop init + OOM retry

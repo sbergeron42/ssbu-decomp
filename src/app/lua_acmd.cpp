@@ -15,6 +15,19 @@ extern "C" float fmodf(float, float);
 extern "C" float logf(float);
 extern "C" float log10f(float);
 
+// nn::err — ShowError takes u64 internally despite Ghidra showing undefined4
+// [derived: binary emits AND X0,X0,#0xFFFFFFFF before tail call, proving callee expects u64]
+namespace nn { namespace err {
+extern "C" void ShowError(u64);
+}}
+
+// OOM retry handler — global pointer
+// [derived: used by L2CValue copy ctor, alloc helpers, L2CTable ctor]
+extern "C" __attribute__((visibility("hidden"))) long* DAT_7105331f00;
+
+// je_aligned_alloc (jemalloc 5.1.0 Nintendo fork)
+extern "C" void* je_aligned_alloc(unsigned long align, unsigned long size);
+
 namespace app::lua_bind {
 
 // ============================================================
@@ -287,7 +300,7 @@ const char* as_string_7103735ff0(u32* this_) {
 // Type 8 (inner string): free heap buffer if SSO, then free string struct
 // ============================================================
 
-extern "C" void FUN_7103733900(void*);  // L2CTable destructor/cleanup
+void FUN_7103733900(u8*);  // L2CTable cleanup, defined below
 
 void dtor_L2CValue_7103733f20(u32* this_) {
     u32 type = *this_;
@@ -972,6 +985,354 @@ void* find_metatable_7103733ea0(u8* this_, u64* hash) {
     u64 bk = *reinterpret_cast<u64*>(best + 0x20) & 0xFFFFFFFFFFULL;
     if (target < bk) return nullptr;
     return best + 0x28;
+}
+
+// ============================================================
+// nn::err::ShowError wrapper
+// 0x7103754e50 (8 bytes)
+// Tail call to nn::err::ShowError
+// ============================================================
+void ShowError_wrapper_7103754e50(u32 error_code) {
+    nn::err::ShowError(error_code);
+}
+
+// ============================================================
+// OOM retry allocators — used by L2CValue copy ctor, L2CTable ctor, etc.
+// Pattern: alloc(); if (!ptr && OOM_handler) { handler->retry(); alloc(); }
+// ============================================================
+
+// 0x710373df50 (120 bytes) — alloc_with_oom_retry, fixed 0x10 alignment
+// [derived: Ghidra shows je_aligned_alloc(0x10, param_1)]
+void* alloc_aligned16_710373df50(long size) {
+    long result = size;
+    if (size != 0) {
+        result = (long)je_aligned_alloc(0x10, size);
+        if (result == 0) {
+            if (DAT_7105331f00 != nullptr) {
+                u32 local_14 = 0;
+                long local_28 = size;
+                u64 rv = reinterpret_cast<u64 (*)(long*, u32*, long*)>(
+                    *reinterpret_cast<void**>(*DAT_7105331f00 + 0x30)
+                )(DAT_7105331f00, &local_14, &local_28);
+                if ((rv & 1) != 0) {
+                    result = (long)je_aligned_alloc(0x10, size);
+                    if (result != 0) return reinterpret_cast<void*>(result);
+                }
+            }
+            result = 0;
+        }
+    }
+    return reinterpret_cast<void*>(result);
+}
+
+// 0x710373dfd0 (116 bytes) — alloc_with_oom_retry, caller-specified alignment
+// [derived: Ghidra shows je_aligned_alloc(param_1, param_2)]
+void* alloc_with_retry_710373dfd0(unsigned long align, long size) {
+    if (size != 0) {
+        long result = (long)je_aligned_alloc(align, size);
+        if (result != 0) return reinterpret_cast<void*>(result);
+        if (DAT_7105331f00 != nullptr) {
+            u32 local_24 = 0;
+            long local_30 = size;
+            u64 rv = reinterpret_cast<u64 (*)(long*, u32*, long*)>(
+                *reinterpret_cast<void**>(*DAT_7105331f00 + 0x30)
+            )(DAT_7105331f00, &local_24, &local_30);
+            if ((rv & 1) != 0) {
+                result = (long)je_aligned_alloc(align, size);
+                if (result != 0) return reinterpret_cast<void*>(result);
+            }
+        }
+    }
+    return nullptr;
+}
+
+// ============================================================
+// RB tree node destructor — recursive
+// 0x71037339b0 (matches FUN_7103716100/FUN_710376a190 pattern but calls ~L2CValue)
+// [derived: Ghidra shows recurse(left), recurse(right), ~L2CValue(node+5), free(node)]
+// ============================================================
+
+void FUN_71037339b0(u8** node) {
+    if (!node) return;
+    FUN_71037339b0(reinterpret_cast<u8**>(node[0]));
+    FUN_71037339b0(reinterpret_cast<u8**>(node[1]));
+    dtor_L2CValue_7103733f20(reinterpret_cast<u32*>(node + 5));
+    FUN_710392e590(node);
+}
+
+// ============================================================
+// L2CTable::cleanup — destroys metatable, tree, and vector contents
+// 0x7103733900 (164 bytes)
+// [derived: Ghidra shows metatable refcount at +0x40, tree at +0x28,
+//  vector at +0x08/+0x10, each element 0x10 bytes (L2CValue)]
+// ============================================================
+
+void FUN_7103733900(u8* this_) {
+    // Release metatable at +0x40
+    s32* meta = *reinterpret_cast<s32**>(this_ + 0x40);
+    if (meta != nullptr) {
+        s32 old = *meta;
+        s32 rc = old - 1;
+        *meta = rc;
+        if (rc == 0 || old < 1) {
+            FUN_7103733900(reinterpret_cast<u8*>(meta));
+            FUN_710392e590(meta);
+        }
+    }
+    // Destroy RB tree nodes at +0x28
+    FUN_71037339b0(*reinterpret_cast<u8***>(this_ + 0x28));
+    // Reverse-iterate vector, destroy each L2CValue
+    u8* begin = *reinterpret_cast<u8**>(this_ + 0x08);
+    if (begin != nullptr) {
+        u8* end = *reinterpret_cast<u8**>(this_ + 0x10);
+        if (end == begin) {
+            *reinterpret_cast<u8**>(this_ + 0x10) = begin;
+        } else {
+            do {
+                end -= 0x10;
+                dtor_L2CValue_7103733f20(reinterpret_cast<u32*>(end));
+            } while (begin != end);
+            end = *reinterpret_cast<u8**>(this_ + 0x08);
+            *reinterpret_cast<u8**>(this_ + 0x10) = begin;
+        }
+        if (end != nullptr) {
+            FUN_710392e590(end);
+        }
+    }
+}
+
+// ============================================================
+// L2CValue copy constructor — L2CValue(const L2CValue&)
+// 0x7103733fe0 (224 bytes)
+// [derived: Ghidra shows type!=8 path copies raw + bumps refcount,
+//  type==8 path allocates 0x18 bytes + basic_string copy ctor]
+// ============================================================
+
+// basic_string copy ctor (libc++)
+extern "C" void _ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEC1ERKS5_(void* dst, void* src);
+
+void FUN_7103733fe0(lib::L2CValue* this_, const lib::L2CValue* src) {
+    s32 type = *reinterpret_cast<const s32*>(src);
+    *reinterpret_cast<s32*>(this_) = type;
+    u8* ptr;
+    if (type != 8) {
+        ptr = *reinterpret_cast<u8* const*>(reinterpret_cast<const u8*>(src) + 8);
+        goto store_and_refcount;
+    }
+    // type 8: allocate new string struct
+    ptr = reinterpret_cast<u8*>(je_aligned_alloc(0x10, 0x18));
+    if (ptr == nullptr) {
+        if (DAT_7105331f00 != nullptr) {
+            u32 local_24 = 0;
+            u64 local_38 = 0x18;
+            u64 rv = reinterpret_cast<u64 (*)(long*, u32*, u64*)>(
+                *reinterpret_cast<void**>(*DAT_7105331f00 + 0x30)
+            )(DAT_7105331f00, &local_24, &local_38);
+            if ((rv & 1) != 0) {
+                ptr = reinterpret_cast<u8*>(je_aligned_alloc(0x10, 0x18));
+                if (ptr != nullptr) goto do_string_copy;
+            }
+        }
+        ptr = nullptr;
+    }
+do_string_copy:
+    _ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEC1ERKS5_(
+        ptr, *reinterpret_cast<void* const*>(reinterpret_cast<const u8*>(src) + 8));
+    type = *reinterpret_cast<s32*>(this_);
+store_and_refcount:
+    *reinterpret_cast<u8**>(reinterpret_cast<u8*>(this_) + 8) = ptr;
+    if (type == 6) {
+        ptr += 8;
+    } else if (type != 5) {
+        return;
+    }
+    *reinterpret_cast<s32*>(ptr) += 1;
+}
+
+// ============================================================
+// L2CValue::length() — returns string length or table size
+// 0x7103735ea0 (136 bytes)
+// [derived: Ghidra shows SSO string check + table vector reverse scan]
+// ============================================================
+
+u64 length_7103735ea0(u32* this_) {
+    u32 type = *this_;
+    if (__builtin_expect(type == 8, 0)) {
+        // String length: SSO check
+        u8* str = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(this_) + 8);
+        u8 b = str[0];
+        if ((b & 1) == 0) {
+            return (u64)(b >> 1);
+        }
+        return *reinterpret_cast<u64*>(str + 8);
+    }
+    if (type != 5) return 0;
+    // Table length: reverse-scan for last non-nil element
+    u8* table = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(this_) + 8);
+    long base;
+    long end_ptr;
+    // ldp loads base and end together
+    base = *reinterpret_cast<long*>(table + 8);
+    end_ptr = *reinterpret_cast<long*>(table + 0x10);
+    u64 diff = (u64)(end_ptr - base);
+    s64 count = (s64)(s32)(diff >> 4);
+    if (count < 2) return 0;
+    u32* p = reinterpret_cast<u32*>(base + (count << 4));
+    u64 n = (u64)count;
+    do {
+        p -= 4;  // back one L2CValue (0x10 bytes)
+        if ((s64)n < 2) return 0;
+        n -= 1;
+    } while (*p == 0);
+    return n;
+}
+
+// ============================================================
+// operator[](L2CValue const&) — table index with L2CValue key
+// 0x7103735df0 (144 bytes)
+// [derived: Ghidra shows int/float → FUN_71037339f0, hash → FUN_7103733d50]
+// ============================================================
+
+void* operator_index_lv_7103735df0(u32* this_, u32* key) {
+    if (*this_ != 5) return &DAT_710593a3a8;
+    s32 key_type = *reinterpret_cast<s32*>(key);
+    if ((u32)(key_type - 2) < 2) {
+        long index;
+        if (key_type == 3) {
+            index = (long)*reinterpret_cast<f32*>(reinterpret_cast<u8*>(key) + 8);
+        } else if (key_type == 2) {
+            index = *reinterpret_cast<long*>(reinterpret_cast<u8*>(key) + 8);
+        } else {
+            index = 0;
+        }
+        void* table = *reinterpret_cast<void**>(reinterpret_cast<u8*>(this_) + 8);
+        return FUN_71037339f0(table, (int)index);
+    }
+    if (key_type == 7) {
+        u64 hash = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(key) + 8);
+        void* table = *reinterpret_cast<void**>(reinterpret_cast<u8*>(this_) + 8);
+        return FUN_7103733d50(table, &hash);
+    }
+    return &DAT_710593a3a8;
+}
+
+// ============================================================
+// L2CAgent::setmetatable — assigns metatable to a table
+// 0x710372e950 (152 bytes)
+// [derived: Ghidra shows param_4's table stored at +0x38 of param_3's table,
+//  with refcount management on old/new metatable]
+// ============================================================
+
+void setmetatable_710372e950(lib::L2CValue* ret, u8* this_, u32* table_val, u32* meta_val) {
+    // Store agent pointer in meta_val's inner ptr+0x38
+    u8* meta_inner = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(meta_val) + 8);
+    *reinterpret_cast<u8**>(meta_inner + 0x38) = this_;
+    // Only assign if both are table type (5)
+    if (*table_val == 5 && *meta_val == 5) {
+        u8* tbl = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(table_val) + 8);
+        s32* new_meta = *reinterpret_cast<s32**>(reinterpret_cast<u8*>(meta_val) + 8);
+        // Release old metatable at tbl+0x40
+        s32* old_meta = *reinterpret_cast<s32**>(tbl + 0x40);
+        if (old_meta != nullptr) {
+            s32 old_val = *old_meta;
+            s32 new_rc = old_val - 1;
+            *old_meta = new_rc;
+            if (new_rc == 0 || old_val < 1) {
+                FUN_7103733900(reinterpret_cast<u8*>(old_meta));
+                FUN_710392e590(old_meta);
+            }
+        }
+        // Increment refcount on new metatable
+        if (new_meta != nullptr) {
+            *new_meta += 1;
+        }
+        // Store new metatable
+        *reinterpret_cast<s32**>(tbl + 0x40) = new_meta;
+    }
+    // Copy-construct return value from table_val
+    FUN_7103733fe0(ret, reinterpret_cast<const lib::L2CValue*>(table_val));
+}
+
+// ============================================================
+// Linked list dual-cleanup destructor
+// 0x7103728a40 (116 bytes)
+// [derived: Ghidra shows two linked list walks (+0x40/+0x18) with free,
+//  plus clearing alloc ptrs at +0x30 and +0x8]
+// ============================================================
+
+void FUN_7103728a40(u8* this_) {
+    // Walk and free linked list at +0x40
+    u8** node = *reinterpret_cast<u8***>(this_ + 0x40);
+    while (node != nullptr) {
+        u8** next = reinterpret_cast<u8**>(*node);
+        FUN_710392e590(node);
+        node = next;
+    }
+    // Free alloc at +0x30
+    void* p = *reinterpret_cast<void**>(this_ + 0x30);
+    *reinterpret_cast<u64*>(this_ + 0x30) = 0;
+    if (p != nullptr) {
+        FUN_710392e590(p);
+    }
+    // Walk and free linked list at +0x18
+    node = *reinterpret_cast<u8***>(this_ + 0x18);
+    while (node != nullptr) {
+        u8** next = reinterpret_cast<u8**>(*node);
+        FUN_710392e590(node);
+        node = next;
+    }
+    // Free alloc at +0x8
+    void* p2 = *reinterpret_cast<void**>(this_ + 0x08);
+    *reinterpret_cast<u64*>(this_ + 0x08) = 0;
+    if (p2 != nullptr) {
+        FUN_710392e590(p2);
+    }
+}
+
+// ============================================================
+// Recursive tree visit — calls action on node, then recurses on children
+// 0x7103729440 (88 bytes)
+// [derived: Ghidra shows FUN_71037294a0 on node, then loop over children]
+// ============================================================
+
+extern "C" void FUN_71037294a0(u8*, u8*);
+
+void FUN_7103729440(u8* agent, u8* node) {
+    s32 count = *reinterpret_cast<s32*>(node + 0x20);
+    FUN_71037294a0(agent, node);
+    if (count > 0) {
+        long i = 0;
+        do {
+            u8** children = *reinterpret_cast<u8***>(node + 0x40);
+            FUN_7103729440(agent, children[i]);
+            i++;
+        } while (count != i);
+    }
+}
+
+// ============================================================
+// Recursive tree check — validates node, then recurses on children
+// 0x71037293d0 (108 bytes)
+// [derived: Ghidra shows FUN_710372aa60 check, then recursive child validation]
+// ============================================================
+
+extern "C" u64 FUN_710372aa60(u8*, u8*);
+
+u32 FUN_71037293d0(u8* agent, u8* node) {
+    s64 count = (s64)*reinterpret_cast<s32*>(node + 0x20);
+    u32 r = (u32)FUN_710372aa60(agent, node);
+    if ((r & 1) == 0) return 0;
+    if (count > 0) {
+        s64 i = 0;
+        do {
+            u8** children = *reinterpret_cast<u8***>(node + 0x40);
+            r = FUN_71037293d0(agent, children[i]);
+            if ((r & 1) == 0) return 0;
+            asm volatile("");
+            i++;
+        } while (i < count);
+    }
+    return 1;
 }
 
 } // namespace app::lua_bind
