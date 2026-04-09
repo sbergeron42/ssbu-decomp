@@ -114,3 +114,24 @@ then vtable[0xa0/8](pile, param_2) to add movement.
 === 0x7101651480 (60B) app::wanwan::get_pile_ground_movement_speed ===
 Gets ground module, vtable call to get pile ground [10], then vtable[0x20/8]() to get speed.
 Returns {speed, 0} as Vector4f.
+
+=== 0x71015c6b60 (28B) app::target::center_pos_2d ===
+Calls center_pos, then NEON ext on return value (zeroing upper half). Not just a tail-call.
+
+=== 0x71015c1750 (28B) app::item::request_cut_in_from_param ===
+Tail-calls FUN_71015c1770 with extra params: (lua, kind, hash, 0x50000000, vec2, 0x7fb997a80, 1).
+
+=== 0x71015ce790 (48B) app::stage::back_line_z ===
+Returns -10.0f normally. If BattleObjectWorld+0xc == 0 && +0x8 < threshold, returns -1.0f.
+
+=== 0x71015c79e0 (64B) app::boss_private::common_param_float ===
+Reads float from ItemParamAccessor at kind*100+param_type*4+0x73188. Returns 0 if array null.
+
+=== 0x71015c11a0 (52B) app::item::begin_scale_animation ===
+Gets scale data from lua accessor chain (+0x1a0 → +0x190 → +0x220), calls FUN_71015b58e0.
+
+=== 0x71015c1d80 (80B) app::item::set_scale_speed_mul ===
+Sets float at item_data+0x27c, dispatches vtable[0x120/8] or [0x110/8] based on mul==1.0.
+
+=== 0x71015c22f0 (64B) app::item::calc_offset_with_gravity (lua_State version) ===
+Gets posture module from accessor+0x38, vtable[0x60/8] for position, calls FUN_710160e340.

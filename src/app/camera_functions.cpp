@@ -1901,11 +1901,11 @@ extern "C" void create_weapon_71015c8ed0(void* lua_state, s32 kind, float x, flo
 // 0x71015ce6c0 (8 bytes) — app::stage::calc_offset_with_gravity
 // Tail-calls FUN_710160e340 forwarding vec3 as u64.
 // [derived: Ghidra decompilation at 0x71015ce6c0]
-extern "C" void FUN_710160e340(u64);
+extern "C" void FUN_710160e340(u64, void*);
 
 namespace app { namespace stage {
 extern "C" void calc_offset_with_gravity_71015ce6c0(void* vec2, void* vec3) {
-    FUN_710160e340(*(u64*)vec3);
+    FUN_710160e340(*(u64*)vec2, vec3);
 }
 }} // namespace app::stage
 
@@ -1919,3 +1919,105 @@ extern "C" void search_range(void* lua_state, float f1, float f2, float f3, floa
     FUN_71015c5c50(lua_state, 5, flag, 1);
 }
 }} // namespace app::target
+
+// ---- Batch 4: more item/stage leaf functions ----
+
+// 0x71015c1750 (28 bytes) — app::item::request_cut_in_from_param
+// Tail-calls FUN_71015c1770 adding default params (0x50000000, vec2, hash, 1).
+// [derived: Ghidra decompilation at 0x71015c1750]
+extern "C" void FUN_71015c1770(void*, s32, u64, u32, void*, u64, s32);
+
+namespace app { namespace item {
+extern "C" void request_cut_in_from_param(void* lua_state, s32 kind, u64 hash, void* vec2) {
+    FUN_71015c1770(lua_state, kind, hash, 0x50000000, vec2, 0x7fb997a80ULL, 1);
+}
+}} // namespace app::item
+
+// 0x71015ce790 (48 bytes) — app::stage::back_line_z
+// Returns -10.0f (0xc1200000) normally, or -1.0f (0xbf800000) if BattleObjectWorld
+// has gravity disabled and stage depth < threshold.
+// [derived: Ghidra decompilation at 0x71015ce790]
+// lib::Singleton<app::BattleObjectWorld>::instance_ [derived: Ghidra label]
+extern "C" void* DAT_71052bb390 HIDDEN;  // BattleObjectWorld instance
+extern "C" float DAT_7104471590 HIDDEN;  // back_line_z threshold
+
+namespace app { namespace stage {
+extern "C" float back_line_z(void) {
+    u8* world = (u8*)DAT_71052bb390;
+    float result = -10.0f;
+    if (*(char*)(world + 0xc) == 0 && *(float*)(world + 8) < DAT_7104471590) {
+        result = -1.0f;
+    }
+    return result;
+}
+}} // namespace app::stage
+
+// 0x71015c79e0 (64 bytes) — app::boss_private::common_param_float
+// Reads float from ItemParamAccessor lookup table indexed by (kind, param_type).
+// Returns 0 if param array for this kind is null.
+// [derived: Ghidra decompilation at 0x71015c79e0]
+// lib::Singleton<app::ItemParamAccessor>::instance_ [derived: Ghidra label]
+extern "C" void* DAT_71052c34c0 HIDDEN;  // ItemParamAccessor instance
+
+namespace app { namespace boss_private {
+extern "C" u32 common_param_float(s32 kind, u32 param_type) {
+    u8* ipa = (u8*)DAT_71052c34c0;
+    if (*(u64*)(ipa + (s64)kind * 8 + 0xef8) != 0) {
+        return *(u32*)(ipa + (s64)kind * 100 + (u64)param_type * 4 + 0x73188);
+    }
+    return 0;
+}
+}} // namespace app::boss_private
+
+// 0x71015c11a0 (52 bytes) — app::item::begin_scale_animation
+// Gets item scale data from lua accessor chain, calls FUN_71015b58e0 with animation params.
+// [derived: Ghidra decompilation at 0x71015c11a0]
+extern "C" float DAT_7104472918 HIDDEN;  // default scale animation rate
+extern "C" void FUN_71015b58e0(float, u32, u64, s32, s32);
+
+namespace app { namespace item {
+extern "C" void begin_scale_animation(void* lua_state, s32 anim_type) {
+    u8* boma = *(u8**)(*(u8**)((u8*)lua_state - 8) + 0x1a0);
+    u64 scale_data = *(u64*)(*(u8**)(*(u8**)(boma + 400) + 0x220));
+    FUN_71015b58e0(DAT_7104472918, 0x3f800000, scale_data, anim_type, -1);
+}
+}} // namespace app::item
+
+// 0x71015c1d80 (80 bytes) — app::item::set_scale_speed_mul
+// Sets scale speed multiplier on item, dispatches vtable call based on whether mul == 1.0.
+// [derived: Ghidra decompilation at 0x71015c1d80]
+namespace app { namespace item {
+extern "C" void set_scale_speed_mul(void* lua_state, float mul) {
+    u8* boma = *(u8**)(*(u8**)((u8*)lua_state - 8) + 0x1a0);
+    u8* item_data = *(u8**)(*(u8**)(boma + 400) + 0x220);
+    void** module = *(void***)(item_data + 0xe8);
+    *(float*)(item_data + 0x27c) = mul;
+    void* vt = *(void**)module;
+    void (*func)(void**, u32);
+    if (mul == 1.0f) {
+        func = reinterpret_cast<void(*)(void**, u32)>(((void**)vt)[0x120/8]);
+    } else {
+        func = reinterpret_cast<void(*)(void**, u32)>(((void**)vt)[0x110/8]);
+    }
+    func(module, 0x20000014);
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");  // prevent tail-call
+#endif
+}
+}} // namespace app::item
+
+// 0x71015c22f0 (64 bytes) — app::item::calc_offset_with_gravity (lua_State version)
+// Gets posture module from accessor, calls FUN_710160e340 with pos + vec2.
+// [derived: Ghidra decompilation at 0x71015c22f0]
+namespace app { namespace item {
+extern "C" void calc_offset_with_gravity_71015c22f0(void* lua_state, void* vec2) {
+    u8* boma = *(u8**)(*(u8**)((u8*)lua_state - 8) + 0x1a0);
+    void** posture = *(void***)(boma + 0x38);
+    u64* pos = reinterpret_cast<u64*(*)(void**)>(
+        (*(void***)posture)[0x60/8])(posture);
+    FUN_710160e340(*pos, vec2);
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");  // prevent tail-call
+#endif
+}
+}} // namespace app::item
