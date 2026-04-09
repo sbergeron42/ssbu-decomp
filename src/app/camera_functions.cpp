@@ -655,3 +655,194 @@ extern "C" void entry_to_stage(u32 param_1) {
     FUN_710315f230(*(u64*)(*(u8**)SM_INSTANCE + 0x1e0), &event);
 }
 } // namespace app::st_shell
+
+// ---- Stage center / facing utility functions ----
+
+// 0x71015cf110 (124 bytes) — app::stage::lr_to_stage_center
+// Gets battle object posture, computes stage center from stage_info vtable[0x140/8],
+// returns 1.0f if position <= center, -1.0f if position > center.
+// [derived: disasm shows posture at +0x38, vtable[0x60/8] for pos, vtable[0x140/8] for stage bounds]
+// [derived: fcsel s0,s1,s0,gt — ordered greater-than check, returns -1.0f when pos > center]
+namespace app::stage {
+extern "C" float lr_to_stage_center(u64 lua_state) {
+    u8* battle_obj = *(u8**)(*(u8**)(lua_state - 8) + 0x1a0);
+    void** posture = *(void***)(battle_obj + 0x38);
+    u8* stage_info = *(u8**)SM_INSTANCE + 0x128;
+    void** si_vt = *(void***)stage_info;
+    float* bounds = reinterpret_cast<float*(*)(void*)>(si_vt[0x140/8])(stage_info);
+    float* pos = reinterpret_cast<float*(*)(void**)>(((void**)*posture)[0x60/8])(posture);
+    float px = *pos;
+    float center = *bounds + (bounds[1] - *bounds) * 0.5f;
+    if (px > center) {
+        return -1.0f;
+    }
+    return 1.0f;
+}
+} // namespace app::stage
+
+// 0x71015cf190 (156 bytes) — app::stage::is_looking_at_stage_center
+// Same center computation, checks if facing direction matches the lr toward center.
+// [derived: disasm shows fcsel s8,s1,s0,gt — saves lr in d8 across vtable[0xb0/8] call]
+namespace app::stage {
+extern "C" bool is_looking_at_stage_center(u64 lua_state) {
+    u8* battle_obj = *(u8**)(*(u8**)(lua_state - 8) + 0x1a0);
+    void** posture = *(void***)(battle_obj + 0x38);
+    u8* stage_info = *(u8**)SM_INSTANCE + 0x128;
+    void** si_vt = *(void***)stage_info;
+    float* bounds = reinterpret_cast<float*(*)(void*)>(si_vt[0x140/8])(stage_info);
+    float* pos = reinterpret_cast<float*(*)(void**)>(((void**)*posture)[0x60/8])(posture);
+    float px = *pos;
+    float center = *bounds + (bounds[1] - *bounds) * 0.5f;
+    float lr;
+    if (px > center) {
+        lr = -1.0f;
+    } else {
+        lr = 1.0f;
+    }
+    float facing = reinterpret_cast<float(*)(void**)>(((void**)*posture)[0xb0/8])(posture);
+    return facing == lr;
+}
+} // namespace app::stage
+
+// ---- Dead-up camera hit distance group ----
+
+// 0x71022802f0 (120 bytes) — app::sv_fighter_util::get_dead_up_camera_hit_my_distance_group
+// Gets work module float, compares against FighterParamAccessor2 thresholds to return group 0/1/2.
+// [derived: disasm shows FighterParamAccessor2 → [+0x50] → [+0x10c8] for threshold pair]
+// [derived: fcmp+b.pl for >=thresh_lo, fcmp+b.le (!gt) for <=thresh_hi]
+namespace app::sv_fighter_util {
+extern "C" u64 get_dead_up_camera_hit_my_distance_group(u64 lua_state) {
+    u8* battle_obj = *(u8**)(*(u8**)(lua_state - 8) + 0x1a0);
+    void** work = *(void***)(battle_obj + 0x50);
+    u8* param_sub = *(u8**)((u8*)DAT_71052bb3b0 + 0x50);
+    float* thresholds = *(float**)(param_sub + 0x10c8);
+    float thresh_lo = thresholds[0];
+    float thresh_hi = thresholds[1];
+    float val = reinterpret_cast<float(*)(void**, u64, s32)>(
+        ((void**)*work)[0x270/8])(work, 0x1bf2c4c8e6ULL, 0);
+    if (val < thresh_lo) {
+        return 0;
+    }
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");
+#endif
+    if (val > thresh_hi) {
+        return 2;
+    }
+    return 1;
+}
+} // namespace app::sv_fighter_util
+
+// ---- Stage restart scroll ----
+
+// 0x710227ffd0 (160 bytes) — app::sv_fighter_util::stage_restart_scroll
+// Gets posture position, adds stage_info scroll offset (returned as float4 in v0),
+// builds new position on stack, calls set_pos.
+// [derived: disasm shows posture+0x38 vtable[0x60/8] for pos (returns ptr),
+//  stage_info vtable[0x58/8] returns offset as float4 in v0,
+//  ldr q1 loads pos as vector, component-wise fadd, posture vtable[0x70/8] sets pos]
+namespace app::sv_fighter_util {
+extern "C" void stage_restart_scroll(u64 lua_state) {
+    u8* battle_obj = *(u8**)(*(u8**)(lua_state - 8) + 0x1a0);
+    void** posture = *(void***)(battle_obj + 0x38);
+    float4* pos = reinterpret_cast<float4*(*)(void**)>(((void**)*posture)[0x60/8])(posture);
+    u8* stage_info = *(u8**)SM_INSTANCE + 0x128;
+    void** si_vt = *(void***)stage_info;
+    float4 offset = reinterpret_cast<float4(*)(void*)>(si_vt[0x58/8])(stage_info);
+    float4 p = *pos;
+    float4 new_pos = {0};
+    new_pos[0] = p[0] + offset[0];
+    new_pos[1] = p[1] + offset[1];
+    new_pos[2] = p[2] + offset[2];
+    reinterpret_cast<void(*)(void**, float4*)>(((void**)*posture)[0x70/8])(posture, &new_pos);
+}
+} // namespace app::sv_fighter_util
+
+// ---- CHECK_VALID_START_CAMERA wrappers ----
+
+// 0x71022b1740 — inner implementation (2812 bytes, complex)
+extern "C" void FUN_71022b1740(void*, u64);
+
+// 0x71022b2240 (144 bytes) — app::sv_animcmd::CHECK_VALID_START_CAMERA
+// Lua wrapper: sets up param struct on stack, calls FUN_71022b1740, cleans lua stack.
+// [derived: disasm shows pre-check + do-while loop pattern for stack cleanup,
+//  base computed as **(L+0x20)+0x10, argc = (top - base) >> 4]
+namespace app::sv_animcmd {
+extern "C" void CHECK_VALID_START_CAMERA(u64 lua_state) {
+    struct {
+        u64 val;        // +0x00
+        u32 argc;       // +0x08
+        u64 state;      // +0x10
+        u8 done;        // +0x18
+    } params;
+    params.val = 0;
+    u64 base = *(u64*)*(u64*)(lua_state + 0x20) + 0x10;
+    params.state = lua_state;
+    params.done = 0;
+    params.argc = (u32)((*(u64*)(lua_state + 0x10) - base) >> 4);
+    FUN_71022b1740(&params, *(u64*)(*(u8**)(lua_state - 8) + 0x1a0));
+    base = *(u64*)*(u64*)(lua_state + 0x20) + 0x10;
+    u64 top = *(u64*)(lua_state + 0x10);
+    if (top < base) {
+        do {
+            *(u64*)(lua_state + 0x10) = top + 0x10;
+            *(u32*)(top + 8) = 0;
+            top = *(u64*)(lua_state + 0x10);
+        } while (top < base);
+    }
+    *(u64*)(lua_state + 0x10) = base;
+}
+} // namespace app::sv_animcmd
+
+// 0x71022b22d0 (144 bytes) — app::sv_animcmd::CHECK_VALID_START_CAMERA_arg8
+// Identical structure to CHECK_VALID_START_CAMERA
+namespace app::sv_animcmd {
+extern "C" void CHECK_VALID_START_CAMERA_arg8(u64 lua_state) {
+    struct {
+        u64 val;
+        u32 argc;
+        u64 state;
+        u8 done;
+    } params;
+    params.val = 0;
+    u64 base = *(u64*)*(u64*)(lua_state + 0x20) + 0x10;
+    params.state = lua_state;
+    params.done = 0;
+    params.argc = (u32)((*(u64*)(lua_state + 0x10) - base) >> 4);
+    FUN_71022b1740(&params, *(u64*)(*(u8**)(lua_state - 8) + 0x1a0));
+    base = *(u64*)*(u64*)(lua_state + 0x20) + 0x10;
+    u64 top = *(u64*)(lua_state + 0x10);
+    if (top < base) {
+        do {
+            *(u64*)(lua_state + 0x10) = top + 0x10;
+            *(u32*)(top + 8) = 0;
+            top = *(u64*)(lua_state + 0x10);
+        } while (top < base);
+    }
+    *(u64*)(lua_state + 0x10) = base;
+}
+} // namespace app::sv_animcmd
+
+// ---- Camera direction calculation ----
+
+// 0x710165d190 (132 bytes) — app::dragoonsight::get_rotation_with_calc_camera_direction
+// Computes rotation from camera direction vector using atan2f.
+// [derived: disasm shows ldr q1,[x19,#0xed0] for vector load, dup s0,v1.s[1] for dy,
+//  dup s1,v1.s[2] for dz, fabs s1 for |dz|, bl atan2f, then reload and negate dx]
+extern "C" float DAT_7104471fbc HIDDEN;  // [inferred: radians-to-degrees conversion constant]
+extern "C" float DAT_7104470d10 HIDDEN;  // [inferred: degree scale divisor]
+extern "C" float atan2f(float, float);
+
+namespace app::dragoonsight {
+extern "C" float4 get_rotation_with_calc_camera_direction(void) {
+    u8* cam = *(u8**)DAT_71052b7f00;
+    float4 v = *(float4*)(cam + 0xed0);
+    float angle_y = atan2f(v[1], __builtin_fabsf(v[2]));
+    v = *(float4*)(cam + 0xed0);
+    float angle_x = atan2f(-v[0], __builtin_fabsf(v[2]));
+    float4 r = {0};
+    r[0] = (angle_y * DAT_7104471fbc) / DAT_7104470d10;
+    r[1] = (angle_x * DAT_7104471fbc) / DAT_7104470d10;
+    return r;
+}
+} // namespace app::dragoonsight
