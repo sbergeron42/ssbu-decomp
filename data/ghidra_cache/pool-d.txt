@@ -122,6 +122,23 @@ Address: 0x710317b2e0, Size: 272B
 - param_1[0] != 0: writes to +0xc10/+0xc18/+0xc30..+0xc3c/+0xc50..+0xc58
 - Copies 32 bytes of param_2 data into param_1
 
+== FUN_7100082500 / FUN_7100083d10 — float getter via vtable[11] ==
+Address: 0x7100082500 / 0x7100083d10, Size: 76B each
+- if sub at +0x28 is null → val = 0.0
+- else call vtable[11] (offset 0x58), cast int → float
+- return val * *(f32)(this+0x10) + *(f32)(this+0x44)
+
+== FUN_710048c1d0 — conditional vtable dispatch ==
+Address: 0x710048c1d0, Size: 80B
+- Call vtable[10] (0x50) → flags
+- If !(flags & 1) and this[2]→[0] != 0 → FUN_710372c470(sub, param_2, 1)
+
+== FUN_7100225b10 — mutex-locked field accessor ==
+Address: 0x7100225b10, Size: 84B
+- Lock via vtable[2] on mutex at +0xe8
+- Read this+0x58→+0x8 as s32 (or -1 if null)
+- Unlock via vtable[4], return result
+
 == FUN_710317b3f0 — team param flag toggle ==
 Address: 0x710317b3f0, Size: 320B
 - ensure_team_param_init()

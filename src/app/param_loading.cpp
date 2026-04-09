@@ -6735,3 +6735,90 @@ void FUN_710317b3f0(u64 param_1, s64* param_2) {
     FUN_710317b530(param_1, param_2[0]);
     FUN_710317b530(param_1, param_2[1]);
 }
+
+// ════════════════════════════════════════════════════════════════════
+// Small scattered functions — various modules
+// ════════════════════════════════════════════════════════════════════
+
+// ════════════════════════════════════════════════════════════════════
+// 0x7100082500 — float getter: vtable call → scale + offset
+// Size: 76 bytes
+// [derived: Ghidra decompilation — reads float via vtable[11] on sub-object
+//  at param_1+0x28, multiplies by scale at +0x10, adds offset at +0x44]
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+f32 FUN_7100082500(s64 param_1) {
+    f32 val;
+    s64* sub = *(s64**)(param_1 + 0x28);
+    if (sub == nullptr) {
+        val = 0.0f;
+    } else {
+        // vtable[11] at offset 0x58 — returns int
+        s32 iresult = ((s32(*)(void))(*(s64**)sub)[0x58/8])();
+        val = (f32)iresult;
+    }
+    return val * *(f32*)(param_1 + 0x10) + *(f32*)(param_1 + 0x44);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x7100083d10 — float getter: same pattern as 0x7100082500
+// Size: 76 bytes
+// [derived: Ghidra decompilation — identical structure, different call site]
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+f32 FUN_7100083d10(s64 param_1) {
+    f32 val;
+    s64* sub = *(s64**)(param_1 + 0x28);
+    if (sub == nullptr) {
+        val = 0.0f;
+    } else {
+        s32 iresult = ((s32(*)(void))(*(s64**)sub)[0x58/8])();
+        val = (f32)iresult;
+    }
+    return val * *(f32*)(param_1 + 0x10) + *(f32*)(param_1 + 0x44);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x710048c1d0 — conditional vtable dispatch
+// Size: 80 bytes
+// [derived: Ghidra decompilation — calls vtable[10] to check flag,
+//  if not set and sub-object at this[2] is non-null, dispatches to
+//  FUN_710372c470 with param_2]
+// ════════════════════════════════════════════════════════════════════
+extern "C" void FUN_710372c470(s64, u64, s32);
+
+extern "C"
+void FUN_710048c1d0(s64* param_1, u64 param_2) {
+    u64 flags = ((u64(*)(void))(*(s64**)param_1)[0x50/8])();
+    if ((flags & 1) == 0) {
+        s64 sub = *(s64*)param_1[2];
+        if (sub != 0) {
+            FUN_710372c470(sub, param_2, 1);
+        }
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x7100225b10 — mutex-locked accessor: lock → read → unlock
+// Size: 84 bytes
+// [derived: Ghidra decompilation — calls vtable[2] to lock,
+//  reads field at +0x58→+0x8, calls vtable[4] to unlock, returns s32]
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+s32 FUN_7100225b10(s64 param_1) {
+    s64* mutex = (s64*)(param_1 + 0xe8);
+    // vtable[2] = lock
+    ((void(*)(s64*))(*(s64**)mutex)[0x10/8])(mutex);
+
+    s32 result;
+    s64 ptr = *(s64*)(param_1 + 0x58);
+    if (ptr == 0) {
+        result = -1;
+    } else {
+        result = *(s32*)(ptr + 8);
+    }
+
+    // vtable[4] = unlock
+    ((void(*)(s64*))(*(s64**)mutex)[0x20/8])(mutex);
+    return result;
+}
