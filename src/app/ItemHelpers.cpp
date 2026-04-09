@@ -526,3 +526,41 @@ void sub1_energy_from_param_inherit_no_boss_71015c8200(void* ls, u32 kind, u64 h
 void sub1_energy_from_param_inherit_all_no_boss_71015c8240(void* ls, u32 kind, u64 hash) {
     FUN_71015c7aa0(ls, kind, hash, 0.0f, 1, 1, 0xd, 0, 0, 1);
 }
+
+// ============================================================
+// Pool-E Session 3: Small item/stage helper functions
+// ============================================================
+
+// 71015c3060 — get_assist_respawn_position: tail-call with extra arg=1 (8B)
+// [derived: Ghidra shows FUN_710160e690(param_1, param_2, 1)]
+extern "C" void FUN_710160e690(void*, int, int);
+
+void get_assist_respawn_position_71015c3060(void* pos, int param2) {
+    FUN_710160e690(pos, param2, 1);
+}
+
+// 71015c8ed0 — create_weapon: tail-call to create_weapon_with_variation with variation=-1 (8B)
+// [derived: Ghidra shows create_weapon_with_variation(p1, p2, -1, p3, p4, p5, p6)]
+extern "C" void create_weapon_with_variation(void*, u32, s32, f32, f32, f32, f32);
+
+void create_weapon_71015c8ed0(void* ls, u32 kind, f32 p3, f32 p4, f32 p5, f32 p6) {
+    create_weapon_with_variation(ls, kind, -1, p3, p4, p5, p6);
+}
+
+// 71015c5c40 — search_range: shuffles args to FUN_71015c5c50(ls, 5, is_boss, 1) (16B)
+// [derived: Ghidra shows FUN_71015c5c50(param_1, 5, param_6, 1)]
+extern "C" void FUN_71015c5c50(void*, u32, u32, u32);
+
+void search_range_71015c5c40(void* ls, f32 p2, f32 p3, f32 p4, f32 p5, u32 p6) {
+    FUN_71015c5c50(ls, 5, p6, 1);
+}
+
+// 71015c1750 — request_cut_in_from_param: tail-call with constants (28B)
+// [derived: Ghidra shows FUN_71015c1770(p1, p2, p3, 0x50000000, p4, 0x7fb997a80, 1)]
+extern "C" void FUN_71015c1770(void*, u32, u64, u32, void*, u64, u32);
+
+void request_cut_in_from_param_71015c1750(void* ls, u32 kind, u64 hash, void* pos) {
+    FUN_71015c1770(ls, kind, hash, 0x50000000, pos, 0x7fb997a80ULL, 1);
+}
+
+// 71015c6b60 — center_pos_2d: SKIP — 28B in binary vs 4B compiled, Ghidra may be wrong about scope
