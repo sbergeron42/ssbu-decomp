@@ -31,10 +31,11 @@ Matching decompilation of SSBU (Nintendo Switch, AArch64) targeting patch 13.0.4
 - `data/` — Function database (functions.csv with 39,635 entries)
 
 ## Build
-```bat
-build.bat
+```bash
+python tools/build.py
 ```
 Or: `python tools/progress.py` to check status.
+**WARNING:** `build.bat` is deprecated — it runs obsolete post-processors that inflate match counts. Always use `build.py`.
 
 ## Module Accessor Pattern
 Most `lua_bind` functions take `BattleObjectModuleAccessor*` as first param and dispatch to a sub-module via vtable. The accessor has module pointers at fixed offsets (+0x38 through +0x188). See `include/app/BattleObjectModuleAccessor.h` for the full layout.
@@ -93,10 +94,10 @@ This repo supports parallel decomp work via git worktrees. Multiple Claude Code 
 - **Library code identification.** If a function matches a known open-source library (jemalloc, zlib, zstd), identify the version and document with `// library_name version: source_file.c:line`. Do NOT try to byte-match library code compiled with different optimization flags — document the version and move on.
 
 ### Worker Efficiency Rules
-1. **NEVER rebuild just to re-parse output** — run `cmd /c build.bat 2>&1 | tee /tmp/build.txt` once, then grep the saved file. One build, not ten.
-2. **Save Ghidra results to disk** — after each `mcp__ghidra__decompile_function_by_address` call, append the result to `/tmp/ghidra_results.txt`. On context continuation, read the file instead of re-calling Ghidra.
+1. **NEVER rebuild just to re-parse output** — run `python tools/build.py 2>&1 | tee build_output.txt` once, then grep the saved file. One build, not ten.
+2. **Save Ghidra results to disk** — after each `mcp__ghidra__decompile_function_by_address` call, append the result to `data/ghidra_cache/<pool_name>.txt` (NOT /tmp — it gets wiped on reboot). On context continuation, read the file instead of re-calling Ghidra.
 3. **Use existing helper scripts** — run `python tools/next_batch.py` to find targets, `python tools/compare_bytes.py` to diff. Do NOT write inline Python for CSV parsing or byte comparison.
-4. **Do NOT fix infrastructure** — if a tool (verify_all.py, build.bat, linker script) is broken, report the issue in your commit message and move to the next function. The orchestrator handles tool fixes.
+4. **Do NOT fix infrastructure** — if a tool (verify_all.py, build.py, linker script) is broken, report the issue in your commit message and move to the next function. The orchestrator handles tool fixes.
 5. **3-attempt limit on matching** — if a function doesn't match after 3 edit-build-verify cycles, either use `__attribute__((naked))` with inline asm or skip it and move on. Do NOT spiral on one function.
 
 ### Worker Verification
@@ -105,44 +106,8 @@ Workers use `tools/verify_local.py` for self-checks (read-only, no CSV writes):
 python tools/verify_local.py --build --modules GroundModule
 ```
 
-### Orchestrator Commands
-```bash
-python tools/setup_worktrees.py              # Create worker worktrees
-bash tools/merge_worker.sh pool-a            # Merge a worker branch
-python tools/verify_all.py --update          # Global verify + CSV update
-```
-
-### Setup
-```bash
-python tools/setup_worktrees.py   # Creates 3 worktrees: pool-a, pool-b, pool-c
-cd "../SSBU Decomp-pool-a"        # Open a worker directory
-claude                             # Start Claude Code in the worktree
-```
-
-## Linking Infrastructure (building toward full shiftable link)
-The long-term goal is a full linked binary where every function is either decomped or stubbed. Infrastructure to build:
-
-### Stub Generator
-A script (`tools/gen_stubs.py`) that reads `data/functions.csv` and generates `extern "C"` stub declarations for every U-quality (undecompiled) function. This lets us attempt a full link at any time — stubs resolve to the original binary's addresses.
-
-**Status:** Not yet built. Build this when compiled percentage reaches ~50%.
-
-### Linker Script
-A linker script that places sections at original addresses. Required for:
-- Resolving PCREL (branch/ADRP) relocations that currently cause false non-matches
-- Producing a binary that can be diffed section-by-section against the original
-- Eventually producing a shiftable binary for modding
-
-**Status:** Not yet built. The current `ld.lld -shared` link is verification-only.
-
-### When to Invest in Linking
-- **Now (39% compiled):** Too early for full link. Focus on decomp volume and match quality.
-- **50% compiled:** Build stub generator, attempt first full link, identify section ordering issues.
-- **60%+ compiled:** Maintain a working linked binary as part of CI. Every commit should link.
-- **80%+ compiled:** Target shiftable link — the binary can be relocated and still function.
-
-### Data Sections
-Not yet addressed. `.rodata`, `.data`, `.bss` sections need to be accounted for before a full link works. The `functions.csv` only tracks `.text` functions.
+### Orchestrator
+Orchestrator workflow (merge, verify, assign, setup, linking infrastructure) is in `docs/ORCHESTRATOR.md`.
 
 ## Reference Projects
 - KinokoDecomp-S (Captain Toad, same SDK 8.2.x) — primary reference for toolchain and patterns
