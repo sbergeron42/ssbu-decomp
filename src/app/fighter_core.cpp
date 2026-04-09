@@ -547,6 +547,7 @@ namespace lib { extern "C" void* Singleton_app_FighterManager_instance_ asm("_ZN
 extern "C" [[noreturn]] void abort();
 extern "C" void FUN_7100653490(void* entry, s32 param);  // deactivate entry helper [HARD, simd_complex]
 extern "C" void FUN_7100649540(u64 battle_object, s32 enable, s32 rate, s32 duration, s32 param_5);  // slow control [HARD, complex_tail_call]
+extern "C" u64 FUN_710160e2a0(u32 object_id);  // get fighter battle object helper [derived: wraps get_battle_object_from_id + null fallback]
 
 // ============================================================================
 // is_loaded_fighter
@@ -656,6 +657,33 @@ extern "C" void FUN_71016529e0(s32 entry_id) {
 }
 
 // ============================================================================
+// is_fighter_enabled
+// Address: 0x71015ce5c0 | Size: 88 bytes
+// Returns 1 if the fighter's status is not dead (0xb5) or entry (0x1d6).
+// [derived: is_fighter_enabled (community name) — calls FUN_710160e2a0
+//  to get battle object, reads StatusModule vtable[0x110/8] for status_kind,
+//  0xb5 = STATUS_KIND_DEAD, 0x1d6 = STATUS_KIND_ENTRY]
+// ============================================================================
+
+extern "C" u32 FUN_71015ce5c0(u32 object_id) {
+    if (__builtin_expect((object_id >> 28) != 0, 0)) {
+        return 0;
+    }
+    u64 obj = FUN_710160e2a0(object_id);
+    if (obj == 0) {
+        return 0;
+    }
+    // StatusModule at +0x40 [derived: BattleObjectModuleAccessor +0x40 = StatusModule]
+    u64* status_mod = *reinterpret_cast<u64**>(obj + 0x40);
+    // vtable[0x110/8] = get_status_kind [derived: returns int status kind]
+    s32 kind = reinterpret_cast<s32(*)(u64*)>(*reinterpret_cast<void**>(*status_mod + 0x110))(status_mod);
+    if (kind == 0xb5 || kind == 0x1d6) {
+        return 0;
+    }
+    return 1;
+}
+
+// ============================================================================
 // ItemManager utility functions
 // ============================================================================
 
@@ -663,6 +691,14 @@ extern "C" void FUN_71016529e0(s32 entry_id) {
 // [derived: all ItemManager:: functions dereference this global]
 namespace lib { extern "C" void* Singleton_app_ItemManager_instance_ asm("_ZN3lib9SingletonIN3app11ItemManagerEE9instance_E") HIDDEN2; }
 #define IM_INSTANCE (reinterpret_cast<u8*>(lib::Singleton_app_ItemManager_instance_))
+
+// FighterParamAccessor2 singleton
+// [derived: init_bound_frame/special_lw_gravity load params through this]
+namespace lib { extern "C" void* Singleton_app_FighterParamAccessor2_instance_ asm("_ZN3lib9SingletonIN3app22FighterParamAccessor2EE9instance_E") HIDDEN2; }
+#define FPA2_INSTANCE (reinterpret_cast<u8*>(lib::Singleton_app_FighterParamAccessor2_instance_))
+
+// Misc globals
+extern "C" void* DAT_7105328f50 HIDDEN2;  // item se controller [derived: used in stop_ingame_se]
 
 // Invalid item battle object ID
 #define INVALID_ITEM_ID 0x50000000u
@@ -798,8 +834,309 @@ extern "C" u32 FUN_7101655fb0(u8* acc) {
     return result & 1;
 }
 
+// ============================================================================
+// can_exist (shiokarazu)
+// Address: 0x710164bb20 | Size: 28 bytes
+// Returns true if the shiokarazu (splatoon ink) slot is empty.
+// [derived: can_exist (community name) — checks ItemManager+0x58->+0x708 == 0]
+// ============================================================================
+
+extern "C" bool FUN_710164bb20() {
+    u64 sub = *reinterpret_cast<u64*>(IM_INSTANCE + 0x58);
+    return *reinterpret_cast<u64*>(sub + 0x708) == 0;
+}
+
+// ============================================================================
+// can_exist (darz)
+// Address: 0x71016523a0 | Size: 28 bytes
+// Returns true if the darz (assist trophy) slot is empty.
+// [derived: can_exist_71016523a0 (community name) — checks ItemManager+0x58->+0xcd0 == 0]
+// ============================================================================
+
+extern "C" bool FUN_71016523a0() {
+    u64 sub = *reinterpret_cast<u64*>(IM_INSTANCE + 0x58);
+    return *reinterpret_cast<u64*>(sub + 0xcd0) == 0;
+}
+
+// ============================================================================
+// can_exist (kiila)
+// Address: 0x7101652f20 | Size: 28 bytes
+// Returns true if the kiila (Killer Eye) slot is empty.
+// [derived: can_exist_7101652f20 (community name) — checks ItemManager+0x58->+0xc78 == 0]
+// ============================================================================
+
+extern "C" bool FUN_7101652f20() {
+    u64 sub = *reinterpret_cast<u64*>(IM_INSTANCE + 0x58);
+    return *reinterpret_cast<u64*>(sub + 0xc78) == 0;
+}
+
+// ============================================================================
+// send_event_on_start_boss_entry
+// Address: 0x71015c8450 | Size: 84 bytes
+// Finds an active item by object_id and sends boss entry start event.
+// [derived: send_event_on_start_boss_entry (community name) — iterates
+//  active items at IM+0x28..+0x30, tail-calls FUN_71015b52c0 on match]
+// ============================================================================
+
+extern "C" void FUN_71015b52c0(u64 item);  // send boss entry event helper
+extern "C" void FUN_71015c8450(u32 object_id) {
+    if (object_id == INVALID_ITEM_ID) return;
+    u64* begin = *reinterpret_cast<u64**>(IM_INSTANCE + 0x28);
+    u64* end   = *reinterpret_cast<u64**>(IM_INSTANCE + 0x30);
+    for (u64* it = begin; it != end; ++it) {
+        u64 item = *it;
+        if (*(u8*)(*(u64*)(item + 0x90) + 0x18) == 0 &&
+            *(u32*)(item + 0x8) == object_id) {
+            FUN_71015b52c0(item);
+            return;
+        }
+    }
+}
+
+// ============================================================================
+// stop_ingame_se
+// Address: 0x71016538e0 | Size: 24 bytes
+// Stops in-game sound effect by setting a flag byte.
+// [derived: stop_ingame_se (community name) — loads global ptr, deref, sets byte +1 to 1]
+// ============================================================================
+
+extern "C" void FUN_71016538e0() {
+    u64 ptr = *reinterpret_cast<u64*>(DAT_7105328f50);
+    *reinterpret_cast<u8*>(ptr + 1) = 1;
+}
+
+// ============================================================================
+// init_bound_frame
+// Address: 0x71016593a0 | Size: 20 bytes
+// Returns the bound frame count from FighterParamAccessor2.
+// [derived: init_bound_frame (community name) — FPA2+0x12d0->+0x230, returns u32]
+// ============================================================================
+
+extern "C" u32 FUN_71016593a0() {
+    u64 sub = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0x12d0);
+    return *reinterpret_cast<u32*>(sub + 0x230);
+}
+
+// ============================================================================
+// special_lw_gravity
+// Address: 0x71016593c0 | Size: 20 bytes
+// Returns the special low gravity float from FighterParamAccessor2.
+// [derived: special_lw_gravity (community name) — FPA2+0x12d0->+0x234, returns float]
+// ============================================================================
+
+extern "C" float FUN_71016593c0() {
+    u64 sub = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0x12d0);
+    return *reinterpret_cast<float*>(sub + 0x234);
+}
+
+// ============================================================================
+// buddybomb param getters (batch)
+// All use FPA2+0x12d0 deref chain with varying final offsets.
+// [derived: community names, FPA2 singleton deref pattern]
+// ============================================================================
+
+// length_gravity — Address: 0x7101659400 | Size: 20 bytes | +0x240
+extern "C" float FUN_7101659400() {
+    u64 sub = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0x12d0);
+    return *reinterpret_cast<float*>(sub + 0x240);
+}
+
+// length_speed_y_max — Address: 0x7101659420 | Size: 20 bytes | +0x244
+extern "C" float FUN_7101659420() {
+    u64 sub = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0x12d0);
+    return *reinterpret_cast<float*>(sub + 0x244);
+}
+
+// length_angle_x_velocity — Address: 0x7101659440 | Size: 20 bytes | +0x260
+extern "C" float FUN_7101659440() {
+    u64 sub = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0x12d0);
+    return *reinterpret_cast<float*>(sub + 0x260);
+}
+
+// length_angle_y_velocity — Address: 0x7101659460 | Size: 20 bytes | +0x264
+extern "C" float FUN_7101659460() {
+    u64 sub = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0x12d0);
+    return *reinterpret_cast<float*>(sub + 0x264);
+}
+
+// length_angle_z_velocity — Address: 0x7101659480 | Size: 20 bytes | +0x268
+extern "C" float FUN_7101659480() {
+    u64 sub = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0x12d0);
+    return *reinterpret_cast<float*>(sub + 0x268);
+}
+
+// side_gravity — Address: 0x71016594a0 | Size: 20 bytes | +0x26c
+extern "C" float FUN_71016594a0() {
+    u64 sub = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0x12d0);
+    return *reinterpret_cast<float*>(sub + 0x26c);
+}
+
+// side_speed_y_max — Address: 0x71016594c0 | Size: 20 bytes | +0x270
+extern "C" float FUN_71016594c0() {
+    u64 sub = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0x12d0);
+    return *reinterpret_cast<float*>(sub + 0x270);
+}
+
+// side_angle_x_velocity — Address: 0x71016594e0 | Size: 20 bytes | +0x28c
+extern "C" float FUN_71016594e0() {
+    u64 sub = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0x12d0);
+    return *reinterpret_cast<float*>(sub + 0x28c);
+}
+
+// side_angle_y_velocity — Address: 0x7101659500 | Size: 20 bytes | +0x290
+extern "C" float FUN_7101659500() {
+    u64 sub = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0x12d0);
+    return *reinterpret_cast<float*>(sub + 0x290);
+}
+
+// side_angle_z_velocity — Address: 0x7101659520 | Size: 20 bytes | +0x294
+extern "C" float FUN_7101659520() {
+    u64 sub = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0x12d0);
+    return *reinterpret_cast<float*>(sub + 0x294);
+}
+
+// flashing_frame_before_life_over — Address: 0x7101659560 | Size: 20 bytes | +0x2a4
+extern "C" u32 FUN_7101659560() {
+    u64 sub = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0x12d0);
+    return *reinterpret_cast<u32*>(sub + 0x2a4);
+}
+
+// rebound_speed_x_add — Address: 0x7101659580 | Size: 20 bytes | +0x2a8
+extern "C" float FUN_7101659580() {
+    u64 sub = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0x12d0);
+    return *reinterpret_cast<float*>(sub + 0x2a8);
+}
+
+// rebound_speed_y_add — Address: 0x71016595a0 | Size: 20 bytes | +0x2ac
+extern "C" float FUN_71016595a0() {
+    u64 sub = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0x12d0);
+    return *reinterpret_cast<float*>(sub + 0x2ac);
+}
+
+// ============================================================================
+// EXPLOSIONBOMB_WIRE_ROT_SPEED — Address: 0x710165d480 | Size: 20 bytes
+// [derived: FPA2+0x3f0->+0x120, returns u32]
+extern "C" u32 FUN_710165d480() {
+    u64 sub = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0x3f0);
+    return *reinterpret_cast<u32*>(sub + 0x120);
+}
+
+// ============================================================================
+// DAISY_DAISYDAIKON param getters (batch) — all 24 bytes
+// Chain: FPA2+0x380->+0x158->offset, returns float
+// [derived: community names from modding scene]
+// ============================================================================
+
+#define DAISY_PARAM(name, addr, off) \
+extern "C" float FUN_##addr() { \
+    u64 s1 = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0x380); \
+    u64 s2 = *reinterpret_cast<u64*>(s1 + 0x158); \
+    return *reinterpret_cast<float*>(s2 + off); \
+}
+
+DAISY_PARAM(PROB_1, 710165be40, 0x40)
+DAISY_PARAM(PROB_2, 710165be60, 0x44)
+DAISY_PARAM(PROB_3, 710165be80, 0x48)
+DAISY_PARAM(PROB_4, 710165bea0, 0x4c)
+DAISY_PARAM(PROB_5, 710165bec0, 0x50)
+DAISY_PARAM(PROB_6, 710165bee0, 0x54)
+DAISY_PARAM(PROB_7, 710165bf00, 0x58)
+DAISY_PARAM(PROB_8, 710165bf20, 0x5c)
+DAISY_PARAM(POWER_1, 710165bf40, 0x20)
+DAISY_PARAM(POWER_2, 710165bf60, 0x24)
+DAISY_PARAM(POWER_3, 710165bf80, 0x28)
+DAISY_PARAM(POWER_4, 710165bfa0, 0x2c)
+DAISY_PARAM(POWER_5, 710165bfc0, 0x30)
+DAISY_PARAM(POWER_6, 710165bfe0, 0x34)
+DAISY_PARAM(POWER_7, 710165c000, 0x38)
+DAISY_PARAM(POWER_8, 710165c020, 0x3c)
+
+#undef DAISY_PARAM
+
+// ============================================================================
+// spawn_frame family (batch) — all 24 bytes
+// Chain: FPA2+0xf88->+0x1c8->offset, returns u32
+// [derived: community names]
+// ============================================================================
+
+#define SPAWN_PARAM_U32(name, addr, off) \
+extern "C" u32 FUN_##addr() { \
+    u64 s1 = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0xf88); \
+    u64 s2 = *reinterpret_cast<u64*>(s1 + 0x1c8); \
+    return *reinterpret_cast<u32*>(s2 + off); \
+}
+
+SPAWN_PARAM_U32(spawn_frame, 710165e800, 0x1c)
+SPAWN_PARAM_U32(spawn_frame_add, 710165e820, 0x20)
+SPAWN_PARAM_U32(spawn_frame_max, 710165e840, 0x24)
+SPAWN_PARAM_U32(spawn_frame_get_krool_only, 710165e860, 0x2c)
+SPAWN_PARAM_U32(delete_frame, 710165e880, 0x34)
+SPAWN_PARAM_U32(delete_flash_frame, 710165e8a0, 0x38)
+
+#undef SPAWN_PARAM_U32
+
+// ============================================================================
+// LOG param family (batch) — all 24 bytes
+// Chain: FPA2+0xc08->+0x178->offset
+// [derived: community names]
+// ============================================================================
+
+extern "C" u32 FUN_710165f120() {  // LOG_LIFE — returns u32
+    u64 s1 = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0xc08);
+    u64 s2 = *reinterpret_cast<u64*>(s1 + 0x178);
+    return *reinterpret_cast<u32*>(s2 + 0x34);
+}
+
+extern "C" float FUN_710165f140() {  // LOG_REACTION_MUL — returns float
+    u64 s1 = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0xc08);
+    u64 s2 = *reinterpret_cast<u64*>(s1 + 0x178);
+    return *reinterpret_cast<float*>(s2 + 0xc);
+}
+
+extern "C" float FUN_710165f160() {  // LOG_LIFE_DEC_MUL — returns float
+    u64 s1 = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0xc08);
+    u64 s2 = *reinterpret_cast<u64*>(s1 + 0x178);
+    return *reinterpret_cast<float*>(s2 + 0x38);
+}
+
+extern "C" float FUN_710165f180() {  // LOG_SMASH_ACCEL_Y — returns float
+    u64 s1 = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0xc08);
+    u64 s2 = *reinterpret_cast<u64*>(s1 + 0x178);
+    return *reinterpret_cast<float*>(s2 + 0x20);
+}
+
+// ============================================================================
+// adjust_model_constraint_posture (variant 2)
+// Address: 0x7101655110 | Size: 24 bytes
+// Same pattern as first variant — different item type.
+// [derived: identical vtable tail call at accessor+0xd0, vtable[0x3b0/8]]
+// ============================================================================
+
+extern "C" void FUN_7101655110(u8* acc) {
+    u64* mod = *reinterpret_cast<u64**>(acc + 0xd0);
+    auto fn = reinterpret_cast<void(*)(u64*, u64, u64)>(
+        *reinterpret_cast<void**>(*mod + 0x3b0));
+    fn(mod, 0, 0);
+}
+
+// ============================================================================
+// adjust_model_constraint_posture
+// Address: 0x7101654bf0 | Size: 24 bytes
+// Adjusts model constraint posture via vtable tail call.
+// [derived: adjust_model_constraint_posture (community name) — loads module at
+//  accessor+0xd0, vtable[0x3b0/8], tail-calls with (module, 0, 0)]
+// ============================================================================
+
+extern "C" void FUN_7101654bf0(u8* acc) {
+    u64* mod = *reinterpret_cast<u64**>(acc + 0xd0);
+    auto fn = reinterpret_cast<void(*)(u64*, u64, u64)>(
+        *reinterpret_cast<void**>(*mod + 0x3b0));
+    fn(mod, 0, 0);
+}
+
 #undef HIDDEN2
 #undef FM_INSTANCE
 #undef IM_INSTANCE
+#undef FPA2_INSTANCE
 #undef INVALID_ITEM_ID
 

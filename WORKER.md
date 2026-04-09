@@ -1,27 +1,28 @@
-# Worker: pool-a
+# Worker: pool-b
 
 ## Model: Opus
 
-## Task: Effect template functions — 15 remaining, ~31 KB
+## Task: Fighter core — continue item/fighter utility functions
 
-## Progress (53/68 complete, 78%)
-- 4 perfect byte matches: EFFECT_REMOVE_ATTR, EFFECT_OFF_HANDLE, LAST_EFFECT_SET_WORK_INT, EFFECT_OFF
-- Patterns: kill_all/kill_kind, req_on_joint, req_follow, FLW_POS, FLIP+hash swap, COLOR/ALPHA post-process
-- FUN_7102288620 shared parser decomped: EFFECT_COLOR, COLOR_WORK, ALPHA, FLIP, FLIP_ALPHA
-- CSE divergence: upstream Clang CSEs DAT_7104861960 loads, ~85-95% size
-- NEW: EFFECT (86%), EFFECT_WORK_R (84%), EFFECT_BRANCH_SITUATION (86%) — 16-arg inline readers with vec packing
-- NEW: EFFECT_FOLLOW_RND (91%), FOLLOW_RND_WORK (93%), FOLLOW_FLIP_RND (87%) — XOR-shift128 PRNG + randomization
-- NEW: LANDING_EFFECT (102%), LANDING_EFFECT_FLIP (100.5%), FOOT_EFFECT_FLIP (97%) — terrain-aware with StageManager
+## Progress
+- get_fighter_id_from_fighter_kind (3,604B) — 100%, get_entry_in_fighter_param_kind_struct (15,848B) — 78%
+- change_status_lost (108B) — 100%, set_force_flashing (124B) — 100%
+- 10 item/fighter utility functions (get_item_kind 94%, remove_item_from_id 91%, etc.)
+- FighterEntry struct: +0x591F partner_flags, +0x5935 is_unloaded
+- Key: asm("") barriers, u32 vs u64, csel vs branch divergence
 
-## Continue with (15 remaining)
-- FOOT_EFFECT (~4.1 KB, inline 16-arg + terrain logic, needs StageManager)
-- DOWN_EFFECT (~4.0 KB, inline 16-arg + terrain at offset 0x78)
-- EFFECT_GLOBAL_BACK_GROUND, EFFECT_GLOBAL_BACK_GROUND_CENTER_TOP_NODE, EFFECT_GLOBAL_BACK_GROUND_CUT_IN_CENTER_POS (~4 KB, need FUN_710228ea70)
-- EFFECT_FOLLOW_LIGHT (NEON + PostureModule, ~4 KB)
-- Remaining smaller functions from original 24 list
+## Continue with
+- More small item/fighter utility functions (100-200B, vtable-chain pattern)
+- is_fighter_enabled (88B), get_fighter_entry_id (172B), item_throw (136B)
+- fighter_status.cpp AI functions
+- Hash-to-value switch pattern functions (match well)
+
+## Skipped (don't retry)
+- NEON functions, Ghidra jump table failures, global-ref ADRP mismatches
+- is_loaded_fighter — NX reorders singleton check
 
 ## File Territory
-- src/app/sv_animcmd_effect.cpp
+- src/app/fighter_core.cpp, fighter_status.cpp, fighter_attack.cpp
 
 ## Quality Rules
-- No naked asm, 3-attempt limit
+- No naked asm, 3-attempt limit, derivation chains
