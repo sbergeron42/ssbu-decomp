@@ -1,4 +1,5 @@
 #include "types.h"
+#include "app/BattleObject.h"
 #include "app/BattleObjectModuleAccessor.h"
 #include "app/modules/KineticModule.h"
 #include "app/modules/WorkModule.h"
@@ -115,15 +116,15 @@ void FUN_71003dcdd0(u8* param_1, s32 param_2) {
 // [derived: Ghidra FUN_71003a7740 — set +0x3a=4, +0x3c=0xff,
 //  *(+0x20)→vt[0x28/8](module, param_2, *(param_1+0x10)),
 //  BOM FUN_71003aeef0 with *(param_1+8) and *(param_2+8)]
-void FUN_71003a7740(u8* param_1, u8* param_2) {
-    *(param_1 + 0x3a) = 4;
-    *(param_1 + 0x3c) = 0xff;
-    void** module = *reinterpret_cast<void***>(param_1 + 0x20);
+void FUN_71003a7740(app::BattleObject* obj, u8* param_2) {
+    obj->category = 4;
+    obj->team = 0xff;
+    void** module = obj->module_group;
     void** mvt = *reinterpret_cast<void***>(module);
     reinterpret_cast<void(*)(void**, u8*, u32)>(mvt[0x28/8])(
-        module, param_2, *reinterpret_cast<u32*>(param_1 + 0x10));
+        module, param_2, obj->battle_object_id);
     FUN_71003aeef0(*lib::Singleton<app::BattleObjectManager>::instance_,
-                   *reinterpret_cast<u32*>(param_1 + 0x8),
+                   obj->object_id,
                    *reinterpret_cast<u16*>(param_2 + 8));
 }
 
@@ -132,14 +133,14 @@ void FUN_71003a7740(u8* param_1, u8* param_2) {
 // sets category to 3 and team to 0xFF.
 // [derived: Ghidra FUN_71003a7850 — BOM FUN_71003af040,
 //  *(+0x20)→vt[0x30/8](module, param_2&1), set +0x3a=3, +0x3c=0xff]
-void FUN_71003a7850(u8* param_1, u32 param_2) {
+void FUN_71003a7850(app::BattleObject* obj, u32 param_2) {
     FUN_71003af040(*lib::Singleton<app::BattleObjectManager>::instance_,
-                   reinterpret_cast<long>(param_1));
-    void** module = *reinterpret_cast<void***>(param_1 + 0x20);
+                   reinterpret_cast<long>(obj));
+    void** module = obj->module_group;
     void** mvt = *reinterpret_cast<void***>(module);
     reinterpret_cast<void(*)(void**, u32)>(mvt[0x30/8])(module, param_2 & 1);
-    *(param_1 + 0x3a) = 3;
-    *(param_1 + 0x3c) = 0xff;
+    obj->category = 3;
+    obj->team = 0xff;
 }
 
 // ── 0x71003d0380 (96B) — conditional pair init ─────────────────────
@@ -234,15 +235,15 @@ void FUN_71003fd310(u64 param_1, u8* param_2, u8* param_3) {
 // [derived: Ghidra FUN_71003fffa0 — loop count at param_1[2],
 //  stride 0x1c0 from param_1[3], read float at +0x10,
 //  if (float < 0.0 == NAN(float)) && vt[0xe0/8] returns false → return 1]
-u64 FUN_71003fffa0(u8* param_1) {
-    s32 count = *reinterpret_cast<s32*>(param_1 + 0x10);  // param_1[2] as long*
+u64 FUN_71003fffa0(app::AttackListContainer* container) {
+    s32 count = container->count;
     if (count > 0) {
-        u8* base = *reinterpret_cast<u8**>(param_1 + 0x18);  // param_1[3]
+        u8* base = container->entries_base;
         for (s32 i = 0; i < count; i++) {
             f32 val = *reinterpret_cast<f32*>(base + (long)i * 0x1c0 + 0x10);
             if (!(val < 0.0f)) {
-                void** vt = *reinterpret_cast<void***>(param_1);
-                u64 r = reinterpret_cast<u64(*)(u8*)>(vt[0xe0/8])(param_1);
+                void** vt = *reinterpret_cast<void***>(container);
+                u64 r = reinterpret_cast<u64(*)(app::AttackListContainer*)>(vt[0xe0/8])(container);
                 if ((r & 1) == 0) {
                     return 1;
                 }
