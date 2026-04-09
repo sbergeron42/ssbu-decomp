@@ -163,3 +163,117 @@ u32 LOG_SHAPE_TYPE_165f340() { return *(u32*)FPA2_3(0xc08, 0x190, 0x0); }
 
 // 0x710166e110 — flash_start_frame (20B)
 u32 flash_start_frame_166e110() { return *(u32*)FPA2_2(0x13b0, 0x51c); }
+// 0x710166e210 — generate_continuous_forbid_frame (20B)
+u32 generate_continuous_forbid_frame_166e210() { return *(u32*)FPA2_2(0x13b0, 0x540); }
+// 0x710166e250 — jostle_touch_ground_frame (20B)
+u32 jostle_touch_ground_frame_166e250() { return *(u32*)FPA2_2(0x13b0, 0x554); }
+// 0x710166e270 — jostle_up_touch_ground_frame (20B)
+u32 jostle_up_touch_ground_frame_166e270() { return *(u32*)FPA2_2(0x13b0, 0x55c); }
+// 0x710166e290 — jostle_up_touch_air_frame (20B)
+u32 jostle_up_touch_air_frame_166e290() { return *(u32*)FPA2_2(0x13b0, 0x560); }
+
+// ---- app::pickelobject — motion bomb params ----
+// Chain: FPA2 → +0x13b0 → +field (2-deref, 20B)
+
+// 0x7101668fa0 — reaction (20B)
+float reaction_1668fa0() { return *(float*)FPA2_2(0x13b0, 0x750); }
+// 0x7101669000 — ignition (20B)
+float ignition_1669000() { return *(float*)FPA2_2(0x13b0, 0x75c); }
+// 0x7101669060 — lost (20B)
+u32 lost_1669060() { return *(u32*)FPA2_2(0x13b0, 0x768); }
+// 0x71016690a0 — gravity_accel (20B)
+float gravity_accel_16690a0() { return *(float*)FPA2_2(0x13b0, 0x770); }
+// 0x71016690c0 — gravity_accel_max (20B)
+float gravity_accel_max_16690c0() { return *(float*)FPA2_2(0x13b0, 0x774); }
+// 0x71016690e0 — gravity_frame (20B)
+u32 gravity_frame_16690e0() { return *(u32*)FPA2_2(0x13b0, 0x778); }
+// 0x7101669100 — flashing_frame_before_life (20B)
+u32 flashing_frame_before_life_1669100() { return *(u32*)FPA2_2(0x13b0, 0x77c); }
+
+// ---- app::rockman_metalblade — Metal Blade params ----
+// Rockman (Mega Man) chain: FPA2 → +0xb28 → +0x1a0 → +field (3-deref, 24B)
+// [derived: app::rockman_metalblade::* in Ghidra]
+
+// 0x7101661660 — ROCKMAN_METALBLADE_WAIT_LOST_COUNT_THROW (24B)
+u32 ROCKMAN_METALBLADE_WAIT_LOST_COUNT_THROW_1661660() { return *(u32*)FPA2_3(0xb28, 0x1a0, 0x4); }
+// 0x7101661680 — ROCKMAN_METALBLADE_WAIT_LOST_COUNT_STICK (24B)
+u32 ROCKMAN_METALBLADE_WAIT_LOST_COUNT_STICK_1661680() { return *(u32*)FPA2_3(0xb28, 0x1a0, 0xc); }
+// 0x71016616a0 — ROCKMAN_METALBLADE_STICK_PERCENT (24B)
+float ROCKMAN_METALBLADE_STICK_PERCENT_16616a0() { return *(float*)FPA2_3(0xb28, 0x1a0, 0x8); }
+// 0x71016616e0 — ROCKMAN_METALBLADE_SPEED_REVERSE_FRAME (24B)
+u32 ROCKMAN_METALBLADE_SPEED_REVERSE_FRAME_16616e0() { return *(u32*)FPA2_3(0xb28, 0x1a0, 0x30); }
+// 0x7101661780 — ROCKMAN_METALBLADE_LIFE_SUBTRACT (24B)
+u32 ROCKMAN_METALBLADE_LIFE_SUBTRACT_1661780() { return *(u32*)FPA2_3(0xb28, 0x1a0, 0x10); }
+// 0x71016617a0 — ROCKMAN_METALBLADE_STICK_ROT_STOP_FRAME (24B)
+u32 ROCKMAN_METALBLADE_STICK_ROT_STOP_FRAME_16617a0() { return *(u32*)FPA2_3(0xb28, 0x1a0, 0x14); }
+// 0x71016617c0 — ROCKMAN_METALBLADE_JOSTLE_SCALE (24B)
+float ROCKMAN_METALBLADE_JOSTLE_SCALE_16617c0() { return *(float*)FPA2_3(0xb28, 0x1a0, 0x18); }
+
+// ---- Other Metal Blade (non-Rockman owner) ----
+// Chain: FPA2 → +0xb28 → +0x1b8 → +field (3-deref, 24B)
+
+// 0x7101661700 — OTHER_METALBLADE_WAIT_LOST_COUNT_THROW (24B)
+u32 OTHER_METALBLADE_WAIT_LOST_COUNT_THROW_1661700() { return *(u32*)FPA2_3(0xb28, 0x1b8, 0x4); }
+// 0x7101661720 — OTHER_METALBLADE_WAIT_LOST_COUNT_STICK (24B)
+u32 OTHER_METALBLADE_WAIT_LOST_COUNT_STICK_1661720() { return *(u32*)FPA2_3(0xb28, 0x1b8, 0xc); }
+// 0x7101661740 — OTHER_METALBLADE_STICK_PERCENT (24B)
+float OTHER_METALBLADE_STICK_PERCENT_1661740() { return *(float*)FPA2_3(0xb28, 0x1b8, 0x8); }
+// 0x7101661760 — OTHER_METALBLADE_SPEED_REVERSE_FRAME (24B)
+u32 OTHER_METALBLADE_SPEED_REVERSE_FRAME_1661760() { return *(u32*)FPA2_3(0xb28, 0x1b8, 0x20); }
+
+// ---- app::pacman — Pac-Man bonus fruit params ----
+// Chain: FPA2 → +0xc78 → +0x138 → +field (3-deref, 24B)
+
+// 0x7101661f80 — PACMAN_ACCEL_Y (24B)
+float PACMAN_ACCEL_Y_1661f80() { return *(float*)FPA2_3(0xc78, 0x138, 0x10); }
+// 0x7101661fa0 — PACMAN_LIFE (24B)
+u32 PACMAN_LIFE_1661fa0() { return *(u32*)FPA2_3(0xc78, 0x138, 0x0); }
+// 0x7101661fc0 — PACMAN_REFLECTION_MAX_NUM (24B)
+u32 PACMAN_REFLECTION_MAX_NUM_1661fc0() { return *(u32*)FPA2_3(0xc78, 0x138, 0x24); }
+
+// Pac-Man shape type (different sub-table)
+// Chain: FPA2 → +0xc78 → +0x2b8 → +field
+// 0x7101662000 — PACMAN_SHAPE_TYPE (24B)
+u32 PACMAN_SHAPE_TYPE_1662000() { return *(u32*)FPA2_3(0xc78, 0x2b8, 0x0); }
+
+// Pac-Man landing (different sub-table)
+// Chain: FPA2 → +0xc78 → +0xd8 → +field
+// 0x7101665760 — PACMAN_LANDING_LIFE (24B)
+u32 PACMAN_LANDING_LIFE_1665760() { return *(u32*)FPA2_3(0xc78, 0xd8, 0x4); }
+
+// ---- app::poweresa — Power Star params ----
+// Chain: FPA2 → +0xc78 → +0x360 → +field (3-deref, 24B)
+
+// 0x710166f6c0 — POWERESA_ACCEL_Y (24B)
+float POWERESA_ACCEL_Y_166f6c0() { return *(float*)FPA2_3(0xc78, 0x360, 0x4); }
+// 0x710166f6e0 — POWERESA_LIFE (24B)
+u32 POWERESA_LIFE_166f6e0() { return *(u32*)FPA2_3(0xc78, 0x360, 0x10); }
+// 0x710166f740 — POWERESA_HEAL_BASE (24B)
+float POWERESA_HEAL_BASE_166f740() { return *(float*)FPA2_3(0xc78, 0x360, 0x14); }
+
+// Power Star shape type (2-deref, 20B)
+// Chain: FPA2 → +0xc78 → +0x3a0
+// 0x710166f720 — POWERESA_SHAPE_TYPE (20B)
+u32 POWERESA_SHAPE_TYPE_166f720() { return *(u32*)FPA2_2(0xc78, 0x3a0); }
+
+// ---- app::robotgyro — R.O.B. Gyro params ----
+// Chain: FPA2 → +0xa48 → +0x158 → +field (3-deref, 24B)
+
+// 0x710166f9c0 — ROBOTGYRO_MOVE_SPEED (24B)
+float ROBOTGYRO_MOVE_SPEED_166f9c0() { return *(float*)FPA2_3(0xa48, 0x158, 0x34); }
+// 0x710166f9e0 — ROBOTGYRO_MOVE_BASE_FRAME (24B)
+u32 ROBOTGYRO_MOVE_BASE_FRAME_166f9e0() { return *(u32*)FPA2_3(0xa48, 0x158, 0x2c); }
+// 0x710166fa00 — ROBOTGYRO_MOVE_RANDOM_FRAME (24B)
+u32 ROBOTGYRO_MOVE_RANDOM_FRAME_166fa00() { return *(u32*)FPA2_3(0xa48, 0x158, 0x30); }
+
+// ---- app::wiifitball — Wii Fit Ball params ----
+// Chain: FPA2 → +0xb60 → +0x120 → +field (3-deref, 24B)
+
+// 0x7101678190 — WIIFITBALL_LIFE (24B)
+u32 WIIFITBALL_LIFE_1678190() { return *(u32*)FPA2_3(0xb60, 0x120, 0x24); }
+// 0x71016781f0 — WIIFITBALL_BOUND_MAX (24B)
+u32 WIIFITBALL_BOUND_MAX_16781f0() { return *(u32*)FPA2_3(0xb60, 0x120, 0x30); }
+// 0x7101678210 — WIIFITBALL_HEADING_SHOT_SPEED (24B)
+float WIIFITBALL_HEADING_SHOT_SPEED_1678210() { return *(float*)FPA2_3(0xb60, 0x120, 0xc); }
+// 0x7101678230 — WIIFITBALL_START_GROUND_GRAVITY (24B)
+float WIIFITBALL_START_GROUND_GRAVITY_1678230() { return *(float*)FPA2_3(0xb60, 0x120, 0x64); }
