@@ -1,36 +1,35 @@
-# Worker: pool-a
+# Worker: pool-b
 
 ## Model: Opus
 
-## Task: Effect template functions — 68 functions, 120 KB
-
-## Strategy
-The EFFECT_* functions (FOOT_EFFECT, DOWN_EFFECT, EFFECT_FOLLOW_*, EFFECT_BRANCH_*, etc.) appear to share template patterns. If one matches, the pattern likely applies to many. This is the highest KB-per-effort ratio available.
+## Task: Fighter + game core medium functions — targeting 100+ KB
 
 ## Targets (by size, descending)
-1. FOOT_EFFECT (4,148 bytes @ 0x7102297600)
-2. DOWN_EFFECT (3,996 bytes @ 0x7102298fa0)
-3. EFFECT_FOLLOW_LIGHT (3,976 bytes @ 0x7102296410)
-4. EFFECT_FOLLOW_FLIP_RND (3,968 bytes @ 0x710229ff20)
-5. EFFECT_VARIATION (3,736 bytes @ 0x710228cc90)
-6. EFFECT_ATTR (3,716 bytes @ 0x710228db30)
-7. EFFECT_FOLLOW_RND (3,672 bytes @ 0x710229e280)
-8. EFFECT_BRANCH_SITUATION (3,664 bytes @ 0x71022a1a20)
-... and 60 more in the 0x71022xxxxx range
+1. get_entry_in_fighter_param_kind_struct (15,848 bytes @ 0x71006f3b00)
+2. create_status_script_for_projectile_article (15,648 bytes @ 0x71033abee0)
+3. save_aura_ball_status (13,348 bytes @ 0x7100c5e1a0)
+4. load_fighter? (7,776 bytes @ 0x71017e6510)
+5. heal_fighters (3,644 bytes @ 0x7101676250)
+6. get_fighter_id_from_fighter_kind? (3,604 bytes @ 0x710066cd40)
+7. chase_fighter (3,148 bytes @ 0x7101672f90)
+8. escape_from_fighter (2,700 bytes @ 0x7101672500)
+
+Plus continue fighter_status.cpp AI functions from prior round.
 
 ## Approach
-- Start with ONE function (e.g., EFFECT_VARIATION). Use Ghidra to decompile.
-- Identify the shared pattern/template across the group.
-- Once the template matches, apply it to all 68 functions.
-- These are ACMD effect dispatchers — cross-reference with existing fighter_effects.cpp.
-- Use EffectModule vtable methods from include/app/modules/EffectModule.h if available.
+- Use Ghidra to decompile each target
+- These are LARGE functions — focus on understanding structure first
+- Cross-reference with existing fighter struct headers
+- For switch/case dispatchers, identify the dispatch pattern before writing code
+- 3-attempt limit — if register alloc won't match, document and move on as N-quality
 
 ## File Territory
-- src/app/fighter_effects.cpp (extend existing)
-- src/app/effect_dispatchers.cpp (new, if too many for one file)
-- include/app/modules/ (struct updates)
+- src/app/fighter_status.cpp
+- src/app/fighter_attack.cpp
+- src/app/fighter_core.cpp (new — for game core fighter functions)
+- include/app/ (struct updates)
 
 ## Quality Rules
-- Document the template pattern once, reference it for variants
+- Use BattleObjectModuleAccessor struct access
 - No naked asm
-- 3-attempt limit per function
+- Document derivation chains
