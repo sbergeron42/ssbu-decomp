@@ -2,15 +2,17 @@
 """
 Set up git worktrees for parallel multi-agent decomp work.
 
-Creates 3 worker worktrees (pool-a, pool-b, pool-c) with:
+Creates worker worktrees (pool-a through pool-j) with:
 - Separate branches based on current master
 - Symlinked original ELFs (saves ~250MB)
 - Warm build directories (copies existing .o files)
-- Per-worker WORKER.md with module assignments
+- Per-worker WORKER.md with module assignments (only if not already present)
 
 Usage:
-    python tools/setup_worktrees.py           # Create all 3 worktrees
-    python tools/setup_worktrees.py --clean   # Remove all worktrees
+    python tools/setup_worktrees.py               # Create all worktrees
+    python tools/setup_worktrees.py a b c          # Create specific pools only
+    python tools/setup_worktrees.py --device2       # Create pool-f through pool-j only
+    python tools/setup_worktrees.py --clean         # Remove all worktrees
 """
 
 import os
@@ -80,6 +82,32 @@ WORKERS = {
             'AttackModule', 'StatusModule', 'BattleObjectWorld', 'BattleObjectSlow',
         ],
         'desc': 'Serialization functions (store/load_l2c_table) + data structs + misc remaining',
+    },
+    # Device 2 pools (f-j) — assigned dynamically by orchestrator via WORKER.md
+    'pool-f': {
+        'branch': 'worker/pool-f',
+        'modules': ['UNASSIGNED'],
+        'desc': 'Device 2 pool — assign work via WORKER-pool-{letter}.md, then run sync_assignments.py',
+    },
+    'pool-g': {
+        'branch': 'worker/pool-g',
+        'modules': ['UNASSIGNED'],
+        'desc': 'Device 2 pool — assign work via WORKER-pool-{letter}.md, then run sync_assignments.py',
+    },
+    'pool-h': {
+        'branch': 'worker/pool-h',
+        'modules': ['UNASSIGNED'],
+        'desc': 'Device 2 pool — assign work via WORKER-pool-{letter}.md, then run sync_assignments.py',
+    },
+    'pool-i': {
+        'branch': 'worker/pool-i',
+        'modules': ['UNASSIGNED'],
+        'desc': 'Device 2 pool — assign work via WORKER-pool-{letter}.md, then run sync_assignments.py',
+    },
+    'pool-j': {
+        'branch': 'worker/pool-j',
+        'modules': ['UNASSIGNED'],
+        'desc': 'Device 2 pool — assign work via WORKER-pool-{letter}.md, then run sync_assignments.py',
     },
 }
 
@@ -152,49 +180,49 @@ def setup_worktree(name, config):
         if copied:
             print(f"  Copied {copied} .o files for warm start")
 
-    # Write WORKER.md
-    worker_md = worktree_dir / "WORKER.md"
-    modules_list = '\n'.join(f'- `{m}`' for m in config['modules'])
-    worker_md.write_text(f"""# Worker: {name}
+    # Write WORKER.md only if it doesn't exist (preserve manually curated assignments)
+    worker_md = worktree_dir / f"WORKER-{name}.md"
+    if worker_md.exists():
+        print(f"  {worker_md.name} already exists — preserving")
+    else:
+        modules_list = '\n'.join(f'- `{m}`' for m in config['modules'])
+        safe_modules = ' '.join(m for m in config['modules'] if '*' not in m and m != 'UNASSIGNED')[:5]
+        worker_md.write_text(f"""# Worker: {name}
 
-## Assignment
-{config['desc']}
+## Model: Opus
 
-## Assigned Modules
-{modules_list}
+## Task: {config['desc']}
 
-## Rules
-1. **ONLY edit .cpp files for your assigned modules** (in src/app/ or src/app/modules/)
-2. **NEVER modify data/functions.csv** — the orchestrator handles this
-3. **NEVER edit modules assigned to other workers**
-4. Commit to your branch (`{branch}`), never push to master
+## Progress
+- (no work done yet)
 
-## Workflow
-```bash
-# 1. Edit source files for your assigned modules
-# 2. Build and verify:
-python tools/verify_local.py --build --modules {' '.join(m for m in config['modules'] if '*' not in m)[:5]}
+## Continue with
+- (orchestrator will assign targets)
 
-# 3. Or build manually:
-cmd /c build.bat
-python tools/verify_local.py --modules YourModule
+## Skipped (don't retry)
+- (none yet)
 
-# 4. Commit when functions match:
-git add src/app/modules/YourModule.cpp
-git commit -m "Match N functions in YourModule"
+## File Territory
+- (assign via orchestrator)
 
-# 5. The orchestrator will merge your branch to master
-```
+## Quality Rules
+- No naked asm, 3-attempt limit, derivation chains
 
-## Checking your progress
-```bash
-python tools/verify_local.py --modules YourModule
-```
+## Quick Reference
+- Single-file compile: `C:/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -c src/app/FILE.cpp -o build/FILE.o`
+- Compare bytes: `python tools/compare_bytes.py FUNCTION_NAME` (takes function name, NOT address)
+- Full build+verify: `python tools/build.py && python tools/verify_local.py --build` (only after batch is done)
+- Progress: `python tools/progress.py`
+- Use `run_in_background` for any build that takes >10 seconds
+- **WARNING:** Do NOT use `build.bat` — it runs deprecated post-processors that inflate match counts
 
-## Using viking for per-function debugging
-```bash
-tools/common/nx-decomp-tools/viking/target/release/check.exe FunctionName
-```
+## Ghidra Cache
+- Save ALL Ghidra decompilation results to `data/ghidra_cache/{name}.txt` (NOT /tmp — survives reboots)
+- On session start, check if this file exists and read it to recover previous Ghidra work
+
+## Commit Cadence
+- Commit every 15-20 functions or every 30 minutes, whichever comes first
+- Use descriptive commit messages: `{name}: decomp MODULE functions (N new, M matching)`
 """)
     print(f"  Created WORKER.md")
 
@@ -212,30 +240,52 @@ def clean_worktrees():
 
 
 def main():
-    if '--clean' in sys.argv:
+    args = [a for a in sys.argv[1:] if not a.startswith('-')]
+    flags = [a for a in sys.argv[1:] if a.startswith('-')]
+
+    if '--clean' in flags:
         clean_worktrees()
         return
+
+    # Determine which pools to set up
+    if '--device2' in flags:
+        selected = {k: v for k, v in WORKERS.items() if k in ('pool-f', 'pool-g', 'pool-h', 'pool-i', 'pool-j')}
+    elif args:
+        # e.g., "python setup_worktrees.py f g h"
+        selected = {}
+        for a in args:
+            key = f"pool-{a}" if not a.startswith("pool-") else a
+            if key in WORKERS:
+                selected[key] = WORKERS[key]
+            else:
+                print(f"Unknown pool: {a}")
+        if not selected:
+            sys.exit(1)
+    else:
+        selected = WORKERS
 
     print("SSBU Decomp — Parallel Worker Setup")
     print(f"Project root: {PROJECT_ROOT}")
     print(f"Worktrees will be created in: {PARENT_DIR}")
+    print(f"Pools: {', '.join(selected.keys())}")
 
-    for name, config in WORKERS.items():
+    for name, config in selected.items():
         setup_worktree(name, config)
 
     print("\n" + "=" * 60)
     print("Setup complete! Worker directories:")
-    for name in WORKERS:
+    for name in selected:
         d = PARENT_DIR / f"SSBU Decomp-{name}"
         print(f"  {d}")
     print()
-    print("To start a worker session:")
-    print('  cd "SSBU Decomp-pool-a"')
-    print("  claude")
+    print("To launch pools:")
+    print('  bash tools/launch_pools.sh')
     print()
     print("Orchestrator commands (run from main repo):")
     print("  git log master..worker/pool-a --oneline  # check worker progress")
     print("  bash tools/merge_worker.sh pool-a         # merge a worker")
+    print("  python tools/usage_monitor.py --status    # check token usage")
+    print("  python tools/sync_assignments.py          # sync WORKER.md → pool_assignments.md")
 
 
 if __name__ == '__main__':

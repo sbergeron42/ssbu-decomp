@@ -1285,7 +1285,7 @@ extern "C" void change_camera_type_melee(void) {
 // If mode matches, loads *(cam_data+8) as the sub-mode, calls change_active_camera.
 // [derived: disasm shows early-return cmp w8,#0x11 + b.ne to ret before prologue setup]
 namespace app::marx {
-extern "C" void revert_camera(void) {
+extern "C" void revert_camera_7101654b60(void) {
     u8* cam_data = *(u8**)DAT_71052b7f00;
     if (*(s32*)(cam_data + 4) != 0x11) return;
     u32 sub_mode = *(u32*)(cam_data + 8);

@@ -194,7 +194,7 @@ void FUN_71033f1cc0(u64 param_1, s64 param_2)
     // +0x20 [derived: accessor pointer from lua context]
     auto* acc = ACC(param_2);
     // +0x58 [derived: ground_module per GroundModule__*_impl (.dynsym)]
-    s64 *ground_mod = static_cast<s64*>(acc->ground_module);
+    s64 *ground_mod = reinterpret_cast<s64*>(acc->ground_module);
     // vtable+0x2d0 [inferred: GroundModule virtual method, arg=1]
     (*(void(*)(s64*, u32))(*(s64*)(*ground_mod + 0x2d0)))(ground_mod, 1);
     // +0x90 [inferred: u8 flag on lua context]

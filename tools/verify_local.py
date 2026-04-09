@@ -96,46 +96,31 @@ def build_incremental():
     if compiled > 0:
         print(f"  Compiled {compiled} file(s)")
 
-    # Post-process: patch movz → orr to match NX original encoding
-    fix_movz = PROJECT_ROOT / "tools" / "fix_movz_to_orr.py"
-    if fix_movz.exists():
-        objs = [str(o) for o in (build_dir).glob("*.o")]
-        if objs:
-            subprocess.run(["python", str(fix_movz)] + objs, capture_output=True)
+    # Post-process all .o files — use relative paths + cwd to stay within
+    # Windows 32K command-line limit (same approach as build.py)
+    import glob as globmod
+    rel_objs = globmod.glob("build/*.o", root_dir=str(PROJECT_ROOT))
 
-    # Run all post-processors on all .o files (matching build.bat pipeline)
-    all_objs = [str(o) for o in build_dir.glob("*.o")]
-    if all_objs:
-        # Prologue scheduling (all .o files, not just specific modules)
-        fix_script = PROJECT_ROOT / "tools" / "fix_prologue_sched.py"
-        if fix_script.exists():
-            subprocess.run(["python", str(fix_script)] + all_objs, capture_output=True)
+    def _run_pp(script_name, objs):
+        script = PROJECT_ROOT / "tools" / script_name
+        if script.exists() and objs:
+            subprocess.run(["python", str(script)] + objs,
+                           cwd=str(PROJECT_ROOT), capture_output=True)
 
-        # Return-register width (mov w0,wzr vs mov x0,xzr)
-        fix_script = PROJECT_ROOT / "tools" / "fix_return_width.py"
-        if fix_script.exists():
-            subprocess.run(["python", str(fix_script)] + all_objs, capture_output=True)
-
-        # x8-dispatch register allocation (x8->x9 scratch)
-        fix_script = PROJECT_ROOT / "tools" / "fix_x8_regalloc.py"
-        if fix_script.exists():
-            subprocess.run(["python", str(fix_script)] + all_objs, capture_output=True)
-
-        # Instruction reordering (same instructions, different order)
-        fix_script = PROJECT_ROOT / "tools" / "fix_insn_reorder.py"
-        if fix_script.exists():
-            subprocess.run(["python", str(fix_script)] + all_objs, capture_output=True)
+    _run_pp("fix_movz_to_orr.py", rel_objs)
+    _run_pp("fix_prologue_sched.py", rel_objs)
+    _run_pp("fix_return_width.py", rel_objs)
+    _run_pp("fix_x8_regalloc.py", rel_objs)
+    _run_pp("fix_insn_reorder.py", rel_objs)
 
     # Epilogue scheduling (batch files only, uses whitelist)
     gen_epi = PROJECT_ROOT / "tools" / "gen_epilogue_list.py"
     if gen_epi.exists():
         subprocess.run(["python", str(gen_epi)], capture_output=True)
     batch_objs = []
-    for pattern in ["fun_batch_c_*.o", "fun_batch_d_*.o", "fun_batch_e2_*.o"]:
-        batch_objs.extend(str(o) for o in build_dir.glob(pattern))
-    fix_script = PROJECT_ROOT / "tools" / "fix_epilogue.py"
-    if fix_script.exists() and batch_objs:
-        subprocess.run(["python", str(fix_script)] + batch_objs, capture_output=True)
+    for pattern in ["build/fun_batch_c_*.o", "build/fun_batch_d_*.o", "build/fun_batch_e2_*.o"]:
+        batch_objs.extend(globmod.glob(pattern, root_dir=str(PROJECT_ROOT)))
+    _run_pp("fix_epilogue.py", batch_objs)
 
     # Generate address-specific linker script (for ADRP correctness)
     gen_ld = PROJECT_ROOT / "tools" / "gen_linker_script.py"
@@ -143,16 +128,18 @@ def build_incremental():
     subprocess.run(["python", str(gen_ld)], capture_output=True)
 
     # Link with address-specific linker script
-    obj_files = list(build_dir.glob("*.o"))
+    # Use relative paths + cwd to stay within Windows command-line limit
+    rel_obj_files = globmod.glob("build/*.o", root_dir=str(PROJECT_ROOT))
     cmd = [LLD, "-T", str(linker_script), "-o", str(DECOMP_ELF),
            "--unresolved-symbols=ignore-all",
+           "--allow-multiple-definition",
            "--no-undefined-version", "-nostdlib",
-           "--noinhibit-exec"] + [str(o) for o in obj_files]
-    result = subprocess.run(cmd, capture_output=True, text=True)
+           "--noinhibit-exec"] + rel_obj_files
+    result = subprocess.run(cmd, cwd=str(PROJECT_ROOT), capture_output=True, text=True)
     if result.returncode != 0:
         stderr_lines = result.stderr.split('\n')
         real_errors = [l for l in stderr_lines if 'error:' in l and 'no space on device' not in l
-                       and 'duplicate symbol' not in l]
+                       and 'duplicate symbol' not in l and 'output file too large' not in l]
         dup_errors = [l for l in stderr_lines if 'duplicate symbol' in l]
         if dup_errors:
             print(f"  Link error (duplicate symbols): {dup_errors[0]}")
@@ -179,9 +166,10 @@ def build_incremental():
             f.write(flat_content)
         cmd2 = [LLD, "-T", str(flat_ld), "-o", str(DECOMP_ELF),
                 "--unresolved-symbols=ignore-all",
+                "--allow-multiple-definition",
                 "--no-undefined-version", "-nostdlib",
-                "--noinhibit-exec"] + [str(o) for o in obj_files]
-        result2 = subprocess.run(cmd2, capture_output=True, text=True)
+                "--noinhibit-exec"] + rel_obj_files
+        result2 = subprocess.run(cmd2, cwd=str(PROJECT_ROOT), capture_output=True, text=True)
         if result2.returncode != 0:
             print(f"  Link error (flat): {result2.stderr[:500]}")
             return False

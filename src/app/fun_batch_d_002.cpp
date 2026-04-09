@@ -90,7 +90,7 @@ void FUN_7103579b10(s64 param_1, u8 param_2)
 u64 FUN_7103444090(u64 param_1, s64 param_2)
 {
     auto* acc = ACC(param_2);
-    s64* work_mod = static_cast<s64*>(acc->work_module);
+    s64* work_mod = reinterpret_cast<s64*>(acc->work_module);
     u32 result = (*(u32 (*)(s64 *, u32))(*(s64 *)(*work_mod + 0x108)))(work_mod, 0x20000006);
     return ~result & 1;
 }
@@ -127,7 +127,7 @@ u64 FUN_7103979cbc(s64 param_1)
 u8 FUN_71034d9c70(u64 param_1, s64 param_2)
 {
     auto* acc = ACC(param_2);
-    s64* status_mod = static_cast<s64*>(acc->status_module);
+    s64* status_mod = reinterpret_cast<s64*>(acc->status_module);
     s32 status_kind = (*(s32 (*)(s64*))(*(s64 *)(*status_mod + 0x110)))(status_mod);
     return (u8)(status_kind != 2);
 }
@@ -240,7 +240,7 @@ s32 FUN_71037f1cc0(u32 param_1, s32 param_2)
 u8 FUN_710340fbf0(u64 param_1, s64 param_2)
 {
     auto* acc = ACC(param_2);
-    s64* status_mod = static_cast<s64*>(acc->status_module);
+    s64* status_mod = reinterpret_cast<s64*>(acc->status_module);
     s32 status_kind = (*(s32 (*)(s64*))(*(s64 *)(*status_mod + 0x110)))(status_mod);
     return (u8)(status_kind != 2);
 }
@@ -249,7 +249,7 @@ u8 FUN_710340fbf0(u64 param_1, s64 param_2)
 u8 FUN_71034f2790(u64 param_1, s64 param_2)
 {
     auto* acc = ACC(param_2);
-    s64* status_mod = static_cast<s64*>(acc->status_module);
+    s64* status_mod = reinterpret_cast<s64*>(acc->status_module);
     s32 status_kind = (*(s32 (*)(s64*))(*(s64 *)(*status_mod + 0x110)))(status_mod);
     return (u8)(status_kind == 1);
 }
@@ -258,7 +258,7 @@ u8 FUN_71034f2790(u64 param_1, s64 param_2)
 u8 FUN_71035033a0(u64 param_1, s64 param_2)
 {
     auto* acc = ACC(param_2);
-    s64* status_mod = static_cast<s64*>(acc->status_module);
+    s64* status_mod = reinterpret_cast<s64*>(acc->status_module);
     s32 status_kind = (*(s32 (*)(s64*))(*(s64 *)(*status_mod + 0x110)))(status_mod);
     return (u8)(status_kind != 2);
 }

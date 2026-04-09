@@ -57,33 +57,50 @@ This repo supports parallel decomp work via git worktrees. Multiple Claude Code 
 - **Workers** (git worktrees on `worker/pool-*` branches): decomp assigned modules, compile, verify locally
 
 ### Pool Assignment Protocol
-**CRITICAL:** Each pool's `WORKER.md` is the **single source of truth** for its assignment.
-1. **READ the pool's WORKER.md** before reassigning — check if it's already doing useful work
-2. **WRITE WORKER.md** in the pool's worktree when assigning new work
-3. WORKER.md is tracked in git and survives rebases
-4. `data/pool_assignments.md` is just a quick overview — WORKER.md wins if they conflict
+**CRITICAL:** Each pool has a unique `WORKER-pool-{letter}.md` file (e.g., `WORKER-pool-a.md`).
+This is the **single source of truth** for that pool's assignment. Pool-specific filenames prevent rebase clobbering.
+1. **READ the pool's `WORKER-pool-{letter}.md`** before reassigning — check if it's already doing useful work
+2. **WRITE `WORKER-pool-{letter}.md`** in the pool's worktree when assigning new work
+3. These files are tracked in git and survive rebases (unique filenames = no conflicts)
+4. `data/pool_assignments.md` is just a quick overview — the WORKER file wins if they conflict
 5. Pools that ignore their assignment waste hours of compute — this is a serious problem
 
 ### Worker Rules
-1. **ONLY edit files in your assigned file territory** — see WORKER.md
+1. **ONLY edit files in your assigned file territory** — see your `WORKER-pool-{letter}.md`
 2. **NEVER modify `data/functions.csv`** — the orchestrator handles this exclusively
 3. **NEVER edit files assigned to other workers**
 4. Commit to your worker branch, never push to master directly
 
 ### Worker Code Quality Rules
+
+**ALL WORKER DIFFS ARE REVIEWED BY `tools/review_diff.py` BEFORE MERGE.**
+The orchestrator will REJECT diffs that fail the reviewer. Do not submit code that violates these rules — it wastes your compute budget and the orchestrator's time.
+
 1. **Write C++ that a Bandai Namco developer would have written.** Use the struct definitions in `include/app/` and `include/resource/`. If Ghidra shows a pattern, understand it and rewrite it idiomatically — do NOT copy-paste Ghidra pseudocode.
-2. **Use struct field access, not raw offsets.** Write `acc->camera_module` not `*reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x60)`. If the struct header exists, use it.
-3. **Do NOT paste assembly into C functions.** `__attribute__((naked))` with inline asm is a last resort after 3 failed matching attempts, not a first approach. It inflates progress metrics without recovering source.
-4. **Decompile module-by-module, not random addresses.** Understand the module's struct layout first, then decomp its functions. Each function you decomp should reveal new field information for the struct.
-5. **Document derivation chains for every struct field name.** Every named field must include HOW the name was derived, traceable back to binary evidence:
+2. **STRUCT FIRST — define types before writing functions.** If a function accesses 3+ distinct offsets on the same pointer, you MUST define or extend a struct in `include/` BEFORE writing the function. Use `unk_0xNN` for unknown fields, typed fields for known ones. Raw hex offset access on untyped `u8*`/`void*`/`u64*` is REJECTED by the reviewer.
+   - **GOOD:** `stage->sub_object` (struct field at +0x738)
+   - **BAD:** `param_1[0xe7]` or `*(u64*)(sub + 0x790)`
+   - **Exception:** trivial 1-2 field leaf functions (e.g., singleton getters) may use raw access.
+3. **NO `__attribute__((naked))`.** Naked asm is BANNED outright. If a function can't match after 3 attempts, SKIP IT — do not inflate progress with pasted assembly. The reviewer auto-rejects any `naked` attribute.
+4. **NO Ghidra variable names.** `uVar1`, `plVar2`, `iVar3` etc. in new code are auto-rejected. If you're writing these, you're pasting Ghidra output instead of understanding the code.
+5. **NO nested `reinterpret_cast` chains.** 3+ nested casts (e.g., `ITEM_DATA` macro with 4 casts) are auto-rejected. Define a struct for the pointer chain instead.
+6. **Use struct field access, not raw offsets.** Write `acc->camera_module` not `*reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x60)`. If the struct header exists, use it.
+7. **Decompile module-by-module, not random addresses.** Understand the module's struct layout first, then decomp its functions. Each function you decomp should reveal new field information for the struct.
+8. **Document derivation chains for every struct field name.** Every named field must include HOW the name was derived, traceable back to binary evidence:
    - `situation_kind`  — `// +0xD8 [derived: situation_kind_impl (.dynsym) reads this as s32]`
    - `field_0xE0_s32`  — `// +0xE0 [inferred: bitmask pattern in 12 functions, no proven name]`
    - `unk_0xE4[0x5C]`  — unknown padding, honest gap
    - NEVER label an inferred field name as if it were confirmed. Wrong names that look authoritative mislead the community.
    - The derivation chain should be enough for someone to verify the name by checking the referenced function in Ghidra.
-6. **Minimize `reinterpret_cast`.** If a module header has typed vtable methods (e.g., `MotionModule::change_motion()`), use them instead of `reinterpret_cast<void(*)(...)>(VT(mod)[slot])`. If the struct field is `void*` but the type is known, add the type to the header rather than casting at every use site.
-7. **Use vtable method wrappers from module headers.** Headers in `include/app/modules/` have named methods for vtable slots. Write `mod->change_motion(hash, rate, p1, p2, p3)` not `reinterpret_cast<void(*)(MotionModule*,u64,f32,bool,bool,bool)>(mod->_vt[28])(mod, hash, rate, p1, p2, p3)`.
-8. **Renaming variables is NOT a rewrite.** Changing `uVar1` to `result` without replacing raw offsets with struct access is not acceptable. The goal is structural rewriting with typed field access, not cosmetic renames.
+9. **Use vtable method wrappers from module headers.** Headers in `include/app/modules/` have named methods for vtable slots. Write `mod->change_motion(hash, rate, p1, p2, p3)` not `reinterpret_cast<void(*)(MotionModule*,u64,f32,bool,bool,bool)>(mod->_vt[28])(mod, hash, rate, p1, p2, p3)`. The reviewer warns on raw vtable dispatch.
+10. **Renaming variables is NOT a rewrite.** Changing `uVar1` to `result` without replacing raw offsets with struct access is not acceptable. The goal is structural rewriting with typed field access, not cosmetic renames.
+
+### Self-Check Before Committing
+Workers SHOULD run the reviewer against their own branch before committing:
+```bash
+python tools/review_diff.py pool-{letter}
+```
+If the score is below 50 or there are REJECT violations, fix them before committing. The orchestrator WILL reject your diff otherwise.
 
 ### Resource Service Guidelines
 - **Use ARCropolis community names.** Field names come from `ARCropolis` (Rust mod loader) and `smash-arc` (ARC format library). These are empirically validated by millions of mod installations. Tag with `[derived: ARCropolis field_name]`.
@@ -98,7 +115,7 @@ This repo supports parallel decomp work via git worktrees. Multiple Claude Code 
 2. **Save Ghidra results to disk** — after each `mcp__ghidra__decompile_function_by_address` call, append the result to `data/ghidra_cache/<pool_name>.txt` (NOT /tmp — it gets wiped on reboot). On context continuation, read the file instead of re-calling Ghidra.
 3. **Use existing helper scripts** — run `python tools/next_batch.py` to find targets, `python tools/compare_bytes.py` to diff. Do NOT write inline Python for CSV parsing or byte comparison.
 4. **Do NOT fix infrastructure** — if a tool (verify_all.py, build.py, linker script) is broken, report the issue in your commit message and move to the next function. The orchestrator handles tool fixes.
-5. **3-attempt limit on matching** — if a function doesn't match after 3 edit-build-verify cycles, either use `__attribute__((naked))` with inline asm or skip it and move on. Do NOT spiral on one function.
+5. **3-attempt limit on matching** — if a function doesn't match after 3 edit-build-verify cycles, skip it and move on. Do NOT spiral on one function. Do NOT use `__attribute__((naked))` — it is banned.
 
 ### Worker Verification
 Workers use `tools/verify_local.py` for self-checks (read-only, no CSV writes):

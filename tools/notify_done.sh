@@ -26,12 +26,13 @@ claude -p "Run this exact command and show its output: python tools/orchestrate_
 echo ""
 
 # --- Step 2: Check if new work was assigned ---
-if [ ! -f "$WORKTREE/WORKER.md" ]; then
-  echo "[$POOL] ERROR: WORKER.md not found at $WORKTREE"
+WORKER_FILE="$WORKTREE/WORKER-$POOL.md"
+if [ ! -f "$WORKER_FILE" ]; then
+  echo "[$POOL] ERROR: WORKER-$POOL.md not found at $WORKTREE"
   exit 1
 fi
 
-if grep -q "No more work available" "$WORKTREE/WORKER.md"; then
+if grep -q "No more work available" "$WORKER_FILE"; then
   echo "============================================"
   echo "  [$POOL] No more work available. Stopping."
   echo "============================================"
@@ -43,7 +44,7 @@ echo ""
 
 # --- Step 3: Spawn worker lambda for next round ---
 cd "$WORKTREE"
-claude -p "You are a decomp worker. Read WORKER.md for your assignment. Decompile ALL assigned functions using Ghidra MCP to disassemble originals, write matching C++, compile with 'cmd /c build.bat', and verify with 'python tools/verify_local.py --build'. Commit all changes to your branch with 'git add src/ && git commit -m \"description\"'. When ALL assigned work is done, run: bash tools/notify_done.sh $POOL \"description of what you did\"" \
+claude -p "You are a decomp worker. Read WORKER-$POOL.md for your assignment. Decompile ALL assigned functions using Ghidra MCP to disassemble originals, write matching C++, compile with 'python tools/build.py', and verify with 'python tools/verify_local.py --build'. Commit all changes to your branch with 'git add src/ && git commit -m \"description\"'. When ALL assigned work is done, run: bash tools/notify_done.sh $POOL \"description of what you did\"" \
   --model sonnet \
   --dangerously-skip-permissions \
   2>&1

@@ -49,7 +49,7 @@ u64 FUN_7103366ac0(void)
 u8 FUN_71033c94c0(u64 param_1, s64 param_2)
 {
     auto* acc = ACC(param_2);
-    s64* status_mod = static_cast<s64*>(acc->status_module);
+    s64* status_mod = reinterpret_cast<s64*>(acc->status_module);
     s32 status_kind = (*(s32(*)(s64*))(*(s64*)(*status_mod + 0x110)))(status_mod);
     return (u8)(status_kind != 5);
 }
@@ -58,7 +58,7 @@ u8 FUN_71033c94c0(u64 param_1, s64 param_2)
 u8 FUN_71033ec8c0(u64 param_1, s64 param_2)
 {
     auto* acc = ACC(param_2);
-    s64* status_mod = static_cast<s64*>(acc->status_module);
+    s64* status_mod = reinterpret_cast<s64*>(acc->status_module);
     s32 status_kind = (*(s32(*)(s64*))(*(s64*)(*status_mod + 0x110)))(status_mod);
     return (u8)(2 < (u32)(status_kind - 3));
 }
@@ -67,7 +67,7 @@ u8 FUN_71033ec8c0(u64 param_1, s64 param_2)
 u8 FUN_71033f34a0(u64 param_1, s64 param_2)
 {
     auto* acc = ACC(param_2);
-    s64* status_mod = static_cast<s64*>(acc->status_module);
+    s64* status_mod = reinterpret_cast<s64*>(acc->status_module);
     s32 status_kind = (*(s32(*)(s64*))(*(s64*)(*status_mod + 0x110)))(status_mod);
     return (u8)((u32)(status_kind - 1) < 6);
 }
@@ -76,7 +76,7 @@ u8 FUN_71033f34a0(u64 param_1, s64 param_2)
 u8 FUN_71033f34d0(u64 param_1, s64 param_2)
 {
     auto* acc = ACC(param_2);
-    s64* status_mod = static_cast<s64*>(acc->status_module);
+    s64* status_mod = reinterpret_cast<s64*>(acc->status_module);
     s32 status_kind = (*(s32(*)(s64*))(*(s64*)(*status_mod + 0x110)))(status_mod);
     return (u8)(5 < (u32)(status_kind - 1));
 }
@@ -85,7 +85,7 @@ u8 FUN_71033f34d0(u64 param_1, s64 param_2)
 u8 FUN_71033fbf00(u64 param_1, s64 param_2)
 {
     auto* acc = ACC(param_2);
-    s64* status_mod = static_cast<s64*>(acc->status_module);
+    s64* status_mod = reinterpret_cast<s64*>(acc->status_module);
     s32 status_kind = (*(s32(*)(s64*))(*(s64*)(*status_mod + 0x110)))(status_mod);
     return (u8)(status_kind == 1);
 }
@@ -94,7 +94,7 @@ u8 FUN_71033fbf00(u64 param_1, s64 param_2)
 u64 FUN_71034298d0(u64 param_1, s64 param_2)
 {
     auto* acc = ACC(param_2);
-    s64* work_mod = static_cast<s64*>(acc->work_module);
+    s64* work_mod = reinterpret_cast<s64*>(acc->work_module);
     (*(void(*)(s64*, u32))(*(s64*)(*work_mod + 0x110)))(work_mod, 0x2000000e);
     return 1;
 }
@@ -103,7 +103,7 @@ u64 FUN_71034298d0(u64 param_1, s64 param_2)
 u8 FUN_71034336f0(u64 param_1, s64 param_2)
 {
     auto* acc = ACC(param_2);
-    s64* status_mod = static_cast<s64*>(acc->status_module);
+    s64* status_mod = reinterpret_cast<s64*>(acc->status_module);
     s32 status_kind = (*(s32(*)(s64*))(*(s64*)(*status_mod + 0x110)))(status_mod);
     return (u8)(status_kind != 1);
 }
@@ -112,7 +112,7 @@ u8 FUN_71034336f0(u64 param_1, s64 param_2)
 u8 FUN_710346c7f0(u64 param_1, s64 param_2)
 {
     auto* acc = ACC(param_2);
-    s64* status_mod = static_cast<s64*>(acc->status_module);
+    s64* status_mod = reinterpret_cast<s64*>(acc->status_module);
     s32 status_kind = (*(s32(*)(s64*))(*(s64*)(*status_mod + 0x110)))(status_mod);
     return (u8)(status_kind != 1);
 }
@@ -124,7 +124,7 @@ u32 FUN_710347d410(u64 param_1, u64 param_2) { FUN_710347cff0(param_2); return 0
 u8 FUN_710348c480(u64 param_1, s64 param_2)
 {
     auto* acc = ACC(param_2);
-    s64* status_mod = static_cast<s64*>(acc->status_module);
+    s64* status_mod = reinterpret_cast<s64*>(acc->status_module);
     s32 status_kind = (*(s32(*)(s64*))(*(s64*)(*status_mod + 0x110)))(status_mod);
     return (u8)(status_kind != 1);
 }
@@ -136,7 +136,7 @@ u64 FUN_710348cc50(u64 param_1, u64 param_2) { FUN_710348cc70(param_2); return 1
 u64 FUN_710349d810(u64 param_1, s64 param_2)
 {
     auto* acc = ACC(param_2);
-    s64* link_mod = static_cast<s64*>(acc->link_module);
+    s64* link_mod = reinterpret_cast<s64*>(acc->link_module);
     u32 result = (*(u32(*)(s64*, s32))(*(s64*)(*link_mod + 0x78)))(link_mod, 10);
     return ~result & 1;
 }
@@ -145,7 +145,7 @@ u64 FUN_710349d810(u64 param_1, s64 param_2)
 u8 FUN_71034d3ae0(u64 param_1, s64 param_2)
 {
     auto* acc = ACC(param_2);
-    s64* status_mod = static_cast<s64*>(acc->status_module);
+    s64* status_mod = reinterpret_cast<s64*>(acc->status_module);
     s32 status_kind = (*(s32(*)(s64*))(*(s64*)(*status_mod + 0x110)))(status_mod);
     return (u8)((u32)(status_kind - 4) < 3);
 }
@@ -154,7 +154,7 @@ u8 FUN_71034d3ae0(u64 param_1, s64 param_2)
 u8 FUN_7103517a60(u64 param_1, s64 param_2)
 {
     auto* acc = ACC(param_2);
-    s64* status_mod = static_cast<s64*>(acc->status_module);
+    s64* status_mod = reinterpret_cast<s64*>(acc->status_module);
     s32 status_kind = (*(s32(*)(s64*))(*(s64*)(*status_mod + 0x110)))(status_mod);
     return (u8)(status_kind != 7);
 }
@@ -163,7 +163,7 @@ u8 FUN_7103517a60(u64 param_1, s64 param_2)
 u8 FUN_71035343b0(u64 param_1, s64 param_2)
 {
     auto* acc = ACC(param_2);
-    s64* status_mod = static_cast<s64*>(acc->status_module);
+    s64* status_mod = reinterpret_cast<s64*>(acc->status_module);
     s32 status_kind = (*(s32(*)(s64*))(*(s64*)(*status_mod + 0x110)))(status_mod);
     return (u8)(status_kind != 1);
 }

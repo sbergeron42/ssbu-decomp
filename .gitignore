@@ -33,6 +33,12 @@ original/
 # Generated stubs (regenerate with: python tools/gen_stubs.py)
 src/stubs/
 
+# Worker pool local artifacts (not source — regenerated)
+build_output.txt
+data/ghidra_cache/
+data/pool_logs/
+data/pool_signals/
+
 # Python
 __pycache__/
 *.pyc

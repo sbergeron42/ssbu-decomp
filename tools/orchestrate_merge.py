@@ -56,7 +56,7 @@ def merge_worker_branch(pool):
     if r.returncode != 0:
         print("  MERGE CONFLICT — attempting auto-resolve...")
         # Try resolving: ours for data files, theirs for source
-        run('git checkout --ours data/ WORKER.md')
+        run('git checkout --ours data/ WORKER-pool-*.md')
         run('git checkout --theirs src/')
         r = run('git add -A && git commit --no-edit -m "Auto-resolve merge conflict"')
         if r.returncode != 0:
@@ -177,7 +177,7 @@ def is_pool_active(pool):
 
 
 def get_claimed_modules(exclude_pool):
-    """Read ACTIVE pools' WORKER.md to find claimed modules.
+    """Read ACTIVE pools' WORKER-pool-*.md to find claimed modules.
 
     Only counts modules from pools that are actively working (have uncommitted
     changes or pending commits). Idle pools don't claim anything.
@@ -190,7 +190,7 @@ def get_claimed_modules(exclude_pool):
             continue
 
         worktree = PARENT_DIR / f"SSBU Decomp-{pool}"
-        worker_md = worktree / "WORKER.md"
+        worker_md = worktree / f"WORKER-{pool}.md"
         if not worker_md.exists():
             continue
 
@@ -236,9 +236,9 @@ def pick_assignment(available_uncompiled, available_nonmatching, target=30):
 
 
 def write_worker_md(pool, assignment):
-    """Write updated WORKER.md for the pool."""
+    """Write updated WORKER-pool-*.md for the pool."""
     worktree = PARENT_DIR / f"SSBU Decomp-{pool}"
-    worker_md = worktree / "WORKER.md"
+    worker_md = worktree / f"WORKER-{pool}.md"
 
     lines = [f"# Worker: {pool} (auto-assigned)\n"]
     lines.append("## Assignment\n")
@@ -352,7 +352,7 @@ def main():
         for mod, funcs in mods.items():
             print(f"  [{cat}] {mod}: {len(funcs)}")
 
-    # 8. Write WORKER.md
+    # 8. Write WORKER-pool-*.md
     write_worker_md(pool, assignment)
 
     # 9. Rebase
