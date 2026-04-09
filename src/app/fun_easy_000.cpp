@@ -168,7 +168,7 @@ void FUN_7100012920(s64 param_1)
 
 // -- FUN_71000145e0 ----------------------------------------------------------
 // 71000145e0
-u32 FUN_71000145e0(s64 param_1, s64 param_2)
+int FUN_71000145e0(long param_1, long param_2)
 {
     if (*(u8 *)(param_2 + 0x82d) != 0) {
         return 1;
@@ -176,20 +176,18 @@ u32 FUN_71000145e0(s64 param_1, s64 param_2)
     if (*(u8 *)(param_2 + 0x8c9) != 0) {
         return 0;
     }
-    s64 ptr = *(s64 *)(param_2 + 0x8d0);
-    if (ptr == 0) {
+    long *ptr = *(long **)(param_2 + 0x8d0);
+    if (ptr == 0)
         return 0;
-    }
-    if (*(s64 *)ptr != param_1) {
+    if (*ptr != param_1)
         return 0;
-    }
     *(u8 *)(param_2 + 0x8c9) = 1;
     return 1;
 }
 
 // -- FUN_7100014630 ----------------------------------------------------------
 // 7100014630
-u32 FUN_7100014630(s64 param_1, s64 param_2)
+int FUN_7100014630(long param_1, long param_2)
 {
     if (*(u8 *)(param_2 + 0x82d) != 0) {
         return 1;
@@ -197,13 +195,11 @@ u32 FUN_7100014630(s64 param_1, s64 param_2)
     if (*(u8 *)(param_2 + 0x8c8) != 0) {
         return 0;
     }
-    s64 ptr = *(s64 *)(param_2 + 0x8f0);
-    if (ptr == 0) {
+    long *ptr = *(long **)(param_2 + 0x8f0);
+    if (ptr == 0)
         return 0;
-    }
-    if (*(s64 *)ptr != param_1) {
+    if (*ptr != param_1)
         return 0;
-    }
     *(u8 *)(param_2 + 0x8c8) = 1;
     return 1;
 }

@@ -1,36 +1,33 @@
-# Worker: pool-a
+# Worker: pool-b
 
 ## Model: Opus
 
-## Task: Library identification — name and type jemalloc, zstd, Lua, curl, SDK functions
+## Task: Fighter status + AI decomp — community priority #1
 
 ## Strategy
-This is an IDENTIFICATION task, not a matching task. NX Clang diverges too much from upstream Clang 8.0.0 for byte-matching library code. The goal is to name functions and import struct types.
+Fighter state machines are the #1 community request. Moveset modders need to understand status transitions, AI decision logic, and ACMD integration. Use types-first approach: recover struct layouts from cross-referencing, then decomp functions using typed access.
+
+## Targets
+1. **fighter_status.cpp** — Continue adding check_stat_*, AI target, command step functions
+2. **fighter_attack.cpp** — AI check_stat bitfield readers, attack data dispatchers
+3. **New: fighter_ai.cpp** — AI decision functions (188 undecompiled, 91 KB)
+4. **Named fighter functions** — 1,124 undecompiled functions with "fighter" in name
 
 ## Approach
-1. Use Ghidra MCP to decompile unnamed functions in known library address ranges
-2. Compare Ghidra output against upstream library source to identify which function it is
-3. Use size matching as a hint: compile upstream source, compare function sizes
-4. Name identified functions in source file comments (orchestrator updates CSV)
-5. Import upstream struct definitions into include/ headers
-
-## Targets (prioritized)
-1. **zstd v1.3.7** — Source at lib/zstd/. Known functions near 0x71039a3xxx. ~264 functions compiled from upstream, use size matching + Ghidra to identify binary counterparts.
-2. **jemalloc 5.1.0** — Source at lib/jemalloc/. Known at 0x710392dxxx+. ~145 functions estimated.
-3. **curl** — 99 named functions at 0x7100000xxx-0x7100028xxx, already identified. Import curl struct types.
-4. **NintendoSDK** — xref_sdk.py found 97 functions. Cross-reference with KinokoDecomp-S headers.
-
-## Output
-- New header files: include/lib/zstd_types.h, include/lib/jemalloc_types.h etc.
-- Source files with identified functions: src/lib/zstd_identified.cpp, etc.
-- Each function gets: address comment, upstream function name, N-quality (non-matching) code
+- Use Ghidra to decompile each function
+- Cross-reference with existing struct headers in include/app/
+- Use BattleObjectModuleAccessor field access, NOT raw offsets
+- Derive field names with provenance tags [derived: ...] or [inferred: ...]
+- 3-attempt limit per function, skip if register allocation won't match
 
 ## File Territory
-- include/lib/
-- src/lib/
-- Do NOT modify data/functions.csv (orchestrator only)
+- src/app/fighter_status.cpp
+- src/app/fighter_attack.cpp
+- src/app/fighter_ai.cpp (new)
+- include/app/ (struct updates only)
 
-## Tools
-- Ghidra MCP (mcp__ghidra__decompile_function_by_address)
-- Compiled library .o files in build/libmatch/ for size reference
-- tools/match_library.py --extra-flags="..." for compilation
+## Quality Rules
+- Write C++ a Bandai Namco dev would write — use struct headers
+- No naked asm
+- No shallow variable renames without struct access
+- Document derivation chains for every field name
