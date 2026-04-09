@@ -48,3 +48,100 @@ Size: ~600B
 - Alloc count*0x40|8, zero-fill, set count at [0], data at [1..]
 - Swap, cleanup old
 - Loop: marker + version byte + FUN_7103187920
+
+# Session: 2026-04-09 (continued) — BST entry manager + stage functions
+
+== FUN_7103176f70 — BST-0x58 clear u64 at entry+0x410, notify via entry+0x440 ==
+Address: 0x7103176f70, Size: 220B
+Pattern: BST lookup at this+0x58 by key param_2
+- Write 0 (u64) to entry+0x410
+- If this->current_id == param_2 && this->mode < 3: second BST lookup, call vtable[6] on entry+0x440
+
+== FUN_7103177060 — BST-0x58 set u8 at entry+0x450, check+notify via entry+0x480 ==
+Address: 0x7103177060, Size: 256B
+- Write 1 (u8) to entry+0x450
+- If match: second lookup, check entry+0x450 != 0, call vtable[6] on entry+0x480, clear entry+0x450
+
+== FUN_7103177160 — BST-0x58 set u8 at entry+0x490, notify via entry+0x4c0 ==
+Address: 0x7103177160, Size: 224B
+- Write 1 (u8) to entry+0x490
+- If match: notify entry+0x4c0 with entry+0x490
+
+== FUN_7103177250 — BST-0x58 clear u8 at entry+0x490, notify via entry+0x4c0 ==
+Address: 0x7103177250, Size: 220B
+- Write 0 (u8) to entry+0x490
+- If match: notify entry+0x4c0 with entry+0x490
+
+== FUN_7103177430 — BST-0x58 clear u8 at entry+0x560, notify via entry+0x590 ==
+Address: 0x7103177430, Size: 220B
+- Write 0 (u8) to entry+0x560
+- If match: notify entry+0x590 with entry+0x560
+
+== FUN_7103177520 — BST-0x58 set u32 at entry+0x5a0, notify via entry+0x5d0 ==
+Address: 0x7103177520, Size: 224B
+- Write 1 (u32) to entry+0x5a0
+- If match: notify entry+0x5d0 with entry+0x5a0
+
+== FUN_7103177610 — BST-0x58 clear u32 at entry+0x5a0, notify via entry+0x5d0 ==
+Address: 0x7103177610, Size: 220B
+- Write 0 (u32) to entry+0x5a0
+- If match: notify entry+0x5d0 with entry+0x5a0
+
+== FUN_7103177850 — BST-0x58 set 3 fields at entry+0x780..+0x798, notify via entry+0x7c0 ==
+Address: 0x7103177850, Size: 260B
+Params: (u32 p1, u32 p2, u32 p3, s64 this, u64 key)
+- Write p3 to entry+0x798, CONCAT(p2,p1) to entry+0x790
+- Set entry+0x780 = 1 if was 0
+- If match: check entry+0x780 != 0, notify entry+0x7c0 with entry+0x790
+
+== FUN_710317f0a0 — phx::Fiber switch with TLS guard ==
+Address: 0x710317f0a0, Size: 96B
+- Read param_1+8 → fiber ptr
+- If DAT_710532e484 != 0xFFFFFFFF: SetTlsValue(it, 1)
+- switch_to_fiber(fiber_ptr+8)
+- If DAT_710532e484 != 0xFFFFFFFF: SetTlsValue(it, 0)
+
+== FUN_71031796f0 — BST-0x50 stage reversal mode 0 (clear+apply) ==
+Address: 0x71031796f0, Size: 368B
+- BST at this+0x50, find by key param_2
+- Set entry+8 = 0, entry+0xc = param_3, entry+0x14 = 0
+- If this->current_id == param_2: second BST, dispatch based on entry+8 (0→FUN_710240cd00, 1→stage rev)
+
+== FUN_7103179860 — BST-0x50 stage reversal mode 1 (set+apply) ==
+Address: 0x7103179860, Size: 384B
+- Same pattern, entry+8 = 1, entry+0x10 = param_3, entry+0x14 = 0
+
+== FUN_71031799e0 — BST-0x50 stage reversal mode 1 with duration (set+apply) ==
+Address: 0x71031799e0, Size: 384B
+- Same pattern, entry+8 = 1, entry+0x10 = param_3, entry+0x18 = param_4, entry+0x14 = 1
+
+== FUN_710317b2e0 — set death boundary coordinates ==
+Address: 0x710317b2e0, Size: 272B
+- Reads DAT_71052b7f00 singleton
+- param_1[0] == 0: writes to +0xc00/+0xc08/+0xc20..+0xc2c/+0xc40..+0xc48
+- param_1[0] != 0: writes to +0xc10/+0xc18/+0xc30..+0xc3c/+0xc50..+0xc58
+- Copies 32 bytes of param_2 data into param_1
+
+== FUN_7100082500 / FUN_7100083d10 — float getter via vtable[11] ==
+Address: 0x7100082500 / 0x7100083d10, Size: 76B each
+- if sub at +0x28 is null → val = 0.0
+- else call vtable[11] (offset 0x58), cast int → float
+- return val * *(f32)(this+0x10) + *(f32)(this+0x44)
+
+== FUN_710048c1d0 — conditional vtable dispatch ==
+Address: 0x710048c1d0, Size: 80B
+- Call vtable[10] (0x50) → flags
+- If !(flags & 1) and this[2]→[0] != 0 → FUN_710372c470(sub, param_2, 1)
+
+== FUN_7100225b10 — mutex-locked field accessor ==
+Address: 0x7100225b10, Size: 84B
+- Lock via vtable[2] on mutex at +0xe8
+- Read this+0x58→+0x8 as s32 (or -1 if null)
+- Unlock via vtable[4], return result
+
+== FUN_710317b3f0 — team param flag toggle ==
+Address: 0x710317b3f0, Size: 320B
+- ensure_team_param_init()
+- Check team flags (DAT_71052c41ba, DAT_71052c41bb, DAT_71052c45b4, DAT_71052c41b8)
+- Toggle param_2[2] flag and linked entries at param_2[0]+0x78, param_2[1]+0x78
+- Tail-calls FUN_710317b530 on both entries

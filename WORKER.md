@@ -1,44 +1,47 @@
-# Worker: pool-a
+# Worker: pool-d
 
 ## Model: Opus
 
-## Task: AI module helpers + weapon param readers
+## Task: BST entry manager + stage functions + small scattered functions
 
-## Progress
-- Round 1-5: 68 effect functions (FOOT_EFFECT, DOWN_EFFECT, etc.) — COMPLETE
-- Round 6a: 30 AI helper functions in ai_helpers_a.cpp
-  - 16 perfect byte matches (100%)
-  - 14 non-matching (relocation diffs or scheduling diffs — structurally correct)
-  - Key patterns: AI_CTX/AI_STATE macros, indexed param tables, analyst double-deref
-- Round 6b-d: 93 weapon param readers in weapon_params_a.cpp
-  - All structurally correct (diffs are ADRP+LDR relocations only)
-  - FPA2 singleton at 0x71052bb3b0
-  - Domains: daisydaikon(16), kroolcrown(6), log(13), buddybomb(17),
-    explosionbomb(1), pickelobject(12), rockman_metalblade(11),
-    pacman(5), poweresa(4), robotgyro(3), wiifitball(4)
+## Progress (26 functions total across all sessions)
+- 8 param reader functions from prior session (all compiled)
+- 14 BST entry manager + stage functions this session:
+  - 7 BST-at-0x58 set/clear (all size-match): 7103176f70, 7103177160, 7103177250, 7103177430, 7103177520, 7103177610, 7103177850
+  - 1 BST-at-0x58 set+check+notify: 7103177060 (248B vs 256B, 8B short)
+  - 1 fiber switch: 710317f0a0 (88B size-match, likely byte-match after linking)
+  - 3 stage reversal BST-at-0x50: 71031796f0, 7103179860, 71031799e0 (16B short)
+  - 1 death boundary: 710317b2e0 (244B vs 264B)
+  - 1 team param: 710317b3f0 (280B vs 312B — NEON ABI)
+- 4 small scattered functions (all size-match):
+  - FUN_7100082500 (76B), FUN_7100083d10 (76B) — float getter via vtable
+  - FUN_710048c1d0 (80B) — conditional vtable dispatch
+  - FUN_7100225b10 (84B) — mutex-locked field accessor
+
+## Key patterns discovered
+- BST-at-0x58 manager: +0x20 current_id, +0x38 mode, +0x58 BST root
+- BST node layout: left[0], right[8], ..., key[0x20], value[0x28]
+- Set/clear template: BST find → set field → if match + mode<3 → find again → notify via vtable[6]
+- Stage reversal: BST-at-0x50, dispatches to Stage_Rev table + FUN_710240cd00
+- Team param: uses NEON v0 for first arg, ldarb for guard, ccmp for && chains
+- All data globals need __attribute__((visibility("hidden"))) to avoid GOT indirection
 
 ## Continue with
-- More AI helpers: floor_moves (16B return), add_stick_abs (NEON), width (52B)
-- distance_x_to_target, distance_y_to_target (60B each) — need FUN_7100314030 extern
-- get_safe_fall / get_safe_fall_current (52B each, stack local pattern)
-- More weapon param readers — check 0x71016* for remaining uncompiled
-- Larger AI functions: check_line_segment, most_earliest_weapon, floor_lr
+- FUN_710317b530 (320B) — float interpolation, calls FUN_710317b2e0
+- FUN_710317b000 (464B) — BST lookup + flag + camera request
+- FUN_710317cc20 (304B) — std::string comparison + update
+- Named: set_offset (848B), set_zone (960B), SituationLink (1588B)
+- Remaining small HARD targets are mostly jemalloc (skip per rules)
 
 ## Skipped
-- floor_moves (20B) — returns 16-byte struct, ABI complexity
-- add_stick_abs (24B) — NEON vector add, needs float vector type matching
+- FUN_7103176e64, FUN_71031776ec — Ghidra shows abort(), but CSV lists 244B/356B
+- All 0x710395xxxx functions — jemalloc 5.1.0 library code
 
 ## File Territory
-- src/app/ai_helpers_a.cpp (AI module helper functions)
-- src/app/weapon_params_a.cpp (FPA2 weapon/fighter param readers)
+- src/app/param_loading.cpp
 
 ## Quality Rules
 - No naked asm, 3-attempt limit
-- Use AI_CTX/AI_STATE macros for pointer chains
-- Use FPA2_2/FPA2_3 macros for param reader chains
-- Verify return type via ldr encoding: bd = float (s0), b9 = int (w0)
-- HIDDEN on all extern data symbols (prevents GOT indirection)
-- disable_tail_calls attribute when original uses bl (not b)
 
 ## Quick Reference
 - Single-file compile: `C:/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -c src/app/FILE.cpp -o build/FILE.o`
@@ -49,11 +52,28 @@
 - **WARNING:** Do NOT use `build.bat` — it runs deprecated post-processors that inflate match counts
 
 ## Ghidra Cache
-- Save ALL Ghidra decompilation results to `data/ghidra_cache/pool-a.txt` (NOT /tmp — survives reboots)
+- Save ALL Ghidra decompilation results to `data/ghidra_cache/pool-d.txt` (NOT /tmp — survives reboots)
 - On session start, check if this file exists and read it to recover previous Ghidra work
 - Append new results after each `mcp__ghidra__decompile_function_by_address` call
 
 ## Commit Cadence
 - Commit every 15-20 functions or every 30 minutes, whichever comes first
-- Use descriptive commit messages: `pool-a: decomp MODULE functions (N new, M matching)`
+- Use descriptive commit messages: `pool-d: decomp MODULE functions (N new, M matching)`
 - If session crashes, uncommitted work will be auto-recovered by the launcher script
+
+## Rewrite Quality Standard
+BAD (rename only — NOT acceptable):
+```cpp
+void FUN_710228d930(void* param_1) {
+    void* result = *(void**)((u8*)param_1 + 0x40);
+    (*(void(**)(void*))(*(u8**)result + 0x38))(result);
+}
+```
+
+GOOD (struct access + derivation chain):
+```cpp
+void StatusModule_change_status(BattleObjectModuleAccessor* acc) {
+    StatusModule* mod = acc->status_module;  // +0x40 [derived: .dynsym StatusModule vtable]
+    mod->change_status();  // vtable[7] [derived: StatusModule.h]
+}
+```
