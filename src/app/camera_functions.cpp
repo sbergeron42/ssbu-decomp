@@ -4,6 +4,7 @@
 #include "app/GroundCollisionLine.h"
 #include "app/modules/WorkModule.h"
 #include "app/BattleObjectModuleAccessor.h"
+#include "app/CameraController.h"
 
 // ---- ~CameraQuake destructor ----
 // 0x7100515190 (3,192 bytes)
@@ -2464,13 +2465,13 @@ extern "C" float4 convert_pos_dead_range_gravity(u8* lua_state, float x, float y
         float dy = y - oy;
         disp[0] = dx;
         disp[1] = dy;
-        u8* cam = *(u8**)DAT_71052b7f00;
+        app::CameraController* cam = *(app::CameraController**)DAT_71052b7f00;
         // Compute angle
         float angle = atan2f(dy, dx);
         angle = DAT_710447198c - angle;
         // Select extent based on angle sign
-        float neg_ext = -*(float*)(cam + 0xc30);
-        float pos_ext = *(float*)(cam + 0xc34);
+        float neg_ext = -cam->dead_range_neg;
+        float pos_ext = cam->dead_range_pos;
         float extent = (angle < 0.0f) ? neg_ext : pos_ext;
         float gravity_y = bow->gravity_origin_y;
         float neg_gravity = -gravity_y;

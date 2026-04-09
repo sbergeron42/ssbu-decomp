@@ -154,9 +154,9 @@ extern "C" void set_effect_pause(s32 handle, bool pause) {
 // +0x140 [derived: EffectModule at accessor+0x140]
 // vtable[0x488/8=145] [derived: enable_stencil from EffectModule.h]
 extern "C" void EFFECT_STENCIL_ON(u64 L) {
-    u64 acc = *(u64*)(L - 8);
-    app::EffectModule* mod = *(app::EffectModule**)(*(u64*)(acc + 0x1a0) + 0x140);
-    mod->enable_stencil(true);
+    u64 wrapper = *(u64*)(L - 8);
+    app::BattleObjectModuleAccessor* boma = *(app::BattleObjectModuleAccessor**)(wrapper + 0x1a0);
+    boma->effect_module->enable_stencil(true);
     u64 end = **(u64**)(L + 0x20) + 0x10;
     u64 cur = *(u64*)(L + 0x10);
     if (cur < end) {
@@ -172,9 +172,9 @@ extern "C" void EFFECT_STENCIL_ON(u64 L) {
 // 0x710228fac0 (108 bytes) — app::sv_animcmd::EFFECT_STENCIL_OFF
 // ACMD function: disables stencil on EffectModule, then consumes remaining lua args
 extern "C" void EFFECT_STENCIL_OFF(u64 L) {
-    u64 acc = *(u64*)(L - 8);
-    app::EffectModule* mod = *(app::EffectModule**)(*(u64*)(acc + 0x1a0) + 0x140);
-    mod->enable_stencil(false);
+    u64 wrapper = *(u64*)(L - 8);
+    app::BattleObjectModuleAccessor* boma = *(app::BattleObjectModuleAccessor**)(wrapper + 0x1a0);
+    boma->effect_module->enable_stencil(false);
     u64 end = **(u64**)(L + 0x20) + 0x10;
     u64 cur = *(u64*)(L + 0x10);
     if (cur < end) {
@@ -294,9 +294,9 @@ extern "C" u64 get_break_sound_hash(void* acc) {
 // 0x71033dbb00 (172 bytes) — WeaponSpecializer_DemonBlaster::remove_beam_effect
 // work var: 0x1000000b [inferred: beam effect handle]
 extern "C" void remove_beam_effect(void* weapon, bool detach_flag) {
-    u64 acc = *(u64*)((u8*)weapon + 0x20);
-    app::WorkModule* work = *(app::WorkModule**)(acc + 0x50);
-    app::EffectModule* effect = *(app::EffectModule**)(acc + 0x140);
+    app::BattleObjectModuleAccessor* acc = *(app::BattleObjectModuleAccessor**)((u8*)weapon + 0x20);
+    app::WorkModule* work = acc->work_module;
+    app::EffectModule* effect = acc->effect_module;
     s32 handle = work->get_int(0x1000000b);
     if (handle != 0) {
         if (detach_flag) {
@@ -311,9 +311,9 @@ extern "C" void remove_beam_effect(void* weapon, bool detach_flag) {
 // 0x71033dbbb0 (172 bytes) — WeaponSpecializer_DemonBlaster::remove_shot_effect
 // work var: 0x1000000c [inferred: shot effect handle]
 extern "C" void remove_shot_effect(void* weapon, bool detach_flag) {
-    u64 acc = *(u64*)((u8*)weapon + 0x20);
-    app::WorkModule* work = *(app::WorkModule**)(acc + 0x50);
-    app::EffectModule* effect = *(app::EffectModule**)(acc + 0x140);
+    app::BattleObjectModuleAccessor* acc = *(app::BattleObjectModuleAccessor**)((u8*)weapon + 0x20);
+    app::WorkModule* work = acc->work_module;
+    app::EffectModule* effect = acc->effect_module;
     s32 handle = work->get_int(0x1000000c);
     if (handle != 0) {
         if (detach_flag) {
@@ -328,9 +328,9 @@ extern "C" void remove_shot_effect(void* weapon, bool detach_flag) {
 // 0x71033dbc60 (172 bytes) — WeaponSpecializer_DemonBlaster::remove_head_effect
 // work var: 0x1000000d [inferred: head effect handle]
 extern "C" void remove_head_effect(void* weapon, bool detach_flag) {
-    u64 acc = *(u64*)((u8*)weapon + 0x20);
-    app::WorkModule* work = *(app::WorkModule**)(acc + 0x50);
-    app::EffectModule* effect = *(app::EffectModule**)(acc + 0x140);
+    app::BattleObjectModuleAccessor* acc = *(app::BattleObjectModuleAccessor**)((u8*)weapon + 0x20);
+    app::WorkModule* work = acc->work_module;
+    app::EffectModule* effect = acc->effect_module;
     s32 handle = work->get_int(0x1000000d);
     if (handle != 0) {
         if (detach_flag) {
