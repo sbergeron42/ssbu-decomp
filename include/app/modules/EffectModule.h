@@ -46,9 +46,13 @@ struct EffectModule {
     void end_kind(u64 p1, u64 p2) { ((void(*)(EffectModule*,u64,u64))_vt[34])(this,p1,p2); }
 
     // -- after image [35-40] --
-    void req_after_image(u64 p1, u64 p2, u64 p3, u64 p4, u32 p5, u64 p6, u64 p7, u32 p8, u64 p9, u64 p10, u64 p11, u64 p12, bool p13, bool p14, s32 p15, s32 p16, s32 p17) { ((void(*)(EffectModule*,u64,u64,u64,u64,u32,u64,u64,u32,u64,u64,u64,u64,bool,bool,s32,s32,s32))_vt[35])(this,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15,p16,p17); }
+    // req_after_image signature: actual vtable dispatch has 19 params (extra f32/u8 fields vs lua_bind API)
+    // [derived: Ghidra disasm of EffectModule__req_after_image_impl at 0x7102017900]
+    void req_after_image(u64 p1, u64 p2, u64 p3, u64 p4, u32 p5, u64 p6, u64 p7, u32 p8, u64 p9, u64 p10, u64 p11, u64 p12, f32 p13, u8 p14, u8 p15, f32 p16, s32 p17, s32 p18, s32 p19) { ((void(*)(EffectModule*,u64,u64,u64,u64,u32,u64,u64,u32,u64,u64,u64,u64,f32,u8,u8,f32,s32,s32,s32))_vt[35])(this,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15,p16,p17,p18,p19); }
     // [36] unknown
-    void req_after_image_no_parent(u64 p1, u64 p2, u32 p3, u64 p4, u64 p5, u32 p6, u64 p7, u64 p8, u64 p9, u64 p10, bool p11, bool p12, s32 p13, s32 p14, s32 p15) { ((void(*)(EffectModule*,u64,u64,u32,u64,u64,u32,u64,u64,u64,u64,bool,bool,s32,s32,s32))_vt[37])(this,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15); }
+    // req_after_image_no_parent signature: actual vtable dispatch has 17 params
+    // [derived: Ghidra disasm of EffectModule__req_after_image_no_parent_impl at 0x7102017950]
+    void req_after_image_no_parent(u64 p1, u64 p2, u32 p3, u64 p4, u64 p5, u32 p6, u64 p7, u64 p8, u64 p9, u64 p10, f32 p11, u8 p12, u8 p13, f32 p14, s32 p15, s32 p16, s32 p17) { ((void(*)(EffectModule*,u64,u64,u32,u64,u64,u32,u64,u64,u64,u64,f32,u8,u8,f32,s32,s32,s32))_vt[37])(this,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15,p16,p17); }
     void clear_all_after_image(u64 p1) { ((void(*)(EffectModule*,u64))_vt[38])(this,p1); }
     void remove_after_image(u64 p1, u64 p2) { ((void(*)(EffectModule*,u64,u64))_vt[39])(this,p1,p2); }
     void remove_all_after_image(u64 p1, u64 p2) { ((void(*)(EffectModule*,u64,u64))_vt[40])(this,p1,p2); }

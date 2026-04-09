@@ -39,13 +39,11 @@ void EffectModule__end_kind_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { 
 // -- after image --
 // 7102017900 -- vtable[35] dispatch, tail call with stack arg passthrough
 void EffectModule__req_after_image_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2, u64 p3, u64 p4, u32 p5, u64 p6, u64 p7, u32 p8, u64 p9, u64 p10, u64 p11, u64 p12, f32 p13, u8 p14, u8 p15, f32 p16, s32 p17, s32 p18, s32 p19) {
-    auto* m = EF(a);
-    reinterpret_cast<void(*)(EffectModule*, u64, u64, u64, u64, u32, u64, u64, u32, u64, u64, u64, u64, f32, u8, u8, f32, s32, s32, s32)>(m->_vt[35])(m, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17, p18, p19);
+    EF(a)->req_after_image(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17, p18, p19);
 }
 // 7102017950 -- vtable[37] dispatch, tail call with stack arg passthrough
 void EffectModule__req_after_image_no_parent_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2, u32 p3, u64 p4, u64 p5, u32 p6, u64 p7, u64 p8, u64 p9, u64 p10, f32 p11, u8 p12, u8 p13, f32 p14, s32 p15, s32 p16, s32 p17) {
-    auto* m = EF(a);
-    reinterpret_cast<void(*)(EffectModule*, u64, u64, u32, u64, u64, u32, u64, u64, u64, u64, f32, u8, u8, f32, s32, s32, s32)>(m->_vt[37])(m, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17);
+    EF(a)->req_after_image_no_parent(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17);
 }
 void EffectModule__clear_all_after_image_impl(BattleObjectModuleAccessor* a,u64 p1) { EF(a)->clear_all_after_image(p1); }
 void EffectModule__remove_after_image_impl(BattleObjectModuleAccessor* a,u64 p1,u64 p2) { EF(a)->remove_after_image(p1,p2); }

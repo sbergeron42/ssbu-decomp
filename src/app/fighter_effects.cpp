@@ -155,9 +155,8 @@ extern "C" void set_effect_pause(s32 handle, bool pause) {
 // vtable[0x488/8=145] [derived: enable_stencil from EffectModule.h]
 extern "C" void EFFECT_STENCIL_ON(u64 L) {
     u64 acc = *(u64*)(L - 8);
-    void* mod = *(void**)(*(u64*)(acc + 0x1a0) + 0x140);
-    void** vt = *(void***)mod;
-    reinterpret_cast<void(*)(void*, s32)>(vt[0x488 / 8])(mod, 1);
+    app::EffectModule* mod = *(app::EffectModule**)(*(u64*)(acc + 0x1a0) + 0x140);
+    mod->enable_stencil(true);
     u64 end = **(u64**)(L + 0x20) + 0x10;
     u64 cur = *(u64*)(L + 0x10);
     if (cur < end) {
@@ -174,9 +173,8 @@ extern "C" void EFFECT_STENCIL_ON(u64 L) {
 // ACMD function: disables stencil on EffectModule, then consumes remaining lua args
 extern "C" void EFFECT_STENCIL_OFF(u64 L) {
     u64 acc = *(u64*)(L - 8);
-    void* mod = *(void**)(*(u64*)(acc + 0x1a0) + 0x140);
-    void** vt = *(void***)mod;
-    reinterpret_cast<void(*)(void*, s32)>(vt[0x488 / 8])(mod, 0);
+    app::EffectModule* mod = *(app::EffectModule**)(*(u64*)(acc + 0x1a0) + 0x140);
+    mod->enable_stencil(false);
     u64 end = **(u64**)(L + 0x20) + 0x10;
     u64 cur = *(u64*)(L + 0x10);
     if (cur < end) {
@@ -297,22 +295,16 @@ extern "C" u64 get_break_sound_hash(void* acc) {
 // work var: 0x1000000b [inferred: beam effect handle]
 extern "C" void remove_beam_effect(void* weapon, bool detach_flag) {
     u64 acc = *(u64*)((u8*)weapon + 0x20);
-    void* work = *(void**)(acc + 0x50);
-    void* effect = *(void**)(acc + 0x140);
-    void** wvt = *(void***)work;
-    void** evt = *(void***)effect;
-    s32 handle = reinterpret_cast<s32(*)(void*, s32)>(wvt[0x98 / 8])(work, 0x1000000b);
+    app::WorkModule* work = *(app::WorkModule**)(acc + 0x50);
+    app::EffectModule* effect = *(app::EffectModule**)(acc + 0x140);
+    s32 handle = work->get_int(0x1000000b);
     if (handle != 0) {
         if (detach_flag) {
-            // EffectModule::detach (vtable[33], offset 0x108)
-            reinterpret_cast<void(*)(void*, s32, s32)>(evt[0x108 / 8])(effect, handle, 5);
+            effect->detach(handle, 5);
         } else {
-            // EffectModule::kill (vtable[27], offset 0xd8)
-            reinterpret_cast<void(*)(void*, s32, bool, bool)>(evt[0xd8 / 8])(effect, handle, true, true);
+            effect->kill(handle, true, true);
         }
-        // WorkModule::set_int(0, work_var)
-        wvt = *(void***)work;
-        reinterpret_cast<void(*)(void*, s32, s32)>(wvt[0xa0 / 8])(work, 0, 0x1000000b);
+        work->set_int(0, 0x1000000b);
     }
 }
 
@@ -320,19 +312,16 @@ extern "C" void remove_beam_effect(void* weapon, bool detach_flag) {
 // work var: 0x1000000c [inferred: shot effect handle]
 extern "C" void remove_shot_effect(void* weapon, bool detach_flag) {
     u64 acc = *(u64*)((u8*)weapon + 0x20);
-    void* work = *(void**)(acc + 0x50);
-    void* effect = *(void**)(acc + 0x140);
-    void** wvt = *(void***)work;
-    void** evt = *(void***)effect;
-    s32 handle = reinterpret_cast<s32(*)(void*, s32)>(wvt[0x98 / 8])(work, 0x1000000c);
+    app::WorkModule* work = *(app::WorkModule**)(acc + 0x50);
+    app::EffectModule* effect = *(app::EffectModule**)(acc + 0x140);
+    s32 handle = work->get_int(0x1000000c);
     if (handle != 0) {
         if (detach_flag) {
-            reinterpret_cast<void(*)(void*, s32, s32)>(evt[0x108 / 8])(effect, handle, 5);
+            effect->detach(handle, 5);
         } else {
-            reinterpret_cast<void(*)(void*, s32, bool, bool)>(evt[0xd8 / 8])(effect, handle, false, true);
+            effect->kill(handle, false, true);
         }
-        wvt = *(void***)work;
-        reinterpret_cast<void(*)(void*, s32, s32)>(wvt[0xa0 / 8])(work, 0, 0x1000000c);
+        work->set_int(0, 0x1000000c);
     }
 }
 
@@ -340,19 +329,16 @@ extern "C" void remove_shot_effect(void* weapon, bool detach_flag) {
 // work var: 0x1000000d [inferred: head effect handle]
 extern "C" void remove_head_effect(void* weapon, bool detach_flag) {
     u64 acc = *(u64*)((u8*)weapon + 0x20);
-    void* work = *(void**)(acc + 0x50);
-    void* effect = *(void**)(acc + 0x140);
-    void** wvt = *(void***)work;
-    void** evt = *(void***)effect;
-    s32 handle = reinterpret_cast<s32(*)(void*, s32)>(wvt[0x98 / 8])(work, 0x1000000d);
+    app::WorkModule* work = *(app::WorkModule**)(acc + 0x50);
+    app::EffectModule* effect = *(app::EffectModule**)(acc + 0x140);
+    s32 handle = work->get_int(0x1000000d);
     if (handle != 0) {
         if (detach_flag) {
-            reinterpret_cast<void(*)(void*, s32, s32)>(evt[0x108 / 8])(effect, handle, 5);
+            effect->detach(handle, 5);
         } else {
-            reinterpret_cast<void(*)(void*, s32, bool, bool)>(evt[0xd8 / 8])(effect, handle, true, true);
+            effect->kill(handle, true, true);
         }
-        wvt = *(void***)work;
-        reinterpret_cast<void(*)(void*, s32, s32)>(wvt[0xa0 / 8])(work, 0, 0x1000000d);
+        work->set_int(0, 0x1000000d);
     }
 }
 

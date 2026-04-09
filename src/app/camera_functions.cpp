@@ -1,4 +1,9 @@
 #include "types.h"
+#include "app/ItemManager.h"
+#include "app/BattleObjectWorld.h"
+#include "app/GroundCollisionLine.h"
+#include "app/modules/WorkModule.h"
+#include "app/BattleObjectModuleAccessor.h"
 
 // ---- ~CameraQuake destructor ----
 // 0x7100515190 (3,192 bytes)
@@ -2261,13 +2266,13 @@ extern "C" void FUN_71015b52c0(void*);
 namespace app { namespace boss_private {
 extern "C" void send_event_on_start_boss_entry(u32 battle_object_id) {
     if (battle_object_id == 0x50000000) return;
-    u8* im = (u8*)DAT_71052c25b0;
-    u64* begin = *(u64**)(im + 0x28);
-    u64* end   = *(u64**)(im + 0x30);
-    for (u64* it = begin; it != end; ++it) {
-        u8* item = (u8*)*it;
-        if (*(u8*)(*(u8**)(item + 0x90) + 0x18) != 0) continue;
-        if (*(u32*)(item + 0x8) == battle_object_id) {
+    app::ItemManager* im = (app::ItemManager*)DAT_71052c25b0;
+    app::ItemEntry** begin = im->active_begin;
+    app::ItemEntry** end   = im->active_end;
+    for (app::ItemEntry** it = begin; it != end; ++it) {
+        app::ItemEntry* item = *it;
+        if (item->state_info->is_removed != 0) continue;
+        if (item->battle_object_id == battle_object_id) {
             FUN_71015b52c0(item);
             return;
         }
@@ -2315,22 +2320,22 @@ extern "C" void send_event_on_boss_finish(u8* lua_state, u64 hash40) {
 // [derived: Ghidra decompilation at 0x71015ca930]
 namespace app { namespace item_manager {
 extern "C" u64 find_active_item_from_id(u32 battle_object_id) {
-    u8* found = 0;
+    app::ItemEntry* found = 0;
     if (battle_object_id != 0x50000000) {
-        u8* im = (u8*)DAT_71052c25b0;
-        u64* begin = *(u64**)(im + 0x28);
-        u64* end   = *(u64**)(im + 0x30);
-        for (u64* it = begin; it != end; ++it) {
-            u8* item = (u8*)*it;
-            if (*(u8*)(*(u8**)(item + 0x90) + 0x18) != 0) continue;
-            if (*(u32*)(item + 0x8) == battle_object_id) {
+        app::ItemManager* im = (app::ItemManager*)DAT_71052c25b0;
+        app::ItemEntry** begin = im->active_begin;
+        app::ItemEntry** end   = im->active_end;
+        for (app::ItemEntry** it = begin; it != end; ++it) {
+            app::ItemEntry* item = *it;
+            if (item->state_info->is_removed != 0) continue;
+            if (item->battle_object_id == battle_object_id) {
                 found = item;
                 break;
             }
         }
     }
     if (!found) return 0;
-    return (u64)(found + 0x98);
+    return (u64)&found->module_accessor;
 }
 }} // namespace app::item_manager
 
@@ -2346,15 +2351,14 @@ extern "C" u64 find_active_item_from_id(u32 battle_object_id) {
 namespace app { namespace item_manager {
 extern "C" void remove_item_from_id(u32 battle_object_id) {
     if (battle_object_id == 0x50000000) return;
-    u8* im = (u8*)DAT_71052c25b0;
-    u64* begin = *(u64**)(im + 0x10);
-    u64* end   = *(u64**)(im + 0x18);
-    for (u64* it = begin; it != end; ++it) {
-        u8* item = (u8*)*it;
-        if (*(u32*)(item + 0x8) == battle_object_id) {
+    app::ItemManager* im = (app::ItemManager*)DAT_71052c25b0;
+    app::ItemEntry** begin = im->pending_begin;
+    app::ItemEntry** end   = im->pending_end;
+    for (app::ItemEntry** it = begin; it != end; ++it) {
+        app::ItemEntry* item = *it;
+        if (item->battle_object_id == battle_object_id) {
             if (item != 0) {
-                void** vt = *(void***)item;
-                reinterpret_cast<void(*)(void*, s32)>(vt[0x520/8])(item, 0);
+                item->remove(0);
             }
             return;
         }
@@ -2371,22 +2375,22 @@ extern "C" void remove_item_from_id(u32 battle_object_id) {
 // PTR_ConstantZero_71052a7a80 [derived: pointer to 128-bit zero constant]
 // [derived: Ghidra disasm at 0x71015cbd50]
 namespace app { namespace ground {
-extern "C" float4 get_near_pos(u8* line, const float4* pos) {
+extern "C" float4 get_near_pos(app::GroundCollisionLine* line, const float4* pos) {
     if (!line) {
         return *(float4*)&PTR_ConstantZero_71052a7a80;
     }
-    u8* ep0 = *(u8**)(line + 0x88) + 0x10;
-    u8* ep1 = *(u8**)(line + 0x90) + 0x10;
-    float4 d0 = *(float4*)ep0 - *pos;
-    float4 d1 = *(float4*)ep1 - *pos;
+    float4* p0 = (float4*)line->endpoint0->position;
+    float4* p1 = (float4*)line->endpoint1->position;
+    float4 d0 = *p0 - *pos;
+    float4 d1 = *p1 - *pos;
     d0 = d0 * d0;
     d1 = d1 * d1;
     float dist0 = d0[0] + d0[1];
     float dist1 = d1[0] + d1[1];
     if (dist0 < dist1) {
-        return *(float4*)ep0;
+        return *p0;
     }
-    return *(float4*)ep1;
+    return *p1;
 }
 }} // namespace app::ground
 
@@ -2411,13 +2415,13 @@ extern "C" float cosf(float);
 namespace app { namespace sv_camera_manager {
 extern "C" float4 restore_pos_dead_range_gravity(u8* lua_state, float x, float y, s32 param_4) {
     u8* acc_ptr = *(u8**)(lua_state - 8);
-    u8* accessor = *(u8**)(acc_ptr + 0x1a0);
+    app::BattleObjectModuleAccessor* accessor = *(app::BattleObjectModuleAccessor**)(acc_ptr + 0x1a0);
     float4 result = {0.0f, 0.0f, 0.0f, 0.0f};
     result[0] = x;
     result[1] = y;
-    u8* bow = (u8*)DAT_71052b7558;
-    if (*(u8*)(bow + 0x5c) == 0 && *(u8*)(bow + 0x59) == 0) {
-        float gravity_y = *(float*)(bow + 0x14);
+    app::BattleObjectWorld* bow = (app::BattleObjectWorld*)DAT_71052b7558;
+    if (bow->gravity_disabled_flag == 0 && bow->gravity_override_flag == 0) {
+        float gravity_y = bow->gravity_origin_y;
         float diff = y - gravity_y;
         float angle = x / -gravity_y;
         float s = sinf(angle);
@@ -2425,10 +2429,7 @@ extern "C" float4 restore_pos_dead_range_gravity(u8* lua_state, float x, float y
         float c = cosf(angle);
         result[1] = gravity_y + diff * c;
     }
-    // Dispatch to WorkModule vtable[0x60/8]
-    u8** work_mod = *(u8***)(accessor + 0x50);
-    reinterpret_cast<void(*)(u8**, float, s32)>(
-        (*(void***)work_mod)[0x60/8])(work_mod, result[1], param_4);
+    accessor->work_module->set_float(param_4, result[1]);
     return result;
 }
 }} // namespace app::sv_camera_manager
@@ -2449,16 +2450,16 @@ extern "C" float DAT_710447198c HIDDEN;
 namespace app { namespace sv_camera_manager {
 extern "C" float4 convert_pos_dead_range_gravity(u8* lua_state, float x, float y, s32 param_4) {
     u8* acc_ptr = *(u8**)(lua_state - 8);
-    u8* accessor = *(u8**)(acc_ptr + 0x1a0);
+    app::BattleObjectModuleAccessor* accessor = *(app::BattleObjectModuleAccessor**)(acc_ptr + 0x1a0);
     float4 disp = {0.0f, 0.0f, 0.0f, 0.0f};
     float4 result = {0.0f, 0.0f, 0.0f, 0.0f};
     result[0] = x;
     result[1] = y;
-    u8* bow = (u8*)DAT_71052b7558;
-    if (*(u8*)(bow + 0x5c) == 0 && *(u8*)(bow + 0x59) == 0) {
+    app::BattleObjectWorld* bow = (app::BattleObjectWorld*)DAT_71052b7558;
+    if (bow->gravity_disabled_flag == 0 && bow->gravity_override_flag == 0) {
         // Subtract gravity origin
-        float ox = *(float*)(bow + 0x10);
-        float oy = *(float*)(bow + 0x14);  // origin.y is at +0x14 in the 128-bit load
+        float ox = bow->gravity_origin_x;
+        float oy = bow->gravity_origin_y;
         float dx = x - ox;
         float dy = y - oy;
         disp[0] = dx;
@@ -2471,7 +2472,7 @@ extern "C" float4 convert_pos_dead_range_gravity(u8* lua_state, float x, float y
         float neg_ext = -*(float*)(cam + 0xc30);
         float pos_ext = *(float*)(cam + 0xc34);
         float extent = (angle < 0.0f) ? neg_ext : pos_ext;
-        float gravity_y = *(float*)(bow + 0x14);
+        float gravity_y = bow->gravity_origin_y;
         float neg_gravity = -gravity_y;
         float ratio = extent / neg_gravity;
         float scaled_angle = angle / ratio;
@@ -2481,10 +2482,7 @@ extern "C" float4 convert_pos_dead_range_gravity(u8* lua_state, float x, float y
         float magnitude = __builtin_sqrtf(dist_sq);
         result[1] = gravity_y + magnitude;
     }
-    // Dispatch to WorkModule vtable[0x60/8]
-    u8** work_mod = *(u8***)(accessor + 0x50);
-    reinterpret_cast<void(*)(u8**, float, s32)>(
-        (*(void***)work_mod)[0x60/8])(work_mod, result[1], param_4);
+    accessor->work_module->set_float(param_4, result[1]);
     return result;
 }
 }} // namespace app::sv_camera_manager
