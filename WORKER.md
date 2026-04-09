@@ -1,25 +1,26 @@
-# Worker: pool-e
+# Worker: pool-c
 
 ## Model: Opus
 
-## Task: Item/weapon + Lua — continue
+## Task: Stage + camera — continue
 
-## Progress
-- ~30 functions: ItemKinetic (7), ItemHelpers (16), lua_acmd (7)
-- L2CValue accessors, ldrsw codegen fix, energy forwarders
+## Progress (57 functions total)
+- 20 new leaf functions last round (3 perfect matches: get_area_down, get_rhombus_down_y, is_enable_capture_baitocrane)
+- gt vs hi condition: use > directly instead of <= to prevent LLVM negation
+- NX Clang prologue scheduling (add x29) is most common remaining diff
 
 ## Continue with
-- More L2C functions in 0x71037xxx range (math_toint, etc.)
-- Medium Item functions 100-300B (accessor chain patterns)
-- lua_ai_path_builder (4,388B) if time permits
-- Try optnone for -O0 Lua functions
+- ~StageWufuIsland destructor (2,700B)
+- ~~StageBase destructor (2,572B)
+- set_camera_param (2,344B), set_pause_camera_param (3,996B)
+- CHECK_VALID_START_CAMERA (2,812B)
+- More stage/camera leaf functions
 
-## Blocked (don't retry)
-- NEON ItemKinetic functions, pop_lua_stack, ItemManager ctor, item_generate_position_in_rect
+## Skipped
+- create_stage (114,600B), StageBase ctor (14,820B) — too large
 
 ## File Territory
-- src/app/lua_acmd.cpp, weapon_params.cpp, ItemKinetic.cpp, ItemHelpers.cpp
-- include/lib/L2CValue.h
+- src/app/camera_functions.cpp, StageManager.cpp, StageWufuIsland.cpp
 
 ## Quality Rules
-- optnone for -O0 Lua functions, no naked asm, 3-attempt limit
+- No naked asm, 3-attempt limit
