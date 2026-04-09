@@ -2953,6 +2953,48 @@ void set_force_flashing_71015c29f0(void* L, bool enable) {
     }
 }
 
+// ── 0x71015c4ad0 -- app::item::init_status_data (84B) ───────────
+// [derived: Ghidra FUN_71015c4ad0 — lua_State + StatusModule init_status_data]
+// Gets StatusModule at acc+0x40, calls vtable[0x39] (+0x1c8) with 10 args.
+// Note: param reordering — situation_kind and kinetic_type are swapped in the call.
+void init_status_data_71015c4ad0(void* L, s32 kinetic_type, s32 situation, s32 ground_correct, bool enable) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
+    void* status_mod = *reinterpret_cast<void**>(acc + 0x40);
+    void** vt = *reinterpret_cast<void***>(status_mod);
+    // StatusModule::init_status_data — vtable[0x39] at +0x1c8
+    // [derived: confirmed by parameter count (10) and StatusModule offset (+0x40)]
+    reinterpret_cast<void(*)(void*, s32, s32, s32, s32, bool, s32, s32, s32, s32)>(vt[0x39])(
+        status_mod, situation, kinetic_type, ground_correct, 0, enable, 0, 0, 0, 0);
+}
+
+// ── 0x71015c1d80 -- app::item::set_scale_speed_mul (80B) ────────
+// [derived: Ghidra FUN_71015c1d80 — lua_State + item data write + conditional vtable]
+// Writes scale_speed_mul float at item_data+0x27c, then calls either vtable[0x22]
+// (+0x110, set event) or vtable[0x24] (+0x120, clear event) depending on whether
+// the value equals 1.0. Event hash = 0x20000014.
+void set_scale_speed_mul_71015c1d80(void* L, f32 mul) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
+    u8* ptr = *reinterpret_cast<u8**>(acc + 0x190);
+    u8* item_data = reinterpret_cast<u8*>(*reinterpret_cast<u64*>(ptr + 0x220));
+
+    void* mod = *reinterpret_cast<void**>(item_data + 0xe8);
+    *reinterpret_cast<f32*>(item_data + 0x27c) = mul;
+    void** vt = *reinterpret_cast<void***>(mod);
+
+    void(*fn)(void*, u32);
+    if (mul == 1.0f) {
+        fn = reinterpret_cast<void(*)(void*, u32)>(vt[0x24]);  // clear event
+    } else {
+        fn = reinterpret_cast<void(*)(void*, u32)>(vt[0x22]);  // set event
+    }
+    fn(mod, 0x20000014U);
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");  // prevent tail call — original uses blr+ret
+#endif
+}
+
 // NOTE: Link event functions (send_link_event_disable_clatter, send_catch_cut_event)
 // need proper LinkEvent struct layout investigation. Skipped for now — struct
 // alignment and vtable pointer layout don't match with naive u8[] approach.
