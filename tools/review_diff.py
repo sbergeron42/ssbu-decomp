@@ -195,12 +195,13 @@ def analyze_file(filepath: str, lines: list) -> FileReport:
             for m in re.finditer(r'0x([0-9a-fA-F]{2,})', text):
                 offsets_per_function[current_func].add(m.group(1))
 
-        # ── WARN: raw vtable dispatch ──
+        # ── REJECT: raw vtable dispatch ──
         if RE_RAW_VTABLE.search(text):
             report.violations.append(Violation(
                 file=filepath, line=line_no, rule="USE_VTABLE_WRAPPERS",
-                severity="WARN", snippet=stripped[:120],
-                suggestion="Check include/app/modules/ for a typed wrapper method."
+                severity="REJECT", snippet=stripped[:120],
+                suggestion="Use typed wrapper from include/app/modules/. "
+                           "If no wrapper exists for this slot, add one to the header."
             ))
 
         # ── Count positive signals ──
