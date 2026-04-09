@@ -366,4 +366,134 @@ void EFFECT_VARIATION(lua_State* param_1) {
     acmd_consume(L);
 }
 
+// 0x710229cc80 (520 bytes) — EFFECT_OFF_KIND
+// Args: 1=effect_hash, 2=is_trail(bool), 3=reset_flag(bool)
+// Calls EffectModule::kill_kind (vtable slot 28, offset 0xE0)
+void EFFECT_OFF_KIND(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    int nargs = acmd_nargs(L);
+
+    u64 hash;
+    bool flag1, flag2;
+
+    if (param_1 == nullptr) {
+        if (nargs >= 1) {
+#ifdef MATCHING_HACK_NX_CLANG
+            __builtin_trap();
+#endif
+        }
+        hash = 0;
+        flag1 = false;
+        flag2 = false;
+    } else if (nargs < 1) {
+        hash = 0;
+        flag1 = false;
+        flag2 = false;
+    } else {
+        hash = FUN_71038f4000(param_1, 1, 0);
+#ifdef MATCHING_HACK_NX_CLANG
+        asm("" : "+r"(nargs));
+#endif
+        if (nargs < 2) {
+            flag1 = false;
+            flag2 = false;
+        } else {
+            flag1 = acmd_read_bool(L, 0x20);
+            if (nargs < 3) {
+                flag2 = false;
+            } else {
+                flag2 = acmd_read_bool(L, 0x30);
+            }
+        }
+    }
+
+    // EffectModule::kill_kind(hash, flag1, flag2)
+    void** eff = *(void***)(acc + 0x140);
+    void** vt = *(void***)eff;
+    reinterpret_cast<void(*)(void*, u64, bool, bool)>(vt[0xe0 / 8])(eff, hash, flag1, flag2);
+
+    acmd_consume(L);
+}
+
+// 0x71022907c0 — EFFECT_FOLLOW
+// Args: 1=effect_hash, 2=bone_hash, 3-5=offset(int xyz), 6-8=rot(int xyz),
+//       9=scale(int), 10=follow_flag(bool)
+// Calls EffectModule::req_follow (vtable slot 16, offset 0x80)
+void EFFECT_FOLLOW(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    if (param_1 == nullptr) {
+#ifdef MATCHING_HACK_NX_CLANG
+        __builtin_trap();
+#endif
+    }
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    int nargs = acmd_nargs(L);
+
+    u64 hash1 = 0, hash2 = 0;
+    // EFFECT_FOLLOW reads offsets/rotations as INTEGERS (not floats)
+    u64 off_x = 0, off_y = 0, off_z = 0;
+    u64 rot_x = 0, rot_y = 0, rot_z = 0;
+    f32 scale_f = 0;
+    u64 scale_int = 0;
+    bool follow_flag = false;
+
+    if (nargs >= 1) {
+        hash1 = FUN_71038f4000(param_1, 1, 0);
+        if (nargs >= 2) {
+            hash2 = FUN_71038f4000(param_1, 2, 0);
+            if (nargs >= 3) {
+                // Arg 3: offset_x as int
+                f32 f3 = acmd_read_float(L, 0x30);
+                off_x = (u64)(u32)f3;
+                if (nargs >= 4) {
+                    f32 f4 = acmd_read_float(L, 0x40);
+                    off_y = (u64)(u32)f4;
+                    if (nargs >= 5) {
+                        f32 f5 = acmd_read_float(L, 0x50);
+                        off_z = (u64)(u32)f5;
+                        if (nargs >= 6) {
+                            f32 f6 = acmd_read_float(L, 0x60);
+                            rot_x = (u64)(u32)f6;
+                            if (nargs >= 7) {
+                                f32 f7 = acmd_read_float(L, 0x70);
+                                rot_y = (u64)(u32)f7;
+                                if (nargs >= 8) {
+                                    f32 f8 = acmd_read_float(L, 0x80);
+                                    rot_z = (u64)(u32)f8;
+                                    if (nargs >= 9) {
+                                        scale_f = acmd_read_float(L, 0x90);
+                                        scale_int = (u64)(u32)scale_f;
+                                        if (nargs >= 10) {
+                                            follow_flag = acmd_read_bool(L, 0xa0);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Pack offset and rotation vectors
+    // offset: {off_y(lo), off_x(hi)} at local_b0, off_z at uStack_a8
+    struct { u32 y; u32 x; u64 z; } off_vec = { (u32)off_y, (u32)off_x, off_z };
+    // rotation: {rot_y(lo), rot_x(hi)} at local_a0, rot_z at uStack_98
+    struct { u32 y; u32 x; u64 z; } rot_vec = { (u32)rot_y, (u32)rot_x, rot_z };
+
+    // Follow flag → 0xc000 (follow) or 0x8000 (no follow)
+    u64 flags = follow_flag ? 0xc000ULL : 0x8000ULL;
+
+    // EffectModule::req_follow (vtable[16], offset 0x80)
+    // (scale_f, eff, hash1, hash2, &off_vec, &rot_vec, 0, flags, 0, -1, 0, 0, 0, 0)
+    void** eff = *(void***)(acc + 0x140);
+    void** vt = *(void***)eff;
+    reinterpret_cast<void(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, s32, s32, s32, f32)>
+        (vt[0x80 / 8])(eff, hash1, hash2, &off_vec, &rot_vec, 0, flags, 0, (s32)-1, 0, 0, 0, scale_f);
+
+    acmd_consume(L);
+}
+
 }} // namespace app::sv_animcmd
