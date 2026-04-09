@@ -1,44 +1,44 @@
-# Worker: pool-c
+# Worker: pool-e
 
 ## Model: Opus
 
-## Task: Stage + camera — continue
+## Task: L2CValue / L2CAgent methods — continue
 
-## Progress (82 functions total)
-- 20 leaf functions from round 2 (3 perfect matches)
-- 4 new functions from round 3 (size matches, minor scheduling diffs)
-- 17 new functions this round (batch 3):
-  - 10 relocation-only matches: screen_width, screen_height, screen_to_world,
-    can_exist (shio/darz), add_movement (PERFECT), get_assist_respawn_position,
-    create_weapon, calc_offset_with_gravity, search_range
-  - 7 non-matching but correct: start_zoom_out (3 variants), start_bgm, end_bgm,
-    get_bgm_kind, set_dead_range (2 variants — NEON vectorization diff)
-- Key patterns: fcvtzu for unsigned float conversion, ternary for csel ne,
-  asm("") barrier for tail-call prevention
+## Progress (all sessions combined)
+- ~65 functions in lua_acmd.cpp covering L2CValue constructors, operators, math wrappers, trig functions, table operations, tree traversal, alloc helpers
+- Small leaf functions (8-124 bytes): most byte-match or are relocation-only mismatches
+- Medium functions (164-368 bytes): typically non-matching due to instruction scheduling (NX Clang prologue divergence)
+- Key patterns established: type tag extraction (7/3/2 check order), SSO string layout, OOM retry, refcount management, RB tree search
 
-## Continue with
-- set_camera_param (2,344B), set_pause_camera_param (3,996B) — param tree lookups
-- ~StageWufuIsland destructor (2,700B) — event listener cleanup
-- convert_pos_dead_range_gravity (296B) — NEON math, may not match
-- restore_pos_dead_range_gravity (196B) — sin/cos rotation
-- change_camera_range (300B) / change_dead_range (292B) — BST lookup in StageManager
-- More item leaf functions in 0x71015c0000-0x71015d0000 range
+## Latest round (session 3)
+- operator= (0x7103734330, 356B): copy assignment — destroy old + copy from source. 13% match (scheduling diffs).
+- L2CValue(char*) (0x71037341c0, 368B): string constructor with SSO alloc + OOM retry. 8% match.
 
-## Skipped
-- create_stage (114,600B), StageBase ctor (14,820B) — too large
-- IT_MOVE_CAMERA, is_clip_in_camera, is_dark_stage — shared_ptr refcount patterns
-- set_camera_range variants (flyandhand/shiokarazu/crazyhand/marx) — shared_ptr atomics
-- powf stub (4B) — GOT indirect, can't match
-- is_flat_stage — guard variable __cxa_guard pattern
+## Remaining targets in L2C range
+- operator== (0x7103734520, 680B) — very complex, many code paths, stretch goal
+- operator! (0x7103734fa0, 132B) — jump table, ~8% match expected (same as as_bool)
+- operator= copy (0x7103734330, done as non-matching)
+- math_min/max (0x71037336b0/750, 160B each) — removed in commit 65240a8 due to binary discrepancy
+- FUN_7103733d50 (328B) — RB tree hash insert (needs __tree_balance_after_insert extern)
+- FUN_71037339f0 (860B) — table index vector growth + RB tree fallback (too large)
+- math_deg/rad (356B each) — construct L2CValues + call operator*, complex
+- L2CTable ctor (268B) — vector alloc + loop init + OOM retry
+
+## BLOCKED / SKIP
+- Jump table functions: operator!, operator bool, as_bool — ldrsw encoding differs
+- Shared_ptr atomics: various camera/stage functions
+- Large functions (>500B): CallFunctionByHash, push_lua_stack, pop_lua_stack, ipairs, to_string
+- Library code: __tree_balance_after_insert (can't match libc++ separately)
 
 ## File Territory
-- src/app/camera_functions.cpp, StageManager.cpp, StageWufuIsland.cpp
+- src/app/lua_acmd.cpp
 
 ## Quality Rules
 - No naked asm, 3-attempt limit
+- Non-matching functions still committed (structural decomp, not cosmetic renames)
 
 ## Quick Reference
-- Single-file compile: `C:/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -c src/app/FILE.cpp -o build/FILE.o`
+- Single-file compile: `C:/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -Ilib/NintendoSDK/include -Ilib/NintendoSDK/include/stubs -c src/app/lua_acmd.cpp -o build/lua_acmd.o`
 - Compare bytes: `python tools/compare_bytes.py FUNCTION_NAME` (takes function name, NOT address)
 - Full build+verify: `python tools/build.py && python tools/verify_local.py --build` (only after batch is done)
 - Progress: `python tools/progress.py`
@@ -46,13 +46,13 @@
 - **WARNING:** Do NOT use `build.bat` — it runs deprecated post-processors that inflate match counts
 
 ## Ghidra Cache
-- Save ALL Ghidra decompilation results to `data/ghidra_cache/pool-c.txt` (NOT /tmp — survives reboots)
+- Save ALL Ghidra decompilation results to `data/ghidra_cache/pool-e.txt` (NOT /tmp — survives reboots)
 - On session start, check if this file exists and read it to recover previous Ghidra work
 - Append new results after each `mcp__ghidra__decompile_function_by_address` call
 
 ## Commit Cadence
 - Commit every 15-20 functions or every 30 minutes, whichever comes first
-- Use descriptive commit messages: `pool-c: decomp MODULE functions (N new, M matching)`
+- Use descriptive commit messages: `pool-e: decomp MODULE functions (N new, M matching)`
 - If session crashes, uncommitted work will be auto-recovered by the launcher script
 
 ## Rewrite Quality Standard

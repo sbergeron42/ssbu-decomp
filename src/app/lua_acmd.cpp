@@ -118,6 +118,75 @@ void L2CValue_71037341a0(u32* this_, u64 hash) {
     *reinterpret_cast<u64*>(reinterpret_cast<u8*>(this_) + 8) = hash & 0xFFFFFFFFFFULL;
 }
 
+// String functions (bare metal — no <string.h>)
+extern "C" unsigned long strlen(const char*);
+extern "C" void* memcpy(void* dst, const void* src, unsigned long n);
+
+// lib::L2CValue::L2CValue(const char*) — string constructor
+// 0x71037341c0 (368 bytes)
+// [derived: Ghidra shows SSO string alloc (je_aligned_alloc 0x18) + OOM retry,
+//  then strlen + short/long string construction (libc++ basic_string layout)]
+// SSO layout: short (<0x17): byte[0] = len<<1, data at +1
+//             long: [0]=cap|1, [8]=len, [16]=heap_ptr
+void L2CValue_71037341c0(u32* this_, const char* str) {
+    *this_ = 8;
+    u64* sso = reinterpret_cast<u64*>(je_aligned_alloc(0x10, 0x18));
+    if (sso == nullptr) {
+        if (DAT_7105331f00 != nullptr) {
+            u32 local_44 = 0;
+            u64 local_58 = 0x18;
+            u64 rv = reinterpret_cast<u64 (*)(long*, u32*, u64*)>(
+                *reinterpret_cast<void**>(*DAT_7105331f00 + 0x30)
+            )(DAT_7105331f00, &local_44, &local_58);
+            if ((rv & 1) != 0) {
+                sso = reinterpret_cast<u64*>(je_aligned_alloc(0x10, 0x18));
+                if (sso != nullptr) goto init_string;
+            }
+        }
+        sso = nullptr;
+    }
+init_string:
+    sso[1] = 0;
+    sso[2] = 0;
+    sso[0] = 0;
+    unsigned long len = strlen(str);
+    void* dest;
+    if (len < 0x17) {
+        // Short string: store in-place
+        dest = reinterpret_cast<void*>(reinterpret_cast<u8*>(sso) + 1);
+        *reinterpret_cast<u8*>(sso) = (u8)(len << 1);
+        if (len == 0) goto null_terminate;
+    } else {
+        // Long string: allocate heap buffer
+        u64 cap = (len + 0x10) & 0xFFFFFFFFFFFFFFF0ULL;
+        u64 alloc_size = cap;
+        if (cap == 0) alloc_size = 1;
+        dest = je_aligned_alloc(0x10, alloc_size);
+        if (dest == nullptr) {
+            if (DAT_7105331f00 != nullptr) {
+                u32 local_44b = 0;
+                u64 local_58b = alloc_size;
+                u64 rv2 = reinterpret_cast<u64 (*)(long*, u32*, u64*)>(
+                    *reinterpret_cast<void**>(*DAT_7105331f00 + 0x30)
+                )(DAT_7105331f00, &local_44b, &local_58b);
+                if ((rv2 & 1) != 0) {
+                    dest = je_aligned_alloc(0x10, alloc_size);
+                    if (dest != nullptr) goto store_long;
+                }
+            }
+            dest = nullptr;
+        }
+    store_long:
+        sso[1] = len;
+        sso[2] = reinterpret_cast<u64>(dest);
+        sso[0] = cap | 1;
+    }
+    memcpy(dest, str, len);
+null_terminate:
+    reinterpret_cast<u8*>(dest)[len] = 0;
+    *reinterpret_cast<u64**>(reinterpret_cast<u8*>(this_) + 8) = sso;
+}
+
 // ============================================================
 // SetLuaStateAccessor — copies module pointers from accessor to lua state
 // 0x71003ab220 (364 bytes)
@@ -1415,6 +1484,90 @@ store_and_refcount:
         return;
     }
     *reinterpret_cast<s32*>(ptr) += 1;
+}
+
+// ============================================================
+// L2CValue::operator=(const L2CValue&) — copy assignment
+// 0x7103734330 (356 bytes)
+// [derived: Ghidra shows inlined ~L2CValue + inlined copy ctor, returns this]
+// Phase 1: destroy old value (types 8/6/5 have cleanup)
+// Phase 2: copy from source (type 8 allocates new string, others raw copy + refcount)
+// ============================================================
+
+void* operator_assign_7103734330(u32* this_, const u32* src) {
+    u32 type = *this_;
+    u8* ptr;
+    if (type == 8) goto handle_8;
+    if (type == 6) goto handle_6;
+    if (type != 5) goto phase2;
+    // type 5: table — decrement refcount at +0, cleanup + free if zero
+    ptr = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(this_) + 8);
+    {
+        s32 old = *reinterpret_cast<s32*>(ptr);
+        s32 rc = old - 1;
+        *reinterpret_cast<s32*>(ptr) = rc;
+        if (!ptr || (rc != 0 && old >= 1)) goto phase2;
+    }
+    FUN_7103733900(ptr);
+    goto free_old;
+handle_8:
+    // type 8: free SSO heap buffer if large, then free string struct
+    ptr = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(this_) + 8);
+    if (!ptr) goto phase2;
+    if ((ptr[0] & 1) != 0) {
+        void* heap = *reinterpret_cast<void**>(ptr + 0x10);
+        if (heap) FUN_710392e590(heap);
+    }
+    goto free_old;
+handle_6:
+    // type 6: inner function — decrement refcount at +8, free if zero
+    ptr = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(this_) + 8);
+    {
+        s32 old = *reinterpret_cast<s32*>(ptr + 8);
+        s32 rc = old - 1;
+        *reinterpret_cast<s32*>(ptr + 8) = rc;
+        if (!ptr || (rc != 0 && old >= 1)) goto phase2;
+    }
+free_old:
+    FUN_710392e590(ptr);
+phase2:
+    // Phase 2: Copy from source (inlined copy ctor)
+    type = *reinterpret_cast<const u32*>(src);
+    *this_ = type;
+    u8* new_ptr;
+    if (type != 8) {
+        new_ptr = *reinterpret_cast<u8* const*>(reinterpret_cast<const u8*>(src) + 8);
+        goto store_and_refcount;
+    }
+    // type 8: allocate new string struct + copy
+    new_ptr = reinterpret_cast<u8*>(je_aligned_alloc(0x10, 0x18));
+    if (new_ptr == nullptr) {
+        if (DAT_7105331f00 != nullptr) {
+            u32 local_24 = 0;
+            u64 local_38 = 0x18;
+            u64 rv = reinterpret_cast<u64 (*)(long*, u32*, u64*)>(
+                *reinterpret_cast<void**>(*DAT_7105331f00 + 0x30)
+            )(DAT_7105331f00, &local_24, &local_38);
+            if ((rv & 1) != 0) {
+                new_ptr = reinterpret_cast<u8*>(je_aligned_alloc(0x10, 0x18));
+                if (new_ptr != nullptr) goto do_string_copy;
+            }
+        }
+        new_ptr = nullptr;
+    }
+do_string_copy:
+    _ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEC1ERKS5_(
+        new_ptr, *reinterpret_cast<void* const*>(reinterpret_cast<const u8*>(src) + 8));
+    type = *this_;
+store_and_refcount:
+    *reinterpret_cast<u8**>(reinterpret_cast<u8*>(this_) + 8) = new_ptr;
+    if (type == 6) {
+        new_ptr += 8;
+    } else if (type != 5) {
+        return this_;
+    }
+    *reinterpret_cast<s32*>(new_ptr) += 1;
+    return this_;
 }
 
 // ============================================================

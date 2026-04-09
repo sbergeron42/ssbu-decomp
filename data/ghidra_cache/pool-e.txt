@@ -108,3 +108,38 @@
 ## 0x71037344a0 (116B) — operator bool: switch + string length check — SKIP: jump table
 ## 0x710372db50 (436B) — CallFunctionByHash: hash table lookup + call — SKIP: too complex
 ## 0x7103732a50 (296B) — ipairs: table iteration, copy ctors — SKIP: complex
+
+## Session 3 — 2026-04-09
+
+## 0x7103734330 (356B) — L2CValue::operator=(const L2CValue&) — copy assignment
+# 1. Destroy old value (same as ~L2CValue): type 8→free SSO+string, type 6→decr refcount at+8,
+#    type 5→decr refcount at+0 + FUN_7103733900 cleanup
+# 2. Copy type tag from source
+# 3. If source type!=8: raw copy 8 bytes at +8
+# 4. If source type==8: je_aligned_alloc(0x10, 0x18) + OOM retry + basic_string copy ctor
+# 5. Bump refcount: type 5 at +0, type 6 at +8 (of the copied ptr)
+# 6. Return this
+
+## 0x7103733d50 (328B) — RB tree get-or-insert by Hash40
+# Search tree at param_1+0x28 using Hash40 key masked to 40 bits
+# If found: return node+0x28
+# If not found: alloc 0x38-byte node (OOM retry), store hash at+0x20, type=0 at+0x28,
+#   set left/right to 0, parent to last visited, insert + __tree_balance_after_insert, count++
+# Return node+0x28
+
+## 0x7103734520 (680B) — L2CValue::operator==(const L2CValue&) — equality
+# Same type: 0→true, 1→int==int, 2/7→long==long, 3→float==float,
+#   5→ptr==ptr || metamethod __eq (0x4ea42772d) → as_bool,
+#   8→string length check + SSO-aware byte compare (memcmp or loop)
+# Cross-type: nil vs int/hash→val==0, int/hash↔float→(long)f==int, else false
+
+## 0x7103736660 (224B) — SKIP: mutex-guarded handle assignment (not L2CValue)
+## 0x710372ced0 (128B) — SKIP: wrapper for FUN_710372cf50 with stack args
+## 0x7103720e80 (84B) — SKIP: vector-like reset + FUN_71037220c0 call
+## 0x710372cdf0 (212B) — SKIP: Lua state stack manipulation + hash table ops
+## 0x710372bfa0 (228B) — SKIP: mutex-locked linked list insertion with refcount
+## 0x7103728ac0 (236B) — Lua init: parse --noluaopt/--lua_verify from GetHostArgv
+## 0x710372b900 (336B) — SKIP: destructor with mutex cleanup, linked list freeing
+## 0x710372be40 (340B) — SKIP: linked list search + alloc + vtable setup
+## 0x71037364e0 (380B) — SKIP: vsnprintf sprintf_to_string, SSO alloc
+## 0x71037339f0 (860B) — SKIP: table index access with vector growth + RB tree fallback (too large)
