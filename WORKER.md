@@ -1,60 +1,58 @@
-# Worker: pool-a
+# Worker: pool-e
 
 ## Model: Opus
 
-## Task: Fighter specializer + sv_information/sv_fighter_util readers
+## Task: L2CValue / L2CAgent methods — continue
 
-## Progress (12 functions this session)
-- 6 FighterSpecializer_Reflet functions (all size-matching):
-  - get_final_chrom_pos (76B), set_final_chrom_pos (76B), get_final_chrom_lr (68B)
-  - set_final_chrom_lr (116B), set_final_chrom_joint_rotate (100B), get_magickind (108B)
-  - Pattern: ArticleModule→get_article(5)→posture/model dispatch on Chrom article
-- 3 sv_information FighterInformation readers (all size-matching):
-  - is_dead_up_force_crush (84B), sleep_time_mul (84B), get_dead_up_star_fall_prob (84B)
-  - Pattern: WorkModule→get_int(0x10000000)→FM entries[id]→FI data→field
-- 3 sv_fighter_util FPA2 param readers (all size-matching, LEAF on fast path):
-  - get_default_fighter_param_walk_speed_max (72B), ground_brake (72B), air_brake_x (72B)
-  - Pattern: BattleObject+0x198 kind → FPA2 index table → param entry → field
-- Key patterns: prologue scheduling is only NX divergence, logic matches 100%
+## Progress (all sessions combined)
+- ~65 functions in lua_acmd.cpp covering L2CValue constructors, operators, math wrappers, trig functions, table operations, tree traversal, alloc helpers
+- Small leaf functions (8-124 bytes): most byte-match or are relocation-only mismatches
+- Medium functions (164-368 bytes): typically non-matching due to instruction scheduling (NX Clang prologue divergence)
+- Key patterns established: type tag extraction (7/3/2 check order), SSO string layout, OOM retry, refcount management, RB tree search
 
-## Continue with
-- More FighterInformation readers (same template, different field offsets)
-- More FPA2 param readers (same template, different param offsets)
-- owner_handi (104B), owner_rank (88B) — similar but use FUN_ calls
-- set_on_rebirth (116B), set_dead_rumble (112B) — setters instead of getters
-- More unnamed small functions in 0x71022xxxxx range
+## Latest round (session 3)
+- operator= (0x7103734330, 356B): copy assignment — destroy old + copy from source. 13% match (scheduling diffs).
+- L2CValue(char*) (0x71037341c0, 368B): string constructor with SSO alloc + OOM retry. 8% match.
 
-## Skipped
-- vec2/vec3 math functions (NEON-only, impossible to match without NX compiler)
-- slope/effect/sound/article/cancel/etc 180B sv_module_access (call FUN_71003cb840 private)
-- create_burner_effect, is_ownered_item (Robot specializer, call private FUN_)
+## Remaining targets in L2C range
+- operator== (0x7103734520, 680B) — very complex, many code paths, stretch goal
+- operator! (0x7103734fa0, 132B) — jump table, ~8% match expected (same as as_bool)
+- operator= copy (0x7103734330, done as non-matching)
+- math_min/max (0x71037336b0/750, 160B each) — removed in commit 65240a8 due to binary discrepancy
+- FUN_7103733d50 (328B) — RB tree hash insert (needs __tree_balance_after_insert extern)
+- FUN_71037339f0 (860B) — table index vector growth + RB tree fallback (too large)
+- math_deg/rad (356B each) — construct L2CValues + call operator*, complex
+- L2CTable ctor (268B) — vector alloc + loop init + OOM retry
+
+## BLOCKED / SKIP
+- Jump table functions: operator!, operator bool, as_bool — ldrsw encoding differs
+- Shared_ptr atomics: various camera/stage functions
+- Large functions (>500B): CallFunctionByHash, push_lua_stack, pop_lua_stack, ipairs, to_string
+- Library code: __tree_balance_after_insert (can't match libc++ separately)
 
 ## File Territory
-- src/app/fighter_specializer_reflet.cpp
-- src/app/sv_information_a.cpp
-- src/app/weapon_params_a.cpp (previous sessions)
-- src/app/ai_helpers_a.cpp (previous sessions)
+- src/app/lua_acmd.cpp
 
 ## Quality Rules
 - No naked asm, 3-attempt limit
-- All functions use typed struct access (PostureModule, WorkModule, ArticleModule, ModelModule)
-- Derivation chains documented for every field offset
+- Non-matching functions still committed (structural decomp, not cosmetic renames)
 
 ## Quick Reference
-- Single-file compile: `C:/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -c src/app/FILE.cpp -o build/FILE.o`
+- Single-file compile: `C:/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -Ilib/NintendoSDK/include -Ilib/NintendoSDK/include/stubs -c src/app/lua_acmd.cpp -o build/lua_acmd.o`
 - Compare bytes: `python tools/compare_bytes.py FUNCTION_NAME` (takes function name, NOT address)
 - Full build+verify: `python tools/build.py && python tools/verify_local.py --build` (only after batch is done)
 - Progress: `python tools/progress.py`
+- Use `run_in_background` for any build that takes >10 seconds
 - **WARNING:** Do NOT use `build.bat` — it runs deprecated post-processors that inflate match counts
 
 ## Ghidra Cache
-- Save ALL Ghidra decompilation results to `data/ghidra_cache/pool-a.txt` (NOT /tmp — survives reboots)
+- Save ALL Ghidra decompilation results to `data/ghidra_cache/pool-e.txt` (NOT /tmp — survives reboots)
 - On session start, check if this file exists and read it to recover previous Ghidra work
 - Append new results after each `mcp__ghidra__decompile_function_by_address` call
 
 ## Commit Cadence
 - Commit every 15-20 functions or every 30 minutes, whichever comes first
-- Use descriptive commit messages: `pool-a: decomp MODULE functions (N new, M matching)`
+- Use descriptive commit messages: `pool-e: decomp MODULE functions (N new, M matching)`
 - If session crashes, uncommitted work will be auto-recovered by the launcher script
 
 ## Rewrite Quality Standard
