@@ -2999,6 +2999,48 @@ void set_scale_speed_mul_71015c1d80(void* L, f32 mul) {
 // need proper LinkEvent struct layout investigation. Skipped for now — struct
 // alignment and vtable pointer layout don't match with naive u8[] approach.
 
+// ════════════════════════════════════════════════════════════════════
+// Item field readers — pure leaf functions, chain deref from lua state
+// Pattern: lua[-8]→+0x1a0→+0x190→+0x220→+OFFSET → return u32
+// [derived: Ghidra — item data accessed via module accessor +0x190 (item module)
+//  →+0x220 (item data base). Community-named fields.]
+// ════════════════════════════════════════════════════════════════════
+
+// Helper: get item data base pointer from lua state
+#define ITEM_DATA(L) (*reinterpret_cast<u8**>( \
+    *reinterpret_cast<u8**>( \
+        *reinterpret_cast<u8**>( \
+            *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8) + 0x1a0 \
+        ) + 0x190 \
+    ) + 0x220 \
+))
+
+// 0x71015c1dd0 (24B) — app::item::variation — leaf, returns item variant index
+// [derived: Ghidra — item_data + 0x258 (600 decimal). Also labeled as 'variation' in decompile]
+extern "C" u32 variation_71015c1dd0(void* L) {
+    return *reinterpret_cast<u32*>(ITEM_DATA(L) + 0x258);
+}
+
+// 0x71015c1f40 (24B) — app::item::owner_id — returns ID of owner fighter
+// [derived: Ghidra — item_data + 0x250]
+extern "C" u32 owner_id_71015c1f40(void* L) {
+    return *reinterpret_cast<u32*>(ITEM_DATA(L) + 0x250);
+}
+
+// 0x71015c2060 (28B) — app::item::enable_lost_flashing — stores bool at item_data+0x29f
+// [derived: Ghidra — pure leaf store: *(item_data + 0x29f) = param_2]
+extern "C" void enable_lost_flashing_71015c2060(void* L, bool val) {
+    *(ITEM_DATA(L) + 0x29f) = val;
+}
+
+// 0x71015c1fc0 (28B) — app::item::set_effect_sync_visibility_default
+// [derived: Ghidra — pure leaf store: *(item_data + 0x29b) = param_2]
+extern "C" void set_effect_sync_visibility_default_71015c1fc0(void* L, bool val) {
+    *(ITEM_DATA(L) + 0x29b) = val;
+}
+
+#undef ITEM_DATA
+
 // NOTE: DAISY/DOLL/EXPLOSIONBOMB param functions (0x710165xxxx) need non-hidden
 // FPA2 singleton access (GOT-style double deref). They belong in a separate TU
 

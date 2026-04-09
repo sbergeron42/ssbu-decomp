@@ -1395,6 +1395,15 @@ extern "C" bool is_enable_rocketbelt_eject_710166fc80(u8* acc) {
     return true;
 }
 
+// 0x7102284580 (40B) — app::sv_item::is_boss_stop (same logic as 71015c8bf0, different TU)
+// [derived: Ghidra — identical BossManager singleton check]
+extern "C" bool is_boss_stop_7102284580() {
+    u8* bm = reinterpret_cast<u8*>(DAT_71052b7ef8_bm);
+    if (bm == nullptr) return false;
+    u8* inner = *reinterpret_cast<u8**>(bm + 8);
+    return *reinterpret_cast<s32*>(inner + 0x164) > 0;
+}
+
 #undef BOW_INSTANCE
 #undef SM_INSTANCE
 #undef HIDDEN2
