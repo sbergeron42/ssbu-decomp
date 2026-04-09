@@ -1,40 +1,41 @@
-# Worker: pool-a
+# Worker: pool-b
 
 ## Model: Opus
 
-## Task: Effect template functions — 33 remaining, ~75 KB
+## Task: Fighter core medium functions — continue
 
-## Progress
-- 25/68 done (5 existing + 20 new this session)
-- 4 perfect byte matches: EFFECT_REMOVE_ATTR, EFFECT_OFF_HANDLE, LAST_EFFECT_SET_WORK_INT, EFFECT_OFF (existing)
-- Remaining 16 have known CSE divergence (upstream Clang CSEs DAT_7104861960 loads, ~85-95% of target size)
-- 3 dispatch patterns confirmed: kill_all/kill_kind, req_on_joint, req_follow
-- New patterns: LAST_EFFECT_SET_* family (rate/alpha/scale/color), EFFECT_DETACH_KIND
+## Progress from last session
+- get_fighter_id_from_fighter_kind (3,604B) — 100% match
+- get_entry_in_fighter_param_kind_struct (15,848B) — 78% (ADRP + branch ordering)
+- Hash-to-value switch pattern matches well with Clang 8 binary search tree generation
 
-## Functions implemented this session
-- EFFECT_REMOVE_ATTR (180/180 perfect), EFFECT_OFF_HANDLE (180/180 perfect)
-- EFFECT_OFF_KIND_WORK, EFFECT_FOLLOW_WORK, EFFECT_FOLLOW_VARIATION, EFFECT_ATTR
-- EFFECT_DETACH_KIND, EFFECT_DETACH_KIND_WORK, EFFECT_LIGHT_END
-- LAST_EFFECT_SET_RATE, LAST_EFFECT_SET_RATE_WORK, LAST_EFFECT_SET_ALPHA
-- LAST_EFFECT_SET_DISABLE_SYSTEM_SLOW (280/284), LAST_EFFECT_SET_WORK_INT (212/212 perfect)
-- LAST_EFFECT_SET_SCALE_W, LAST_EFFECT_SET_COLOR
-- EFFECT_FOLLOW_NO_STOP, EFFECT_FOLLOW_arg11, EFFECT_FOLLOW_NO_SCALE
-- EFFECT_FOLLOW_UNSYNC_VIS_WHOLE
+## Progress from current session
+- change_status_lost (108B, 0x71015cb330) — **100% byte match**
+- set_force_flashing (124B, 0x71015c29f0) — **100% byte match**
+- set_bomb_countdown (100B, 0x71015c12a0) — 64% (prologue scheduling only)
+- pos_2d (108B, 0x71015c6c10) — 66% (prologue scheduling only)
+- add_damage (132B, 0x71015c1600) — 66% (prologue scheduling only)
+- Key technique: asm("") barriers prevent vtable caching + tail call, u32 vs u64 for hash constants
 
 ## Continue with
-- EFFECT_FLIP, EFFECT_FOLLOW_FLIP, FOOT_EFFECT_FLIP, LANDING_EFFECT_FLIP (need shared arg parser FUN_7102288620)
-- EFFECT_FLW_POS, EFFECT_FLW_POS_NO_STOP, EFFECT_FLW_POS_UNSYNC_VIS, EFFECT_FLW_UNSYNC_VIS
-- EFFECT_FOLLOW_COLOR, EFFECT_FOLLOW_ALPHA, EFFECT_FOLLOW_RND family
-- EFFECT_FOLLOW_FLIP_*, EFFECT_BRANCH_SITUATION
-- EFFECT_COLOR, EFFECT_COLOR_WORK, EFFECT_ALPHA (need shared arg parser)
-- EFFECT_WORK_R, EFFECT_GLOBAL family
-- LAST_EFFECT_SET_OFFSET_TO_CAMERA_FLAT, LAST_EFFECT_SET_TOP_OFFSET
-- EFFECT_FOLLOW_arg12 (uses jump table via PTR_FUN_7104f68c38)
+- More small item utility functions (100-200B range, vtable-chain pattern)
+- Link event struct layout investigation (send_link_event_disable_clatter etc.)
+- fighter_status.cpp AI functions (smaller, consistent output)
+
+## Skipped (don't retry)
+- save_aura_ball_status — Ghidra can't recover jump table
+- load_fighter — Too complex (mutexes, Mii accessor)
+- NEON intrinsic functions — Can't reproduce from standard C++
+- heal_fighters, chase_fighter, escape_from_fighter — All NEON-heavy (frsqrte/frsqrts)
+- attack_interval_* cluster — app::ai_koopag namespace, outside file territory
+- is_boss_battle etc. — __cxa_guard_acquire + global refs, ADRP mismatch
 
 ## File Territory
-- src/app/sv_animcmd_effect.cpp (continue)
-- src/app/fighter_effects.cpp
+- src/app/fighter_core.cpp (continue)
+- src/app/fighter_status.cpp
+- src/app/fighter_attack.cpp
 
 ## Quality Rules
 - No naked asm
-- 3-attempt limit per function
+- Document derivation chains
+- 3-attempt limit

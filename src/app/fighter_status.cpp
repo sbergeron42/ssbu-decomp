@@ -2799,6 +2799,206 @@ float4 get_hash_71003a4820() {
     return zero;
 }
 
+// ════════════════════════════════════════════════════════════════════
+// Item utility functions — pool-b additions
+// Pure vtable-chain functions (no global references)
+// ════════════════════════════════════════════════════════════════════
+
+// ── 0x71015c12a0 -- app::item::set_bomb_countdown (100B) ─────────
+// [derived: Ghidra FUN_71015c12a0 — lua_State + WorkModule set_int]
+// Writes param_2 to two work int variables (0x10000015, 0x10000016)
+// via WorkModule vtable[0x14] (offset 0xa0 = set_int).
+void set_bomb_countdown_71015c12a0(void* L, s32 param_2) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
+    void* work = *reinterpret_cast<void**>(acc + 0x50);
+    void** vt = *reinterpret_cast<void***>(work);
+    // WorkModule::set_int — vtable[0x14] at +0xa0
+    // [derived: vtable slot confirmed by cross-ref with WorkModule__set_int_impl (.dynsym)]
+    reinterpret_cast<void(*)(void*, s32, u32)>(vt[0x14])(work, param_2, 0x10000015U);
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");  // prevent vtable caching across call
+#endif
+    vt = *reinterpret_cast<void***>(work);
+    reinterpret_cast<void(*)(void*, s32, u32)>(vt[0x14])(work, param_2, 0x10000016U);
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");  // prevent tail call — original uses blr+ret, not br
+#endif
+}
+
+// ── 0x71015c6c10 -- app::target::pos_2d (108B) ──────────────────
+// [derived: Ghidra FUN_71015c6c10 — lua_State + WorkModule get_float]
+// Returns float4{x, y, 0, 0} from WorkModule floats at indices 0xb and 0xc.
+// WorkModule vtable[0x0B] (offset 0x58 = get_float).
+float4 pos_2d_71015c6c10(void* L) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
+    void* work = *reinterpret_cast<void**>(acc + 0x50);
+    void** vt = *reinterpret_cast<void***>(work);
+    // WorkModule::get_float — vtable[0x0B] at +0x58
+    f32 x = reinterpret_cast<f32(*)(void*, s32)>(vt[0x0B])(work, 0xb);
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");  // prevent vtable caching across call
+#endif
+    vt = *reinterpret_cast<void***>(work);
+    f32 y = reinterpret_cast<f32(*)(void*, s32)>(vt[0x0B])(work, 0xc);
+    float4 result = {x, y, 0.0f, 0.0f};
+    return result;
+}
+
+// ── 0x71015cb330 -- app::item_other::change_status_lost (108B) ───
+// [derived: Ghidra FUN_71015cb330 — BattleObject type check + StatusModule]
+// Checks if object is an item (kind >> 28 == 4), gets item data,
+// reads current status via StatusModule vtable[0x22] (+0x110 = get_status_kind),
+// changes to status 6 (lost) via StatusModule vtable[0x09] (+0x48 = change_status).
+void change_status_lost_71015cb330(void* param_1) {
+    if (param_1 == nullptr) return;
+    u32 kind = *reinterpret_cast<u32*>(reinterpret_cast<u8*>(param_1) + 8);
+    if ((kind >> 0x1c) != 4) return;
+
+    // +0x190 → +0x220 = item sub-object
+    // [derived: all item lua_bind functions use this double-deref chain]
+    u8* ptr = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(param_1) + 0x190);
+    u8* item_data = reinterpret_cast<u8*>(*reinterpret_cast<u64*>(ptr + 0x220));
+
+    // StatusModule at item_data + 0xD8
+    // [derived: confirmed by StatusModule dispatch in change_status_lost, Ghidra lVar3+0xd8]
+    void* status_mod = *reinterpret_cast<void**>(item_data + 0xd8);
+    void** vt = *reinterpret_cast<void***>(status_mod);
+
+    // get_status_kind — vtable[0x22] at +0x110
+    s32 status = reinterpret_cast<s32(*)(void*)>(vt[0x22])(status_mod);
+    if (status == 6) return;
+
+    // change_status — vtable[0x09] at +0x48
+    // [derived: binary uses tail call (br x3) here]
+    status_mod = *reinterpret_cast<void**>(item_data + 0xd8);
+    vt = *reinterpret_cast<void***>(status_mod);
+    reinterpret_cast<void(*)(void*, u32, s32)>(vt[0x09])(status_mod, 6, 0);
+}
+
+// ── 0x71015c1600 -- app::item::add_damage (132B) ────────────────
+// [derived: Ghidra FUN_71015c1600 — lua_State + item HP subtract]
+// Reads current HP from module at item_data+0xe8 (get_float index 9),
+// subtracts param_2. If HP <= 0, triggers status event 0x21000002 and clamps to 0.
+// Writes back via set_float (index 9).
+// Module at +0xe8: vtable[0x0B](+0x58)=get_float, vtable[0x0C](+0x60)=set_float,
+//   vtable[0x22](+0x110)=notify_status_event
+void add_damage_71015c1600(void* L, f32 damage) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
+    u8* ptr = *reinterpret_cast<u8**>(acc + 0x190);
+    u8* item_data = reinterpret_cast<u8*>(*reinterpret_cast<u64*>(ptr + 0x220));
+
+    // Module at item_data+0xe8 — used for HP read/write
+    // [derived: Ghidra shows lVar1+0xe8 consistently for item HP operations]
+    void* mod = *reinterpret_cast<void**>(item_data + 0xe8);
+    void** vt = *reinterpret_cast<void***>(mod);
+
+    // get_float(mod, 9) — read current HP
+    f32 hp = reinterpret_cast<f32(*)(void*, s32)>(vt[0x0B])(mod, 9);
+    hp = hp - damage;
+    if (hp <= 0.0f) {
+        // notify_status_event — vtable[0x22] at +0x110
+        mod = *reinterpret_cast<void**>(item_data + 0xe8);
+        vt = *reinterpret_cast<void***>(mod);
+        reinterpret_cast<void(*)(void*, u32)>(vt[0x22])(mod, 0x21000002U);
+        hp = 0.0f;
+    }
+    // set_float(hp, mod, 9) — write back HP
+    // [derived: s0=hp value, x0=module, w1=index; float doesn't consume integer slot in ABI]
+    mod = *reinterpret_cast<void**>(item_data + 0xe8);
+    vt = *reinterpret_cast<void***>(mod);
+    reinterpret_cast<void(*)(f32, void*, s32)>(vt[0x0C])(hp, mod, 9);
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");  // prevent tail call — original uses blr+ret, not br
+#endif
+}
+
+// ── 0x71015c29f0 -- app::item::set_force_flashing (124B) ────────
+// [derived: Ghidra FUN_71015c29f0 — lua_State + item byte field writes]
+// Sets the "force flashing" flag at plVar2[0x12]+0x152, and if transitioning
+// from on→off, resets the flash state and calls vtable[0xa8](+0x540) to disable.
+// plVar2[0x12] is the item's flash/visual state sub-object.
+void set_force_flashing_71015c29f0(void* L, bool enable) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
+    u8* ptr = *reinterpret_cast<u8**>(acc + 0x190);
+    u64* item_data = reinterpret_cast<u64*>(*reinterpret_cast<u64*>(ptr + 0x220));
+
+    // item_data[0x12] = sub-object for flash state
+    // [derived: Ghidra plVar2[0x12] = *(item_data + 0x90)]
+    u8* flash_state = reinterpret_cast<u8*>(item_data[0x12]);
+
+    if (*(flash_state + 0x151) == 0) {
+        char old_val = *(flash_state + 0x152);
+        *(flash_state + 0x152) = enable ? 1 : 0;
+        if (old_val == 0) {
+            return;
+        }
+    } else {
+        *(flash_state + 0x152) = enable ? 1 : 0;
+    }
+
+    flash_state = reinterpret_cast<u8*>(item_data[0x12]);
+    if (*(flash_state + 0x151) == 0 && *(flash_state + 0x152) == 0) {
+        *reinterpret_cast<u16*>(flash_state + 0x150) = 1;
+        *(flash_state + 0x152) = 0;
+        void** vt = *reinterpret_cast<void***>(item_data);
+        // vtable[0xa8] at +0x540 — disable flashing visual
+        reinterpret_cast<void(*)(u64*, u32)>(vt[0xa8])(item_data, 1);
+#ifdef MATCHING_HACK_NX_CLANG
+        asm("");  // prevent tail call — original uses blr+ret with shrink-wrapped frame
+#endif
+    }
+}
+
+// ── 0x71015c4ad0 -- app::item::init_status_data (84B) ───────────
+// [derived: Ghidra FUN_71015c4ad0 — lua_State + StatusModule init_status_data]
+// Gets StatusModule at acc+0x40, calls vtable[0x39] (+0x1c8) with 10 args.
+// Note: param reordering — situation_kind and kinetic_type are swapped in the call.
+void init_status_data_71015c4ad0(void* L, s32 kinetic_type, s32 situation, s32 ground_correct, bool enable) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
+    void* status_mod = *reinterpret_cast<void**>(acc + 0x40);
+    void** vt = *reinterpret_cast<void***>(status_mod);
+    // StatusModule::init_status_data — vtable[0x39] at +0x1c8
+    // [derived: confirmed by parameter count (10) and StatusModule offset (+0x40)]
+    reinterpret_cast<void(*)(void*, s32, s32, s32, s32, bool, s32, s32, s32, s32)>(vt[0x39])(
+        status_mod, situation, kinetic_type, ground_correct, 0, enable, 0, 0, 0, 0);
+}
+
+// ── 0x71015c1d80 -- app::item::set_scale_speed_mul (80B) ────────
+// [derived: Ghidra FUN_71015c1d80 — lua_State + item data write + conditional vtable]
+// Writes scale_speed_mul float at item_data+0x27c, then calls either vtable[0x22]
+// (+0x110, set event) or vtable[0x24] (+0x120, clear event) depending on whether
+// the value equals 1.0. Event hash = 0x20000014.
+void set_scale_speed_mul_71015c1d80(void* L, f32 mul) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
+    u8* ptr = *reinterpret_cast<u8**>(acc + 0x190);
+    u8* item_data = reinterpret_cast<u8*>(*reinterpret_cast<u64*>(ptr + 0x220));
+
+    void* mod = *reinterpret_cast<void**>(item_data + 0xe8);
+    *reinterpret_cast<f32*>(item_data + 0x27c) = mul;
+    void** vt = *reinterpret_cast<void***>(mod);
+
+    void(*fn)(void*, u32);
+    if (mul == 1.0f) {
+        fn = reinterpret_cast<void(*)(void*, u32)>(vt[0x24]);  // clear event
+    } else {
+        fn = reinterpret_cast<void(*)(void*, u32)>(vt[0x22]);  // set event
+    }
+    fn(mod, 0x20000014U);
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");  // prevent tail call — original uses blr+ret
+#endif
+}
+
+// NOTE: Link event functions (send_link_event_disable_clatter, send_catch_cut_event)
+// need proper LinkEvent struct layout investigation. Skipped for now — struct
+// alignment and vtable pointer layout don't match with naive u8[] approach.
+
 // NOTE: DAISY/DOLL/EXPLOSIONBOMB param functions (0x710165xxxx) need non-hidden
 // FPA2 singleton access (GOT-style double deref). They belong in a separate TU
 // where DAT_71052bb3b0 is declared without __attribute__((visibility("hidden"))).
