@@ -15,17 +15,24 @@
 - NEW: L2CValue constructors: int, uint, L2CTable*, L2CInnerFunctionBase*, Hash40 (5 funcs, all PERFECT MATCH)
 - NEW: ~L2CValue destructor (codegen diff: tail merge saves 1 insn, 40/41)
 - NEW: operator< and operator<= (codegen diff: block layout differs, 43/43 instructions each)
+- NEW: Bitwise binary operators: &, |, ^, <<, >> (5 funcs, all PERFECT MATCH 100%)
+- NEW: math_atan (relocation-only diff, 34/35)
+- NEW: operator/ division (relocation-only diff, 41/42)
+- NEW: math_log (prologue scheduling diff, 37/46 — body matches)
+- NEW: FUN_71037347d0 metamethod dispatch declared as extern
 
 ## Continue with
-- as_bool / operator_cast_to_bool need ldrsw jump table (NX Clang uses 32-bit offsets, upstream uses byte)
-- sort_71037301b0 has extra mov x0,x8 in target (52B vs our 48B)
+- operator== (0x7103734520, 680 bytes) — complex equality, multiple type paths
 - copy ctor 0x7103733fe0 (OOM retry pattern, complex)
-- operator== and other comparison operators
+- operator= assignment (0x7103734330, 356 bytes)
+- math_min/max (160 bytes each) — copy ctor tail call
+- length (136 bytes) — SSO string + table
 - Medium Item functions if time permits
 
 ## Blocked (don't retry)
 - NEON ItemKinetic functions, pop_lua_stack, ItemManager ctor, item_generate_position_in_rect
 - as_bool / operator_cast_to_bool (jump table format: upstream ldrb vs NX ldrsw)
+- operator- binary, operator* (12% match — metamethod tail call codegen doesn't match)
 
 ## File Territory
 - src/app/lua_acmd.cpp, weapon_params.cpp, ItemKinetic.cpp, ItemHelpers.cpp

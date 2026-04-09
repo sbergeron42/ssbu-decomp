@@ -1,0 +1,30 @@
+# Ghidra Cache — Pool E
+# Session: 2026-04-09 (updated)
+
+## Bitwise Operators (all 120 bytes, 31 insns, leaf, struct return)
+# Pattern: extract both as integer (7/3/2 check order), apply op, return {2, result}
+# Extraction: cmp 7→b.eq raw, cmp 3→b.eq fcvtzs, cmp 2→b.ne default, raw: ldr, float: ldr+fcvtzs, default: mov xzr
+## 0x7103735b00 — operator& → and x9,x10,x9
+## 0x7103735b80 — operator| → orr x9,x10,x9
+## 0x7103735c00 — operator^ → eor x9,x10,x9
+## 0x7103735c80 — operator<< → lsl x9,x9,x10
+## 0x7103735d00 — operator>> → asr x9,x9,x10
+
+## 0x7103733000 — math_atan (140 bytes, non-leaf, calls atan2f)
+# Prologue: str x19,[sp,#-0x20]!, stp x29/x30, add x29,sp,#0x10, mov x19,x8
+# Extract p1 into s0, p2 into s1 (same 7/3/2 pattern, float version)
+# s1 initialized to 0.0 early (fmov s1,wzr), p1 default copies from s1 (mov v0.16b,v1.16b)
+# bl atan2f, store {3, s0} to [x19]
+
+## BLOCKED
+# operator! (0x7103734fa0) — ldrsw jump table
+# operator- unary (0x7103734d20) — table metatable + OOM retry
+# operator+/- binary/*/div — table dispatch tail call (struct return + b FUN_71037347d0)
+# math_deg/rad — constructs L2CValues, calls operator*
+# L2CValue(char*) — OOM retry + SSO alloc
+
+## SKIPPED (complex, attempt later)
+# operator% (0x7103735920) — integer sdiv/msub + float fmodf, Python-style sign
+# math_fmod (0x7103733180) — integer + float paths
+# math_log (0x7103733310) — log10f special case + logf/logf/divide
+# math_min/max — tail-call to copy ctor
