@@ -9,10 +9,24 @@
 - Large constructors/destructors have NX codegen divergence (constant-store ordering)
 - verify_local.py only processes lua_bind names — extern "C" not auto-verified
 
+## This session's progress
+- 16 new functions added to camera_functions.cpp (~1.1 KB total)
+  - 4 pickelobject camera_range_damag_mul getters (32B each) — likely match
+  - get_camera_range_center_pos (72B) — likely match
+  - get_camera_subject_range (100B) — matches expected disasm
+  - camera_sleep (104B) — matches (orr→movz via fix_orr_movz.py)
+  - app::camera::get_camera_range (114B) — near-match (register allocation diff)
+  - set_dead_up_camera_hit_vis_change (80B) — matches
+  - get_dead_up_camera_hit_prob (84B) — matches
+  - entry_to_stage (88B) — near-match (instruction reordering)
+  - 5 boss energy wrappers (56-60B each) — near-match (minor instruction ordering)
+
 ## Continue with
-- Camera param functions: set_camera_param (2,344B), set_pause_camera_param (3,996B), CHECK_VALID_START_CAMERA (2,812B)
-- Stage destructors: ~StageWufuIsland (2,700B), ~~StageBase (2,572B)
-- More stage leaf functions in StageManager.cpp
+- ~StageWufuIsland destructor (2,700B) — complex, 5 event listener unregistrations + many field frees
+- ~~StageBase destructor (2,572B) — complex, red-black tree traversal, effect cleanup
+- set_camera_param (2,344B) — complex param lookup with binary search
+- set_pause_camera_param (3,996B) — even more complex
+- CHECK_VALID_START_CAMERA (2,812B) — complex param lookup
 
 ## Skipped (don't retry)
 - create_stage (114,600B) — too large
