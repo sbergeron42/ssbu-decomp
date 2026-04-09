@@ -280,6 +280,104 @@ void get_hp_71015c2020(void* item) {
 extern "C" void FUN_71015b8290(void*);
 extern "C" void FUN_71015b8600(void*);
 
+// ============================================================
+// Accessor chain → +0x90 sub-object → call (40B)
+// ============================================================
+
+extern "C" void FUN_71015b8970(void*);
+extern "C" void FUN_71015b8a50(void*);
+
+// 71015c95a0 — get_action_probability_mul (40B)
+void get_action_probability_mul_71015c95a0(void* item) {
+    u8* obj = reinterpret_cast<u8*>(item_trampoline_field(item));
+    FUN_71015b8970(*reinterpret_cast<void**>(obj + 0x90));
+    asm volatile("");
+}
+
+// 71015c95d0 — get_action_probability_mul_2nd (40B)
+void get_action_probability_mul_2nd_71015c95d0(void* item) {
+    u8* obj = reinterpret_cast<u8*>(item_trampoline_field(item));
+    FUN_71015b8a50(*reinterpret_cast<void**>(obj + 0x90));
+    asm volatile("");
+}
+
+// ============================================================
+// Accessor chain → +0x220, bool mask, call (40B)
+// ============================================================
+
+extern "C" void FUN_71015ac050(void*, u32, u32);
+
+// 71015c4aa0 — remove_model_constraint (40B)
+void remove_model_constraint_71015c4aa0(void* item, u32 p1, u32 flag) {
+    FUN_71015ac050(item_trampoline_field(item), p1, flag & 1);
+    asm volatile("");
+}
+
+// ============================================================
+// Deep chain → +0xe8 vtable[0x98/8] with hash (56B)
+// ============================================================
+
+// 71015c26e0 — have_count: item→+0x1a0→+0x190→+0x220→+0xe8, vt[0x98/8](sub, 0x10002d) (56B)
+void have_count_71015c26e0(void* item) {
+    u8* obj = reinterpret_cast<u8*>(item_trampoline_field(item));
+    void* sub = *reinterpret_cast<void**>(obj + 0xe8);
+    reinterpret_cast<void(*)(void*, u32)>(VT(sub)[0x98/8])(sub, 0x10002du);
+    asm volatile("");
+}
+
+// ============================================================
+// Conditional flag clear + global counter decrement (60B, leaf)
+// ============================================================
+
+extern "C" __attribute__((visibility("hidden"))) void* DAT_71052b7f00;
+
+// 71015c49b0 — set_disabled_camera_user_operation (60B, leaf)
+void set_disabled_camera_user_operation_71015c49b0(void* item) {
+    u8* obj = reinterpret_cast<u8*>(item_trampoline_field(item));
+    u8* sub = *reinterpret_cast<u8**>(obj + 0x90);
+    if (sub[0x168] == 0) return;
+    sub[0x168] = 0;
+    u8* global = *reinterpret_cast<u8**>(DAT_71052b7f00);
+    u32 count = *reinterpret_cast<u32*>(global + 0xc9c);
+    *reinterpret_cast<u32*>(global + 0xc9c) = count - 1;
+}
+
+// ============================================================
+// Bounds-guarded getter (52B)
+// ============================================================
+
+extern "C" u64 FUN_71015b4e40(void*, u32);
+
+// 71015c4e40 — property_param_int: if w1 >= 3 return 0, else call (52B)
+u64 property_param_int_71015c4e40(void* item, u32 param_id) {
+    if (param_id < 3) return 0;
+    return FUN_71015b4e40(item_trampoline_field(item), param_id);
+}
+
+// ============================================================
+// Indexed array lookups (common_param style, leaf)
+// ============================================================
+
+// 71015c4d40 — common_param_float: global table[idx*0x284 + w1*4 + 0x3908] (52B, leaf)
+f32 common_param_float_71015c4d40(void* item, u32 param_id) {
+    u8* acc = item_accessor(item);
+    u8* p3 = *reinterpret_cast<u8**>(*reinterpret_cast<u8**>(acc + 0x190) + 0x220);
+    s32 idx = *reinterpret_cast<s32*>(p3 + 0xc);
+    u8* base = *reinterpret_cast<u8**>(DAT_71052c31e0);
+    u8* entry = base + (u64)(u32)idx * 0x284 + (u64)param_id * 4;
+    return *reinterpret_cast<f32*>(entry + 0x3908);
+}
+
+// 71015c4d80 — common_param_int: global table[idx*0xac + w1*4 + 0x477c8] (60B, leaf)
+u32 common_param_int_71015c4d80(void* item, u32 param_id) {
+    u8* acc = item_accessor(item);
+    u8* p3 = *reinterpret_cast<u8**>(*reinterpret_cast<u8**>(acc + 0x190) + 0x220);
+    s32 idx = *reinterpret_cast<s32*>(p3 + 0xc);
+    u8* base = *reinterpret_cast<u8**>(DAT_71052c31e0);
+    u8* entry = base + (u64)(u32)idx * 0xac + (u64)param_id * 4;
+    return *reinterpret_cast<u32*>(entry + 0x477c8);
+}
+
 // 71015c9540 — set_action_probability_mul: if (s0 >= 0) call (44B)
 void set_action_probability_mul_71015c9540(void* item, f32 val) {
     if (val < 0.0f) return;
