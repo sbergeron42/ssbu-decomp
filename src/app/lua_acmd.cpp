@@ -226,6 +226,23 @@ const char* as_string_7103735ff0(u32* this_) {
 }
 
 // ============================================================
+// operator[] — L2CValue table index access (shrink-wrapped)
+// 0x7103735d80 (48 bytes)
+// Prologue is inside the type==5 branch (compiler shrink-wraps)
+// ============================================================
+
+extern "C" void* FUN_71037339f0(void*, int);
+extern "C" __attribute__((visibility("hidden"))) u8 DAT_710593a3a8;
+
+void* operator_index_7103735d80(u32* this_, int index) {
+    if (*this_ != 5) return &DAT_710593a3a8;
+    void* table = *reinterpret_cast<void**>(reinterpret_cast<u8*>(this_) + 8);
+    void* result = FUN_71037339f0(table, index);
+    asm volatile("");
+    return result;
+}
+
+// ============================================================
 // sort — wrapper for L2CAgent lua sort
 // 0x710372e9f0 (32 bytes)
 // ============================================================
