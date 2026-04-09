@@ -145,3 +145,52 @@ Address: 0x710317b3f0, Size: 320B
 - Check team flags (DAT_71052c41ba, DAT_71052c41bb, DAT_71052c45b4, DAT_71052c41b8)
 - Toggle param_2[2] flag and linked entries at param_2[0]+0x78, param_2[1]+0x78
 - Tail-calls FUN_710317b530 on both entries
+
+# Session: 2026-04-09 (batch hard-d-030/031) — effect cleanup, destructors, optnone wrappers
+
+== FUN_7100228110 — malloc dispatch hook (32B, -O2) ==
+ALREADY DECOMPED in camera_functions.cpp. Hook: DAT_71052b4450 → malloc fallback.
+
+== FUN_7100228130 — free dispatch hook (32B, -O2) ==
+ALREADY DECOMPED in camera_functions.cpp. Hook: DAT_71052b4458 → free fallback.
+
+== FUN_7101958da0 — effect cleanup, chain +0x58→+0x180→+0x80→+0x50 (96B, -O2) ==
+Chains through module accessor, calls FUN_71037759f0 on dereferenced handle.
+Looks up effect by hash via FUN_710330a4a0(DAT_710532e8b8+8, &DAT_7104544980).
+If found: FUN_7103563720(*EffectManager::instance_, result).
+Tail-calls FUN_71032e5640(DAT_710532e7c8).
+NON-MATCHING: 100B compiled vs 96B binary (1 extra instruction from EffectManager scheduling).
+
+== FUN_710195f150 — effect cleanup, chain +0x58→+0x170→+0x80→+0x50 (96B, -O2) ==
+Same as FUN_7101958da0 but offset +0x170 instead of +0x180.
+NON-MATCHING: same scheduling issue.
+
+== FUN_7101b799b0 — destructor: reset vtable, cleanup sub-objects, free self (80B, -O2) ==
+Sets vtable to PTR_LAB_71050655e0, nulls field +0x8.
+If sub-object: moves inner (+0x8) to cleanup slot (+0x10), frees inner, frees sub.
+Tail-calls FUN_710392e590(self).
+RELOCATION-ONLY MATCH: 74% (14/19 words, all diffs are ADRP/BL/B relocations).
+
+== FUN_7103600360 — __shared_weak_count destructor (80B, -O2) ==
+Sets vtable to PTR_FUN_7105232ae8, nulls field +0x18.
+If sub: FUN_7103607270(sub) + FUN_710392e590(sub).
+Tail-calls FUN_71039c2140(self).
+RELOCATION-ONLY MATCH: 72% (13/18 words, all diffs are relocations).
+
+== FUN_7103609340 — __shared_weak_count destructor variant (80B, -O2) ==
+Same as FUN_7103600360, vtable = PTR_FUN_7105232cf8.
+RELOCATION-ONLY MATCH: 72%.
+
+== FUN_7103946160 — jemalloc background_thread check (80B, -O2) ==
+Checks DAT_7106dd3f1d == 1, prints pthread warning.
+TOTAL MISMATCH: binary uses shrink-wrapped prologue (str x19 before stp x29/x30).
+
+== 0x71039500 cluster — optnone wrappers (48-96B each, -O0) ==
+Simple thunks: FUN_7103950670, 71039513b0, 7103951400, 71039514f0, 7103951bd0,
+  7103951c50, 7103951ca0, 7103951cf0, 7103951db0, 7103953360, 7103953420,
+  7103957aa0, 7103957c40, 7103958710
+Logic: FUN_7103950a80, 7103950ae0, 7103950e50, 7103951170, 7103951e00,
+  71039526e0, 7103952890, 71039533e0, 7103953eb0, 7103957bf0, 7103957cc0,
+  7103957d90, 7103958650, 710395b690
+NON-MATCHING: binary has 2 extra `b .+4` NOP-branches per wrapper (8 bytes)
+that optnone doesn't reproduce. Frame sizes also differ for logic functions.
