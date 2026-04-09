@@ -427,16 +427,16 @@ u64 FUN_7102222280(u8* L) {
     u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
     app::KineticModule* kinetic = reinterpret_cast<app::KineticModule*>(
         *reinterpret_cast<void**>(acc + 0x68));
-    u8* energy = reinterpret_cast<u8*>(kinetic->get_energy(3));
+    app::KineticEnergy* energy = kinetic->get_energy(3);
 
-    u32 val0 = *reinterpret_cast<u32*>(energy + 0x40);
+    u32 val0 = *reinterpret_cast<u32*>(&energy->accel_x);
     u32* stack = *reinterpret_cast<u32**>(L + 0x10);
     stack[2] = 3;
     stack[0] = val0;
 
     u64 sp = *reinterpret_cast<u64*>(L + 0x10);
     *reinterpret_cast<u64*>(L + 0x10) = sp + 0x10;
-    *reinterpret_cast<u32*>(sp + 0x10) = *reinterpret_cast<u32*>(energy + 0x44);
+    *reinterpret_cast<u32*>(sp + 0x10) = *reinterpret_cast<u32*>(&energy->accel_y);
     *reinterpret_cast<u32*>(sp + 0x18) = 3;
     *reinterpret_cast<u64*>(L + 0x10) += 0x10;
     return 2;
@@ -450,16 +450,16 @@ u64 FUN_7102222300(u8* L) {
     u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
     app::KineticModule* kinetic = reinterpret_cast<app::KineticModule*>(
         *reinterpret_cast<void**>(acc + 0x68));
-    u8* energy = reinterpret_cast<u8*>(kinetic->get_energy(3));
+    app::KineticEnergy* energy = kinetic->get_energy(3);
 
-    u32 val0 = *reinterpret_cast<u32*>(energy + 0x50);
+    u32 val0 = *reinterpret_cast<u32*>(&energy->brake_x);
     u32* stack = *reinterpret_cast<u32**>(L + 0x10);
     stack[2] = 3;
     stack[0] = val0;
 
     u64 sp = *reinterpret_cast<u64*>(L + 0x10);
     *reinterpret_cast<u64*>(L + 0x10) = sp + 0x10;
-    *reinterpret_cast<u32*>(sp + 0x10) = *reinterpret_cast<u32*>(energy + 0x54);
+    *reinterpret_cast<u32*>(sp + 0x10) = *reinterpret_cast<u32*>(&energy->brake_y);
     *reinterpret_cast<u32*>(sp + 0x18) = 3;
     *reinterpret_cast<u64*>(L + 0x10) += 0x10;
     return 2;
@@ -473,16 +473,16 @@ u64 FUN_7102222380(u8* L) {
     u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
     app::KineticModule* kinetic = reinterpret_cast<app::KineticModule*>(
         *reinterpret_cast<void**>(acc + 0x68));
-    u8* energy = reinterpret_cast<u8*>(kinetic->get_energy(3));
+    app::KineticEnergy* energy = kinetic->get_energy(3);
 
-    u32 val0 = *reinterpret_cast<u32*>(energy + 0x60);
+    u32 val0 = *reinterpret_cast<u32*>(&energy->stable_speed_x);
     u32* stack = *reinterpret_cast<u32**>(L + 0x10);
     stack[2] = 3;
     stack[0] = val0;
 
     u64 sp = *reinterpret_cast<u64*>(L + 0x10);
     *reinterpret_cast<u64*>(L + 0x10) = sp + 0x10;
-    *reinterpret_cast<u32*>(sp + 0x10) = *reinterpret_cast<u32*>(energy + 0x64);
+    *reinterpret_cast<u32*>(sp + 0x10) = *reinterpret_cast<u32*>(&energy->stable_speed_y);
     *reinterpret_cast<u32*>(sp + 0x18) = 3;
     *reinterpret_cast<u64*>(L + 0x10) += 0x10;
     return 2;
@@ -496,16 +496,16 @@ u64 FUN_7102222400(u8* L) {
     u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
     app::KineticModule* kinetic = reinterpret_cast<app::KineticModule*>(
         *reinterpret_cast<void**>(acc + 0x68));
-    u8* energy = reinterpret_cast<u8*>(kinetic->get_energy(3));
+    app::KineticEnergy* energy = kinetic->get_energy(3);
 
-    u32 val0 = *reinterpret_cast<u32*>(energy + 0x70);
+    u32 val0 = *reinterpret_cast<u32*>(&energy->limit_speed_x);
     u32* stack = *reinterpret_cast<u32**>(L + 0x10);
     stack[2] = 3;
     stack[0] = val0;
 
     u64 sp = *reinterpret_cast<u64*>(L + 0x10);
     *reinterpret_cast<u64*>(L + 0x10) = sp + 0x10;
-    *reinterpret_cast<u32*>(sp + 0x10) = *reinterpret_cast<u32*>(energy + 0x74);
+    *reinterpret_cast<u32*>(sp + 0x10) = *reinterpret_cast<u32*>(&energy->limit_speed_y);
     *reinterpret_cast<u32*>(sp + 0x18) = 3;
     *reinterpret_cast<u64*>(L + 0x10) += 0x10;
     return 2;

@@ -1,6 +1,7 @@
 #include "types.h"
 #include "app/BattleObjectModuleAccessor.h"
 #include "app/modules/WorkModule.h"
+#include "app/FighterInformation.h"
 
 // Batch decompiled via Ghidra MCP -- pool-b, batch 026
 // sv_information / sv_fighter_util functions — FighterInformation field readers
@@ -44,8 +45,8 @@ u8 FUN_710227ed00(u8* L) {
     if (id < 8) {
         u8* fm = FM_DATA;
         u8* entry = *reinterpret_cast<u8**>(fm + (long)(s32)id * 8 + 0x20);
-        u8* fi = *reinterpret_cast<u8**>(entry + 0xf8);
-        return *(fi + 0x6e);
+        app::FighterInformationData* fi = *reinterpret_cast<app::FighterInformationData**>(entry + 0xf8);
+        return fi->dead_up_force_crush;
     }
     abort();
 }
@@ -61,8 +62,8 @@ u32 FUN_710227ef00(u8* L) {
     if (id < 8) {
         u8* fm = FM_DATA;
         u8* entry = *reinterpret_cast<u8**>(fm + (long)(s32)id * 8 + 0x20);
-        u8* fi = *reinterpret_cast<u8**>(entry + 0xf8);
-        return *reinterpret_cast<u32*>(fi + 900);
+        app::FighterInformationData* fi = *reinterpret_cast<app::FighterInformationData**>(entry + 0xf8);
+        return fi->sleep_time_mul;
     }
     abort();
 }
@@ -78,8 +79,8 @@ u32 FUN_7102281890(u8* L) {
     if (id < 8) {
         u8* fm = FM_DATA;
         u8* entry = *reinterpret_cast<u8**>(fm + (long)(s32)id * 8 + 0x20);
-        u8* fi = *reinterpret_cast<u8**>(entry + 0xf8);
-        return *reinterpret_cast<u32*>(fi + 0x7c);
+        app::FighterInformationData* fi = *reinterpret_cast<app::FighterInformationData**>(entry + 0xf8);
+        return fi->star_fall_prob;
     }
     abort();
 }
@@ -113,8 +114,8 @@ u32 FUN_710227ee30(u8* L) {
     u8* fm = FM_DATA;
     if (*(fm + 0xcd) != 0) {
         u8* entry = *reinterpret_cast<u8**>(fm + (long)(s32)id * 8 + 0x20);
-        u8* fi = *reinterpret_cast<u8**>(entry + 0xf8);
-        return *reinterpret_cast<u32*>(fi + 0x370);
+        app::FighterInformationData* fi = *reinterpret_cast<app::FighterInformationData**>(entry + 0xf8);
+        return fi->handi;
     }
     return 0;
 }
@@ -130,10 +131,10 @@ void FUN_71022819a0(u8* L, u8 param_2) {
     if (id < 8) {
         u8* fm = FM_DATA;
         u8* entry = *reinterpret_cast<u8**>(fm + (long)(s32)id * 8 + 0x20);
-        u8* fi = *reinterpret_cast<u8**>(entry + 0xf8);
-        *(fi + 0x38c) = param_2;
-        if (*(fi + 0x38c) == 0) {
-            *(fi + 0xa42) = 0;
+        app::FighterInformationData* fi = *reinterpret_cast<app::FighterInformationData**>(entry + 0xf8);
+        fi->on_rebirth = param_2;
+        if (!fi->on_rebirth) {
+            *reinterpret_cast<u8*>(reinterpret_cast<u8*>(fi) + 0xa42) = 0;
         }
         return;
     }

@@ -147,6 +147,22 @@ struct KineticEnergy {
     u8 _rotation[0x10];       // +0x20 [derived: KineticEnergy__get_rotation_impl at 0x71020f64c0 returns &this+0x20]
     u8 enabled;               // +0x30 [derived: enable_impl writes 1, unable_impl writes 0, is_enable_impl reads]
     u8 field_0x31_u8;         // +0x31 [inferred: set/cleared alongside enabled in 40+ lua_bind functions]
+    u8 _unk_0x32[0x0E];       // +0x32 to +0x3F (unknown padding)
+
+    // Speed/physics vectors — each is an {x, y} pair of f32
+    // [derived: sv_kinetic_energy lua_bind readers at 0x7102222280-0x7102222400
+    //  read these fields directly from KineticEnergy* returned by get_energy()]
+    f32 accel_x;              // +0x40 [derived: FUN_7102222280 (get_energy3_accel_xy) reads +0x40]
+    f32 accel_y;              // +0x44 [derived: FUN_7102222280 reads +0x44]
+    u8 _unk_0x48[0x08];       // +0x48 to +0x4F (unknown)
+    f32 brake_x;              // +0x50 [derived: FUN_7102222300 (get_energy3_brake_xy) reads +0x50]
+    f32 brake_y;              // +0x54 [derived: FUN_7102222300 reads +0x54]
+    u8 _unk_0x58[0x08];       // +0x58 to +0x5F (unknown)
+    f32 stable_speed_x;       // +0x60 [derived: FUN_7102222380 (get_energy3_stable_speed_xy) reads +0x60]
+    f32 stable_speed_y;       // +0x64 [derived: FUN_7102222380 reads +0x64]
+    u8 _unk_0x68[0x08];       // +0x68 to +0x6F (unknown)
+    f32 limit_speed_x;        // +0x70 [derived: FUN_7102222400 (get_energy3_limit_speed_xy) reads +0x70]
+    f32 limit_speed_y;        // +0x74 [derived: FUN_7102222400 reads +0x74]
 };
 
 } // namespace app
