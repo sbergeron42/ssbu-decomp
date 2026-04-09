@@ -2,62 +2,57 @@
 
 ## Model: Opus
 
-## Task: Phase 1 — WorkModule typed wrapper adoption
+## Task: Phase 2 — Rewrite res_pipeline_medium.cpp with typed struct access
 
-## Priority: QUALITY REFACTOR (not new decomp)
+## Priority: QUALITY REWRITE (not new decomp)
 
 ## Context
-The `BattleObjectModuleAccessor` fields are now typed (`WorkModule*` not `void*`).
-A code reviewer (`tools/review_diff.py`) now gates all merges.
-Your job is to replace raw vtable dispatch with typed method wrappers.
+This file is 1,876 lines of Ghidra paste with 1,378 default variable names. It compiles but has zero verified matches and zero structural value. Your job is to rewrite it using the existing resource service types in `include/resource/`.
 
 ## File Territory
-- `src/app/modules/WorkModule.cpp` (49 raw VT calls to convert)
-- `src/app/fighter_status.cpp` (WorkModule VT calls only)
-- `src/app/fighter_effects.cpp` (WorkModule VT calls only)
-- `src/app/fun_typed_e_004.cpp`
-- `src/app/fun_typed_b_002.cpp`
-- `src/app/fun_batch_c2_018.cpp`
-- `src/app/fun_batch_b_025.cpp` (your pending code — fix REJECT violations)
-- `src/app/fun_batch_b_026.cpp` (your pending code — fix REJECT violations)
+- `src/resource/res_pipeline_medium.cpp` (REWRITE)
+- `include/resource/` (extend existing headers as needed)
 
-## Step 1: Fix your own pending REJECT violations
-Your diff scored 30/100. Fix the 11 STRUCT_REQUIRED and 17 USE_VTABLE_WRAPPERS issues in fun_batch_b_025.cpp and fun_batch_b_026.cpp FIRST. Replace `VT(work)[0x98/8]` with `acc->work_module->get_int(...)` etc.
+## Available Struct Headers
+- `include/resource/ResServiceNX.h` — resource service singleton, file loading
+- `include/resource/LoadedArc.h` — ARC archive structures (ARCropolis-derived names)
+- `include/resource/PathResolver.h` — filepath/directory handle resolution
+- `include/resource/containers.h` — FixedString, vector-like containers
+- `include/resource/FixedString.h` — FixedString<N> template
+- `include/resource/Fiber.h` — fiber/coroutine context
+- `include/resource/LZ4Frame.h` — LZ4 frame decompression
 
-## Step 2: Convert WorkModule.cpp
-Add `#include "app/modules/WorkModule.h"`. Replace all 49 `VT(m)[slot]` dispatches with typed `m->method()` calls.
+## What To Do
 
-## Step 3: Convert consumer files
-For each file in territory, replace:
-```cpp
-// BEFORE:
-u8* work = reinterpret_cast<u8*>(acc->work_module);
-u32 val = reinterpret_cast<u32(*)(u8*, u32)>(VT(work)[0x98/8])(work, 0x10000000);
+### Step 1: Read and understand the existing headers
+Read ALL headers in `include/resource/` first. Understand what types are already available before touching the source.
 
-// AFTER:
-u32 val = acc->work_module->get_int(0x10000000);
-```
+### Step 2: Identify the functions
+The file has ~50-80 functions. For each one:
+1. Read the Ghidra paste version
+2. Identify which struct types are being accessed (by offset patterns)
+3. Rewrite using struct field access from the headers
+4. If a needed struct doesn't exist, define it in the appropriate header with `unk_0xNN` for unknown fields
 
-## Key vtable slot -> method mapping
-| Slot | Method |
-|------|--------|
-| 0x58/8 | `get_float` |
-| 0x98/8 | `get_int` |
-| 0xa0/8 | `set_int` |
-| 0x108/8 | `is_flag` |
-| 0x110/8 | `on_flag` |
-| 0x118/8 | `off_flag` |
-| 0x1d0/8 | `enable_transition_term` |
-| 0x1d8/8 | `unable_transition_term` |
-| 0x1e8/8 | `is_enable_transition_term` |
+### Step 3: Rename Ghidra variables
+After struct access is in place, rename `uVar1`, `lVar2` etc. to meaningful names.
 
-See `include/app/modules/WorkModule.h` for the complete list.
+### Step 4: Delete functions you can't properly type
+If a function is too opaque to rewrite with struct access (no recognizable patterns), DELETE it rather than keeping the paste. An honest gap is better than fake progress.
+
+## Rules
+- **Every named field needs a `[derived:]` or `[inferred:]` comment**
+- **Use ARCropolis community names** where available (tag with `[derived: ARCropolis]`)
+- **0xFFFFFF sentinel** = invalid index, use named constant
+- **OOM retry pattern**: `alloc(); if (!ptr && handler) { handler->retry(); alloc(); }` — factor into helper
+- **NO Ghidra variable names** in final code (uVar, lVar, plVar = auto-REJECT)
+- **NO raw vtable dispatch** — use typed wrappers or add them to headers
 
 ## Self-Check (MANDATORY before committing)
 ```bash
 python tools/review_diff.py pool-b
 ```
-Must score 50+ with zero REJECT violations. The orchestrator WILL reject your diff otherwise.
+Must have zero REJECT violations. The reviewer now rejects raw vtable dispatch too.
 
 ## Build
 ```bash
