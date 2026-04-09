@@ -28,6 +28,9 @@ struct L2CValue {
         void* ptr_val;  // type==4: pointer, type==5: table*, type==6/8: string*
         u32 bool_val;   // type==1: boolean (val & 1)
     };              // +0x08
+
+    L2CValue() = default;
+    L2CValue(const L2CValue&);  // [derived: copy ctor at 0x7103733fe0, non-trivial — forces x8 return ABI]
 };
 static_assert(sizeof(L2CValue) == 0x10, "L2CValue size mismatch");
 
