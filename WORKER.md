@@ -1,25 +1,25 @@
-# Worker: pool-d
+# Worker: pool-e
 
 ## Model: Opus
 
-## Task: Game core + params — continue
+## Task: Item/weapon + Lua — continue
 
 ## Progress
-- populate_parameters_for_hash40 (13,536B) — compiled, N-quality (85% size match)
-- 6 prior functions: apply_lift_param, sub_rage_system, get_magic_ball_param, UpdateParams, global_param_init_sets_team_flag, nnMain
-- Ghidra size mislabeling found on 2 functions
+- ~30 functions: ItemKinetic (7), ItemHelpers (16), lua_acmd (7)
+- L2CValue accessors, ldrsw codegen fix, energy forwarders
 
 ## Continue with
-- read_file (17,488B) — 20 versioned deserialization sections, hard but attempt it
-- Look for more medium param functions
-- Any game core functions reachable from nnMain
+- More L2C functions in 0x71037xxx range (math_toint, etc.)
+- Medium Item functions 100-300B (accessor chain patterns)
+- lua_ai_path_builder (4,388B) if time permits
+- Try optnone for -O0 Lua functions
 
-## Deferred
-- game_tick (15,376B) — impossible, 94-case switches
-- round_manager_update (29,496B) — jump table, too large
+## Blocked (don't retry)
+- NEON ItemKinetic functions, pop_lua_stack, ItemManager ctor, item_generate_position_in_rect
 
 ## File Territory
-- src/app/param_loading.cpp, game_core.cpp, global_param_init.cpp
+- src/app/lua_acmd.cpp, weapon_params.cpp, ItemKinetic.cpp, ItemHelpers.cpp
+- include/lib/L2CValue.h
 
 ## Quality Rules
-- No naked asm, 3-attempt limit, N-quality is fine for large functions
+- optnone for -O0 Lua functions, no naked asm, 3-attempt limit
