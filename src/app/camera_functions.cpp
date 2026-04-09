@@ -1219,3 +1219,703 @@ extern "C" u32 camera(u64 lua_state) {
     return ret;
 }
 } // namespace app::sv_module_access
+
+// ---- Allocator hook wrappers ----
+
+// DAT_71052b4450 [derived: custom malloc hook function pointer, nullable]
+extern "C" void* DAT_71052b4450 HIDDEN;
+// DAT_71052b4458 [derived: custom free hook function pointer, nullable]
+extern "C" void* DAT_71052b4458 HIDDEN;
+
+extern "C" void* malloc(unsigned long);
+extern "C" void free(void*);
+
+// 0x7100228110 (20 bytes) — malloc wrapper with hook
+// [derived: disasm shows adrp+ldr of hook pointer, cbz to fallthrough malloc, br for hook]
+extern "C" void* FUN_7100228110(unsigned long size) {
+    void* hook = DAT_71052b4450;
+    if (hook != nullptr) {
+        return reinterpret_cast<void*(*)(unsigned long)>(hook)(size);
+    }
+    return malloc(size);
+}
+
+// 0x7100228130 (20 bytes) — free wrapper with hook
+// [derived: disasm shows same pattern with DAT_71052b4458]
+extern "C" void FUN_7100228130(void* ptr) {
+    void* hook = DAT_71052b4458;
+    if (hook != nullptr) {
+        reinterpret_cast<void(*)(void*)>(hook)(ptr);
+        return;
+    }
+    free(ptr);
+}
+
+// ---- Camera type change / revert ----
+
+// change_active_camera [derived: at 0x71004ee480, takes (cam_data, mode, flags, stack_struct, extra)]
+extern "C" void change_active_camera(u64, u32, u32, void*, u32);
+
+// PTR_LAB_7104f73ca0 [derived: camera cleanup/release vtable, used by change_camera_type_melee and revert_camera]
+extern "C" u8 PTR_LAB_7104f73ca0 HIDDEN;
+
+// 0x7101649b90 (124 bytes) — app::nintendogshi::change_camera_type_melee
+// Builds a stack object with cleanup vtable, calls change_active_camera(cam_data, 1, 0, obj, 0).
+// Post-call: dispatches through the stack object's vtable for cleanup.
+// [derived: disasm shows sp-local struct, vtable at PTR_LAB_7104f73ca0]
+// [derived: post-call cleanup: if local_30==sp (inline), vtable[4]; else if non-null, vtable[5]]
+namespace app::nintendogshi {
+extern "C" void change_camera_type_melee(void) {
+    u8* cam_data = *(u8**)DAT_71052b7f00;
+    struct { void* vt; u8 pad[0x18]; void* self; } local;
+    local.vt = &PTR_LAB_7104f73ca0;
+    local.self = &local;
+    change_active_camera((u64)cam_data, 1, 0, &local, 0);
+    void* p = local.self;
+    if (p == &local) {
+        reinterpret_cast<void(*)(void*)>((*(void***)p)[0x20/8])(p);
+    } else if (p != nullptr) {
+        reinterpret_cast<void(*)(void*)>((*(void***)p)[0x28/8])(p);
+    }
+}
+} // namespace app::nintendogshi
+
+// 0x7101654b60 (136 bytes) — app::marx::revert_camera
+// Checks if camera mode at *(cam_data+4) == 0x11; if not, returns immediately (before prologue).
+// If mode matches, loads *(cam_data+8) as the sub-mode, calls change_active_camera.
+// [derived: disasm shows early-return cmp w8,#0x11 + b.ne to ret before prologue setup]
+namespace app::marx {
+extern "C" void revert_camera(void) {
+    u8* cam_data = *(u8**)DAT_71052b7f00;
+    if (*(s32*)(cam_data + 4) != 0x11) return;
+    u32 sub_mode = *(u32*)(cam_data + 8);
+    struct { void* vt; u8 pad[0x18]; void* self; } local;
+    local.vt = &PTR_LAB_7104f73ca0;
+    local.self = &local;
+    change_active_camera((u64)cam_data, sub_mode, 0, &local, 0);
+    void* p = local.self;
+    if (p == &local) {
+        reinterpret_cast<void(*)(void*)>((*(void***)p)[0x20/8])(p);
+    } else if (p != nullptr) {
+        reinterpret_cast<void(*)(void*)>((*(void***)p)[0x28/8])(p);
+    }
+}
+} // namespace app::marx
+
+// ---- Stage destructors ----
+
+// FUN_71025d7310 [derived: StageBase::~StageBase common destructor chain, tail-called by all stage dtors]
+extern "C" void FUN_71025d7310(void*);
+
+// ---- ~StageNintendogs (0x7102ccf720, 136 bytes) ----
+// Sets vtable, releases sub-object at +0x738 (3 inner ptrs at +0x790, +0x788, +0x780),
+// calls FUN_7102ccf300 for sub-object cleanup, frees, then tail-calls StageBase dtor.
+// [derived: disasm at 0x7102ccf720]
+
+// PTR_LAB_710512e5e0 [derived: StageNintendogs vtable]
+extern "C" u8 PTR_LAB_710512e5e0 HIDDEN;
+extern "C" void FUN_7102ccf300(u64);
+
+extern "C" void FUN_7102ccf720(u64* param_1)
+{
+    u64 sub = param_1[0xe7];  // +0x738
+    *(void**)param_1 = &PTR_LAB_710512e5e0;
+    param_1[0xe7] = 0;
+    if (sub != 0) {
+        // Release sub-objects at +0x790, +0x788 via vtable[1]
+        u64 p790 = *(u64*)(sub + 0x790);
+        *(u64*)(sub + 0x790) = 0;
+        if (p790 != 0) {
+            reinterpret_cast<void(*)(u64)>((*(void***)(u64*)p790)[1])(p790);
+        }
+        u64 p788 = *(u64*)(sub + 0x788);
+        *(u64*)(sub + 0x788) = 0;
+        if (p788 != 0) {
+            reinterpret_cast<void(*)(u64)>((*(void***)(u64*)p788)[1])(p788);
+        }
+        // Free allocation at +0x780
+        u64 p780 = *(u64*)(sub + 0x780);
+        *(u64*)(sub + 0x780) = 0;
+        if (p780 != 0) {
+            FUN_710392e590((void*)p780);
+        }
+        // Cleanup sub-object
+        FUN_7102ccf300(sub + 0x10);
+        FUN_710392e590((void*)sub);
+    }
+    FUN_71025d7310(param_1);
+}
+
+// ---- ~StageFlatZoneX (0x71029240a0, 176 bytes) ----
+// Sets vtable, releases unique_ptr at +0xc78, destroys vector at [+0x850..+0x858],
+// frees allocation at +0x830, tail-calls StageBase dtor.
+// [derived: disasm at 0x71029240a0]
+
+// PTR_LAB_71050f2f78 [derived: StageFlatZoneX vtable]
+extern "C" u8 PTR_LAB_71050f2f78 HIDDEN;
+
+extern "C" void FUN_71029240a0(u64* param_1)
+{
+    *(void**)param_1 = &PTR_LAB_71050f2f78;
+
+    // Release unique_ptr at +0xc78
+    u64 uptr = param_1[0xc78 / 8];
+    param_1[0xc78 / 8] = 0;
+    if (uptr != 0) {
+        reinterpret_cast<void(*)(u64)>((*(void***)(u64*)uptr)[1])(uptr);
+    }
+
+    // Destroy vector at +0x850..+0x858 (elements are 0x18 bytes each)
+    // [derived: Ghidra shows plVar1/plVar2 reuse pattern, plVar1 used as final free arg]
+    u64* plVar2 = (u64*)param_1[0x850 / 8];
+    if (plVar2 != nullptr) {
+        u64* plVar1 = (u64*)param_1[0x858 / 8];
+        if (plVar1 == plVar2) {
+            param_1[0x858 / 8] = (u64)plVar2;
+            plVar1 = plVar2;
+        } else {
+            u64* iter = plVar1;
+            do {
+                u64* plVar3 = iter - 3;
+                u64 elem = *plVar3;
+                if (elem != 0) {
+                    iter[-2] = elem;
+                    FUN_710392e590((void*)elem);
+                }
+                iter = plVar3;
+            } while (plVar2 != iter);
+            plVar1 = (u64*)param_1[0x850 / 8];
+            param_1[0x858 / 8] = (u64)plVar2;
+        }
+        if (plVar1 != nullptr) {
+            FUN_710392e590(plVar1);
+        }
+    }
+
+    // Free allocation at +0x830
+    u64 alloc = param_1[0x830 / 8];
+    if (alloc != 0) {
+        param_1[0x838 / 8] = alloc;
+        FUN_710392e590((void*)alloc);
+    }
+
+    FUN_71025d7310(param_1);
+}
+
+// ---- ~StageStreetPass (0x7102f33f20, 192 bytes) ----
+// Sets vtable, releases unique_ptr at +0x950, destroys vector at [+0x908..+0x910],
+// frees allocations at +0x8b8 and +0x898, tail-calls StageBase dtor.
+// [derived: disasm at 0x7102f33f20]
+
+// PTR_LAB_71051520f8 [derived: StageStreetPass vtable]
+extern "C" u8 PTR_LAB_71051520f8 HIDDEN;
+
+extern "C" void FUN_7102f33f20(u64* param_1)
+{
+    *(void**)param_1 = &PTR_LAB_71051520f8;
+
+    // Release unique_ptr at +0x950
+    // [derived: disasm shows cbz after ldr, then blr, then str xzr (store after release)]
+    u64 uptr = param_1[0x950 / 8];
+    if (uptr != 0) {
+        reinterpret_cast<void(*)(u64)>((*(void***)(u64*)uptr)[1])(uptr);
+        param_1[0x950 / 8] = 0;
+    }
+
+    // Destroy vector at +0x908..+0x910 (elements 0x18 bytes)
+    u64* plVar2 = (u64*)param_1[0x908 / 8];
+    if (plVar2 != nullptr) {
+        u64* plVar1 = (u64*)param_1[0x910 / 8];
+        if (plVar1 == plVar2) {
+            param_1[0x910 / 8] = (u64)plVar2;
+            plVar1 = plVar2;
+        } else {
+            u64* iter = plVar1;
+            do {
+                u64* plVar3 = iter - 3;
+                u64 elem = *plVar3;
+                if (elem != 0) {
+                    iter[-2] = elem;
+                    FUN_710392e590((void*)elem);
+                }
+                iter = plVar3;
+            } while (plVar2 != iter);
+            plVar1 = (u64*)param_1[0x908 / 8];
+            param_1[0x910 / 8] = (u64)plVar2;
+        }
+        if (plVar1 != nullptr) {
+            FUN_710392e590(plVar1);
+        }
+    }
+
+    // Free allocation at +0x8b8
+    u64 alloc1 = param_1[0x8b8 / 8];
+    if (alloc1 != 0) {
+        param_1[0x8c0 / 8] = alloc1;
+        FUN_710392e590((void*)alloc1);
+    }
+
+    // Free allocation at +0x898
+    u64 alloc2 = param_1[0x898 / 8];
+    if (alloc2 != 0) {
+        param_1[0x8a0 / 8] = alloc2;
+        FUN_710392e590((void*)alloc2);
+    }
+
+    FUN_71025d7310(param_1);
+}
+
+// ---- Additional leaf functions (batch 2) ----
+
+// 0x710135dd10 (60 bytes) — coordinate_axes_replay_camera
+// Sets thread priority to 0xf and enables effect manager flag.
+// DAT_7106dd4cc0 [derived: nn::os::ThreadType for replay camera thread]
+// DAT_7105333920 [derived: lib::Singleton<lib::EffectManager>::instance_]
+// +0x194c1 [inferred: coordinate axes enable flag, u8]
+// [derived: disasm at 0x710135dd10]
+extern "C" u8 DAT_7106dd4cc0 HIDDEN;
+extern "C" void* DAT_7105333920 HIDDEN;
+extern "C" void nn_os_ChangeThreadPriority(void*, s32);
+
+extern "C" void FUN_710135dd10(void) {
+    nn_os_ChangeThreadPriority(&DAT_7106dd4cc0, 0xf);
+    *(u8*)(*(u8**)DAT_7105333920 + 0x194c1) = 1;
+}
+
+// 0x7101651b00 (44 bytes) — app::crazyhand::get_dead_range
+// Leaf: returns 4 floats from camera data at +0xc30..+0xc3c (same as shiokarazu variant)
+namespace app { namespace crazyhand {
+extern "C" float4 get_dead_range_7101651b00(void) {
+    u8* inner = *(u8**)DAT_71052b7f00;
+    float4 r;
+    r[0] = *(float*)(inner + 0xc30);
+    r[1] = *(float*)(inner + 0xc34);
+    r[2] = *(float*)(inner + 0xc38);
+    r[3] = *(float*)(inner + 0xc3c);
+    return r;
+}
+}} // namespace app::crazyhand
+
+// 0x7101651b60 (44 bytes) — app::crazyhand::get_shrinked_dead_range
+// Leaf: returns 4 floats from camera data at +0xc50..+0xc5c
+namespace app { namespace crazyhand {
+extern "C" float4 get_shrinked_dead_range_7101651b60(void) {
+    u8* inner = *(u8**)DAT_71052b7f00;
+    float4 r;
+    r[0] = *(float*)(inner + 0xc50);
+    r[1] = *(float*)(inner + 0xc54);
+    r[2] = *(float*)(inner + 0xc58);
+    r[3] = *(float*)(inner + 0xc5c);
+    return r;
+}
+}} // namespace app::crazyhand
+
+// 0x71022820f0 (28 bytes) — app::sv_fighter_util::get_item_lift_motion_rate_mul
+// Tail-call: passes battle_obj to FUN_710068e1c0
+// [derived: disasm shows ldr x0,[x8,#0x1a0]; b FUN_710068e1c0]
+extern "C" void FUN_710068e1c0(u64);
+
+namespace app { namespace sv_fighter_util {
+extern "C" void get_item_lift_motion_rate_mul(u64 lua_state) {
+    u64 battle_obj = *(u64*)(*(u8**)(lua_state - 8) + 0x1a0);
+    FUN_710068e1c0(battle_obj);
+}
+}} // namespace app::sv_fighter_util
+
+// HFA (Homogeneous Float Aggregate) for camera rect — 4 floats returned in s0-s3
+struct CameraRect { float x0, y0, x1, y1; };
+
+// 0x7102282810 (32 bytes) — app::sv_camera_manager::dead_range
+// Leaf: returns 4 floats from camera data at +0xc30..+0xc3c as CameraRect HFA (s0-s3)
+// [derived: disasm shows 4x ldr s0-s3 pattern, same as camera_range]
+namespace app { namespace sv_camera_manager {
+extern "C" CameraRect dead_range(void) {
+    u8* inner = *(u8**)DAT_71052b7f00;
+    CameraRect r;
+    r.x0 = *(float*)(inner + 0xc30);
+    r.y0 = *(float*)(inner + 0xc34);
+    r.x1 = *(float*)(inner + 0xc38);
+    r.y1 = *(float*)(inner + 0xc3c);
+    return r;
+}
+}} // namespace app::sv_camera_manager
+
+// 0x71015ce830 (40 bytes) — app::stage::item_generate_position
+// Returns float4 result from FUN_71015dc450 (passed stack pointer for output)
+// [derived: disasm shows stack-local zero-init, bl to helper, ldp result from stack]
+extern "C" void FUN_71015dc450(void*);
+
+namespace app { namespace stage {
+extern "C" float4 item_generate_position(void) {
+    u64 result[2];
+    result[0] = 0;
+    result[1] = 0;
+    FUN_71015dc450(result);
+    return *(float4*)result;
+}
+}} // namespace app::stage
+
+// ---- set_camera_range_from_param (0x71015c4830, 304 bytes) ----
+// Gets ItemParamAccessor singleton, reads 4 param floats by hash,
+// subtracts camera subject position, calls camera module set_range.
+// [derived: Ghidra decompilation at 0x71015c4830]
+// DAT_71052c34c8 [derived: lib::Singleton<app::ItemParamAccessor>::instance_]
+extern "C" void* DAT_71052c34c8 HIDDEN;
+extern "C" float FUN_7101602f50(void*, u32, u64, u64);
+
+namespace app { namespace item {
+extern "C" void set_camera_range_from_param(u64 lua_state, u32 kind, u64 hash) {
+    void* ipa = DAT_71052c34c8;
+    void** cam = *(void***)(*(u64*)(*(u8**)(lua_state - 8) + 0x1a0) + 0x60);
+    float f0 = FUN_7101602f50(ipa, kind, hash, 0x47a67e768ULL);
+    float f1 = FUN_7101602f50(ipa, kind, hash, 0x5b4ca7514ULL);
+    float f2 = FUN_7101602f50(ipa, kind, hash, 0x31ed91fcaULL);
+    float f3 = FUN_7101602f50(ipa, kind, hash, 0x6895f72a4ULL);
+    float local[4];
+    local[0] = f0;
+    local[1] = f1;
+    local[2] = f2;
+    local[3] = f3;
+    // Get camera subject position via vtable[0xb0/8](cam, 0)
+    float* pos = reinterpret_cast<float*(*)(void**, s32)>(
+        ((void**)*cam)[0xb0/8])(cam, 0);
+    local[0] = f0 - pos[2];
+    local[1] = f1 - pos[1];
+    local[3] = f3 - pos[4];
+    local[2] = f2 - pos[3];
+    // Set camera range: vtable[0xd0/8](cam, &local, 0)
+    reinterpret_cast<void(*)(void**, float*, s32)>(
+        ((void**)*cam)[0xd0/8])(cam, local, 0);
+}
+}} // namespace app::item
+
+// ---- Boss/Item camera leaf functions (batch 3) ----
+
+// ---- kozukatasight screen helpers ----
+
+// DAT_710744601c [derived: Ghidra float global, screen resolution width override]
+extern "C" float DAT_710744601c HIDDEN;
+// DAT_7107446020 [derived: Ghidra float global, screen resolution height override]
+extern "C" float DAT_7107446020 HIDDEN;
+
+// 0x7101646f00 (28 bytes) — app::kozukatasight::screen_width
+// Returns screen width as int. Default 1920 (0x780) if the override float is 0.
+// [derived: Ghidra decompilation at 0x7101646f00]
+namespace app { namespace kozukatasight {
+extern "C" u32 screen_width(void) {
+    float w = DAT_710744601c;
+    return w != 0.0f ? (u32)w : 0x780U;
+}
+}} // namespace app::kozukatasight
+
+// 0x7101646f20 (28 bytes) — app::kozukatasight::screen_height
+// Returns screen height as int. Default 1080 (0x438) if the override float is 0.
+// [derived: Ghidra decompilation at 0x7101646f20]
+namespace app { namespace kozukatasight {
+extern "C" u32 screen_height(void) {
+    float h = DAT_7107446020;
+    return h != 0.0f ? (u32)h : 0x438U;
+}
+}} // namespace app::kozukatasight
+
+// 0x7101646ed0 (48 bytes) — app::kozukatasight::screen_to_world
+// Converts screen coordinates to world coordinates via FUN_7101341670.
+// [derived: Ghidra decompilation at 0x7101646ed0]
+extern "C" void FUN_7101341670(float, void*, void*, s32);
+
+namespace app { namespace kozukatasight {
+extern "C" float4 screen_to_world(void* vec2_in, float depth) {
+    u64 local[2];
+    local[0] = 0;
+    local[1] = 0;
+    FUN_7101341670(depth, local, vec2_in, 1);
+    return *(float4*)local;
+}
+}} // namespace app::kozukatasight
+
+// ---- can_exist checks ----
+
+// DAT_71052c25b0 [derived: lib::Singleton<app::ItemManager>::instance_ pointer]
+extern "C" void* DAT_71052c25b0 HIDDEN;
+
+// 0x710164bb20 (28 bytes) — app::shiokarazu::can_exist
+// Returns true if ItemManager stage data +0x708 == 0 (no existing instance).
+// [derived: Ghidra decompilation at 0x710164bb20]
+namespace app { namespace shiokarazu {
+extern "C" bool can_exist_710164bb20(void) {
+    u8* inst = (u8*)DAT_71052c25b0;
+    return *(u64*)(*(u8**)(inst + 0x58) + 0x708) == 0;
+}
+}} // namespace app::shiokarazu
+
+// 0x71016523a0 (28 bytes) — app::darz::can_exist
+// Returns true if ItemManager stage data +0xcd0 == 0 (no existing instance).
+// [derived: Ghidra decompilation at 0x71016523a0]
+namespace app { namespace darz {
+extern "C" bool can_exist_71016523a0(void) {
+    u8* inst = (u8*)DAT_71052c25b0;
+    return *(u64*)(*(u8**)(inst + 0x58) + 0xcd0) == 0;
+}
+}} // namespace app::darz
+
+// ---- start_zoom_out variants ----
+
+// FUN_710160dc80 [derived: camera zoom-out helper, takes (int mode, Vector4f* rect)]
+extern "C" void FUN_710160dc80(s32, void*);
+
+// 0x7101645980 (56 bytes) — app::flyandhand::start_zoom_out
+// Copies camera rect from cam_data+0xc00 to stack, calls zoom-out helper.
+// [derived: Ghidra decompilation at 0x7101645980]
+namespace app { namespace flyandhand {
+extern "C" void start_zoom_out_7101645980(s32 mode) {
+    u8* cam = *(u8**)DAT_71052b7f00;
+    u64 local[2];
+    local[0] = *(u64*)(cam + 0xc00);
+    local[1] = *(u64*)(cam + 0xc08);
+    FUN_710160dc80(mode, local);
+}
+}} // namespace app::flyandhand
+
+// 0x710164c420 (48 bytes) — app::shiokarazu::start_zoom_out
+// Copies input Vector4f to stack, calls zoom-out helper.
+// [derived: Ghidra decompilation at 0x710164c420]
+namespace app { namespace shiokarazu {
+extern "C" void start_zoom_out_710164c420(s32 mode, void* rect) {
+    struct { u64 lo; u64 hi; } local;
+    local = *(decltype(local)*)rect;
+    FUN_710160dc80(mode, &local);
+}
+}} // namespace app::shiokarazu
+
+// 0x7101651d50 (48 bytes) — app::crazyhand::start_zoom_out
+// Identical to shiokarazu::start_zoom_out.
+// [derived: Ghidra decompilation at 0x7101651d50]
+namespace app { namespace crazyhand {
+extern "C" void start_zoom_out_7101651d50(s32 mode, void* rect) {
+    struct { u64 lo; u64 hi; } local;
+    local = *(decltype(local)*)rect;
+    FUN_710160dc80(mode, &local);
+}
+}} // namespace app::crazyhand
+
+// ---- BGM functions ----
+
+// DAT_7105328f38 [derived: BGM/sound manager singleton]
+extern "C" void* DAT_7105328f38 HIDDEN;
+// DAT_7104464590 [derived: BGM hash for shiokarazu track 0]
+extern "C" u64 DAT_7104464590 HIDDEN;
+// DAT_7104464328 [derived: BGM hash for shiokarazu track 1]
+extern "C" u64 DAT_7104464328 HIDDEN;
+
+// FUN_71023edd60 [derived: BGM play function, takes (mgr, hash, flags)]
+extern "C" u64 FUN_71023edd60(void*, u64, s32);
+// FUN_71023edf50 [derived: BGM stop function, takes (mgr, handle, params)]
+extern "C" void FUN_71023edf50(void*, s32, void*);
+
+// 0x710164bdc0 (76 bytes) — app::shiokarazu::start_bgm
+// Plays a BGM track based on index (0 or 1). Returns handle or -1 on invalid index.
+// [derived: Ghidra decompilation at 0x710164bdc0]
+namespace app { namespace shiokarazu {
+extern "C" u64 start_bgm(s32 index) {
+    u64 hash;
+    if (index == 0) {
+        hash = DAT_7104464590;
+    } else if (index == 1) {
+        hash = DAT_7104464328;
+    } else {
+        return 0xffffffff;
+    }
+    u64 result = FUN_71023edd60(DAT_7105328f38, hash, 0);
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("");  // prevent tail-call optimization
+#endif
+    return result;
+}
+}} // namespace app::shiokarazu
+
+// 0x710164be10 (68 bytes) — app::shiokarazu::end_bgm
+// Stops a BGM track by handle. No-op if handle is -1.
+// [derived: Ghidra decompilation at 0x710164be10]
+namespace app { namespace shiokarazu {
+extern "C" void end_bgm(s32 handle, s32 fade_frames) {
+    if (handle != -1) {
+        struct { u8 flag; u8 pad[3]; s32 fade; } params;
+        params.flag = 1;
+        params.fade = fade_frames;
+        FUN_71023edf50(DAT_7105328f38, handle, &params);
+    }
+}
+}} // namespace app::shiokarazu
+
+// ---- BGM RNG ----
+
+// DAT_7104464220 [derived: BGM kind lookup table, 2 entries]
+extern "C" u32 DAT_7104464220 HIDDEN;
+
+// 0x710164bd60 (84 bytes) — app::shiokarazu::get_bgm_kind
+// XorShift128 RNG to pick one of 2 BGM tracks. Advances RNG state at *(DAT_71052c25b0)+0x78..0x88.
+// [derived: Ghidra decompilation at 0x710164bd60]
+namespace app { namespace shiokarazu {
+extern "C" u32 get_bgm_kind(void) {
+    u64 rng_base = *(u64*)DAT_71052c25b0;
+    u32* state = (u32*)(rng_base + 0x78);
+    // Increment call counter
+    *(u32*)(rng_base + 0x88) += 1;
+    // XorShift128
+    u32 s0 = state[0];
+    u32 s3 = state[3];
+    u32 t = s0 ^ (s0 << 11);
+    state[0] = state[1];
+    state[1] = state[2];
+    state[2] = s3;
+    u32 result = t ^ (t >> 8) ^ s3 ^ (s3 >> 19);
+    state[3] = result;
+    return (&DAT_7104464220)[result & 1];
+}
+}} // namespace app::shiokarazu
+
+// ---- set_dead_range variants ----
+
+// 0x710164c390 (140 bytes) — app::shiokarazu::set_dead_range
+// Transforms input Vector4f by subtracting camera origin and adding extents to compute dead range rect.
+// [derived: Ghidra decompilation at 0x710164c390]
+// cam_data+0xa80: camera origin (x, y as float pair)
+// cam_data+0xc60: camera extents (x_ext, y_ext as float pair)
+// cam_data+0xc10..0xc3c: dead range output (left, right, bottom, top, left+ext, right+ext, bottom+ext, top+ext)
+namespace app { namespace shiokarazu {
+extern "C" void set_dead_range_710164c390(float4* param_1) {
+    u8* cam = *(u8**)DAT_71052b7f00;
+    float origin_x = *(float*)(cam + 0xa80);
+    float origin_y = *(float*)(cam + 0xa84);
+    float ext_x = *(float*)(cam + 0xc60);
+    float ext_y = *(float*)(cam + 0xc64);
+    float* input = (float*)param_1;
+    float neg_ox = -origin_x;
+    float neg_oy = -origin_y;
+    float sum_ext_x = origin_x + ext_x;
+    float sum_ext_y = origin_y + ext_y;
+    float left = input[0] + neg_ox;
+    float right = input[1] + neg_ox;
+    float bottom = input[2] + neg_oy;
+    float top = input[3] + neg_oy;
+    *(float*)(cam + 0xc10) = left;
+    *(float*)(cam + 0xc14) = right;
+    *(float*)(cam + 0xc18) = bottom;
+    *(float*)(cam + 0xc1c) = top;
+    *(float*)(cam + 0xc30) = left + sum_ext_x;
+    *(float*)(cam + 0xc34) = right + sum_ext_x;
+    *(float*)(cam + 0xc38) = bottom + sum_ext_y;
+    *(float*)(cam + 0xc3c) = top + sum_ext_y;
+}
+}} // namespace app::shiokarazu
+
+// 0x7101651cc0 (140 bytes) — app::crazyhand::set_dead_range
+// Identical to shiokarazu::set_dead_range.
+// [derived: Ghidra decompilation at 0x7101651cc0]
+namespace app { namespace crazyhand {
+extern "C" void set_dead_range_7101651cc0(float4* param_1) {
+    u8* cam = *(u8**)DAT_71052b7f00;
+    float origin_x = *(float*)(cam + 0xa80);
+    float origin_y = *(float*)(cam + 0xa84);
+    float ext_x = *(float*)(cam + 0xc60);
+    float ext_y = *(float*)(cam + 0xc64);
+    float* input = (float*)param_1;
+    float neg_ox = -origin_x;
+    float neg_oy = -origin_y;
+    float sum_ext_x = origin_x + ext_x;
+    float sum_ext_y = origin_y + ext_y;
+    float left = input[0] + neg_ox;
+    float right = input[1] + neg_ox;
+    float bottom = input[2] + neg_oy;
+    float top = input[3] + neg_oy;
+    *(float*)(cam + 0xc10) = left;
+    *(float*)(cam + 0xc14) = right;
+    *(float*)(cam + 0xc18) = bottom;
+    *(float*)(cam + 0xc1c) = top;
+    *(float*)(cam + 0xc30) = left + sum_ext_x;
+    *(float*)(cam + 0xc34) = right + sum_ext_x;
+    *(float*)(cam + 0xc38) = bottom + sum_ext_y;
+    *(float*)(cam + 0xc3c) = top + sum_ext_y;
+}
+}} // namespace app::crazyhand
+
+// ---- wanwan (Chain Chomp) ground movement ----
+
+// 0x71016514c0 (60 bytes) — app::wanwan::add_movement
+// Dispatches movement vector to pile ground module via vtable.
+// [derived: Ghidra decompilation at 0x71016514c0]
+// ItemModuleAccessor+0x68: KineticModule*
+// KineticModule vtable[0x60/8](mod, 10) → pile ground object
+// pile vtable[0xa0/8](pile, vec2) → add_movement
+namespace app { namespace wanwan {
+extern "C" void add_movement(u8* acc, void* vec2) {
+    void** kinetic = *(void***)(acc + 0x68);
+    void** pile = reinterpret_cast<void**(*)(void**, s32)>(
+        (*(void***)kinetic)[0x60/8])(kinetic, 10);
+    reinterpret_cast<void(*)(void**, void*)>(
+        (*(void***)pile)[0xa0/8])(pile, vec2);
+}
+}} // namespace app::wanwan
+
+// 0x7101651480 (60 bytes) — app::wanwan::get_pile_ground_movement_speed
+// Returns the pile ground movement speed as a Vector4f (speed, 0).
+// [derived: Ghidra decompilation at 0x7101651480]
+namespace app { namespace wanwan {
+extern "C" float4 get_pile_ground_movement_speed(u8* acc) {
+    void** kinetic = *(void***)(acc + 0x68);
+    void** pile = reinterpret_cast<void**(*)(void**, s32)>(
+        (*(void***)kinetic)[0x60/8])(kinetic, 10);
+    u64* speed = reinterpret_cast<u64*(*)(void**)>(
+        (*(void***)pile)[0x20/8])(pile);
+    u64 result[2];
+    result[0] = *speed;
+    result[1] = 0;
+    return *(float4*)result;
+}
+}} // namespace app::wanwan
+
+// ---- Tiny wrapper functions ----
+
+// 0x71015c3060 (8 bytes) — app::item::get_assist_respawn_position
+// Tail-calls FUN_710160e690 with an extra param=1.
+// [derived: Ghidra decompilation at 0x71015c3060]
+extern "C" void FUN_710160e690(void*, s32, s32);
+
+namespace app { namespace item {
+extern "C" void get_assist_respawn_position(void* vec3, s32 param_2) {
+    FUN_710160e690(vec3, param_2, 1);
+}
+}} // namespace app::item
+
+// 0x71015c8ed0 (8 bytes) — app::boss_private::create_weapon
+// Tail-calls create_weapon_with_variation with variation=-1.
+// [derived: Ghidra decompilation at 0x71015c8ed0]
+extern "C" void create_weapon_with_variation(void*, s32, s32, float, float, float, float);
+
+namespace app { namespace boss_private {
+extern "C" void create_weapon_71015c8ed0(void* lua_state, s32 kind, float x, float y, float z, float w) {
+    create_weapon_with_variation(lua_state, kind, -1, x, y, z, w);
+}
+}} // namespace app::boss_private
+
+// 0x71015ce6c0 (8 bytes) — app::stage::calc_offset_with_gravity
+// Tail-calls FUN_710160e340 forwarding vec3 as u64.
+// [derived: Ghidra decompilation at 0x71015ce6c0]
+extern "C" void FUN_710160e340(u64);
+
+namespace app { namespace stage {
+extern "C" void calc_offset_with_gravity_71015ce6c0(void* vec2, void* vec3) {
+    FUN_710160e340(*(u64*)vec3);
+}
+}} // namespace app::stage
+
+// 0x71015c5c40 (16 bytes) — app::target::search_range
+// Calls FUN_71015c5c50 with fixed params (5, param_6, 1).
+// [derived: Ghidra decompilation at 0x71015c5c40]
+extern "C" void FUN_71015c5c50(void*, s32, bool, s32);
+
+namespace app { namespace target {
+extern "C" void search_range(void* lua_state, float f1, float f2, float f3, float f4, bool flag) {
+    FUN_71015c5c50(lua_state, 5, flag, 1);
+}
+}} // namespace app::target

@@ -1,40 +1,44 @@
-# Worker: pool-e
+# Worker: pool-c
 
 ## Model: Opus
 
-## Task: L2CValue/L2CAgent — continue decomp
+## Task: Stage + camera — continue
 
-## Progress
-- Round 1: 10 L2CValue constructors, SetLuaStateAccessor, clear_lua_stack, etc.
-- Round 2: 8 L2CValue operators/math (bitwise, division, atan, log) — 7 matching
-- Round 3: 12 new functions (alloc helpers, copy ctor, tree ops, table cleanup)
-  - 6 relocation/prologue-only match: alloc_aligned16, alloc_with_retry, FUN_71037339b0, FUN_7103728a40, FUN_7103729440, FUN_71037293d0
-  - 6 structural diff (correct decomp): copy ctor, table cleanup, length, operator[], setmetatable, ShowError wrapper
+## Progress (82 functions total)
+- 20 leaf functions from round 2 (3 perfect matches)
+- 4 new functions from round 3 (size matches, minor scheduling diffs)
+- 17 new functions this round (batch 3):
+  - 10 relocation-only matches: screen_width, screen_height, screen_to_world,
+    can_exist (shio/darz), add_movement (PERFECT), get_assist_respawn_position,
+    create_weapon, calc_offset_with_gravity, search_range
+  - 7 non-matching but correct: start_zoom_out (3 variants), start_bgm, end_bgm,
+    get_bgm_kind, set_dead_range (2 variants — NEON vectorization diff)
+- Key patterns: fcvtzu for unsigned float conversion, ternary for csel ne,
+  asm("") barrier for tail-call prevention
 
 ## Continue with
-- Fix non-matching functions (copy ctor 0x7103733fe0, table cleanup 0x7103733900, length 0x7103735ea0)
-- operator! (0x7103734fa0) — switch/jump table, may need different approach
-- push_lua_stack (0x710372e320, 252B) — switch on type, pushes to Lua stack
-- L2CTable ctor (0x71037337f0, 268B) — vector alloc + loop init
-- operator% (0x7103735920, 292B) — integer sdiv/msub + float fmodf
-- math_fmod (0x7103733180, 288B) — integer + float paths
-- ipairs (0x7103732a50, 296B)
+- set_camera_param (2,344B), set_pause_camera_param (3,996B) — param tree lookups
+- ~StageWufuIsland destructor (2,700B) — event listener cleanup
+- convert_pos_dead_range_gravity (296B) — NEON math, may not match
+- restore_pos_dead_range_gravity (196B) — sin/cos rotation
+- change_camera_range (300B) / change_dead_range (292B) — BST lookup in StageManager
+- More item leaf functions in 0x71015c0000-0x71015d0000 range
 
 ## Skipped
-- math_min/max — binary discrepancy (removed in commit 65240a8)
-- operator+/- binary, operator* — table metamethod dispatch tail call
-- operator- unary — metatable OOM retry
-- math_deg/rad — constructs L2CValues, calls operator*
-- L2CValue(char*) — OOM retry + SSO alloc
+- create_stage (114,600B), StageBase ctor (14,820B) — too large
+- IT_MOVE_CAMERA, is_clip_in_camera, is_dark_stage — shared_ptr refcount patterns
+- set_camera_range variants (flyandhand/shiokarazu/crazyhand/marx) — shared_ptr atomics
+- powf stub (4B) — GOT indirect, can't match
+- is_flat_stage — guard variable __cxa_guard pattern
 
 ## File Territory
-- src/app/lua_acmd.cpp
+- src/app/camera_functions.cpp, StageManager.cpp, StageWufuIsland.cpp
 
 ## Quality Rules
 - No naked asm, 3-attempt limit
 
 ## Quick Reference
-- Single-file compile: `C:/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 -fno-exceptions -fno-rtti -ffunction-sections -fdata-sections -fno-common -fno-short-enums -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -Ilib/NintendoSDK/include -Ilib/NintendoSDK/include/stubs -c src/app/FILE.cpp -o build/FILE.o`
+- Single-file compile: `C:/llvm-8.0.0/bin/clang++.exe -target aarch64-none-elf -mcpu=cortex-a57 -O2 -fPIC -mno-implicit-float -fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG -Iinclude -c src/app/FILE.cpp -o build/FILE.o`
 - Compare bytes: `python tools/compare_bytes.py FUNCTION_NAME` (takes function name, NOT address)
 - Full build+verify: `python tools/build.py && python tools/verify_local.py --build` (only after batch is done)
 - Progress: `python tools/progress.py`
@@ -42,13 +46,13 @@
 - **WARNING:** Do NOT use `build.bat` — it runs deprecated post-processors that inflate match counts
 
 ## Ghidra Cache
-- Save ALL Ghidra decompilation results to `data/ghidra_cache/pool-e.txt` (NOT /tmp — survives reboots)
+- Save ALL Ghidra decompilation results to `data/ghidra_cache/pool-c.txt` (NOT /tmp — survives reboots)
 - On session start, check if this file exists and read it to recover previous Ghidra work
 - Append new results after each `mcp__ghidra__decompile_function_by_address` call
 
 ## Commit Cadence
 - Commit every 15-20 functions or every 30 minutes, whichever comes first
-- Use descriptive commit messages: `pool-e: decomp MODULE functions (N new, M matching)`
+- Use descriptive commit messages: `pool-c: decomp MODULE functions (N new, M matching)`
 - If session crashes, uncommitted work will be auto-recovered by the launcher script
 
 ## Rewrite Quality Standard
