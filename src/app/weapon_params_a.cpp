@@ -96,6 +96,67 @@ float length_gravity_1659400() { return *(float*)FPA2_2(0x12d0, 0x240); }
 float length_speed_y_max_1659420() { return *(float*)FPA2_2(0x12d0, 0x244); }
 // 0x7101659440 — length_angle_x_velocity (20B)
 float length_angle_x_velocity_1659440() { return *(float*)FPA2_2(0x12d0, 0x260); }
+// 0x7101659460 — length_angle_y_velocity (20B)
+float length_angle_y_velocity_1659460() { return *(float*)FPA2_2(0x12d0, 0x264); }
+// 0x7101659480 — length_angle_z_velocity (20B)
+float length_angle_z_velocity_1659480() { return *(float*)FPA2_2(0x12d0, 0x268); }
+// 0x71016594a0 — side_gravity (20B)
+float side_gravity_16594a0() { return *(float*)FPA2_2(0x12d0, 0x26c); }
+// 0x71016594c0 — side_speed_y_max (20B)
+float side_speed_y_max_16594c0() { return *(float*)FPA2_2(0x12d0, 0x270); }
+// 0x71016594e0 — side_angle_x_velocity (20B)
+float side_angle_x_velocity_16594e0() { return *(float*)FPA2_2(0x12d0, 0x28c); }
+// 0x7101659500 — side_angle_y_velocity (20B)
+float side_angle_y_velocity_1659500() { return *(float*)FPA2_2(0x12d0, 0x290); }
+// 0x7101659520 — side_angle_z_velocity (20B)
+float side_angle_z_velocity_1659520() { return *(float*)FPA2_2(0x12d0, 0x294); }
+// 0x7101659560 — flashing_frame_before_life_over (20B)
+// [derived: ldr w0 = u32 return]
+u32 flashing_frame_before_life_over_1659560() { return *(u32*)FPA2_2(0x12d0, 0x2a4); }
+// 0x7101659580 — rebound_speed_x_add (20B)
+float rebound_speed_x_add_1659580() { return *(float*)FPA2_2(0x12d0, 0x2a8); }
+// 0x71016595a0 — rebound_speed_y_add (20B)
+float rebound_speed_y_add_16595a0() { return *(float*)FPA2_2(0x12d0, 0x2ac); }
+
+// ---- app::explosionbomb — Explosion bomb wire params ----
+// Chain: FPA2 → +0x3f0 → +field (2-deref, 20B)
+
+// 0x710165d480 — EXPLOSIONBOMB_WIRE_ROT_SPEED (20B)
+// [derived: ldr w0 = u32 return]
+u32 EXPLOSIONBOMB_WIRE_ROT_SPEED_165d480() { return *(u32*)FPA2_2(0x3f0, 0x120); }
+
+// ---- app::log — additional Log item params ----
+// Chain: FPA2 → +0xc08 → +0x178 → +field (3-deref, 24B)
+
+// 0x710165f160 — LOG_LIFE_DEC_MUL (24B)
+float LOG_LIFE_DEC_MUL_165f160() { return *(float*)FPA2_3(0xc08, 0x178, 0x38); }
+// 0x710165f180 — LOG_SMASH_ACCEL_Y (24B)
+float LOG_SMASH_ACCEL_Y_165f180() { return *(float*)FPA2_3(0xc08, 0x178, 0x20); }
+// 0x710165f1a0 — LOG_SMASH_MAX_SPEED_X (24B)
+float LOG_SMASH_MAX_SPEED_X_165f1a0() { return *(float*)FPA2_3(0xc08, 0x178, 0x10); }
+// 0x710165f1c0 — LOG_SMASH_MAX_SPEED_Y (24B)
+float LOG_SMASH_MAX_SPEED_Y_165f1c0() { return *(float*)FPA2_3(0xc08, 0x178, 0x14); }
+// 0x710165f1e0 — LOG_POWER_MAX (24B)
+float LOG_POWER_MAX_165f1e0() { return *(float*)FPA2_3(0xc08, 0x178, 0x30); }
+// 0x710165f200 — LOG_POWER_MIN (24B)
+float LOG_POWER_MIN_165f200() { return *(float*)FPA2_3(0xc08, 0x178, 0x2c); }
+// 0x710165f220 — LOG_ROT_SPEED_MAX (24B)
+float LOG_ROT_SPEED_MAX_165f220() { return *(float*)FPA2_3(0xc08, 0x178, 0x28); }
+// 0x710165f240 — LOG_ROT_SPEED_MIN (24B)
+float LOG_ROT_SPEED_MIN_165f240() { return *(float*)FPA2_3(0xc08, 0x178, 0x24); }
+// 0x710165f260 — LOG_SPEED_Y (24B)
+float LOG_SPEED_Y_165f260() { return *(float*)FPA2_3(0xc08, 0x178, 0x0); }
+// 0x710165f280 — LOG_ROT_SPEED_Z (24B)
+float LOG_ROT_SPEED_Z_165f280() { return *(float*)FPA2_3(0xc08, 0x178, 0x8); }
+// 0x710165f2a0 — LOG_ROT_Z_RATIO (24B)
+float LOG_ROT_Z_RATIO_165f2a0() { return *(float*)FPA2_3(0xc08, 0x178, 0x44); }
+
+// ---- app::log — LOG_SHAPE_TYPE (different sub-table) ----
+// Chain: FPA2 → +0xc08 → +0x190 → +field (3-deref, 24B)
+// [derived: ldr w0 = u32 return, different offset2 than other LOG params]
+
+// 0x710165f340 — LOG_SHAPE_TYPE (24B)
+u32 LOG_SHAPE_TYPE_165f340() { return *(u32*)FPA2_3(0xc08, 0x190, 0x0); }
 
 // ---- app::pickelobject — Pickel (Steve) object params ----
 // Chain: FPA2 → +0x13b0 → +field (2-deref, 20B)

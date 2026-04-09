@@ -432,3 +432,36 @@ length_angle_x_velocity @ 0x7101659440: +0x260 (float)
 
 === Pickelobject 20B: FPA2→+0x13b0→+field ===
 flash_start_frame @ 0x710166e110: +0x51c (u32)
+
+=== BATCH: More weapon param readers (pool-a round 6c) ===
+
+Buddybomb 20B (FPA2→+0x12d0→+field):
+length_angle_y_velocity @ 0x7101659460: +0x264 (float)
+length_angle_z_velocity @ 0x7101659480: +0x268 (float)
+side_gravity @ 0x71016594a0: +0x26c (float)
+side_speed_y_max @ 0x71016594c0: +0x270 (float)
+side_angle_x_velocity @ 0x71016594e0: +0x28c (float)
+side_angle_y_velocity @ 0x7101659500: +0x290 (float)
+side_angle_z_velocity @ 0x7101659520: +0x294 (float)
+flashing_frame_before_life_over @ 0x7101659560: +0x2a4 (u32)
+rebound_speed_x_add @ 0x7101659580: +0x2a8 (float)
+rebound_speed_y_add @ 0x71016595a0: +0x2ac (float)
+
+Explosionbomb 20B (FPA2→+0x3f0→+field):
+EXPLOSIONBOMB_WIRE_ROT_SPEED @ 0x710165d480: +0x120 (u32)
+
+LOG 24B (FPA2→+0xc08→+0x178→+field):
+LOG_LIFE_DEC_MUL @ 0x710165f160: +0x38 (float)
+LOG_SMASH_ACCEL_Y @ 0x710165f180: +0x20 (float)
+LOG_SMASH_MAX_SPEED_X @ 0x710165f1a0: +0x10 (float)
+LOG_SMASH_MAX_SPEED_Y @ 0x710165f1c0: +0x14 (float)
+LOG_POWER_MAX @ 0x710165f1e0: +0x30 (float)
+LOG_POWER_MIN @ 0x710165f200: +0x2c (float)
+LOG_ROT_SPEED_MAX @ 0x710165f220: +0x28 (float)
+LOG_ROT_SPEED_MIN @ 0x710165f240: +0x24 (float)
+LOG_SPEED_Y @ 0x710165f260: +0x0 (float)
+LOG_ROT_SPEED_Z @ 0x710165f280: +0x8 (float)
+LOG_ROT_Z_RATIO @ 0x710165f2a0: +0x44 (float)
+
+LOG_SHAPE_TYPE 24B (FPA2→+0xc08→+0x190→+field):
+LOG_SHAPE_TYPE @ 0x710165f340: +0x0 (u32)
