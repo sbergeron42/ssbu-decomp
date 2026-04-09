@@ -1,0 +1,137 @@
+== Ghidra Cache for pool-c ==
+== Session 2026-04-09 ==
+
+=== 0x7101645a50 (296B) app::flyandhand::set_camera_range ===
+shared_ptr refcount pattern. Reads +0xe0/+0xe8 from cam data.
+vtable[0x88/8] check == 0xc. Writes vector to lVar[0xc]+0x70. Sets flags at +0x6c, +0x80=1.
+
+=== 0x710164c260 (296B) app::shiokarazu::set_camera_range ===
+Identical to flyandhand variant. +0xe0/+0xe8, mode==0xc, flag=1.
+
+=== 0x7101651b90 (296B) app::crazyhand::set_camera_range ===
+Identical to flyandhand variant. +0xe0/+0xe8, mode==0xc, flag=1.
+
+=== 0x7101654620 (292B) app::marx::set_camera_range ===
+Uses +0x110/+0x118 offsets instead. Mode check == 0x11. Flag at +0x80=0 (not 1).
+
+=== 0x7101654b60 (136B) app::marx::revert_camera ===
+Checks *(cam_data+4) == 0x11. Builds stack struct with PTR_LAB_7104f73ca0 vtable.
+Calls change_active_camera(cam_data, *(cam_data+8), 0, stack_struct, 0).
+Then dispatches through local_30 vtable (offset 0x20 or 0x28 depending on local/remote).
+
+=== 0x7101649b90 (124B) app::nintendogshi::change_camera_type_melee ===
+Builds stack struct with PTR_LAB_7104f73ca0 vtable.
+Calls change_active_camera(*DAT_71052b7f00, 1, 0, stack_struct, 0).
+Then dispatches through local_30 vtable.
+
+=== 0x71029240a0 (176B) ~StageFlatZoneX ===
+Sets vtable PTR_LAB_71050f2f78.
+Releases unique_ptr at [399] via vtable[1].
+Destroys vector at [0x10a..0x10b]: reverse iterate, move [i-3] to [i-2], free each.
+Frees [0x106] (moves to [0x107] first).
+Calls FUN_71025d7310 (StageBase dtor chain).
+
+=== 0x7102ccf720 (136B) ~StageNintendogs ===
+Sets vtable PTR_LAB_710512e5e0.
+Gets lVar3 = [0xe7], clears [0xe7].
+If lVar3: releases 3 sub-objects at lVar3+0x790, +0x788 (vtable[1] release), +0x780 (free).
+Calls FUN_7102ccf300(lVar3+0x10), frees lVar3.
+Calls FUN_71025d7310.
+
+=== 0x7102f33f20 (192B) ~StageStreetPass ===
+Sets vtable PTR_LAB_71051520f8.
+Releases unique_ptr at [0x12a] via vtable[1].
+Destroys vector at [0x121..0x122]: same reverse-iterate pattern.
+Frees [0x117] → [0x118], frees [0x113] → [0x114].
+Calls FUN_71025d7310.
+
+=== 0x7100228110 (32B) ===
+malloc wrapper: if DAT_71052b4450 != null, tail-call it; else call malloc(param_1).
+
+=== 0x7100228130 (32B) ===
+free wrapper: if DAT_71052b4458 != null, tail-call it; else call free(param_1).
+
+=== 0x7103008320 (2700B) ~StageWufuIsland ===
+Sets vtable PTR_LAB_710515f3b0. Very complex destructor:
+- Releases unique_ptr at [0x19a]
+- Interacts with FighterManager for event listener removal (linked list manipulation)
+- Unregisters 5 event listeners from StageManager (FUN_7103167110 calls)
+  with event listener flag cleanup (DAT_71052b5fd8 checks)
+- Releases many unique_ptrs and sub-objects (vectors, linked lists, shared_ptrs)
+- Calls FUN_71030080c0, FUN_7103018000, FUN_7103018040 for list cleanup
+- Calls FUN_71025d7310 at end
+
+== Session 2026-04-09 (continued) ==
+
+=== 0x7101646f00 (28B) app::kozukatasight::screen_width ===
+Reads float DAT_710744601c. If 0.0, returns 0x780 (1920). Else returns (int)float.
+
+=== 0x7101646f20 (28B) app::kozukatasight::screen_height ===
+Reads float DAT_7107446020. If 0.0, returns 0x438 (1080). Else returns (int)float.
+
+=== 0x7101646ed0 (48B) app::kozukatasight::screen_to_world ===
+Stack-local zero Vector4f, calls FUN_7101341670(depth, &local, &input_vec2, 1), returns local.
+
+=== 0x7101645980 (56B) app::flyandhand::start_zoom_out ===
+Copies 16 bytes from *(DAT_71052b7f00)+0xc00 to stack, calls FUN_710160dc80(param_1, &stack).
+
+=== 0x710164c420 (48B) app::shiokarazu::start_zoom_out ===
+Copies Vector4f param to stack via NEON ext, calls FUN_710160dc80(param_1, &stack).
+
+=== 0x7101651d50 (48B) app::crazyhand::start_zoom_out ===
+Identical to shiokarazu::start_zoom_out.
+
+=== 0x710164bb20 (28B) app::shiokarazu::can_exist ===
+Returns *(ItemManager::instance_ + 0x58)->+0x708 == 0.
+
+=== 0x71016523a0 (28B) app::darz::can_exist ===
+Returns *(ItemManager::instance_ + 0x58)->+0xcd0 == 0.
+
+=== 0x710164be10 (68B) app::shiokarazu::end_bgm ===
+If param_1 != -1: builds stack struct {1, pad, param_2}, calls FUN_71023edf50(DAT_7105328f38, param_1, &stack).
+
+=== 0x710164bdc0 (76B) app::shiokarazu::start_bgm ===
+If param_1==0: puVar2=&DAT_7104464590. If param_1==1: puVar2=&DAT_7104464328. Else return -1.
+Returns FUN_71023edd60(DAT_7105328f38, *puVar2, 0).
+
+=== 0x710164bd60 (84B) app::shiokarazu::get_bgm_kind ===
+XorShift128 RNG state at *(DAT_71052c25b0)[0]+0x78..0x84. Increments counter at +0x88.
+Returns DAT_7104464220[result & 1].
+
+=== 0x710164c390 (140B) app::shiokarazu::set_dead_range ===
+Pure float arithmetic. Reads origin at cam_data+0xa80, extents at cam_data+0xc60.
+Subtracts origin from input Vector4f, writes to cam_data+0xc10..0xc3c (dead range rect).
+Layout: [0xc10]=left, [0xc14]=right, [0xc18]=bottom, [0xc1c]=top,
+        [0xc30..0xc3c]=same+extents.
+
+=== 0x7101651cc0 (140B) app::crazyhand::set_dead_range ===
+Identical to shiokarazu::set_dead_range.
+
+=== 0x71016514c0 (60B) app::wanwan::add_movement ===
+Gets ground module from ItemModuleAccessor+0x68, vtable[0x60/8](ground, 10) to get pile,
+then vtable[0xa0/8](pile, param_2) to add movement.
+
+=== 0x7101651480 (60B) app::wanwan::get_pile_ground_movement_speed ===
+Gets ground module, vtable call to get pile ground [10], then vtable[0x20/8]() to get speed.
+Returns {speed, 0} as Vector4f.
+
+=== 0x71015c6b60 (28B) app::target::center_pos_2d ===
+Calls center_pos, then NEON ext on return value (zeroing upper half). Not just a tail-call.
+
+=== 0x71015c1750 (28B) app::item::request_cut_in_from_param ===
+Tail-calls FUN_71015c1770 with extra params: (lua, kind, hash, 0x50000000, vec2, 0x7fb997a80, 1).
+
+=== 0x71015ce790 (48B) app::stage::back_line_z ===
+Returns -10.0f normally. If BattleObjectWorld+0xc == 0 && +0x8 < threshold, returns -1.0f.
+
+=== 0x71015c79e0 (64B) app::boss_private::common_param_float ===
+Reads float from ItemParamAccessor at kind*100+param_type*4+0x73188. Returns 0 if array null.
+
+=== 0x71015c11a0 (52B) app::item::begin_scale_animation ===
+Gets scale data from lua accessor chain (+0x1a0 → +0x190 → +0x220), calls FUN_71015b58e0.
+
+=== 0x71015c1d80 (80B) app::item::set_scale_speed_mul ===
+Sets float at item_data+0x27c, dispatches vtable[0x120/8] or [0x110/8] based on mul==1.0.
+
+=== 0x71015c22f0 (64B) app::item::calc_offset_with_gravity (lua_State version) ===
+Gets posture module from accessor+0x38, vtable[0x60/8] for position, calls FUN_710160e340.
