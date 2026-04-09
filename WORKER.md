@@ -33,6 +33,10 @@
 - NEON ItemKinetic functions, pop_lua_stack, ItemManager ctor, item_generate_position_in_rect
 - as_bool / operator_cast_to_bool (jump table format: upstream ldrb vs NX ldrsw)
 - operator- binary, operator* (12% match — metamethod tail call codegen doesn't match)
+- **Binary discrepancy:** data/main.elf differs from Ghidra binary (13.0.4) at many addresses.
+  Small leaf functions (bitwise ops, simple accessors) are identical in both.
+  Larger functions (min/max, length, operator-/*, operator==) have different code.
+  compare_bytes.py verifies against main.elf — only trust for small leaf functions.
 
 ## File Territory
 - src/app/lua_acmd.cpp, weapon_params.cpp, ItemKinetic.cpp, ItemHelpers.cpp
