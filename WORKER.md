@@ -1,30 +1,32 @@
-# Worker: pool-d
+# Worker: pool-e
 
 ## Model: Opus
 
-## Task: Lua/ACMD + AI system decomp — community priority #3
+## Task: Item/weapon + parameter loading — community priority #4
 
 ## Strategy
-ACMD (Animation Command) is the core scripting system every moveset mod interacts with. The Lua/L2C binding layer translates between the game engine and ACMD scripts. AI system controls CPU behavior. Both are high-value for the modding community.
+Weapon parameters and item behavior are heavily used by modders who create custom fighters and items. Parameter loading is how the game reads .prc files, which modders replace constantly. Both areas have strong community knowledge to leverage.
 
 ## Targets
-1. **Lua/ACMD functions** — 137 undecompiled (121 KB). L2C binding, lua state management, ACMD interpreter hooks.
-2. **AI system** — 188 undecompiled (91 KB). AI decision trees, combat evaluation, target selection.
-3. **fighter_motion.cpp** — Continue kinetic energy + motion helpers (existing file).
+1. **weapon_params.cpp** — Continue weapon param accessor decomp. Already have BUDDYBOMB, PICKELBOMB, MECHAKOOPA, HOLYWATER, PEACH, DOLL, EXPLOSIONBOMB, LINKARROW. Target remaining weapon types.
+2. **Item functions** — 97 undecompiled (53 KB). Item spawning, behavior, collision.
+3. **Parameter loading** — 87 undecompiled (65 KB). ParamAccessor, prc file reading, hash lookups.
+4. **FighterParamAccessor2.cpp** — Existing file, extend with more param accessors.
 
 ## Approach
-- Lua functions may be at -O0 optimization (0x71037xxxxx range) — try __attribute__((optnone))
-- AI functions use the ai_data struct at +0x168 offset pattern (see fighter_status.cpp examples)
-- ACMD interpreter functions are complex — focus on the dispatch wrappers first
-- Cross-reference with Skyline/ARCropolis naming for ACMD opcodes
+- Weapon params follow consistent patterns (see existing weapon_params.cpp)
+- Use Ghidra to identify param accessor vtable patterns
+- ItemModule vtable methods in include/app/modules/
+- Parameter loading may use hash40 lookups — cross-reference with community hash tables
 
 ## File Territory
-- src/app/fighter_motion.cpp
-- src/app/lua_acmd.cpp (new)
-- src/app/fighter_ai.cpp (coordinate with pool-b — pool-b owns AI stat checks, pool-d owns AI decision logic)
+- src/app/weapon_params.cpp
+- src/app/Item.cpp
+- src/app/ItemManager.cpp
+- src/app/FighterParamAccessor2.cpp
 - include/app/ (struct updates)
 
 ## Quality Rules
-- Use optnone for -O0 compiled functions (0x71037-0x71039 range)
+- Weapon params are templated patterns — document the template
 - No naked asm
-- Document Lua/ACMD opcode names with community sources
+- Use existing module headers for vtable dispatch
