@@ -3618,8 +3618,8 @@ extern "C" void FUN_7103187210(s64 elem, s64 stream, u32 version);
 extern "C" void FUN_71031885c0(s64 elem, s64 stream);
 extern "C" void FUN_7103187920(s64 elem, s64 stream, u32 version);
 extern "C" s64  FUN_7103188160(s64 stream, s64 dest);
-extern "C" void FUN_7103187c20(s64 stream, void* str);
-extern "C" void FUN_7103188a70(s64 stream, void* str);
+extern "C" s64  FUN_7103187c20(s64 stream, void* str);
+extern "C" s64  FUN_7103188a70(s64 stream, void* str);
 extern "C" void FUN_71031882c0(void* dest, s64 stream);
 extern "C" void FUN_7103189b00(s64 elem, s64 stream, u32 version);
 
@@ -4584,4 +4584,1305 @@ void FUN_7103187920(s64 param_1, s64 param_2, u32 param_3) {
 
     // Version >= 2 (or >= 3): read array at +0x18
     FUN_7103188160(param_2, param_1 + 0x18);
+}
+
+// Forward declarations for FUN_7103185c80 / FUN_7103184f20
+extern "C" s64 FUN_7103189880(s64 stream, s64 dest);
+
+// ════════════════════════════════════════════════════════════════════
+// 0x7103185c80 — read param element type 0x1A0 (common + 3 sub-arrays + weights + tail)
+// Size: 2,772 bytes
+// [derived: Ghidra decompilation — reads version, common element via
+//  FUN_7103187210, then 3 identical blocks each reading an array of
+//  0x40-stride sub-elements (via FUN_7103187920) at offsets:
+//  +0x108/+0x110, +0x128/+0x130, +0x148/+0x150.
+//  In read mode (LE), computes area weights per element and accumulates
+//  at +0x118, +0x138, +0x158. Reads f32 at +0x190.
+//  Version < 2: allocates sentinel arrays at +0x160/+0x168, +0x180/+0x188, +0x170/+0x178.
+//  Version >= 2: calls FUN_7103189880 for +0x160 and +0x180.
+//  Version >= 3: calls FUN_7103189880 for +0x170.]
+// NOTE: Area computation uses NEON SIMD (frsqrte/frsqrts) for vector
+// length — won't byte-match but is semantically correct.
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+void FUN_7103185c80(s64 param_1, s64 param_2, u32 param_3) {
+    // Read version byte (init 4)
+    u8 version = 4;
+    stream_io(param_2, &version, 1);
+    FUN_7103187210(param_1, param_2, (u32)version);
+
+    // ── Block 1: sub-array at +0x108/+0x110, weights at +0x118 ──
+    u8 m1 = 1;
+    stream_io(param_2, &m1, 1);
+    u8 m2 = 1;
+    stream_io(param_2, &m2, 1);
+
+    u32* count1 = (u32*)(param_1 + 0x108);
+    char is_writing = *(char*)(param_2 + 4);
+
+    if (is_writing == '\0') {
+        FUN_71031894b0(count1, param_2);
+        is_writing = *(char*)(param_2 + 4);
+    } else {
+        FUN_710314fc70(param_2, count1);
+        if (*count1 != 0) {
+            u64 i = 0;
+            s64 off = 8;
+            do {
+                s64 arr = *(s64*)(param_1 + 0x110);
+                u8 em = 1;
+                stream_io(param_2, &em, 1);
+                u8 sv = 3;
+                stream_io(param_2, &sv, 1);
+                FUN_7103187920(arr + off, param_2, (u32)sv);
+                i++;
+                off += 0x40;
+            } while (i < *count1);
+        }
+        is_writing = *(char*)(param_2 + 4);
+    }
+
+    if (is_writing == '\0') {
+        *(u32*)(param_1 + 0x118) = 0;
+        f32 pi_val = DAT_710447291c;
+        f32 ten_val = DAT_7104470d10;
+        if (*count1 != 0) {
+            s64 ep = *(s64*)(param_1 + 0x110);
+            s64 end = ep + (u64)*count1 * 0x40;
+            do {
+                s32 type = *(s32*)(ep + 8);
+                f32 area;
+                if (type == 2) {
+                    f32 r = *(f32*)(ep + 0x14);
+                    area = (r * r * ten_val) / pi_val;
+                    if (area <= 1.0f) area = 1.0f;
+                } else if (type == 4) {
+                    area = 0.0f;
+                    if (1 < *(u32*)(ep + 0x28)) {
+                        area = 0.0f;
+                        s64 pi = 0;
+                        do {
+                            f32* pts = (f32*)(*(s64*)(ep + 0x30) + pi * 0x10);
+                            f32 dx = pts[4] - pts[0];
+                            f32 dy = pts[5] - pts[1];
+                            f32 len_sq = dx * dx + dy * dy;
+                            f32 len;
+                            if (len_sq == 0.0f) {
+                                len = 0.0f;
+                            } else {
+                                len = len_sq; // NEON frsqrte/frsqrts path
+                            }
+                            area += len;
+                            pi++;
+                        } while ((u64)(pi + 2) < *(u32*)(ep + 0x28));
+                    }
+                    area = area / 10.0f;
+                } else {
+                    area = 1.0f;
+                    if (type == 3) {
+                        f32 w = (*(f32*)(ep + 0x10) - *(f32*)(ep + 0xc)) / 10.0f;
+                        if (w <= 1.0f) w = 1.0f;
+                        f32 h = (*(f32*)(ep + 0x18) - *(f32*)(ep + 0x14)) / 10.0f;
+                        if (h <= 1.0f) h = 1.0f;
+                        area = w * h;
+                    }
+                }
+                *(f32*)(ep + 0x38) = area;
+                ep += 0x40;
+                *(f32*)(param_1 + 0x118) = area + *(f32*)(param_1 + 0x118);
+            } while (ep != end);
+        }
+        is_writing = *(char*)(param_2 + 4);
+    }
+
+    // ── Block 2: sub-array at +0x128/+0x130, weights at +0x138 ──
+    u8 m3 = 1;
+    stream_io(param_2, &m3, 1);
+    u8 m4 = 1;
+    stream_io(param_2, &m4, 1);
+
+    u32* count2 = (u32*)(param_1 + 0x128);
+
+    if (*(char*)(param_2 + 4) == '\0') {
+        FUN_71031894b0(count2, param_2);
+        is_writing = *(char*)(param_2 + 4);
+    } else {
+        FUN_710314fc70(param_2, count2);
+        if (*count2 != 0) {
+            u64 i = 0;
+            s64 off = 8;
+            do {
+                s64 arr = *(s64*)(param_1 + 0x130);
+                u8 em = 1;
+                stream_io(param_2, &em, 1);
+                u8 sv = 3;
+                stream_io(param_2, &sv, 1);
+                FUN_7103187920(arr + off, param_2, (u32)sv);
+                i++;
+                off += 0x40;
+            } while (i < *count2);
+        }
+        is_writing = *(char*)(param_2 + 4);
+    }
+
+    if (is_writing == '\0') {
+        *(u32*)(param_1 + 0x138) = 0;
+        f32 pi_val = DAT_710447291c;
+        f32 ten_val = DAT_7104470d10;
+        if (*count2 != 0) {
+            s64 ep = *(s64*)(param_1 + 0x130);
+            s64 end = ep + (u64)*count2 * 0x40;
+            do {
+                s32 type = *(s32*)(ep + 8);
+                f32 area;
+                if (type == 2) {
+                    f32 r = *(f32*)(ep + 0x14);
+                    area = (r * r * ten_val) / pi_val;
+                    if (area <= 1.0f) area = 1.0f;
+                } else if (type == 4) {
+                    area = 0.0f;
+                    if (1 < *(u32*)(ep + 0x28)) {
+                        area = 0.0f;
+                        s64 pi = 0;
+                        do {
+                            f32* pts = (f32*)(*(s64*)(ep + 0x30) + pi * 0x10);
+                            f32 dx = pts[4] - pts[0];
+                            f32 dy = pts[5] - pts[1];
+                            f32 len_sq = dx * dx + dy * dy;
+                            f32 len;
+                            if (len_sq == 0.0f) {
+                                len = 0.0f;
+                            } else {
+                                len = len_sq; // NEON frsqrte/frsqrts path
+                            }
+                            area += len;
+                            pi++;
+                        } while ((u64)(pi + 2) < *(u32*)(ep + 0x28));
+                    }
+                    area = area / 10.0f;
+                } else {
+                    area = 1.0f;
+                    if (type == 3) {
+                        f32 w = (*(f32*)(ep + 0x10) - *(f32*)(ep + 0xc)) / 10.0f;
+                        if (w <= 1.0f) w = 1.0f;
+                        f32 h = (*(f32*)(ep + 0x18) - *(f32*)(ep + 0x14)) / 10.0f;
+                        if (h <= 1.0f) h = 1.0f;
+                        area = w * h;
+                    }
+                }
+                *(f32*)(ep + 0x38) = area;
+                ep += 0x40;
+                *(f32*)(param_1 + 0x138) = area + *(f32*)(param_1 + 0x138);
+            } while (ep != end);
+        }
+        is_writing = *(char*)(param_2 + 4);
+    }
+
+    // ── Block 3: sub-array at +0x148/+0x150, weights at +0x158 ──
+    u8 m5 = 1;
+    stream_io(param_2, &m5, 1);
+    u8 m6 = 1;
+    stream_io(param_2, &m6, 1);
+
+    u32* count3 = (u32*)(param_1 + 0x148);
+
+    if (*(char*)(param_2 + 4) == '\0') {
+        FUN_71031894b0(count3, param_2);
+        is_writing = *(char*)(param_2 + 4);
+    } else {
+        FUN_710314fc70(param_2, count3);
+        if (*count3 != 0) {
+            u64 i = 0;
+            s64 off = 8;
+            do {
+                s64 arr = *(s64*)(param_1 + 0x150);
+                u8 em = 1;
+                stream_io(param_2, &em, 1);
+                u8 sv = 3;
+                stream_io(param_2, &sv, 1);
+                FUN_7103187920(arr + off, param_2, (u32)sv);
+                i++;
+                off += 0x40;
+            } while (i < *count3);
+        }
+        is_writing = *(char*)(param_2 + 4);
+    }
+
+    if (is_writing == '\0') {
+        *(u32*)(param_1 + 0x158) = 0;
+        f32 pi_val = DAT_710447291c;
+        f32 ten_val = DAT_7104470d10;
+        if (*count3 != 0) {
+            s64 ep = *(s64*)(param_1 + 0x150);
+            s64 end = ep + (u64)*count3 * 0x40;
+            do {
+                s32 type = *(s32*)(ep + 8);
+                f32 area;
+                if (type == 2) {
+                    f32 r = *(f32*)(ep + 0x14);
+                    area = (r * r * ten_val) / pi_val;
+                    if (area <= 1.0f) area = 1.0f;
+                } else if (type == 4) {
+                    area = 0.0f;
+                    if (1 < *(u32*)(ep + 0x28)) {
+                        area = 0.0f;
+                        s64 pi = 0;
+                        do {
+                            f32* pts = (f32*)(*(s64*)(ep + 0x30) + pi * 0x10);
+                            f32 dx = pts[4] - pts[0];
+                            f32 dy = pts[5] - pts[1];
+                            f32 len_sq = dx * dx + dy * dy;
+                            f32 len;
+                            if (len_sq == 0.0f) {
+                                len = 0.0f;
+                            } else {
+                                len = len_sq; // NEON frsqrte/frsqrts path
+                            }
+                            area += len;
+                            pi++;
+                        } while ((u64)(pi + 2) < *(u32*)(ep + 0x28));
+                    }
+                    area = area / 10.0f;
+                } else {
+                    area = 1.0f;
+                    if (type == 3) {
+                        f32 w = (*(f32*)(ep + 0x10) - *(f32*)(ep + 0xc)) / 10.0f;
+                        if (w <= 1.0f) w = 1.0f;
+                        f32 h = (*(f32*)(ep + 0x18) - *(f32*)(ep + 0x14)) / 10.0f;
+                        if (h <= 1.0f) h = 1.0f;
+                        area = w * h;
+                    }
+                }
+                *(f32*)(ep + 0x38) = area;
+                ep += 0x40;
+                *(f32*)(param_1 + 0x158) = area + *(f32*)(param_1 + 0x158);
+            } while (ep != end);
+        }
+        is_writing = *(char*)(param_2 + 4);
+    }
+
+    // ── Tail: read f32, version-gated array allocation ──
+    u8 m7 = 1;
+    stream_io(param_2, &m7, 1);
+    FUN_710314fef0(param_2, (void*)(param_1 + 0x190));
+
+    if (param_3 < 2) {
+        // Version < 2: allocate sentinel arrays
+        if (*(char*)(param_2 + 4) != '\0') return;
+
+        // Sentinel array at +0x160/+0x168 (count from block 1)
+        u32 c1 = *(u32*)(param_1 + 0x108);
+        *(u32*)(param_1 + 0x160) = c1;
+        s64 old1;
+        if (c1 == 0) {
+            old1 = *(s64*)(param_1 + 0x168);
+            *(s64*)(param_1 + 0x168) = 0;
+        } else {
+            u64 sz1 = (u64)c1 * 4;
+            u32* buf1 = (u32*)je_aligned_alloc(0x10, sz1);
+            if (buf1 == nullptr) {
+                if (DAT_7105331f00 != nullptr) {
+                    u32 oom_type = 0;
+                    u64 oom_size = sz1;
+                    u64 r = ((u64(*)(s64*, u32*, u64*))(*(u64*)(*DAT_7105331f00 + 0x30)))
+                             (DAT_7105331f00, &oom_type, &oom_size);
+                    if ((r & 1) != 0) {
+                        buf1 = (u32*)je_aligned_alloc(0x10, sz1);
+                        if (buf1 == nullptr) buf1 = nullptr;
+                    } else {
+                        buf1 = nullptr;
+                    }
+                } else {
+                    buf1 = nullptr;
+                }
+            }
+            // Fill with 0xFFFFFFFA sentinel
+            for (u64 j = 0; j < c1; j++) buf1[j] = 0xFFFFFFFA;
+            old1 = *(s64*)(param_1 + 0x168);
+            *(u32**)(param_1 + 0x168) = buf1;
+        }
+        if (old1 != 0) FUN_710392e590(old1);
+
+        // Sentinel array at +0x180/+0x188 (count from block 3)
+        u32 c3 = *(u32*)(param_1 + 0x148);
+        *(u32*)(param_1 + 0x180) = c3;
+        s64 old3;
+        if (c3 == 0) {
+            old3 = *(s64*)(param_1 + 0x188);
+            *(s64*)(param_1 + 0x188) = 0;
+        } else {
+            u64 sz3 = (u64)c3 * 4;
+            u32* buf3 = (u32*)je_aligned_alloc(0x10, sz3);
+            if (buf3 == nullptr) {
+                if (DAT_7105331f00 != nullptr) {
+                    u32 oom_type = 0;
+                    u64 oom_size = sz3;
+                    u64 r = ((u64(*)(s64*, u32*, u64*))(*(u64*)(*DAT_7105331f00 + 0x30)))
+                             (DAT_7105331f00, &oom_type, &oom_size);
+                    if ((r & 1) != 0) {
+                        buf3 = (u32*)je_aligned_alloc(0x10, sz3);
+                        if (buf3 == nullptr) buf3 = nullptr;
+                    } else {
+                        buf3 = nullptr;
+                    }
+                } else {
+                    buf3 = nullptr;
+                }
+            }
+            for (u64 j = 0; j < c3; j++) buf3[j] = 0xFFFFFFFA;
+            old3 = *(s64*)(param_1 + 0x188);
+            *(u32**)(param_1 + 0x188) = buf3;
+        }
+        if (old3 != 0) FUN_710392e590(old3);
+    } else {
+        // Version >= 2: use FUN_7103189880
+        s64 s = FUN_7103189880(param_2, param_1 + 0x160);
+        FUN_7103189880(s, param_1 + 0x180);
+    }
+
+    if (2 < param_3) {
+        // Version >= 3: third array via FUN_7103189880
+        FUN_7103189880(param_2, param_1 + 0x170);
+        return;
+    }
+
+    // Version < 3, LE: allocate third sentinel array at +0x170/+0x178
+    if (*(char*)(param_2 + 4) != '\0') return;
+
+    u32 c2 = *(u32*)(param_1 + 0x128);
+    *(u32*)(param_1 + 0x170) = c2;
+    s64 old2;
+    if (c2 == 0) {
+        old2 = *(s64*)(param_1 + 0x178);
+        *(s64*)(param_1 + 0x178) = 0;
+    } else {
+        u64 sz2 = (u64)c2 * 4;
+        u32* buf2 = (u32*)je_aligned_alloc(0x10, sz2);
+        if (buf2 == nullptr) {
+            if (DAT_7105331f00 != nullptr) {
+                u32 oom_type = 0;
+                u64 oom_size = sz2;
+                u64 r = ((u64(*)(s64*, u32*, u64*))(*(u64*)(*DAT_7105331f00 + 0x30)))
+                         (DAT_7105331f00, &oom_type, &oom_size);
+                if ((r & 1) != 0) {
+                    buf2 = (u32*)je_aligned_alloc(0x10, sz2);
+                    if (buf2 == nullptr) buf2 = nullptr;
+                } else {
+                    buf2 = nullptr;
+                }
+            } else {
+                buf2 = nullptr;
+            }
+        }
+        for (u64 j = 0; j < c2; j++) buf2[j] = 0xFFFFFFFA;
+        old2 = *(s64*)(param_1 + 0x178);
+        *(u32**)(param_1 + 0x178) = buf2;
+    }
+    if (old2 != 0) FUN_710392e590(old2);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x7103184f20 — read param element type 0x160 (common + paired f32 arrays + 0x120/0x160 sub-arrays)
+// Size: 3,132 bytes
+// [derived: Ghidra decompilation — complex version-gated reader:
+//  v<2: init local struct with magic 0x7735bb75, read base header.
+//  v>=2: read version byte, common element via FUN_7103187210.
+//  Read u32 at +0x100. Two paired-f32 arrays at +0x108/+0x110 and +0x118/+0x120
+//  (LE: FUN_71031882c0, BE: loop read 2 f32 per 0x10-stride element).
+//  Read count at +0x128, allocate 0x120-stride elements with magic 0x7735bb75
+//  and PTR_LAB_710517a388 vtable. Each element: optional FUN_7103187210 header,
+//  2 f32 at +0x100, f32 at +0x110, optional f32 at +0x114.
+//  v<3: alloc 0x10-stride zero array at +0x138/+0x140 (count from +0x118).
+//  v>=3: read count at +0x138, alloc 0x10-stride array, read u32+u64 per element.
+//  v>=4: read count at +0x148, alloc 0x160-stride elements with PTR_LAB_710517a3a8,
+//  read each via FUN_7103189b00.]
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+void FUN_7103184f20(s64 param_1, s64 param_2, u32 param_3) {
+    // Version-dependent header
+    if (param_3 < 2) {
+        // Version < 2: init local base struct, read via FUN_71031885c0
+        // (the local struct is discarded — only side effect is stream advancement)
+        u8 local_marker = 1;
+        stream_io(param_2, &local_marker, 1);
+        // Local base struct would be initialized with magic 0x7735bb75 etc.
+        // but only the base header read matters for stream position
+        u64 local_buf[6] = {0x27735bb75ULL, 0, 0, 0, 0, 0};
+        FUN_71031885c0((s64)local_buf, param_2);
+    } else {
+        // Version >= 2: read version, common element
+        u8 version = 4;
+        stream_io(param_2, &version, 1);
+        FUN_7103187210(param_1, param_2, (u32)version);
+    }
+
+    // Read u32 at +0x100
+    FUN_710314fc70(param_2, (void*)(param_1 + 0x100));
+
+    // ── Paired f32 array 1: count at +0x108, data at +0x110 ──
+    u8 mk1 = 1;
+    stream_io(param_2, &mk1, 1);
+
+    u32* cnt1 = (u32*)(param_1 + 0x108);
+    if (*(char*)(param_2 + 4) == '\0') {
+        FUN_71031882c0(cnt1, param_2);
+    } else {
+        FUN_710314fc70(param_2, cnt1);
+        if (*cnt1 != 0) {
+            u64 i = 0;
+            do {
+                s64 arr = *(s64*)(param_1 + 0x110);
+                u8 em = 1;
+                stream_io(param_2, &em, 1);
+                s64 ofs = i * 0x10;
+                u32 lo = (u32)*(u64*)(arr + ofs);
+                u32 hi = (u32)(*(u64*)(arr + ofs) >> 32);
+                s64 s = FUN_710314fff0(param_2, &lo);
+                FUN_710314fff0(s, &hi);
+                i++;
+                u64* p = (u64*)(arr + ofs);
+                p[1] = 0;
+                *p = ((u64)hi << 32) | (u64)lo;
+            } while (i < *cnt1);
+        }
+    }
+
+    // ── Paired f32 array 2: count at +0x118, data at +0x120 ──
+    u8 mk2 = 1;
+    stream_io(param_2, &mk2, 1);
+
+    u32* cnt2 = (u32*)(param_1 + 0x118);
+    if (*(char*)(param_2 + 4) == '\0') {
+        FUN_71031882c0(cnt2, param_2);
+    } else {
+        FUN_710314fc70(param_2, cnt2);
+        if (*cnt2 != 0) {
+            u64 i = 0;
+            do {
+                s64 arr = *(s64*)(param_1 + 0x120);
+                u8 em = 1;
+                stream_io(param_2, &em, 1);
+                s64 ofs = i * 0x10;
+                u32 lo = (u32)*(u64*)(arr + ofs);
+                u32 hi = (u32)(*(u64*)(arr + ofs) >> 32);
+                s64 s = FUN_710314fff0(param_2, &lo);
+                FUN_710314fff0(s, &hi);
+                i++;
+                u64* p = (u64*)(arr + ofs);
+                p[1] = 0;
+                *p = ((u64)hi << 32) | (u64)lo;
+            } while (i < *cnt2);
+        }
+    }
+
+    // ── 0x120-stride sub-array: count at +0x128, data at +0x130 ──
+    u8 mk3 = 1;
+    stream_io(param_2, &mk3, 1);
+
+    char is_le = *(char*)(param_2 + 4);
+    u32* cnt3 = (u32*)(param_1 + 0x128);
+    FUN_710314fc70(param_2, cnt3);
+    u32 count3 = *cnt3;
+    u64 count3_u64 = (u64)count3;
+
+    if (is_le == '\0') {
+        // LE path: allocate and init 0x120-stride array
+        if (count3 == 0) {
+            s64 old = *(s64*)(param_1 + 0x130);
+            *(s64*)(param_1 + 0x130) = 0;
+            if (old != 0) FUN_710392e590(old - 0x10);
+        } else {
+            u64 alloc_sz = count3_u64 * 0x120 | 0x10;
+            s64 buf = (s64)je_aligned_alloc(0x10, alloc_sz);
+            if (buf == 0) {
+                if (DAT_7105331f00 != nullptr) {
+                    u32 oom_type = 0;
+                    u64 oom_size = alloc_sz;
+                    u64 r = ((u64(*)(s64*, u32*, u64*))(*(u64*)(*DAT_7105331f00 + 0x30)))
+                             (DAT_7105331f00, &oom_type, &oom_size);
+                    if ((r & 1) != 0)
+                        buf = (s64)je_aligned_alloc(0x10, alloc_sz);
+                }
+            }
+            // Store count at +8
+            s64 idx = 0;
+            *(u64*)(buf + 8) = count3_u64;
+            do {
+                s64 e = buf + idx;
+                idx += 0x120;
+                *(u32*)(e + 0x18) = 0x7735bb75;
+                *(u32*)(e + 0x1c) = 2;
+                *(u8*)(e + 0x20) = 0;
+                *(u8*)(e + 0x58) = 0;
+                *(u64*)(e + 0x48) = 0;
+                *(u64*)(e + 0x50) = 0;
+                *(u64*)(e + 0x40) = 0;
+                *(u8*)(e + 0xb0) = 0;
+                *(u32*)(e + 0xb4) = 0xFFFFFFFF;
+                *(u8*)(e + 0xb8) = 0;
+                *(u32*)(e + 0xf8) = 0;
+                *(u8**)(e + 0x10) = &PTR_LAB_710517a388;
+                *(u64*)(e + 0x110) = 0;
+                *(u64*)(e + 0xa0) = 0;
+                *(u64*)(e + 0xa8) = 0;
+                *(u64*)(e + 0x100) = 0;
+                *(u64*)(e + 0x108) = 0;
+                *(u64*)(e + 0x118) = 0;
+                *(u64*)(e + 0x120) = 0;
+            } while (count3_u64 * 0x120 - idx != 0);
+
+            s64 old = *(s64*)(param_1 + 0x130);
+            *(s64*)(param_1 + 0x130) = buf + 0x10;
+            if (old != 0) FUN_710392e590(old - 0x10);
+
+            // Read each element
+            if (*cnt3 != 0) {
+                s64 eoff = 0;
+                u64 j = 0;
+                do {
+                    s64 arr = *(s64*)(param_1 + 0x130);
+                    u8 sv = 3;
+                    stream_io(param_2, &sv, 1);
+                    u8 sv_val = sv;
+                    if (1 < sv) {
+                        u8 ev = 4;
+                        stream_io(param_2, &ev, 1);
+                        FUN_7103187210(arr + eoff, param_2, (u32)ev);
+                    }
+                    u8 em = 1;
+                    stream_io(param_2, &em, 1);
+
+                    s64 ep = arr + eoff;
+                    u32 lo = (u32)*(u64*)(ep + 0x100);
+                    u32 hi = (u32)(*(u64*)(ep + 0x100) >> 32);
+                    s64 s = FUN_710314fff0(param_2, &lo);
+                    s = FUN_710314fff0(s, &hi);
+                    *(u64*)(ep + 0x108) = 0;
+                    *(u64*)(ep + 0x100) = ((u64)hi << 32) | (u64)lo;
+                    FUN_710314fff0(s, (void*)(ep + 0x110));
+
+                    if (2 < sv_val) {
+                        FUN_710314fef0(param_2, (void*)(ep + 0x114));
+                    }
+
+                    j++;
+                    eoff += 0x120;
+                } while (j < *cnt3);
+            }
+        }
+    } else if (count3 != 0) {
+        // BE path: read directly into existing array
+        u64 j = 0;
+        s64 eoff = 0x114;
+        do {
+            s64 arr = *(s64*)(param_1 + 0x130);
+            u8 sv = 3;
+            stream_io(param_2, &sv, 1);
+            u8 sv_val = sv;
+            if (1 < sv) {
+                u8 ev = 4;
+                stream_io(param_2, &ev, 1);
+                FUN_7103187210(arr + eoff - 0x114, param_2, (u32)ev);
+            }
+            u8 em = 1;
+            stream_io(param_2, &em, 1);
+
+            s64 ep = arr + eoff;
+            u32 lo = (u32)*(u64*)(ep - 0x14);
+            u32 hi = (u32)(*(u64*)(ep - 0x14) >> 32);
+            s64 s = FUN_710314fff0(param_2, &lo);
+            s = FUN_710314fff0(s, &hi);
+            *(u64*)(ep - 0xc) = 0;
+            *(u64*)(ep - 0x14) = ((u64)hi << 32) | (u64)lo;
+            FUN_710314fff0(s, (void*)(ep - 4));
+
+            if (2 < sv_val) {
+                FUN_710314fef0(param_2, (void*)ep);
+            }
+
+            j++;
+            eoff += 0x120;
+        } while (j < *cnt3);
+    }
+
+    // ── Version < 3: alloc 0x10-stride zero array at +0x138/+0x140 ──
+    if (param_3 < 3) {
+        if (*(char*)(param_2 + 4) != '\0') return;
+
+        u32 c = *(u32*)(param_1 + 0x118);
+        *(u32*)(param_1 + 0x138) = c;
+        s64 old;
+        if (c == 0) {
+            old = *(s64*)(param_1 + 0x140);
+            *(s64*)(param_1 + 0x140) = 0;
+        } else {
+            u64 sz = (u64)c * 0x10;
+            u32* pbuf = (u32*)je_aligned_alloc(0x10, sz);
+            if (pbuf == nullptr) {
+                if (DAT_7105331f00 != nullptr) {
+                    u32 oom_type = 0;
+                    u64 oom_size = sz;
+                    u64 r = ((u64(*)(s64*, u32*, u64*))(*(u64*)(*DAT_7105331f00 + 0x30)))
+                             (DAT_7105331f00, &oom_type, &oom_size);
+                    if ((r & 1) != 0) {
+                        pbuf = (u32*)je_aligned_alloc(0x10, sz);
+                        if (pbuf == nullptr) pbuf = nullptr;
+                    } else {
+                        pbuf = nullptr;
+                    }
+                } else {
+                    pbuf = nullptr;
+                }
+            }
+            // Zero-fill each 0x10 element
+            for (u64 k = 0; k < c; k++) {
+                pbuf[k * 4] = 0;
+                *(u64*)&pbuf[k * 4 + 2] = 0;
+            }
+            old = *(s64*)(param_1 + 0x140);
+            *(u32**)(param_1 + 0x140) = pbuf;
+        }
+        if (old != 0) FUN_710392e590(old);
+
+        // Init each slot to zero
+        if (*(s32*)(param_1 + 0x138) != 0) {
+            s64 off = 0;
+            u64 k = 0;
+            do {
+                *(u64*)(*(s64*)(param_1 + 0x140) + off + 8) = 0;
+                *(u32*)(*(s64*)(param_1 + 0x140) + off) = 0;
+                k++;
+                off += 0x10;
+            } while (k < *(u32*)(param_1 + 0x138));
+        }
+        return;
+    }
+
+    // ── Version >= 3: read count at +0x138, alloc 0x10-stride array ──
+    u8 mk4 = 1;
+    stream_io(param_2, &mk4, 1);
+
+    char is_le2 = *(char*)(param_2 + 4);
+    u32* cnt4 = (u32*)(param_1 + 0x138);
+    FUN_710314fc70(param_2, cnt4);
+    u32 count4 = *cnt4;
+
+    if (is_le2 == '\0') {
+        // LE path
+        if (count4 == 0) {
+            s64 old = *(s64*)(param_1 + 0x140);
+            *(s64*)(param_1 + 0x140) = 0;
+            if (old != 0) FUN_710392e590(old);
+        } else {
+            u64 sz = (u64)count4 * 0x10;
+            u32* pbuf = (u32*)je_aligned_alloc(0x10, sz);
+            if (pbuf == nullptr) {
+                if (DAT_7105331f00 != nullptr) {
+                    u32 oom_type = 0;
+                    u64 oom_size = sz;
+                    u64 r = ((u64(*)(s64*, u32*, u64*))(*(u64*)(*DAT_7105331f00 + 0x30)))
+                             (DAT_7105331f00, &oom_type, &oom_size);
+                    if ((r & 1) != 0) {
+                        pbuf = (u32*)je_aligned_alloc(0x10, sz);
+                        if (pbuf == nullptr) pbuf = nullptr;
+                    } else {
+                        pbuf = nullptr;
+                    }
+                } else {
+                    pbuf = nullptr;
+                }
+            }
+            // Zero-fill
+            for (u64 k = 0; k < count4; k++) {
+                pbuf[k * 4] = 0;
+                *(u64*)&pbuf[k * 4 + 2] = 0;
+            }
+            s64 old = *(s64*)(param_1 + 0x140);
+            *(u32**)(param_1 + 0x140) = pbuf;
+            if (old != 0) FUN_710392e590(old);
+
+            // Read each element: marker, u32, u64
+            if (*cnt4 != 0) {
+                u64 j = 0;
+                s64 off = 8;
+                do {
+                    s64 arr = *(s64*)(param_1 + 0x140);
+                    u8 em = 1;
+                    stream_io(param_2, &em, 1);
+                    s64 ep = arr + off;
+                    s64 s = FUN_710314fc70(param_2, (void*)(ep - 8));
+                    FUN_710314fd70(s, (void*)ep);
+                    j++;
+                    off += 0x10;
+                } while (j < *cnt4);
+            }
+        }
+    } else if (count4 != 0) {
+        // BE path: read directly
+        u64 j = 0;
+        s64 off = 8;
+        do {
+            s64 arr = *(s64*)(param_1 + 0x140);
+            u8 em = 1;
+            stream_io(param_2, &em, 1);
+            s64 ep = arr + off;
+            s64 s = FUN_710314fc70(param_2, (void*)(ep - 8));
+            FUN_710314fd70(s, (void*)ep);
+            j++;
+            off += 0x10;
+        } while (j < *cnt4);
+    }
+
+    // ── Version >= 4: 0x160-stride sub-array at +0x148/+0x150 ──
+    if (param_3 < 4) return;
+
+    u8 mk5 = 1;
+    stream_io(param_2, &mk5, 1);
+
+    char is_le3 = *(char*)(param_2 + 4);
+    u32* cnt5 = (u32*)(param_1 + 0x148);
+    FUN_710314fc70(param_2, cnt5);
+    u32 count5 = *cnt5;
+    u64 count5_u64 = (u64)count5;
+
+    if (is_le3 != '\0') {
+        // BE path: read directly
+        if (count5 == 0) return;
+        s64 eoff = 0;
+        u64 j = 0;
+        do {
+            s64 arr = *(s64*)(param_1 + 0x150);
+            u8 sv = 2;
+            stream_io(param_2, &sv, 1);
+            FUN_7103189b00(arr + eoff, param_2, (u32)sv);
+            j++;
+            eoff += 0x160;
+        } while (j < *cnt5);
+        return;
+    }
+
+    // LE path: allocate 0x160-stride array
+    if (count5 == 0) {
+        s64 old = *(s64*)(param_1 + 0x150);
+        *(s64*)(param_1 + 0x150) = 0;
+        if (old == 0) return;
+        FUN_710392e590(old - 0x10);
+        return;
+    }
+
+    u64 alloc_sz5 = count5_u64 * 0x160 | 0x10;
+    s64 buf5 = (s64)je_aligned_alloc(0x10, alloc_sz5);
+    if (buf5 == 0) {
+        if (DAT_7105331f00 != nullptr) {
+            u32 oom_type = 0;
+            u64 oom_size = alloc_sz5;
+            u64 r = ((u64(*)(s64*, u32*, u64*))(*(u64*)(*DAT_7105331f00 + 0x30)))
+                     (DAT_7105331f00, &oom_type, &oom_size);
+            if ((r & 1) != 0)
+                buf5 = (s64)je_aligned_alloc(0x10, alloc_sz5);
+        }
+    }
+
+    s64 idx5 = 0;
+    *(u64*)(buf5 + 8) = count5_u64;
+    do {
+        s64 e = buf5 + idx5;
+        idx5 += 0x160;
+        *(u32*)(e + 0x18) = 0x7735bb75;
+        *(u32*)(e + 0x1c) = 2;
+        *(u8*)(e + 0x20) = 0;
+        *(u8*)(e + 0x58) = 0;
+        *(u64*)(e + 0x48) = 0;
+        *(u64*)(e + 0x50) = 0;
+        *(u64*)(e + 0x40) = 0;
+        *(u8*)(e + 0xb0) = 0;
+        *(u32*)(e + 0xb4) = 0xFFFFFFFF;
+        *(u8*)(e + 0xb8) = 0;
+        *(u32*)(e + 0xf8) = 0;
+        *(u8**)(e + 0x10) = &PTR_LAB_710517a3a8;
+        *(u32*)(e + 0x110) = 0;
+        *(u8*)(e + 0x114) = 0;
+        *(u64*)(e + 0xa0) = 0;
+        *(u64*)(e + 0xa8) = 0;
+        *(u64*)(e + 0x100) = 0;
+        *(u64*)(e + 0x108) = 0;
+        // Packed 1.0f values: 0x3f800000 3f800000
+        *(u64*)(e + 0x154) = 0x3f8000003f800000ULL;
+        *(u64*)(e + 0x15c) = 0x3f8000003f800000ULL;
+        *(u64*)(e + 0x164) = 0;
+    } while (count5_u64 * 0x160 - idx5 != 0);
+
+    s64 old5 = *(s64*)(param_1 + 0x150);
+    *(s64*)(param_1 + 0x150) = buf5 + 0x10;
+    if (old5 != 0) FUN_710392e590(old5 - 0x10);
+
+    if (*cnt5 != 0) {
+        s64 eoff = 0;
+        u64 j = 0;
+        do {
+            s64 arr = *(s64*)(param_1 + 0x150);
+            u8 sv = 2;
+            stream_io(param_2, &sv, 1);
+            FUN_7103189b00(arr + eoff, param_2, (u32)sv);
+            j++;
+            eoff += 0x160;
+        } while (j < *cnt5);
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x7103187c20 — read 32-byte fixed string (byte-by-byte stream reads)
+// Size: 1,332 bytes
+// [derived: Ghidra decompilation — reads 32 individual bytes at
+//  param_2+0x00 through param_2+0x1f via vtable dispatch. Returns stream.]
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+s64 FUN_7103187c20(s64 param_1, void* param_2) {
+    s64 dest = (s64)param_2;
+    stream_io(param_1, (void*)(dest + 0x00), 1);
+    stream_io(param_1, (void*)(dest + 0x01), 1);
+    stream_io(param_1, (void*)(dest + 0x02), 1);
+    stream_io(param_1, (void*)(dest + 0x03), 1);
+    stream_io(param_1, (void*)(dest + 0x04), 1);
+    stream_io(param_1, (void*)(dest + 0x05), 1);
+    stream_io(param_1, (void*)(dest + 0x06), 1);
+    stream_io(param_1, (void*)(dest + 0x07), 1);
+    stream_io(param_1, (void*)(dest + 0x08), 1);
+    stream_io(param_1, (void*)(dest + 0x09), 1);
+    stream_io(param_1, (void*)(dest + 0x0a), 1);
+    stream_io(param_1, (void*)(dest + 0x0b), 1);
+    stream_io(param_1, (void*)(dest + 0x0c), 1);
+    stream_io(param_1, (void*)(dest + 0x0d), 1);
+    stream_io(param_1, (void*)(dest + 0x0e), 1);
+    stream_io(param_1, (void*)(dest + 0x0f), 1);
+    stream_io(param_1, (void*)(dest + 0x10), 1);
+    stream_io(param_1, (void*)(dest + 0x11), 1);
+    stream_io(param_1, (void*)(dest + 0x12), 1);
+    stream_io(param_1, (void*)(dest + 0x13), 1);
+    stream_io(param_1, (void*)(dest + 0x14), 1);
+    stream_io(param_1, (void*)(dest + 0x15), 1);
+    stream_io(param_1, (void*)(dest + 0x16), 1);
+    stream_io(param_1, (void*)(dest + 0x17), 1);
+    stream_io(param_1, (void*)(dest + 0x18), 1);
+    stream_io(param_1, (void*)(dest + 0x19), 1);
+    stream_io(param_1, (void*)(dest + 0x1a), 1);
+    stream_io(param_1, (void*)(dest + 0x1b), 1);
+    stream_io(param_1, (void*)(dest + 0x1c), 1);
+    stream_io(param_1, (void*)(dest + 0x1d), 1);
+    stream_io(param_1, (void*)(dest + 0x1e), 1);
+    stream_io(param_1, (void*)(dest + 0x1f), 1);
+    return param_1;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x7103188a70 — read 64-byte fixed string (byte-by-byte stream reads)
+// Size: 2,612 bytes
+// [derived: Ghidra decompilation — reads 64 individual bytes at
+//  param_2+0x00 through param_2+0x3f via vtable dispatch. Returns stream.]
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+s64 FUN_7103188a70(s64 param_1, void* param_2) {
+    s64 dest = (s64)param_2;
+    stream_io(param_1, (void*)(dest + 0x00), 1);
+    stream_io(param_1, (void*)(dest + 0x01), 1);
+    stream_io(param_1, (void*)(dest + 0x02), 1);
+    stream_io(param_1, (void*)(dest + 0x03), 1);
+    stream_io(param_1, (void*)(dest + 0x04), 1);
+    stream_io(param_1, (void*)(dest + 0x05), 1);
+    stream_io(param_1, (void*)(dest + 0x06), 1);
+    stream_io(param_1, (void*)(dest + 0x07), 1);
+    stream_io(param_1, (void*)(dest + 0x08), 1);
+    stream_io(param_1, (void*)(dest + 0x09), 1);
+    stream_io(param_1, (void*)(dest + 0x0a), 1);
+    stream_io(param_1, (void*)(dest + 0x0b), 1);
+    stream_io(param_1, (void*)(dest + 0x0c), 1);
+    stream_io(param_1, (void*)(dest + 0x0d), 1);
+    stream_io(param_1, (void*)(dest + 0x0e), 1);
+    stream_io(param_1, (void*)(dest + 0x0f), 1);
+    stream_io(param_1, (void*)(dest + 0x10), 1);
+    stream_io(param_1, (void*)(dest + 0x11), 1);
+    stream_io(param_1, (void*)(dest + 0x12), 1);
+    stream_io(param_1, (void*)(dest + 0x13), 1);
+    stream_io(param_1, (void*)(dest + 0x14), 1);
+    stream_io(param_1, (void*)(dest + 0x15), 1);
+    stream_io(param_1, (void*)(dest + 0x16), 1);
+    stream_io(param_1, (void*)(dest + 0x17), 1);
+    stream_io(param_1, (void*)(dest + 0x18), 1);
+    stream_io(param_1, (void*)(dest + 0x19), 1);
+    stream_io(param_1, (void*)(dest + 0x1a), 1);
+    stream_io(param_1, (void*)(dest + 0x1b), 1);
+    stream_io(param_1, (void*)(dest + 0x1c), 1);
+    stream_io(param_1, (void*)(dest + 0x1d), 1);
+    stream_io(param_1, (void*)(dest + 0x1e), 1);
+    stream_io(param_1, (void*)(dest + 0x1f), 1);
+    stream_io(param_1, (void*)(dest + 0x20), 1);
+    stream_io(param_1, (void*)(dest + 0x21), 1);
+    stream_io(param_1, (void*)(dest + 0x22), 1);
+    stream_io(param_1, (void*)(dest + 0x23), 1);
+    stream_io(param_1, (void*)(dest + 0x24), 1);
+    stream_io(param_1, (void*)(dest + 0x25), 1);
+    stream_io(param_1, (void*)(dest + 0x26), 1);
+    stream_io(param_1, (void*)(dest + 0x27), 1);
+    stream_io(param_1, (void*)(dest + 0x28), 1);
+    stream_io(param_1, (void*)(dest + 0x29), 1);
+    stream_io(param_1, (void*)(dest + 0x2a), 1);
+    stream_io(param_1, (void*)(dest + 0x2b), 1);
+    stream_io(param_1, (void*)(dest + 0x2c), 1);
+    stream_io(param_1, (void*)(dest + 0x2d), 1);
+    stream_io(param_1, (void*)(dest + 0x2e), 1);
+    stream_io(param_1, (void*)(dest + 0x2f), 1);
+    stream_io(param_1, (void*)(dest + 0x30), 1);
+    stream_io(param_1, (void*)(dest + 0x31), 1);
+    stream_io(param_1, (void*)(dest + 0x32), 1);
+    stream_io(param_1, (void*)(dest + 0x33), 1);
+    stream_io(param_1, (void*)(dest + 0x34), 1);
+    stream_io(param_1, (void*)(dest + 0x35), 1);
+    stream_io(param_1, (void*)(dest + 0x36), 1);
+    stream_io(param_1, (void*)(dest + 0x37), 1);
+    stream_io(param_1, (void*)(dest + 0x38), 1);
+    stream_io(param_1, (void*)(dest + 0x39), 1);
+    stream_io(param_1, (void*)(dest + 0x3a), 1);
+    stream_io(param_1, (void*)(dest + 0x3b), 1);
+    stream_io(param_1, (void*)(dest + 0x3c), 1);
+    stream_io(param_1, (void*)(dest + 0x3d), 1);
+    stream_io(param_1, (void*)(dest + 0x3e), 1);
+    stream_io(param_1, (void*)(dest + 0x3f), 1);
+    return param_1;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x71031882c0 — array reader: count + 0x10-stride float pairs
+// Size: 392 bytes
+// [derived: Ghidra decompilation — reads count via FUN_710314fc70,
+//  allocates count*0x10 with OOM retry, memset 0, then reads float pairs
+//  via FUN_710314fff0 into each 0x10-stride entry.
+//  Count = 0 frees old array. dest layout: u32 count at +0, ptr at +8.]
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+void FUN_71031882c0(void* dest, s64 param_2) {
+    u32* count_ptr = (u32*)dest;
+    FUN_710314fc70(param_2, count_ptr);
+
+    if (*count_ptr == 0) {
+        s64 old = *(s64*)(count_ptr + 2);
+        count_ptr[2] = 0;
+        count_ptr[3] = 0;
+        if (old == 0) return;
+        FUN_710392e590(old);
+        return;
+    }
+
+    u64 alloc_size = (u64)*count_ptr << 4;
+    void* buf = (void*)je_aligned_alloc(0x10, alloc_size);
+    if (buf == nullptr) {
+        if (DAT_7105331f00_param != nullptr) {
+            u32 oom_flag = 0;
+            u64 oom_size = alloc_size;
+            u64 r = (*(u64(**)(s64*, u32*, u64*))(*(s64*)DAT_7105331f00_param + 0x30))
+                     (DAT_7105331f00_param, &oom_flag, &oom_size);
+            if ((r & 1) != 0) {
+                buf = (void*)je_aligned_alloc(0x10, alloc_size);
+                if (buf != nullptr) goto alloc_ok_82c0;
+            }
+        }
+        buf = nullptr;
+    }
+alloc_ok_82c0:
+    memset(buf, 0, alloc_size);
+
+    s64 old = *(s64*)(count_ptr + 2);
+    *(void**)(count_ptr + 2) = buf;
+    if (old != 0) {
+        FUN_710392e590(old);
+    }
+
+    if (*count_ptr != 0) {
+        u64 i = 0;
+        do {
+            s64 arr = *(s64*)(count_ptr + 2);
+            u8 marker = 1;
+            stream_io(param_2, &marker, 1);
+
+            s64 off = i * 0x10;
+            u64 packed = *(u64*)(arr + off);
+            u32 lo = (u32)packed;
+            u32 hi = (u32)(packed >> 32);
+            s64 s = FUN_710314fff0(param_2, &lo);
+            FUN_710314fff0(s, &hi);
+            i++;
+            u64* elem = (u64*)(arr + off);
+            elem[1] = 0;
+            *elem = ((u64)hi << 32) | (u64)lo;
+        } while (i < *count_ptr);
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x71031894b0 — array reader with prepended size header + sub-elements
+// Size: 600 bytes
+// [derived: Ghidra decompilation — reads count via FUN_710314fc70.
+//  Allocates (count*0x40 | 8) block: stores count at block[0], array
+//  at block+8. Elements are 0x40 stride, zeroed on alloc. Cleanup
+//  iterates backward freeing sub-pointers at +0x30, then frees header.
+//  Read loop: stream_io markers, calls FUN_7103187920 per element.]
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+void FUN_71031894b0(void* dest, s64 param_2) {
+    u32* count_ptr = (u32*)dest;
+    FUN_710314fc70(param_2, count_ptr);
+    u64 count = (u64)*count_ptr;
+
+    if (*count_ptr == 0) {
+        s64 arr = *(s64*)(count_ptr + 2);
+        count_ptr[2] = 0;
+        count_ptr[3] = 0;
+        if (arr == 0) return;
+
+        s64 old_count = *(s64*)(arr - 8);
+        if (old_count != 0) {
+            s64 off = old_count << 6;
+            do {
+                if (*(s64*)(arr + off - 0x10) != 0) {
+                    FUN_710392e590(*(s64*)(arr + off - 0x10));
+                }
+                off -= 0x40;
+            } while (off != 0);
+        }
+        FUN_710392e590((s64)(arr - 8));
+        return;
+    }
+
+    u64 alloc_size = count << 6 | 8;
+    u64* block = (u64*)je_aligned_alloc(0x10, alloc_size);
+    if (block == nullptr) {
+        if (DAT_7105331f00_param != nullptr) {
+            u32 oom_flag = 0;
+            u64 oom_size = alloc_size;
+            u64 r = (*(u64(**)(s64*, u32*, u64*))(*(s64*)DAT_7105331f00_param + 0x30))
+                     (DAT_7105331f00_param, &oom_flag, &oom_size);
+            if ((r & 1) != 0) {
+                block = (u64*)je_aligned_alloc(0x10, alloc_size);
+                if (block != nullptr) goto alloc_ok_94b0;
+            }
+        }
+        block = nullptr;
+    }
+alloc_ok_94b0:
+    *block = count;
+    s64 data = (s64)(block + 1);
+
+    // Zero 0x40-stride elements (two-at-a-time unrolled pattern)
+    {
+        s64 tail = count * 0x40 - 0x40;
+        s64 p = data;
+        if (((u32)(tail >> 6) & 1) == 0) {
+            p = data + 0x40;
+            *(u32*)(data + 0x28) = 0;
+            *(u64*)(data + 0x30) = 0;
+            *(u32*)(data + 0x18) = 0;
+            *(u32*)(data + 0x38) = 0;
+            *(u64*)(data + 0x08) = 0;
+            *(u64*)(data + 0x10) = 0;
+        }
+        if (tail != 0) {
+            s64 z = 0;
+            s64 target = (s64)block + (count * 0x40 + 8) - data;
+            do {
+                *(u32*)(p + z + 0x28) = 0;
+                *(u64*)(p + z + 0x30) = 0;
+                *(u32*)(p + z + 0x18) = 0;
+                *(u64*)(p + z + 0x08) = 0;
+                *(u64*)(p + z + 0x10) = 0;
+                *(u32*)(p + z + 0x38) = 0;
+                *(u32*)(p + z + 0x68) = 0;
+                *(u64*)(p + z + 0x70) = 0;
+                *(u32*)(p + z + 0x58) = 0;
+                *(u32*)(p + z + 0x78) = 0;
+                *(u64*)(p + z + 0x48) = 0;
+                *(u64*)(p + z + 0x50) = 0;
+                z += 0x80;
+            } while (target != z);
+        }
+    }
+
+    s64 old_arr = *(s64*)(count_ptr + 2);
+    *(s64*)(count_ptr + 2) = data;
+    if (old_arr != 0) {
+        s64 old_count = *(s64*)(old_arr - 8);
+        if (old_count != 0) {
+            s64 off = old_count << 6;
+            do {
+                if (*(s64*)(old_arr + off - 0x10) != 0) {
+                    FUN_710392e590(*(s64*)(old_arr + off - 0x10));
+                }
+                off -= 0x40;
+            } while (off != 0);
+        }
+        FUN_710392e590((s64)(old_arr - 8));
+    }
+
+    if (*count_ptr != 0) {
+        u64 i = 0;
+        s64 off = 8;
+        do {
+            s64 arr_base = *(s64*)(count_ptr + 2);
+            u8 m1 = 1;
+            stream_io(param_2, &m1, 1);
+            u8 ver = 3;
+            stream_io(param_2, &ver, 1);
+            FUN_7103187920(arr_base + off, param_2, (u32)ver);
+            i++;
+            off += 0x40;
+        } while (i < *count_ptr);
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x7103189880 — array reader: count + s32 values with 0xfffffffa sentinel fill
+// Size: 564 bytes
+// [derived: Ghidra decompilation — reads marker byte, count via
+//  FUN_710314fc70. Write mode: reads s32 values via FUN_710314fef0.
+//  Read mode: allocates count*4, fills with 0xfffffffa, reads s32 values.
+//  Returns stream (param_1) for chaining.]
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+s64 FUN_7103189880(s64 param_1, s64 dest) {
+    u32* count_ptr = (u32*)dest;
+    u8 marker = 1;
+    stream_io(param_1, &marker, 1);
+
+    char is_writing = *(char*)(param_1 + 4);
+    FUN_710314fc70(param_1, count_ptr);
+    u32 count = *count_ptr;
+
+    if (is_writing != '\0') {
+        // Write mode: read s32 values
+        if (count == 0) return param_1;
+        u64 i = 0;
+        s64 off = 0;
+        do {
+            s64 arr = *(s64*)(count_ptr + 2);
+            u8 em = 1;
+            stream_io(param_1, &em, 1);
+            FUN_710314fef0(param_1, (void*)(arr + off));
+            i++;
+            off += 4;
+        } while (i < *count_ptr);
+        return param_1;
+    }
+
+    // Read mode
+    if (count == 0) {
+        s64 old = *(s64*)(count_ptr + 2);
+        count_ptr[2] = 0;
+        count_ptr[3] = 0;
+        if (old == 0) return param_1;
+        FUN_710392e590(old);
+        return param_1;
+    }
+
+    s64 alloc_size = (u64)count * 4;
+    u64* buf = (u64*)je_aligned_alloc(0x10, alloc_size);
+    if (buf == nullptr) {
+        if (DAT_7105331f00_param != nullptr) {
+            u32 oom_flag = 0;
+            s64 oom_size = alloc_size;
+            u64 r = (*(u64(**)(s64*, u32*, s64*))(*(s64*)DAT_7105331f00_param + 0x30))
+                     (DAT_7105331f00_param, &oom_flag, &oom_size);
+            if ((r & 1) != 0) {
+                buf = (u64*)je_aligned_alloc(0x10, alloc_size);
+                if (buf != nullptr) goto alloc_ok_9880;
+            }
+        }
+        buf = nullptr;
+    }
+alloc_ok_9880:
+    // Fill with 0xfffffffa sentinel (unrolled by 8)
+    {
+        u32 fill_count = ((u32)((u64)(alloc_size - 4) >> 2) & 0x3fffffff) + 1;
+        u64 rem = (u64)fill_count & 7;
+        u32* fp = (u32*)buf;
+        if (rem != 0) {
+            s64 ri = -(s64)rem;
+            u32* rp = (u32*)buf;
+            do {
+                ri++;
+                *rp = 0xfffffffa;
+                rp = (u32*)((s64)rp + 4);
+            } while (ri != 0);
+            fp = (u32*)((s64)buf + rem * 4);
+        }
+        if ((u64)(alloc_size - 4) > 0x1b) {
+            u64* fp8 = (u64*)fp;
+            do {
+                fp8[0] = 0xfffffffafffffffa;
+                fp8[1] = 0xfffffffafffffffa;
+                fp8[2] = 0xfffffffafffffffa;
+                fp8[3] = 0xfffffffafffffffa;
+                fp8 += 4;
+            } while (fp8 != (u64*)((s64)buf + (u64)count * 4));
+        }
+    }
+
+    s64 old = *(s64*)(count_ptr + 2);
+    *(u64**)(count_ptr + 2) = buf;
+    if (old != 0) {
+        FUN_710392e590(old);
+    }
+
+    if (*count_ptr != 0) {
+        u64 i = 0;
+        s64 off = 0;
+        do {
+            s64 arr = *(s64*)(count_ptr + 2);
+            u8 em = 1;
+            stream_io(param_1, &em, 1);
+            FUN_710314fef0(param_1, (void*)(arr + off));
+            i++;
+            off += 4;
+        } while (i < *count_ptr);
+    }
+    return param_1;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x7103189b00 — StageCameraPath element reader
+// Size: 304 bytes
+// [derived: Ghidra decompilation — reads version, calls FUN_7103187210
+//  for common base, reads u32 at +0x100, reads marker byte. If writing
+//  mode, copies 0x40-byte string to local buffer before reading. Calls
+//  FUN_7103188a70 for 64-byte string at +0x104. Version >= 2: reads
+//  6 floats at +0x144..+0x158 via FUN_710314fff0.]
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+void FUN_7103189b00(s64 param_1, s64 param_2, u32 param_3) {
+    u8 version = 4;
+    stream_io(param_2, &version, 1);
+    FUN_7103187210(param_1, param_2, (u32)version);
+
+    FUN_710314fc70(param_2, (void*)(param_1 + 0x100));
+
+    u8 marker = 1;
+    stream_io(param_2, &marker, 1);
+
+    u64* str_src = (u64*)(param_1 + 0x104);
+    if (*(char*)(param_2 + 4) != '\0') {
+        u64 local_buf[8];
+        local_buf[0] = 0; local_buf[1] = 0;
+        local_buf[2] = 0; local_buf[3] = 0;
+        local_buf[4] = 0; local_buf[5] = 0;
+        local_buf[6] = 0; local_buf[7] = 0;
+        strncpy((char*)local_buf, (char*)str_src, 0x40);
+        str_src = local_buf;
+    }
+    FUN_7103188a70(param_2, str_src);
+
+    if (1 < param_3) {
+        s64 s = FUN_710314fff0(param_2, (void*)(param_1 + 0x144));
+        s = FUN_710314fff0(s, (void*)(param_1 + 0x148));
+        s = FUN_710314fff0(s, (void*)(param_1 + 0x14c));
+        s = FUN_710314fff0(s, (void*)(param_1 + 0x150));
+        s = FUN_710314fff0(s, (void*)(param_1 + 0x154));
+        FUN_710314fff0(s, (void*)(param_1 + 0x158));
+    }
 }

@@ -30,8 +30,19 @@
 - FUN_7103187210 (740B) — compiled, N-quality (common element reader: base + name + packed values)
 - FUN_7103187920 (768B) — compiled, N-quality (sub-element reader: u32 + 16 bytes or 4 floats + array)
 
+- FUN_7103185c80 (2772B) — compiled, N-quality (param element reader: 3 sub-arrays + area weights + sentinel fill)
+- FUN_7103184f20 (3132B) — compiled, N-quality (param element reader: structured sub-elements + 0x120/0x160 stride)
+- FUN_7103187c20 (1332B) — compiled, N-quality (read_string32: 32-byte byte-by-byte string reader)
+- FUN_7103188a70 (2612B) — compiled, N-quality (read_string64: 64-byte byte-by-byte string reader)
+- FUN_71031882c0 (392B) — compiled, N-quality (array reader: count + 0x10-stride float pairs with OOM)
+- FUN_71031894b0 (600B) — compiled, N-quality (array reader: prepended size header + 0x40 sub-elements)
+- FUN_7103189880 (564B) — compiled, N-quality (array reader: count + s32 values with 0xfffffffa fill)
+- FUN_7103189b00 (304B) — compiled, N-quality (StageCameraPath element reader: base + string + 6 floats)
+
 ## Continue with
-- Remaining read_element sub-functions: FUN_7103185c80 (2772B), FUN_7103184f20 (3132B)
+- All read_element sub-functions COMPLETE — 24/24 element types covered
+- Next: look for additional game_core or param functions outside the 0x71031849xx range
+- Consider tackling read_file wrapper functions or stage/camera param consumers
 - Ghidra analysis saved to data/ghidra_cache/pool-d.txt
 
 ## read_file Analysis (0x7103180ad0, 17,488B)
