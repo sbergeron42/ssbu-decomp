@@ -200,7 +200,7 @@ namespace app { namespace sv_animcmd {
 
 // 0x710228e9c0 (164 bytes) — EFFECT_GLOBAL
 // Calls FUN_710228ea70 with constant args (hash=0, scale=1.0f, flag=0)
-void EFFECT_GLOBAL(lua_State* param_1) {
+extern "C" void EFFECT_GLOBAL(lua_State* param_1) {
     u64 L = (u64)param_1;
     u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
     int nargs = acmd_nargs(L);
@@ -219,7 +219,7 @@ void EFFECT_GLOBAL(lua_State* param_1) {
 // 0x71022927b0 (348 bytes) — EFFECT_OFF
 // Args: 1=effect_hash, 2=bool_flag
 // Calls EffectModule::kill_all (vtable slot 30, offset 0xF0)
-void EFFECT_OFF(lua_State* param_1) {
+extern "C" void EFFECT_OFF(lua_State* param_1) {
     u64 L = (u64)param_1;
     u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
     int nargs = acmd_nargs(L);
@@ -261,7 +261,7 @@ void EFFECT_OFF(lua_State* param_1) {
 //       8=rate, 9=rot_z, 10-11=scale_xy, 12=scale_z, 13-14=extra_xy,
 //       15=extra_z, 16=bool_flag
 // Calls EffectModule::req_on_joint (vtable slot 14, offset 0x70)
-void EFFECT_WORK(lua_State* param_1) {
+extern "C" void EFFECT_WORK(lua_State* param_1) {
     u64 L = (u64)param_1;
     if (param_1 == nullptr) {
 #ifdef MATCHING_HACK_NX_CLANG
@@ -358,7 +358,7 @@ void EFFECT_WORK(lua_State* param_1) {
 // 0x710228cc90 — EFFECT_VARIATION
 // Like EFFECT_WORK but calls get_variation_effect_kind first, then optionally set_offset_to_next
 // Args: same as EFFECT_WORK (1-16), plus optional arg 17 for offset hash
-void EFFECT_VARIATION(lua_State* param_1) {
+extern "C" void EFFECT_VARIATION(lua_State* param_1) {
     u64 L = (u64)param_1;
     if (param_1 == nullptr) {
 #ifdef MATCHING_HACK_NX_CLANG
@@ -454,7 +454,7 @@ void EFFECT_VARIATION(lua_State* param_1) {
 // 0x710229cc80 (520 bytes) — EFFECT_OFF_KIND
 // Args: 1=effect_hash, 2=is_trail(bool), 3=reset_flag(bool)
 // Calls EffectModule::kill_kind (vtable slot 28, offset 0xE0)
-void EFFECT_OFF_KIND(lua_State* param_1) {
+extern "C" void EFFECT_OFF_KIND(lua_State* param_1) {
     u64 L = (u64)param_1;
     u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
     int nargs = acmd_nargs(L);
@@ -504,7 +504,7 @@ void EFFECT_OFF_KIND(lua_State* param_1) {
 // Args: 1=effect_hash, 2=bone_hash, 3-5=offset(int xyz), 6-8=rot(int xyz),
 //       9=scale(int), 10=follow_flag(bool)
 // Calls EffectModule::req_follow (vtable slot 16, offset 0x80)
-void EFFECT_FOLLOW(lua_State* param_1) {
+extern "C" void EFFECT_FOLLOW(lua_State* param_1) {
     u64 L = (u64)param_1;
     if (param_1 == nullptr) {
 #ifdef MATCHING_HACK_NX_CLANG
@@ -583,7 +583,7 @@ void EFFECT_FOLLOW(lua_State* param_1) {
 // 0x7102292910 (180 bytes) — EFFECT_REMOVE_ATTR
 // Args: 1=effect_hash
 // Calls EffectModule::remove_attr (vtable slot 26, offset 0xD0)
-void EFFECT_REMOVE_ATTR(lua_State* param_1) {
+extern "C" void EFFECT_REMOVE_ATTR(lua_State* param_1) {
     u64 L = (u64)param_1;
     u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
     int nargs = acmd_nargs(L);
@@ -613,7 +613,7 @@ void EFFECT_REMOVE_ATTR(lua_State* param_1) {
 // Args: 1=effect_hash, 2=is_trail(bool), 3=reset_flag(bool)
 // Like EFFECT_OFF_KIND but with null check at start (WORK variant)
 // Calls EffectModule::kill_kind (vtable slot 28, offset 0xE0)
-void EFFECT_OFF_KIND_WORK(lua_State* param_1) {
+extern "C" void EFFECT_OFF_KIND_WORK(lua_State* param_1) {
     u64 L = (u64)param_1;
     if (param_1 == nullptr) {
 #ifdef MATCHING_HACK_NX_CLANG
@@ -659,7 +659,7 @@ void EFFECT_OFF_KIND_WORK(lua_State* param_1) {
 // then again at end to get actual hash. Offsets nested inside arg2 block,
 // rotations at top level.
 // Calls EffectModule::req_follow (vtable slot 16, offset 0x80)
-void EFFECT_FOLLOW_WORK(lua_State* param_1) {
+extern "C" void EFFECT_FOLLOW_WORK(lua_State* param_1) {
     u64 L = (u64)param_1;
     if (param_1 == nullptr) {
 #ifdef MATCHING_HACK_NX_CLANG
@@ -746,7 +746,7 @@ void EFFECT_FOLLOW_WORK(lua_State* param_1) {
 // Like EFFECT_FOLLOW_WORK + variation resolution via get_variation_effect_kind.
 // Arg 9 is scale as FLOAT (not int). Up to 11 args.
 // Calls EffectModule::req_follow (vtable slot 16, offset 0x80)
-void EFFECT_FOLLOW_VARIATION(lua_State* param_1) {
+extern "C" void EFFECT_FOLLOW_VARIATION(lua_State* param_1) {
     u64 L = (u64)param_1;
     if (param_1 == nullptr) {
 #ifdef MATCHING_HACK_NX_CLANG
@@ -853,7 +853,7 @@ void EFFECT_FOLLOW_VARIATION(lua_State* param_1) {
 // Args: 1=hash1, 2=hash2, 3-4=pos(float), 5=pos_z(int), 6-8=rot(float),
 //       9=rate(float), 10-12=scale(float), 13-15=color(float), 16=bool, 17=attr_hash
 // Calls EffectModule::req_on_joint with attr (vtable slot 14, offset 0x70)
-void EFFECT_ATTR(lua_State* param_1) {
+extern "C" void EFFECT_ATTR(lua_State* param_1) {
     u64 L = (u64)param_1;
     if (param_1 == nullptr) {
 #ifdef MATCHING_HACK_NX_CLANG
@@ -942,7 +942,7 @@ void EFFECT_ATTR(lua_State* param_1) {
 // 0x71022a7f50 (180 bytes) — EFFECT_OFF_HANDLE
 // Args: 1=handle_hash
 // Calls EffectModule::kill_handle (vtable offset 0xC8)
-void EFFECT_OFF_HANDLE(lua_State* param_1) {
+extern "C" void EFFECT_OFF_HANDLE(lua_State* param_1) {
     u64 L = (u64)param_1;
     u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
     int nargs = acmd_nargs(L);
@@ -971,7 +971,7 @@ void EFFECT_OFF_HANDLE(lua_State* param_1) {
 // 0x71022a5780 (224 bytes) — EFFECT_DETACH_KIND
 // Args: 1=effect_hash, 2=group_hash
 // Calls EffectModule::detach_kind (vtable offset 0x100)
-void EFFECT_DETACH_KIND(lua_State* param_1) {
+extern "C" void EFFECT_DETACH_KIND(lua_State* param_1) {
     u64 L = (u64)param_1;
     if (param_1 == nullptr) {
 #ifdef MATCHING_HACK_NX_CLANG
@@ -1006,7 +1006,7 @@ void EFFECT_DETACH_KIND(lua_State* param_1) {
 // 0x71022a5860 (224 bytes) — EFFECT_DETACH_KIND_WORK
 // Args: 1=effect_hash, 2=group_hash
 // Identical to EFFECT_DETACH_KIND (vtable offset 0x100)
-void EFFECT_DETACH_KIND_WORK(lua_State* param_1) {
+extern "C" void EFFECT_DETACH_KIND_WORK(lua_State* param_1) {
     u64 L = (u64)param_1;
     if (param_1 == nullptr) {
 #ifdef MATCHING_HACK_NX_CLANG
@@ -1041,7 +1041,7 @@ void EFFECT_DETACH_KIND_WORK(lua_State* param_1) {
 // 0x7102297520 (224 bytes) — EFFECT_LIGHT_END
 // Args: 1=light_hash(u32), 2=group_hash
 // Calls EffectModule::end_light (vtable offset 0x2E0)
-void EFFECT_LIGHT_END(lua_State* param_1) {
+extern "C" void EFFECT_LIGHT_END(lua_State* param_1) {
     u64 L = (u64)param_1;
     u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
     int nargs = acmd_nargs(L);
@@ -1078,7 +1078,7 @@ void EFFECT_LIGHT_END(lua_State* param_1) {
 // 0x71022a49a0 (340 bytes) — LAST_EFFECT_SET_RATE
 // Args: 1=rate(float)
 // Calls EffectModule::set_rate (vtable offset 0x338)
-void LAST_EFFECT_SET_RATE(lua_State* param_1) {
+extern "C" void LAST_EFFECT_SET_RATE(lua_State* param_1) {
     u64 L = (u64)param_1;
     u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
     int nargs = acmd_nargs(L);
@@ -1108,7 +1108,7 @@ void LAST_EFFECT_SET_RATE(lua_State* param_1) {
 
 // 0x71022a4b00 (340 bytes) — LAST_EFFECT_SET_RATE_WORK
 // Identical to LAST_EFFECT_SET_RATE (vtable offset 0x338)
-void LAST_EFFECT_SET_RATE_WORK(lua_State* param_1) {
+extern "C" void LAST_EFFECT_SET_RATE_WORK(lua_State* param_1) {
     u64 L = (u64)param_1;
     u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
     int nargs = acmd_nargs(L);
@@ -1139,7 +1139,7 @@ void LAST_EFFECT_SET_RATE_WORK(lua_State* param_1) {
 // 0x71022a52c0 (340 bytes) — LAST_EFFECT_SET_ALPHA
 // Args: 1=alpha(float)
 // Calls EffectModule::set_alpha (vtable offset 0x348)
-void LAST_EFFECT_SET_ALPHA(lua_State* param_1) {
+extern "C" void LAST_EFFECT_SET_ALPHA(lua_State* param_1) {
     u64 L = (u64)param_1;
     u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
     int nargs = acmd_nargs(L);
@@ -1170,7 +1170,7 @@ void LAST_EFFECT_SET_ALPHA(lua_State* param_1) {
 // 0x71022a5420 (284 bytes) — LAST_EFFECT_SET_DISABLE_SYSTEM_SLOW
 // Args: 1=disable(bool)
 // Calls EffectModule::set_disable_system_slow (vtable offset 0x350)
-void LAST_EFFECT_SET_DISABLE_SYSTEM_SLOW(lua_State* param_1) {
+extern "C" void LAST_EFFECT_SET_DISABLE_SYSTEM_SLOW(lua_State* param_1) {
     u64 L = (u64)param_1;
     int nargs = acmd_nargs(L);
 
@@ -1201,7 +1201,7 @@ void LAST_EFFECT_SET_DISABLE_SYSTEM_SLOW(lua_State* param_1) {
 // Args: 1=work_var_hash
 // Gets last effect handle from EffectModule vtable[0x3A0], then
 // sets work int via WorkModule vtable[0xA0]
-void LAST_EFFECT_SET_WORK_INT(lua_State* param_1) {
+extern "C" void LAST_EFFECT_SET_WORK_INT(lua_State* param_1) {
     u64 L = (u64)param_1;
     u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
     int nargs = acmd_nargs(L);
@@ -1237,7 +1237,7 @@ void LAST_EFFECT_SET_WORK_INT(lua_State* param_1) {
 // 0x71022a4c60 (804 bytes) — LAST_EFFECT_SET_SCALE_W
 // Args: 1-3 = scale xyz (float→int)
 // Packs into vec3 struct, calls EffectModule::set_scale (vtable offset 0x340)
-void LAST_EFFECT_SET_SCALE_W(lua_State* param_1) {
+extern "C" void LAST_EFFECT_SET_SCALE_W(lua_State* param_1) {
     u64 L = (u64)param_1;
     u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
     int nargs = acmd_nargs(L);
@@ -1275,7 +1275,7 @@ void LAST_EFFECT_SET_SCALE_W(lua_State* param_1) {
 // 0x71022a4f90 (804 bytes) — LAST_EFFECT_SET_COLOR
 // Args: 1-3 = RGB color (float)
 // Gets last handle via vtable[0x3A0], then sets color via vtable[0x2F8]
-void LAST_EFFECT_SET_COLOR(lua_State* param_1) {
+extern "C" void LAST_EFFECT_SET_COLOR(lua_State* param_1) {
     u64 L = (u64)param_1;
     u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
     int nargs = acmd_nargs(L);
@@ -1310,7 +1310,7 @@ void LAST_EFFECT_SET_COLOR(lua_State* param_1) {
 // Like EFFECT_FOLLOW but reads hashes in nested block, offsets nested,
 // rotations top-level. Flags: follow=0x4000, default=0.
 // Calls EffectModule::req_follow (vtable slot 16, offset 0x80)
-void EFFECT_FOLLOW_NO_STOP(lua_State* param_1) {
+extern "C" void EFFECT_FOLLOW_NO_STOP(lua_State* param_1) {
     u64 L = (u64)param_1;
     if (param_1 == nullptr) {
 #ifdef MATCHING_HACK_NX_CLANG
@@ -1465,7 +1465,7 @@ void EFFECT_FOLLOW_arg11(lua_State* param_1) {
 // Like EFFECT_FOLLOW but passes 1 as the no_scale flag (13th arg).
 // Flags: follow=0xc000, default=0x8000.
 // Calls EffectModule::req_follow (vtable slot 16, offset 0x80)
-void EFFECT_FOLLOW_NO_SCALE(lua_State* param_1) {
+extern "C" void EFFECT_FOLLOW_NO_SCALE(lua_State* param_1) {
     u64 L = (u64)param_1;
     if (param_1 == nullptr) {
 #ifdef MATCHING_HACK_NX_CLANG
@@ -1540,7 +1540,7 @@ void EFFECT_FOLLOW_NO_SCALE(lua_State* param_1) {
 // Like EFFECT_FOLLOW_NO_STOP but flags: follow=0x40c000, default=0x408000.
 // The 0x40xxxx prefix marks unsync vis mode.
 // Calls EffectModule::req_follow (vtable slot 16, offset 0x80)
-void EFFECT_FOLLOW_UNSYNC_VIS_WHOLE(lua_State* param_1) {
+extern "C" void EFFECT_FOLLOW_UNSYNC_VIS_WHOLE(lua_State* param_1) {
     u64 L = (u64)param_1;
     if (param_1 == nullptr) {
 #ifdef MATCHING_HACK_NX_CLANG
@@ -1618,7 +1618,7 @@ void EFFECT_FOLLOW_UNSYNC_VIS_WHOLE(lua_State* param_1) {
 //       6-7=rot_xy(float), 8=rot_z(float→int), 9=scale(float), 10=follow_flag(bool)
 // Like EFFECT_FOLLOW but keeps offset/rot x,y as raw floats (position-based)
 // Calls EffectModule::req_follow (vtable offset 0x80) with pos_mode=1
-void EFFECT_FLW_POS(lua_State* param_1) {
+extern "C" void EFFECT_FLW_POS(lua_State* param_1) {
     u64 L = (u64)param_1;
     if (param_1 == nullptr) {
 #ifdef MATCHING_HACK_NX_CLANG
@@ -1681,7 +1681,7 @@ void EFFECT_FLW_POS(lua_State* param_1) {
 
 // 0x71022931e0 (2048 bytes) — EFFECT_FLW_POS_NO_STOP
 // Same as EFFECT_FLW_POS but flags: follow=0x4000, default=0
-void EFFECT_FLW_POS_NO_STOP(lua_State* param_1) {
+extern "C" void EFFECT_FLW_POS_NO_STOP(lua_State* param_1) {
     u64 L = (u64)param_1;
     if (param_1 == nullptr) {
 #ifdef MATCHING_HACK_NX_CLANG
@@ -1744,7 +1744,7 @@ void EFFECT_FLW_POS_NO_STOP(lua_State* param_1) {
 
 // 0x71022939e0 (2056 bytes) — EFFECT_FLW_POS_UNSYNC_VIS
 // Same as EFFECT_FLW_POS but flags: follow=0x40c000, default=0x408000
-void EFFECT_FLW_POS_UNSYNC_VIS(lua_State* param_1) {
+extern "C" void EFFECT_FLW_POS_UNSYNC_VIS(lua_State* param_1) {
     u64 L = (u64)param_1;
     if (param_1 == nullptr) {
 #ifdef MATCHING_HACK_NX_CLANG
@@ -1807,7 +1807,7 @@ void EFFECT_FLW_POS_UNSYNC_VIS(lua_State* param_1) {
 
 // 0x71022941f0 (2056 bytes) — EFFECT_FLW_UNSYNC_VIS
 // Same as EFFECT_FLW_POS_UNSYNC_VIS but pos_mode=0 instead of 1
-void EFFECT_FLW_UNSYNC_VIS(lua_State* param_1) {
+extern "C" void EFFECT_FLW_UNSYNC_VIS(lua_State* param_1) {
     u64 L = (u64)param_1;
     if (param_1 == nullptr) {
 #ifdef MATCHING_HACK_NX_CLANG
@@ -1872,7 +1872,7 @@ void EFFECT_FLW_UNSYNC_VIS(lua_State* param_1) {
 // Checks BattleObjectWorld singleton; if invalid, skip.
 // Args: 1=offset(float)
 // Calls EffectModule::set_offset_to_camera_flat (vtable offset 0x370)
-void LAST_EFFECT_SET_OFFSET_TO_CAMERA_FLAT(lua_State* param_1) {
+extern "C" void LAST_EFFECT_SET_OFFSET_TO_CAMERA_FLAT(lua_State* param_1) {
     u64 L = (u64)param_1;
     int nargs = acmd_nargs(L);
 
@@ -1897,7 +1897,7 @@ void LAST_EFFECT_SET_OFFSET_TO_CAMERA_FLAT(lua_State* param_1) {
 // 0x71022a5940 (780 bytes) — LAST_PARTICLE_SET_COLOR
 // Args: 1-3 = RGB color (float)
 // Calls EffectModule::set_particle_color (vtable offset 0x300)
-void LAST_PARTICLE_SET_COLOR(lua_State* param_1) {
+extern "C" void LAST_PARTICLE_SET_COLOR(lua_State* param_1) {
     u64 L = (u64)param_1;
     u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
     int nargs = acmd_nargs(L);
@@ -1930,7 +1930,7 @@ void LAST_PARTICLE_SET_COLOR(lua_State* param_1) {
 // 0x710229a720 (2620 bytes) — EFFECT_FOLLOW_COLOR
 // Like EFFECT_FOLLOW but returns handle from req_follow, then reads 3 extra float
 // args (11-13) for RGB and calls set_color (vtable offset 0x2F8)
-void EFFECT_FOLLOW_COLOR(lua_State* param_1) {
+extern "C" void EFFECT_FOLLOW_COLOR(lua_State* param_1) {
     u64 L = (u64)param_1;
     if (param_1 == nullptr) {
 #ifdef MATCHING_HACK_NX_CLANG
@@ -2022,7 +2022,7 @@ void EFFECT_FOLLOW_COLOR(lua_State* param_1) {
 // 0x710229d9e0 (2196 bytes) — EFFECT_FOLLOW_ALPHA
 // Like EFFECT_FOLLOW but returns handle from req_follow, then reads 1 extra float
 // arg (11) for alpha and calls set_alpha_last (vtable offset 0x308)
-void EFFECT_FOLLOW_ALPHA(lua_State* param_1) {
+extern "C" void EFFECT_FOLLOW_ALPHA(lua_State* param_1) {
     u64 L = (u64)param_1;
     if (param_1 == nullptr) {
 #ifdef MATCHING_HACK_NX_CLANG
@@ -2108,7 +2108,7 @@ void EFFECT_FOLLOW_ALPHA(lua_State* param_1) {
 //       7-8=rot_xy(float), 9=rot_z(int), 10=scale(float), 11=follow_flag(bool),
 //       12=alt_hash(when flipped)
 // Calls MotionModule vtable[0x390/8] for flip check, then req_follow (vtable 0x80)
-void EFFECT_FOLLOW_FLIP(lua_State* param_1) {
+extern "C" void EFFECT_FOLLOW_FLIP(lua_State* param_1) {
     u64 L = (u64)param_1;
     u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
     int nargs = acmd_nargs(L);
@@ -2205,7 +2205,7 @@ void EFFECT_FOLLOW_FLIP(lua_State* param_1) {
 // Args: 1=hash_nf(discarded initially), 2=hash_flip, 3=bone_hash,
 //       4-6=off_xyz(int), 7-9=rot_xyz(int), 10=scale(float),
 //       11=follow_flag(bool), 12=alt_hash(when flipped)
-void EFFECT_FOLLOW_NO_STOP_FLIP(lua_State* param_1) {
+extern "C" void EFFECT_FOLLOW_NO_STOP_FLIP(lua_State* param_1) {
     u64 L = (u64)param_1;
     if (param_1 == nullptr) {
 #ifdef MATCHING_HACK_NX_CLANG
@@ -2305,7 +2305,7 @@ void EFFECT_FOLLOW_NO_STOP_FLIP(lua_State* param_1) {
 // Args: 1=hash_nf, 2=hash_flip, 3=bone_hash, 4-6=off_xyz(int), 7-9=rot_xyz(int),
 //       10=scale(float), 11=follow_flag(bool), 12=alt_hash(when flipped),
 //       13-15=RGB(float)
-void EFFECT_FOLLOW_FLIP_COLOR(lua_State* param_1) {
+extern "C" void EFFECT_FOLLOW_FLIP_COLOR(lua_State* param_1) {
     u64 L = (u64)param_1;
     if (param_1 == nullptr) {
 #ifdef MATCHING_HACK_NX_CLANG
@@ -2417,7 +2417,7 @@ void EFFECT_FOLLOW_FLIP_COLOR(lua_State* param_1) {
 // 0x71022a1100 (2328 bytes) — EFFECT_FOLLOW_FLIP_ALPHA
 // Combines FOLLOW_FLIP (motion flip + hash swap) with ALPHA (1 float arg after req_follow).
 // Same arg layout as EFFECT_FOLLOW_FLIP_COLOR but arg 13=alpha, calls vtable 0x308
-void EFFECT_FOLLOW_FLIP_ALPHA(lua_State* param_1) {
+extern "C" void EFFECT_FOLLOW_FLIP_ALPHA(lua_State* param_1) {
     u64 L = (u64)param_1;
     if (param_1 == nullptr) {
 #ifdef MATCHING_HACK_NX_CLANG
@@ -2627,7 +2627,7 @@ void EFFECT_FOLLOW_FLIP_arg13(lua_State* param_1) {
 // 0x710229d0a0 (932 bytes) — EFFECT_COLOR
 // Parses 16 EFFECT args via FUN_7102288620, calls req_on_joint, then reads 3 extra
 // float args (17-19) for RGB and calls set_color (vtable offset 0x2F8)
-void EFFECT_COLOR(lua_State* param_1) {
+extern "C" void EFFECT_COLOR(lua_State* param_1) {
     u64 L = (u64)param_1;
     u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
     int nargs = acmd_nargs(L);
@@ -2671,7 +2671,7 @@ void EFFECT_COLOR(lua_State* param_1) {
 
 // 0x710229d450 (932 bytes) — EFFECT_COLOR_WORK
 // Identical to EFFECT_COLOR
-void EFFECT_COLOR_WORK(lua_State* param_1) {
+extern "C" void EFFECT_COLOR_WORK(lua_State* param_1) {
     u64 L = (u64)param_1;
     u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
     int nargs = acmd_nargs(L);
@@ -2713,7 +2713,7 @@ void EFFECT_COLOR_WORK(lua_State* param_1) {
 // 0x710229d800 (476 bytes) — EFFECT_ALPHA
 // Parses 16 EFFECT args via FUN_7102288620, calls req_on_joint, then reads 1 extra
 // float arg (17) for alpha and calls set_alpha_last (vtable offset 0x308)
-void EFFECT_ALPHA(lua_State* param_1) {
+extern "C" void EFFECT_ALPHA(lua_State* param_1) {
     u64 L = (u64)param_1;
     u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
     int nargs = acmd_nargs(L);
@@ -2752,7 +2752,7 @@ void EFFECT_ALPHA(lua_State* param_1) {
 // 0x71022973a0 (380 bytes) — EFFECT_FLIP
 // Calls FUN_7102288620 in flip mode (mode=1), checks MotionModule flip state,
 // swaps hash arg, then calls req_on_joint (vtable 0x70)
-void EFFECT_FLIP(lua_State* param_1) {
+extern "C" void EFFECT_FLIP(lua_State* param_1) {
     u64 L = (u64)param_1;
     u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
     int nargs = acmd_nargs(L);
@@ -2801,7 +2801,7 @@ void EFFECT_FLIP(lua_State* param_1) {
 
 // 0x71022a0ea0 (596 bytes) — EFFECT_FLIP_ALPHA
 // Like EFFECT_FLIP but reads alpha at arg 19 (offset 0x130) and calls set_alpha_last
-void EFFECT_FLIP_ALPHA(lua_State* param_1) {
+extern "C" void EFFECT_FLIP_ALPHA(lua_State* param_1) {
     u64 L = (u64)param_1;
     u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
     int nargs = acmd_nargs(L);
@@ -2860,7 +2860,7 @@ void EFFECT_FLIP_ALPHA(lua_State* param_1) {
 // 0x710228b030 — EFFECT
 // 16-arg ACMD effect command: 2 hashes + pos + rot + rate + scale + color + follow
 // Same as EFFECT_ATTR but without attr_hash (17th arg), passes 0 for attr position
-void EFFECT(lua_State* param_1) {
+extern "C" void EFFECT(lua_State* param_1) {
     u64 L = (u64)param_1;
     if (param_1 == nullptr) {
 #ifdef MATCHING_HACK_NX_CLANG
@@ -2942,7 +2942,7 @@ void EFFECT(lua_State* param_1) {
 // 0x710228fb30 — EFFECT_WORK_R
 // Like EFFECT but all position/rotation/scale/color values are WorkModule indices (integers)
 // Reads floats then truncates to u32 for all vector components
-void EFFECT_WORK_R(lua_State* param_1) {
+extern "C" void EFFECT_WORK_R(lua_State* param_1) {
     u64 L = (u64)param_1;
     if (param_1 == nullptr) {
 #ifdef MATCHING_HACK_NX_CLANG
@@ -3031,7 +3031,7 @@ void EFFECT_WORK_R(lua_State* param_1) {
 // 0x71022a1a20 — EFFECT_BRANCH_SITUATION
 // Like EFFECT but selects hash based on ground/air situation
 // Args: 1=ground_hash, 2=air_hash, 3=joint_hash, 4-17=pos/rot/rate/scale/color/follow
-void EFFECT_BRANCH_SITUATION(lua_State* param_1) {
+extern "C" void EFFECT_BRANCH_SITUATION(lua_State* param_1) {
     u64 L = (u64)param_1;
     u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
     u64 saved_top = *(u64*)(L + 0x10);
@@ -3148,7 +3148,7 @@ static inline f32 apply_rng(f32 base, f32 range, u32 rng) {
 // 0x710229e280 — EFFECT_FOLLOW_RND
 // Like EFFECT_FOLLOW but with XOR-shift128 random offsets on position and rotation
 // Args: 1-2=hashes, 3-5=offset(int), 6-8=rot(float), 9=scale, 10-15=rng ranges, 16=follow
-void EFFECT_FOLLOW_RND(lua_State* param_1) {
+extern "C" void EFFECT_FOLLOW_RND(lua_State* param_1) {
     u64 L = (u64)param_1;
     if (param_1 == nullptr) {
 #ifdef MATCHING_HACK_NX_CLANG
@@ -3269,7 +3269,7 @@ void EFFECT_FOLLOW_RND(lua_State* param_1) {
 // 0x710229f0e0 — EFFECT_FOLLOW_RND_WORK
 // Like EFFECT_FOLLOW_RND but all offsets/rotations as work indices (integers)
 // Reads arg 1 hash twice (once to prime, once for the vtable call)
-void EFFECT_FOLLOW_RND_WORK(lua_State* param_1) {
+extern "C" void EFFECT_FOLLOW_RND_WORK(lua_State* param_1) {
     u64 L = (u64)param_1;
     u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
     int nargs = acmd_nargs(L);
@@ -3391,7 +3391,7 @@ void EFFECT_FOLLOW_RND_WORK(lua_State* param_1) {
 // Like EFFECT_FOLLOW_RND but with MotionModule flip check + hash swap
 // Args: 1=ground_hash, 2=air_hash, 3=joint_hash, 4-9=off/rot(float),
 //       10=scale, 11-16=rng ranges, 17=follow
-void EFFECT_FOLLOW_FLIP_RND(lua_State* param_1) {
+extern "C" void EFFECT_FOLLOW_FLIP_RND(lua_State* param_1) {
     u64 L = (u64)param_1;
     u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
     int nargs = acmd_nargs(L);
@@ -3578,7 +3578,7 @@ void EFFECT_FOLLOW_FLIP_RND(lua_State* param_1) {
 
 // 0x71022989b0 (688 bytes) — LANDING_EFFECT
 // Uses FUN_7102288620 shared parser, checks landing enabled, terrain lookup via StageManager
-void LANDING_EFFECT(lua_State* param_1) {
+extern "C" void LANDING_EFFECT(lua_State* param_1) {
     u64 L = (u64)param_1;
     u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
 
@@ -3655,7 +3655,7 @@ landing_consume:
 
 // 0x7102298c60 (828 bytes) — LANDING_EFFECT_FLIP
 // Like LANDING_EFFECT but with MotionModule flip check for hash swap
-void LANDING_EFFECT_FLIP(lua_State* param_1) {
+extern "C" void LANDING_EFFECT_FLIP(lua_State* param_1) {
     u64 L = (u64)param_1;
     u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
 
@@ -3757,7 +3757,7 @@ landing_flip_consume:
 // 0x7102298640 (880 bytes) — FOOT_EFFECT_FLIP
 // Like LANDING_EFFECT_FLIP but for foot effects: vtable[0x3d0/8], terrain[0x18],
 // plus special case for hash 0xe3c234564 with FighterParamAccessor2 position
-void FOOT_EFFECT_FLIP(lua_State* param_1) {
+extern "C" void FOOT_EFFECT_FLIP(lua_State* param_1) {
     u64 L = (u64)param_1;
     u64 wrapper = *(u64*)(L - 8);
     u64 acc = *(u64*)(wrapper + 0x1a0);
@@ -3869,7 +3869,7 @@ foot_flip_consume:
 // Args: 1=effect_hash
 // Uses global screen effect manager (DAT_71052b7710), not accessor
 // Calls vtable[0x1f0/8] on sub-object at +0x3a0, then clears state fields
-void REMOVE_FINAL_SCREEN_EFFECT(lua_State* param_1) {
+extern "C" void REMOVE_FINAL_SCREEN_EFFECT(lua_State* param_1) {
     u64 L = (u64)param_1;
     int nargs = acmd_nargs(L);
 
@@ -3905,7 +3905,7 @@ void REMOVE_FINAL_SCREEN_EFFECT(lua_State* param_1) {
 // Args: 1=se_hash
 // Calls SoundModule vtable[0x120/8] (play_landing_se)
 // +0x148 = SoundModule [derived: accessor offset map]
-void PLAY_LANDING_SE(lua_State* param_1) {
+extern "C" void PLAY_LANDING_SE(lua_State* param_1) {
     u64 L = (u64)param_1;
     if (param_1 == nullptr) {
 #ifdef MATCHING_HACK_NX_CLANG
@@ -3932,7 +3932,7 @@ void PLAY_LANDING_SE(lua_State* param_1) {
 // Args: 1=se_hash
 // Calls SoundModule vtable[0x1c8/8] (reg_landing_se)
 // +0x148 = SoundModule [derived: accessor offset map]
-void REG_LANDING_SE(lua_State* param_1) {
+extern "C" void REG_LANDING_SE(lua_State* param_1) {
     u64 L = (u64)param_1;
     if (param_1 == nullptr) {
 #ifdef MATCHING_HACK_NX_CLANG
@@ -3960,7 +3960,7 @@ void REG_LANDING_SE(lua_State* param_1) {
 // If nargs >= 10, reads bool arg 10 → sets/clears bit 0x1000000 on EffectManager entry
 // EffectManager: *instance_ is entries base, each entry 0x300 bytes
 //   entry+4 = handle validation, entry+0x26c = flags
-void EFFECT_GLOBAL_BACK_GROUND(lua_State* param_1) {
+extern "C" void EFFECT_GLOBAL_BACK_GROUND(lua_State* param_1) {
     u64 L = (u64)param_1;
     u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
 
@@ -4001,7 +4001,7 @@ void EFFECT_GLOBAL_BACK_GROUND(lua_State* param_1) {
 // If camera mode (DAT_71052b7f00+4) is 4 or 7, computes weighted normalized direction
 // from camera to cutin position, then interpolates along that direction.
 // Uses NEON rsqrt approximation in original — scalar math here (size mismatch expected).
-void EFFECT_GLOBAL_BACK_GROUND_CENTER_TOP_NODE(lua_State* param_1) {
+extern "C" void EFFECT_GLOBAL_BACK_GROUND_CENTER_TOP_NODE(lua_State* param_1) {
     u64 L = (u64)param_1;
     u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
 
@@ -4110,7 +4110,7 @@ void EFFECT_GLOBAL_BACK_GROUND_CENTER_TOP_NODE(lua_State* param_1) {
 // 0x710228f8a0 (432 bytes) — EFFECT_GLOBAL_BACK_GROUND_CUT_IN_CENTER_POS
 // Like EFFECT_GLOBAL_BACK_GROUND but reads pos from FighterCutInManager+0x2f0
 // and rate from FighterCutInManager+0x340
-void EFFECT_GLOBAL_BACK_GROUND_CUT_IN_CENTER_POS(lua_State* param_1) {
+extern "C" void EFFECT_GLOBAL_BACK_GROUND_CUT_IN_CENTER_POS(lua_State* param_1) {
     u64 L = (u64)param_1;
     u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
 
@@ -4154,7 +4154,7 @@ void EFFECT_GLOBAL_BACK_GROUND_CUT_IN_CENTER_POS(lua_State* param_1) {
 // adds offsets, then sets effect position via EffectModule::set_pos(last_handle, pos)
 // +0x38 = PostureModule [derived: accessor offset map]
 // +0x140 = EffectModule [derived: accessor offset map]
-void LAST_EFFECT_SET_TOP_OFFSET(lua_State* param_1) {
+extern "C" void LAST_EFFECT_SET_TOP_OFFSET(lua_State* param_1) {
     u64 L = (u64)param_1;
     u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
 
@@ -4208,7 +4208,7 @@ void LAST_EFFECT_SET_TOP_OFFSET(lua_State* param_1) {
 // Updates BattleObjectSlow max frame, allocates slot in slow effect array
 // DAT_71052b7710+8 = BattleObjectSlow instance
 // DAT_71052c2610 = slow effect slot array (16 slots × 2 bytes: {active, kind})
-void SCREEN_EFFECT_SLOW_WHOLE(lua_State* param_1) {
+extern "C" void SCREEN_EFFECT_SLOW_WHOLE(lua_State* param_1) {
     u64 L = (u64)param_1;
     int nargs = acmd_nargs(L);
 
@@ -4269,7 +4269,7 @@ void SCREEN_EFFECT_SLOW_WHOLE(lua_State* param_1) {
 // If enable: iterates StageManager stage objects, updates visibility state
 // If disable: calls FUN_710260ccd0 to reset hiding
 // DAT_71052b7710+8 = BattleObjectSlow, +0x448 = bg_hiding_active flag
-void BACK_GROUND_EFFECT_STAGE_SET_HIDING_FOR_DIRECTION(lua_State* param_1) {
+extern "C" void BACK_GROUND_EFFECT_STAGE_SET_HIDING_FOR_DIRECTION(lua_State* param_1) {
     u64 L = (u64)param_1;
     u64 top = *(u64*)(L + 0x10);
     u64 base_entry = **(u64**)(L + 0x20) + 0x10;
@@ -4366,7 +4366,7 @@ bg_consume:
 // Original inlines 16-arg reader (4148B); we call FUN_7102288620 (size mismatch expected).
 // EffectModule vtable[0x3d0/8] = is_foot_enabled, terrain hash at +0x18
 // FPA2 secondary effect when wrapper+0x194==0 and terrain hash==0xe3c234564
-void FOOT_EFFECT(lua_State* param_1) {
+extern "C" void FOOT_EFFECT(lua_State* param_1) {
     u64 L = (u64)param_1;
     u64 wrapper = *(u64*)(L - 8);
     u64 acc = *(u64*)(wrapper + 0x1a0);
@@ -4478,7 +4478,7 @@ foot_consume:
 // Args 1-2: hashes, 3-5: pos, 6-8: rot, 9: rate, 10: follow_flag (bool),
 //       11-12: scale (x,y), 13-14: color (r,g), 15-16: color_b + extra, 17: extra_z
 // PostureModule vtable[0xb0/8] → lr direction, multiplied with color_b
-void EFFECT_FOLLOW_LIGHT(lua_State* param_1) {
+extern "C" void EFFECT_FOLLOW_LIGHT(lua_State* param_1) {
     u64 L = (u64)param_1;
     if (param_1 == nullptr) {
 #ifdef MATCHING_HACK_NX_CLANG
@@ -4584,7 +4584,7 @@ void EFFECT_FOLLOW_LIGHT(lua_State* param_1) {
 // 0x7102298fa0 (3996 bytes) — DOWN_EFFECT
 // Like FOOT_EFFECT but no enable check, terrain uses +0x78 for secondary hash,
 // +0x70 for flag check. No FPA2 secondary effect. Original inlines 16-arg reader.
-void DOWN_EFFECT(lua_State* param_1) {
+extern "C" void DOWN_EFFECT(lua_State* param_1) {
     u64 L = (u64)param_1;
     if (param_1 == nullptr) {
 #ifdef MATCHING_HACK_NX_CLANG
