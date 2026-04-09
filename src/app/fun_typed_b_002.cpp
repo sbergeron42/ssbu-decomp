@@ -1,10 +1,12 @@
 #include "types.h"
 #include "app/BattleObjectModuleAccessor.h"
+#include "app/modules/WorkModule.h"
 
 // pool-b: Types-first HARD tier — CaptureModule/CatchModule/GrabModule related functions
 // and AI accessor functions in the same domain.
 
 using app::BattleObjectModuleAccessor;
+using app::WorkModule;
 
 // ---------------------------------------------------------------------------
 // 0x7101658cc0  8B  is_enable_capture_bossgalaga — always enabled
@@ -59,25 +61,22 @@ bool is_enable_capture_baitocrane_16433a0(BattleObjectModuleAccessor* acc) {
 // Uses WorkModule (+0x50) vtable[0x108/8] (is_flag)
 // ---------------------------------------------------------------------------
 u32 is_enable_capture_164b0b0(BattleObjectModuleAccessor* acc) {
-    void* wm = acc->work_module;
-    void** vt = *reinterpret_cast<void***>(wm);
-    u32 flag = reinterpret_cast<u32(*)(void*, u32)>(vt[0x108 / 8])(wm, 0x20000028);
+    WorkModule* wm = acc->work_module;
+    u32 flag = (u32)wm->is_flag(0x20000028);
     u32 result;
 #ifdef MATCHING_HACK_NX_CLANG
     if (!(flag & 1)) goto do_else;
     result = 0;
     goto done;
 do_else:
-    vt = *reinterpret_cast<void***>(wm);
-    result = reinterpret_cast<u32(*)(void*, u32)>(vt[0x108 / 8])(wm, 0x20000029);
+    result = (u32)wm->is_flag(0x20000029);
     result = result ^ 1;
 done:
 #else
     if (flag & 1) {
         result = 0;
     } else {
-        vt = *reinterpret_cast<void***>(wm);
-        result = reinterpret_cast<u32(*)(void*, u32)>(vt[0x108 / 8])(wm, 0x20000029);
+        result = (u32)wm->is_flag(0x20000029);
         result = result ^ 1;
     }
 #endif
@@ -89,25 +88,22 @@ done:
 // Uses WorkModule (+0x50) vtable[0x108/8] (is_flag)
 // ---------------------------------------------------------------------------
 u32 is_enable_capture_beetle_1655fb0(BattleObjectModuleAccessor* acc) {
-    void* wm = acc->work_module;
-    void** vt = *reinterpret_cast<void***>(wm);
-    u32 flag = reinterpret_cast<u32(*)(void*, u32)>(vt[0x108 / 8])(wm, 0x20000028);
+    WorkModule* wm = acc->work_module;
+    u32 flag = (u32)wm->is_flag(0x20000028);
     u32 result;
 #ifdef MATCHING_HACK_NX_CLANG
     if (!(flag & 1)) goto do_else2;
     result = 0;
     goto done2;
 do_else2:
-    vt = *reinterpret_cast<void***>(wm);
-    result = reinterpret_cast<u32(*)(void*, u32)>(vt[0x108 / 8])(wm, 0x20000029);
+    result = (u32)wm->is_flag(0x20000029);
     result = result ^ 1;
 done2:
 #else
     if (flag & 1) {
         result = 0;
     } else {
-        vt = *reinterpret_cast<void***>(wm);
-        result = reinterpret_cast<u32(*)(void*, u32)>(vt[0x108 / 8])(wm, 0x20000029);
+        result = (u32)wm->is_flag(0x20000029);
         result = result ^ 1;
     }
 #endif

@@ -131,7 +131,7 @@ Else: [base+0x158]→vt[0x18] call
 == 0x71015c7890 — self_param_float (160B) — hash literals, lerp pattern
 == 0x71015ce0b0 — find_fighter_entry_id (412B) — very complex, skip
 
-=== SESSION 2026-04-09 BATCH 2 ===
+=== SESSION 2026-04-09 BATCH 2 (sv_kinetic) ===
 
 == 0x71022087b0 — sv_kinetic::disable_energy_pair (96B) ==
 Gets kinetic_module (+0x68 from accessor). Two vtable[12](0xc) and vtable[12](0xd) calls.
@@ -157,3 +157,150 @@ Reads byte at result+0x30. Writes to lua stack at [param+0x10]:
 == 0x7102203910 — sv_item::init_explosion_no_damage_2 (160B) ==
 Same pattern as 0x71015c55c0: work_module, IPA[0x72ffc], attack clear, work flag.
 (Different TU due to non-hidden FPA2 access)
+
+=== SESSION 2026-04-09 BATCH 3 (fighter core + sv_kinetic_energy) ===
+
+== 0x71003de250 — IsAttack / container_reset (52B) ==
+Calls FUN_71003e5ba0 on node at +0x180, zeros +0x178/+0x180/+0x188, clears flag at +0x190.
+Appears to reset a red-black tree/BST container.
+
+== 0x71003dd500 — GetOffset2 (56B) ==
+vtable[0x1e8/8](param_1, param_2, param_3&1) → if result, return *(result+0x10), else return zero vec.
+
+== 0x71003b5710 — Set2ndPrecede (92B) ==
+cxa_guard_acquire pattern → lazy-init static Hash40. SKIP (guard variable pattern).
+
+== 0x71003b5cf0 — Set2ndDisableCollision (92B) ==
+cxa_guard_acquire pattern → lazy-init static Hash40. SKIP (guard variable pattern).
+
+== 0x71003e2ab0 — ResetSafePos (100B) ==
+Loop over count at param_1[6], stride 0x2d0 from param_1[0xb]. Calls vt[0x548/8], resets fields.
+
+== 0x71003d3f30 — CreateArticles (128B) ==
+Stack struct (vtable PTR_LAB_7104f61718), calls FUN_71003a6460 and FUN_71003a6a30 with +0x240 data.
+
+== 0x71003f6ce0 — CancelMainColor (128B) ==
+Stack init with float constants (0x437f0000=255.0f, 0x3f800000=1.0f), vtable[0xf0/8] call.
+
+== 0x71003d41e0 — GenerateArticleEnable (104B) ==
+vtable[0x1d8/8]() check → vtable[0x78/8](param_1, param_2, param_3&1, param_4).
+
+== 0x71003de1a0 — SetInvalidInvincible (176B) ==
+vtable chain check via +0xd0 module → vtable[0x2a0/8], then BST lookup at +0x178/+0x180.
+
+== 0x71003d40c0 — GenerateArticleForTarget (180B) ==
+Article creation with +0x248 secondary path, FUN_71003a6ce0 or FUN_71003a5d80 fallback.
+
+== 0x71003e3210 — SetAttackCameraQuakeForced (164B) ==
+Function ptr check at param_1[0x4a], vtable[0x680/8] call, then struct field flag sets.
+
+== 0x71003d0380 (96B) ==
+Two conditional vtable[0x80/8] calls with PTR_DAT_7104f691d0 and 0x7104f691e0.
+
+== 0x71003dcdd0 (80B) ==
+Check byte at +0x148 in stride-0x150 array at +0x78, vtable via +0x38 module, store result.
+
+== 0x71003e5ba0 (56B) ==
+Recursive BST post-order delete: recurse left, recurse right, free node (FUN_710392e590).
+
+== 0x71003a7740 (88B) ==
+BattleObject init: set +0x3a=4, +0x3c=0xff, vtable[0x28/8] on +0x20 module, BOM call.
+
+== 0x71003a7850 (88B) ==
+BattleObject cleanup: BOM call FUN_71003af040, vtable[0x30/8] on +0x20 module, set +0x3a=3, +0x3c=0xff.
+
+== 0x71003d57e0 — IsFlagFromNo (164B) ==
+Hash table lookup: vt[0x1c8/8] check, modular arithmetic (param_3+offset)%capacity, linked node check.
+
+== 0x71003f0d70 — IsIgnoreDistance (200B) ==
+Multiple vtable checks on +0xd0 module (vt[0x78], vt[0x70], vt[0xd8], vt[0xe0]) and +0xa8 module.
+
+== 0x71003cd650 (136B) ==
+Destructor: set vtable, loop destroy elements (stride 0x70), free buffer, free self.
+
+== 0x71003cddb0 (136B) ==
+Identical to 0x71003cd650.
+
+== 0x71003f6e30 (92B) ==
+Check +0xd0 module vt[0x70], call vt[0x428/8] with params, store field at +0xb4.
+
+== 0x71003f7000 (92B) ==
+Same as 0x71003f6e30 but stores at +0x2b4 and uses param 10 instead of 0xb.
+
+== 0x71003f77b0 (64B) ==
+Flag toggle: if +0x54 set and param clear, call vt[0x50/8]. Store param&1 at +0x54.
+
+== 0x71003f8c50 (88B) ==
+vtable[0x438/8] call with struct fields, conditional vtable[0x2f0/8](1) call.
+
+== 0x71003fd310 (96B) ==
+Effect module (+0x140) vtable[0x68/8] call with hash 0xee04a4651, multiple params.
+
+== 0x71003fffa0 (128B) ==
+Loop over count at param_1[2], stride 0x1c0 from param_1[3], check float at +0x10, vtable[0xe0/8].
+
+== 0x7100404ec0 — calc_reaction_frame (152B) ==
+DamageTransactorImpl: param lookup with hashes 0x10eb42a0a3 and 0x10e33b9cd2, float max.
+
+== sv_kinetic_energy speed readers (0x71022 range) ==
+
+== 0x71022213e0 (104B) — get_energy3_speed_x ==
+kinetic(+0x68)→get_energy(3)→get_speed()→ push result[0] to lua stack. Returns 1.
+
+== 0x7102221450 (104B) — get_energy3_speed_y ==
+Same but pushes result[1] (offset +4). Returns 1.
+
+== 0x7102221360 (124B) — get_energy3_speed_xy ==
+Pushes result[0] and result[1] as separate values. Returns 2.
+
+== 0x71022214c0 (152B) — get_energy3_speed_xyz ==
+Pushes result[0], result[1], result[2] as separate values. Returns 3.
+
+== 0x7102222280 (116B) — get_energy3_field_0x40_xy ==
+kinetic→get_energy(3), reads +0x40/+0x44, pushes 2 values. Returns 2.
+
+== 0x7102222300 (116B) — get_energy3_field_0x50_xy ==
+Same but reads +0x50/+0x54. Returns 2.
+
+== 0x7102222380 (116B) — get_energy3_field_0x60_xy ==
+Same but reads +0x60/+0x64. Returns 2.
+
+== 0x7102222400 (116B) — get_energy3_field_0x70_xy ==
+Same but reads +0x70/+0x74. Returns 2.
+
+== 0x7102200470 (100B) — clear_energy4_fields ==
+Gets +0x190 module → vt[0x60/8](4), zeroes speed/accel fields at +0x10..+0x78 with NEON. Returns 0.
+
+
+=== SESSION 2026-04-09 BATCH 4 (sv_information + FPA2) ===
+
+== 0x710227ed00 (84B) — is_dead_up_force_crush ==
+work→vt[0x98/8](0x10000000)→id, bounds <8, FM→entries[id]→FI(+0xf8)→byte at +0x6e
+
+== 0x710227ef00 (84B) — sleep_time_mul ==
+Same FM pattern, FI→u32 at +0x384 (=900 decimal)
+
+== 0x7102281890 (84B) — get_dead_up_star_fall_prob ==
+Same FM pattern, FI→u32 at +0x7c
+
+== 0x710227eea0 (88B) — owner_rank ==
+FM+0xcd check, calls FUN_71006798f0(FM, id)
+
+== 0x710227ee30 (104B) — owner_handi ==
+Bounds check + FM+0xcd check, FI→u32 at +0x370
+
+== 0x71022819a0 (116B) — set_on_rebirth ==
+FI→write +0x38C, if false clear +0xA42
+
+== 0x7102281a20 (112B) — set_dead_rumble ==
+FUN_710067de90(FM, hash, 0, 0, 0x50000000), control(+0x48)→vt[0x2e0/8]
+
+== 0x7102283d10 (92B) — set_power_mul_region_attr_info ==
+attack_module(+0xA0)→vt[0x318/8] read, vt[0x320/8] write (18-byte buffer)
+
+== 0x7102284520 (92B) — start_boss_finish ==
+FUN_71003ab390 + BossManager singleton + FUN_71004eb4b0
+
+== 0x7102211600 (84B) — Pac_Land ==
+FUN_710067a3a0(FM, 1) → push result&1 with type tag 1
+
