@@ -459,42 +459,6 @@ lib::L2CValue operator_not_7103734f50(lib::L2CValue* param) {
 }
 
 // ============================================================
-// L2CValue type query functions — return bool
-// ============================================================
-
-// 0x7103735f30 (96 bytes) — as_bool: convert L2CValue to bool
-// Uses jump table for types 0-7
-bool as_bool_7103735f30(lib::L2CValue* param) {
-    switch (param->type) {
-    case 0: return false;
-    case 1: return (s32)param->bool_val > 0;
-    case 2: case 7: return param->int_val != 0;
-    case 3: return param->float_val != 0.0f;
-    default: return true;
-    }
-}
-
-// 0x71037344a0 (116 bytes) — operator bool(): convert L2CValue to bool
-// Includes string SSO check for type 8
-bool operator_cast_to_bool_71037344a0(lib::L2CValue* param) {
-    switch (param->type) {
-    case 0: return false;
-    case 1: return (s32)param->bool_val > 0;
-    case 3: return param->float_val != 0.0f;
-    case 8: {
-        u8* str = reinterpret_cast<u8*>(param->ptr_val);
-        if (str[0] & 1) {
-            return *reinterpret_cast<u64*>(str + 8) != 0;
-        }
-        return (u64)(str[0] >> 1) != 0;
-    }
-    case 2: case 7:
-        return param->int_val != 0;
-    default: return true;
-    }
-}
-
-// ============================================================
 // operator[](Hash40) — table lookup by hash key
 // 0x7103735db0 (64 bytes)
 // ============================================================
