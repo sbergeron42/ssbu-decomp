@@ -17,12 +17,21 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent.parent
 SRC_DIR = PROJECT_ROOT / "src"
 BUILD_DIR = PROJECT_ROOT / "build"
-CLANG = r"C:\llvm-8.0.0\bin\clang++.exe"
+CLANG = os.environ.get("DECOMP_CLANG", r"C:\llvm-8.0.0\bin\clang++.exe")
 CFLAGS = ("-target aarch64-none-elf -mcpu=cortex-a57 -O2 -std=c++17 "
           "-fno-exceptions -fno-rtti -ffunction-sections -fdata-sections "
           "-fno-common -fno-short-enums -fPIC -mno-implicit-float "
           "-fno-strict-aliasing -fno-slp-vectorize -DMATCHING_HACK_NX_CLANG "
           "-Iinclude -Ilib/NintendoSDK/include -Ilib/NintendoSDK/include/stubs")
+# NX Clang compat flags (only effective with the patched compiler from
+# decomp-compiler-fork). Set DECOMP_NX_CFLAGS env var to enable.
+# Recommended: "-mllvm -aarch64-nx-prologue"
+#   Prologue patch: +91 matches, +5,852 bytes in testing.
+#   Other patches (movz, return-width, epilogue) cause regressions
+#   because they apply unconditionally; keep their post-processing scripts.
+NX_CFLAGS = os.environ.get("DECOMP_NX_CFLAGS", "")
+if NX_CFLAGS:
+    CFLAGS = CFLAGS + " " + NX_CFLAGS
 
 
 def needs_rebuild(cpp_path, o_path):
@@ -99,28 +108,39 @@ def main():
     print("  fix_plt_stubs...")
     run_postprocess("fix_plt_stubs.py")
 
-    print("  fix_movz_to_orr...")
-    run_postprocess("fix_movz_to_orr.py")
+    # Skip post-processing scripts that are superseded by compiler NX flags.
+    # When NX_CFLAGS contains the corresponding -mllvm flag, the compiler
+    # handles the fix natively and running the script would conflict.
+    if "-aarch64-nx-movz" not in NX_CFLAGS:
+        print("  fix_movz_to_orr...")
+        run_postprocess("fix_movz_to_orr.py")
+    else:
+        print("  fix_movz_to_orr... SKIPPED (compiler handles it)")
 
-    print("  fix_prologue_sched...")
-    run_postprocess("fix_prologue_sched.py")
+    if "-aarch64-nx-prologue" not in NX_CFLAGS:
+        print("  fix_prologue_sched...")
+        run_postprocess("fix_prologue_sched.py")
+    else:
+        print("  fix_prologue_sched... SKIPPED (compiler handles it)")
 
-    print("  gen_epilogue_list + fix_epilogue...")
-    subprocess.run(
-        'python "%s"' % (PROJECT_ROOT / "tools" / "gen_epilogue_list.py"),
-        shell=True, capture_output=True
-    )
-    for pattern in ["fun_batch_c_*.o", "fun_batch_d_*.o", "fun_batch_e2_*.o"]:
-        run_postprocess("fix_epilogue.py", "build/" + pattern)
+    if "-aarch64-nx-epilogue" not in NX_CFLAGS:
+        print("  gen_epilogue_list + fix_epilogue...")
+        subprocess.run(
+            'python "%s"' % (PROJECT_ROOT / "tools" / "gen_epilogue_list.py"),
+            shell=True, capture_output=True
+        )
+        for pattern in ["fun_batch_c_*.o", "fun_batch_d_*.o", "fun_batch_e2_*.o"]:
+            run_postprocess("fix_epilogue.py", "build/" + pattern)
+    else:
+        print("  fix_epilogue... SKIPPED (compiler handles it)")
 
-    print("  fix_return_width...")
-    run_postprocess("fix_return_width.py")
-
-    print("  fix_x8_regalloc...")
-    run_postprocess("fix_x8_regalloc.py")
-
-    print("  fix_insn_reorder...")
-    run_postprocess("fix_insn_reorder.py")
+    # Oracle scripts (read original binary) — disabled for honest matching.
+    # These produce "matches" by peeking at the answer key, not by applying
+    # known blind transforms.  Kept in repo for analysis but not in pipeline.
+    #   fix_return_width.py  — peeks at original to decide 32/64 width
+    #   fix_x8_regalloc.py   — peeks at original to verify register rewrite
+    #   fix_insn_reorder.py  — copies instruction order from original
+    #   fix_commutative.py   — peeks at original to decide swap direction
 
     print()
     print("Build complete.")
