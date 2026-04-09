@@ -20,6 +20,7 @@ extern "C" __attribute__((visibility("hidden"))) void* DAT_71052bb3b0;
             *reinterpret_cast<u64*>( \
                 reinterpret_cast<u8*>(DAT_71052bb3b0) + (off1)) + (off2)) + (off3))
 
+
 // ════════════════════════════════════════════════════════════════════
 // DAISY DAISYDAIKON — probability and power tables (24B each)
 // [derived: FPA2+0x380 → +0x158 → final offset]
