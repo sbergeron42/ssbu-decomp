@@ -2021,3 +2021,78 @@ extern "C" void calc_offset_with_gravity_71015c22f0(void* lua_state, void* vec2)
 #endif
 }
 }} // namespace app::item
+
+// ---- Batch 5: trivial return-value functions ----
+
+// 0x71022821a0 (8 bytes) — app::sv_fighter_util::get_walk_speed_mul
+// Returns 1.0f (hardcoded). Simplified-mode fallback.
+// [derived: Ghidra decompilation at 0x71022821a0]
+namespace app { namespace sv_fighter_util {
+extern "C" float get_walk_speed_mul(void* lua_state) {
+    return 1.0f;
+}
+}} // namespace app::sv_fighter_util
+
+// 0x7102282800 (8 bytes) — app::sv_fighter_util::is_free_move_rot_legacy
+// Always returns false. Legacy stub.
+// [derived: Ghidra decompilation at 0x7102282800]
+namespace app { namespace sv_fighter_util {
+extern "C" u64 is_free_move_rot_legacy(void) {
+    return 0;
+}
+}} // namespace app::sv_fighter_util
+
+// 0x7102282290 (24 bytes) — app::sv_fighter_util::get_world_move_seed
+// Returns {BattleObjectWorld+0x20, 0} as a 16-byte value.
+// [derived: Ghidra decompilation at 0x7102282290]
+namespace app { namespace sv_fighter_util {
+extern "C" float4 get_world_move_seed(void) {
+    u8* world = (u8*)DAT_71052bb390;
+    u64 result[2];
+    result[0] = *(u64*)(world + 0x20);
+    result[1] = 0;
+    return *(float4*)result;
+}
+}} // namespace app::sv_fighter_util
+
+// ---- sv_camera_manager position getters ----
+
+// 0x7102283240 (20 bytes) — app::sv_camera_manager::get_pos
+// Returns camera position from cam_data+0xd30.
+// [derived: Ghidra decompilation at 0x7102283240]
+namespace app { namespace sv_camera_manager {
+extern "C" float4 get_pos_7102283240(void) {
+    u8* cam = *(u8**)DAT_71052b7f00;
+    return *(float4*)(cam + 0xd30);
+}
+}} // namespace app::sv_camera_manager
+
+// 0x7102283260 (20 bytes) — app::sv_camera_manager::get_target
+// Returns camera target from cam_data+0xd20.
+// [derived: Ghidra decompilation at 0x7102283260]
+namespace app { namespace sv_camera_manager {
+extern "C" float4 get_target_7102283260(void) {
+    u8* cam = *(u8**)DAT_71052b7f00;
+    return *(float4*)(cam + 0xd20);
+}
+}} // namespace app::sv_camera_manager
+
+// 0x7102283280 (20 bytes) — app::sv_camera_manager::get_internal_pos
+// Returns internal camera position from cam_data+0xec0.
+// [derived: Ghidra decompilation at 0x7102283280]
+namespace app { namespace sv_camera_manager {
+extern "C" float4 get_internal_pos(void) {
+    u8* cam = *(u8**)DAT_71052b7f00;
+    return *(float4*)(cam + 0xec0);
+}
+}} // namespace app::sv_camera_manager
+
+// 0x71022832a0 (20 bytes) — app::sv_camera_manager::get_internal_target
+// Returns internal camera target from cam_data+0xeb0.
+// [derived: Ghidra decompilation at 0x71022832a0]
+namespace app { namespace sv_camera_manager {
+extern "C" float4 get_internal_target(void) {
+    u8* cam = *(u8**)DAT_71052b7f00;
+    return *(float4*)(cam + 0xeb0);
+}
+}} // namespace app::sv_camera_manager
