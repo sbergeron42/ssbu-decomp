@@ -734,6 +734,104 @@ lib::L2CValue operator_div_7103735a50(lib::L2CValue* this_, lib::L2CValue* other
     return ret;
 }
 
+// 0x7103735730 (240 bytes) — operator-: subtraction
+// [derived: Ghidra shows same-type int→sub, same-type float→fsub,
+//  cross-type int/float→scvtf+fsub, table→metamethod dispatch]
+lib::L2CValue operator_sub_7103735730(lib::L2CValue* this_, lib::L2CValue* other) {
+    lib::L2CValue ret;
+    s32 t1 = this_->type;
+    s32 t2 = other->type;
+    if (t1 == t2) {
+        if (t1 == 5) goto metamethod;
+        if (t1 != 3) {
+            if (t1 == 2) {
+                s64 a = this_->int_val;
+                s64 b = other->int_val;
+                ret.type = 2;
+                ret.int_val = a - b;
+                return ret;
+            }
+            ret.type = 2;
+            ret.raw = 0;
+            return ret;
+        }
+        f32 result = this_->float_val - other->float_val;
+        ret.type = 3;
+        ret.float_val = result;
+        return ret;
+    }
+    {
+        f32 a, b;
+        if (t1 == 2 && t2 == 3) {
+            a = (f32)this_->int_val;
+            b = other->float_val;
+        } else if (t1 == 3 && t2 == 2) {
+            a = this_->float_val;
+            b = (f32)other->int_val;
+        } else {
+            if (t1 != 5 && t2 != 5) {
+                ret.type = 3;
+                ret.float_val = 0.0f;
+                return ret;
+            }
+metamethod:
+            FUN_71037347d0(&ret, this_, 0x5b58a6ff4ULL, other);
+            return ret;
+        }
+        ret.type = 3;
+        ret.float_val = a - b;
+        return ret;
+    }
+}
+
+// 0x7103735820 (244 bytes) — operator*: multiplication
+// [derived: Ghidra shows same-type int→mul, same-type float→fmul,
+//  cross-type int/float→scvtf+fmul, table→metamethod dispatch]
+lib::L2CValue operator_mul_7103735820(lib::L2CValue* this_, lib::L2CValue* other) {
+    lib::L2CValue ret;
+    s32 t1 = this_->type;
+    s32 t2 = other->type;
+    if (t1 == t2) {
+        if (t1 == 5) goto metamethod;
+        if (t1 != 3) {
+            if (t1 != 2) {
+                ret.type = 2;
+                ret.raw = 0;
+                return ret;
+            }
+            s64 a = this_->int_val;
+            s64 b = other->int_val;
+            ret.type = 2;
+            ret.int_val = b * a;
+            return ret;
+        }
+        f32 result = this_->float_val * other->float_val;
+        ret.type = 3;
+        ret.float_val = result;
+        return ret;
+    }
+    if (t1 == 2 && t2 == 3) {
+        f32 result = other->float_val * (f32)this_->int_val;
+        ret.type = 3;
+        ret.float_val = result;
+        return ret;
+    }
+    if (t1 == 3 && t2 == 2) {
+        f32 result = this_->float_val * (f32)other->int_val;
+        ret.type = 3;
+        ret.float_val = result;
+        return ret;
+    }
+    if (t1 != 5 && t2 != 5) {
+        ret.type = 3;
+        ret.float_val = 0.0f;
+        return ret;
+    }
+metamethod:
+    FUN_71037347d0(&ret, this_, 0x5ad88d0e8ULL, other);
+    return ret;
+}
+
 // ============================================================
 // Binary bitwise operators — all follow as_integer(a) OP as_integer(b) → type 2
 // as_integer pattern: type 7/2 → raw u64, type 3 → (u64)(s64)float, else 0
