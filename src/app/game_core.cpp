@@ -67,6 +67,42 @@ extern "C" u8 DAT_7104741dbb;
 // Resource type registry
 extern "C" void* DAT_71052b60e8;
 
+// NintendoSDK filesystem allocator setup
+extern "C" void nn_fs_SetAllocator(void*, void*) __asm("_ZN2nn2fs12SetAllocatorEPFPvmEPFvS1_mE");
+
+// jemalloc config string pointer
+extern "C" u64 DAT_71052b5f18;
+
+// jemalloc config string "percpu_arena:percpu,dirty_decay_ms:1"
+// [derived: Ghidra shows string at 0x710437ad07 in .rodata]
+extern "C" char DAT_710437ad07[];
+
+// Resource allocator/free function pointers (passed to nn::fs::SetAllocator)
+extern "C" void LAB_710353bba0(void);
+extern "C" void LAB_710353bc10(void);
+
+// ════════════════════════════════════════════════════════════════════
+// 0x71002c55e0 — nninitStartup (SDK early init, called before nnMain)
+// Size: 60 bytes
+// [derived: Ghidra decompilation — sets jemalloc config, calls GetHostArgc/Argv,
+//  sets nn::fs allocator. This is the NintendoSDK startup hook.]
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+void nninitStartup(void) {
+    // Set jemalloc configuration string
+    // [derived: DAT_71052b5f18 = je_malloc_conf pointer, set to
+    //  "percpu_arena:percpu,dirty_decay_ms:1" for per-CPU arenas and 1ms dirty decay]
+    DAT_71052b5f18 = (u64)DAT_710437ad07;
+
+    // SDK initialization (required before any other SDK calls)
+    nn_os_GetHostArgc();
+    nn_os_GetHostArgv();
+
+    // Set filesystem allocator functions
+    // [derived: LAB_710353bba0 = alloc, LAB_710353bc10 = free]
+    nn_fs_SetAllocator((void*)&LAB_710353bba0, (void*)&LAB_710353bc10);
+}
+
 // ════════════════════════════════════════════════════════════════════
 // 0x71002c5620 — nnMain (game entry point)
 // Size: 1,744 bytes (0x6D0)

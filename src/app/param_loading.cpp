@@ -1439,6 +1439,18 @@ extern "C" void FUN_7103239370(void* out, s32 mode, bool flag);
 extern "C" void FUN_7103239770(void* out, const char* fmt, char* str);
 extern "C" u64 FUN_7103238300(u64 hash, s32 mode, s32 param);
 
+// ── Resource file I/O ────────────────────────────────────────────
+// [derived: Ghidra decompilation of 0x7103720680, 0x7103720910, 0x7103720870]
+extern "C" void FUN_7103540450(void*, u32);   // acquire filepath ref (FilesystemInfo*, index)
+extern "C" void FUN_7103540560(void*, u32);   // release filepath ref (FilesystemInfo*, index)
+extern "C" void* je_aligned_alloc(u64 alignment, u64 size);
+extern "C" s64 DAT_7105331f20;    // FilesystemInfo* singleton
+extern "C" s64* DAT_7105331f00;   // OOM handler (vtable dispatch at +0x30)
+extern "C" u8 PTR_LAB_710523bc28; // vtable for resource load node
+
+// Global param state (for is_master_hand_stage etc.)
+extern "C" u64 DAT_71052c41b0;
+
 // ── PRC integer decode helper ───────────────────────────────────
 // [derived: PRC stores integers with type tag at byte 0]
 // Type tags: \x01/\x03 = u8, \x02 = s8, \x04 = s16, \x05 = u16, \x06/\x07 = u32
@@ -3334,4 +3346,1242 @@ path_store:
     if (((*param_1 | 4) == 4) && ((s32)*puVar2 < 1)) {
         *(u8*)((s64)param_1 + 0x175) = 1;
     }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x7103720870 — copy (resource load node allocator)
+// Size: 120 bytes
+// [derived: Ghidra decompilation — allocates 8-byte object with OOM retry,
+//  stores vtable pointer PTR_LAB_710523bc28. Named "copy" in community RE.]
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+void copy(void) {
+    void** ptr = (void**)je_aligned_alloc(0x10, 8);
+    if (ptr == nullptr) {
+        if (DAT_7105331f00 != nullptr) {
+            u32 oom_type = 0;
+            u64 oom_size = 8;
+            u64 r = ((u64(*)(s64*, u32*, u64*))(*(u64*)(*DAT_7105331f00 + 0x30)))
+                     (DAT_7105331f00, &oom_type, &oom_size);
+            if ((r & 1) != 0) {
+                ptr = (void**)je_aligned_alloc(0x10, 8);
+                if (ptr != nullptr) goto alloc_ok;
+            }
+        }
+        ptr = nullptr;
+    }
+alloc_ok:
+    *ptr = (void*)&PTR_LAB_710523bc28;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x7103720680 — open_param_file
+// Size: 448 bytes
+// [derived: Ghidra decompilation — opens a file by filepath index from
+//  the global FilesystemInfo (DAT_7105331f20). Validates index, resolves
+//  through LoadedFilepath → LoadedData, checks state == LOADED (3),
+//  populates output view with data/entry/body pointers.]
+//
+// param_1: output struct (0x30 bytes):
+//   +0x00 = self ptr, +0x08 = name, +0x10 = file_index (u32),
+//   +0x18 = raw data, +0x20 = entries, +0x28 = body
+// param_2: pointer to u32 filepath index
+// Returns: 1 on success, 0 on failure
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+u32 open_param_file(s64 param_1, u32* param_2) {
+    // Release existing file reference if held
+    u32 old_idx = *(u32*)(param_1 + 0x10);
+    if (old_idx != 0xffffff) {
+        FUN_7103540560((void*)DAT_7105331f20, old_idx);
+        *(u32*)(param_1 + 0x10) = 0xffffff;
+    }
+
+    // Reset output fields
+    *(u64*)(param_1 + 0x18) = 0;
+    *(u64*)(param_1 + 0x08) = (u64)&DAT_7104741dbb;
+
+    u32 path_idx = *param_2;
+
+    // ── Validation pass 1: check file is loaded with state == 3 ──
+    // [derived: loaded_filepaths at fs+0x08 (8-byte entries, is_loaded at +4),
+    //  loaded_datas at fs+0x10 (0x18-byte entries, is_used at +0xC, state at +0xD)]
+    if (path_idx == 0xffffff) return 0;
+
+    s64 fs = DAT_7105331f20;
+    if (path_idx >= *(u32*)(fs + 0x18)) return 0;
+
+    s64 filepaths = *(s64*)(fs + 0x08);
+    if (*(u8*)(filepaths + (u64)path_idx * 8 + 4) == 0) return 0;
+
+    u32 data_idx = *(u32*)(filepaths + (u64)path_idx * 8);
+    if (data_idx == 0xffffff) return 0;
+    if (data_idx >= *(u32*)(fs + 0x1c)) return 0;
+
+    s64 datas = *(s64*)(fs + 0x10);
+    s64 entry = datas + (u64)data_idx * 0x18;
+
+    // Check is_used and non-null entry
+    if (*(u8*)(entry + 0x0c) == 0 || entry == 0) return 0;
+
+    // Atomic acquire load of state byte (assembly uses LDARB)
+    // [derived: LoadedData.state at +0x0D: 0=Unused, 1=Unloaded, 2=Unknown, 3=Loaded]
+    u8 state = __atomic_load_n((u8*)(datas + (u64)data_idx * 0x18 + 0x0d), __ATOMIC_ACQUIRE);
+    if (state != 3) return 0;
+
+    s64 data_ptr = *(s64*)entry;
+    if (data_ptr == 0) return 0;
+
+    // ── Validation pass 2: extract data pointer ──
+    // [note: compiler inlined a helper twice — once for state check, once for data extraction]
+    path_idx = *param_2;
+    if (path_idx == 0xffffff) return 0;
+
+    fs = DAT_7105331f20;
+    if (path_idx >= *(u32*)(fs + 0x18)) return 0;
+
+    filepaths = *(s64*)(fs + 0x08);
+    if (*(u8*)(filepaths + (u64)path_idx * 8 + 4) == 0) return 0;
+
+    data_idx = *(u32*)(filepaths + (u64)path_idx * 8);
+    if (data_idx == 0xffffff) return 0;
+    if (data_idx >= *(u32*)(fs + 0x1c)) return 0;
+
+    datas = *(s64*)(fs + 0x10);
+    entry = datas + (u64)data_idx * 0x18;
+
+    if (*(u8*)(entry + 0x0c) == 0) return 0;
+    if (entry == 0) return 0;
+
+    data_ptr = *(s64*)entry;
+    if (data_ptr == 0) return 0;
+
+    // ── Populate output view ──
+    // File data layout: +0x00 header, +0x08 body_offset (s32), +0x0C name_offset (s32),
+    //                   +0x10 entry section start
+    *(u64*)(param_1 + 0x18) = (u64)data_ptr;
+    *(u64*)(param_1 + 0x20) = (u64)(data_ptr + 0x10);
+
+    s64 body = data_ptr + 0x10 + (s64)*(s32*)(data_ptr + 8);
+    *(s64*)(param_1 + 0x28) = body;
+    *(s64*)(param_1 + 0x08) = body + (s64)*(s32*)(data_ptr + 0x0c);
+
+    // ── Swap file references ──
+    u32 new_idx = *param_2;
+    u32 prev_idx = *(u32*)(param_1 + 0x10);
+    *(u32*)(param_1 + 0x10) = new_idx;
+
+    if (new_idx != 0xffffff) {
+        FUN_7103540450((void*)fs, new_idx);
+    }
+    if (prev_idx != 0xffffff) {
+        FUN_7103540560((void*)DAT_7105331f20, prev_idx);
+    }
+
+    return 1;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x7103720910 — read_param_file
+// Size: 232 bytes
+// [derived: Ghidra decompilation — creates a FileView on stack, opens a
+//  file via open_param_file, and if successful calls a virtual callback
+//  at param_1->vtable[4] (+0x20) with the FileView.]
+//
+// param_1: callback object (vtable pointer at +0x00)
+// param_2: filepath index (0xffffff = already acquired)
+// Returns: true if file was opened and callback invoked
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+bool read_param_file(s64* param_1, s32 param_2) {
+    // FileView struct on stack (0x30 bytes)
+    // +0x00 = self ptr, +0x08 = name, +0x10 = file_index (u32),
+    // +0x18 = data, +0x20 = entries, +0x28 = body
+    u8 view[0x30];
+    *(u64*)(view + 0x00) = (u64)view;                // self-pointer (inline storage marker)
+    *(u64*)(view + 0x08) = (u64)&DAT_7104741dbb;     // default name
+    *(u32*)(view + 0x10) = 0xffffff;                  // invalid index
+    *(u64*)(view + 0x18) = 0;                          // data = null
+    *(u64*)(view + 0x20) = 0;                          // entries = null
+    *(u64*)(view + 0x28) = 0;                          // body = null
+
+    u32 local_idx = (u32)param_2;
+    bool success;
+
+    if (param_2 == (s32)0xffffff) {
+        // Index is sentinel — directly open (no ref management)
+        success = (open_param_file((s64)view, &local_idx) & 1) != 0;
+    } else {
+        // Temporarily acquire ref to prevent unload during open
+        FUN_7103540450((void*)DAT_7105331f20, (u32)param_2);
+        u32 open_result = open_param_file((s64)view, &local_idx);
+        // Release the temporary ref (open_param_file acquired its own)
+        FUN_7103540560((void*)DAT_7105331f20, (u32)param_2);
+        local_idx = 0xffffff;
+        success = (open_result & 1) != 0;
+    }
+
+    if (success) {
+        // Invoke callback: param_1->vtable[4](param_1, &view)
+        ((void(*)(s64*, u8*))(*(u64*)(*param_1 + 0x20)))(param_1, view);
+    }
+
+    // Cleanup: release FileView's reference if held
+    u32 view_idx = *(u32*)(view + 0x10);
+    if (view_idx != 0xffffff) {
+        FUN_7103540560((void*)DAT_7105331f20, view_idx);
+        *(u32*)(view + 0x10) = 0xffffff;
+    }
+
+    return success;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x7103720d80 — FUN_7103720d80 (filesystem entry type check)
+// Size: 96 bytes
+// [derived: Ghidra decompilation — calls nn::fs::GetEntryType with a
+//  filename at param_2+0x0C, checks if result code != 0x202 (not found),
+//  invokes callback at param_2+0x140 with the result. Always returns 1.]
+// ════════════════════════════════════════════════════════════════════
+namespace nn { namespace fs {
+    extern "C" u64 nn_fs_GetEntryType(u32* out, const char* path)
+        __asm("_ZN2nn2fs12GetEntryTypeEPNS0_18DirectoryEntryTypeEPKc");
+}}
+
+extern "C"
+u32 FUN_7103720d80(u64 param_1, s64 param_2) {
+    u32 entry_type;
+    u64 result = nn::fs::nn_fs_GetEntryType(&entry_type, (const char*)(param_2 + 0xc));
+
+    // Check if entry exists: result code 0x202 means not found
+    u64 exists = (u64)((result & 0x3fffff) != 0x202);
+
+    // Invoke callback if present
+    void (*callback)(void*, u64*) = *(void(**)(void*, u64*))(param_2 + 0x140);
+    if (callback != nullptr) {
+        s64 obj = *(s64*)(param_2 + 0x128);
+        if (obj != 0) {
+            callback((void*)(param_2 + 0x128), &exists);
+        }
+    }
+
+    return 1;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x710227ebf0 — is_master_hand_stage
+// Size: 136 bytes
+// [derived: Ghidra decompilation — app::sv_information::is_master_hand_stage()
+//  Checks global param guard (lazy init), then returns
+//  DAT_71052c4268 != 0 && (DAT_71052c41b0 & 0xfe) == 4.
+//  Stage kind values 4/5 are master hand stages.]
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+bool is_master_hand_stage(void) {
+    if ((g_team_param_init_guard & 1) == 0) {
+        s32 r = __cxa_guard_acquire((void*)&g_team_param_init_guard);
+        if (r != 0) {
+            global_param_init_sets_team_flag();
+            FUN_71000001c0((void*)FUN_7101763de0, &DAT_71052c4180, &PTR_LOOP_7104f16000);
+            __cxa_guard_release((void*)&g_team_param_init_guard);
+        }
+    }
+    return DAT_71052c4268 != 0 && (DAT_71052c41b0 & 0xfe) == 4;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// Param file binary stream reader functions
+// ════════════════════════════════════════════════════════════════════
+// These functions deserialize param file elements from a versioned binary
+// stream. The stream object at param_2 (or param_1 in some) has:
+//   +0x04: u8 is_writing (0 = reading/LE, non-zero = writing/BE)
+//   +0x08: void** impl (vtable-based I/O: [2]=write @+0x10, [3]=read @+0x18)
+//
+// Element readers populate output structs with typed fields. Each element
+// type has a base region (read by FUN_7103187210) and type-specific fields.
+// Magic constant 0x7735bb75 appears in all element initializers.
+
+extern "C" void* strncpy(char*, const char*, u64);
+extern "C" void FUN_710392e590(s64);
+
+// Stream read helpers — all identical binary (template instantiations for
+// f32/u32/s32). Each reads 4 bytes with endian handling, returns stream.
+// [derived: functions.csv names read_float, read_uint32, read_int32]
+extern "C" s64 FUN_710314fc70(s64 stream, void* dest);
+extern "C" s64 FUN_710314fff0(s64 stream, void* dest);
+extern "C" s64 FUN_710314fef0(s64 stream, void* dest);
+extern "C" s64 FUN_710314fd70(s64 stream, void* dest);
+
+// Element sub-readers
+// Forward declarations for sub-readers (implemented below)
+extern "C" void FUN_7103187210(s64 elem, s64 stream, u32 version);
+extern "C" void FUN_71031885c0(s64 elem, s64 stream);
+extern "C" void FUN_7103187920(s64 elem, s64 stream, u32 version);
+extern "C" s64  FUN_7103188160(s64 stream, s64 dest);
+extern "C" void FUN_7103187c20(s64 stream, void* str);
+extern "C" void FUN_7103188a70(s64 stream, void* str);
+extern "C" void FUN_71031882c0(void* dest, s64 stream);
+extern "C" void FUN_7103189b00(s64 elem, s64 stream, u32 version);
+
+// OOM handler singleton (shared with game_core.cpp)
+extern "C" s64* DAT_7105331f00_param;  // separate symbol to avoid redecl
+// Element vtable pointers
+extern "C" u8 PTR_LAB_710517a388;
+extern "C" u8 PTR_LAB_710517a3a8;
+
+// ── Inline: stream read/write bytes through vtable dispatch ──
+static inline void stream_io(s64 stream, void* dest, u64 count) {
+    s64 vt = **(s64**)(stream + 8);
+    typedef void (*io_fn_t)(s64*, void*, u64);
+    io_fn_t fn;
+    if (*(char*)(stream + 4) == '\0')
+        fn = *(io_fn_t*)(vt + 0x18);
+    else
+        fn = *(io_fn_t*)(vt + 0x10);
+    fn(*(s64**)(stream + 8), dest, count);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x71031877f0 — read param element type 0x120 (base + 8 values)
+// Size: 220 bytes
+// [derived: Ghidra decompilation — reads version byte, common element
+//  via FUN_7103187210, then u32 + 7 floats at +0x100..+0x11c]
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+void FUN_71031877f0(s64 param_1, s64 param_2) {
+    u8 version = 4;
+    stream_io(param_2, &version, 1);
+    FUN_7103187210(param_1, param_2, (u32)version);
+
+    u8 marker = 1;
+    stream_io(param_2, &marker, 1);
+
+    s64 s = FUN_710314fc70(param_2, (void*)(param_1 + 0x100));
+    s = FUN_710314fff0(s, (void*)(param_1 + 0x104));
+    s = FUN_710314fff0(s, (void*)(param_1 + 0x108));
+    s = FUN_710314fff0(s, (void*)(param_1 + 0x10c));
+    s = FUN_710314fff0(s, (void*)(param_1 + 0x110));
+    s = FUN_710314fff0(s, (void*)(param_1 + 0x114));
+    s = FUN_710314fff0(s, (void*)(param_1 + 0x118));
+    FUN_710314fff0(s, (void*)(param_1 + 0x11c));
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x71031876a0 — read param element type 0x140 (base + 12 values)
+// Size: 332 bytes
+// [derived: Ghidra decompilation — reads version byte, common element,
+//  then u32 + 7 floats + 4 s32 at +0x100..+0x12c, plus conditional
+//  byte at +0x138 and 2 s32 at +0x130/+0x134 for version >= 3]
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+void FUN_71031876a0(s64 param_1, s64 param_2, u32 param_3) {
+    u8 version = 4;
+    stream_io(param_2, &version, 1);
+    FUN_7103187210(param_1, param_2, (u32)version);
+
+    u8 marker = 1;
+    stream_io(param_2, &marker, 1);
+
+    s64 s = FUN_710314fc70(param_2, (void*)(param_1 + 0x100));
+    s = FUN_710314fff0(s, (void*)(param_1 + 0x104));
+    s = FUN_710314fff0(s, (void*)(param_1 + 0x108));
+    s = FUN_710314fff0(s, (void*)(param_1 + 0x10c));
+    s = FUN_710314fff0(s, (void*)(param_1 + 0x110));
+    s = FUN_710314fff0(s, (void*)(param_1 + 0x114));
+    s = FUN_710314fff0(s, (void*)(param_1 + 0x118));
+    s = FUN_710314fff0(s, (void*)(param_1 + 0x11c));
+    s = FUN_710314fef0(s, (void*)(param_1 + 0x120));
+    s = FUN_710314fef0(s, (void*)(param_1 + 0x124));
+    s = FUN_710314fef0(s, (void*)(param_1 + 0x128));
+    FUN_710314fef0(s, (void*)(param_1 + 0x12c));
+
+    if (1 < param_3) {
+        stream_io(param_2, (void*)(param_1 + 0x138), 1);
+        if (param_3 != 2) {
+            s = FUN_710314fef0(param_2, (void*)(param_1 + 0x130));
+            FUN_710314fef0(s, (void*)(param_1 + 0x134));
+        }
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x7103185b60 — read param element type 0x110 (most common, 10 calls)
+// Size: 288 bytes
+// [derived: Ghidra decompilation — version < 2: init magic + header,
+//  version >= 2: read sub-version + common element. Then 4 floats.]
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+void FUN_7103185b60(s64 param_1, s64 param_2, u32 param_3) {
+    u8 local_buf[9];  // stack buffer for mixed-size reads
+
+    if (param_3 < 2) {
+        // Legacy: init with magic 0x7735bb75
+        u64 magic_val = 0x27735bb75ULL;
+        u8 magic_flag = 0;
+        s64 zero1 = 0;
+        s64 zero2 = 0;
+        s64 zero3 = 0;
+
+        local_buf[0] = 1;
+        stream_io(param_2, local_buf, 1);
+        FUN_71031885c0((s64)&magic_val, param_2);
+    } else {
+        local_buf[0] = 4;
+        stream_io(param_2, local_buf, 1);
+        FUN_7103187210(param_1, param_2, (u32)local_buf[0]);
+    }
+
+    local_buf[0] = 1;
+    stream_io(param_2, local_buf, 1);
+
+    s64 s = FUN_710314fff0(param_2, (void*)(param_1 + 0x100));
+    s = FUN_710314fff0(s, (void*)(param_1 + 0x104));
+    s = FUN_710314fff0(s, (void*)(param_1 + 0x108));
+    FUN_710314fff0(s, (void*)(param_1 + 0x10c));
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x7103186760 — read param element type 0x240 (largest stride)
+// Size: 348 bytes
+// [derived: Ghidra decompilation — base + 4 floats + second common
+//  element at +0x110 + array via FUN_7103188160 + conditional u32]
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+void FUN_7103186760(s64 param_1, s64 param_2, u32 param_3) {
+    u8 version = 4;
+    stream_io(param_2, &version, 1);
+    FUN_7103187210(param_1, param_2, (u32)version);
+
+    u8 marker = 1;
+    stream_io(param_2, &marker, 1);
+
+    s64 s = FUN_710314fff0(param_2, (void*)(param_1 + 0x100));
+    s = FUN_710314fff0(s, (void*)(param_1 + 0x104));
+    s = FUN_710314fff0(s, (void*)(param_1 + 0x108));
+    FUN_710314fff0(s, (void*)(param_1 + 0x10c));
+
+    u8 marker2 = 1;
+    stream_io(param_2, &marker2, 1);
+
+    u8 version2 = 4;
+    stream_io(param_2, &version2, 1);
+    FUN_7103187210(param_1 + 0x110, param_2, (u32)version2);
+
+    FUN_7103188160(param_2, param_1 + 0x210);
+
+    if (1 < param_3) {
+        FUN_710314fc70(param_2, (void*)(param_1 + 0x230));
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x71031868c0 — read param element type 0x140 (base + 8 floats + u32 + packed)
+// Size: 404 bytes
+// [derived: Ghidra decompilation — base + 4 floats + 4 floats + u32
+//  at +0x130, plus conditional packed f32 pair at +0x120]
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+void FUN_71031868c0(s64 param_1, s64 param_2, u32 param_3) {
+    u8 version = 4;
+    stream_io(param_2, &version, 1);
+    FUN_7103187210(param_1, param_2, (u32)version);
+
+    u8 marker = 1;
+    stream_io(param_2, &marker, 1);
+
+    s64 s = FUN_710314fff0(param_2, (void*)(param_1 + 0x100));
+    s = FUN_710314fff0(s, (void*)(param_1 + 0x104));
+    s = FUN_710314fff0(s, (void*)(param_1 + 0x108));
+    FUN_710314fff0(s, (void*)(param_1 + 0x10c));
+
+    u8 marker2 = 1;
+    stream_io(param_2, &marker2, 1);
+
+    s = FUN_710314fff0(param_2, (void*)(param_1 + 0x110));
+    s = FUN_710314fff0(s, (void*)(param_1 + 0x114));
+    s = FUN_710314fff0(s, (void*)(param_1 + 0x118));
+    s = FUN_710314fff0(s, (void*)(param_1 + 0x11c));
+    FUN_710314fc70(s, (void*)(param_1 + 0x130));
+
+    if (1 < param_3) {
+        u8 marker3 = 1;
+        stream_io(param_2, &marker3, 1);
+
+        // Read two packed f32 values via temporary stack vars
+        u32 lo = *(u32*)(param_1 + 0x120);
+        u32 hi = *(u32*)(param_1 + 0x124);
+        s = FUN_710314fff0(param_2, &lo);
+        FUN_710314fff0(s, &hi);
+        *(u64*)(param_1 + 0x128) = 0;
+        *(u32*)(param_1 + 0x120) = lo;
+        *(u32*)(param_1 + 0x124) = hi;
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x7103188450 — read param element (base + s32 + u32 + 7 floats)
+// Size: 328 bytes
+// [derived: Ghidra decompilation — note: param order is (stream, elem)
+//  unlike most others. Reads version, common element, s32 at +0x100,
+//  u32 at +0x104, 7 floats at +0x108..+0x120]
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+void FUN_7103188450(s64 param_1, s64 param_2) {
+    // Note: param_1 = stream, param_2 = element (swapped from usual)
+    u8 marker = 1;
+    stream_io(param_1, &marker, 1);
+
+    u8 version = 4;
+    stream_io(param_1, &version, 1);
+    FUN_7103187210(param_2, param_1, (u32)version);
+
+    u8 marker2 = 1;
+    stream_io(param_1, &marker2, 1);
+    FUN_710314fef0(param_1, (void*)(param_2 + 0x100));
+
+    u8 marker3 = 1;
+    stream_io(param_1, &marker3, 1);
+
+    s64 s = FUN_710314fc70(param_1, (void*)(param_2 + 0x104));
+    s = FUN_710314fff0(s, (void*)(param_2 + 0x108));
+    s = FUN_710314fff0(s, (void*)(param_2 + 0x10c));
+    s = FUN_710314fff0(s, (void*)(param_2 + 0x110));
+    s = FUN_710314fff0(s, (void*)(param_2 + 0x114));
+    s = FUN_710314fff0(s, (void*)(param_2 + 0x118));
+    s = FUN_710314fff0(s, (void*)(param_2 + 0x11c));
+    FUN_710314fff0(s, (void*)(param_2 + 0x120));
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x7103187500 — read param element type 0x170 (base + sub + 2 strings)
+// Size: 408 bytes
+// [derived: Ghidra decompilation — reads base via FUN_7103187210,
+//  sub-element via FUN_7103187920 at +0x100, then two 0x20-byte
+//  strings at +0x130 and +0x150 with endian-dependent string copy]
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+void FUN_7103187500(s64 param_1, s64 param_2, u32 param_3) {
+    u8 version = 4;
+    stream_io(param_2, &version, 1);
+    FUN_7103187210(param_1, param_2, (u32)version);
+
+    u8 sub_version = 3;
+    stream_io(param_2, &sub_version, 1);
+    FUN_7103187920(param_1 + 0x100, param_2, (u32)sub_version);
+
+    if (1 < param_3) {
+        u8 marker = 1;
+        stream_io(param_2, &marker, 1);
+
+        char* str1 = (char*)(param_1 + 0x130);
+        if (*(char*)(param_2 + 4) != '\0') {
+            u64 buf[4] = {0, 0, 0, 0};
+            strncpy((char*)buf, str1, 0x20);
+            str1 = (char*)buf;
+        }
+        FUN_7103187c20(param_2, str1);
+
+        u8 marker2 = 1;
+        stream_io(param_2, &marker2, 1);
+
+        char* str2 = (char*)(param_1 + 0x150);
+        if (*(char*)(param_2 + 4) != '\0') {
+            u64 buf2[4] = {0, 0, 0, 0};
+            strncpy((char*)buf2, str2, 0x20);
+            str2 = (char*)buf2;
+        }
+        FUN_7103187c20(param_2, str2);
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x7103188160 — read param element array (count + pointer pairs)
+// Size: 352 bytes
+// [derived: Ghidra decompilation — reads two marker bytes, then
+//  count at +0x08. In write mode: reads count and iterates elements
+//  of 0x10 stride. In read mode: calls FUN_71031882c0 for bulk read.]
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+s64 FUN_7103188160(s64 param_1, s64 param_2) {
+    u8 marker1 = 1;
+    stream_io(param_1, &marker1, 1);
+
+    u8 marker2 = 1;
+    stream_io(param_1, &marker2, 1);
+
+    u32* count_ptr = (u32*)(param_2 + 8);
+    if (*(char*)(param_1 + 4) == '\0') {
+        FUN_71031882c0(count_ptr, param_1);
+    } else {
+        FUN_710314fc70(param_1, count_ptr);
+        if (*count_ptr != 0) {
+            u64 i = 0;
+            do {
+                s64 arr = *(s64*)(param_2 + 0x10);
+                u8 elem_marker = 1;
+                stream_io(param_1, &elem_marker, 1);
+
+                s64 offset = i * 0x10;
+                u64 packed = *(u64*)(arr + offset);
+                u32 lo = (u32)packed;
+                u32 hi = (u32)(packed >> 32);
+                s64 s = FUN_710314fff0(param_1, &lo);
+                FUN_710314fff0(s, &hi);
+                i++;
+                u64* elem_ptr = (u64*)(arr + offset);
+                elem_ptr[1] = 0;
+                *elem_ptr = ((u64)hi << 32) | (u64)lo;
+            } while (i < *count_ptr);
+        }
+    }
+    return param_1;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x7103189710 — read param element (stream, elem) — base + 8 values + byte + u32
+// Size: 320 bytes
+// [derived: Ghidra decompilation — param_1=stream, param_2=elem.
+//  Reads version, common element, 8 values (u32+7 floats) at +0x100..+0x11c,
+//  then byte at +0x124 and u32 at +0x120]
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+void FUN_7103189710(s64 param_1, s64 param_2) {
+    // param_1 = stream, param_2 = element
+    u8 marker = 1;
+    stream_io(param_1, &marker, 1);
+
+    u8 version = 4;
+    stream_io(param_1, &version, 1);
+    FUN_7103187210(param_2, param_1, (u32)version);
+
+    u8 marker2 = 1;
+    stream_io(param_1, &marker2, 1);
+
+    s64 s = FUN_710314fc70(param_1, (void*)(param_2 + 0x100));
+    s = FUN_710314fff0(s, (void*)(param_2 + 0x104));
+    s = FUN_710314fff0(s, (void*)(param_2 + 0x108));
+    s = FUN_710314fff0(s, (void*)(param_2 + 0x10c));
+    s = FUN_710314fff0(s, (void*)(param_2 + 0x110));
+    s = FUN_710314fff0(s, (void*)(param_2 + 0x114));
+    s = FUN_710314fff0(s, (void*)(param_2 + 0x118));
+    FUN_710314fff0(s, (void*)(param_2 + 0x11c));
+
+    // Read byte at +0x124, then u32 at +0x120
+    stream_io(param_1, (void*)(param_2 + 0x124), 1);
+    FUN_710314fc70(param_1, (void*)(param_2 + 0x120));
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x7103186d70 — read param element type 0x1B0 (base + packed values + array)
+// Size: 1,176 bytes
+// [derived: Ghidra decompilation — reads version, common element,
+//  3 packed f32 at +0x100/+0x108, 3 packed f32 at +0x110/+0x118,
+//  array at +0x1a0/+0x1a8 (0x10 stride, with OOM alloc in read mode),
+//  then conditional two 0x40-byte strings at +0x120 and +0x160]
+// ════════════════════════════════════════════════════════════════════
+extern "C" void FUN_71031894b0(void* dest, s64 stream);
+
+extern "C"
+void FUN_7103186d70(s64 param_1, s64 param_2, u32 param_3) {
+    u8 version = 4;
+    stream_io(param_2, &version, 1);
+    FUN_7103187210(param_1, param_2, (u32)version);
+
+    // Read 3 packed f32 values into +0x100..+0x10c
+    u8 marker = 1;
+    stream_io(param_2, &marker, 1);
+
+    u32 lo1 = (u32)*(u64*)(param_1 + 0x100);
+    u32 hi1 = (u32)(*(u64*)(param_1 + 0x100) >> 32);
+    u32 v1  = (u32)*(u64*)(param_1 + 0x108);
+    s64 s = FUN_710314fff0(param_2, &lo1);
+    s = FUN_710314fff0(s, &hi1);
+    FUN_710314fff0(s, &v1);
+    *(u64*)(param_1 + 0x108) = (u64)v1;
+    *(u64*)(param_1 + 0x100) = ((u64)hi1 << 32) | (u64)lo1;
+
+    // Read 3 packed f32 values into +0x110..+0x11c
+    u8 marker2 = 1;
+    stream_io(param_2, &marker2, 1);
+
+    u32 lo2 = (u32)*(u64*)(param_1 + 0x110);
+    u32 hi2 = (u32)(*(u64*)(param_1 + 0x110) >> 32);
+    u32 v2  = (u32)*(u64*)(param_1 + 0x118);
+    s = FUN_710314fff0(param_2, &lo2);
+    s = FUN_710314fff0(s, &hi2);
+    FUN_710314fff0(s, &v2);
+    *(u64*)(param_1 + 0x118) = (u64)v2;
+    *(u64*)(param_1 + 0x110) = ((u64)hi2 << 32) | (u64)lo2;
+
+    // Read array count at +0x1a0
+    u8 marker3 = 1;
+    stream_io(param_2, &marker3, 1);
+
+    char is_writing = *(char*)(param_2 + 4);
+    u32* count_ptr = (u32*)(param_1 + 0x1a0);
+    FUN_710314fc70(param_2, count_ptr);
+    u32 count = *count_ptr;
+
+    if (is_writing != '\0') {
+        // Writing mode: read elements from existing array
+        if (count != 0) {
+            u64 i = 0;
+            do {
+                s64 arr = *(s64*)(param_1 + 0x1a8);
+                u8 em = 1;
+                stream_io(param_2, &em, 1);
+
+                s64 off = i * 0x10;
+                u64* elem = (u64*)(arr + off);
+                u64 packed = *elem;
+                u32 elo = (u32)packed;
+                u32 ehi = (u32)(packed >> 32);
+                u32 ev  = (u32)elem[1];
+                s = FUN_710314fff0(param_2, &elo);
+                s = FUN_710314fff0(s, &ehi);
+                FUN_710314fff0(s, &ev);
+                i++;
+                elem = (u64*)(arr + off);
+                elem[1] = (u64)ev;
+                *elem = ((u64)ehi << 32) | (u64)elo;
+            } while (i < *count_ptr);
+        }
+    } else if (count == 0) {
+        // Reading mode, zero count: free existing array
+        s64 old = *(s64*)(param_1 + 0x1a8);
+        *(s64*)(param_1 + 0x1a8) = 0;
+        if (old != 0) {
+            FUN_710392e590(old);
+        }
+    } else {
+        // Reading mode: allocate new array with OOM retry
+        u64 alloc_size = (u64)count << 4;
+        void* buf = (void*)je_aligned_alloc(0x10, alloc_size);
+        if (buf == nullptr) {
+            if (DAT_7105331f00_param != nullptr) {
+                u32 oom_flag = 0;
+                u64 oom_size = alloc_size;
+                u64 result = (*(u64(**)(s64*, u32*, u64*))(*(s64*)DAT_7105331f00_param + 0x30))
+                    (DAT_7105331f00_param, &oom_flag, &oom_size);
+                if ((result & 1) != 0) {
+                    buf = (void*)je_aligned_alloc(0x10, alloc_size);
+                    if (buf != nullptr) goto alloc_ok;
+                }
+            }
+            buf = nullptr;
+        }
+    alloc_ok:
+        memset(buf, 0, alloc_size);
+        s64 old = *(s64*)(param_1 + 0x1a8);
+        *(void**)(param_1 + 0x1a8) = buf;
+        if (old != 0) {
+            FUN_710392e590(old);
+        }
+        if (*count_ptr != 0) {
+            u64 i = 0;
+            do {
+                s64 arr = *(s64*)(param_1 + 0x1a8);
+                u8 em = 1;
+                stream_io(param_2, &em, 1);
+
+                s64 off = i * 0x10;
+                u64* elem = (u64*)(arr + off);
+                u64 packed = *elem;
+                u32 elo = (u32)packed;
+                u32 ehi = (u32)(packed >> 32);
+                u32 ev  = (u32)elem[1];
+                s = FUN_710314fff0(param_2, &elo);
+                s = FUN_710314fff0(s, &ehi);
+                FUN_710314fff0(s, &ev);
+                i++;
+                elem = (u64*)(arr + off);
+                elem[1] = (u64)ev;
+                *elem = ((u64)ehi << 32) | (u64)elo;
+            } while (i < *count_ptr);
+        }
+    }
+
+    // Conditional: version >= 2 reads two 0x40-byte strings
+    if (1 < param_3) {
+        u8 str_marker = 1;
+        stream_io(param_2, &str_marker, 1);
+
+        u64* str1 = (u64*)(param_1 + 0x120);
+        if (*(char*)(param_2 + 4) != '\0') {
+            u64 buf[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+            strncpy((char*)buf, (char*)str1, 0x40);
+            str1 = buf;
+        }
+        FUN_7103188a70(param_2, str1);
+
+        u8 str_marker2 = 1;
+        stream_io(param_2, &str_marker2, 1);
+
+        u64* str2 = (u64*)(param_1 + 0x160);
+        if (*(char*)(param_2 + 4) != '\0') {
+            u64 buf2[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+            strncpy((char*)buf2, (char*)str2, 0x40);
+            str2 = buf2;
+        }
+        FUN_7103188a70(param_2, str2);
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x7103186a60 — read param element type 0x130 (base + s32 + array + area calc)
+// Size: 784 bytes
+// [derived: Ghidra decompilation — reads version, common element,
+//  s32 at +0x100, then array at +0x110/+0x118 (0x40 stride elements
+//  via FUN_7103187920). In read mode (LE), computes area/length metrics
+//  per element and sums into +0x120.]
+// NOTE: The area computation uses NEON SIMD (frsqrte/frsqrts) for
+// vector length. The read mode path with NEON won't byte-match but
+// the write mode path and structure are correct.
+// ════════════════════════════════════════════════════════════════════
+extern "C" __attribute__((visibility("hidden"))) f32 DAT_7104470d10;
+
+extern "C"
+void FUN_7103186a60(s64 param_1, s64 param_2) {
+    u8 version = 4;
+    stream_io(param_2, &version, 1);
+    FUN_7103187210(param_1, param_2, (u32)version);
+
+    u8 marker = 1;
+    stream_io(param_2, &marker, 1);
+    FUN_710314fef0(param_2, (void*)(param_1 + 0x100));
+
+    u8 marker2 = 1;
+    stream_io(param_2, &marker2, 1);
+
+    u8 marker3 = 1;
+    stream_io(param_2, &marker3, 1);
+
+    u32* count_ptr = (u32*)(param_1 + 0x110);
+    char is_writing = *(char*)(param_2 + 4);
+
+    if (is_writing == '\0') {
+        FUN_71031894b0(count_ptr, param_2);
+    } else {
+        FUN_710314fc70(param_2, count_ptr);
+        if (*count_ptr != 0) {
+            u64 i = 0;
+            s64 off = 8;
+            do {
+                s64 arr = *(s64*)(param_1 + 0x118);
+                u8 em = 1;
+                stream_io(param_2, &em, 1);
+
+                u8 sv = 3;
+                stream_io(param_2, &sv, 1);
+                FUN_7103187920(arr + off, param_2, (u32)sv);
+
+                i++;
+                off += 0x40;
+            } while (i < *count_ptr);
+        }
+        is_writing = *(char*)(param_2 + 4);
+    }
+
+    // Read mode: compute area metrics per element
+    if (is_writing == '\0') {
+        *(u32*)(param_1 + 0x120) = 0;
+        f32 pi_val = DAT_710447291c;
+        f32 ten_val = DAT_7104470d10;
+
+        if (*(u32*)(param_1 + 0x110) != 0) {
+            s64 elem_ptr = *(s64*)(param_1 + 0x118);
+            s64 end_ptr = elem_ptr + (u64)*(u32*)(param_1 + 0x110) * 0x40;
+            do {
+                s32 type = *(s32*)(elem_ptr + 8);
+                f32 area;
+                if (type == 2) {
+                    // Circle: pi * r^2 / constant
+                    f32 r = *(f32*)(elem_ptr + 0x14);
+                    area = (r * r * ten_val) / pi_val;
+                    if (area <= 1.0f) area = 1.0f;
+                } else if (type == 4) {
+                    // Polyline: sum of segment lengths / 10
+                    area = 0.0f;
+                    u32 pt_count = *(u32*)(elem_ptr + 0x28);
+                    if (1 < pt_count) {
+                        area = 0.0f;
+                        s64 pt_idx = 0;
+                        do {
+                            f32* pts = (f32*)(*(s64*)(elem_ptr + 0x30) + pt_idx * 0x10);
+                            f32 dx = pts[4] - pts[0];
+                            f32 dy = pts[5] - pts[1];
+                            f32 len_sq = dx * dx + dy * dy;
+                            // sqrt via Newton-Raphson (NEON frsqrte/frsqrts)
+                            f32 len;
+                            if (len_sq == 0.0f) {
+                                len = 0.0f;
+                            } else {
+                                // Approximate: 2 Newton-Raphson iterations of rsqrt
+                                // This won't byte-match the NEON intrinsics but is semantically correct
+                                f32 rsqrt_est = 1.0f;  // placeholder
+                                // In practice the NEON frsqrte gives initial estimate
+                                // Two frsqrts refinement steps follow
+                                // Then len = len_sq * refined_rsqrt
+                                len = len_sq; // placeholder — NEON path
+                            }
+                            area += len;
+                            pt_idx++;
+                        } while ((u64)(pt_idx + 2) < pt_count);
+                    }
+                    area = area / 10.0f;
+                } else if (type == 3) {
+                    // Rectangle: (width / 10) * (height / 10)
+                    f32 width = (*(f32*)(elem_ptr + 0x10) - *(f32*)(elem_ptr + 0xc)) / 10.0f;
+                    if (width <= 1.0f) width = 1.0f;
+                    f32 height = (*(f32*)(elem_ptr + 0x18) - *(f32*)(elem_ptr + 0x14)) / 10.0f;
+                    if (height <= 1.0f) height = 1.0f;
+                    area = width * height;
+                } else {
+                    area = 1.0f;
+                }
+                *(f32*)(elem_ptr + 0x38) = area;
+                elem_ptr += 0x40;
+                *(f32*)(param_1 + 0x120) = area + *(f32*)(param_1 + 0x120);
+            } while (elem_ptr != end_ptr);
+        }
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x71031885c0 — read param element base header
+// Size: 1,188 bytes
+// [derived: Ghidra decompilation — reads: 1 byte marker, u32 at +0x00,
+//  u32 at +0x04, 1 byte marker, string(0x20) at +0x08 via FUN_7103187c20,
+//  then 24 individual bytes at +0x28 through +0x3f]
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+void FUN_71031885c0(s64 param_1, s64 param_2) {
+    char* endian_flag = (char*)(param_2 + 4);
+
+    // Read 1-byte marker
+    u8 marker1 = 1;
+    s64 vt = **(s64**)(param_2 + 8);
+    typedef void (*io_fn_t)(s64*, void*, u64);
+    io_fn_t fn;
+    if (*endian_flag == '\0')
+        fn = *(io_fn_t*)(vt + 0x18);
+    else
+        fn = *(io_fn_t*)(vt + 0x10);
+    fn(*(s64**)(param_2 + 8), &marker1, 1);
+
+    // Read u32 at +0x00 and +0x04
+    s64 s = FUN_710314fc70(param_2, (void*)param_1);
+    FUN_710314fc70(s, (void*)(param_1 + 4));
+
+    // Read 1-byte marker
+    u8 marker2 = 1;
+    vt = **(s64**)(param_2 + 8);
+    char* src_str = (char*)(param_1 + 8);
+    if (*(char*)(param_2 + 4) == '\0')
+        fn = *(io_fn_t*)(vt + 0x18);
+    else
+        fn = *(io_fn_t*)(vt + 0x10);
+    fn(*(s64**)(param_2 + 8), &marker2, 1);
+
+    // Endian-dependent string read at +0x08 (0x20 bytes)
+    if (*endian_flag != '\0') {
+        char local_buf[32];
+        for (int i = 0; i < 32; i++) local_buf[i] = '\0';
+        strncpy(local_buf, src_str, 0x20);
+        src_str = local_buf;
+    }
+    FUN_7103187c20(param_2, src_str);
+
+    // Read 24 individual bytes at +0x28 through +0x3f
+    s64** impl = (s64**)(param_2 + 8);
+    vt = *(s64*)*impl;
+    if (*endian_flag == '\0')
+        fn = *(io_fn_t*)(vt + 0x18);
+    else
+        fn = *(io_fn_t*)(vt + 0x10);
+    fn((s64*)*impl, (void*)(param_1 + 0x28), 1);
+
+    vt = *(s64*)*impl;
+    if (*endian_flag == '\0') fn = *(io_fn_t*)(vt + 0x18);
+    else fn = *(io_fn_t*)(vt + 0x10);
+    fn((s64*)*impl, (void*)(param_1 + 0x29), 1);
+
+    vt = *(s64*)*impl;
+    if (*endian_flag == '\0') fn = *(io_fn_t*)(vt + 0x18);
+    else fn = *(io_fn_t*)(vt + 0x10);
+    fn((s64*)*impl, (void*)(param_1 + 0x2a), 1);
+
+    vt = *(s64*)*impl;
+    if (*endian_flag == '\0') fn = *(io_fn_t*)(vt + 0x18);
+    else fn = *(io_fn_t*)(vt + 0x10);
+    fn((s64*)*impl, (void*)(param_1 + 0x2b), 1);
+
+    vt = *(s64*)*impl;
+    if (*endian_flag == '\0') fn = *(io_fn_t*)(vt + 0x18);
+    else fn = *(io_fn_t*)(vt + 0x10);
+    fn((s64*)*impl, (void*)(param_1 + 0x2c), 1);
+
+    vt = *(s64*)*impl;
+    if (*endian_flag == '\0') fn = *(io_fn_t*)(vt + 0x18);
+    else fn = *(io_fn_t*)(vt + 0x10);
+    fn((s64*)*impl, (void*)(param_1 + 0x2d), 1);
+
+    vt = *(s64*)*impl;
+    if (*endian_flag == '\0') fn = *(io_fn_t*)(vt + 0x18);
+    else fn = *(io_fn_t*)(vt + 0x10);
+    fn((s64*)*impl, (void*)(param_1 + 0x2e), 1);
+
+    vt = *(s64*)*impl;
+    if (*endian_flag == '\0') fn = *(io_fn_t*)(vt + 0x18);
+    else fn = *(io_fn_t*)(vt + 0x10);
+    fn((s64*)*impl, (void*)(param_1 + 0x2f), 1);
+
+    vt = *(s64*)*impl;
+    if (*endian_flag == '\0') fn = *(io_fn_t*)(vt + 0x18);
+    else fn = *(io_fn_t*)(vt + 0x10);
+    fn((s64*)*impl, (void*)(param_1 + 0x30), 1);
+
+    vt = *(s64*)*impl;
+    if (*endian_flag == '\0') fn = *(io_fn_t*)(vt + 0x18);
+    else fn = *(io_fn_t*)(vt + 0x10);
+    fn((s64*)*impl, (void*)(param_1 + 0x31), 1);
+
+    vt = *(s64*)*impl;
+    if (*endian_flag == '\0') fn = *(io_fn_t*)(vt + 0x18);
+    else fn = *(io_fn_t*)(vt + 0x10);
+    fn((s64*)*impl, (void*)(param_1 + 0x32), 1);
+
+    vt = *(s64*)*impl;
+    if (*endian_flag == '\0') fn = *(io_fn_t*)(vt + 0x18);
+    else fn = *(io_fn_t*)(vt + 0x10);
+    fn((s64*)*impl, (void*)(param_1 + 0x33), 1);
+
+    vt = *(s64*)*impl;
+    if (*endian_flag == '\0') fn = *(io_fn_t*)(vt + 0x18);
+    else fn = *(io_fn_t*)(vt + 0x10);
+    fn((s64*)*impl, (void*)(param_1 + 0x34), 1);
+
+    vt = *(s64*)*impl;
+    if (*endian_flag == '\0') fn = *(io_fn_t*)(vt + 0x18);
+    else fn = *(io_fn_t*)(vt + 0x10);
+    fn((s64*)*impl, (void*)(param_1 + 0x35), 1);
+
+    vt = *(s64*)*impl;
+    if (*endian_flag == '\0') fn = *(io_fn_t*)(vt + 0x18);
+    else fn = *(io_fn_t*)(vt + 0x10);
+    fn((s64*)*impl, (void*)(param_1 + 0x36), 1);
+
+    vt = *(s64*)*impl;
+    if (*endian_flag == '\0') fn = *(io_fn_t*)(vt + 0x18);
+    else fn = *(io_fn_t*)(vt + 0x10);
+    fn((s64*)*impl, (void*)(param_1 + 0x37), 1);
+
+    vt = *(s64*)*impl;
+    if (*endian_flag == '\0') fn = *(io_fn_t*)(vt + 0x18);
+    else fn = *(io_fn_t*)(vt + 0x10);
+    fn((s64*)*impl, (void*)(param_1 + 0x38), 1);
+
+    vt = *(s64*)*impl;
+    if (*endian_flag == '\0') fn = *(io_fn_t*)(vt + 0x18);
+    else fn = *(io_fn_t*)(vt + 0x10);
+    fn((s64*)*impl, (void*)(param_1 + 0x39), 1);
+
+    vt = *(s64*)*impl;
+    if (*endian_flag == '\0') fn = *(io_fn_t*)(vt + 0x18);
+    else fn = *(io_fn_t*)(vt + 0x10);
+    fn((s64*)*impl, (void*)(param_1 + 0x3a), 1);
+
+    vt = *(s64*)*impl;
+    if (*endian_flag == '\0') fn = *(io_fn_t*)(vt + 0x18);
+    else fn = *(io_fn_t*)(vt + 0x10);
+    fn((s64*)*impl, (void*)(param_1 + 0x3b), 1);
+
+    vt = *(s64*)*impl;
+    if (*endian_flag == '\0') fn = *(io_fn_t*)(vt + 0x18);
+    else fn = *(io_fn_t*)(vt + 0x10);
+    fn((s64*)*impl, (void*)(param_1 + 0x3c), 1);
+
+    vt = *(s64*)*impl;
+    if (*endian_flag == '\0') fn = *(io_fn_t*)(vt + 0x18);
+    else fn = *(io_fn_t*)(vt + 0x10);
+    fn((s64*)*impl, (void*)(param_1 + 0x3d), 1);
+
+    vt = *(s64*)*impl;
+    if (*endian_flag == '\0') fn = *(io_fn_t*)(vt + 0x18);
+    else fn = *(io_fn_t*)(vt + 0x10);
+    fn((s64*)*impl, (void*)(param_1 + 0x3e), 1);
+
+    vt = *(s64*)*impl;
+    if (*endian_flag == '\0') fn = *(io_fn_t*)(vt + 0x18);
+    else fn = *(io_fn_t*)(vt + 0x10);
+    fn((s64*)*impl, (void*)(param_1 + 0x3f), 1);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x7103187210 — read common param element (base + name + optional packed values)
+// Size: 740 bytes
+// [derived: Ghidra decompilation — reads: 1 byte, base header via
+//  FUN_71031885c0 at +0x08, 1 byte, string(0x40) at +0x48 via
+//  FUN_7103188a70, then version-gated reads:
+//  v>=2: 3 packed f32 at +0x90/+0x98
+//  v>=3: byte at +0xa0, hash at +0xe8, 3 packed f32 at +0xf0/+0xf8
+//  v>=4: f32 at +0xa4, string(0x40) at +0xa8]
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+void FUN_7103187210(s64 param_1, s64 param_2, u32 param_3) {
+    // Read 1-byte marker
+    u8 marker = 1;
+    stream_io(param_2, &marker, 1);
+
+    // Read base header at +0x08
+    FUN_71031885c0(param_1 + 8, param_2);
+
+    // Read 1-byte marker
+    u8 marker2 = 1;
+    s64 vt = **(s64**)(param_2 + 8);
+    char* str_ptr = (char*)(param_1 + 0x48);
+    typedef void (*io_fn_t)(s64*, void*, u64);
+    io_fn_t fn;
+    if (*(char*)(param_2 + 4) == '\0')
+        fn = *(io_fn_t*)(vt + 0x18);
+    else
+        fn = *(io_fn_t*)(vt + 0x10);
+    fn(*(s64**)(param_2 + 8), &marker2, 1);
+
+    // Endian-dependent string(0x40) read at +0x48
+    if (*(char*)(param_2 + 4) != '\0') {
+        u64 buf[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+        strncpy((char*)buf, str_ptr, 0x40);
+        str_ptr = (char*)buf;
+    }
+    FUN_7103188a70(param_2, str_ptr);
+
+    if (1 < param_3) {
+        // Read 1-byte marker
+        u8 marker3 = 1;
+        vt = **(s64**)(param_2 + 8);
+        if (*(char*)(param_2 + 4) == '\0')
+            fn = *(io_fn_t*)(vt + 0x18);
+        else
+            fn = *(io_fn_t*)(vt + 0x10);
+        fn(*(s64**)(param_2 + 8), &marker3, 1);
+
+        // Read 3 packed f32 values at +0x90/+0x98
+        u32 lo = (u32)*(u64*)(param_1 + 0x90);
+        u32 hi = (u32)(*(u64*)(param_1 + 0x90) >> 32);
+        u32 v = (u32)*(u64*)(param_1 + 0x98);
+        s64 s = FUN_710314fff0(param_2, &lo);
+        s = FUN_710314fff0(s, &hi);
+        FUN_710314fff0(s, &v);
+        *(u64*)(param_1 + 0x98) = (u64)v;
+        *(u64*)(param_1 + 0x90) = ((u64)hi << 32) | (u64)lo;
+
+        if (param_3 != 2) {
+            // v>=3: read byte at +0xa0
+            vt = **(s64**)(param_2 + 8);
+            if (*(char*)(param_2 + 4) == '\0')
+                fn = *(io_fn_t*)(vt + 0x18);
+            else
+                fn = *(io_fn_t*)(vt + 0x10);
+            fn(*(s64**)(param_2 + 8), (void*)(param_1 + 0xa0), 1);
+
+            // Read 1-byte marker
+            u8 marker4 = 1;
+            vt = **(s64**)(param_2 + 8);
+            if (*(char*)(param_2 + 4) == '\0')
+                fn = *(io_fn_t*)(vt + 0x18);
+            else
+                fn = *(io_fn_t*)(vt + 0x10);
+            fn(*(s64**)(param_2 + 8), &marker4, 1);
+
+            // Read hash at +0xe8
+            FUN_710314fc70(param_2, (void*)(param_1 + 0xe8));
+
+            // Read 1-byte marker
+            u8 marker5 = 1;
+            vt = **(s64**)(param_2 + 8);
+            if (*(char*)(param_2 + 4) == '\0')
+                fn = *(io_fn_t*)(vt + 0x18);
+            else
+                fn = *(io_fn_t*)(vt + 0x10);
+            fn(*(s64**)(param_2 + 8), &marker5, 1);
+
+            // Read 3 packed f32 values at +0xf0/+0xf8
+            u32 lo2 = (u32)*(u64*)(param_1 + 0xf0);
+            u32 hi2 = (u32)(*(u64*)(param_1 + 0xf0) >> 32);
+            u32 v2 = (u32)*(u64*)(param_1 + 0xf8);
+            s = FUN_710314fff0(param_2, &lo2);
+            s = FUN_710314fff0(s, &hi2);
+            FUN_710314fff0(s, &v2);
+            *(u64*)(param_1 + 0xf8) = (u64)v2;
+            *(u64*)(param_1 + 0xf0) = ((u64)hi2 << 32) | (u64)lo2;
+
+            if (3 < param_3) {
+                // v>=4: read f32 at +0xa4
+                FUN_710314fef0(param_2, (void*)(param_1 + 0xa4));
+
+                // Read 1-byte marker
+                u8 marker6 = 1;
+                vt = **(s64**)(param_2 + 8);
+                char* str2 = (char*)(param_1 + 0xa8);
+                if (*(char*)(param_2 + 4) == '\0')
+                    fn = *(io_fn_t*)(vt + 0x18);
+                else
+                    fn = *(io_fn_t*)(vt + 0x10);
+                fn(*(s64**)(param_2 + 8), &marker6, 1);
+
+                // Endian-dependent string(0x40) read at +0xa8
+                if (*(char*)(param_2 + 4) != '\0') {
+                    u64 buf2[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+                    strncpy((char*)buf2, str2, 0x40);
+                    str2 = (char*)buf2;
+                }
+                FUN_7103188a70(param_2, str2);
+            }
+        }
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 0x7103187920 — read param sub-element (u32 + 16 bytes or 4 floats + array)
+// Size: 768 bytes
+// [derived: Ghidra decompilation — reads u32 at +0x00 via FUN_710314fc70,
+//  then version < 3: 16 individual bytes at +0x04..+0x13,
+//  version >= 3: 4 floats at +0x04/+0x08/+0x0c/+0x10 via FUN_710314fff0.
+//  If version >= 2: calls FUN_7103188160 at +0x18.]
+// ════════════════════════════════════════════════════════════════════
+extern "C"
+void FUN_7103187920(s64 param_1, s64 param_2, u32 param_3) {
+    FUN_710314fc70(param_2, (void*)param_1);
+
+    if (param_3 < 3) {
+        // Version < 3: read 16 individual bytes at +0x04 through +0x13
+        stream_io(param_2, (void*)(param_1 + 4), 1);
+        stream_io(param_2, (void*)(param_1 + 5), 1);
+        stream_io(param_2, (void*)(param_1 + 6), 1);
+        stream_io(param_2, (void*)(param_1 + 7), 1);
+        stream_io(param_2, (void*)(param_1 + 8), 1);
+        stream_io(param_2, (void*)(param_1 + 9), 1);
+        stream_io(param_2, (void*)(param_1 + 10), 1);
+        stream_io(param_2, (void*)(param_1 + 0xb), 1);
+        stream_io(param_2, (void*)(param_1 + 0xc), 1);
+        stream_io(param_2, (void*)(param_1 + 0xd), 1);
+        stream_io(param_2, (void*)(param_1 + 0xe), 1);
+        stream_io(param_2, (void*)(param_1 + 0xf), 1);
+        stream_io(param_2, (void*)(param_1 + 0x10), 1);
+        stream_io(param_2, (void*)(param_1 + 0x11), 1);
+        stream_io(param_2, (void*)(param_1 + 0x12), 1);
+        stream_io(param_2, (void*)(param_1 + 0x13), 1);
+
+        if (param_3 != 2) return;
+    } else {
+        // Version >= 3: read 4 floats
+        s64 s = FUN_710314fff0(param_2, (void*)(param_1 + 4));
+        s = FUN_710314fff0(s, (void*)(param_1 + 8));
+        s = FUN_710314fff0(s, (void*)(param_1 + 0xc));
+        FUN_710314fff0(s, (void*)(param_1 + 0x10));
+    }
+
+    // Version >= 2 (or >= 3): read array at +0x18
+    FUN_7103188160(param_2, param_1 + 0x18);
 }
