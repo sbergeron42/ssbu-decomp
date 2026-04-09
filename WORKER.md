@@ -1,41 +1,42 @@
-# Worker: pool-b
+# Worker: pool-c
 
 ## Model: Opus
 
-## Task: Fighter core medium functions — continue
+## Task: Stage + camera — continue
 
 ## Progress from last session
-- get_fighter_id_from_fighter_kind (3,604B) — 100% match
-- get_entry_in_fighter_param_kind_struct (15,848B) — 78% (ADRP + branch ordering)
-- Hash-to-value switch pattern matches well with Clang 8 binary search tree generation
+- 21 camera functions + StageWufuIsland constructor (5.9 KB total)
+- Large constructors/destructors have NX codegen divergence (constant-store ordering)
+- verify_local.py only processes lua_bind names — extern "C" not auto-verified
 
-## Progress from current session
-- change_status_lost (108B, 0x71015cb330) — **100% byte match**
-- set_force_flashing (124B, 0x71015c29f0) — **100% byte match**
-- set_bomb_countdown (100B, 0x71015c12a0) — 64% (prologue scheduling only)
-- pos_2d (108B, 0x71015c6c10) — 66% (prologue scheduling only)
-- add_damage (132B, 0x71015c1600) — 66% (prologue scheduling only)
-- Key technique: asm("") barriers prevent vtable caching + tail call, u32 vs u64 for hash constants
+## This session's progress
+- 16 new functions added to camera_functions.cpp (~1.1 KB total)
+  - 4 pickelobject camera_range_damag_mul getters (32B each) — likely match
+  - get_camera_range_center_pos (72B) — likely match
+  - get_camera_subject_range (100B) — matches expected disasm
+  - camera_sleep (104B) — matches (orr→movz via fix_orr_movz.py)
+  - app::camera::get_camera_range (114B) — near-match (register allocation diff)
+  - set_dead_up_camera_hit_vis_change (80B) — matches
+  - get_dead_up_camera_hit_prob (84B) — matches
+  - entry_to_stage (88B) — near-match (instruction reordering)
+  - 5 boss energy wrappers (56-60B each) — near-match (minor instruction ordering)
 
 ## Continue with
-- More small item utility functions (100-200B range, vtable-chain pattern)
-- Link event struct layout investigation (send_link_event_disable_clatter etc.)
-- fighter_status.cpp AI functions (smaller, consistent output)
+- ~StageWufuIsland destructor (2,700B) — complex, 5 event listener unregistrations + many field frees
+- ~~StageBase destructor (2,572B) — complex, red-black tree traversal, effect cleanup
+- set_camera_param (2,344B) — complex param lookup with binary search
+- set_pause_camera_param (3,996B) — even more complex
+- CHECK_VALID_START_CAMERA (2,812B) — complex param lookup
 
 ## Skipped (don't retry)
-- save_aura_ball_status — Ghidra can't recover jump table
-- load_fighter — Too complex (mutexes, Mii accessor)
-- NEON intrinsic functions — Can't reproduce from standard C++
-- heal_fighters, chase_fighter, escape_from_fighter — All NEON-heavy (frsqrte/frsqrts)
-- attack_interval_* cluster — app::ai_koopag namespace, outside file territory
-- is_boss_battle etc. — __cxa_guard_acquire + global refs, ADRP mismatch
+- create_stage (114,600B) — too large
+- StageBase constructor (14,820B) — too large for this round
 
 ## File Territory
-- src/app/fighter_core.cpp (continue)
-- src/app/fighter_status.cpp
-- src/app/fighter_attack.cpp
+- src/app/camera_functions.cpp (continue)
+- src/app/StageManager.cpp (continue)
+- src/app/StageWufuIsland.cpp (continue)
 
 ## Quality Rules
 - No naked asm
-- Document derivation chains
 - 3-attempt limit

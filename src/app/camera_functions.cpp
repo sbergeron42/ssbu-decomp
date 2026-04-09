@@ -408,3 +408,250 @@ extern "C" void set_stage_sh(u64 lua_state) {
     reinterpret_cast<void(*)(void**, s32)>(((void**)*module)[0x330/8])(module, 1);
 }
 } // namespace app::boss_private
+
+// ---- Boss energy wrapper functions ----
+
+// Inner function for boss energy initialization
+// [derived: called by all energy_from_param_* wrappers with different constant combos]
+// Signature: 8 GPR args (x0-x7) + 1 FPR (s0) + 1 bool on stack
+extern "C" void FUN_71015c7aa0(u64, u32, u64, s32, s32, s32, s32, s32, float, bool);
+
+// 0x71015c8140 (56 bytes) — app::boss_private::main_energy_from_param_no_boss
+// Wrapper: passes through lua_state/kind/hash/float, sets fixed int args
+namespace app::boss_private {
+extern "C" void main_energy_from_param_no_boss(u64 lua_state, u32 kind, u64 hash, float param_4) {
+    FUN_71015c7aa0(lua_state, kind, hash, 0, 0, 0xc, 0, 0, param_4, true);
+}
+} // namespace app::boss_private
+
+// 0x71015c8180 (56 bytes) — app::boss_private::sub1_energy_from_param_no_boss
+namespace app::boss_private {
+extern "C" void sub1_energy_from_param_no_boss(u64 lua_state, u32 kind, u64 hash, float param_4) {
+    FUN_71015c7aa0(lua_state, kind, hash, 0, 0, 0xd, 0, 0, param_4, true);
+}
+} // namespace app::boss_private
+
+// 0x71015c81c0 (60 bytes) — app::boss_private::main_energy_from_param_inherit_no_boss
+// Inherit variant: s0=0.0f, w3=1 (inherit flag)
+namespace app::boss_private {
+extern "C" void main_energy_from_param_inherit_no_boss(u64 lua_state, u32 kind, u64 hash) {
+    FUN_71015c7aa0(lua_state, kind, hash, 1, 0, 0xc, 0, 0, 0.0f, true);
+}
+} // namespace app::boss_private
+
+// 0x71015c8200 (60 bytes) — app::boss_private::sub1_energy_from_param_inherit_no_boss
+namespace app::boss_private {
+extern "C" void sub1_energy_from_param_inherit_no_boss(u64 lua_state, u32 kind, u64 hash) {
+    FUN_71015c7aa0(lua_state, kind, hash, 1, 0, 0xd, 0, 0, 0.0f, true);
+}
+} // namespace app::boss_private
+
+// 0x71015c8240 (60 bytes) — app::boss_private::sub1_energy_from_param_inherit_all_no_boss
+// Same as inherit but w4=1 (inherit_all flag)
+namespace app::boss_private {
+extern "C" void sub1_energy_from_param_inherit_all_no_boss(u64 lua_state, u32 kind, u64 hash) {
+    FUN_71015c7aa0(lua_state, kind, hash, 1, 1, 0xd, 0, 0, 0.0f, true);
+}
+} // namespace app::boss_private
+
+// ---- FighterParamAccessor2 camera param getters ----
+
+// FighterParamAccessor2 singleton
+// [derived: lib::Singleton<app::FighterParamAccessor2>::instance_, adrp 0x71052bb000+0x3b0]
+extern "C" void* DAT_71052bb3b0 HIDDEN;
+
+// 0x710166e190 (32 bytes) — app::pickelobject::camera_range_damag_mul_start_rate
+// Leaf: reads float from FighterParamAccessor2 → [+0x13b0] → [+0x530]
+namespace app::pickelobject {
+extern "C" float camera_range_damag_mul_start_rate(void) {
+    u8* sub = *(u8**)((u8*)DAT_71052bb3b0 + 0x13b0);
+    return *(float*)(sub + 0x530);
+}
+} // namespace app::pickelobject
+
+// 0x710166e1b0 (32 bytes) — app::pickelobject::camera_range_damag_mul_end_rate
+namespace app::pickelobject {
+extern "C" float camera_range_damag_mul_end_rate(void) {
+    u8* sub = *(u8**)((u8*)DAT_71052bb3b0 + 0x13b0);
+    return *(float*)(sub + 0x534);
+}
+} // namespace app::pickelobject
+
+// 0x710166e1d0 (32 bytes) — app::pickelobject::camera_range_damag_mul_min
+namespace app::pickelobject {
+extern "C" float camera_range_damag_mul_min(void) {
+    u8* sub = *(u8**)((u8*)DAT_71052bb3b0 + 0x13b0);
+    return *(float*)(sub + 0x538);
+}
+} // namespace app::pickelobject
+
+// 0x710166e1f0 (32 bytes) — app::pickelobject::camera_range_damag_mul_max
+namespace app::pickelobject {
+extern "C" float camera_range_damag_mul_max(void) {
+    u8* sub = *(u8**)((u8*)DAT_71052bb3b0 + 0x13b0);
+    return *(float*)(sub + 0x53c);
+}
+} // namespace app::pickelobject
+
+// NEON vector return type — 4 floats packed in v0
+typedef float float4 __attribute__((vector_size(16)));
+
+// ---- Camera range center position ----
+
+// 0x71016459d0 (72 bytes) — app::flyandhand::get_camera_range_center_pos
+// Leaf: computes center of camera range rect at +0xc00..+0xc0c, returns float4
+// DAT_71052b7f00 [derived: camera/stage parameter singleton]
+// +0xc00 camera_range left, +0xc04 right, +0xc08 top, +0xc0c bottom
+namespace app::flyandhand {
+extern "C" float4 get_camera_range_center_pos(void) {
+    u8* inner = *(u8**)DAT_71052b7f00;
+    float left   = *(float*)(inner + 0xc00);
+    float right  = *(float*)(inner + 0xc04);
+    float top    = *(float*)(inner + 0xc08);
+    float bottom = *(float*)(inner + 0xc0c);
+    float cx = left + (right - left) * 0.5f;
+    float cy = top + (bottom - top) * 0.5f;
+    float4 r = {0};
+    r[0] = cx;
+    r[1] = cy;
+    return r;
+}
+} // namespace app::flyandhand
+
+// ---- Camera subject range ----
+
+// 0x7101679010 (100 bytes) — app::kasey::get_camera_subject_range
+// Calls camera module vtable[0x110/8] with arg=0, returns 4 floats from result pointer
+// [derived: disasm shows ldr x0,[x0,#0x60]; vtable call [0x110]; load 4 floats from ret ptr]
+namespace app::kasey {
+extern "C" float4 get_camera_subject_range(void* accessor) {
+    void** cam = *(void***)(reinterpret_cast<u8*>(accessor) + 0x60);
+    float* result = reinterpret_cast<float*(*)(void**, s32)>(
+        ((void**)*cam)[0x110/8])(cam, 0);
+    float4 r;
+    r[0] = result[0];
+    r[1] = result[1];
+    r[2] = result[2];
+    r[3] = result[3];
+    return r;
+}
+} // namespace app::kasey
+
+// ---- Camera sleep ----
+
+// 0x71015c4490 (104 bytes) — app::item::camera_sleep
+// Gets battle object, checks camera module vtable[2] (is_camera_sleeping),
+// if not sleeping, writes 1 to *(battle_obj + 0x1a8) + 0x7608
+// [derived: disasm shows ldr x19,[x8,#0x1a0]; camera module at +0x60; vtable[0x10/8] check]
+namespace app::item {
+extern "C" void camera_sleep(u64 lua_state) {
+    u8* battle_obj = *(u8**)(*(u8**)(lua_state - 8) + 0x1a0);
+    void** cam = *(void***)(battle_obj + 0x60);
+    u64 res = reinterpret_cast<u64(*)(void**)>(((void**)*cam)[0x10/8])(cam);
+    if ((res & 1) == 0) {
+        *(u32*)(*(u8**)(battle_obj + 0x1a8) + 0x7608) = 1;
+    }
+}
+} // namespace app::item
+
+// ---- Camera range (computed from params) ----
+
+// 0x71015cb960 (114 bytes) — app::camera::get_camera_range
+// Leaf: computes camera range from scale/aspect params and center position
+// DAT_71052b7f00 [derived: camera/stage parameter singleton]
+// +0xf38 [inferred: camera half-height scale], +0xf68 [inferred: aspect ratio],
+// +0xf58 [inferred: width-to-height ratio], +0xeb0 [inferred: camera center pos (x,y) packed]
+namespace app::camera {
+extern "C" float4 get_camera_range(void) {
+    u8* inner = *(u8**)DAT_71052b7f00;
+    float half_h_scale = *(float*)(inner + 0xf38);
+    float aspect       = *(float*)(inner + 0xf68);
+    float half_h = half_h_scale * aspect;
+    float ratio  = *(float*)(inner + 0xf58);
+    float half_w = half_h * ratio;
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("" :: "w"(half_w));
+#endif
+    // Vector load of center position — expected codegen: ldr q3,[x8,#0xeb0]
+    float4 center = *(float4*)(inner + 0xeb0);
+    float center_y = center[1];
+    float bottom = center_y - half_h;
+    float top = half_h + center_y;
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("" :: "w"(bottom), "w"(top));
+#endif
+    float left = center[0] - half_w;
+    float right = half_w + center[0];
+    float4 r;
+    r[0] = left;
+    r[1] = right;
+    r[2] = top;
+    r[3] = bottom;
+    return r;
+}
+} // namespace app::camera
+
+// ---- Dead-up camera hit functions ----
+
+// 0x7102281950 (80 bytes) — app::sv_fighter_util::set_dead_up_camera_hit_vis_change
+// Checks status field at *(lua_state-8)+0x198, if 8 or 6, calls module+0x150 vtable[0x50/8]
+// [derived: Ghidra shows check of iVar1 == 8 || 6, then module at +0x150, vtable[0x50/8]]
+namespace app::sv_fighter_util {
+extern "C" void set_dead_up_camera_hit_vis_change(u64 lua_state) {
+    u8* ctx = *(u8**)(lua_state - 8);
+    s32 status = *(s32*)(ctx + 0x198);
+    if (status == 8 || status == 6) {
+        void** mod = *(void***)(*(u8**)(ctx + 0x1a0) + 0x150);
+        reinterpret_cast<void(*)(void**, u64, u64)>(
+            ((void**)*mod)[0x50/8])(mod, 0x4dba80bb2ULL, 0xf4c200029ULL);
+#ifdef MATCHING_HACK_NX_CLANG
+        asm("" ::: "x29", "x30");
+#endif
+    }
+}
+} // namespace app::sv_fighter_util
+
+// 0x71022818f0 (84 bytes) — app::sv_fighter_util::get_dead_up_camera_hit_prob
+// Gets work module at +0x50, calls vtable[0x98/8](mod, 0x10000000),
+// indexes into FighterManager to read u32
+// [derived: disasm shows ldr w0 (integer return, not float)]
+extern "C" __attribute__((noreturn)) void abort(void);
+namespace app::sv_fighter_util {
+extern "C" u32 get_dead_up_camera_hit_prob(u64 lua_state) {
+    u8* battle_obj = *(u8**)(*(u8**)(lua_state - 8) + 0x1a0);
+    void** work = *(void***)(battle_obj + 0x50);
+    u32 idx = reinterpret_cast<u32(*)(void**, u32)>(
+        ((void**)*work)[0x98/8])(work, 0x10000000);
+    if (idx >= 8u) {
+        abort();
+    }
+    u8* fm = *(u8**)FM_INSTANCE;
+    u8* entry = *(u8**)(fm + (s64)(s32)idx * 8 + 0x20);
+    u8* info = *(u8**)(entry + 0xf8);
+    return *(u32*)(info + 0x80);
+}
+} // namespace app::sv_fighter_util
+
+// ---- Stage entry function ----
+
+// 0x7101675fd0 (88 bytes) — app::st_shell::entry_to_stage
+// Constructs event data struct on stack, dispatches to stage manager
+// DAT_71050b3828 [inferred: stage event vtable/type descriptor]
+extern "C" u8 DAT_71050b3828 HIDDEN;
+extern "C" void FUN_710315f230(u64, void*);
+
+namespace app::st_shell {
+extern "C" void entry_to_stage(u32 param_1) {
+    struct {
+        void* type;
+        u64 field1;
+        u64 field2;
+        u32 param;
+    } event;
+    event.type = &DAT_71050b3828;
+    event.field1 = 0x5000000000000001ULL;
+    event.field2 = 0x500000000000004aULL;
+    event.param = param_1;
+    FUN_710315f230(*(u64*)(*(u8**)SM_INSTANCE + 0x1e0), &event);
+}
+} // namespace app::st_shell
