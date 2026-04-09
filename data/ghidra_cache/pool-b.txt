@@ -271,3 +271,36 @@ Same but reads +0x70/+0x74. Returns 2.
 == 0x7102200470 (100B) — clear_energy4_fields ==
 Gets +0x190 module → vt[0x60/8](4), zeroes speed/accel fields at +0x10..+0x78 with NEON. Returns 0.
 
+
+=== SESSION 2026-04-09 BATCH 4 (sv_information + FPA2) ===
+
+== 0x710227ed00 (84B) — is_dead_up_force_crush ==
+work→vt[0x98/8](0x10000000)→id, bounds <8, FM→entries[id]→FI(+0xf8)→byte at +0x6e
+
+== 0x710227ef00 (84B) — sleep_time_mul ==
+Same FM pattern, FI→u32 at +0x384 (=900 decimal)
+
+== 0x7102281890 (84B) — get_dead_up_star_fall_prob ==
+Same FM pattern, FI→u32 at +0x7c
+
+== 0x710227eea0 (88B) — owner_rank ==
+FM+0xcd check, calls FUN_71006798f0(FM, id)
+
+== 0x710227ee30 (104B) — owner_handi ==
+Bounds check + FM+0xcd check, FI→u32 at +0x370
+
+== 0x71022819a0 (116B) — set_on_rebirth ==
+FI→write +0x38C, if false clear +0xA42
+
+== 0x7102281a20 (112B) — set_dead_rumble ==
+FUN_710067de90(FM, hash, 0, 0, 0x50000000), control(+0x48)→vt[0x2e0/8]
+
+== 0x7102283d10 (92B) — set_power_mul_region_attr_info ==
+attack_module(+0xA0)→vt[0x318/8] read, vt[0x320/8] write (18-byte buffer)
+
+== 0x7102284520 (92B) — start_boss_finish ==
+FUN_71003ab390 + BossManager singleton + FUN_71004eb4b0
+
+== 0x7102211600 (84B) — Pac_Land ==
+FUN_710067a3a0(FM, 1) → push result&1 with type tag 1
+
