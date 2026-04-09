@@ -1,32 +1,38 @@
-# Worker: pool-e
+# Worker: pool-d
 
 ## Model: Opus
 
-## Task: Item/weapon + parameter loading — community priority #4
+## Task: Game core + params medium functions — targeting 130+ KB
 
-## Strategy
-Weapon parameters and item behavior are heavily used by modders who create custom fighters and items. Parameter loading is how the game reads .prc files, which modders replace constantly. Both areas have strong community knowledge to leverage.
+## Targets (by size, descending)
+### Game core
+1. round_manager_update (29,496 bytes @ 0x7101c35b80)
+2. read_file (17,488 bytes @ 0x7103180ad0)
+3. game_tick (15,376 bytes @ 0x71002c5cf0)
+4. sub_rage_system (13,524 bytes @ 0x7100937030)
+5. nnMain (1,744 bytes @ 0x71002c5620)
 
-## Targets
-1. **weapon_params.cpp** — Continue weapon param accessor decomp. Already have BUDDYBOMB, PICKELBOMB, MECHAKOOPA, HOLYWATER, PEACH, DOLL, EXPLOSIONBOMB, LINKARROW. Target remaining weapon types.
-2. **Item functions** — 97 undecompiled (53 KB). Item spawning, behavior, collision.
-3. **Parameter loading** — 87 undecompiled (65 KB). ParamAccessor, prc file reading, hash lookups.
-4. **FighterParamAccessor2.cpp** — Existing file, extend with more param accessors.
+### Params (54 KB)
+1. populate_parameters_for_hash40 (13,536 bytes @ 0x71032ed9c0)
+2. apply_lift_param (11,044 bytes @ 0x7100995040)
+3. global_param_init_sets_team_flag (6,796 bytes @ 0x71017641a0)
+4. UpdateParams (4,564 bytes @ 0x710008b480)
+5. get_magic_ball_param (3,184 bytes @ 0x710165fcb0)
 
 ## Approach
-- Weapon params follow consistent patterns (see existing weapon_params.cpp)
-- Use Ghidra to identify param accessor vtable patterns
-- ItemModule vtable methods in include/app/modules/
-- Parameter loading may use hash40 lookups — cross-reference with community hash tables
+- game_tick and round_manager_update are the game's main loop — high community value
+- These are VERY large functions. Focus on structural understanding first.
+- read_file likely relates to resource service (check existing res_*.cpp files)
+- Param functions may use hash40 lookup patterns — check community hash tables
+- nnMain is the entry point — small but structurally important
 
 ## File Territory
-- src/app/weapon_params.cpp
-- src/app/Item.cpp
-- src/app/ItemManager.cpp
-- src/app/FighterParamAccessor2.cpp
+- src/app/game_core.cpp (new)
+- src/app/param_loading.cpp (new)
+- src/app/lua_acmd.cpp (continue from prior round)
 - include/app/ (struct updates)
 
 ## Quality Rules
-- Weapon params are templated patterns — document the template
 - No naked asm
-- Use existing module headers for vtable dispatch
+- Large functions: document control flow structure even if match fails
+- 3-attempt limit, N-quality is fine for these
