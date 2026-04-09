@@ -750,6 +750,54 @@ extern "C" s32 FUN_71015cf3d0(u32 object_id) {
     return -1;
 }
 
+// ============================================================================
+// is_enable_capture
+// Address: 0x710164b0b0 | Size: 96 bytes
+// Checks if an item can be captured by testing WorkModule flags.
+// Returns 0 if flag 0x20000028 is set, else returns !flag(0x20000029).
+// [derived: Ghidra FUN_710164b0b0 — WorkModule::is_flag vtable[0x108/8=33]]
+// ============================================================================
+
+extern "C" u32 FUN_710164b0b0(u8* acc) {
+    u64* work = *reinterpret_cast<u64**>(acc + 0x50);
+    // WorkModule::is_flag at vtable offset 0x108
+    u64 flag1 = reinterpret_cast<u64(*)(u64*, u32)>(*reinterpret_cast<void**>(*work + 0x108))(work, 0x20000028);
+    u32 result;
+    if ((flag1 & 1) == 0) {
+#ifdef MATCHING_HACK_NX_CLANG
+        asm("" ::: "memory");  // force vtable reload — original doesn't cache fn ptr
+#endif
+        u32 flag2 = reinterpret_cast<u32(*)(u64*, u32)>(*reinterpret_cast<void**>(*work + 0x108))(work, 0x20000029);
+        result = flag2 ^ 1u;
+    } else {
+        result = 0;
+    }
+    return result & 1;
+}
+
+// ============================================================================
+// is_enable_capture_beetle
+// Address: 0x7101655fb0 | Size: 96 bytes
+// Identical logic to is_enable_capture — beetle variant.
+// [derived: Ghidra FUN_7101655fb0 — same WorkModule flag check pattern]
+// ============================================================================
+
+extern "C" u32 FUN_7101655fb0(u8* acc) {
+    u64* work = *reinterpret_cast<u64**>(acc + 0x50);
+    u64 flag1 = reinterpret_cast<u64(*)(u64*, u32)>(*reinterpret_cast<void**>(*work + 0x108))(work, 0x20000028);
+    u32 result;
+    if ((flag1 & 1) == 0) {
+#ifdef MATCHING_HACK_NX_CLANG
+        asm("" ::: "memory");
+#endif
+        u32 flag2 = reinterpret_cast<u32(*)(u64*, u32)>(*reinterpret_cast<void**>(*work + 0x108))(work, 0x20000029);
+        result = flag2 ^ 1u;
+    } else {
+        result = 0;
+    }
+    return result & 1;
+}
+
 #undef HIDDEN2
 #undef FM_INSTANCE
 #undef IM_INSTANCE

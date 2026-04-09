@@ -18,18 +18,22 @@
 - remove_item_from_id (88B) — 91% match, ADRP-only diffs
 - find_active_item_from_id (92B) — 70% match, NX csel epilogue diff
 - is_loaded_fighter (68B) — N-quality, NX condition ordering divergence
+- is_enable_capture (96B) — 54% match, branch layout + eor/mvn diff
+- is_enable_capture_beetle (96B) — 54% match, same pattern
 
 ## Continue with
 - More small item/fighter utility functions (100-200B, vtable-chain pattern)
 - fighter_status.cpp AI functions
-- Look for hash-to-value switch pattern functions (these match well)
-- Try: is_fighter_enabled (88B), get_fighter_entry_id (172B), item_throw (136B)
+- Avoid: switch/if-else-chain functions (csel divergence), guard variable functions
 
 ## Skipped (don't retry)
 - NEON functions (heal_fighters, chase_fighter, escape_from_fighter)
 - Ghidra jump table failures (save_aura_ball_status)
 - Global-ref functions (is_boss_battle etc.) — ADRP mismatch
 - is_loaded_fighter — NX reorders singleton check before param check
+- LINK_LINKBOMB param functions — NX uses branches, upstream uses csel for if/else chains
+- get_item_swing_motion_rate — jump table format differs between NX and upstream
+- Guard variable functions (cxa_guard_acquire pattern) — complex static init
 
 ## File Territory
 - src/app/fighter_core.cpp, fighter_status.cpp, fighter_attack.cpp
@@ -40,3 +44,8 @@
 ## FighterEntry struct updates
 - +0x591F partner_flags (bit 1 = has partner) [derived: set_fighter_slow]
 - +0x5935 is_unloaded (1 = unloaded) [derived: is_loaded_fighter]
+
+## Key matching techniques discovered
+- `asm("" ::: "memory")` prevents CSE of vtable fn ptr across blr calls
+- Upstream Clang 8 hoists conditions/CSEs more aggressively than NX Clang
+- tbz/tbnz branch sense is compiler's choice — can't easily control
