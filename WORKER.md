@@ -1,25 +1,28 @@
-# Worker: pool-e
+# Worker: pool-b
 
 ## Model: Opus
 
-## Task: Item/weapon + Lua — continue
+## Task: Fighter core — continue item/fighter utility functions
 
 ## Progress
-- ~30 functions: ItemKinetic (7), ItemHelpers (16), lua_acmd (7)
-- L2CValue accessors, ldrsw codegen fix, energy forwarders
+- get_fighter_id_from_fighter_kind (3,604B) — 100%, get_entry_in_fighter_param_kind_struct (15,848B) — 78%
+- change_status_lost (108B) — 100%, set_force_flashing (124B) — 100%
+- 10 item/fighter utility functions (get_item_kind 94%, remove_item_from_id 91%, etc.)
+- FighterEntry struct: +0x591F partner_flags, +0x5935 is_unloaded
+- Key: asm("") barriers, u32 vs u64, csel vs branch divergence
 
 ## Continue with
-- More L2C functions in 0x71037xxx range (math_toint, etc.)
-- Medium Item functions 100-300B (accessor chain patterns)
-- lua_ai_path_builder (4,388B) if time permits
-- Try optnone for -O0 Lua functions
+- More small item/fighter utility functions (100-200B, vtable-chain pattern)
+- is_fighter_enabled (88B), get_fighter_entry_id (172B), item_throw (136B)
+- fighter_status.cpp AI functions
+- Hash-to-value switch pattern functions (match well)
 
-## Blocked (don't retry)
-- NEON ItemKinetic functions, pop_lua_stack, ItemManager ctor, item_generate_position_in_rect
+## Skipped (don't retry)
+- NEON functions, Ghidra jump table failures, global-ref ADRP mismatches
+- is_loaded_fighter — NX reorders singleton check
 
 ## File Territory
-- src/app/lua_acmd.cpp, weapon_params.cpp, ItemKinetic.cpp, ItemHelpers.cpp
-- include/lib/L2CValue.h
+- src/app/fighter_core.cpp, fighter_status.cpp, fighter_attack.cpp
 
 ## Quality Rules
-- optnone for -O0 Lua functions, no naked asm, 3-attempt limit
+- No naked asm, 3-attempt limit, derivation chains
