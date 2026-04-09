@@ -2,33 +2,40 @@
 
 ## Model: Opus
 
-## Task: BST entry manager + stage functions — 0x710317xxxx range
+## Task: BST entry manager + stage functions + small scattered functions
 
-## Progress (22 functions total from prior + this session)
+## Progress (26 functions total across all sessions)
 - 8 param reader functions from prior session (all compiled)
-- 14 new functions this session:
-  - 7 BST-at-0x58 set/clear functions (all size-match): FUN_7103176f70, 7103177160, 7103177250, 7103177430, 7103177520, 7103177610, 7103177850
-  - 1 BST-at-0x58 set+check+notify: FUN_7103177060 (248B vs 256B, 8B short — 2 extra optimizations)
-  - 1 fiber switch: FUN_710317f0a0 (88B size-match, likely byte-match after linking)
-  - 3 stage reversal BST-at-0x50: FUN_71031796f0, 7103179860, 71031799e0 (16B short — GOT/guard patterns)
-  - 1 death boundary: FUN_710317b2e0 (244B vs 264B)
-  - 1 team param: FUN_710317b3f0 (280B vs 312B — NEON ABI mismatch)
+- 14 BST entry manager + stage functions this session:
+  - 7 BST-at-0x58 set/clear (all size-match): 7103176f70, 7103177160, 7103177250, 7103177430, 7103177520, 7103177610, 7103177850
+  - 1 BST-at-0x58 set+check+notify: 7103177060 (248B vs 256B, 8B short)
+  - 1 fiber switch: 710317f0a0 (88B size-match, likely byte-match after linking)
+  - 3 stage reversal BST-at-0x50: 71031796f0, 7103179860, 71031799e0 (16B short)
+  - 1 death boundary: 710317b2e0 (244B vs 264B)
+  - 1 team param: 710317b3f0 (280B vs 312B — NEON ABI)
+- 4 small scattered functions (all size-match):
+  - FUN_7100082500 (76B), FUN_7100083d10 (76B) — float getter via vtable
+  - FUN_710048c1d0 (80B) — conditional vtable dispatch
+  - FUN_7100225b10 (84B) — mutex-locked field accessor
 
 ## Key patterns discovered
-- BST-at-0x58 manager struct: +0x20 current_id, +0x38 mode, +0x58 BST root
-- BST node: left[0], right[8], ..., key[0x20], value[0x28]
-- Set/clear functions follow template: BST lookup → set field → if match + mode<3 → second lookup → notify via vtable[6]
-- Stage reversal uses BST-at-0x50, dispatches to Stage_Rev string table and FUN_710240cd00
-- Team param function uses NEON v0 for first arg (not integer), ldarb for guard acquisition
+- BST-at-0x58 manager: +0x20 current_id, +0x38 mode, +0x58 BST root
+- BST node layout: left[0], right[8], ..., key[0x20], value[0x28]
+- Set/clear template: BST find → set field → if match + mode<3 → find again → notify via vtable[6]
+- Stage reversal: BST-at-0x50, dispatches to Stage_Rev table + FUN_710240cd00
+- Team param: uses NEON v0 for first arg, ldarb for guard, ccmp for && chains
+- All data globals need __attribute__((visibility("hidden"))) to avoid GOT indirection
 
 ## Continue with
-- More uncompiled HARD functions in 0x710317xxxx range (~20 remaining)
-- FUN_7103177960 (960B) — larger BST function
-- FUN_710317c0f0 (2160B), FUN_710317dc70 (848B set_offset), FUN_710317dfc0 (960B set_zone)
-- SituationLink (1588B), StageColorCorrectionController (704B)
+- FUN_710317b530 (320B) — float interpolation, calls FUN_710317b2e0
+- FUN_710317b000 (464B) — BST lookup + flag + camera request
+- FUN_710317cc20 (304B) — std::string comparison + update
+- Named: set_offset (848B), set_zone (960B), SituationLink (1588B)
+- Remaining small HARD targets are mostly jemalloc (skip per rules)
 
 ## Skipped
-- FUN_7103176e64 (244B), FUN_71031776ec (356B) — listed as functions but Ghidra shows only abort(), likely alignment padding
+- FUN_7103176e64, FUN_71031776ec — Ghidra shows abort(), but CSV lists 244B/356B
+- All 0x710395xxxx functions — jemalloc 5.1.0 library code
 
 ## File Territory
 - src/app/param_loading.cpp
