@@ -30,6 +30,9 @@ extern "C" u32 DAT_71052381c8 HIDDEN;  // XOR-shift128 PRNG state[2]
 extern "C" u32 DAT_71052381cc HIDDEN;  // XOR-shift128 PRNG state[3]
 extern "C" f32 DAT_7104472710 HIDDEN;  // PRNG normalization ≈ 1/(2^32)
 extern "C" void* PTR_FUN_7104f68c38[] HIDDEN;  // joint resolve function table (9 entries, indexed 0-8)
+extern "C" void* DAT_71052b7f00 HIDDEN;  // [inferred: camera controller singleton]
+extern "C" u8 DAT_71044646b0[] HIDDEN;  // [inferred: 4-float weight vector for camera interpolation]
+extern "C" u8 DAT_7104464430[] HIDDEN;  // [inferred: 2-float target value for camera projection]
 extern "C" [[noreturn]] void abort();
 
 // Singletons for FOOT/LANDING/DOWN effects
@@ -52,7 +55,7 @@ extern template lib::EffectManager* lib::Singleton<lib::EffectManager>::instance
 
 extern "C" u64 DAT_71052c2610 HIDDEN;   // [inferred: slow effect slot array base]
 extern "C" void FUN_710260ccd0(u64);      // StageManager::reset_hiding (called on bg effect disable)
-extern "C" u64 DAT_71052b7f00 HIDDEN;   // [inferred: camera/view data ptr]
+// DAT_71052b7f00 declared above as void*
 
 // Control struct for FUN_7102288620 / FUN_710228ea70
 // FUN_7102288620 reads nargs and L from this struct via the pointer passed as arg 2
@@ -3996,6 +3999,117 @@ void EFFECT_GLOBAL_BACK_GROUND(lua_State* param_1) {
     acmd_consume(L);
 }
 
+// 0x710228f610 (644 bytes) — EFFECT_GLOBAL_BACK_GROUND_CENTER_TOP_NODE
+// Like EFFECT_GLOBAL_BACK_GROUND_CUT_IN_CENTER_POS but with camera interpolation.
+// If camera mode (DAT_71052b7f00+4) is 4 or 7, computes weighted normalized direction
+// from camera to cutin position, then interpolates along that direction.
+// Uses NEON rsqrt approximation in original — scalar math here (size mismatch expected).
+void EFFECT_GLOBAL_BACK_GROUND_CENTER_TOP_NODE(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+
+    acmd_effect_ctrl ctrl;
+    ctrl.hash = 0;
+    ctrl.flag = 0;
+    int nargs = (int)((*(u64*)(L + 0x10) - (**(u64**)(L + 0x20) + 0x10)) >> 4);
+    ctrl.nargs = (u32)nargs;
+    ctrl.L = param_1;
+
+    u64 cam_ctrl = *(u64*)DAT_71052b7f00;
+    u64 cutin = (u64)lib::Singleton<app::FighterCutInManager>::instance_;
+    u64 cutin_data = *(u64*)cutin;
+
+    u64 pos;
+    s32 cam_mode = *(s32*)(cam_ctrl + 4);
+    if (cam_mode == 4 || cam_mode == 7) {
+        // Camera position
+        f32 cam_x = *(f32*)(cam_ctrl + 0xd30);
+        f32 cam_y = *((f32*)(cam_ctrl + 0xd30) + 1);
+        f32 cam_z = *(f32*)(cam_ctrl + 0xd38);
+        f32 cam_w = *((f32*)(cam_ctrl + 0xd38) + 1);
+
+        // CutIn target position
+        f32 tgt_x = *(f32*)(cutin_data + 0x300);
+        f32 tgt_y = *((f32*)(cutin_data + 0x300) + 1);
+
+        // Direction from camera to target
+        f32 dx = tgt_x - cam_x;
+        f32 dy = tgt_y - cam_y;
+        f32 dz = 0.0f - cam_z;
+        f32 dw = 0.0f - cam_w;
+
+        // Weighted direction (DAT_71044646b0 = weight vector, 4 floats)
+        f32* weights = (f32*)&DAT_71044646b0;
+        f32 wx = dx * weights[0];
+        f32 wy = dy * weights[1];
+        f32 wz = dz * weights[2];
+        f32 ww = dw * weights[3];
+
+        // Squared length
+        f32 dot = wx*wx + wy*wy + wz*wz + ww*ww;
+
+        // Safe normalize (skip if zero)
+        f32 inv_len = 0;
+        if (dot != 0.0f) {
+            inv_len = 1.0f / dot;
+        }
+        f32 nx = (dot != 0.0f) ? dx * inv_len : 0.0f;
+        f32 ny = (dot != 0.0f) ? dy * inv_len : 0.0f;
+
+        // Weighted normalized direction
+        f32 wnx = nx * weights[0];
+        f32 wny = ny * weights[1];
+
+        // Camera projection
+        f32 cam_proj = cam_x * weights[0] + cam_y * weights[1] + cam_z * weights[2] + cam_w * weights[3];
+
+        // Target value from DAT_7104464430
+        f32* target = (f32*)&DAT_7104464430;
+        f32 target_val = target[0] + target[1];
+
+        f32 remaining = target_val - cam_proj;
+        f32 wn_dot = wnx + wny;  // simplified dot of weighted normals
+
+        if (wn_dot != 0.0f) {
+            f32 t = remaining / wn_dot;
+            f32 result_x = cam_x + nx * t;
+            f32 result_y = cam_y + ny * t;
+            u32 rx = *(u32*)&result_x;
+            u32 ry = *(u32*)&result_y;
+            pos = ((u64)ry << 32) | rx;
+        } else {
+            pos = *(u64*)(cutin_data + 0x300);
+        }
+    } else {
+        pos = *(u64*)(cutin_data + 0x300);
+    }
+
+    u32 rate = *(u32*)(cutin_data + 0x340);
+    u32 handle = FUN_710228ea70(pos, rate, acc, &ctrl, 0x2000000);
+
+    if (nargs >= 10) {
+        bool bg_flag = acmd_read_bool(L, 0xa0);
+
+        if ((s32)handle > 0) {
+            u64 em = *(u64*)lib::Singleton<lib::EffectManager>::instance_;
+            u64 entry = em + (u64)(handle >> 24) * 0x300;
+            if (entry != 0 && *(u32*)(entry + 4) == handle) {
+                entry = *(u64*)lib::Singleton<lib::EffectManager>::instance_ + (u64)(handle >> 24) * 0x300;
+                u32 flags = *(u32*)(entry + 0x26c);
+                u32 new_flags;
+                if (bg_flag) {
+                    new_flags = flags | 0x1000000;
+                } else {
+                    new_flags = flags & 0xfeffffff;
+                }
+                *(u32*)(entry + 0x26c) = new_flags;
+            }
+        }
+    }
+
+    acmd_consume(L);
+}
+
 // 0x710228f8a0 (432 bytes) — EFFECT_GLOBAL_BACK_GROUND_CUT_IN_CENTER_POS
 // Like EFFECT_GLOBAL_BACK_GROUND but reads pos from FighterCutInManager+0x2f0
 // and rate from FighterCutInManager+0x340
@@ -4247,6 +4361,296 @@ void BACK_GROUND_EFFECT_STAGE_SET_HIDING_FOR_DIRECTION(lua_State* param_1) {
     }
 
 bg_consume:
+    acmd_consume(L);
+}
+
+// 0x7102297600 (4148 bytes) — FOOT_EFFECT
+// Like FOOT_EFFECT_FLIP but without MotionModule flip check.
+// Original inlines 16-arg reader (4148B); we call FUN_7102288620 (size mismatch expected).
+// EffectModule vtable[0x3d0/8] = is_foot_enabled, terrain hash at +0x18
+// FPA2 secondary effect when wrapper+0x194==0 and terrain hash==0xe3c234564
+void FOOT_EFFECT(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    u64 wrapper = *(u64*)(L - 8);
+    u64 acc = *(u64*)(wrapper + 0x1a0);
+
+    acmd_effect_ctrl ctrl;
+    ctrl.hash = 0;
+    ctrl.flag = 0;
+    ctrl.nargs = (u32)((*(u64*)(L + 0x10) - (**(u64**)(L + 0x20) + 0x10)) >> 4);
+    ctrl.L = param_1;
+
+    // Check EffectModule::is_foot_enabled (vtable[0x3d0/8])
+    void** eff_check = *(void***)(acc + 0x140);
+    u64 enabled = reinterpret_cast<u64(*)(void*)>((*(void***)eff_check)[0x3d0 / 8])(eff_check);
+    if ((enabled & 1) == 0) goto foot_consume;
+
+    {
+        acmd_effect_out out;
+        FUN_7102288620(&out, &ctrl, 0);
+
+        // GroundModule::get_terrain_kind (vtable[0x478/8]) with arg 8
+        void** ground = *(void***)(acc + 0x58);
+        int terrain_kind = reinterpret_cast<int(*)(void*, int)>((*(void***)ground)[0x478 / 8])(ground, 8);
+
+        if (terrain_kind != 0) {
+            u64 stage_mgr = (u64)lib::Singleton<app::StageManager>::instance_;
+            u64 terrain_this = stage_mgr + 0x128;
+            u64 terrain_data = reinterpret_cast<u64(*)(u64, int)>(*(u64*)(*(u64*)terrain_this + 0x1f8))(terrain_this, terrain_kind);
+
+            u32 terrain_flag = (terrain_kind == 10 || terrain_kind == 0x2b) ? 0x4000000u : 0u;
+
+            u64 terrain_hash = *(u64*)(terrain_data + 0x18);
+            u64 th_masked = terrain_hash & 0xffffffffffULL;
+
+            void** eff = *(void***)(acc + 0x140);
+            if (th_masked == 0xe3c234564ULL || th_masked == 0x14a422ea56ULL || th_masked == 0x11b722b99fULL) {
+                u64 fpa2 = (u64)lib::Singleton<app::FighterParamAccessor2>::instance_;
+                u32 param_val = *(u32*)(*(u64*)(fpa2 + 0x50) + 0x162c);
+                reinterpret_cast<void(*)(void*, u32)>((*(void***)eff)[0x438 / 8])(eff, param_val);
+                eff = *(void***)(acc + 0x140);
+                terrain_hash = *(u64*)(terrain_data + 0x18);
+            }
+
+            f32 rate = *(f32*)&out.rate_bits;
+            reinterpret_cast<void(*)(void*, u64, u64, void*, void*, void*, void*, bool, u32, u32, s32, f32)>
+                ((*(void***)eff)[0x70 / 8])(eff, terrain_hash, out.hash2, &out.pos_xy, &out.rot_xy, &out.scale_xy, &out.color_xy, out.follow_flag, terrain_flag, 0, 0, rate);
+
+            // Special case: FPA2 secondary effect
+            if (*(u8*)(wrapper + 0x194) == 0 && (*(u64*)(terrain_data + 0x18) & 0xffffffffffULL) == 0xe3c234564ULL) {
+                u64 fpa2 = (u64)lib::Singleton<app::FighterParamAccessor2>::instance_;
+                u64 param_base = *(u64*)(fpa2 + 0x50);
+                u64 sec_pos_xy = *(u64*)(param_base + 0x1630);
+                u64 sec_pos_z = (u64)*(u32*)(param_base + 0x1638);
+
+                eff = *(void***)(acc + 0x140);
+
+                // Check MotionModule motion kind for negate
+                void** motion = *(void***)(acc + 0x88);
+                u64 motion_kind = reinterpret_cast<u64(*)(void*)>((*(void***)motion)[0x138 / 8])(motion);
+                u64 mk_masked = motion_kind & 0xffffffffffULL;
+
+                // If certain motion kinds, negate x position
+                struct { u64 xy; u64 z; } sec_pos;
+                if (mk_masked == 0x7ff5db516ULL || mk_masked == 0xb1de0f39dULL ||
+                    mk_masked == 0xbaee2f27aULL || mk_masked == 0xdae4249e4ULL) {
+                    f32 neg_x = -*(f32*)&sec_pos_xy;
+                    u32 neg_x_bits = *(u32*)&neg_x;
+                    sec_pos.xy = (sec_pos_xy & 0xFFFFFFFF00000000ULL) | neg_x_bits;
+                    sec_pos.z = sec_pos_z;
+                } else {
+                    sec_pos.xy = sec_pos_xy;
+                    sec_pos.z = sec_pos_z;
+                }
+
+                u32 param_val2 = *(u32*)(param_base + 0x162c);
+                reinterpret_cast<void(*)(void*, u32)>((*(void***)eff)[0x438 / 8])(eff, param_val2);
+                eff = *(void***)(acc + 0x140);
+                reinterpret_cast<void(*)(void*, u64, u64, void*, void*, void*, void*, bool, u32, u32, s32, f32)>
+                    ((*(void***)eff)[0x70 / 8])(eff, 0x14a422ea56ULL, out.hash2, &sec_pos, &out.rot_xy, &out.scale_xy, &out.color_xy, false, terrain_flag, 0, 0, rate);
+            }
+
+            // Check terrain[0x10] flag
+            if (*(u8*)(terrain_data + 0x10) == 0) {
+                out.hash1 = 0x425cbfc4fULL;
+            }
+        }
+
+        // Fallback req_on_joint if hash != sentinel
+        if ((out.hash1 & 0xffffffffffULL) != 0x425cbfc4fULL) {
+            void** eff = *(void***)(acc + 0x140);
+            u64 h1_masked = out.hash1 & 0xffffffffffULL;
+            if (h1_masked == 0xe3c234564ULL || h1_masked == 0x14a422ea56ULL || h1_masked == 0x11b722b99fULL) {
+                u64 fpa2 = (u64)lib::Singleton<app::FighterParamAccessor2>::instance_;
+                u32 param_val = *(u32*)(*(u64*)(fpa2 + 0x50) + 0x162c);
+                reinterpret_cast<void(*)(void*, u32)>((*(void***)eff)[0x438 / 8])(eff, param_val);
+                eff = *(void***)(acc + 0x140);
+            }
+            f32 rate = *(f32*)&out.rate_bits;
+            reinterpret_cast<void(*)(void*, u64, u64, void*, void*, void*, void*, bool, u32, u32, s32, f32)>
+                ((*(void***)eff)[0x70 / 8])(eff, out.hash1, out.hash2, &out.pos_xy, &out.rot_xy, &out.scale_xy, &out.color_xy, out.follow_flag, 0, 0, 0, rate);
+        }
+    }
+
+foot_consume:
+    acmd_consume(L);
+}
+
+// 0x7102296410 (3976 bytes) — EFFECT_FOLLOW_LIGHT
+// 17-arg inline reader + req_follow (vtable[0x80/8]) + light setup (vtable[0x2d8/8])
+// Args 1-2: hashes, 3-5: pos, 6-8: rot, 9: rate, 10: follow_flag (bool),
+//       11-12: scale (x,y), 13-14: color (r,g), 15-16: color_b + extra, 17: extra_z
+// PostureModule vtable[0xb0/8] → lr direction, multiplied with color_b
+void EFFECT_FOLLOW_LIGHT(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    if (param_1 == nullptr) {
+#ifdef MATCHING_HACK_NX_CLANG
+        __builtin_trap();
+#endif
+    }
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    int nargs = acmd_nargs(L);
+
+    u64 hash1 = 0, hash2 = 0;
+    f32 pos_x = 0, pos_y = 0, pos_z = 0;
+    f32 rot_x = 0, rot_y = 0, rot_z = 0;
+    f32 rate = 0;
+    bool follow = false;
+    f32 scale_x = 0, scale_y = 0;
+    f32 color_r = 0, color_g = 0, color_b = 0;
+    f32 extra = 0;
+    u64 extra_z = 0;
+
+    if (nargs >= 1) {
+        hash1 = FUN_71038f4000(param_1, 1, 0);
+        if (nargs >= 2) {
+            hash2 = FUN_71038f4000(param_1, 2, 0);
+            if (nargs >= 3) {
+                pos_x = acmd_read_float(L, 0x30);
+                if (nargs >= 4) {
+                    pos_y = acmd_read_float(L, 0x40);
+                    if (nargs >= 5) {
+                        pos_z = acmd_read_float(L, 0x50);
+                        if (nargs >= 6) {
+                            rot_x = acmd_read_float(L, 0x60);
+                            if (nargs >= 7) {
+                                rot_y = acmd_read_float(L, 0x70);
+                                if (nargs >= 8) {
+                                    rot_z = acmd_read_float(L, 0x80);
+                                    if (nargs >= 9) {
+                                        rate = acmd_read_float(L, 0x90);
+                                        if (nargs >= 10) {
+                                            follow = acmd_read_bool(L, 0xa0);
+                                            if (nargs >= 11) {
+                                                scale_x = acmd_read_float(L, 0xb0);
+                                                if (nargs >= 12) {
+                                                    scale_y = acmd_read_float(L, 0xc0);
+                                                    if (nargs >= 13) {
+                                                        color_r = acmd_read_float(L, 0xd0);
+                                                        if (nargs >= 14) {
+                                                            color_g = acmd_read_float(L, 0xe0);
+                                                            if (nargs >= 15) {
+                                                                color_b = acmd_read_float(L, 0xf0);
+                                                                if (nargs >= 16) {
+                                                                    extra = acmd_read_float(L, 0x100);
+                                                                    if (nargs >= 17) {
+                                                                        f32 ez = acmd_read_float(L, 0x110);
+                                                                        extra_z = (u64)(u32)ez;
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Pack position and rotation vectors
+    struct { f32 x; f32 y; u64 z; } pos_vec = { pos_x, pos_y, (u64)(u32)pos_z };
+    struct { f32 x; f32 y; u64 z; } rot_vec = { rot_x, rot_y, (u64)(u32)rot_z };
+
+    u64 flags = follow ? 0xc000ULL : 0x8000ULL;
+
+    // EffectModule::req_follow (vtable[0x80/8]) → returns handle
+    void** eff = *(void***)(acc + 0x140);
+    void** vt = *(void***)eff;
+    u32 handle = reinterpret_cast<u32(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, s32, s32, s32, s32, f32)>
+        (vt[0x80 / 8])(eff, hash1, hash2, &pos_vec, &rot_vec, 0, flags, 0, (s32)-1, 0, 0, 0, 0, rate);
+
+    // PostureModule vtable[0xb0/8] → get LR direction (float)
+    void** posture = *(void***)(acc + 0x38);
+    f32 lr = reinterpret_cast<f32(*)(void*)>((*(void***)posture)[0xb0 / 8])(posture);
+
+    // Pack light color vector: {color_b * lr, extra, extra_z}
+    struct { f32 cb_lr; f32 ex; u64 ez; } light_vec;
+    light_vec.cb_lr = color_b * lr;
+    light_vec.ex = extra;
+    light_vec.ez = extra_z;
+
+    // EffectModule::set_light_params (vtable[0x2d8/8])
+    // (eff, handle, &light_vec, scale_x, scale_y, color_r, color_g)
+    reinterpret_cast<void(*)(void*, u32, void*, f32, f32, f32, f32)>
+        (vt[0x2d8 / 8])(eff, handle, &light_vec, scale_x, scale_y, color_r, color_g);
+
+    acmd_consume(L);
+}
+
+// 0x7102298fa0 (3996 bytes) — DOWN_EFFECT
+// Like FOOT_EFFECT but no enable check, terrain uses +0x78 for secondary hash,
+// +0x70 for flag check. No FPA2 secondary effect. Original inlines 16-arg reader.
+void DOWN_EFFECT(lua_State* param_1) {
+    u64 L = (u64)param_1;
+    if (param_1 == nullptr) {
+#ifdef MATCHING_HACK_NX_CLANG
+        __builtin_trap();
+#endif
+    }
+    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+
+    acmd_effect_ctrl ctrl;
+    ctrl.hash = 0;
+    ctrl.flag = 0;
+    ctrl.nargs = (u32)((*(u64*)(L + 0x10) - (**(u64**)(L + 0x20) + 0x10)) >> 4);
+    ctrl.L = param_1;
+
+    acmd_effect_out out;
+    FUN_7102288620(&out, &ctrl, 0);
+
+    // GroundModule::get_terrain_kind (vtable[0x478/8]) with arg 8
+    void** ground = *(void***)(acc + 0x58);
+    void** eff_mod = *(void***)(acc + 0x140);
+    int terrain_kind = reinterpret_cast<int(*)(void*, int)>((*(void***)ground)[0x478 / 8])(ground, 8);
+
+    if (terrain_kind != 0) {
+        u32 terrain_flag = (terrain_kind == 10 || terrain_kind == 0x2b) ? 0x4000000u : 0u;
+
+        u64 stage_mgr = (u64)lib::Singleton<app::StageManager>::instance_;
+        u64 terrain_this = stage_mgr + 0x128;
+        u64 terrain_data = reinterpret_cast<u64(*)(u64, int)>(*(u64*)(*(u64*)terrain_this + 0x1f8))(terrain_this, terrain_kind);
+
+        // Secondary hash from terrain_data+0x78 (different from FOOT/LANDING which use +0x18/+0x48)
+        u64 terrain_hash = *(u64*)(terrain_data + 0x78);
+        u64 th_masked = terrain_hash & 0xffffffffffULL;
+
+        void** eff = eff_mod;
+        if (th_masked == 0xe3c234564ULL || th_masked == 0x14a422ea56ULL || th_masked == 0x11b722b99fULL) {
+            u64 fpa2 = (u64)lib::Singleton<app::FighterParamAccessor2>::instance_;
+            u32 param_val = *(u32*)(*(u64*)(fpa2 + 0x50) + 0x162c);
+            reinterpret_cast<void(*)(void*, u32)>((*(void***)eff)[0x438 / 8])(eff, param_val);
+            terrain_hash = *(u64*)(terrain_data + 0x78);
+        }
+
+        f32 rate = *(f32*)&out.rate_bits;
+        reinterpret_cast<void(*)(void*, u64, u64, void*, void*, void*, void*, bool, u32, u32, s32, f32)>
+            ((*(void***)eff_mod)[0x70 / 8])(eff_mod, terrain_hash, out.hash2, &out.pos_xy, &out.rot_xy, &out.scale_xy, &out.color_xy, out.follow_flag, terrain_flag, 0, 0, rate);
+
+        // Check terrain[0x70] flag (DOWN uses +0x70, not +0x10 like LANDING/FOOT)
+        if (*(u8*)(terrain_data + 0x70) == 0) goto down_consume;
+    }
+
+    // Fallback req_on_joint if hash != sentinel
+    if ((out.hash1 & 0xffffffffffULL) != 0x425cbfc4fULL) {
+        u64 h1_masked = out.hash1 & 0xffffffffffULL;
+        if (h1_masked == 0xe3c234564ULL || h1_masked == 0x14a422ea56ULL || h1_masked == 0x11b722b99fULL) {
+            u64 fpa2 = (u64)lib::Singleton<app::FighterParamAccessor2>::instance_;
+            u32 param_val = *(u32*)(*(u64*)(fpa2 + 0x50) + 0x162c);
+            reinterpret_cast<void(*)(void*, u32)>((*(void***)eff_mod)[0x438 / 8])(eff_mod, param_val);
+        }
+        f32 rate = *(f32*)&out.rate_bits;
+        reinterpret_cast<void(*)(void*, u64, u64, void*, void*, void*, void*, bool, u32, u32, s32, f32)>
+            ((*(void***)eff_mod)[0x70 / 8])(eff_mod, out.hash1, out.hash2, &out.pos_xy, &out.rot_xy, &out.scale_xy, &out.color_xy, out.follow_flag, 0, 0, 0, rate);
+    }
+
+down_consume:
     acmd_consume(L);
 }
 
