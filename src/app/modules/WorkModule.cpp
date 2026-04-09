@@ -57,7 +57,7 @@ s32 WorkModule__get_int_impl(BattleObjectModuleAccessor* a, s32 index) {
 // 710208dbd0  set_int [vt+0xa0]
 void WorkModule__set_int_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2) {
     auto* m = WM(a);
-    reinterpret_cast<void(*)(WorkModule*, u64, u64)>(m->_vt[0xa0/8])(m, p1, p2);
+    reinterpret_cast<void(*)(WorkModule*, u64, u64)>(m->_vt[20])(m, p1, p2); // slot 20 = 0xa0/8
 }
 
 // 710208dbe0  get_int64 [vt+0xb0]
@@ -68,7 +68,7 @@ s64 WorkModule__get_int64_impl(BattleObjectModuleAccessor* a, s32 index) {
 // 710208dbf0  set_int64 [vt+0xb8]
 void WorkModule__set_int64_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2) {
     auto* m = WM(a);
-    reinterpret_cast<void(*)(WorkModule*, u64, u64)>(m->_vt[0xb8/8])(m, p1, p2);
+    reinterpret_cast<void(*)(WorkModule*, u64, u64)>(m->_vt[23])(m, p1, p2); // slot 23 = 0xb8/8
 }
 
 // 710208dc00  rnd_int [vt+0xc0]
@@ -94,25 +94,25 @@ void WorkModule__add_int_impl(BattleObjectModuleAccessor* a, s32 index, s32 valu
 // 710208dc40  sub_int [vt+0xe0]
 void* WorkModule__sub_int_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2) {
     auto* m = WM(a);
-    return reinterpret_cast<void*(*)(WorkModule*, u64, u64)>(m->_vt[0xe0/8])(m, p1, p2);
+    return reinterpret_cast<void*(*)(WorkModule*, u64, u64)>(m->_vt[28])(m, p1, p2); // slot 28 = 0xe0/8
 }
 
 // 710208dc50  mul_int [vt+0xe8]
 void* WorkModule__mul_int_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2) {
     auto* m = WM(a);
-    return reinterpret_cast<void*(*)(WorkModule*, u64, u64)>(m->_vt[0xe8/8])(m, p1, p2);
+    return reinterpret_cast<void*(*)(WorkModule*, u64, u64)>(m->_vt[29])(m, p1, p2); // slot 29 = 0xe8/8
 }
 
 // 710208dc60  div_int [vt+0xf0]
 void* WorkModule__div_int_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2) {
     auto* m = WM(a);
-    return reinterpret_cast<void*(*)(WorkModule*, u64, u64)>(m->_vt[0xf0/8])(m, p1, p2);
+    return reinterpret_cast<void*(*)(WorkModule*, u64, u64)>(m->_vt[30])(m, p1, p2); // slot 30 = 0xf0/8
 }
 
 // 710208dc70  count_down_int [vt+0xf8]
 void* WorkModule__count_down_int_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2) {
     auto* m = WM(a);
-    return reinterpret_cast<void*(*)(WorkModule*, u64, u64)>(m->_vt[0xf8/8])(m, p1, p2);
+    return reinterpret_cast<void*(*)(WorkModule*, u64, u64)>(m->_vt[31])(m, p1, p2); // slot 31 = 0xf8/8
 }
 
 // --- Flag operations ---
@@ -258,25 +258,25 @@ void WorkModule__clear_all_impl(BattleObjectModuleAccessor* a, s32 p1) {
 // 710208de30  get_param_int [vt+0x248]
 void* WorkModule__get_param_int_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2) {
     auto* m = WM(a);
-    return reinterpret_cast<void*(*)(WorkModule*, u64, u64)>(m->_vt[0x248/8])(m, p1, p2);
+    return reinterpret_cast<void*(*)(WorkModule*, u64, u64)>(m->_vt[73])(m, p1, p2); // slot 73 = 0x248/8
 }
 
 // 710208de40  get_param_int64 [vt+0x258]
 void* WorkModule__get_param_int64_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2) {
     auto* m = WM(a);
-    return reinterpret_cast<void*(*)(WorkModule*, u64, u64)>(m->_vt[0x258/8])(m, p1, p2);
+    return reinterpret_cast<void*(*)(WorkModule*, u64, u64)>(m->_vt[75])(m, p1, p2); // slot 75 = 0x258/8
 }
 
 // 710208de50  get_param_float [vt+0x268]
 void* WorkModule__get_param_float_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2) {
     auto* m = WM(a);
-    return reinterpret_cast<void*(*)(WorkModule*, u64, u64)>(m->_vt[0x268/8])(m, p1, p2);
+    return reinterpret_cast<void*(*)(WorkModule*, u64, u64)>(m->_vt[77])(m, p1, p2); // slot 77 = 0x268/8
 }
 
 // 710208de60  set_customize_no [vt+0x278]
 void WorkModule__set_customize_no_impl(BattleObjectModuleAccessor* a, u64 p1, u64 p2) {
     auto* m = WM(a);
-    reinterpret_cast<void(*)(WorkModule*, u64, u64)>(m->_vt[0x278/8])(m, p1, p2);
+    reinterpret_cast<void(*)(WorkModule*, u64, u64)>(m->_vt[79])(m, p1, p2); // slot 79 = 0x278/8
 }
 
 } // namespace app::lua_bind
