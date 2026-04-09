@@ -194,3 +194,28 @@ Logic: FUN_7103950a80, 7103950ae0, 7103950e50, 7103951170, 7103951e00,
   7103957d90, 7103958650, 710395b690
 NON-MATCHING: binary has 2 extra `b .+4` NOP-branches per wrapper (8 bytes)
 that optnone doesn't reproduce. Frame sizes also differ for logic functions.
+
+== FUN_710114c140 — vtable dispatch + tail-call (80B, -O2) ==
+Chain: param_2+0x20 → +0x98 → vtable[0x37](obj, 0x12, 0). Tail-calls FUN_7100dbaf50.
+RELOCATION-ONLY MATCH: 94% (16/17 words).
+
+== FUN_71030f6950 — state machine dispatch (176B, -O2) ==
+Reads state at this+0x4891. Cases: 4→vtable[0x1F], 5→vtable[0x20], 6→vtable[0x21].
+Stores result to +0x489c, clears state. Final: if +0x489d==4, propagate.
+NEAR-MATCH: 93% (41/44 — 3 prologue scheduling diffs, NX fork).
+
+== FUN_710003e2b0 — ~AnimTransformBasic destructor (76B, -O2) ==
+Sets vtable from DAT_71052a3480+0x10, cleans +0x30 and +0x28 via FUN_7100048dd0.
+RELOCATION-ONLY MATCH: 79% (15/19).
+
+== FUN_7100044cb0 — Map: dispatch to two sub-objects (72B, -O2) ==
+Calls FUN_710007a0e0 on +0xC8 and +0xD0 sub-objects. Second is tail-call.
+RELOCATION-ONLY MATCH: 89% (16/18).
+
+== FUN_7100047990 — AppendPane: circular list insert (72B, -O2) ==
+Allocates 0x18 node, self-links, inserts at head of list at param_1+0x18.
+NEAR-MATCH: 67% (12/18 — prologue scheduling diffs).
+
+== FUN_7100050020 — AnimatorEx ctor (64B, -O2) ==
+Calls parent ctor, init self-linked list at +0x48, sets vtable from DAT_71052a36d0+0x10.
+NON-MATCHING: 56% (body scheduling diffs).
