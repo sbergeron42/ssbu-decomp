@@ -1,0 +1,50 @@
+# Ghidra decompilation cache for pool-d
+# Session: 2026-04-09
+# Functions decompiled: FUN_7103185c80, FUN_7103184f20, FUN_7103187c20, FUN_7103188a70,
+#   FUN_71031882c0, FUN_71031894b0, FUN_7103189880, FUN_7103189b00, FUN_7103189e30
+# Key: all are param reader sub-functions of read_file (0x7103180ad0)
+# FUN_7103189e30 (camera interp) skipped — not a param reader
+
+== FUN_7103188a70 — string reader (0x40 bytes, byte-by-byte) ==
+Address: 0x7103188a70
+Size: ~1100B (lots of unrolled stream_io calls)
+Reads 64 individual bytes at param_2+0 through param_2+0x3f.
+Returns param_1 (stream).
+
+== FUN_7103189b00 — sub-element reader (0x160 stride) ==
+Address: 0x7103189b00
+Size: ~304B
+- Read version byte (init 4), FUN_7103187210
+- Read u32 at +0x100 via FUN_710314fc70
+- Read marker, string(0x40) at +0x104 via FUN_7103188a70
+- If writing: copy to local buf first (strncpy 0x40)
+- If param_3 >= 2: read 6 f32 at +0x144..+0x158 via FUN_710314fff0
+
+== FUN_71031882c0 — LE array reader (0x10 stride, paired f32) ==
+Address: 0x71031882c0
+Size: 400B
+- Read count via FUN_710314fc70
+- If 0: free old, null, return
+- Alloc count*0x10, OOM retry, memset(0)
+- Swap, free old
+- Loop: marker + 2 packed f32 via FUN_710314fff0
+
+== FUN_7103189880 — sentinel array reader (returns stream) ==
+Address: 0x7103189880
+Size: 480B
+- Read marker, count via FUN_710314fc70
+- If BE: loop read f32 per element via FUN_710314fef0, return stream
+- If LE+count==0: free old, null, return stream
+- Alloc count*4, OOM, fill 0xFFFFFFFA
+- Swap, free old
+- Loop: marker + FUN_710314fef0
+- Return stream
+
+== FUN_71031894b0 — LE array reader (0x40 stride, with header+cleanup) ==
+Address: 0x71031894b0
+Size: ~600B
+- Read count via FUN_710314fc70
+- If 0: cleanup old container (free sub-arrays at elem+0x30, free header)
+- Alloc count*0x40|8, zero-fill, set count at [0], data at [1..]
+- Swap, cleanup old
+- Loop: marker + version byte + FUN_7103187920
