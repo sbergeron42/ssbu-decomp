@@ -13,22 +13,22 @@ Targeting the final version: **patch 13.0.4**.
 | Category | Count | % of total |
 |----------|------:|------------|
 | **Total functions** | 39,635 | |
-| Verified byte-identical | 10,214 | 25.77% |
-| Compiled (non-matching) | 3,567 | 9.00% |
-| **Total decompiled** | **13,781** | **34.77%** |
-| Undecompiled | 25,854 | 65.23% |
+| Verified byte-identical | 10,214 | 25.78% |
+| Compiled (non-matching) | 3,597 | 9.07% |
+| **Total decompiled** | **13,811** | **34.85%** |
+| Undecompiled | 25,824 | 65.15% |
 
 ### By bytes (.text)
 
 | Category | Size | % of .text |
 |----------|-----:|------------|
 | **.text total** | **27.0 MB** | |
-| Compiled | 1.81 MB | 6.72% |
+| Compiled | 1.85 MB | 6.83% |
 | Byte-matched | 0.48 MB | 1.77% |
 
 ```
-By functions:  13,781 / 39,635  (34.77% compiled, 25.77% verified)
-By bytes:       1.81M / 27.0M   ( 6.72% compiled,  1.77% verified)
+By functions:  13,811 / 39,635  (34.85% compiled, 25.78% verified)
+By bytes:       1.85M / 27.0M   ( 6.83% compiled,  1.77% verified)
 ```
 
 > Progress skews toward small functions: avg matched function is 46 bytes vs
