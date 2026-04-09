@@ -219,3 +219,29 @@ NEAR-MATCH: 67% (12/18 — prologue scheduling diffs).
 == FUN_7100050020 — AnimatorEx ctor (64B, -O2) ==
 Calls parent ctor, init self-linked list at +0x48, sets vtable from DAT_71052a36d0+0x10.
 NON-MATCHING: 56% (body scheduling diffs).
+
+# Session: 2026-04-09 (batch hard-d-033) — more optnone wrappers + resource dispatch
+
+== 0x710395* cluster batch 2 — optnone wrappers (48-96B each, -O0) ==
+Simple thunks (48B): 710395bae0→bb10, 710395bb30→bb60, 710395bc20→bc50,
+  710395c440→c470, 710395d1e0→c840, 710395d240→d270, 710395d290→d2c0,
+  710395d2e0→d310, 710395d330→d360, 710395eb20→eb50, 710395eb70→eba0,
+  710395eeb0→eee0, 710395ef00→ef30
+
+Two-call-return (64B): 7103951e60→{7103952190,71039521d0}, 710395d430→{710395d760,710395d7a0}
+Two-arg wrapper: 710395f210→710395faf0(DAT_7106dd40b0,param_1)
+
+Conditional (80-96B):
+  710395a890 — if *p1==0: call a6a0(p1,p2,0,p3,p4)
+  710395a8f0 — if *p1==0: aa80+a4a0("\"%s\": [",p2)+aad0
+  710395a950 — if *p1==0: aa80+a4a0(DAT_710425d0a2)+aad0
+  710395b8a0 — call b990, null-check return
+  710395bba0 — if !b830: b850→bc20; else 0
+  710395bd70 — if !b830: b850→c410; else 58840(p2)→p2
+  710395c650 — c6b0(p1,~fec&1)+ea10+if fec-1: c700(fec-1,p1)
+  710395c6b0 — *d240(p1) = p2&1
+  710395e090 — if e0e0(p2+8)&1: ae10(p1,p2)
+  710395e850 — if p1<=0x1000: d760; else e8b0(p1-0x1000,p1)
+  710395ede0 — ee90+58840+*eeb0=1+*eba0(→eb70)=0+*eb20=1+ee40
+  710395f3c0 — if !f440: f460→f480; else 0
+  7103952a90 — if !0de0: 0e00→3330; else 58840(p2)→p2
