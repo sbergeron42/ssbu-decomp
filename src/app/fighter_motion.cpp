@@ -95,8 +95,7 @@ namespace app::item {
 // vtable takes 3 floats (start_frame, rate, unk) but header exposes only 1
 void change_partial_motion(u8* L, u64 slot, u64 hash) {
     MotionModule* m = item_motion(L);
-    reinterpret_cast<void(*)(MotionModule*, u64, u64, f32, f32, f32, bool, bool, bool, bool, bool)>
-        (m->_vt[100])(m, slot, hash, 0.0f, 1.0f, 0.0f, false, false, true, false, false);
+    m->add_motion_partial_ext(slot, hash, 0.0f, 1.0f, 0.0f, false, false, true, false, false);
 #ifdef MATCHING_HACK_NX_CLANG
     asm("");
 #endif
@@ -106,8 +105,7 @@ void change_partial_motion(u8* L, u64 slot, u64 hash) {
 // Same as change_partial_motion with skeletal blending flag set (p9=true)
 void change_partial_motion_as_skeletal(u8* L, u64 slot, u64 hash) {
     MotionModule* m = item_motion(L);
-    reinterpret_cast<void(*)(MotionModule*, u64, u64, f32, f32, f32, bool, bool, bool, bool, bool)>
-        (m->_vt[100])(m, slot, hash, 0.0f, 1.0f, 0.0f, false, false, true, true, false);
+    m->add_motion_partial_ext(slot, hash, 0.0f, 1.0f, 0.0f, false, false, true, true, false);
 #ifdef MATCHING_HACK_NX_CLANG
     asm("");
 #endif

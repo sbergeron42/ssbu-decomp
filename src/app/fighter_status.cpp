@@ -1,4 +1,5 @@
 #include "types.h"
+#include "app/modules/StatusModule.h"
 
 // Fighter status and scripting utility functions — pool-c
 // Range: 0x7102275xxx -- 0x7102284xxx
@@ -1851,10 +1852,9 @@ u32 IS_FIGHTER_STATUS_KIND_71022ad5a0(void* L) {
     }
     *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = base;
     // get current status kind via StatusModule vtable
-    void* status = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x40);
-    void** vt = *reinterpret_cast<void***>(status);
-    auto get_status_kind = reinterpret_cast<s32(*)(void*)>(vt[0x110 / 8]);
-    s32 current = get_status_kind(status);
+    auto* status_mod = reinterpret_cast<app::StatusModule*>(
+        *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x40));
+    s32 current = status_mod->vtbl->StatusKind(status_mod);
     return current == kind;
 }
 
@@ -1885,10 +1885,9 @@ u32 IS_STATUS_KIND_71022ad670(void* L) {
     }
     *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = base;
     // get current status kind via StatusModule vtable
-    void* status = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x40);
-    void** vt = *reinterpret_cast<void***>(status);
-    auto get_status_kind = reinterpret_cast<s32(*)(void*)>(vt[0x110 / 8]);
-    s32 current = get_status_kind(status);
+    auto* status_mod = reinterpret_cast<app::StatusModule*>(
+        *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x40));
+    s32 current = status_mod->vtbl->StatusKind(status_mod);
     return current == kind;
 }
 

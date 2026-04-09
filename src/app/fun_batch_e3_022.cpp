@@ -161,7 +161,7 @@ bool FUN_710205cfa0(app::BattleObjectModuleAccessor* acc, u64 p1) {
 // [derived: MotionModule__end_frame_partial_impl (.dynsym) -> slot 106 (0x350/8)]
 float FUN_710205cfb0(app::BattleObjectModuleAccessor* acc, u64 p1) {
     MotionModule* mod = static_cast<MotionModule*>(acc->motion_module);
-    return reinterpret_cast<float(*)(MotionModule*, u64)>(mod->_vt[106])(mod, p1);
+    return mod->end_frame_partial_f32(p1);
 }
 
 // 0x710205cfc0 (16 bytes) — MotionModule::set_rate_partial [slot 107]
@@ -175,21 +175,21 @@ void FUN_710205cfc0(app::BattleObjectModuleAccessor* acc, u64 p1) {
 // [derived: MotionModule__rate_partial_impl (.dynsym) -> slot 108 (0x360/8)]
 float FUN_710205cfd0(app::BattleObjectModuleAccessor* acc, u64 p1) {
     MotionModule* mod = static_cast<MotionModule*>(acc->motion_module);
-    return reinterpret_cast<float(*)(MotionModule*, u64)>(mod->_vt[108])(mod, p1);
+    return mod->rate_partial_f32(p1);
 }
 
 // 0x710205cfe0 (16 bytes) — MotionModule::frame_partial [slot 109]
 // [derived: MotionModule__frame_partial_impl (.dynsym) -> slot 109 (0x368/8)]
 float FUN_710205cfe0(app::BattleObjectModuleAccessor* acc, u64 p1) {
     MotionModule* mod = static_cast<MotionModule*>(acc->motion_module);
-    return reinterpret_cast<float(*)(MotionModule*, u64)>(mod->_vt[109])(mod, p1);
+    return mod->frame_partial_f32(p1);
 }
 
 // 0x710205cff0 (16 bytes) — MotionModule::prev_frame_partial [slot 110]
 // [derived: MotionModule__prev_frame_partial_impl (.dynsym) -> slot 110 (0x370/8)]
 float FUN_710205cff0(app::BattleObjectModuleAccessor* acc, u64 p1) {
     MotionModule* mod = static_cast<MotionModule*>(acc->motion_module);
-    return reinterpret_cast<float(*)(MotionModule*, u64)>(mod->_vt[110])(mod, p1);
+    return mod->prev_frame_partial_f32(p1);
 }
 
 // 0x710205d000 (20 bytes) — MotionModule::set_frame_partial [slot 111]
@@ -259,7 +259,7 @@ u64 FUN_710205d0d0(app::BattleObjectModuleAccessor* acc, u64 p1) {
 // [derived: MotionModule__whole_rate_impl (.dynsym) -> slot 126 (0x3f0/8)]
 float FUN_710205d120(app::BattleObjectModuleAccessor* acc) {
     MotionModule* mod = static_cast<MotionModule*>(acc->motion_module);
-    return reinterpret_cast<float(*)(MotionModule*)>(mod->_vt[126])(mod);
+    return mod->whole_rate_f32();
 }
 
 // 0x710205d130 (16 bytes) — MotionModule::is_flag_disable_change_motion [slot 127]
@@ -273,7 +273,7 @@ bool FUN_710205d130(app::BattleObjectModuleAccessor* acc) {
 // [inferred: slot 130 (0x410/8) returns f32 in this lua_bind context]
 float FUN_710205d140(app::BattleObjectModuleAccessor* acc) {
     MotionModule* mod = static_cast<MotionModule*>(acc->motion_module);
-    return reinterpret_cast<float(*)(MotionModule*)>(mod->_vt[130])(mod);
+    return mod->update_rate_f32();
 }
 
 // 0x710205d190 (16 bytes) — MotionModule::is_no_comp [slot 136]

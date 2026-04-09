@@ -1,4 +1,5 @@
 #include "types.h"
+#include "app/modules/StatusModule.h"
 
 // Batch decompiled via Ghidra MCP -- pool-e, batch 003
 // Rewritten with derivation chains + VT macro
@@ -104,9 +105,9 @@ bool FUN_7100cec330(u64 param_1, s64 param_2)
 {
     // +0x20 [inferred: module accessor from BattleObject]
     // +0x40 [derived: status_module, StatusModule__*_impl (.dynsym)]
-    s64 *status_mod = *(s64 **)(*(s64 *)(param_2 + 0x20) + 0x40);
+    auto* status_mod = reinterpret_cast<app::StatusModule*>(*(void**)(*(s64 *)(param_2 + 0x20) + 0x40));
     // vtable+0x110 [derived: StatusKind, status_kind_impl (.dynsym)]
-    s32 status_kind = reinterpret_cast<s32 (*)(s64 *)>(VT(status_mod)[0x110 / 8])(status_mod);
+    s32 status_kind = status_mod->vtbl->StatusKind(status_mod);
     return (status_kind & 0xfffffffe) != 0x1ea;
 }
 

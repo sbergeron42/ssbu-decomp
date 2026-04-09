@@ -1,4 +1,5 @@
 #include "types.h"
+#include "app/EffectCleanupChain.h"
 
 // HARD-tier FUN_* functions — batch hard-d-030
 // Pool-d worker: effect cleanup, destructors, jemalloc check
@@ -41,20 +42,15 @@ extern "C" u8 PTR_FUN_7105232cf8[] HIDDEN;  // [derived: Ghidra vtable for FUN_7
 //   call FUN_71037759f0, lookup effect by hash, remove from EffectManager,
 //   tail-call FUN_71032e5640 (sound queue stop)
 // Size: 96 bytes
-// [derived: Ghidra decompilation — chain is +0x58 → +0x180 → +0x80 → +0x50 → deref.
+// [derived: Ghidra decompilation — chain through EffectModuleCtx (see EffectCleanupChain.h).
 //  DAT_710532e8b8+8 = effect database sub-object.
 //  DAT_7104544980 = hash40 constant for effect identifier.
 //  lib::Singleton<lib::EffectManager>::instance_ loaded for remove call.]
 // ════════════════════════════════════════════════════════════════════
 extern "C"
-void FUN_7101958da0(s64 param_1) {
+void FUN_7101958da0(EffectModuleCtx* param_1) {
     // Chain through module accessor to get effect handle
-    // +0x58 [inferred: sub-module pointer]
-    // → +0x180 [inferred: effect data container]
-    // → +0x80 [inferred: effect list/array]
-    // → +0x50 [inferred: effect slot pointer]
-    // → deref [inferred: effect handle value]
-    u64 val = **(u64**)(*(s64*)(*(s64*)(*(s64*)(param_1 + 0x58) + 0x180) + 0x80) + 0x50);
+    u64 val = *param_1->container->list->slot->handle;
     FUN_71037759f0(val);
 
     // Look up effect by hash in database
@@ -69,14 +65,14 @@ void FUN_7101958da0(s64 param_1) {
 }
 
 // ════════════════════════════════════════════════════════════════════
-// 0x710195f150 — effect cleanup: same as FUN_7101958da0 but offset +0x170
+// 0x710195f150 — effect cleanup: same as FUN_7101958da0 but uses list_alt path
 // Size: 96 bytes
-// [derived: Ghidra decompilation — identical structure, +0x170 instead of +0x180
-//  in the accessor chain. Different sub-module slot in the same container.]
+// [derived: Ghidra decompilation — identical structure, uses container->list_alt
+//  instead of container->list. Different sub-module slot in the same container.]
 // ════════════════════════════════════════════════════════════════════
 extern "C"
-void FUN_710195f150(s64 param_1) {
-    u64 val = **(u64**)(*(s64*)(*(s64*)(*(s64*)(param_1 + 0x58) + 0x170) + 0x80) + 0x50);
+void FUN_710195f150(EffectModuleCtx* param_1) {
+    u64 val = *param_1->container->list_alt->slot->handle;
     FUN_71037759f0(val);
 
     s32 result = FUN_710330a4a0(*(u64*)(DAT_710532e8b8 + 8), &DAT_7104544980);
