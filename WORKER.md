@@ -1,25 +1,24 @@
-# Worker: pool-e
+# Worker: pool-a
 
 ## Model: Opus
 
-## Task: Item/weapon + Lua — continue
+## Task: Effect template functions — 24 remaining, ~46 KB
 
-## Progress
-- ~30 functions: ItemKinetic (7), ItemHelpers (16), lua_acmd (7)
-- L2CValue accessors, ldrsw codegen fix, energy forwarders
+## Progress (44/68 complete, 65%)
+- 4 perfect byte matches: EFFECT_REMOVE_ATTR, EFFECT_OFF_HANDLE, LAST_EFFECT_SET_WORK_INT, EFFECT_OFF
+- Patterns: kill_all/kill_kind, req_on_joint, req_follow, FLW_POS, FLIP+hash swap, COLOR/ALPHA post-process
+- FUN_7102288620 shared parser decomped: EFFECT_COLOR, COLOR_WORK, ALPHA, FLIP, FLIP_ALPHA
+- CSE divergence: upstream Clang CSEs DAT_7104861960 loads, ~85-95% size
 
-## Continue with
-- More L2C functions in 0x71037xxx range (math_toint, etc.)
-- Medium Item functions 100-300B (accessor chain patterns)
-- lua_ai_path_builder (4,388B) if time permits
-- Try optnone for -O0 Lua functions
-
-## Blocked (don't retry)
-- NEON ItemKinetic functions, pop_lua_stack, ItemManager ctor, item_generate_position_in_rect
+## Continue with (24 remaining)
+- EFFECT, EFFECT_WORK_R, EFFECT_BRANCH_SITUATION (~10.5 KB, use FUN_7102288620)
+- EFFECT_FOLLOW_RND, FOLLOW_RND_WORK, FOLLOW_FLIP_RND (inline XOR-shift RNG, ~11.3 KB)
+- FOOT_EFFECT, FOOT_EFFECT_FLIP, LANDING_EFFECT, LANDING_EFFECT_FLIP, DOWN_EFFECT (~10.5 KB, need StageManager singleton)
+- EFFECT_GLOBAL variants (need FUN_710228ea70 + EffectManager singleton, ~4 KB)
+- EFFECT_FOLLOW_LIGHT (NEON + PostureModule, ~4 KB)
 
 ## File Territory
-- src/app/lua_acmd.cpp, weapon_params.cpp, ItemKinetic.cpp, ItemHelpers.cpp
-- include/lib/L2CValue.h
+- src/app/sv_animcmd_effect.cpp
 
 ## Quality Rules
-- optnone for -O0 Lua functions, no naked asm, 3-attempt limit
+- No naked asm, 3-attempt limit
