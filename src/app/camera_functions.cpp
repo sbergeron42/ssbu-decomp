@@ -1044,3 +1044,178 @@ extern "C" float4 get_down_point(u8* line) {
     return *(float4*)&PTR_ConstantZero_71052a7a80;
 }
 } // namespace app::ground
+
+// ---- Camera off / final camera functions ----
+
+// DAT_71045497e8 [inferred: stage kind lookup table base, stride 0x48 per entry, u32 at +8 = category]
+extern "C" u8 DAT_71045497e8 HIDDEN;
+
+// 0x71008df3f0 (188 bytes) — app::FighterSpecializer_Cloud::is_camera_off_final2
+// Checks if current stage is in the "camera off for final2" hash list.
+// [derived: disasm at 0x71008df3f0]
+// Gets stage kind via StageManager singleton stage_info vtable[0], checks category table,
+// then looks up stage hash via stage_info vtable[1] and searches a hash list in FighterParamAccessor2.
+namespace app::FighterSpecializer_Cloud {
+extern "C" bool is_camera_off_final2(void) {
+    u8* sm_inner = *(u8**)SM_INSTANCE;
+    u8* stage_info = sm_inner + 0x128;
+    u32 kind = reinterpret_cast<u32(*)(void*)>((*(void***)stage_info)[0])(stage_info);
+    // [derived: kind > 0x16b → out-of-table, always proceed to hash check]
+    // [derived: table at DAT_71045497e8, stride 0x48, u32 at +8 is category; (cat-1) < 2 → return false]
+    if (kind <= 0x16bu) {
+        u32 val = *(u32*)(&DAT_71045497e8 + (s64)(s32)kind * 0x48 + 8);
+        if ((u32)(val - 1) < 2u) return false;
+    }
+    // [derived: FighterParamAccessor2 → [+0xe00] sub-struct, loaded before second SM call]
+    u8* param_sub = *(u8**)((u8*)DAT_71052bb3b0 + 0xe00);
+    // [derived: reload SM for second vtable call — stage_info vtable[1] returns stage hash]
+    sm_inner = *(u8**)SM_INSTANCE;
+    stage_info = sm_inner + 0x128;
+    u64 stage_hash = reinterpret_cast<u64(*)(void*)>((*(void***)stage_info)[1])(stage_info);
+    // [derived: param_sub+0x1c0 = hash list start, +0x1c8 = hash list end (ldp pair)]
+    u8* list_start = *(u8**)(param_sub + 0x1c0);
+    s64 list_size = *(s64*)(param_sub + 0x1c8) - (s64)list_start;
+    if (list_size != 0) {
+        u64 i = 0;
+        s64 count = list_size >> 3;
+        // [derived: do-while loop — b.eq on size guarantees count > 0]
+        do {
+            // [derived: hash comparison masks to 40 bits (& 0xffffffffff)]
+            if (((*(u64*)(list_start + i * 8) ^ stage_hash) & 0xffffffffffULL) == 0) {
+                return true;
+            }
+            i++;
+        } while ((u64)count > i);
+    }
+    return false;
+}
+} // namespace app::FighterSpecializer_Cloud
+
+// 0x7100e2ce80 (196 bytes) — app::FighterSpecializer_Pacman::get_final_camera_pos
+// Computes final camera position by interpolating a param table based on camera scale.
+// [derived: Ghidra decompilation at 0x7100e2ce80]
+// DAT_71052b7f00+0xa94 [inferred: camera data scale factor]
+// DAT_7104471fbc [inferred: radians-to-degrees or unit conversion constant]
+// DAT_7104470d10 [inferred: degree scale divisor]
+// FighterParamAccessor2+0xc78 [inferred: final camera param sub-struct]
+// +0x4c8 [inferred: interpolation table start ptr], +0x4d0 [inferred: table end ptr]
+// Each table entry: { float threshold, float value, float slope } (12 bytes, stride 3 floats)
+// DAT_71052b7f00+0xec8 [inferred: camera min clamp], +0xa64 [inferred: camera max clamp]
+namespace app::FighterSpecializer_Pacman {
+extern "C" float get_final_camera_pos(void) {
+    u8* cam = *(u8**)DAT_71052b7f00;
+    float scale = (*(float*)(cam + 0xa94) * DAT_7104471fbc) / DAT_7104470d10;
+    u8* param_sub = *(u8**)((u8*)DAT_71052bb3b0 + 0xc78);
+    float cam_max = *(float*)(cam + 0xa64);
+    float cam_min = *(float*)(cam + 0xec8);
+    u8* table_start = *(u8**)(param_sub + 0x4c8);
+    s64 table_len = *(s64*)(param_sub + 0x4d0) - (s64)table_start;
+    float best_val = 0.0f;
+    float best_slope = 0.0f;
+    float best_thresh = 0.0f;
+    if (table_len != 0) {
+        // [derived: entry count = (len >> 2) * 0xAAAAAAAAAAAAAAAB ≡ len/12]
+        u64 count = (u64)(table_len >> 2) * 0xAAAAAAAAAAAAAAABULL;
+        u64 i = 0;
+        float* ptr = (float*)(table_start + 8);
+        // [derived: do-while with count-up — b.ne on size guarantees at least 1 entry]
+#pragma clang loop unroll(disable)
+        do {
+            float thresh = ptr[-2];
+            // [derived: fcmp scale,thresh; b.le — update only when scale > thresh]
+            if (scale > thresh) {
+                best_val = ptr[-1];
+                best_slope = ptr[0];
+                best_thresh = thresh;
+            }
+            i++;
+            ptr += 3;
+        } while (count > i);
+    }
+    float result = (scale - best_thresh) * best_slope + best_val;
+    // [derived: fcmp+fcsel mi → clamp: max(cam_min, result), then min(cam_max, that)]
+    if (result < cam_min) result = cam_min;
+    if (result > cam_max) result = cam_max;
+    return result;
+}
+} // namespace app::FighterSpecializer_Pacman
+
+// ---- Dead-up camera hit distance update ----
+
+// 0x71006977f0 [inferred: get dead-up camera hit distance params, returns bool, writes int+float outputs]
+extern "C" u64 FUN_71006977f0(void**, u32*, float*);
+
+// 0x7102280370 (124 bytes) — app::sv_fighter_util::update_dead_up_camera_hit_first_distance_group
+// Gets work module, calls FUN_71006977f0 for distance params, then sets work int + work float.
+// [derived: disasm at 0x7102280370]
+// [derived: vtable[0xa0/8] = set_work_int, vtable[0x60/8] = set_work_float]
+namespace app::sv_fighter_util {
+extern "C" bool update_dead_up_camera_hit_first_distance_group(u64 lua_state) {
+    u8* battle_obj = *(u8**)(*(u8**)(lua_state - 8) + 0x1a0);
+    void** work = *(void***)(battle_obj + 0x50);
+    u32 param_int;
+    float param_float;
+    u64 result = FUN_71006977f0(work, &param_int, &param_float);
+    // [derived: tbz w0,#0 — branch away on failure, fall through on success]
+    if (__builtin_expect(result & 1, 1)) {
+        // [derived: reload work from battle_obj+0x50 after call]
+        work = *(void***)(battle_obj + 0x50);
+        reinterpret_cast<void(*)(void**, u32, u32)>(
+            ((void**)*work)[0xa0/8])(work, param_int, 0x1100000du);
+        reinterpret_cast<void(*)(void**, u32, float)>(
+            ((void**)*work)[0x60/8])(work, 0x1000010u, param_float);
+        return true;
+    }
+    return false;
+}
+} // namespace app::sv_fighter_util
+
+// ---- Camera module accessor ----
+
+// 0x71003cb840 [derived: camera module accessor dispatch, takes module ptr + param struct]
+extern "C" void FUN_71003cb840(void*, void*);
+
+// 0x710227dbf0 (180 bytes) — app::sv_module_access::camera
+// Lua module accessor: checks battle_obj, builds param struct, dispatches to camera module.
+// [derived: disasm at 0x710227dbf0]
+// [derived: early return before prologue when battle_obj is null]
+namespace app::sv_module_access {
+extern "C" u32 camera(u64 lua_state) {
+    u64 battle_obj = *(u64*)(*(u8**)(lua_state - 8) + 0x1a0);
+    if (battle_obj == 0) return 0;
+    // [derived: stack layout: sp+0=val_ptr, sp+8=result(u32), sp+10=val(u64),
+    //  sp+18=argc(u32), sp+20=state(u64), sp+28=done(u8)]
+    u64 ctx[5];
+    u8* p = (u8*)ctx;
+    *(u64*)(p + 0x10) = 0;
+    *(u64*)(p + 0x20) = lua_state;
+    *(u8*)(p + 0x28) = 0;
+    *(u32*)(p + 0x08) = 0;
+    u64 base = *(u64*)*(u64*)(lua_state + 0x20);
+    base += 0x10;
+#ifdef MATCHING_HACK_NX_CLANG
+    asm("" : "+r"(base));
+#endif
+    *(u32*)(p + 0x18) = (u32)((*(u64*)(lua_state + 0x10) - base) >> 4);
+    *(u64*)(p + 0x00) = (u64)(p + 0x10);
+    FUN_71003cb840(*(void**)(battle_obj + 0x60), p);
+    u32 ret = *(u32*)(p + 0x08);
+    if (*(u8*)(p + 0x28) != 0 && *(u64*)(p + 0x20) != 0) {
+        u64 L = *(u64*)(p + 0x20);
+        base = *(u64*)*(u64*)(L + 0x20) + 0x10;
+        u64 top = *(u64*)(L + 0x10);
+#ifdef MATCHING_HACK_NX_CLANG
+        asm("" : "+r"(top), "+r"(base));
+#endif
+        if (top < base) {
+            do {
+                *(u64*)(L + 0x10) = top + 0x10;
+                *(u32*)(top + 8) = 0;
+                top = *(u64*)(L + 0x10);
+            } while (top < base);
+        }
+        *(u64*)(L + 0x10) = base;
+    }
+    return ret;
+}
+} // namespace app::sv_module_access
