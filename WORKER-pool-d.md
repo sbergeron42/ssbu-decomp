@@ -2,59 +2,74 @@
 
 ## Model: Opus
 
-## Task: Phase 2 — Rewrite net_frame_exchange.cpp with typed struct access
+## Task: Phase 3 — Define BossManager struct + rewrite boss-related functions
 
-## Priority: QUALITY REWRITE (not new decomp)
+## Priority: TYPE RECOVERY (struct definition + consumer rewrite)
 
 ## Context
-This file is 1,338 lines of Ghidra paste with 847 default variable names. It compiles but has zero verified matches and zero structural value. Your job is to rewrite it using the existing networking types.
+`BossManager` is a singleton (~30 raw offset references across 3+ files). Its name is confirmed from .dynsym. Functions like `is_boss_stop` access it via `DAT_71052b7ef8` → deref → inner pointer → fields. The reviewer rejects >10% cast density, and placeholder structs go in `include/app/placeholders/`.
 
 ## File Territory
-- `src/app/networking/net_frame_exchange.cpp` (REWRITE)
-- `include/app/LDNSession.h` (extend as needed)
-- `include/app/CSSState.h` (extend as needed)
-- Create new headers in `include/app/networking/` if needed
-
-## Available Struct Headers
-- `include/app/LDNSession.h` — LDN transport session, enums (~15 fields)
-- `include/app/CSSState.h` — CSS player name, serialize buffer, related types
+- `include/app/BossManager.h` (CREATE — name is .dynsym confirmed)
+- Any `src/` files with boss manager raw offset access (fighter_core.cpp, BossManager.cpp, etc.)
+- After BossManager: sweep remaining high-cast-density files and create placeholder structs for any unknown types to bring density under 10%
 
 ## What To Do
 
-### Step 1: Read the existing networking headers
-Read `include/app/LDNSession.h` and `include/app/CSSState.h` first. Also read `src/app/networking/net_session.cpp` and `src/app/networking/state_serialize.cpp` to understand how other networking files are structured.
+### Step 1: Map the BossManager struct layout
+Known from existing code:
+- Singleton at `DAT_71052b7ef8`
+- +0x8: inner pointer (to BossManagerData or similar)
+- inner+0x164: stop_count (s32, compared > 0)
 
-### Step 2: Identify the frame exchange structs
-The net_frame_exchange file deals with per-frame game state synchronization. Key patterns to look for:
-- Frame counters, sequence numbers
-- Input buffers, controller state serialization
-- Rollback/resync state
-- Player slot indexing
+Use `mcp__ghidra__search_functions_by_name` for "Boss" to find more boss functions, then decompile them to map additional fields.
 
-Define structs for the data types this file operates on.
+### Step 2: Define the struct
+```cpp
+struct BossManagerInner {
+    u8 unk_0x00[0x164];
+    s32 stop_count;         // +0x164 [derived: is_boss_stop checks > 0]
+    // ...
+};
 
-### Step 3: Rewrite with struct access
-For each function:
-1. Identify which struct type is the first parameter
-2. Map the offset accesses to struct fields
-3. Rewrite with typed field access
-4. Name fields based on usage patterns (frame counts, input data, sync flags)
+struct BossManager {
+    u8 unk_0x00[0x8];
+    BossManagerInner* inner; // +0x8 [derived: is_boss_stop derefs this]
+    // ...
+};
+```
 
-### Step 4: Delete functions you can't properly type
-DELETE opaque paste rather than keeping it. Honest gaps > fake progress.
+### Step 3: Rewrite boss functions
+Replace raw offset chains with struct access:
+```cpp
+// BEFORE:
+u8* bm = reinterpret_cast<u8*>(DAT_71052b7ef8_bm);
+u8* inner = *reinterpret_cast<u8**>(bm + 8);
+return *reinterpret_cast<s32*>(inner + 0x164) > 0;
+
+// AFTER:
+BossManager* bm = DAT_71052b7ef8_bm;
+return bm->inner->stop_count > 0;
+```
+
+### Step 4: Sweep for remaining high-density files
+After BossManager, grep `src/` for files with high reinterpret_cast density. For each unknown pointer type, create a placeholder struct in `include/app/placeholders/` and log it in `data/undefined_types.md`. Priority targets:
+- `engine_functions.cpp` (260 casts)
+- `lua_acmd.cpp` (253 casts)
+- `fighter_motion.cpp` (281 casts)
+
+Even creating `UnkType_ADDR.h` with a few known fields reduces cast count significantly.
 
 ## Rules
-- **Every named field needs a `[derived:]` or `[inferred:]` comment**
-- **NO Ghidra variable names** in final code (auto-REJECT)
-- **NO raw vtable dispatch** (auto-REJECT)
-- **Tag confidence levels**: `[confirmed]` for .dynsym-derived, `[inferred]` for usage-pattern-derived
-- **Cross-reference with other networking files** for consistent struct definitions
+- Cast density must stay under 10% or your diff gets REJECTED
+- Create placeholder structs for any new unknown types
+- Every named field needs `[derived:]` or `[inferred:]` provenance
+- Log all placeholder structs in `data/undefined_types.md`
 
-## Self-Check (MANDATORY before committing)
+## Self-Check
 ```bash
 python tools/review_diff.py pool-d
 ```
-Must have zero REJECT violations.
 
 ## Build
 ```bash
