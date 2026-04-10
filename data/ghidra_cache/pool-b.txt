@@ -879,6 +879,30 @@ MUST be inside its call chain. Remaining targets decompiled this session:
 
 Remaining targets to decompile (next pass):
   a) FUN_7103593c40   DONE (not sim, see above)
+  b) FUN_71035c13d0   DONE — graphics event dispatcher (not sim):
+     - Gated on dirty flags [param_1+0x160]/[+0x161]; if set, acquires a
+       GraphicsModule buffer and copies 4-u32 rect (viewport?) from
+       [param_1+0x140..0x15c] into buffer[+0x80..+0x9c] — viewport/scissor
+       update.
+     - Nested iteration dispatch:
+         for event in queue_A [param_1+0x60..+0x68] stride 0x40:
+             for listener in list [param_1+0x08..+0x10] stride 0x10:
+                 shared_ptr::lock(listener_weak)
+                 (*listener->vtable[+0x38])(event.data[0..3], listener, &ev)
+         for event in queue_B [param_1+0x78..+0x80] stride 0x30:
+             for listener in same list:
+                 shared_ptr::lock
+                 (*listener->vtable[+0x40])(event.f0, event.f1, listener, event.f2)
+     - Optional one-time flush (flag at +0x130) calls FUN_71035bda90 per
+       subscriber.
+     - Resets queue_A and queue_B at end: [+0x68]=[+0x60], [+0x80]=[+0x78]
+     Classic observer-pattern dispatcher for graphics events (window
+     resize / surface change / display mode). The two-queue shape with
+     stride 0x40 and 0x30 is not a fighter-list iteration. NOT sim.
+     (Interestingly: this is the same SHAPE rollback's sim advance would
+     have — "for each entity, call update via vtable" — but here the
+     vtable slots +0x38/+0x40 belong to graphics listeners, and the
+     nu::GraphicsModule::Instance() call at entry nails it.)
   b) FUN_71035c13d0   (1048B, phase 6)  ← unknown
   c) FUN_71036186d0   (1188B, phase 7)  ← unknown
   d) FUN_7103619080   (432B,  phase 7)  ← unknown (Event A neighborhood)
