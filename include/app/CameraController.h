@@ -19,12 +19,23 @@ struct CameraController {
     u32 quake_array[82];               // +0x2DC [derived: indexed by kind in stop_quake/request_quake]
     u8 unk_0x424[0x400];               // +0x424
     u32 quake_bitmask;                 // +0x824 [derived: bitfield cleared in stop_quake]
-    u8 unk_0x828[0x408];               // +0x828
+    u8 unk_0x828[0x3D8];               // +0x828
 
-    // -- Dead range (0xC30) --
+    // -- Camera range rect (0xC00–0xC0C) --
+    float camera_range_left;           // +0xC00 [derived: get_camera_range_center_pos reads left/right/top/bottom]
+    float camera_range_right;          // +0xC04 [derived: get_camera_range_center_pos]
+    float camera_range_top;            // +0xC08 [derived: get_camera_range_center_pos]
+    float camera_range_bottom;         // +0xC0C [derived: get_camera_range_center_pos]
+    u8 unk_0xC10[0x20];                // +0xC10
+
+    // -- Dead area / dead range (0xC30–0xC5F) --
     float dead_range_neg;              // +0xC30 [inferred: dead range negative boundary, used in gravity rotation]
     float dead_range_pos;              // +0xC34 [inferred: dead range positive boundary, used in gravity rotation]
-    u8 unk_0xC38[0x64];                // +0xC38
+    float dead_area_top;               // +0xC38 [derived: third component of dead_area rect in get_dead_area/get_dead_range]
+    float dead_area_bottom;            // +0xC3C [derived: fourth component of dead_area rect in get_dead_area/get_dead_range]
+    u8 unk_0xC40[0x10];                // +0xC40
+    float shrinked_dead_range[4];      // +0xC50 [derived: shrinked dead range rect in get_shrinked_dead_range]
+    u8 unk_0xC60[0x3C];                // +0xC60
 
     s32 camera_ref_count;              // +0xC9C [derived: incremented/decremented in add/remove_camera_reference]
     u8 unk_0xCA0[0x210];               // +0xCA0

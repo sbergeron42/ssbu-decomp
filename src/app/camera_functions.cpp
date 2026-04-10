@@ -530,11 +530,11 @@ typedef float float4 __attribute__((vector_size(16)));
 // +0xc00 camera_range left, +0xc04 right, +0xc08 top, +0xc0c bottom
 namespace app::flyandhand {
 extern "C" float4 get_camera_range_center_pos(void) {
-    u8* inner = *(u8**)DAT_71052b7f00;
-    float left   = *(float*)(inner + 0xc00);
-    float right  = *(float*)(inner + 0xc04);
-    float top    = *(float*)(inner + 0xc08);
-    float bottom = *(float*)(inner + 0xc0c);
+    auto* ctrl = (app::CameraController*)(*(u8**)DAT_71052b7f00);
+    float left   = ctrl->camera_range_left;
+    float right  = ctrl->camera_range_right;
+    float top    = ctrl->camera_range_top;
+    float bottom = ctrl->camera_range_bottom;
     float cx = left + (right - left) * 0.5f;
     float cy = top + (bottom - top) * 0.5f;
     float4 r = {0};
@@ -880,12 +880,12 @@ extern "C" float4 get_rotation_with_calc_camera_direction(void) {
 // [derived: disasm shows ldr s0 + ld1 {v0.s}[1-3] per-element load pattern]
 namespace app::camera {
 extern "C" float4 get_dead_area(void) {
-    u8* inner = *(u8**)DAT_71052b7f00;
+    auto* ctrl = (app::CameraController*)(*(u8**)DAT_71052b7f00);
     float4 r;
-    r[0] = *(float*)(inner + 0xc30);
-    r[1] = *(float*)(inner + 0xc34);
-    r[2] = *(float*)(inner + 0xc38);
-    r[3] = *(float*)(inner + 0xc3c);
+    r[0] = ctrl->dead_range_neg;
+    r[1] = ctrl->dead_range_pos;
+    r[2] = ctrl->dead_area_top;
+    r[3] = ctrl->dead_area_bottom;
     return r;
 }
 } // namespace app::camera
@@ -894,12 +894,12 @@ extern "C" float4 get_dead_area(void) {
 // [derived: same per-element pattern, reads +0xc30..+0xc3c]
 namespace app::shiokarazu {
 extern "C" float4 get_dead_range(void) {
-    u8* inner = *(u8**)DAT_71052b7f00;
+    auto* ctrl = (app::CameraController*)(*(u8**)DAT_71052b7f00);
     float4 r;
-    r[0] = *(float*)(inner + 0xc30);
-    r[1] = *(float*)(inner + 0xc34);
-    r[2] = *(float*)(inner + 0xc38);
-    r[3] = *(float*)(inner + 0xc3c);
+    r[0] = ctrl->dead_range_neg;
+    r[1] = ctrl->dead_range_pos;
+    r[2] = ctrl->dead_area_top;
+    r[3] = ctrl->dead_area_bottom;
     return r;
 }
 } // namespace app::shiokarazu
@@ -908,12 +908,12 @@ extern "C" float4 get_dead_range(void) {
 // [derived: reads +0xc50..+0xc5c]
 namespace app::shiokarazu {
 extern "C" float4 get_shrinked_dead_range(void) {
-    u8* inner = *(u8**)DAT_71052b7f00;
+    auto* ctrl = (app::CameraController*)(*(u8**)DAT_71052b7f00);
     float4 r;
-    r[0] = *(float*)(inner + 0xc50);
-    r[1] = *(float*)(inner + 0xc54);
-    r[2] = *(float*)(inner + 0xc58);
-    r[3] = *(float*)(inner + 0xc5c);
+    r[0] = ctrl->shrinked_dead_range[0];
+    r[1] = ctrl->shrinked_dead_range[1];
+    r[2] = ctrl->shrinked_dead_range[2];
+    r[3] = ctrl->shrinked_dead_range[3];
     return r;
 }
 } // namespace app::shiokarazu
