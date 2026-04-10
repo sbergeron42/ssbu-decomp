@@ -645,3 +645,31 @@ Other globals touched by this function (peripheral):
   DAT_71053381f8 — a Hash40 key used for FUN_7103569a80 lookup
   DAT_7105334e90 — another singleton/ptr chain (deref → +8 → +0x1190 → +0x28 → +8 = 0xFFFFFFFF)
 
+
+=== 0x71003aeb50 FUN_71003aeb50 — BattleObject return-to-pool ===
+5-case switch on (id >> 0x1c & 0xf). For each case cat:
+  slot_index = (id >> 0x10) & 0xfff   (12 bits)
+  PoolHeader = DAT_71052b7548[cat]
+  if slot_index >= *(u32*)(PoolHeader + 0x18) → invalid
+  obj_ptr = *(PoolHeader+8) + slot_index * category_stride
+  if *(u32*)(obj_ptr+8) != full_id → invalid
+  (*vtable[0x50/8])(obj_ptr)  // category destroy
+  // then push to freelist:
+  freelist_slot = (obj_ptr - *(PoolHeader+8)) / stride
+  freelist_array = *(PoolHeader + 0x10) (u16[])
+  freelist_array[*(u16*)(PoolHeader+0x1c)] = prev_head
+  *(u16*)(PoolHeader+0x1c) = freelist_slot (new top)
+  *(s16*)(PoolHeader+0x1e) -= 1
+
+→ PoolHeader layout:
+  +0x00 vtable
+  +0x08 obj_array_base
+  +0x10 freelist u16[] stack
+  +0x18 obj_count (u32) — POOL CAPACITY (still not directly observed, but <65536 proven)
+  +0x1c freelist_head (u16) — top of free-index stack
+  +0x1e freelist_count (s16) — count in freelist; alive = obj_count - freelist_count
+
+Strides confirmed again (matches get_battle_object_from_id):
+  cat0 0xf940 (fighter), cat1 0x3c30 (weapon), cat2 0x60c0 (item),
+  cat3 0x300 (enemy?), cat4 0x2b0 (area?)
+

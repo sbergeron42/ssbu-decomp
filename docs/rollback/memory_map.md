@@ -86,7 +86,22 @@ The mismatch almost certainly originated because Ghidra's symbol labeling applie
 
 ## BattleObject Pool Sizes (the largest per-match region)
 
-`get_battle_object_from_id @ 0x71003ac560` reveals the per-category object sizes hard-coded in the dispatch switch. Each category has a `PoolHeader` with `+0x08: obj_array_base`, `+0x18: obj_count`. Object lookup is `base + (id_low12 * obj_stride)`.
+`get_battle_object_from_id @ 0x71003ac560` reveals the per-category object sizes hard-coded in the dispatch switch. Each category has a `PoolHeader` with the layout recovered below. Object lookup is `base + (id_low12 * obj_stride)`.
+
+### PoolHeader layout (≥ 0x20 B)
+
+Recovered from `FUN_71003aeb50` (the "return object to pool" path called when a BattleObject dies). Each of the 5 `PoolHeader*` slots in `DAT_71052b7548[]` points to one of these:
+
+```
++0x00  vtable_ptr            (dispatch to category-specific destroy in slot +0x50)
++0x08  obj_array_base        (pointer to the flat obj[] array, stride = category stride)
++0x10  freelist_index_array  (pointer to a u16[] — free-slot indices, LIFO stack)
++0x18  obj_count (u32)       // THE number we actually need — capacity of the pool
++0x1c  freelist_head (u16)   // top-of-stack index for next free slot
++0x1e  freelist_count (s16)  // decremented on free, so alive_count = obj_count - freelist_count
+```
+
+The `+0x18` obj_count field is what determines worst-case pool bytes. Extraction status: **still not directly read** (would require decoding `FUN_7101344cf0`, 31 KB). However, the dispatcher math constants in `FUN_71003aeb50` give us an indirect clue: cases 0 and 2 divide a byte offset by `0xf940`/`0x60c0` via magic-number reciprocal multiplication (respectively `0x41bbb2f80a4553f7` shifted 0xe, `0xa957fab5402a55ff` shifted 0xe, etc.) and the result is masked to 16 bits → `uVar9 & 0xffff`. This proves **obj_count per category < 65536**, which is weak but consistent with our ≤ 256 guesstimates.
 
 | Cat | Dispatch bits (id >> 28 & 0xF) | Object stride | Dominant usage | Max per-match instances (estimated) |
 |---|---|---|---|---|
@@ -228,7 +243,7 @@ Things I confirmed are built once at startup or match-load and then never writte
 2. **Exact BattleObject pool instance counts**: `+0x18` count fields of the 5 PoolHeaders are set somewhere in `FUN_7101344cf0` (BattleObjectManager init, 31 KB). Extracting them gives us exact worst-case pool sizes.
 3. ~~**EffectManager layout**~~ **Resolved (2026-04-10)**: record stride 0x300 B, max 256 entries, top-byte generational indexing. Worst case 768 KB. See §5 above. Still unknown: whether adjacent `.data` slots at `DAT_71053339xx` hold parallel pools (sound FX, trail meshes).
 4. **Lua VM size per fighter**: the wrapper struct at `lua_state - 8` is a `lib::L2CAgent` (`include/lib/L2CAgent.h`, sizeof=0x38), which holds the `lua_State*` at `+0x08` and the owning `BattleObject*` at `+0x1A0` of an outer struct. The `lua_State` itself (jemalloc-allocated in `lua_newstate`) is opaque; empirical sizing is the only realistic path (allocate a VM, instrument `je_aligned_alloc`, count reachable bytes). Estimate budget remains ~32 KB/fighter × 8 = **~256 KB** pending measurement.
-5. **Sound system mutable state**: not investigated. Some rollback implementations explicitly *do not* rewind audio, trading a minor audio blip for a huge state reduction. Worth documenting as an opt-out.
+5. **Sound system mutable state**: no `app::SoundManager` or `lib::SoundManager` singleton exists in the .dynsym; every sound accessor is a `SoundModule__*_impl` (see `0x7102081940..0x7102081ce0`) operating on the per-BattleObject `SoundModule` sub-object (module accessor offset `+0x148`). This means **there is no top-level sound state to snapshot separately** — all per-fighter sound state is already inside the BattleObject pool, captured by §1. The only open cost is the *audio engine's* playing-voice table, which lives behind the NintendoSDK `nn::atk` library and is likely impractical to rewind. Recommended default: **do not rewind audio**, advance it monotonically. This is the same trade-off Slippi makes for Melee's DSP state.
 6. ~~**`BattleObjectWorld` global state root address**~~ **Resolved (2026-04-10)**: `lib::Singleton<app::BattleObjectWorld>::instance_` = `0x71052b7558`. Struct ≥ 0x60 B, ≤ 0x100 B conservative. See §8 above.
 7. ~~**Higher RNG stream offsets in `*DAT_71052c25b0`**~~ **Resolved (2026-04-10)**: full decompile of `app::sv_math::rand @ 0x7102275400` dispatcher confirms exactly **9 streams, highest offset +0xb0**. Minimum snapshot body = 180 B. No further streams reachable from the rand path.
 
