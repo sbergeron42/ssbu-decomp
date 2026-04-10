@@ -1340,6 +1340,53 @@ pool has identified what type lives at `+0x24e8`. That needs one of:
    if the singleton has a struct type attached, but since
    `DAT_710593a6a0` is still `undefined *`, those xrefs don't exist yet.
 
+### Dispatcher A — the double-deref chain, read literally
+
+Re-reading `asm/ghidra_FUN_7103747270.c` line 558 after the identity rollback:
+
+```c
+lVar48 = *(long *)(**(long **)(&DAT_000024e8 + *DAT_710593a6a0) + 0x2da8);
+```
+
+Ghidra's `&DAT_000024e8` is a fabricated "cast constant to pointer" artifact; in
+real C the expression is:
+
+```c
+//   mii    = the Mii manager instance (singleton)
+//   P1     = raw pointer stored on the Mii manager at +0x24e8
+//   Y      = the object whose address is stored as the FIRST QWORD of P1
+//   list   = Y + 0x2da8 (circular list head with sentinel pair at +0x30/+0x38)
+app::FighterMiiManager *mii = *DAT_710593a6a0;
+void          **P1   = *(void ***)((char *)mii + 0x24e8);
+void           *Y    = *P1;                           // load first qword of *P1
+list_head_t    *list = (list_head_t *)((char *)Y + 0x2da8);
+```
+
+So the chain is **three** loads deep from `DAT_710593a6a0`: (i) load the
+singleton pointer, (ii) load `mii->field_0x24e8`, (iii) load `*field_0x24e8`.
+That extra indirection level is the giveaway that `+0x24e8` is a
+*pointer-to-handle*, not a direct owning pointer:
+
+- Candidate (a): `+0x24e8` holds a `std::shared_ptr<Y>*` — i.e. the Mii
+  manager holds a pointer into someone else's shared_ptr (control block +
+  data pair). Reading the first qword of a `shared_ptr` returns the
+  `data_ptr` (= `Y`).
+- Candidate (b): `+0x24e8` holds a `ReferenceWrapper<Y>*` — a thin wrapper
+  struct whose first field is `Y*`.
+- Candidate (c): `+0x24e8` holds the address of another bss global that
+  holds `Y*` (a pointer to a pointer — unusual, but possible if the Mii
+  manager caches the address of e.g. `&DAT_710593a530` or a similar globals
+  bank).
+
+All three candidates are consistent with the destructor's refusal to touch
+`+0x24e8` — in none of them is `+0x24e8` owning the pointee.
+
+The same `main_loop` function only contains **one** read of
+`DAT_710593a6a0` (grep of `asm/ghidra_FUN_7103747270.c` shows line 558 is
+the sole match). So Dispatcher A is the only place in `main_loop` that
+reaches through the Mii manager at all; the rest of `main_loop`'s
+subsystems are reached through their own globals.
+
 ### Pool B pass notes / artifacts
 
 - Full decompile of `FUN_71022cd350` (145 KB) is cached in the harness
