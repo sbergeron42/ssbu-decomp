@@ -5,6 +5,15 @@
 #include "app/modules/WorkModule.h"
 #include "app/BattleObjectModuleAccessor.h"
 #include "app/CameraController.h"
+#include "app/placeholders/StageBase.h"
+#include "app/placeholders/StageEnd.h"
+#include "app/placeholders/StageFlatZoneX.h"
+#include "app/placeholders/StageStreetPass.h"
+#include "app/placeholders/StageDuckHunt.h"
+#include "app/placeholders/StageLuigiMansion.h"
+#include "app/placeholders/StageWreckingCrew.h"
+#include "app/placeholders/StagePilotwings.h"
+#include "app/placeholders/StagePictochat2.h"
 
 // ---- ~CameraQuake destructor ----
 // 0x7100515190 (3,192 bytes)
@@ -265,28 +274,37 @@ extern "C" void request_quake(u64 lua_state, u32 kind) {
 extern "C" u8 PTR_LAB_71050e7a18;
 extern "C" void FUN_7102837e00(void*);
 extern "C" void FUN_7102834b90(void*);
-extern "C" void FUN_71025e55a0(void*);
+// FUN_71025e55a0 [derived: ~StageBattleBase — intermediate destructor between StageBase and StageEnd]
+// Sets vtable PTR_LAB_71050c4d70, releases +0x768 (with cleanup), +0x750 (vector-style),
+// +0x740 (shared_ptr with embedded ref). Tail-calls StageBase dtor.
+extern "C" void FUN_71025e55a0(StageBase*);
 
-extern "C" void FUN_71028350b0(u64* param_1) {
-    *param_1 = (u64)&PTR_LAB_71050e7a18;
+// Forward-declare cleanup function for StageBattleBase +0x768
+extern "C" void FUN_71025f5c90(u64);
 
-    u64 p3 = param_1[0x123];
-    param_1[0x123] = 0;
-    if (p3 != 0) FUN_710392e590((void*)p3);
+extern "C" void FUN_71028350b0(StageEnd* self) {
+    self->vtable = reinterpret_cast<void**>(&PTR_LAB_71050e7a18);
 
-    u64 p2 = param_1[0x122];
-    param_1[0x122] = 0;
-    if (p2 != 0) FUN_710392e590((void*)p2);
+    // Release owned ptr at +0x918 [derived: StageEnd field]
+    void* p3 = self->owned_0x918;
+    self->owned_0x918 = nullptr;
+    if (p3 != nullptr) FUN_710392e590(p3);
 
-    u64 p1 = param_1[0x121];
-    param_1[0x121] = 0;
-    if (p1 != 0) {
-        FUN_7102837e00((void*)p1);
-        FUN_710392e590((void*)p1);
+    // Release owned ptr at +0x910 [derived: StageEnd field]
+    void* p2 = self->owned_0x910;
+    self->owned_0x910 = nullptr;
+    if (p2 != nullptr) FUN_710392e590(p2);
+
+    // Release owned object at +0x908 [derived: cleanup via FUN_7102837e00]
+    void* p1 = self->owned_0x908;
+    self->owned_0x908 = nullptr;
+    if (p1 != nullptr) {
+        FUN_7102837e00(p1);
+        FUN_710392e590(p1);
     }
 
-    FUN_7102834b90(param_1 + 0xef);
-    FUN_71025e55a0(param_1);
+    FUN_7102834b90(self->embedded_sub_0x778);  // Embedded sub-object cleanup
+    FUN_71025e55a0(self);                       // ~StageBattleBase
 }
 
 // ---- Camera user operation functions ----
@@ -1311,7 +1329,7 @@ extern "C" void revert_camera_7101654b60(void) {
 // ---- Stage destructors ----
 
 // FUN_71025d7310 [derived: StageBase::~StageBase common destructor chain, tail-called by all stage dtors]
-extern "C" void FUN_71025d7310(void*);
+extern "C" void FUN_71025d7310(StageBase*);
 
 // ---- ~StageNintendogs (0x7102ccf720, 136 bytes) ----
 // Sets vtable, releases sub-object at +0x738 (3 inner ptrs at +0x790, +0x788, +0x780),
@@ -1322,11 +1340,12 @@ extern "C" void FUN_71025d7310(void*);
 extern "C" u8 PTR_LAB_710512e5e0 HIDDEN;
 extern "C" void FUN_7102ccf300(u64);
 
-extern "C" void FUN_7102ccf720(u64* param_1)
+extern "C" void FUN_7102ccf720(StageBase* param_1)
 {
-    u64 sub = param_1[0xe7];  // +0x738
-    *(void**)param_1 = &PTR_LAB_710512e5e0;
-    param_1[0xe7] = 0;
+    u64* p = reinterpret_cast<u64*>(param_1);
+    u64 sub = p[0xe7];  // +0x738 [derived: StageNintendogs sub-object]
+    param_1->vtable = reinterpret_cast<void**>(&PTR_LAB_710512e5e0);
+    p[0xe7] = 0;
     if (sub != 0) {
         // Release sub-objects at +0x790, +0x788 via vtable[1]
         u64 p790 = *(u64*)(sub + 0x790);
@@ -1360,52 +1379,51 @@ extern "C" void FUN_7102ccf720(u64* param_1)
 // PTR_LAB_71050f2f78 [derived: StageFlatZoneX vtable]
 extern "C" u8 PTR_LAB_71050f2f78 HIDDEN;
 
-extern "C" void FUN_71029240a0(u64* param_1)
+extern "C" void FUN_71029240a0(StageFlatZoneX* self)
 {
-    *(void**)param_1 = &PTR_LAB_71050f2f78;
+    self->vtable = reinterpret_cast<void**>(&PTR_LAB_71050f2f78);
 
-    // Release unique_ptr at +0xc78
-    u64 uptr = param_1[0xc78 / 8];
-    param_1[0xc78 / 8] = 0;
-    if (uptr != 0) {
-        reinterpret_cast<void(*)(u64)>((*(void***)(u64*)uptr)[1])(uptr);
+    // Release unique_ptr at +0xC78 [derived: StageFlatZoneX field]
+    void* uptr = self->unique_ptr_0xC78;
+    self->unique_ptr_0xC78 = nullptr;
+    if (uptr != nullptr) {
+        reinterpret_cast<void(*)(void*)>((*(void***)(uptr))[1])(uptr);
     }
 
     // Destroy vector at +0x850..+0x858 (elements are 0x18 bytes each)
-    // [derived: Ghidra shows plVar1/plVar2 reuse pattern, plVar1 used as final free arg]
-    u64* plVar2 = (u64*)param_1[0x850 / 8];
-    if (plVar2 != nullptr) {
-        u64* plVar1 = (u64*)param_1[0x858 / 8];
-        if (plVar1 == plVar2) {
-            param_1[0x858 / 8] = (u64)plVar2;
-            plVar1 = plVar2;
+    u64* vec_data = (u64*)self->vec_begin_0x850;
+    if (vec_data != nullptr) {
+        u64* vec_end = (u64*)self->vec_end_0x858;
+        if (vec_end == vec_data) {
+            self->vec_end_0x858 = (void*)vec_data;
+            vec_end = vec_data;
         } else {
-            u64* iter = plVar1;
+            u64* iter = vec_end;
             do {
-                u64* plVar3 = iter - 3;
-                u64 elem = *plVar3;
+                u64* prev = iter - 3;
+                u64 elem = *prev;
                 if (elem != 0) {
                     iter[-2] = elem;
                     FUN_710392e590((void*)elem);
                 }
-                iter = plVar3;
-            } while (plVar2 != iter);
-            plVar1 = (u64*)param_1[0x850 / 8];
-            param_1[0x858 / 8] = (u64)plVar2;
+                iter = prev;
+            } while (vec_data != iter);
+            vec_end = (u64*)self->vec_begin_0x850;
+            self->vec_end_0x858 = (void*)vec_data;
         }
-        if (plVar1 != nullptr) {
-            FUN_710392e590(plVar1);
+        if (vec_end != nullptr) {
+            FUN_710392e590(vec_end);
         }
     }
 
-    // Free allocation at +0x830
-    u64 alloc = param_1[0x830 / 8];
-    if (alloc != 0) {
-        param_1[0x838 / 8] = alloc;
-        FUN_710392e590((void*)alloc);
+    // Free allocation at +0x830 [derived: StageFlatZoneX field]
+    void* alloc = self->alloc_0x830;
+    if (alloc != nullptr) {
+        self->end_0x838 = alloc;
+        FUN_710392e590(alloc);
     }
 
-    FUN_71025d7310(param_1);
+    FUN_71025d7310(self);
 }
 
 // ---- ~StageStreetPass (0x7102f33f20, 192 bytes) ----
@@ -1416,59 +1434,399 @@ extern "C" void FUN_71029240a0(u64* param_1)
 // PTR_LAB_71051520f8 [derived: StageStreetPass vtable]
 extern "C" u8 PTR_LAB_71051520f8 HIDDEN;
 
-extern "C" void FUN_7102f33f20(u64* param_1)
+extern "C" void FUN_7102f33f20(StageStreetPass* self)
 {
-    *(void**)param_1 = &PTR_LAB_71051520f8;
+    self->vtable = reinterpret_cast<void**>(&PTR_LAB_71051520f8);
 
-    // Release unique_ptr at +0x950
-    // [derived: disasm shows cbz after ldr, then blr, then str xzr (store after release)]
-    u64 uptr = param_1[0x950 / 8];
-    if (uptr != 0) {
-        reinterpret_cast<void(*)(u64)>((*(void***)(u64*)uptr)[1])(uptr);
-        param_1[0x950 / 8] = 0;
+    // Release unique_ptr at +0x950 [derived: StageStreetPass field]
+    void* uptr = self->unique_ptr_0x950;
+    if (uptr != nullptr) {
+        reinterpret_cast<void(*)(void*)>((*(void***)(uptr))[1])(uptr);
+        self->unique_ptr_0x950 = nullptr;
     }
 
     // Destroy vector at +0x908..+0x910 (elements 0x18 bytes)
-    u64* plVar2 = (u64*)param_1[0x908 / 8];
-    if (plVar2 != nullptr) {
-        u64* plVar1 = (u64*)param_1[0x910 / 8];
-        if (plVar1 == plVar2) {
-            param_1[0x910 / 8] = (u64)plVar2;
-            plVar1 = plVar2;
+    u64* vec_data = (u64*)self->vec_begin_0x908;
+    if (vec_data != nullptr) {
+        u64* vec_end = (u64*)self->vec_end_0x910;
+        if (vec_end == vec_data) {
+            self->vec_end_0x910 = (void*)vec_data;
+            vec_end = vec_data;
         } else {
-            u64* iter = plVar1;
+            u64* iter = vec_end;
             do {
-                u64* plVar3 = iter - 3;
-                u64 elem = *plVar3;
+                u64* prev = iter - 3;
+                u64 elem = *prev;
                 if (elem != 0) {
                     iter[-2] = elem;
                     FUN_710392e590((void*)elem);
                 }
-                iter = plVar3;
-            } while (plVar2 != iter);
-            plVar1 = (u64*)param_1[0x908 / 8];
-            param_1[0x910 / 8] = (u64)plVar2;
+                iter = prev;
+            } while (vec_data != iter);
+            vec_end = (u64*)self->vec_begin_0x908;
+            self->vec_end_0x910 = (void*)vec_data;
         }
-        if (plVar1 != nullptr) {
-            FUN_710392e590(plVar1);
+        if (vec_end != nullptr) {
+            FUN_710392e590(vec_end);
         }
     }
 
-    // Free allocation at +0x8b8
-    u64 alloc1 = param_1[0x8b8 / 8];
-    if (alloc1 != 0) {
-        param_1[0x8c0 / 8] = alloc1;
-        FUN_710392e590((void*)alloc1);
+    // Free allocation at +0x8b8 [derived: StageStreetPass field]
+    void* alloc1 = self->alloc_0x8b8;
+    if (alloc1 != nullptr) {
+        self->end_0x8c0 = alloc1;
+        FUN_710392e590(alloc1);
     }
 
-    // Free allocation at +0x898
-    u64 alloc2 = param_1[0x898 / 8];
-    if (alloc2 != 0) {
-        param_1[0x8a0 / 8] = alloc2;
-        FUN_710392e590((void*)alloc2);
+    // Free allocation at +0x898 [derived: StageStreetPass field]
+    void* alloc2 = self->alloc_0x898;
+    if (alloc2 != nullptr) {
+        self->end_0x8a0 = alloc2;
+        FUN_710392e590(alloc2);
     }
 
-    FUN_71025d7310(param_1);
+    FUN_71025d7310(self);
+}
+
+// ---- ~StageDuckHunt (0x7102826d30, 212 bytes) ----
+// Directly inherits from StageBase (no intermediate class).
+// Frees 4 vector pairs at +0x740, +0x788, +0x810, +0x828,
+// owned sub-object at +0x850, complex sub-object at +0x858,
+// and 3 simple ptrs at +0x860, +0x868, +0x870.
+// Tail-calls StageBase dtor.
+// [derived: Ghidra decompilation at 0x7102826d30]
+
+// PTR_LAB_71050e6d60 [derived: StageDuckHunt vtable]
+extern "C" u8 PTR_LAB_71050e6d60 HIDDEN;
+
+extern "C" void FUN_7102826d30(StageDuckHunt* self)
+{
+    self->vtable = reinterpret_cast<void**>(&PTR_LAB_71050e6d60);
+
+    // Free simple ptrs at +0x870, +0x868, +0x860
+    if (self->owned_0x870 != nullptr) FUN_710392e590(self->owned_0x870);
+    if (self->owned_0x868 != nullptr) FUN_710392e590(self->owned_0x868);
+    if (self->owned_0x860 != nullptr) FUN_710392e590(self->owned_0x860);
+
+    // Complex sub-object at +0x858 (has inner allocs at +0x40, +0x58, +0x70)
+    DuckHuntSubObj* sub = self->complex_sub_0x858;
+    if (sub != nullptr) {
+        if (sub->inner_alloc_0x70 != nullptr) FUN_710392e590(sub->inner_alloc_0x70);
+        if (sub->inner_alloc_0x58 != nullptr) FUN_710392e590(sub->inner_alloc_0x58);
+        if (sub->inner_alloc_0x40 != nullptr) FUN_710392e590(sub->inner_alloc_0x40);
+        FUN_710392e590(sub);
+    }
+
+    // Owned object at +0x850 (clears fields before free)
+    DuckHuntOwnedObj* obj = self->owned_obj_0x850;
+    if (obj != nullptr) {
+        obj->field_0x20 = 0;
+        obj->field_0x28 = 0;
+        FUN_710392e590(obj);
+    }
+
+    // 4 vector-style begin/end frees
+    if (self->vec3_begin != nullptr) {
+        self->vec3_end = self->vec3_begin;
+        FUN_710392e590(self->vec3_begin);
+    }
+    if (self->vec2_begin != nullptr) {
+        self->vec2_end = self->vec2_begin;
+        FUN_710392e590(self->vec2_begin);
+    }
+    if (self->vec1_begin != nullptr) {
+        self->vec1_end = self->vec1_begin;
+        FUN_710392e590(self->vec1_begin);
+    }
+    if (self->vec0_begin != nullptr) {
+        self->vec0_end = self->vec0_begin;
+        FUN_710392e590(self->vec0_begin);
+    }
+
+    FUN_71025d7310(self);
+}
+
+// ---- ~StageLuigiMansion (0x7102ada090, 288 bytes) ----
+// Directly inherits from StageBase.
+// Releases 2 shared_ptrs, 2 owned containers, zeros 4 fields, tail-calls StageBase dtor.
+// [derived: Ghidra decompilation at 0x7102ada090]
+
+// PTR_LAB_710510dcf0 [derived: StageLuigiMansion vtable]
+extern "C" u8 PTR_LAB_710510dcf0 HIDDEN;
+
+extern "C" void FUN_7102ada090(StageLuigiMansion* self)
+{
+    self->vtable = reinterpret_cast<void**>(&PTR_LAB_710510dcf0);
+
+    // Release shared_ptr at +0x858 [derived: StageLuigiMansion field]
+    RELEASE_SHARED_PTR(self, 0x858);
+
+    // Release shared_ptr at +0x830 [derived: StageLuigiMansion field]
+    self->data_0x848 = 0;
+    self->data_0x840 = 0;
+    RELEASE_SHARED_PTR(self, 0x830);
+
+    // Release owned container at +0x820 [derived: StageLuigiMansion field]
+    long* c820 = (long*)self->container_0x820;
+    self->container_0x820 = nullptr;
+    if (c820 != nullptr) {
+        u64 inner = *c820;
+        *c820 = 0;
+        if (inner != 0) FUN_710392e590((void*)inner);
+        FUN_710392e590(c820);
+    }
+
+    // Release owned container at +0x818 (has inner ptr at +0x68)
+    long* c818 = (long*)self->container_0x818;
+    self->container_0x818 = nullptr;
+    if (c818 != nullptr) {
+        u64 inner = *c818;
+        *c818 = 0;
+        if (inner != 0) {
+            long* sub68 = *(long**)(inner + 0x68);
+            *(u64*)(inner + 0x68) = 0;
+            if (sub68 != nullptr) {
+                reinterpret_cast<void(*)(long*)>((*(void***)(sub68))[1])(sub68);
+            }
+            FUN_710392e590((void*)inner);
+        }
+        FUN_710392e590(c818);
+    }
+
+    // Zero-clear derived fields at +0x7D8, +0x7D0, +0x7C8, +0x7C0
+    self->data_0x7D8 = nullptr;
+    self->data_0x7D0 = nullptr;
+    self->data_0x7C8 = nullptr;
+    self->data_0x7C0 = nullptr;
+
+    FUN_71025d7310(self);
+}
+
+// ---- ~StageWreckingCrew (0x7102fe2330, 300 bytes) ----
+// Directly inherits from StageBase.
+// Frees 9 owned sub-objects (each with custom cleanup functions),
+// plus 1 owned container. Calls embedded sub cleanup at +0x738.
+// [derived: Ghidra decompilation at 0x7102fe2330]
+
+// PTR_LAB_710515d6e0 [derived: StageWreckingCrew vtable]
+extern "C" u8 PTR_LAB_710515d6e0 HIDDEN;
+extern "C" void FUN_7102fed000(void*);
+extern "C" void FUN_7102ff2e20(void*);
+extern "C" void FUN_7102ff2520(void*);
+extern "C" void FUN_7102feb430(void*);
+extern "C" void FUN_7102ff02b0(void*);
+extern "C" void FUN_7102ff2b40(void*);
+extern "C" void FUN_7102ff1420(void*);
+extern "C" void FUN_7102fe2250(u64*);
+
+extern "C" void FUN_7102fe2330(StageWreckingCrew* self)
+{
+    self->vtable = reinterpret_cast<void**>(&PTR_LAB_710515d6e0);
+
+    // Free 9 owned sub-objects from +0xAF0 down to +0xAB0
+    void* v;
+
+    v = self->owned_0xAF0;
+    if (v != nullptr) { FUN_7102fed000(v); FUN_710392e590(v); }
+    v = self->owned_0xAE8;
+    if (v != nullptr) { FUN_710392e590(v); }
+    v = self->owned_0xAE0;
+    if (v != nullptr) { FUN_7102ff2e20(v); FUN_710392e590(v); }
+    v = self->owned_0xAD8;
+    if (v != nullptr) { FUN_7102ff2520(v); FUN_710392e590(v); }
+    v = self->owned_0xAD0;
+    if (v != nullptr) { FUN_7102feb430(v); FUN_710392e590(v); }
+    v = self->owned_0xAC8;
+    if (v != nullptr) { FUN_7102ff02b0(v); FUN_710392e590(v); }
+
+    // Container at +0xAC0 with inner buffer at +0x10
+    ContainerWithBuf10* cont_ac0 = self->container_0xAC0;
+    if (cont_ac0 != nullptr) {
+        void* inner = cont_ac0->buffer_begin;
+        cont_ac0->buffer_end = inner;
+        if (inner != nullptr) {
+            cont_ac0->buffer_end = inner;
+            FUN_710392e590(inner);
+        }
+        FUN_710392e590(cont_ac0);
+    }
+
+    v = self->owned_0xAB8;
+    if (v != nullptr) { FUN_7102ff2b40(v); FUN_710392e590(v); }
+    v = self->owned_0xAB0;
+    if (v != nullptr) { FUN_7102ff1420(v); FUN_710392e590(v); }
+
+    // Owned container at +0x970 with inner buffer at +0x18
+    ContainerWithBuf18* cont_970 = self->container_0x970;
+    if (cont_970 != nullptr) {
+        void* inner = cont_970->buffer_begin;
+        if (inner != nullptr) {
+            cont_970->buffer_end = inner;
+            FUN_710392e590(inner);
+        }
+        FUN_710392e590(cont_970);
+    }
+
+    FUN_7102fe2250(&self->embedded_sub_0x738);  // Embedded sub-object cleanup
+    FUN_71025d7310(self);
+}
+
+// ---- ~StagePilotwings (0x7102de49b0, 304 bytes) ----
+// Directly inherits from StageBase.
+// Embedded sub cleanup at +0x7A8, shared_ptr pair at +0x790,
+// 2 vector-style frees, vector of 0x60-byte elements at +0x738.
+// [derived: Ghidra decompilation at 0x7102de49b0]
+
+// PTR_LAB_710513be98 [derived: StagePilotwings vtable]
+extern "C" u8 PTR_LAB_710513be98 HIDDEN;
+extern "C" void FUN_7102de8120(u64*);
+
+extern "C" void FUN_7102de49b0(StagePilotwings* self)
+{
+    self->vtable = reinterpret_cast<void**>(&PTR_LAB_710513be98);
+
+    // Embedded sub-object cleanup at +0x7A8
+    FUN_7102de8120(&self->embedded_sub_0x7A8);
+
+    // Release shared_ptr container at +0x790 (has 2 shared_ptrs inside)
+    u64* sp = (u64*)self->shared_container_0x790;
+    self->shared_container_0x790 = nullptr;
+    if (sp != nullptr) {
+        u64 inner1_ctrl = sp[1];
+        sp[0] = 0;
+        sp[1] = 0;
+        if (inner1_ctrl != 0) {
+            RELEASE_SHARED_PTR(sp, -8);
+        }
+        long* sp2 = (long*)sp[1];
+        if (sp2 != nullptr) {
+            RELEASE_SHARED_PTR(&sp2, -8);
+        }
+        FUN_710392e590(sp);
+    }
+
+    // Vector-style free at +0x768/+0x770
+    if (self->alloc_0x768 != nullptr) {
+        self->end_0x770 = self->alloc_0x768;
+        FUN_710392e590(self->alloc_0x768);
+    }
+
+    // Vector-style free at +0x750/+0x758
+    if (self->alloc_0x750 != nullptr) {
+        self->end_0x758 = self->alloc_0x750;
+        FUN_710392e590(self->alloc_0x750);
+    }
+
+    // Destroy vector at +0x738/+0x740 (elements are 0x60 bytes, dtor called on each)
+    u64* vec_data = (u64*)self->vec_begin_0x738;
+    if (vec_data != nullptr) {
+        u64* vec_end = (u64*)self->vec_end_0x740;
+        if (vec_end == vec_data) {
+            self->vec_end_0x740 = (void*)vec_data;
+            vec_end = vec_data;
+        } else {
+            u64* iter = vec_end;
+            do {
+                iter = iter - 0xc; // stride 0x60 bytes
+                reinterpret_cast<void(*)(u64*)>((*(void***)(iter))[0])(iter);
+            } while (vec_data != iter);
+            vec_end = (u64*)self->vec_begin_0x738;
+            self->vec_end_0x740 = (void*)vec_data;
+        }
+        if (vec_end != nullptr) {
+            FUN_710392e590(vec_end);
+        }
+    }
+
+    FUN_71025d7310(self);
+}
+
+// ---- ~StagePictochat2 (0x7102d5bbf0, 280 bytes) ----
+// Directly inherits from StageBase.
+// Frees owned container at +0xC70, vector of unique_ptrs at +0xC50/+0xC58,
+// vector-style at +0xC30/+0xC38, unique_ptrs at +0xC20/+0xC18/+0xC10,
+// embedded sub cleanup at +0x740.
+// [derived: Ghidra decompilation at 0x7102d5bbf0]
+
+// PTR_LAB_7105135670 [derived: StagePictochat2 vtable]
+extern "C" u8 PTR_LAB_7105135670 HIDDEN;
+extern "C" void FUN_7102d5a8f0(u64*);
+extern "C" void FUN_71032ca770(void);
+
+extern "C" void FUN_7102d5bbf0(StagePictochat2* self)
+{
+    self->vtable = reinterpret_cast<void**>(&PTR_LAB_7105135670);
+
+    // Release owned container at +0xC70 [derived: StagePictochat2 field]
+    long* c_c70 = (long*)self->container_0xC70;
+    self->container_0xC70 = nullptr;
+    if (c_c70 != nullptr) {
+        u64 inner = *c_c70;
+        *c_c70 = 0;
+        if (inner != 0) FUN_710392e590((void*)inner);
+        FUN_710392e590(c_c70);
+    }
+
+    // Destroy vector of unique_ptrs at +0xC50/+0xC58
+    long* vec_data = (long*)self->vec_begin_0xC50;
+    if (vec_data != nullptr) {
+        long* vec_end = (long*)self->vec_end_0xC58;
+        if (vec_end == vec_data) {
+            self->vec_end_0xC58 = (void*)vec_data;
+        } else {
+            long* iter = vec_end;
+            do {
+                iter = iter - 1;
+                long* elem = (long*)*iter;
+                *iter = 0;
+                if (elem != nullptr) {
+                    reinterpret_cast<void(*)(long*)>((*(void***)(elem))[1])(elem);
+                }
+            } while (vec_data != iter);
+            vec_data = (long*)self->vec_begin_0xC50;
+            self->vec_end_0xC58 = (void*)vec_data;
+        }
+        if (vec_data != nullptr) {
+            FUN_710392e590(vec_data);
+        }
+    }
+
+    // Vector-style free at +0xC30/+0xC38
+    if (self->alloc_0xC30 != nullptr) {
+        self->end_0xC38 = self->alloc_0xC30;
+        FUN_710392e590(self->alloc_0xC30);
+    }
+
+    // Release unique_ptr at +0xC20 [derived: StagePictochat2 field]
+    long* uptr_c20 = (long*)self->unique_ptr_0xC20;
+    self->unique_ptr_0xC20 = nullptr;
+    if (uptr_c20 != nullptr) {
+        reinterpret_cast<void(*)(long*)>((*(void***)(uptr_c20))[1])(uptr_c20);
+    }
+
+    // Release owned object at +0xC18 (has inner alloc at +0x28)
+    u64 v_c18 = (u64)self->owned_0xC18;
+    self->owned_0xC18 = nullptr;
+    if (v_c18 != 0) {
+        u64 inner28 = *(u64*)(v_c18 + 0x28);
+        *(u64*)(v_c18 + 0x28) = 0;
+        if (inner28 != 0) {
+            FUN_71032ca770();
+        }
+        FUN_710392e590((void*)v_c18);
+    }
+
+    // Release unique_ptr at +0xC10 [derived: StagePictochat2 field]
+    long* uptr_c10 = (long*)self->unique_ptr_0xC10;
+    self->unique_ptr_0xC10 = nullptr;
+    if (uptr_c10 != nullptr) {
+        reinterpret_cast<void(*)(long*)>((*(void***)(uptr_c10))[1])(uptr_c10);
+    }
+
+    // Embedded sub-object cleanup at +0x740
+    FUN_7102d5a8f0(&self->embedded_sub_0x740);
+
+    FUN_71025d7310(self);
 }
 
 // ---- Additional leaf functions (batch 2) ----
@@ -2487,3 +2845,234 @@ extern "C" float4 convert_pos_dead_range_gravity(u8* lua_state, float x, float y
     return result;
 }
 }} // namespace app::sv_camera_manager
+
+// ---- Camera manager queries (non-lua) ----
+
+// DAT_7104471fbc [derived: camera FOV conversion constant]
+extern "C" float DAT_7104471fbc HIDDEN;
+// DAT_7104470d10 [derived: camera FOV divisor constant]
+extern "C" float DAT_7104470d10 HIDDEN;
+
+// 0x7102282ec0 (44 bytes) — app::sv_camera_manager::get_fov
+// Leaf: reads FOV from camera parameter singleton at +0xdac, applies conversion
+// [derived: Ghidra decompilation at 0x7102282ec0]
+extern "C" float get_fov_7102282ec0(void) {
+    return (*(float*)(*(u8**)DAT_71052b7f00 + 0xdac) * DAT_7104471fbc) / DAT_7104470d10;
+}
+
+// ---- Stage collision line query functions ----
+
+namespace app { namespace sv_ground_collision_line {
+
+// 0x7102284a50 (52 bytes) — app::sv_ground_collision_line::get_left_pos
+// Returns left endpoint position of collision line
+// [derived: Ghidra decompilation at 0x7102284a50]
+extern "C" float4 get_left_pos(GroundCollisionLine* param_1) {
+    float4* fallback = (float4*)&PTR_ConstantZero_71052a7a80;
+    if (param_1 == nullptr) return *fallback;
+    CollisionEndpoint* ep = param_1->endpoint0;  // +0x88 [derived: GroundCollisionLine.h]
+    if (ep == nullptr) return *fallback;
+    return *(float4*)ep->position;  // +0x10 [derived: CollisionEndpoint position]
+}
+
+// 0x7102284a90 (52 bytes) — app::sv_ground_collision_line::get_right_pos
+// Returns right endpoint position of collision line
+// [derived: Ghidra decompilation at 0x7102284a90]
+extern "C" float4 get_right_pos(GroundCollisionLine* param_1) {
+    float4* fallback = (float4*)&PTR_ConstantZero_71052a7a80;
+    if (param_1 == nullptr) return *fallback;
+    CollisionEndpoint* ep = param_1->endpoint1;  // +0x90 [derived: GroundCollisionLine.h]
+    if (ep == nullptr) return *fallback;
+    return *(float4*)ep->position;  // +0x10 [derived: CollisionEndpoint position]
+}
+
+}} // namespace app::sv_ground_collision_line
+
+// ---- FighterManager indexed lookup functions ----
+
+// FUN_7100653490 [derived: fighter deactivation handler]
+extern "C" void FUN_7100653490(u64, int);
+
+// 0x7101653310 (68 bytes) — app::kiiladarzmanager::is_loaded_fighter
+// Checks if fighter at index is loaded (non-null, status byte != 1).
+// [derived: Ghidra decompilation at 0x7101653310]
+namespace app { namespace kiiladarzmanager {
+extern "C" u64 is_loaded_fighter(int param_1) {
+    long* fm = (long*)FM_INSTANCE;
+    if (fm != nullptr && (u32)param_1 < 8) {
+        u8* entry = *(u8**)((u8*)*fm + (long)param_1 * 8 + 0x20);
+        if (entry != nullptr && *(u8*)(entry + 0x5935) != 1) {
+            return 1;
+        }
+    }
+    return 0;
+}
+}} // namespace app::kiiladarzmanager
+
+// 0x7101653500 (72 bytes) — app::kiiladarzmanager::is_activate_fighter
+// Checks if fighter at index has status byte == 6. Aborts on invalid index.
+// [derived: Ghidra decompilation at 0x7101653500]
+namespace app { namespace kiiladarzmanager {
+extern "C" bool is_activate_fighter(int param_1) {
+    if ((u32)param_1 > 7) abort();
+    u8* entry = *(u8**)((u8*)*(long*)FM_INSTANCE + (long)param_1 * 8 + 0x20);
+    if (entry != nullptr) {
+        return *(u8*)(entry + 0x5920) == 6;
+    }
+    return false;
+}
+}} // namespace app::kiiladarzmanager
+
+// 0x7101653550 (68 bytes) — app::kiiladarzmanager::deactivate_fighter
+// Deactivates fighter at index if status byte == 6. Aborts on invalid index.
+// [derived: Ghidra decompilation at 0x7101653550]
+namespace app { namespace kiiladarzmanager {
+extern "C" void deactivate_fighter(int param_1) {
+    if ((u32)param_1 > 7) abort();
+    u8* entry = *(u8**)((u8*)*(long*)FM_INSTANCE + (long)param_1 * 8 + 0x20);
+    if (*(u8*)(entry + 0x5920) == 6) {
+        FUN_7100653490((u64)entry, 1);
+    }
+}
+}} // namespace app::kiiladarzmanager
+
+// ---- DOLL param accessors ----
+
+// 0x710165c570 (40 bytes) — app::doll::DOLL_HIT_DATA_OFFSET_1
+// Reads a Vector3f from FighterParamAccessor2 param chain.
+// [derived: Ghidra decompilation at 0x710165c570]
+namespace app { namespace doll {
+extern "C" float4 DOLL_HIT_DATA_OFFSET_1(void) {
+    u8* fpa = (u8*)DAT_71052bb3b0;
+    float4 result;
+    float* src = *(float**)(*(u8**)(fpa + 0xc08) + 0x1d8);
+    result[0] = src[0];
+    result[1] = src[1];
+    result[2] = src[2];
+    result[3] = 0.0f;
+    return result;
+}
+}} // namespace app::doll
+
+// 0x710165c5a0 (48 bytes) — app::doll::DOLL_HIT_DATA_OFFSET_2
+// Reads a Vector3f from FighterParamAccessor2 param chain at +0xc offset.
+// [derived: Ghidra decompilation at 0x710165c5a0]
+namespace app { namespace doll {
+extern "C" float4 DOLL_HIT_DATA_OFFSET_2(void) {
+    u8* fpa = (u8*)DAT_71052bb3b0;
+    u8* base = *(u8**)(*(u8**)(fpa + 0xc08) + 0x1d8);
+    float* src = (float*)(base + 0xc);
+    float4 result;
+    result[0] = src[0];
+    result[1] = src[1];
+    result[2] = src[2];
+    result[3] = 0.0f;
+    return result;
+}
+}} // namespace app::doll
+
+// ---- Math utility tail-calls ----
+
+// 0x71015cfca0 (4 bytes) — app::math2::powf
+// Tail-call to C library powf via PLT.
+// [derived: disasm shows single 'b powf' instruction]
+extern "C" float powf(float, float);
+namespace app { namespace math2 {
+extern "C" float powf_71015cfca0(float a, float b) {
+    return ::powf(a, b);
+}
+}} // namespace app::math2
+
+// 0x71015cfae0 (12 bytes) — app::math2::rotate_z
+// Tail-call wrapper to FUN_710160e050 with Vector3f + angle.
+// [derived: Ghidra decompilation at 0x71015cfae0]
+extern "C" void FUN_710160e050(u64, float);
+namespace app { namespace math2 {
+extern "C" void rotate_z(float* param_1, float angle) {
+    FUN_710160e050(*(u64*)param_1, angle);
+}
+}} // namespace app::math2
+
+// ---- LOG param accessors ----
+
+// 0x710165f2c0 (40 bytes) — app::log::LOG_HIT_DATA_OFFSET_1
+// Reads a Vector3f from FighterParamAccessor2 param chain.
+// [derived: Ghidra decompilation at 0x710165f2c0]
+namespace app { namespace log {
+extern "C" float4 LOG_HIT_DATA_OFFSET_1(void) {
+    u8* fpa = (u8*)DAT_71052bb3b0;
+    float4 result;
+    float* src = *(float**)(*(u8**)(fpa + 0xc08) + 0x1a8);
+    result[0] = src[0];
+    result[1] = src[1];
+    result[2] = src[2];
+    result[3] = 0.0f;
+    return result;
+}
+}} // namespace app::log
+
+// 0x710165f2f0 (48 bytes) — app::log::LOG_HIT_DATA_OFFSET_2
+// Reads a Vector3f from FighterParamAccessor2 param chain at +0xc offset.
+// [derived: Ghidra decompilation at 0x710165f2f0]
+namespace app { namespace log {
+extern "C" float4 LOG_HIT_DATA_OFFSET_2(void) {
+    u8* fpa = (u8*)DAT_71052bb3b0;
+    u8* base = *(u8**)(*(u8**)(fpa + 0xc08) + 0x1a8);
+    float* src = (float*)(base + 0xc);
+    float4 result;
+    result[0] = src[0];
+    result[1] = src[1];
+    result[2] = src[2];
+    result[3] = 0.0f;
+    return result;
+}
+}} // namespace app::log
+
+// ---- MECHAKOOPA param accessors ----
+
+// 0x7101661440 (40 bytes) — app::mechakoopa::MECHAKOOPA_HIT_DATA_OFFSET_1
+// Reads a Vector3f from FighterParamAccessor2 param chain.
+// [derived: Ghidra decompilation at 0x7101661440]
+namespace app { namespace mechakoopa {
+extern "C" float4 MECHAKOOPA_HIT_DATA_OFFSET_1(void) {
+    u8* fpa = (u8*)DAT_71052bb3b0;
+    float4 result;
+    float* src = *(float**)(*(u8**)(fpa + 0xd20) + 0x1b0);
+    result[0] = src[0];
+    result[1] = src[1];
+    result[2] = src[2];
+    result[3] = 0.0f;
+    return result;
+}
+}} // namespace app::mechakoopa
+
+// 0x7101661470 (48 bytes) — app::mechakoopa::MECHAKOOPA_HIT_DATA_OFFSET_2
+// Reads a Vector3f from FighterParamAccessor2 param chain at +0xc offset.
+// [derived: Ghidra decompilation at 0x7101661470]
+namespace app { namespace mechakoopa {
+extern "C" float4 MECHAKOOPA_HIT_DATA_OFFSET_2(void) {
+    u8* fpa = (u8*)DAT_71052bb3b0;
+    u8* base = *(u8**)(*(u8**)(fpa + 0xd20) + 0x1b0);
+    float* src = (float*)(base + 0xc);
+    float4 result;
+    result[0] = src[0];
+    result[1] = src[1];
+    result[2] = src[2];
+    result[3] = 0.0f;
+    return result;
+}
+}} // namespace app::mechakoopa
+
+// ---- Rocketbelt ----
+
+// 0x710166fc80 (40 bytes) — app::rocketbelt::is_enable_rocketbelt_eject
+// Checks if the rocketbelt eject is enabled based on object category and status flag.
+// [derived: Ghidra decompilation at 0x710166fc80, param_1 is BattleObjectModuleAccessor*]
+namespace app { namespace rocketbelt {
+extern "C" bool is_enable_rocketbelt_eject(u8* param_1) {
+    if (*(u32*)(param_1 + 8) >> 28 == 0) {
+        return *(u8*)(*(u8**)(param_1 + 0x40) + 0x129) != 0;
+    }
+    return true;
+}
+}} // namespace app::rocketbelt

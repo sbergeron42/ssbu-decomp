@@ -1,8 +1,10 @@
 #include "types.h"
+#include "app/placeholders/StageBase.h"
 
 // StageWufuIsland constructor and destructor
-// StageWufuIsland : StageBase (inherits, adds fields from ~0x748 onward)
+// StageWufuIsland : StageBase (inherits, adds fields from ~0x734 onward)
 // Object total size: at least 0x1ca * 8 = 0xE50 bytes
+// [derived: StageBase size is 0x728, WufuIsland-specific fields start at +0x734]
 
 #define HIDDEN __attribute__((visibility("hidden")))
 

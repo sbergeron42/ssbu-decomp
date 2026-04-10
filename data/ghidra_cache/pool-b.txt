@@ -304,3 +304,187 @@ FUN_71003ab390 + BossManager singleton + FUN_71004eb4b0
 == 0x7102211600 (84B) — Pac_Land ==
 FUN_710067a3a0(FM, 1) → push result&1 with type tag 1
 
+
+=== SESSION 2026-04-09 BATCH 5 (StageBase struct recovery) ===
+
+== 0x71025d7310 — StageBase::~StageBase (1560B) ==
+Sets vtable PTR_LAB_71050c44c8. Releases:
+  [0x67]=+0x338 complex owned obj (double-buffer alloc pattern)
+  FUN_7102619730(param_1+0x7a) = embedded sub at +0x3D0
+  [0x6b]=+0x358 owned with +0x50 flag
+  [0x6a]=+0x350 vector container iteration
+  [0x69]=+0x348 simple free
+  [0x68]=+0x340 simple free
+  [0x67] again (double-free guard)
+  [0x66]=+0x330 FUN_7102630e50 + free
+  [0x65]=+0x328 simple free
+  [0x64]=+0x320 linked list container
+  [99]=+0x318 unique_ptr (vt[1])
+  [0x62]=+0x310 unique_ptr (vt[1])
+  [0x61]=+0x308 unique_ptr (vt[1])
+  [0x60]=+0x300 unique_ptr (vt[1])
+  +0x26C flag cleared, +0x1D8 flag cleared
+  [0x38/0x39] vector of shared_ptrs
+  [0x35/0x36] vector of ptrs
+  [0x34]=+0x1A0 shared_ptr atomic release
+  [0x30/0x31] buffer free
+  Final: FUN_710260d570(StageManager, param_1[0x1a]) (unregister from SM at +0xD0)
+
+== 0x71025d2dc0 — StageBase ctor (14820B) ==
+Too large for inline cache. Fields: 0x008 through 0x720. Size ~0x728.
+Key inits: vtable=PTR_LAB_71050c44c8, +0xD0=self, +0xD8=flags,
+  +0xF8..+0x178 = 3 hash40 groups, +0x180/+0x188 buffer pair,
+  +0x1A0 shared_ptr, +0x300..+0x358 owned ptrs (zeroed),
+  +0x3D0 event listener vtable (PTR_FUN_71050c5ac0),
+  +0x4A0 sub-struct vtable (PTR_LAB_71050c5618),
+  +0x4E0 stage object ID, +0x5E8 active flag,
+  +0x600..+0x6AC u32 param array,
+  +0x6B8 sub listener vt (PTR_LAB_71050c5aa0),
+  +0x6F4 init_color_param=0x876500, +0x704=0xFFFFFFFF sentinel,
+  +0x718 allocated, +0x720=0.
+
+== 0x71025e55a0 — UnkStageIntermediate::~dtor (adds +0x740/+0x750/+0x768) ==
+Sets vtable PTR_LAB_71050c4d70.
+  [0xed]=+0x768 freed with FUN_71025f5c90
+  [0xea/0xeb]=+0x750 vector-style begin/end free
+  [0xe8]=+0x740 shared_ptr release (with embedded ref)
+  Tail-calls FUN_71025d7310 (StageBase dtor)
+
+== 0x71025d7970 (800B) — StageBase virtual (cleanup/update) ==
+Uses: +0x310 vt[3], +0x308 vt[5], +0x350 vector iteration,
+  +0x338 double-deref, +0x4E0 scene handle check/clear,
+  +0x5E8 flag clear, +0xD8 flags |= 4
+
+== 0x71025d8750 (152B) — StageBase virtual (iterate vector at +0x350) ==
+Iterates vec_container elements, checks +0x40 flag, calls vt[6] and vt[9]
+
+== 0x71025d67b0 (96B) — StageBase query (reads 5 params from +0x198 chain) ==
+Reads **(+0x198), passes to 5 param getter functions
+
+=== SESSION 2026-04-09 BATCH 6 (camera/stage query functions) ===
+
+== 0x7102282ec0 — app::sv_camera_manager::get_fov (44B) ==
+Leaf: returns (*(float*)(inner+0xdac) * DAT_7104471fbc) / DAT_7104470d10
+inner = *DAT_71052b7f00
+
+== 0x7102284a50 — app::sv_ground_collision_line::get_left_pos (52B) ==
+Null-check param, read endpoint0 (+0x88), return position (+0x10) as float4.
+Fallback: PTR_ConstantZero_71052a7a80.
+
+== 0x7102284a90 — app::sv_ground_collision_line::get_right_pos (52B) ==
+Same as get_left_pos but reads endpoint1 (+0x90).
+
+== 0x7102275a50 — app::sv_math::vec2_is_zero (44B) ==
+NEON fcmeq: checks if both floats == 0.0. Uses ext+and pattern. SKIP (NEON intrinsics needed).
+
+== 0x7102275da0 — app::sv_math::vec3_is_zero (48B) ==
+Same NEON pattern for 3 floats. SKIP.
+
+== 0x71022848e0 — app::sv_ground_collision_line::get_center_pos (48B) ==
+Average of endpoint0 and endpoint1 positions. Complex NEON arithmetic. SKIP.
+
+== 0x71022ad2b0 — app::sv_animcmd::get_value_int (52B) ==
+Jump table: PTR_FUN_7104f68c38[param_2], bounds check < 9. Outside pool-b territory.
+
+== 0x71022ad2f0 — app::sv_animcmd::get_value_float (52B) ==
+Jump table: PTR_LAB_7104f68c80[param_2], bounds check < 7. Outside pool-b territory.
+
+== 0x71022b5150 — app::sv_animcmd::is_excute (48B) ==
+Reads byte at animcmd_state+0x8, pushes to lua stack with type tag 1.
+
+=== SESSION 2026-04-09 BATCH 7 (more stage destructors) ===
+
+== 0x7102826d30 — ~StageDuckHunt (212B) ==
+vtable PTR_LAB_71050e6d60. Direct StageBase child.
+Frees: +0x870/+0x868/+0x860 simple ptrs, +0x858 complex sub (inner +0x70/+0x58/+0x40),
++0x850 owned obj (clears +0x20/+0x28), +0x828/+0x830 +0x810/+0x818 +0x788/+0x790 +0x740/+0x748
+vector-style begin/end frees. Tail-calls StageBase dtor.
+
+== 0x7102ada090 — ~StageLuigiMansion (288B) ==
+vtable PTR_LAB_710510dcf0. Direct StageBase child.
+Releases: +0x858 shared_ptr, +0x830 shared_ptr (+0x848/+0x840 zeroed first),
++0x820 owned container, +0x818 owned with inner +0x68 unique_ptr,
++0x7D8/+0x7D0/+0x7C8/+0x7C0 zeroed. Tail-calls StageBase dtor.
+
+== 0x7102d5bbf0 — ~StagePictochat2 (280B) ==
+vtable PTR_LAB_7105135670. Direct StageBase child.
+Releases: +0xC70 owned container, +0xC50/+0xC58 vector of unique_ptrs,
++0xC30/+0xC38 vector-style, +0xC20 unique_ptr, +0xC18 owned (+0x28 inner),
++0xC10 unique_ptr. Calls FUN_7102d5a8f0(+0x740). Tail-calls StageBase dtor.
+
+== 0x7102ef5a70 — ~ResultStage (200B) ==
+NOT a destructor — state machine update function. Misnamed in functions.csv.
+Reads state at +0xb4, dispatches through table at +0x68. SKIP.
+
+== 0x710261f5b0 — ~StageCameraController (216B) ==
+vtable PTR_FUN_71050c5b38. NOT a StageBase subclass — different type entirely.
+Releases shared_ptr at +0xF0, vector at +0xC8/+0xD0, flag at +0x400.
+
+== 0x71025eefe0 — ~StageDynamicObject (248B) ==
+vtable PTR_FUN_71050c5878. NOT a StageBase subclass — different type.
+Releases 3 owned containers at +0x130/+0x128/+0x120.
+
+=== SESSION 2026-04-09 BATCH 8 (WreckingCrew + Pilotwings dtors) ===
+
+== 0x7102fe2330 — ~StageWreckingCrew (300B) ==
+vtable PTR_LAB_710515d6e0. Direct StageBase child.
+Frees 9 owned sub-objects at +0xAF0 down to +0xAB0 (each with custom cleanup fn),
++0x970 owned container with inner +0x18 buffer,
+embedded sub cleanup at +0x738 via FUN_7102fe2250.
+Tail-calls StageBase dtor.
+
+== 0x7102de49b0 — ~StagePilotwings (304B) ==
+vtable PTR_LAB_710513be98. Direct StageBase child.
+FUN_7102de8120(+0x7A8) embedded sub cleanup,
++0x790 shared_ptr container (2 shared_ptrs inside),
++0x768/+0x770 and +0x750/+0x758 vector-style frees,
++0x738/+0x740 vector of 0x60-byte elements (each has dtor at vt[0]).
+Tail-calls StageBase dtor.
+
+=== FUN_7100155670 (complex, ~700 bytes actual, skip) ===
+Huge function with loop iterating FUN_7100154f50, vtable dispatch, memcpy. NOT 12 bytes.
+
+=== FUN_71001c0740 (complex, networking, skip) ===
+nn::socket calls, InetNtohl/InetNtohs, vtable dispatch chain. NOT 16 bytes.
+
+=== FUN_71001ffca0 (complex, alloc + vtable, skip) ===
+FUN_71001af850 alloc, vtable dispatch +0x88, container init. NOT 12 bytes.
+
+=== FUN_71004a29b0 (complex, fighter movement, skip) ===
+Float math, vtable chains on module accessor, jumptable warning. NOT 12 bytes.
+
+=== FUN_71015d5770 (complex, event listener registration, skip) ===
+je_aligned_alloc, OOM retry pattern, linked list insertion. NOT 16 bytes.
+
+=== FUN_7102a39f30 (complex, linked list management, skip) ===
+FighterManager linked list insert/remove, ref counting. NOT 12 bytes.
+
+=== FUN_7102f77000 (complex, deque operations, skip) ===
+Deque-like container with bucket addressing, 3x repeated pattern. NOT 12 bytes.
+
+=== FUN_71032e57d0 (complex, deque push + mutex, skip) ===
+std::mutex lock/unlock, deque push_back with bucket expansion. NOT 16 bytes.
+
+=== FUN_7103347690 (complex, timer/tick init, skip) ===
+nn::os::GetSystemTick, ConvertToTimeSpan, field zeroing, magic constants. NOT 12 bytes.
+
+=== FUN_71036eec80 (complex, string copy + FNV hash, skip) ===
+Manual string copy loop, FNV-1a hash (0x811c9dc5 seed), field init. NOT 12 bytes.
+
+=== FUN_7103984970 (complex, player init, skip) ===
+Multi-module init, linked list walks, singleton pattern. NOT 12 bytes.
+
+=== FUN_7100018910 (192 bytes, param dispatch) ===
+Checks callback at param_1[0x10b]+0x58, falls through to bitmask checks on
+*(uint*)(vtable + 0x224), reads param_1[0x10e] and +0x874. Returns u64 with
+flags. Complex bitmask logic.
+
+=== BATCH: Small leaf functions decomped ===
+
+FUN_7101653310 (is_loaded_fighter, 68 bytes) — FM indexed lookup, checks +0x5935 != 1
+FUN_7101653500 (is_activate_fighter, 72 bytes) — FM indexed lookup, checks +0x5920 == 6
+FUN_7101653550 (deactivate_fighter, 68 bytes) — FM indexed, calls FUN_7100653490 if status 6
+FUN_710165c570 (DOLL_HIT_DATA_OFFSET_1, 40 bytes) — FPA2 +0xc08 → +0x1d8, read Vec3f
+FUN_710165c5a0 (DOLL_HIT_DATA_OFFSET_2, 48 bytes) — same chain + 0xc offset
+FUN_71015cfca0 (powf, 4 bytes) — tail-call to ::powf
+FUN_71015cfae0 (rotate_z, 12 bytes) — tail-call to FUN_710160e050
