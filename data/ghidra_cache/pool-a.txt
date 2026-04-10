@@ -785,3 +785,93 @@ returns new w. Used by callers that don't need channel dispatch.
 // 20+ times per call; every one of those reads is AI command generation
 // and is gameplay-sync-critical (CPU behaviour must be deterministic for
 // replay / rollback).
+
+=== 2026-04-10 Sim tick hunt (Item 2) ===
+
+FighterManager has NO vtable. `*(long*)instance_` = raw data field (+0 is
+the first entry slot). Every _impl wrapper uses instance_ via double-pointer:
+  ldr x8,[x0]        ; x8 = *instance_ = FighterManager*
+  ldr w0,[x8,#0xa0]  ; entry_count
+
+FighterEntry layout (derived from 0x710062b830, 0x710082b9e0, 0x7102141210):
+  +0x14 entry_state_s32 (>=2 means multi-char entry)
+  +0x18 primary_kind_s32 (FighterKind)
+  +0x1c secondary_kind_s32 (-1 = none)
+  +0xf0 inline smart_ptr<SubFighterSlot> {vtable, held_ptr}
+  +0x100 inline smart_ptr<SubFighterSlot> secondary
+  +0x4150 u64 sub_count
+  +0x4160 BattleObject* sub_fighters[sub_count]
+  +0x5918 u8 primary sub index
+  +0x5920 u8 status_flag (==6 alive)
+
+FighterManager layout (derived):
+  +0x18 ref_count_u32 (observer recursion guard)
+  +0x1c pending_delete_u32
+  +0x20..+0x58 FighterEntry*[8]
+  +0xa0 entry_count_u32
+  +0xac s32 (mirrored from FighterParamAccessor2+0x50+0x324 on set_final)
+  +0xbe u8 (checked in damage clamp path)
+  +0xce u8 (checked in rumble scale path)
+  +0xd2 u8 (checked in throw flow)
+  +0xd8 u8 flag (pause_all?)
+  +0xda u8
+  +0xe9 u8 disable_iter_flag
+  +0xf0 f32 (rumble scale)
+  +0x164 f32 (damage scale)
+  +0xae8 intrusive_list<Observer> {next, prev, handler*}
+  +0x4150/+0x41e4 trailer (secondary arrays)
+  At least 0x5928 bytes
+
+Fighter/BattleObject layout (derived from FUN_7100614630):
+  +0x10 u32 entry_id (index into FighterManager.entries)
+  +0x0c s32 kind (FighterKind)
+  +0x3f0 BattleObjectModuleAccessor (EMBEDDED, not pointer)
+  Cached module ptr array is part of the embedded accessor:
+    +0x430 StatusModule* (accessor +0x40)
+    +0x440 WorkModule* (accessor +0x50)
+    +0x498 DamageModule* (accessor +0xA8)
+    +0x4a0 VisibilityModule* (accessor +0xB0)
+    +0x528 ?Module* (accessor +0x138)
+    +0x530 MotionModule* (accessor +0x140)
+    +0x548 ?Module* (accessor +0x158)
+    +0x560 GroundModule?* (accessor +0x170)
+    +0xf5a0 scene/stage state ptr
+    +0xf908 ?controller? ptr (vt[0x30/0x38] pre/post hooks)
+    +0xf728 status frame counter
+    +0xf814 u8 damage flag
+    +0xf807 u8 attack flag
+  Total size > 0xf920 bytes.
+
+Status vtable found @ 0x7104f7f5xx (one specific status class):
+  slot +0x368 = FUN_7100614630 (status exit/main — loads FighterManager singleton,
+                iterates param_1->entry_id, dispatches heavy status logic)
+  slot +0x360 = FUN_71006145b0
+  slot +0x358 = FUN_7100614570
+  slot +0x350 = FUN_7100614470
+  slot +0x348 = FUN_71003a7eb0 (vthunk)
+  slot +0x340 = FUN_7100614450
+  slot +0x338 = FUN_7100614360
+  slot +0x330 = FUN_7100614270
+  slot +0x328 = FUN_7100614180
+  slot +0x320 = FUN_71006140c0
+  slot +0x318 = FUN_7100614080
+  slot +0x310 = FUN_7100614060
+  slot +0x308 = FUN_7100613f70
+  slot +0x300 = FUN_7100613eb0
+  slot +0x2f8 = FUN_7100613cc0
+  slot +0x2f0 = FUN_7100613c60
+  slot +0x2e8 = FUN_7100613c00
+  slot +0x2e0 = FUN_7100613ba0
+  ...
+  This matches the canonical FighterStatusBase ~50+ virtual method layout.
+  `*(long*)(param_1 + 0x1f21)` (at +0xf908) is called at vt[0x30] pre and vt[0x38]
+  post around the status body — that's the BattleObject base class's
+  on_tick/off_tick pair, and the status body runs in between.
+
+Key finding: FUN_7100614630 is called ONLY via vtable dispatch. The class
+vtable at 0x7104f7f5xx is a per-status handler table. The actual per-frame
+driver that calls `vt[on_main]` on every fighter's current status must be
+higher up. Candidates for next session:
+  - Find StatusModule::update (iterates status_kind and invokes vt[on_main])
+  - Find Fighter::update (the BattleObject::update override for Fighter)
+  - Walk upward from the vtable -16/-8 (typeinfo) to identify the exact class
