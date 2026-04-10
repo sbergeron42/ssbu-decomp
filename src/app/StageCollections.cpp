@@ -82,6 +82,41 @@ extern "C" void free_stage_list_710301bcb0(StageListOwner* owner)
 // D0 variant inlines the same cleanup, tail-calls ~StageBase, then deletes self.
 // Field layout is documented in include/app/placeholders/StageVt71051624a8.h.
 // [derived: disasm at 0x7103036770; paired with D1 at 0x7103036720 in fun_hard_c_010.cpp]
+// Polymorphic visitor types used by stage element visitors below. The
+// kind() method returns an integer identifying the concrete subtype; the
+// dispatching function uses the return value to decide whether to copy
+// payload fields out of the element.
+struct StagePolyElement {
+    void** _vtable;   // +0x00
+    u8 unk_0x08[0x4]; // +0x08
+    s32 value;        // +0x0c [derived: u32 payload read when kind() == 3]
+
+    s32 kind() {
+        // vt[2] is the standard Itanium ABI typeinfo/kind slot for this hierarchy.
+        auto fn = reinterpret_cast<s32(*)(StagePolyElement*)>(_vtable[2]);
+        return fn(this);
+    }
+};
+
+// Output holder for stage element visitors — stores a u32 32 bytes in.
+struct StageElementOutS32At20 {
+    u8 head[32];       // padding before the output slot
+    s32 value;         // [derived: written when element kind matches]
+};
+
+// 0x71030d1ae0 (64 bytes) — stage element visitor that copies the u32 payload
+// of an element whose kind() == 3 into an output holder at out+0x20. Used by
+// stage serialization / scan passes that collect only elements of a specific
+// kind. No-op when kind() returns anything else.
+// [derived: disasm at 0x71030d1ae0 — blr vt[0x10]; cmp #3; b.ne skip; ldr w8,[x20,#0xc]; str w8,[x19,#0x20]]
+extern "C" void stage_element_copy_kind3_71030d1ae0(StageElementOutS32At20* out,
+                                                     StagePolyElement* elem)
+{
+    if (elem->kind() == 3) {
+        out->value = elem->value;
+    }
+}
+
 // 0x7103088730 (56 bytes) — second BST recursive free helper, identical to
 // free_stage_tree_71030080c0 but at a different address. Used by a different
 // stage sub-object tree. Keeping both as distinct symbols because they are
