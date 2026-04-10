@@ -92,9 +92,9 @@ void* operator new(unsigned long size) {
 }
 
 // ============================================================================
-// operator new(unsigned long, std::nothrow_t const&) — 0x710353bd00 (112 bytes)
+// operator new(unsigned long, std::nothrow_t const&) — 0x710353bca0 (120 bytes)
 // Nothrow variant — identical logic, second param unused.
-// [derived: Ghidra symbol "operator new(unsigned long, std::nothrow_t const&)"]
+// [derived: CSV entry operator.new_710353bca0; identical codegen to operator new]
 // ============================================================================
 void* operator new(unsigned long size, const std::nothrow_t&) noexcept {
     if (size == 0) size = 1;
@@ -115,9 +115,9 @@ void* operator new(unsigned long size, const std::nothrow_t&) noexcept {
 }
 
 // ============================================================================
-// operator new[](unsigned long) — 0x710353bd70 (112 bytes)
+// operator new[](unsigned long) — 0x710353bd20 (120 bytes)
 // Array variant — identical logic.
-// [derived: Ghidra symbol "operator new[](unsigned long)"]
+// [derived: CSV entry operator.new[]; identical codegen to operator new]
 // ============================================================================
 void* operator new[](unsigned long size) {
     if (size == 0) size = 1;
@@ -138,9 +138,9 @@ void* operator new[](unsigned long size) {
 }
 
 // ============================================================================
-// operator new[](unsigned long, std::nothrow_t const&) — 0x710353bde0 (112 bytes)
+// operator new[](unsigned long, std::nothrow_t const&) — 0x710353bda0 (120 bytes)
 // Array nothrow variant — identical logic.
-// [derived: Ghidra symbol "operator new[](unsigned long, std::nothrow_t const&)"]
+// [derived: CSV entry operator.new[]_710353bda0; identical codegen to operator new]
 // ============================================================================
 void* operator new[](unsigned long size, const std::nothrow_t&) noexcept {
     if (size == 0) size = 1;
