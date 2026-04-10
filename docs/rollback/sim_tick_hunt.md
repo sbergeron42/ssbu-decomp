@@ -1138,3 +1138,218 @@ Rollback implication (revised from `main_loop.md` § 6d):
   `FUN_710013be00` (Thread::__init_and_start), `FUN_710013c030` (trampoline),
   `FUN_710013bcb0` (msgq receive), `FUN_710013bc98` (msgq send),
   `FUN_710013bba0` (msgq init), `FUN_710013c200` (Thread::start).
+
+## Pool B — DAT_710593a6a0 is NOT the scene root (major course correction)
+
+### Summary
+
+The earlier pool-b classification of `DAT_710593a6a0` as a "scene root"
+singleton is **wrong**. Direct evidence from the type's destructor and from
+the heaviest client function shows it is a **fighter-Mii manager singleton**
+that embeds an `nn::mii::Database` at `+0x20` and a per-fighter-slot vector
+of Mii character entries at `+0x24d0`. The Dispatcher-A walk at
+`[**(DAT_710593a6a0 + 0x24e8) + 0x2da8]` is therefore **not** walking a
+scene-root tickables list — `+0x24e8` is a non-owning back-reference to
+some other manager whose own `+0x2da8` field holds the list. Whoever wrote
+the Dispatcher-A lead in this document treated `+0x24e8` as if it were a
+field owned by the singleton; it is instead a weak/raw pointer to an
+unrelated subsystem.
+
+This retires the "FUN_71022cd350/FUN_71022b7100 = scene root constructors"
+lead from `WORKER-pool-b.md`. The single most important implication is
+that **sim tick is not rooted here at all** and the next-pass priorities
+listed above (FUN_71035c13d0, FUN_71036186d0, FUN_7103619080, FUN_7103593c40,
+FUN_7103632850) remain the only live candidates.
+
+### Evidence 1 — `FUN_71022cd350` is a global teardown, not a constructor
+
+Ghidra decompile was 145 KB, so the output went to the tool-results dir and
+was analyzed via an `Agent` sub-process (see pass notes below). Key line in
+the decompile:
+
+```c
+lVar14 = DAT_710593a6a0;
+if (DAT_710593a6a0 != 0) {
+    FUN_7103757140(DAT_710593a6a0);   // explicit destructor of the singleton's type
+    FUN_710392e590(lVar14);            // global free (seen ~70× in this fn)
+    DAT_710593a6a0 = 0;
+}
+```
+
+That is a textbook `if (p) { p->~T(); operator delete(p); p = nullptr; }`.
+The function contains **no `operator new`, no vtable install, no writes to
+`+0x24d0`/`+0x24e8`/`+0x2da8` on any local `this`**, and **no string
+literals at all**. The rest of its body is ~50 more back-to-back teardown
+blocks that null out sibling singletons in the range
+`DAT_710593a3d0 / a3d8 / a438 / a5f0 / a6a0 / a6b0 / ...` — a whole family of
+scene-layer singletons that all get torn down together at shutdown / scene
+reset.
+
+Cross-check with Ghidra's xref database: the **only** recorded write to
+`DAT_710593a6a0` is at `0x71022cd600` inside `FUN_71022cd350` — exactly
+the `DAT_710593a6a0 = 0;` null-out shown above. The `WORKER-pool-b.md`
+claim that `FUN_71022b7100` also writes it at `0x71022c9fb4` is not
+reflected in xrefs; either that write happens through an address-taken
+indirection (there is a reader symbol literally named
+`clone_write_entry_to_bss` at `0x7101788ec0`, which strongly suggests a
+templated "clone a heap object into a bss slot" helper), or the prior pool
+confused a read site for a write.
+
+### Evidence 2 — the type's destructor reveals the field layout
+
+`FUN_7103757140` (`0x7103757140 - 0x7103757283`, 0x144 bytes) is the
+explicit destructor called on `DAT_710593a6a0`. It is small enough to quote
+in full here:
+
+```c
+void FUN_7103757140(undefined8 *param_1) {
+    this = (mutex *)*param_1;
+    *param_1 = 0;
+    if (this == 0) return;
+
+    // +0x2500: shared_ptr — release
+    plVar6 = *(long **)(this + 0x2500);
+    if (plVar6 != 0) { ExclusiveMonitor decrement of plVar6[1]; ... }
+
+    // +0x24f0: shared_ptr — release
+    plVar6 = *(long **)(this + 0x24f0);
+    if (plVar6 != 0) { ExclusiveMonitor decrement of plVar6[1]; ... }
+
+    // +0x24d0 / +0x24d8: std::vector<T> where sizeof(T) = 0x68
+    // walks backwards, releasing a shared_ptr at node[-1] (i.e. entry+0x60)
+    lVar4 = *(long *)(this + 0x24d0);           // begin
+    lVar7 = *(long *)(this + 0x24d8);           // end
+    while (lVar7 != lVar4) {
+        lVar7 -= 0x68;
+        plVar6 = *(long **)(lVar7 - 8);         // entry's trailing shared_ptr
+        if (plVar6) release_weak(plVar6);
+    }
+    if (lVar4 != 0) FUN_710392e590();           // free the vector's storage
+
+    // +0x20: nn::mii::Database subobject — CALLED BY NAME
+    nn::mii::Database::~Database((Database *)(this + 0x20));
+
+    // the singleton itself is a mutex base
+    std::__1::mutex::~mutex(this);
+    FUN_710392e590(this);                        // free the object
+}
+```
+
+The smoking gun is `nn::mii::Database::~Database((Database *)(this + 0x20))`
+— Ghidra demangled this call automatically, so the symbol comes from RTTI,
+not guesswork. `DAT_710593a6a0` embeds an `nn::mii::Database` at `+0x20`.
+
+Fields proven by the destructor:
+
+| Offset    | Kind                                | Notes                                    |
+|-----------|-------------------------------------|------------------------------------------|
+| `+0x00`   | `std::mutex` base class (4 ptrs)    | fn casts `this` to `mutex*` + destructs  |
+| `+0x20`   | `nn::mii::Database` (embedded)      | named by destructor's RTTI call          |
+| `+0x24d0` | `std::vector<T>::begin` (`T*`)      | `T` size = 0x68                          |
+| `+0x24d8` | `std::vector<T>::end` (`T*`)        |                                          |
+| `+0x24e0` | `std::vector<T>::end_of_storage`    | not touched by destructor but implied    |
+| `+0x24e8` | **raw pointer (non-owning)**        | *touched by Dispatcher A, NEVER freed*   |
+| `+0x24f0` | `std::shared_ptr<X>` (ctrl, data)   | released                                 |
+| `+0x2500` | `std::shared_ptr<Y>` (ctrl, data)   | released                                 |
+
+Crucially: **`+0x24e8` is never touched by the destructor.** In libc++ and
+any owning smart-pointer idiom you would expect a destruction call here; its
+absence is strong evidence that `+0x24e8` holds a **non-owning back-reference**
+to some externally-managed object (raw `T*`, not a `shared_ptr` or `unique_ptr`).
+
+### Evidence 3 — the heaviest reader confirms the "fighter-Mii" semantic
+
+`FUN_71014f10c0` (the function with 30+ reads of `DAT_710593a6a0`, more than
+any other caller) was decompiled (79 KB, analyzed via `Agent` sub-process).
+It is a **match-end / battle-teardown** routine:
+
+- Iterates FighterManager's 8 player slots at `[DAT_7105323680 + 0xe8..+0x120]`
+- For each live fighter, reads the entry's `nn::mii::CharInfo` from
+  `*DAT_710593a6a0 + 0x24d0 + entry_id*0x68` and releases the shared_ptr at
+  entry `+0x58`/`+0x60`
+- Calls `nn::mii::CharInfoAccessor::CharInfoAccessor((CharInfoAccessor *)..., (CharInfo *)...)`
+  and `nn::mii::CharInfoAccessor::IsValid()` **eight times** — once per
+  fighter slot
+- Divides (end-begin) by 0x68 using the classic `0x4ec4ec4ec4ec4ec5` magic
+  multiplier — confirming `sizeof(entry) == 0x68`
+
+It touches **only** `+0x24d0` and `+0x24d8` on the singleton. It does NOT
+touch `+0x20`, `+0x24e8`, `+0x24f0`, `+0x2500`, or `+0x2da8`. Zero string
+literals in the function body.
+
+An entry is 0x68 bytes and contains a `nn::mii::CharInfo` (0x58 bytes in
+NintendoSDK 8.2.1) plus a `std::shared_ptr` at the trailing 0x10 bytes.
+That shared_ptr is per-fighter-slot: it is released during match-end.
+
+### Conclusion on `DAT_710593a6a0` identity
+
+Best-fit type: a match-owned "**fighter Mii manager**" singleton. It embeds
+an `nn::mii::Database` (the raw Mii cache) at `+0x20` and a
+`std::vector<FighterMiiEntry>` at `+0x24d0`, where each entry holds a
+`nn::mii::CharInfo` + a shared_ptr to a rendered Mii asset (likely the
+head model or texture). Candidate names in the `app::` namespace:
+`app::FighterMiiManager`, `app::MiiCharManager`, `app::CpuMiiManager`.
+No string literal proves the name yet; extraction of the mysterious
+`FUN_71022b7100` constructor (too large for MCP, see
+`data/ghidra_cache/manual_extraction_needed.md`) or of
+`clone_write_entry_to_bss` at `0x7101788ec0` would likely clinch it.
+
+### Impact on Dispatcher A
+
+The prior pool-b writeup says Dispatcher A walks
+`[**(DAT_710593a6a0 + 0x24e8) + 0x2da8]` and treats that as the scene
+tickables list. That walk is **real**; it just doesn't mean what the prior
+pass said it means:
+
+- `+0x24e8` is a **non-owning raw pointer** on the Mii manager. It points
+  to an external object that the Mii manager does not own. That external
+  object has its own `+0x2da8` field which is the list head.
+- The external object is therefore **some other subsystem** (FighterManager,
+  BattleObjectWorld, GameState, Stage, …) and Dispatcher A is walking
+  **that** subsystem's internal list. The Mii manager is just a convenient
+  handle to grab from `main_loop` because it is already in scope.
+- This reduces Dispatcher A's signal value for the sim-tick hunt: it tells
+  us there is *some* cross-subsystem back-reference, not that we have
+  located the scene root. The hunt for the true sim tick stays on the
+  phase-6/phase-7 candidates in `main_loop.md` § 6e.
+
+### Safety-smoke-test implication for rollback resim
+
+The fallback task in WORKER-pool-b.md asked Pool B to decompile
+`vtable[+0x28]` of a node in Dispatcher A's list and check whether it
+touches host services (audio/gfx/LDN/fs). That test is still *doable* but
+its **interpretation** changes:
+
+- Before: "if `vtable[+0x28]` is dirty, rollback needs a service shim".
+- Now: the list isn't necessarily tickables, so a dirty `vtable[+0x28]`
+  doesn't indict the sim tick — it only indicts whatever unknown subsystem
+  the `+0x24e8` back-reference points at. The test is only meaningful once
+  we identify that subsystem.
+
+Pool B recommends the orchestrator **defer the safety smoke test** until a
+pool has identified what type lives at `+0x24e8`. That needs one of:
+
+1. Manual export of `FUN_71022b7100` from Ghidra (1.7 MB disassembly) to
+   find the *real* construction path of the Mii manager and see what gets
+   wired into `+0x24e8`.
+2. Decompile of `FUN_7101788ec0` (named `clone_write_entry_to_bss`) —
+   likely a helper that the constructor calls with `&DAT_710593a6a0` and
+   with the Mii-manager template data; may show how `+0x24e8` gets set.
+3. A targeted xref hunt: find every function that writes to
+   `*(DAT_710593a6a0) + 0x24e8`. Ghidra does track structure-field xrefs
+   if the singleton has a struct type attached, but since
+   `DAT_710593a6a0` is still `undefined *`, those xrefs don't exist yet.
+
+### Pool B pass notes / artifacts
+
+- Full decompile of `FUN_71022cd350` (145 KB) is cached in the harness
+  tool-results dir (path in `data/ghidra_cache/manual_extraction_needed.md`);
+  no need to re-extract — the sub-agent pass already mined it.
+- Full decompile of `FUN_71014f10c0` (79 KB) similarly cached; same note.
+- `FUN_7103757140` (the type destructor) is tiny and quoted in full above.
+- `FUN_71022b7100` is 1.7 MB of raw disassembly (body 0x71022b7100 –
+  0x71022cd31f ≈ 90 KB of code). Listed in
+  `data/ghidra_cache/manual_extraction_needed.md` with LOW priority — the
+  destructor plus reader give us enough type information to retire the
+  scene-root hypothesis, so the constructor decomp is no longer critical
+  to the sim-tick hunt.

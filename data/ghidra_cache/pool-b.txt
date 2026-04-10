@@ -1203,3 +1203,78 @@ projection) and FUN_710361d040 (camera view-matrix update), confirming
 these all belong to the same graphics subsystem.
 
 Lead 3 from sim_tick_hunt.md pool-B handoff is cleared.
+
+================================================================================
+PASS 2026-04-10: DAT_710593a6a0 constructor hunt (ROLLED BACK)
+================================================================================
+
+Summary of findings — the "scene root singleton" classification of
+DAT_710593a6a0 is wrong. It is a fighter-Mii manager that embeds an
+nn::mii::Database at +0x20.
+
+1. FUN_71022cd350 (the supposed constructor #1):
+   - 145 KB Ghidra decompile, analyzed via Agent chunked read
+   - It is a global DESTRUCTOR, not a constructor. Tears down ~50 sibling
+     singletons; the relevant block is the classic
+     if (p) { FUN_7103757140(p); free(p); p = 0; } at lines 160-165 of the
+     decompile. FUN_7103757140 is the explicit type destructor.
+   - No operator new, no vtable install, no field initialization writes,
+     no string literals. Definitely not a constructor.
+   - Other sibling singletons destroyed alongside DAT_710593a6a0:
+     DAT_710593a3d0/a3d8/a438/a5f0/a6a0/a6b0 (adjacent in .bss — a
+     scene-layer singleton cluster)
+     plus DAT_710532e*, DAT_71052c2*, DAT_7105313508, DAT_7105328f*
+     (about 40 more singletons in three clusters)
+
+2. FUN_7103757140 (the type destructor) — QUOTED IN FULL in
+   docs/rollback/sim_tick_hunt.md "Pool B" section. Key finding:
+   it embeds nn::mii::Database at +0x20 (demangled RTTI call:
+   nn::mii::Database::~Database((Database *)(this + 0x20))).
+   Field layout proven by the destructor:
+     +0x00    std::mutex base class
+     +0x20    nn::mii::Database embedded
+     +0x24d0  std::vector<FighterMiiEntry>::begin (entry size = 0x68)
+     +0x24d8  std::vector<FighterMiiEntry>::end
+     +0x24e0  std::vector end_of_storage (implied)
+     +0x24e8  raw non-owning pointer (NEVER touched by dtor — this is
+              what Dispatcher A reads)
+     +0x24f0  std::shared_ptr<X>
+     +0x2500  std::shared_ptr<Y>
+
+3. FUN_71014f10c0 (heaviest reader of DAT_710593a6a0 — 30+ reads):
+   79 KB decompile, analyzed via Agent chunked read. It is the
+   match-end teardown that walks FighterManager's 8 slots and for each
+   live fighter reads the CharInfo from
+     *DAT_710593a6a0 + 0x24d0 + entry_id*0x68
+   and releases the shared_ptr at entry+0x58/+0x60. Calls
+   nn::mii::CharInfoAccessor::CharInfoAccessor and ::IsValid 8 times.
+   Zero strings. Only touches +0x24d0 and +0x24d8 on the singleton.
+   This confirms the type is a per-fighter-slot Mii manager.
+
+4. FUN_71022b7100 (the supposed constructor #2):
+   - Disassembly = 1.7 MB, body = ~90 KB of code
+   - WORKER-pool-b.md claimed a write to DAT_710593a6a0 at 0x71022c9fb4
+     inside this function. Ghidra's xref database shows no such write.
+     The only recorded write is the null-out in the destructor.
+   - SKIPPED per stop-and-document rule. Added to
+     data/ghidra_cache/manual_extraction_needed.md with LOW priority —
+     the destructor + match-end reader give us the type layout already,
+     so the constructor decomp is no longer critical.
+
+5. Dispatcher A reassessment:
+   - The walk [**(DAT_710593a6a0+0x24e8)+0x2da8] goes through a
+     non-owning raw pointer on the Mii manager. That pointer references
+     some external subsystem (unknown type) whose own +0x2da8 is a list
+     head. It is NOT the scene root.
+   - The Mii manager likely has a back-reference to a higher-level
+     subsystem that was convenient for main_loop to grab. The list
+     walked by Dispatcher A belongs to that higher-level subsystem.
+   - Live sim-tick candidates stay at the phase-6/phase-7 children:
+     FUN_71035c13d0, FUN_71036186d0, FUN_7103619080, FUN_7103593c40,
+     FUN_7103632850 (from main_loop.md §6e).
+
+Cache files produced this pass:
+  - data/ghidra_cache/manual_extraction_needed.md  (new)
+  - docs/rollback/sim_tick_hunt.md                 (appended Pool B section)
+  - Full Ghidra output for FUN_71022cd350 and FUN_71014f10c0 lives in the
+    harness tool-results dir, not copied locally.
