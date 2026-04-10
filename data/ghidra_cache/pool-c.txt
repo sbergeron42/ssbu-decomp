@@ -463,3 +463,263 @@ Key low-match causes:
 - LoadedDirectory* dir vs separate array access (one madd vs two)
 - NX shrink-wrapping (prologue deferred past early returns)
 - Vector grow inline code with OOM handler has complex control flow
+
+
+=== Session 2026-04-10 ===
+
+=== Territory saturation check ===
+Pool-c territory files (res_loading_pipeline.cpp, res_pipeline_large.cpp,
+res_remaining_large.cpp, 0x7103540xxx-0x7103542xxx range) are essentially
+complete. No uncompiled functions remain in the strict pool-c address range.
+
+Scanned the broader 0x7103530000-0x71035b0000 resource range for N-quality
+uncompiled functions. Result: only 3 (FUN_710358fa10 276B audio state,
+FUN_71035658a0 516B float struct equality, FUN_7103549170 712B task enqueue).
+None are resource-pipeline related.
+
+=== 0x71036xxxxx scan — file-object destructors ===
+Three byte-identical 80-byte destructors at 0x710368d0d0, 0x7103691ea0,
+0x71036a04f0. Each does: set vtable → call FUN_71037c3680 singleton →
+FUN_71037c3ad0(singleton, obj[1]) → optional VirtualFreeHook → je_free.
+
+Attempted to match: FAILED. Two issues:
+1. NX Clang puts stp x29,x30 EARLY (right after str x19), then adrp/add/mov
+   x19 to compute vtable. Upstream Clang 8 puts adrp/add/mov x19 BEFORE the
+   stp, then stp right before the user code. fix_prologue_sched doesn't
+   handle this pattern (it only moves `add x29,sp` when stp is already at
+   position 0 or 1 of the section).
+2. Clang-8 tail-calls je_free; NX binary uses bl (non-tail). Fixable with
+   trailing asm("") barrier.
+
+Even fixing issue 2, issue 1 remains. No byte-match achievable with current
+tools. File deleted; these remain uncompiled.
+
+=== 0x71037dxxxxx scan — vtable forwarders ===
+Six byte-identical 32-byte functions at 0x71037d1980/3be0/5490/6ed0/88f0/da2f0.
+Pattern: ldr x8,[x0]; ldr x8,[x8,#0xc0]; blr x8; add x0,x0,#0x128; ret.
+The add x0, x0, #0x128 AFTER the call is curious — it treats the return
+value of vtable[24] as a pointer and offsets by 0x128.
+
+Not attempted — same prologue issues as 0x710368d0d0 family.
+
+=== 0x71035xxxxx vtable dispatch thunks ===
+Two byte-identical 28-byte vtable dispatch thunks at 0x710357a0ac and
+0x710357ac7c (vtable slots +0x160 and +0x388). Pattern: stp/mov/ldr x8/
+ldr x8/blr x8/ldp/ret.
+
+Matched individually in res_vtable_leaves.cpp: 2/2 byte-identical after
+fix_prologue_sched. HOWEVER: fun_batch_d_018.cpp (pool-d) already defines
+FUN_710357a0ac and FUN_710357ac7c with incorrect codegen (calls the vtable
+function with NO arguments; should pass obj as first arg). The broken
+versions take precedence in the linker script due to alphabetical ordering
+of .o files.
+
+My correct versions would be dead code in the linked binary. File deleted.
+ACTION NEEDED: pool-d or orchestrator should fix fun_batch_d_018:73-86.
+The correct code:
+  void FUN_710357a0ac(long* obj) {
+      (*(void(**)(long*))(*obj + 0x160))(obj);  // pass obj as this
+  }
+  void FUN_710357ac7c(long* obj) {
+      (*(void(**)(long*))(*obj + 0x388))(obj);
+  }
+Verified byte-matching with this form + standard build pipeline.
+
+== Session 2026-04-10 (rollback memory map) ==
+
+=== 0x71003ac560 (get_battle_object_from_id) ===
+Dispatches on (id>>28)&0xF to 5 BattleObject pool categories via DAT_71052b7548[cat].
+Each pool has header {+0x08 array base, +0x18 count}. Lookup: base + (id & 0xFFF0000)>>16 * stride.
+Object strides (== sizeof per category):
+  cat 0: 0xF940 (Fighter, ~61 KB)
+  cat 1: 0x3C30 (Weapon, ~15 KB)
+  cat 2: 0x60C0 (Item, ~24 KB)
+  cat 3: 0x300 (unknown, 768 B)
+  cat 4: 0x2B0 (unknown, 688 B)
+DAT_71052b7548 is the canonical BattleObjectManager root (NOT DAT_71052b7ef8 which is BossManager).
+
+=== 0x7102275400 (app::sv_math::rand) ===
+XorShift128 RNG dispatcher. Reads *DAT_71052c25b0 (game global).
+Struct body contains >=9 independent streams keyed by Hash40:
+  +0x00 default, +0x14 (0x77a08c3fc), +0x28 (0x66933a7e6), +0x3C (0x5c27c9369),
+  +0x50 (0x2095191e5), +0x64 (0x5fb9f5aa9), +0x78 (0x41f1b251e),
+  +0x8C (0x5f88ec384), +0xA0 (0x63b1cee05).
+Each stream is 20 bytes (16 B xorshift state + 4 B call counter).
+Rollback-critical: every stream must be snapshotted or desync on item/crit/gimmick RNG.
+
+=== 0x7100417d10 (FUN_7100417d10, ItemManager item-kind lookup table init) ===
+Static initializer. 65 je_aligned_alloc calls, every alloc is a std::vector<u32> of item kinds.
+Total ~1.8 KB across DAT_71052c2960..71052c2f90. All PERSISTENT (const lookup tables).
+DAT_71052c2b88 is the .begin of vector<u32>{0xe3}, NOT the ItemManager singleton.
+(Existing comment in src/app/FighterManager.cpp:33 is wrong; correction documented in memory_map.md.)
+
+=== 0x710392dce0 (je_aligned_alloc) ===
+Only named jemalloc symbol. Every manager init calls this directly.
+No per-subsystem arena partitioning (no je_mallocx + MALLOCX_ARENA pattern).
+OOM retry uses DAT_7105331f00->vt[0x30] handler.
+
+=== Singleton root set (validated against xrefs) ===
+FighterManager:      DAT_71052b84f8
+StageManager:        DAT_71053299d8
+EffectManager:       DAT_7105333920
+BattleObjectManager: DAT_71052b7548 (array of 5 PoolHeader*)
+Game global / RNG:   DAT_71052c25b0 (contains per-namespace XorShift128 streams)
+BossManager:         DAT_71052b7ef8 (was mis-labeled as BattleObjectManager in worker brief)
+
+=== Per-match state size lower bound ===
+~2 MB BattleObject pools + ~256 KB est. Lua VMs + ~40 KB manager bodies + ~0.2 KB RNG
+= ~2.5 MB raw per-frame savestate before module-level dirty-bit optimization.
+
+== Session 2026-04-10 — Rollback memory map pass 2 ==
+
+=== 0x71015ce700 app::stage::get_gravity_position ===
+Reads lib::Singleton<app::BattleObjectWorld>::instance_ via:
+  adrp x8, 0x71052b7000 ; ldr x8, [x8, #0x558]
+→ lib::Singleton<app::BattleObjectWorld>::instance_ = **0x71052b7558**
+Body: +0x5c byte flag ('use default gravity'). If 0 → returns &body+0x10 (gravity_pos vec4).
+Else returns &DAT_71052b7610 (static default, guard DAT_71052b7608). Default loaded from
+PTR_ConstantZero_71052a7a80 (8+8 bytes).
+
+=== 0x7101fca200 BattleObjectWorld__scale_z_impl ===
+  if (world[0xc]) return 1.0; else return *(float*)(world+8);
+→ +0x08 scale_z f32, +0x0c override-flag u8.
+
+=== 0x7101fca1f0 BattleObjectWorld__gravity_speed_coefficient_impl ===
+  return *(f32*)(world+4);
+→ +0x04 gravity_speed_coefficient f32.
+
+=== 0x7101fca220 BattleObjectWorld__gravity_pos_impl ===
+  +0x10 gravity_pos vec4 (when not default)
+  +0x5c use_default flag
+
+=== 0x7101fca2e0 BattleObjectWorld__move_speed_impl ===
+  return world + 0x20 → +0x20 move_speed vec4.
+
+So BattleObjectWorld struct layout (≥ 0x60 B):
+  +0x00 (u32?) unknown
+  +0x04 gravity_speed_coefficient (f32)
+  +0x08 scale_z (f32)
+  +0x0c scale_z override flag (u8)
+  +0x10 gravity_pos (vec4, 16B)
+  +0x20 move_speed (vec4, 16B)
+  +0x30..0x5b unknown (~0x2c bytes)
+  +0x5c use_default_gravity flag (u8)
+  +0x5d..0x?? unknown tail
+→ Minimum struct size: 0x60 bytes. Likely ≤ 0x100 in total.
+
+=== 0x2275400 sv_math::rand RNG dispatcher — confirmed RNG body layout ===
+Dispatches on Hash40 keys (9 branches + default). State at *DAT_71052c25b0 → read ptr →
+  +0x00 default (4 u32 state: state0/1/2/3, counter)
+  +0x14 0x77a08c3fc
+  +0x28 0x66933a7e6
+  +0x3c 0x5c27c9369
+  +0x50 0x2095191e5
+  +0x64 0x5fb9f5aa9
+  +0x78 0x41f1b251e
+  +0x8c 0x5f88ec384
+  +0xa0 0x63b1cee05
+Max offset touched: +0xb0 (counter of 9th stream). **No higher streams** in this dispatcher.
+Minimum RNG snapshot: 0xb4 = **180 bytes**. (Matches memory map, no new streams found.)
+
+=== 0x710260b9b0 FUN_710260b9b0 — EffectManager/secondary effect-table confirmed ===
+Two effect-related globals observed via ADRP 0x7105333000:
+  ldr x10,[x10, #0x920]  → lib::Singleton<lib::EffectManager>::instance_ @ **0x71053333920**
+    (actually 0x7105333920, confirms existing memory map)
+    Double-deref: *(0x7105333920) = EffectManager*, then (EffectMgr + idx * 0x300) = entry.
+    Stride = 0x300 (768 B per particle record).
+    Index = (u32field >> 0x18) — top byte → max 256 entries.
+    Entry validation: *(entry+4) == full u32 id; *(entry+0x2d7) zero-check.
+    Fields written: +0x2d2 (bool), +0x2d4 (bool).
+    → Pool upper bound: 256 × 0x300 = **786,432 B ≈ 768 KB worst case**.
+
+  ldr x10,[x10, #0x948]  → DAT_7105333948 (direct .data array, no double-deref)
+    Stride = 0x1b0 (432 B per entry).
+    Index = bits[25:19] but bounded `cmp w10, #0x4; b.hi` → only indices 0..4 allowed.
+    Fixed 5 entries × 0x1b0 = **2160 bytes** (< 3 KB).
+    Entry validation: *(entry+0) == id; writes u16 0 to +0x1a0 on some cleanup.
+    → Small fixed global, likely a 5-slot "reserved effect" table (stage/HUD effects).
+    Not a per-particle pool; keep in snapshot but cost is negligible.
+
+Other globals touched by this function (peripheral):
+  DAT_7105337018 + 0x18 — some manager's event-listener table (read-only in this path)
+  DAT_71053381f8 — a Hash40 key used for FUN_7103569a80 lookup
+  DAT_7105334e90 — another singleton/ptr chain (deref → +8 → +0x1190 → +0x28 → +8 = 0xFFFFFFFF)
+
+
+=== 0x71003aeb50 FUN_71003aeb50 — BattleObject return-to-pool ===
+5-case switch on (id >> 0x1c & 0xf). For each case cat:
+  slot_index = (id >> 0x10) & 0xfff   (12 bits)
+  PoolHeader = DAT_71052b7548[cat]
+  if slot_index >= *(u32*)(PoolHeader + 0x18) → invalid
+  obj_ptr = *(PoolHeader+8) + slot_index * category_stride
+  if *(u32*)(obj_ptr+8) != full_id → invalid
+  (*vtable[0x50/8])(obj_ptr)  // category destroy
+  // then push to freelist:
+  freelist_slot = (obj_ptr - *(PoolHeader+8)) / stride
+  freelist_array = *(PoolHeader + 0x10) (u16[])
+  freelist_array[*(u16*)(PoolHeader+0x1c)] = prev_head
+  *(u16*)(PoolHeader+0x1c) = freelist_slot (new top)
+  *(s16*)(PoolHeader+0x1e) -= 1
+
+→ PoolHeader layout:
+  +0x00 vtable
+  +0x08 obj_array_base
+  +0x10 freelist u16[] stack
+  +0x18 obj_count (u32) — POOL CAPACITY (still not directly observed, but <65536 proven)
+  +0x1c freelist_head (u16) — top of free-index stack
+  +0x1e freelist_count (s16) — count in freelist; alive = obj_count - freelist_count
+
+Strides confirmed again (matches get_battle_object_from_id):
+  cat0 0xf940 (fighter), cat1 0x3c30 (weapon), cat2 0x60c0 (item),
+  cat3 0x300 (enemy?), cat4 0x2b0 (area?)
+
+
+=== 0x71014b2a40 FUN_71014b2a40 — BattleObject match-setup wrapper ===
+Calls FUN_7101344cf0() first (the big pool init), then constructs 4 "match setup
+entries" (each wrapped in a puVar9/puVar11 pair) that get pushed into the linked
+list at DAT_71052c26c0. Each entry:
+  - puVar9 is a 0x20-byte "header" with vtable + list ptrs
+  - puVar11 is the actual payload, alloc sizes 0x50, 0x330, 0x210, 0x50, 0x18 (varies)
+The linked list root is itself lazy-initialized: DAT_71052c26c0 holds a pointer
+to a 0x8-byte slot which points to a 0x50-byte container header (vtable
+&PTR_FUN_7105069db0). The container's +0x08..+0x48 fields are the doubly-linked
+list head/tail pairs for the 4 entries.
+
+→ New singleton: **DAT_71052c26c0** — match-runtime linked-list root (4 entries
+registered after FUN_7101344cf0 init). Per-match mutable, must be snapshotted
+(but shallow — these are task/entry registration slots, not bulk state).
+
+Sizes touched: 0x50 (root container), 0x330 (entry A payload — fighter-setup?),
+0x210 (entry B — stage-setup?), 0x50 (entry C — plus three 0x30 sub-items),
+0x18 (entry D — smallest). Total new per-match allocation from this wrapper:
+~0x5f0 bytes (1520 B) on top of whatever FUN_7101344cf0 itself allocates.
+
+This function is a dead-end for pool-count extraction — it consumes rather
+than defines the pool capacity. Pool counts still need direct inspection of
+FUN_7101344cf0 to extract.
+
+
+=== 0x7101523b60 FUN_7101523b60 — second match-setup wrapper ===
+Also calls FUN_7101344cf0() first. Lazy-creates 3 additional match singletons:
+
+1. DAT_71052c2800 — main match-state root
+   wrapper (0x10 B, vtable &PTR_LAB_710506cd68) → payload 0x270 B
+   Sub-allocations linked from payload:
+     +0xf8  → 0x40 B sub (state-flags, Hash40 key 0x1750629f16, 0x9edd2b0fd)
+     +0x100 → 0x2e0 B sub (Hash40 0x26e5f4cf48, lots of f32 defaults)
+     +0x118 → 0x80 B sub (vtable &PTR_LAB_7105180b40, 4 linked-list heads)
+     +0x258 → 0xc8 B sub (vtable &PTR_LAB_710506cd48, task table)
+   Total chain: ~0x6d8 B ≈ 1,752 B
+
+2. DAT_71052c2860 — wrapper (0x10 B) → 0x48 B payload
+   Small struct with f32=1.0 default at +0x20, zero init
+
+3. DAT_71052c2858 — wrapper (0x08 B) → 0x10 B payload
+   Minimal: u64=0 + u32=0xFFFFFFFF + pad
+
+Grand total per-match allocation from this wrapper: ~1,880 B.
+
+→ New singletons for rollback snapshot:
+    DAT_71052c2800, DAT_71052c2860, DAT_71052c2858
+    Per-match mutable, shallow state, total <2 KB. MUST snapshot.
+
