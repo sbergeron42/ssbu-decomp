@@ -192,6 +192,46 @@ the Fighter caches each module pointer at a fixed offset *alongside* (or
 Fighters, not the FighterManager entry array**, because the FighterManager
 entries don't carry the cached module table.
 
+### Second-pass confirmation — one class, more slots mapped
+
+After the first commit, Pool A decompiled two more slots in the same table:
+
+- Slot `+0x2b8` @ `0x7104f7f578` → `FUN_71006164a0`: reads the module accessor
+  via `*(long*)(param_1 + 0x20)` (the pointer form, not the `+0x3f0` inline
+  form), calls `status_module->vt[0x1b8]`, `status_module->vt[0x98]`
+  (transition-term update), `status_module->vt[0x168]` (get_status_kind),
+  then `area_module->vt[0x48]` (set_whole), and finally
+  `*(long*)(param_1 + 0xf700)->vt[0x58](param_1)` — the post-status cleanup
+  handler. Shape: `Fighter::post_status_update_hook`.
+
+- Slot `+0x340` @ `0x7104f7f600` → `FUN_71006203d0`: takes a `battle_object_id`
+  and returns `f32 * f32` — products of two `vt[0x50]`/`vt[0x58]` calls on
+  `*(long*)(param_1 + 0xf908)` with a stack visitor `&PTR_FUN_7104f61cc8`.
+  Shape: `Fighter::get_relative_scale(u32 target_id)` weight/scale query.
+
+Both slots dereference `param_1 + 0xf908` — the same BattleObject-base pointer
+reached via `param_1[0x1f21]` in slot `+0x2a8`. Cross-validation confirms one
+class, not adjacent vtables.
+
+**Cached layout upgrade.** The Fighter class therefore holds:
+
+| Offset | Type | Role |
+| --- | --- | --- |
+| `+0x00` | `vtable*` | own class vtable @ `0x7104f7f2c0` |
+| `+0x0c` | s32 | FighterKind |
+| `+0x10` | u32 | entry_id |
+| `+0x20` | `BattleObjectModuleAccessor*` | pointer alias to `+0x3f0` |
+| `+0x3f0` | `BattleObjectModuleAccessor` | inline (0x158 bytes of submodule ptrs) |
+| `+0x430..+0x568` | cached module ptrs | fast path for hot-loop readers (see table above) |
+| `+0xf5a0` | `StageContext*` | per-stage flags |
+| `+0xf700` | `PostStatusHandler*` | cleanup callback object (vt[0x58]) |
+| `+0xf908` | `BattleObjectBase*` | outer BattleObject base — vt[0x30/0x38] pre/post, vt[0x50/0x58] scale/weight queries |
+
+The vtable itself runs at least `0x7104f7f2c0..0x7104f7f900+` = ~0x70 slots =
+224+ virtual methods. That is consistent with a concrete `FighterKind`
+specializer class, not a generic base — the base `FighterBase` has fewer
+virtuals.
+
 ### Caller chain to `main_loop`
 
 Not yet mapped. The vtable slot is invoked indirectly by whatever drives
@@ -206,6 +246,20 @@ Pool C is doing (3) via `BattleObjectWorld` / `BattleObjectManager`, so pool A's
 most useful remaining contribution is (1) and (2): the Fighter-level update
 bridge that sits between `BattleObjectManager::iterate()` and the status vtable
 slot documented above.
+
+### Next-session pickup
+
+1. Read the 8 bytes at `0x7104f7f2b0` (typeinfo ptr slot of this vtable) and
+   chase the typeinfo name string to identify the exact FighterKind specializer.
+2. Walk the full vtable (~224 slots) looking for a slot whose body calls
+   `status_module->vt[exec]` + `motion_module->vt[exec]` — that is the
+   Fighter's own `process_fighter` / `update` virtual method.
+3. `get_xrefs_to` that slot's address (even if only DATA, that gives the
+   vtable base). Then `get_xrefs_to` the vtable base to find *all* Fighter
+   classes using it, and trace their update calls.
+4. Cross with Pool C's `BattleObjectManager` pool-header array @
+   `DAT_71052b7548` iterators — the sim driver probably walks that pool and
+   dispatches `obj->vt[update]()`.
 
 ### Verdict
 PROGRESS — the FighterManager-vtable angle is disproven outright, but the pivot
