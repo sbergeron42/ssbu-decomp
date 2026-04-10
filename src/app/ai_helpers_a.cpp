@@ -740,3 +740,155 @@ bool check_parent_same_floor_367400(u64 L) {
 // ---------------------------------------------------------------------------
 // 0x71003672b0 already done above as is_target_on_same_floor
 // ---------------------------------------------------------------------------
+
+// ---- Batch 3: small AI functions ----
+
+// External functions for batch 3
+extern void FUN_710033e5c0(u64, u64);
+extern void FUN_71002ec1a0(u64);
+extern void FUN_710036a5c0(u64, u32, u32);
+extern void FUN_710160e340(u64);
+extern void FUN_71002ee310(u64, u64*, u32);
+extern u64 FUN_71003596f0(u64);
+extern void FUN_7100358a80(float, u64, u64);
+
+// BattleObjectWorld singleton (double-deref pattern like FighterAIManager)
+// [derived: app::ai_stage::scroll_x reads from this + 0x20]
+extern "C" void* DAT_71052b7ed8 HIDDEN;
+
+// ---------------------------------------------------------------------------
+// 0x7100376350 — set_update_count (12B)
+// [derived: app::ai_system::set_update_count in Ghidra]
+// ---------------------------------------------------------------------------
+void set_update_count_376350(u64 L, s32 val) {
+    FighterAI* ctx = get_ai_context(L);
+    ctx->update_count = val;
+}
+
+// ---------------------------------------------------------------------------
+// 0x71003763c0 — change_target (8B)
+// [derived: app::ai_system::change_target in Ghidra]
+// Tail-calls FUN_71002ec1a0 with raw ctx pointer
+// ---------------------------------------------------------------------------
+void change_target_3763c0(u64 L) {
+    FUN_71002ec1a0(reinterpret_cast<u64>(get_ai_context(L)));
+}
+
+// ---------------------------------------------------------------------------
+// 0x7100376390 — prev_mode (12B)
+// [derived: app::ai_system::prev_mode in Ghidra]
+// Returns u32 from ctx + 0xc68
+// ---------------------------------------------------------------------------
+u32 prev_mode_376390(u64 L) {
+    u64 ctx = reinterpret_cast<u64>(get_ai_context(L));
+    return *(u32*)(ctx + 0xc68);
+}
+
+// ---------------------------------------------------------------------------
+// 0x710036a130 — motion_to_cmd_id (12B)
+// [derived: app::ai::motion_to_cmd_id in Ghidra]
+// Dispatches hash lookup on cmd table at ctx + 0x988
+// ---------------------------------------------------------------------------
+void motion_to_cmd_id_36a130(u64 L, u64 hash) {
+    FUN_710033e5c0(reinterpret_cast<u64>(get_ai_context(L)) + 0x988, hash);
+}
+
+// ---------------------------------------------------------------------------
+// 0x710036a5b0 — range_in (12B)
+// [derived: app::ai_deprecated::range_in in Ghidra]
+// Deprecated: always calls predict with mode=1, extra=0
+// ---------------------------------------------------------------------------
+void range_in_36a5b0(u64 L, float a, float b) {
+    FUN_710036a5c0(L, 1, 0);
+}
+
+// ---------------------------------------------------------------------------
+// 0x710036acf0 — distance_in (12B)
+// [derived: app::ai_deprecated::distance_in in Ghidra]
+// Deprecated: always calls predict with mode=0, extra=0
+// ---------------------------------------------------------------------------
+void distance_in_36acf0(u64 L, float a, float b) {
+    FUN_710036a5c0(L, 0, 0);
+}
+
+// ---------------------------------------------------------------------------
+// 0x710036ad00 — other_in (12B)
+// [derived: app::ai_deprecated::other_in in Ghidra]
+// Deprecated: always calls predict with mode=0, extra=1
+// ---------------------------------------------------------------------------
+void other_in_36ad00(u64 L, float a, float b) {
+    FUN_710036a5c0(L, 0, 1);
+}
+
+// ---------------------------------------------------------------------------
+// 0x710036b3d0 — scroll_x (16B)
+// [derived: app::ai_stage::scroll_x in Ghidra]
+// Returns BattleObjectWorld + 0x20 as u32 (stage scroll speed X)
+// ---------------------------------------------------------------------------
+u32 scroll_x_36b3d0() {
+    u64 wrapper = *(u64*)DAT_71052b7ed8;
+    u64 world = *(u64*)wrapper;
+    return *(u32*)(world + 0x20);
+}
+
+// ---------------------------------------------------------------------------
+// 0x710036b3e0 — calc_offset_with_gravity (8B)
+// [derived: app::ai_stage::calc_offset_with_gravity in Ghidra]
+// Tail-calls FUN_710160e340 with contents of param_2 (packed 2xf32)
+// ---------------------------------------------------------------------------
+void calc_offset_with_gravity_36b3e0(void* param_1, u64* param_2) {
+    FUN_710160e340(*param_2);
+}
+
+// ---------------------------------------------------------------------------
+// 0x710036b030 — most_earliest_weapon (36B)
+// [derived: app::ai_weapon::most_earliest_weapon in Ghidra]
+// Finds the first weapon in the AI state, returns weapon+8 or 0
+// ---------------------------------------------------------------------------
+u64 most_earliest_weapon_36b030(u64 L) {
+    FighterAI* ctx = get_ai_context(L);
+    u64 result = FUN_71003596f0(reinterpret_cast<u64>(ctx->state));
+    if (result != 0) {
+        result = *(u64*)(result + 8);
+    }
+    return result;
+}
+
+// ---------------------------------------------------------------------------
+// 0x710036ad10 — get_target_vector (24B)
+// [derived: app::ai_deprecated::get_target_vector in Ghidra]
+// Scales a float by ctx+0xc20 and passes to target vector computation
+// ---------------------------------------------------------------------------
+void get_target_vector_36ad10(u64 L, float scale) {
+    FighterAI* ctx = get_ai_context(L);
+    u64 raw = reinterpret_cast<u64>(ctx);
+    FUN_7100358a80(*(float*)(raw + 0xc20) * scale,
+                   reinterpret_cast<u64>(ctx->state),
+                   raw + 0xc50);
+}
+
+// ---------------------------------------------------------------------------
+// 0x710036ad30 — get_safe_fall (52B)
+// [derived: app::ai_deprecated::get_safe_fall in Ghidra]
+// Initializes stack-local Vector4f to zero, calls safe fall computation
+// ---------------------------------------------------------------------------
+__attribute__((disable_tail_calls))
+v4sf_ret get_safe_fall_36ad30(u64 L) {
+    u64 local[2] = {0, 0};
+    FUN_71002ee310(reinterpret_cast<u64>(get_ai_context(L)) + 0x180,
+                   local, 1);
+    return *reinterpret_cast<v4sf_ret*>(local);
+}
+
+// ---------------------------------------------------------------------------
+// 0x710036ad70 — get_safe_fall_current (52B)
+// [derived: app::ai_deprecated::get_safe_fall_current in Ghidra]
+// Same as get_safe_fall but with param=0
+// ---------------------------------------------------------------------------
+__attribute__((disable_tail_calls))
+v4sf_ret get_safe_fall_current_36ad70(u64 L) {
+    u64 local[2] = {0, 0};
+    FUN_71002ee310(reinterpret_cast<u64>(get_ai_context(L)) + 0x180,
+                   local, 0);
+    return *reinterpret_cast<v4sf_ret*>(local);
+}
