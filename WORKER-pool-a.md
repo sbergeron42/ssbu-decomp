@@ -2,52 +2,75 @@
 
 ## Model: Opus
 
-## Task: ROLLBACK CRITICAL PATH — RNG hunt (sv_math::rand + state + call sites)
+## Task: ROLLBACK SIM TICK HUNT — FighterManager vtable xref walk (Item 2)
 
-## Priority: HIGHEST — blocks downstream rollback netcode work
+## Priority: HIGHEST — sim tick hunt, blocks rollback resimulation
 
 ## Context
-A rollback netcode fork of Eden (Yuzu) intercepting Smash's LDN traffic needs to capture/restore RNG state every frame. Without this, every rollback resimulation desyncs on frame 1.
+Pool B's `docs/rollback/main_loop.md` confirmed `main_loop` @ `0x7103747270` is the **presentation loop**, not the sim dispatcher. The actual "advance one fighter frame" call lives elsewhere — reachable from main_loop's call chain but not on any direct child path investigated yet.
 
-## IMPORTANT: Pre-cached decomps
-**Two huge functions have already been decompiled to disk** (Ghidra MCP times out on them):
-- `data/ghidra_cache/main_loop_7103747270.txt` (24KB function, 3947 lines)
-- `data/ghidra_cache/FUN_7101344cf0.txt` (65KB function, 5891 lines — likely per-frame fighter update)
+You're hunting it via the **bottom-up FighterManager vtable approach**. Pools B and C are doing the same hunt via different angles in parallel — whoever finds it first ends the hunt.
 
-**Read these files with `Read` instead of calling Ghidra MCP for those addresses.** Both files contain Ghidra decompiler output (with Ghidra default variable names — that's expected, you're reading reference material, not committing it).
+## Background — what we already know
+- `Singleton<FighterManager>::instance_` @ `0x71052b84f8`
+- Every field-reader of this singleton pulls **single fields** (hp, entry_id, pos), never iterates the array
+- The sim dispatcher therefore reaches fighters via a **cached pointer stored in a scene object**, not via the singleton
+- Read `docs/rollback/main_loop.md` first — especially the "open questions" section — for full context
+- Pool C confirmed `BattleObjectWorld` singleton @ `0x71052b7558` (was misdocumented as `DAT_71052b7ef8` which is actually BossManager)
+- Pool C also confirmed `BattleObjectManager` pool-header array @ `DAT_71052b7548`
 
-## What To Find
+## What To Do
 
-### 1. The RNG function itself
-- Search Ghidra for `app::sv_math::rand` (or `sv_math::rand`, or `rand` in `app` namespace)
-- Use `mcp__ghidra__search_functions_by_name` with terms like `rand`, `random`, `sv_math`
-- Document the function signature, address, and what it returns
-- We already know `xorshift128_7100138620` exists. Check if it IS the gameplay RNG or separate.
+### 1. Find the FighterManager vtable
+- Use `mcp__ghidra__decompile_function_by_address` on the FighterManager constructor (find via `mcp__ghidra__search_functions_by_name FighterManager`)
+- The vtable is the first store in the constructor (`*this = &PTR_LAB_XXX`)
+- Document the vtable address
 
-### 2. The RNG state
-- Find where RNG state is stored (likely a global or singleton)
-- Document the struct layout
-- Find the seed init function
+### 2. Xref vtable slots
+- Use `mcp__ghidra__get_xrefs_to` on the vtable address
+- Look for slots shaped like `update`, `exec`, `process`, `advance`, `tick`, `frame`
+- For each interesting slot, follow the function pointer to find the actual implementation
 
-### 3. Every call site
-- Use `mcp__ghidra__get_function_xrefs` on the RNG function(s)
-- Categorize each: gameplay (item spawns, hitlag shake, tripping) vs cosmetic (UI, menus)
-- **Both `main_loop` and `FUN_7101344cf0` likely call rand many times — search the cached files for "rand" or for the RNG address you find**
+### 3. Walk callers bottom-up
+- For each tick-shaped vtable slot, find all callers via `mcp__ghidra__get_function_xrefs`
+- Walk up the call chain
+- **Goal**: find a caller that is reachable from `main_loop` (cross-reference with `data/ghidra_cache/main_loop_7103747270.txt` if needed)
+- That caller IS the bridge between the scene object and the per-fighter tick
+
+### 4. Same sweep for adjacent vtables
+- `BattleObjectWorldManager` vtable
+- `BattleObject` vtable (the `_vt[0]` we already identified — what other slots exist?)
+- Whichever is called per-frame from a main_loop descendant is your target
 
 ## Output
 
-Create `docs/rollback/rng.md` with:
-1. RNG function(s): signature, address, return semantics
-2. State struct: layout with `[derived:]` provenance
-3. Seed init function: where and when
-4. All call sites: table of `address | function | category | notes`
+Append to `docs/rollback/sim_tick_hunt.md` (create if not exists). Other pools (B, C) are also writing to this file — use clearly labeled sections:
 
-Define a proper `RngState` struct in `include/app/RngState.h` (not placeholders/) since `sv_math::rand` is `.dynsym`-confirmed.
+```markdown
+## Pool A — FighterManager vtable approach
+
+### FighterManager vtable
+- Address: 0xXXXXX
+- Constructor: 0xXXXXX (FUN_XXXX)
+- Tick-shaped slots:
+  - +0xNN: name (purpose)
+
+### Caller chain to main_loop
+1. vtable[0xNN] called by FUN_XXXX
+2. FUN_XXXX called by FUN_XXXX
+3. ... reaches main_loop at FUN_XXXX (which BL in main_loop?)
+
+### Verdict
+[FOUND / NOT FOUND / DEAD END] — explanation
+```
+
+If you find the sim tick, DO NOT decompile it yet — just document the address and how it's reached. The rollback team needs the entry point first; full decomp comes later.
 
 ## Quality Rules
+- Documentation is the primary deliverable
+- The cached `data/ghidra_cache/main_loop_7103747270.txt` and `FUN_7101344cf0.txt` are reference material — read with `Read` tool, do not call MCP
+- NO `FUN_` names, NO Ghidra vars in any committed code
 - Cast density under 10%
-- NO `FUN_` names, NO Ghidra vars, NO raw vtable dispatch in committed code
-- The cached files contain Ghidra paste — that's reference material, NOT something to commit
 
 ## Build
 ```bash
