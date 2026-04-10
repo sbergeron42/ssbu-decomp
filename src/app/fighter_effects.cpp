@@ -552,6 +552,74 @@ extern "C" void homerun_contest_effect_no_pause(BattleObjectModuleAccessor* acc)
     }
 }
 
+// ---- StageManager sub-object dispatchers ------------------------------------
+// Many "stage-side" effect helpers route through the inline StageManager
+// sub-object at singleton+0x128. Follows the same pattern already used by the
+// kiiladarzmanager::set_stage_status_* family in fighter_attack.cpp.
+namespace lib {
+extern "C" void* Singleton_app_StageManager_instance_fe
+    asm("_ZN3lib9SingletonIN3app12StageManagerEE9instance_E") HIDDEN;
+}
+
+// 0x7100f57520 (28 bytes) — FighterSpecializer_Pikmin::set_glare_fog_color
+// Tail-calls the stage sub-object's vtable slot 0, passing the float directly
+// via s0 (ABI-preserved across the branch).
+// [derived: StageManager inline sub-object at instance+0x128, vt[0] matches the
+//  kiiladarzmanager pattern in fighter_attack.cpp but with a different slot]
+extern "C" void set_glare_fog_color(void* /*acc unused*/, f32 value) {
+    u8* stage = *reinterpret_cast<u8**>(lib::Singleton_app_StageManager_instance_fe);
+    u8* sub = stage + 0x128;
+    using SubFn = void(*)(void*, f32);
+    SubFn slot0 = reinterpret_cast<SubFn>(**reinterpret_cast<void***>(sub));
+    slot0(sub, value);
+}
+
+// ---- Smash Ball post-effect cleanup ----------------------------------------
+// Both smashball items (normal and heavy) share an identical helper that:
+// 1. Reads work var 0x10000005 (current smashball handle/state)
+// 2. If negative: no-op (nothing to clean)
+// 3. If zero (brand-new spawn): destroy a global singleton slot
+// 4. Then write -1 to work var 0x10000005 (marks post-effect cleared)
+//
+// DAT_7105334e90 [inferred: SmashBall visual-effect singleton, contains entry
+//  at +8 with cached ptr fields at +0x1d10 (ptr), +0x1400 (ptr), +0x1408 (u32)]
+// FUN_710392e590 [inferred: operator delete / std::unique_ptr reset]
+
+extern "C" void* DAT_7105334e90 HIDDEN;
+extern "C" void smashball_se_free_710392e590(void*);  // operator delete-like
+
+// Shared cleanup body — duplicated literally in both smashball and smashballheavy
+// Written to access acc->work_module twice (not via a cached local) so the
+// compiler keeps the accessor in a callee-saved register and reloads work each
+// time, matching the original register allocation pattern.
+#define SMASHBALL_FORCE_CLEAR_POST_EFFECT_BODY(acc_param) do { \
+    BattleObjectModuleAccessor* __acc = (acc_param); \
+    s32 __handle = __acc->work_module->get_int(0x10000005); \
+    if (__handle < 0) return; \
+    if (__handle == 0) { \
+        u8* __entry = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(DAT_7105334e90) + 8); \
+        void* __cached = *reinterpret_cast<void**>(__entry + 0x1d10); \
+        if (__cached != nullptr) { \
+            smashball_se_free_710392e590(__cached); \
+            *reinterpret_cast<void**>(__entry + 0x1d10) = nullptr; \
+        } \
+        *reinterpret_cast<void**>(__entry + 0x1400) = nullptr; \
+        *reinterpret_cast<u32*>(__entry + 0x1408) = 0; \
+    } \
+    __acc->work_module->set_int(-1, 0x10000005); \
+} while (0)
+
+// 0x71016723a0 (144 bytes) — app::smashball::force_clear_post_effect
+extern "C" void force_clear_post_effect(BattleObjectModuleAccessor* acc) {
+    SMASHBALL_FORCE_CLEAR_POST_EFFECT_BODY(acc);
+}
+
+// 0x71016749b0 (144 bytes) — app::smashballheavy::force_clear_post_effect
+// Identical to the normal smashball version (same global, same layout).
+extern "C" void force_clear_post_effect_71016749b0(BattleObjectModuleAccessor* acc) {
+    SMASHBALL_FORCE_CLEAR_POST_EFFECT_BODY(acc);
+}
+
 // 0x71006988b0 (128 bytes) — app::FighterUtil::check_hit_dead_effect
 // Checks if a fighter should display a hit-dead visual effect.
 // Calls FUN_710068f7a0 (damage module eligibility check), then tests 3 work flags.
