@@ -2,75 +2,78 @@
 
 ## Model: Opus
 
-## Task: ROLLBACK SIM TICK HUNT — FighterManager vtable xref walk (Item 2)
+## Task: ROLLBACK CO-PRIORITY-1 — Decompile FUN_71014f10c0 (the 40-read serializer)
 
-## Priority: HIGHEST — sim tick hunt, blocks rollback resimulation
+## Priority: HIGHEST — potentially reveals built-in walker / save-state implementation
 
 ## Context
-Pool B's `docs/rollback/main_loop.md` confirmed `main_loop` @ `0x7103747270` is the **presentation loop**, not the sim dispatcher. The actual "advance one fighter frame" call lives elsewhere — reachable from main_loop's call chain but not on any direct child path investigated yet.
+The sim tick hunt converged on a list-walking dispatcher inside main_loop (Dispatcher A) that calls `vtable[+0x28]` on every node in a list rooted at `[**(DAT_710593a6a0+0x24e8)+0x2da8]`. See `docs/rollback/sim_tick_hunt.md` for full context.
 
-You're hunting it via the **bottom-up FighterManager vtable approach**. Pools B and C are doing the same hunt via different angles in parallel — whoever finds it first ends the hunt.
+`FUN_71014f10c0` reads `DAT_710593a6a0` ~40 times in a row. That's almost certainly a **serializer**. The rollback team identifies three plausible identities:
 
-## Background — what we already know
-- `Singleton<FighterManager>::instance_` @ `0x71052b84f8`
-- Every field-reader of this singleton pulls **single fields** (hp, entry_id, pos), never iterates the array
-- The sim dispatcher therefore reaches fighters via a **cached pointer stored in a scene object**, not via the singleton
-- Read `docs/rollback/main_loop.md` first — especially the "open questions" section — for full context
-- Pool C confirmed `BattleObjectWorld` singleton @ `0x71052b7558` (was misdocumented as `DAT_71052b7ef8` which is actually BossManager)
-- Pool C also confirmed `BattleObjectManager` pool-header array @ `DAT_71052b7548`
+1. **Match replay encoder** — RULED OUT (Smash replays store inputs, not state)
+2. **LDN sync/resync encoder** — would be a bombshell. Smash already having an "encode match state" function would mean rollback save-state is a wrapper around a built-in function.
+3. **Debug/telemetry dumper** — still useful as a structural reference; enumerates what's reachable from the root.
+
+**Either way, this function tells us the spec for the savestate walker.**
 
 ## What To Do
 
-### 1. Find the FighterManager vtable
-- Use `mcp__ghidra__decompile_function_by_address` on the FighterManager constructor (find via `mcp__ghidra__search_functions_by_name FighterManager`)
-- The vtable is the first store in the constructor (`*this = &PTR_LAB_XXX`)
-- Document the vtable address
+1. **Decompile `FUN_71014f10c0`** via `mcp__ghidra__decompile_function_by_address 0x71014f10c0`
+2. **CRITICAL — STOP-AND-DOCUMENT RULE**: If Ghidra MCP fails (timeout, "too large", error), **DO NOT retry**. Immediately:
+   - Append the address + error message to `data/ghidra_cache/manual_extraction_needed.md`
+   - Move on to the next function in your workplan
+   - The orchestrator will manually extract and the pool can read it from `data/ghidra_cache/<addr>.txt` next session
 
-### 2. Xref vtable slots
-- Use `mcp__ghidra__get_xrefs_to` on the vtable address
-- Look for slots shaped like `update`, `exec`, `process`, `advance`, `tick`, `frame`
-- For each interesting slot, follow the function pointer to find the actual implementation
+3. **Classify the function**:
+   - Does it call `nn::os::SendMessageQueue` or LDN-namespaced functions? → LDN sync encoder (bombshell)
+   - Does it call `nn::diag` / `nn::dbg` / `printf` / log functions? → Debug dumper
+   - Does it write to a buffer parameter? → Encoder of some kind (good either way)
+   - Does it have a counterpart `FUN_XXX` that decodes? → Round-trip serializer (most useful)
 
-### 3. Walk callers bottom-up
-- For each tick-shaped vtable slot, find all callers via `mcp__ghidra__get_function_xrefs`
-- Walk up the call chain
-- **Goal**: find a caller that is reachable from `main_loop` (cross-reference with `data/ghidra_cache/main_loop_7103747270.txt` if needed)
-- That caller IS the bridge between the scene object and the per-fighter tick
-
-### 4. Same sweep for adjacent vtables
-- `BattleObjectWorldManager` vtable
-- `BattleObject` vtable (the `_vt[0]` we already identified — what other slots exist?)
-- Whichever is called per-frame from a main_loop descendant is your target
+4. **Document the field walk**:
+   - For each `DAT_710593a6a0` deref, what offset is being accessed?
+   - This gives us the **list of all live state fields** the walker enumerates from the scene root
+   - This IS the spec for the snapshotter, regardless of identity
 
 ## Output
 
-Append to `docs/rollback/sim_tick_hunt.md` (create if not exists). Other pools (B, C) are also writing to this file — use clearly labeled sections:
+Append a new section to `docs/rollback/sim_tick_hunt.md`:
 
 ```markdown
-## Pool A — FighterManager vtable approach
+## Pool A — FUN_71014f10c0 classification (next-session)
 
-### FighterManager vtable
-- Address: 0xXXXXX
-- Constructor: 0xXXXXX (FUN_XXXX)
-- Tick-shaped slots:
-  - +0xNN: name (purpose)
+### Identity verdict
+[LDN sync encoder / Debug dumper / Other] — evidence
 
-### Caller chain to main_loop
-1. vtable[0xNN] called by FUN_XXXX
-2. FUN_XXXX called by FUN_XXXX
-3. ... reaches main_loop at FUN_XXXX (which BL in main_loop?)
+### Field walk from DAT_710593a6a0
+| Read # | Offset | Type read | Purpose |
+|--------|--------|-----------|---------|
+| 1 | +0xNN | u32 | ... |
+| ... | ... | ... | ... |
 
-### Verdict
-[FOUND / NOT FOUND / DEAD END] — explanation
+### Implications for rollback walker
+[bombshell scenario / spec reference / dead end]
 ```
 
-If you find the sim tick, DO NOT decompile it yet — just document the address and how it's reached. The rollback team needs the entry point first; full decomp comes later.
+If it's the LDN sync encoder, ALSO write `docs/rollback/savestate_walker.md` documenting how to call it from rollback.
+
+## Stop-and-document rule (applies to ALL Ghidra calls)
+If `mcp__ghidra__*` returns an error, timeout, or "request failed":
+1. Note the address and error
+2. Append to `data/ghidra_cache/manual_extraction_needed.md` (create if missing) in this format:
+   ```
+   ## 0xXXXXXXXX (FUN_XXXXXXXX or known name)
+   - Pool: pool-a
+   - Reason: timeout / too large / unknown error
+   - Why we need it: [one-line context]
+   ```
+3. Move on. Do NOT retry the same address.
 
 ## Quality Rules
-- Documentation is the primary deliverable
-- The cached `data/ghidra_cache/main_loop_7103747270.txt` and `FUN_7101344cf0.txt` are reference material — read with `Read` tool, do not call MCP
-- NO `FUN_` names, NO Ghidra vars in any committed code
+- NO `FUN_` names in committed src/ code (research docs may reference them)
 - Cast density under 10%
+- Documentation is the primary deliverable
 
 ## Build
 ```bash
