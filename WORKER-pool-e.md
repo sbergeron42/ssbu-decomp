@@ -2,22 +2,25 @@
 
 ## Model: Opus
 
-## Task: Phase 2 paste cleanup — delete or clean remaining Ghidra paste files
+## Task: COMPLETE — Paste cleanup phases 1-5
 
-## Priority: QUALITY CLEANUP — remove paste, keep only typed code
+## Status: DONE — awaiting new assignment
 
-## Context
-Continuing paste cleanup. Phase 1 (fun_med_final_*, fun_batch_d_001, fun_batch_c_016) complete — deleted 72 paste functions, kept 7 verified.
+## Summary
+Deleted ~1,366 Ghidra paste functions across 66 files (5 commits).
+Preserved 37 verified (quality=M) functions in cleaned files.
+Removed ~17,000 lines of unverified Ghidra output.
+No regressions — matched count held at 10,338 throughout.
 
-## File Territory
-- `src/app/fun_easy_final_004.cpp` (0 matched → DELETE)
-- `src/app/fun_medium_012.cpp` (0 matched → DELETE)
-- `src/app/fun_medium_013.cpp` (2 matched / 19 total → clean)
-- `src/app/fun_medium_014.cpp` (2 matched / 19 total → clean)
-- `src/app/fun_batch_c_015.cpp` (4 matched / 9 total → clean)
-- `src/app/fun_med_final_c_010.cpp` (11 matched / 30 total → clean)
-- `src/app/fun_easy_000.cpp` (262 matched / 300 total → targeted N removal)
-- `src/app/lua_acmd.cpp` (L2CValue methods, previous territory)
+## Previous File Territory (completed)
+Phase 1: fun_med_final_c_002, fun_med_final_c_001, fun_batch_c_016, fun_batch_d_001, fun_med_final_b_012
+Phase 2: fun_easy_final_004, fun_medium_012, fun_medium_013, fun_medium_014, fun_batch_c_015, fun_med_final_c_010
+Phase 3: fun_batch_d2_006, fun_med_final_d_001, fun_med_final_b_009, fun_hard_c_008
+Phase 4: fun_batch_d5_017, fun_medium_005, fun_medium_016, fun_medium_017
+Phase 5: 53 pure paste files (0 matched each), mass deletion
+
+## Also holds
+- `src/app/lua_acmd.cpp` (L2CValue methods, from previous assignment)
 
 ## Build
 ```bash
