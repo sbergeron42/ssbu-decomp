@@ -577,52 +577,48 @@ namespace app::kinetic_energy_gravity {
 f32 get_accel(u8* L) {
     KineticModule* km = item_kinetic(L);
     KineticEnergy* energy = km->get_energy(2);
-    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(energy) + 0x34);
+    return energy->gravity_accel;
 }
 
 // 0x71015d1b20 (48 bytes)
 // Returns limit speed from gravity energy (slot 2) at energy+0x40
-// [derived: get_energy(2), return *(f32*)(energy+0x40)]
+// [derived: get_energy(2), return *(f32*)(energy+0x40) — gravity uses accel_x as limit_speed]
 f32 get_limit_speed(u8* L) {
     KineticModule* km = item_kinetic(L);
     KineticEnergy* energy = km->get_energy(2);
-    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(energy) + 0x40);
+    return energy->accel_x;  // gravity energy reuses 2D accel_x offset as limit_speed
 }
 
 // 0x71015d1ba0 (60 bytes)
 // Sets accel on gravity energy (slot 2) at energy+0x34
-// [derived: get_energy(2), str s8 at energy+0x34]
 void set_accel(u8* L, f32 val) {
     KineticModule* km = item_kinetic(L);
     KineticEnergy* energy = km->get_energy(2);
-    *reinterpret_cast<f32*>(reinterpret_cast<u8*>(energy) + 0x34) = val;
+    energy->gravity_accel = val;
 }
 
 // 0x71015d1be0 (60 bytes)
 // Sets stable speed on gravity energy (slot 2) at energy+0x38
-// [derived: get_energy(2), str s8 at energy+0x38]
 void set_stable_speed(u8* L, f32 val) {
     KineticModule* km = item_kinetic(L);
     KineticEnergy* energy = km->get_energy(2);
-    *reinterpret_cast<f32*>(reinterpret_cast<u8*>(energy) + 0x38) = val;
+    energy->gravity_stable_speed = val;
 }
 
 // 0x71015d1c20 (60 bytes)
 // Sets brake on gravity energy (slot 2) at energy+0x3c
-// [derived: get_energy(2), str s8 at energy+0x3c]
 void set_brake(u8* L, f32 val) {
     KineticModule* km = item_kinetic(L);
     KineticEnergy* energy = km->get_energy(2);
-    *reinterpret_cast<f32*>(reinterpret_cast<u8*>(energy) + 0x3c) = val;
+    energy->gravity_brake = val;
 }
 
 // 0x71015d1c60 (60 bytes)
 // Sets limit speed on gravity energy (slot 2) at energy+0x40
-// [derived: get_energy(2), str s8 at energy+0x40]
 void set_limit_speed(u8* L, f32 val) {
     KineticModule* km = item_kinetic(L);
     KineticEnergy* energy = km->get_energy(2);
-    *reinterpret_cast<f32*>(reinterpret_cast<u8*>(energy) + 0x40) = val;
+    energy->accel_x = val;  // gravity energy reuses 2D accel_x offset as limit_speed
 }
 
 } // namespace app::kinetic_energy_gravity
