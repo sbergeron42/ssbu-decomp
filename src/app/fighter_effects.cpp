@@ -3,6 +3,8 @@
 #include "app/modules/WorkModule.h"
 #include "app/modules/EffectModule.h"
 #include "app/modules/SoundModule.h"
+#include "app/modules/VisibilityModule.h"
+#include "app/modules/ModelModule.h"
 
 // Fighter effect/sound utility functions — pool-e
 // Decompiled from Ghidra analysis of SSBU 13.0.4
@@ -453,6 +455,102 @@ extern "C" void revert_camera() { FUN_710160dea0(); }
 extern "C" void revert_camera_7101651d80() { FUN_710160dea0(); }
 
 // ---- Dead effect check ----------------------------------------------------
+
+// ---- Inkling fighter param singleton getters --------------------------------
+// All three getters read from the Inkling-specific sub-struct at
+// lib::Singleton<app::FighterParamAccessor2>::instance_ + 0xea8.
+// These are trivial leaf functions and use raw offset access per CLAUDE.md
+// exception for singleton getters.
+
+// Reuse the FPA2 singleton symbol already referenced in fighter_core.cpp
+namespace lib {
+extern "C" void* Singleton_app_FighterParamAccessor2_instance_fe
+    asm("_ZN3lib9SingletonIN3app22FighterParamAccessor2EE9instance_E") HIDDEN;
+}
+#define INKLING_PARAMS (*reinterpret_cast<u8**>(reinterpret_cast<u8*>(lib::Singleton_app_FighterParamAccessor2_instance_fe) + 0xea8))
+
+// 0x7100b0cb10 (20 bytes) — FighterSpecializer_Inkling::get_ink_work_id
+// Returns work variable id used to store ink amount for a given special kind.
+// Special kind 6 (side/hi?) uses var 0x6b; everything else uses var 0x52.
+// [inferred: constants 0x6b and 0x52 identified from csel pattern, branch on w0==6]
+extern "C" s32 get_ink_work_id(u32 special_kind) {
+    return special_kind == 6 ? 0x6b : 0x52;
+}
+
+// 0x7100b0cc40 (20 bytes) — FighterSpecializer_Inkling::get_ink_max
+// Returns max ink capacity (f32) from Inkling-specific fighter param sub-struct.
+// +0xc8 [inferred: ink_max offset into Inkling params, reads as f32 via ldr s0]
+extern "C" f32 get_ink_max() {
+    return *reinterpret_cast<f32*>(INKLING_PARAMS + 0xc8);
+}
+
+// 0x7100b0cc60 (20 bytes) — FighterSpecializer_Inkling::get_sub_ink_special_lw
+// Ink cost for special_lw (down-special: sub weapon toss).
+// +0xf0 [inferred: sub_ink_special_lw offset, reads as f32 via ldr s0]
+extern "C" f32 get_sub_ink_special_lw() {
+    return *reinterpret_cast<f32*>(INKLING_PARAMS + 0xf0);
+}
+
+// 0x7100b0ddb0 (20 bytes) — FighterSpecializer_Inkling::get_sub_ink_special_n
+// Ink cost for special_n (neutral-special: splattershot).
+// +0xec [inferred: sub_ink_special_n offset, reads as f32 via ldr s0]
+extern "C" f32 get_sub_ink_special_n() {
+    return *reinterpret_cast<f32*>(INKLING_PARAMS + 0xec);
+}
+
+// 0x7100b0cf70 (156 bytes) — FighterSpecializer_Inkling::is_body_visible
+// Returns true if Inkling body should render this frame.
+// Logic: body is hidden when painted flag is set and visible-override is clear,
+// OR when whole-object visibility is off, OR when ModelModule says hidden.
+// Fighter +0x20 [derived: standard Fighter layout — module accessor ptr]
+// WorkModule flags:
+//   0x20000023 [inferred: FIGHTER_INKLING_STATUS_WORK_IS_PAINTED]
+//   0x20000024 [inferred: FIGHTER_INKLING_STATUS_WORK_FORCE_VISIBLE (= painted+1)]
+extern "C" u32 is_body_visible(void* fighter) {
+    BattleObjectModuleAccessor* acc = *reinterpret_cast<BattleObjectModuleAccessor**>(
+        reinterpret_cast<u8*>(fighter) + 0x20);
+    WorkModule* work = acc->work_module;
+    u32 flag_result;
+    if (work->is_flag(0x20000023)) {
+        flag_result = work->is_flag(0x20000024);
+    } else {
+        flag_result = 1;
+    }
+    if (!(acc->visibility_module->get_whole() & 1)) return 0;
+    return (flag_result & acc->model_module->is_visible()) & 1;
+}
+
+// 0x7100d295b0 (84 bytes) — FighterSpecializer_Mewtwo::save_shadowball_status
+// Saves charging state (flag) and frame count (int) for Mewtwo's Shadow Ball.
+// WorkModule +0x50 [derived: standard accessor layout]
+// 0x200000e0 [inferred: shadow ball charged flag — Mewtwo extra flag range]
+// 0x100000bd [inferred: shadow ball charge frame var — Mewtwo extra int range]
+extern "C" void save_shadowball_status(BattleObjectModuleAccessor* acc, bool charged, s32 charge_frame) {
+    WorkModule* work = acc->work_module;
+    work->set_flag(charged, 0x200000e0);
+    work->set_int(charge_frame, 0x100000bd);
+}
+
+// 0x71016708e0 (108 bytes) — app::sandbag::homerun_contest_effect_no_pause
+// Flags the last-requested effect as not affected by global pause (home-run contest
+// has a frozen-timer UI but still renders the sandbag hit sparkle).
+// +0x140 [derived: EffectModule at accessor+0x140]
+// EffectModule::get_last_handle() [derived: slot 116, vtable offset 0x3a0]
+// Effect entry +0x26c [inferred: render flag bitmask; 0x800000 = ignore global pause]
+// Reuses DAT_7105333920 (lib::Singleton<lib::EffectManager>::instance_) already
+// declared above for set_effect_pause.
+extern "C" void homerun_contest_effect_no_pause(BattleObjectModuleAccessor* acc) {
+    EffectModule* effect = acc->effect_module;
+    u8* base = *reinterpret_cast<u8**>(&DAT_7105333920);
+    s32 handle = static_cast<s32>(effect->get_last_handle());
+    if (handle > 0) {
+        u8* entry = base + static_cast<u64>(static_cast<u32>(handle) >> 24) * 0x300;
+        if (entry != nullptr && *reinterpret_cast<u32*>(entry + 4) == static_cast<u32>(handle)) {
+            u32* flags = reinterpret_cast<u32*>(base + static_cast<u64>(static_cast<u32>(handle) >> 24) * 0x300 + 0x26c);
+            *flags |= 0x800000u;
+        }
+    }
+}
 
 // 0x71006988b0 (128 bytes) — app::FighterUtil::check_hit_dead_effect
 // Checks if a fighter should display a hit-dead visual effect.
