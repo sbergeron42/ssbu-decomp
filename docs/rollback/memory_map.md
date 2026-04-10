@@ -209,7 +209,28 @@ This is likely the single biggest surprise cost in an SSBU rollback. Needs follo
 ### 7. BossManager (`*DAT_71052b7ef8`)
 Mis-identified in the worker brief. Probably small (boss-only modes). Rollback-relevant only in Stadium/Classic modes.
 
-### 8. BattleObjectWorld (`*DAT_71052b7558`) — physics-world overrides
+### 8a. Match-runtime entry list (`*DAT_71052c26c0`)
+
+**NEW (2026-04-10).** Found while tracing `FUN_7101344cf0` callers. `FUN_71014b2a40` is the match-setup wrapper; it calls `FUN_7101344cf0()` first (the BattleObject pool init) and then lazy-creates a 0x50-byte root container at `*DAT_71052c26c0` that holds doubly-linked list head/tail pairs for 4 registered "match-setup entries":
+
+- Entry A: 0x330-byte payload (fighter-setup config — Hash40 keys `0x2c844e173b`, `0x33731d4b56`, float defaults, 0x104 B memset region)
+- Entry B: 0x210-byte payload (stage/info setup — vtable `&PTR_LAB_7104f72d30`, multiple `&DAT_71014b55XX` static-table refs)
+- Entry C: 0x50-byte payload + three 0x30-byte sub-items (pipeline stages, shared_ptr-refcounted)
+- Entry D: 0x18-byte payload (minimal flag store)
+
+Total new per-match allocation from this wrapper: ~**1,520 bytes** on top of whatever `FUN_7101344cf0` itself allocates. All per-match mutable; must be snapshotted. Container layout:
+
+```
+*DAT_71052c26c0 → u64* (lazy-inited, 8 B slot)
+ └ *slot → 0x50-byte container (vtable &PTR_FUN_7105069db0)
+    +0x08..+0x48: four {head, tail, head, tail} linked-list pointer pairs
+                  (one pair per registered entry category)
+```
+
+Rollback verdict: **YES to snapshot**, cost ~1.5 KB. Shallow structure — entries
+are task/callback registration slots, not bulk gameplay state.
+
+### 8b. BattleObjectWorld (`*DAT_71052b7558`) — physics-world overrides
 **NEW (2026-04-10, Q6 resolved.)** Despite the name suggesting "per-BattleObject" state, this is a singleton holding **per-match global physics overrides** that stage scripts can mutate. Recovered from `app::stage::get_gravity_position @ 0x71015ce700` disassembly and the `BattleObjectWorld__*_impl` .dynsym family.
 
 Struct layout (minimum known, ≥ 0x60 B):
