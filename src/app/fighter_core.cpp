@@ -1,7 +1,10 @@
 #include "types.h"
+#include "app/BattleObject.h"
 #include "app/FighterManager.h"
 #include "app/FighterEntry.h"
 #include "app/BossManager.h"
+#include "app/placeholders/FighterParamAccessor2.h"
+#include "app/placeholders/WeaponParams.h"
 
 // Fighter core utility functions — pool-b
 // Contains param lookups, fighter kind mappings, and core fighter helpers
@@ -698,6 +701,13 @@ namespace lib { extern "C" void* Singleton_app_ItemManager_instance_ asm("_ZN3li
 namespace lib { extern "C" void* Singleton_app_FighterParamAccessor2_instance_ asm("_ZN3lib9SingletonIN3app22FighterParamAccessor2EE9instance_E") HIDDEN2; }
 #define FPA2_INSTANCE (reinterpret_cast<u8*>(lib::Singleton_app_FighterParamAccessor2_instance_))
 
+// Typed FPA2 physics params helper
+static inline app::FighterParamAccessor2PhysicsParams* fpa2_physics() {
+    app::FighterParamAccessor2* fpa2 = reinterpret_cast<app::FighterParamAccessor2*>(
+        lib::Singleton_app_FighterParamAccessor2_instance_);
+    return fpa2->physics_params;
+}
+
 // Misc globals
 extern "C" void* DAT_7105328f50 HIDDEN2;  // item se controller [derived: used in stop_ingame_se]
 
@@ -913,106 +923,23 @@ extern "C" void FUN_71016538e0() {
 // [derived: init_bound_frame (community name) — FPA2+0x12d0->+0x230, returns u32]
 // ============================================================================
 
-extern "C" u32 FUN_71016593a0() {
-    u64 sub = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0x12d0);
-    return *reinterpret_cast<u32*>(sub + 0x230);
-}
+extern "C" u32 FUN_71016593a0() { return fpa2_physics()->init_bound_frame; }
+extern "C" float FUN_71016593c0() { return fpa2_physics()->special_lw_gravity; }
 
-// ============================================================================
-// special_lw_gravity
-// Address: 0x71016593c0 | Size: 20 bytes
-// Returns the special low gravity float from FighterParamAccessor2.
-// [derived: special_lw_gravity (community name) — FPA2+0x12d0->+0x234, returns float]
-// ============================================================================
-
-extern "C" float FUN_71016593c0() {
-    u64 sub = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0x12d0);
-    return *reinterpret_cast<float*>(sub + 0x234);
-}
-
-// ============================================================================
-// buddybomb param getters (batch)
-// All use FPA2+0x12d0 deref chain with varying final offsets.
-// [derived: community names, FPA2 singleton deref pattern]
-// ============================================================================
-
-// length_gravity — Address: 0x7101659400 | Size: 20 bytes | +0x240
-extern "C" float FUN_7101659400() {
-    u64 sub = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0x12d0);
-    return *reinterpret_cast<float*>(sub + 0x240);
-}
-
-// length_speed_y_max — Address: 0x7101659420 | Size: 20 bytes | +0x244
-extern "C" float FUN_7101659420() {
-    u64 sub = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0x12d0);
-    return *reinterpret_cast<float*>(sub + 0x244);
-}
-
-// length_angle_x_velocity — Address: 0x7101659440 | Size: 20 bytes | +0x260
-extern "C" float FUN_7101659440() {
-    u64 sub = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0x12d0);
-    return *reinterpret_cast<float*>(sub + 0x260);
-}
-
-// length_angle_y_velocity — Address: 0x7101659460 | Size: 20 bytes | +0x264
-extern "C" float FUN_7101659460() {
-    u64 sub = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0x12d0);
-    return *reinterpret_cast<float*>(sub + 0x264);
-}
-
-// length_angle_z_velocity — Address: 0x7101659480 | Size: 20 bytes | +0x268
-extern "C" float FUN_7101659480() {
-    u64 sub = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0x12d0);
-    return *reinterpret_cast<float*>(sub + 0x268);
-}
-
-// side_gravity — Address: 0x71016594a0 | Size: 20 bytes | +0x26c
-extern "C" float FUN_71016594a0() {
-    u64 sub = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0x12d0);
-    return *reinterpret_cast<float*>(sub + 0x26c);
-}
-
-// side_speed_y_max — Address: 0x71016594c0 | Size: 20 bytes | +0x270
-extern "C" float FUN_71016594c0() {
-    u64 sub = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0x12d0);
-    return *reinterpret_cast<float*>(sub + 0x270);
-}
-
-// side_angle_x_velocity — Address: 0x71016594e0 | Size: 20 bytes | +0x28c
-extern "C" float FUN_71016594e0() {
-    u64 sub = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0x12d0);
-    return *reinterpret_cast<float*>(sub + 0x28c);
-}
-
-// side_angle_y_velocity — Address: 0x7101659500 | Size: 20 bytes | +0x290
-extern "C" float FUN_7101659500() {
-    u64 sub = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0x12d0);
-    return *reinterpret_cast<float*>(sub + 0x290);
-}
-
-// side_angle_z_velocity — Address: 0x7101659520 | Size: 20 bytes | +0x294
-extern "C" float FUN_7101659520() {
-    u64 sub = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0x12d0);
-    return *reinterpret_cast<float*>(sub + 0x294);
-}
-
-// flashing_frame_before_life_over — Address: 0x7101659560 | Size: 20 bytes | +0x2a4
-extern "C" u32 FUN_7101659560() {
-    u64 sub = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0x12d0);
-    return *reinterpret_cast<u32*>(sub + 0x2a4);
-}
-
-// rebound_speed_x_add — Address: 0x7101659580 | Size: 20 bytes | +0x2a8
-extern "C" float FUN_7101659580() {
-    u64 sub = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0x12d0);
-    return *reinterpret_cast<float*>(sub + 0x2a8);
-}
-
-// rebound_speed_y_add — Address: 0x71016595a0 | Size: 20 bytes | +0x2ac
-extern "C" float FUN_71016595a0() {
-    u64 sub = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0x12d0);
-    return *reinterpret_cast<float*>(sub + 0x2ac);
-}
+// buddybomb param getters — all use FPA2→physics_params→field
+extern "C" float FUN_7101659400() { return fpa2_physics()->length_gravity; }
+extern "C" float FUN_7101659420() { return fpa2_physics()->length_speed_y_max; }
+extern "C" float FUN_7101659440() { return fpa2_physics()->length_angle_x_velocity; }
+extern "C" float FUN_7101659460() { return fpa2_physics()->length_angle_y_velocity; }
+extern "C" float FUN_7101659480() { return fpa2_physics()->length_angle_z_velocity; }
+extern "C" float FUN_71016594a0() { return fpa2_physics()->side_gravity; }
+extern "C" float FUN_71016594c0() { return fpa2_physics()->side_speed_y_max; }
+extern "C" float FUN_71016594e0() { return fpa2_physics()->side_angle_x_velocity; }
+extern "C" float FUN_7101659500() { return fpa2_physics()->side_angle_y_velocity; }
+extern "C" float FUN_7101659520() { return fpa2_physics()->side_angle_z_velocity; }
+extern "C" u32 FUN_7101659560() { return fpa2_physics()->flashing_frame_before_life_over; }
+extern "C" float FUN_7101659580() { return fpa2_physics()->rebound_speed_x_add; }
+extern "C" float FUN_71016595a0() { return fpa2_physics()->rebound_speed_y_add; }
 
 // ============================================================================
 // EXPLOSIONBOMB_WIRE_ROT_SPEED — Address: 0x710165d480 | Size: 20 bytes
@@ -1028,31 +955,31 @@ extern "C" u32 FUN_710165d480() {
 // [derived: community names from modding scene]
 // ============================================================================
 
-#define DAISY_PARAM(name, addr, off) \
-extern "C" float FUN_##addr() { \
-    u64 s1 = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0x380); \
-    u64 s2 = *reinterpret_cast<u64*>(s1 + 0x158); \
-    return *reinterpret_cast<float*>(s2 + off); \
+// DAISY_DAISYDAIKON params — uses PeachDaikonParams struct (FPA2+0x380→+0x158)
+static inline PeachDaikonParams* daisy_daikon_params() {
+    u8* fpa2 = FPA2_INSTANCE;
+    u8* char_params = *reinterpret_cast<u8**>(fpa2 + 0x380);
+    return *reinterpret_cast<PeachDaikonParams**>(char_params + 0x158);
 }
 
-DAISY_PARAM(PROB_1, 710165be40, 0x40)
-DAISY_PARAM(PROB_2, 710165be60, 0x44)
-DAISY_PARAM(PROB_3, 710165be80, 0x48)
-DAISY_PARAM(PROB_4, 710165bea0, 0x4c)
-DAISY_PARAM(PROB_5, 710165bec0, 0x50)
-DAISY_PARAM(PROB_6, 710165bee0, 0x54)
-DAISY_PARAM(PROB_7, 710165bf00, 0x58)
-DAISY_PARAM(PROB_8, 710165bf20, 0x5c)
-DAISY_PARAM(POWER_1, 710165bf40, 0x20)
-DAISY_PARAM(POWER_2, 710165bf60, 0x24)
-DAISY_PARAM(POWER_3, 710165bf80, 0x28)
-DAISY_PARAM(POWER_4, 710165bfa0, 0x2c)
-DAISY_PARAM(POWER_5, 710165bfc0, 0x30)
-DAISY_PARAM(POWER_6, 710165bfe0, 0x34)
-DAISY_PARAM(POWER_7, 710165c000, 0x38)
-DAISY_PARAM(POWER_8, 710165c020, 0x3c)
-
-#undef DAISY_PARAM
+// PROB — float reinterpret of u32 prob fields
+extern "C" float FUN_710165be40() { return *reinterpret_cast<float*>(&daisy_daikon_params()->daikon_1_prob); }
+extern "C" float FUN_710165be60() { return *reinterpret_cast<float*>(&daisy_daikon_params()->daikon_2_prob); }
+extern "C" float FUN_710165be80() { return *reinterpret_cast<float*>(&daisy_daikon_params()->daikon_3_prob); }
+extern "C" float FUN_710165bea0() { return *reinterpret_cast<float*>(&daisy_daikon_params()->daikon_4_prob); }
+extern "C" float FUN_710165bec0() { return *reinterpret_cast<float*>(&daisy_daikon_params()->daikon_5_prob); }
+extern "C" float FUN_710165bee0() { return *reinterpret_cast<float*>(&daisy_daikon_params()->daikon_6_prob); }
+extern "C" float FUN_710165bf00() { return *reinterpret_cast<float*>(&daisy_daikon_params()->daikon_7_prob); }
+extern "C" float FUN_710165bf20() { return *reinterpret_cast<float*>(&daisy_daikon_params()->daikon_8_prob); }
+// POWER
+extern "C" float FUN_710165bf40() { return *reinterpret_cast<float*>(&daisy_daikon_params()->daikon_1_power); }
+extern "C" float FUN_710165bf60() { return *reinterpret_cast<float*>(&daisy_daikon_params()->daikon_2_power); }
+extern "C" float FUN_710165bf80() { return *reinterpret_cast<float*>(&daisy_daikon_params()->daikon_3_power); }
+extern "C" float FUN_710165bfa0() { return *reinterpret_cast<float*>(&daisy_daikon_params()->daikon_4_power); }
+extern "C" float FUN_710165bfc0() { return *reinterpret_cast<float*>(&daisy_daikon_params()->daikon_5_power); }
+extern "C" float FUN_710165bfe0() { return *reinterpret_cast<float*>(&daisy_daikon_params()->daikon_6_power); }
+extern "C" float FUN_710165c000() { return *reinterpret_cast<float*>(&daisy_daikon_params()->daikon_7_power); }
+extern "C" float FUN_710165c020() { return *reinterpret_cast<float*>(&daisy_daikon_params()->daikon_8_power); }
 
 // ============================================================================
 // spawn_frame family (batch) — all 24 bytes
@@ -1082,28 +1009,22 @@ SPAWN_PARAM_U32(delete_flash_frame, 710165e8a0, 0x38)
 // [derived: community names]
 // ============================================================================
 
-extern "C" u32 FUN_710165f120() {  // LOG_LIFE — returns u32
-    u64 s1 = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0xc08);
-    u64 s2 = *reinterpret_cast<u64*>(s1 + 0x178);
-    return *reinterpret_cast<u32*>(s2 + 0x34);
+// LOG param family — uses DollParams struct (FPA2+0xc08→+0x178)
+static inline DollParams* log_doll_params() {
+    u8* fpa2 = FPA2_INSTANCE;
+    u8* char_params = *reinterpret_cast<u8**>(fpa2 + 0xc08);
+    return *reinterpret_cast<DollParams**>(char_params + 0x178);
 }
 
-extern "C" float FUN_710165f140() {  // LOG_REACTION_MUL — returns float
-    u64 s1 = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0xc08);
-    u64 s2 = *reinterpret_cast<u64*>(s1 + 0x178);
-    return *reinterpret_cast<float*>(s2 + 0xc);
+extern "C" u32 FUN_710165f120() { return log_doll_params()->life; }    // LOG_LIFE
+extern "C" float FUN_710165f140() {                                    // LOG_REACTION_MUL
+    return *reinterpret_cast<float*>(&log_doll_params()->reaction_mul);
 }
-
-extern "C" float FUN_710165f160() {  // LOG_LIFE_DEC_MUL — returns float
-    u64 s1 = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0xc08);
-    u64 s2 = *reinterpret_cast<u64*>(s1 + 0x178);
-    return *reinterpret_cast<float*>(s2 + 0x38);
+extern "C" float FUN_710165f160() {                                    // LOG_LIFE_DEC_MUL
+    return *reinterpret_cast<float*>(&log_doll_params()->life_dec_mul);
 }
-
-extern "C" float FUN_710165f180() {  // LOG_SMASH_ACCEL_Y — returns float
-    u64 s1 = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0xc08);
-    u64 s2 = *reinterpret_cast<u64*>(s1 + 0x178);
-    return *reinterpret_cast<float*>(s2 + 0x20);
+extern "C" float FUN_710165f180() {                                    // LOG_SMASH_ACCEL_Y
+    return *reinterpret_cast<float*>(&log_doll_params()->smash_accel_y);
 }
 
 // ============================================================================
@@ -1365,9 +1286,10 @@ HOLYWATER_PARAM(HOLYWATER_THROW_ANGLE_SIDE_7101670fe0, 0x54)     // 0x7101670fe0
 // [derived: Ghidra — chain deref lua[-8]→+0x1a0→+0x190→+0x220, bl FUN_71015aba90]
 extern "C" void FUN_71015aba90(u64 item_data, void* vec, s32 flag);
 extern "C" void throw_attack_71015c2720(void* L, f32 p2, void* vec, f32 p4) {
-    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
-    u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
-    u8* sub = *reinterpret_cast<u8**>(acc + 0x190);
+    app::BattleObject* obj = *reinterpret_cast<app::BattleObject**>(reinterpret_cast<u8*>(L) - 8);
+    app::BattleObjectModuleAccessor* acc = obj->module_accessor;
+    // +0x190 on accessor — item sub-accessor, then +0x220 for item data
+    u8* sub = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(acc) + 0x190);
     u64 item = *reinterpret_cast<u64*>(sub + 0x220);
     FUN_71015aba90(item, vec, 0);
 #ifdef MATCHING_HACK_NX_CLANG
@@ -1400,40 +1322,25 @@ extern "C" bool is_enable_rocketbelt_eject_710166fc80(u8* acc) {
 // [derived: Ghidra — all use FPA2 singleton at +0x12d0. Community-named params.]
 // ════════════════════════════════════════════════════════════════════
 
-#define BUDDYBOMB_PARAM_F(funcname, final_offset) \
-extern "C" f32 funcname() { \
-    u8* fpa2 = FPA2_INSTANCE; \
-    u64 p = *reinterpret_cast<u64*>(fpa2 + 0x12d0); \
-    return *reinterpret_cast<f32*>(p + final_offset); \
-}
-#define BUDDYBOMB_PARAM_I(funcname, final_offset) \
-extern "C" u32 funcname() { \
-    u8* fpa2 = FPA2_INSTANCE; \
-    u64 p = *reinterpret_cast<u64*>(fpa2 + 0x12d0); \
-    return *reinterpret_cast<u32*>(p + final_offset); \
-}
-
-BUDDYBOMB_PARAM_I(init_bound_frame_71016593a0, 0x230)
-BUDDYBOMB_PARAM_F(special_lw_gravity_71016593c0, 0x234)
-BUDDYBOMB_PARAM_F(special_lw_speed_y_max_71016593e0, 0x238)
-BUDDYBOMB_PARAM_F(length_gravity_7101659400, 0x240)
-BUDDYBOMB_PARAM_F(length_speed_y_max_7101659420, 0x244)
-BUDDYBOMB_PARAM_F(length_angle_x_velocity_7101659440, 0x260)
-BUDDYBOMB_PARAM_F(length_angle_y_velocity_7101659460, 0x264)
-BUDDYBOMB_PARAM_F(length_angle_z_velocity_7101659480, 0x268)
-BUDDYBOMB_PARAM_F(side_gravity_71016594a0, 0x26c)
-BUDDYBOMB_PARAM_F(side_speed_y_max_71016594c0, 0x270)
-BUDDYBOMB_PARAM_F(side_angle_x_velocity_71016594e0, 0x28c)
-BUDDYBOMB_PARAM_F(side_angle_y_velocity_7101659500, 0x290)
-BUDDYBOMB_PARAM_F(side_angle_z_velocity_7101659520, 0x294)
-BUDDYBOMB_PARAM_I(life_7101659540, 0x2a0)
-BUDDYBOMB_PARAM_I(flashing_frame_7101659560, 0x2a4)
-BUDDYBOMB_PARAM_F(rebound_speed_x_add_7101659580, 0x2a8)
-BUDDYBOMB_PARAM_F(rebound_speed_y_add_71016595a0, 0x2ac)
-BUDDYBOMB_PARAM_F(bound_se_speed_less_71016595c0, 0x2b0)
-
-#undef BUDDYBOMB_PARAM_F
-#undef BUDDYBOMB_PARAM_I
+// Buddybomb typed param accessors via FPA2→physics_params
+extern "C" u32 init_bound_frame_71016593a0() { return fpa2_physics()->init_bound_frame; }
+extern "C" f32 special_lw_gravity_71016593c0() { return fpa2_physics()->special_lw_gravity; }
+extern "C" f32 special_lw_speed_y_max_71016593e0() { return fpa2_physics()->special_lw_speed_y_max; }
+extern "C" f32 length_gravity_7101659400() { return fpa2_physics()->length_gravity; }
+extern "C" f32 length_speed_y_max_7101659420() { return fpa2_physics()->length_speed_y_max; }
+extern "C" f32 length_angle_x_velocity_7101659440() { return fpa2_physics()->length_angle_x_velocity; }
+extern "C" f32 length_angle_y_velocity_7101659460() { return fpa2_physics()->length_angle_y_velocity; }
+extern "C" f32 length_angle_z_velocity_7101659480() { return fpa2_physics()->length_angle_z_velocity; }
+extern "C" f32 side_gravity_71016594a0() { return fpa2_physics()->side_gravity; }
+extern "C" f32 side_speed_y_max_71016594c0() { return fpa2_physics()->side_speed_y_max; }
+extern "C" f32 side_angle_x_velocity_71016594e0() { return fpa2_physics()->side_angle_x_velocity; }
+extern "C" f32 side_angle_y_velocity_7101659500() { return fpa2_physics()->side_angle_y_velocity; }
+extern "C" f32 side_angle_z_velocity_7101659520() { return fpa2_physics()->side_angle_z_velocity; }
+extern "C" u32 life_7101659540() { return fpa2_physics()->life; }
+extern "C" u32 flashing_frame_7101659560() { return fpa2_physics()->flashing_frame_before_life_over; }
+extern "C" f32 rebound_speed_x_add_7101659580() { return fpa2_physics()->rebound_speed_x_add; }
+extern "C" f32 rebound_speed_y_add_71016595a0() { return fpa2_physics()->rebound_speed_y_add; }
+extern "C" f32 bound_se_speed_less_71016595c0() { return fpa2_physics()->bound_se_speed_less; }
 
 // ════════════════════════════════════════════════════════════════════
 // FighterManager singleton readers — 20B, pure leaf

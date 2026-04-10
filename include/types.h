@@ -17,3 +17,11 @@ using ssize = s64;
 
 // nullptr is a keyword, no header needed
 // bool is a keyword, no header needed
+
+// Simple 2D float vector — matches the {x, y} pair layout used by
+// KineticEnergy::get_speed() and similar engine APIs.
+// [derived: speed data is always two consecutive f32 (ldr s0/s1 at +0/+4)]
+struct Vector2f {
+    f32 x;
+    f32 y;
+};

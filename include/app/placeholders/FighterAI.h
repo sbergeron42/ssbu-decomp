@@ -206,7 +206,9 @@ struct FighterAI {
     s32 auto_stop;             // +0x2bc [derived: set_auto_stop writes here (700 decimal)]
     u8 unk_0x2c0[0x3C];
     u32 update_count;          // +0x2fc [derived: update_count reads; is_update_count_odd checks %3]
-    u8 unk_0x300[0x7D0];
+    u8 unk_0x300[0x688];
+    u32 fighter_kind_for_cmd;      // +0x988 [derived: attack_info_* reads as fighter kind for cmd table lookup]
+    u8 unk_0x98c[0x144];
 
     // ---- Per-fighter indexed param tables (indexed by state->fighter_kind_index) ----
     // Each array has 4 entries (gap between consecutive = 0x10 = 4 floats)
