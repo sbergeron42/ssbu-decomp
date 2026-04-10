@@ -2,22 +2,60 @@
 
 typedef float v4sf __attribute__((vector_size(16)));
 
-// FighterKineticEnergyMotion -- operates on FighterKineticEnergyMotion* directly
-// Direct struct field access at various offsets.
-// Vec4 at +0xa0 stores direction/motion vector (SIMD 128-bit).
-
+// FighterKineticEnergyMotion — fighter-specific "motion" kinetic energy
+// driven by the character facing direction. Operates on self*.
+// Layout recovered from the 13+ FighterKineticEnergyMotion__*_impl
+// dispatchers at 0x7102120f60–0x7102121080 (ldr/str offsets).
 struct FighterKineticEnergyMotion {
+    // -- Base class region (0x00..0x83) — inherited KineticEnergy state --
     u8  pad_0x00[0x84];
-    u32 ground_trans;        // +0x84
-    f32 chara_dir;           // +0x88
-    f32 angle;               // +0x8C
-    f32 angle_whole;         // +0x90
-    f32 angle_whole_rad;     // +0x94
-    s32 angle_whole_mode;    // +0x98
-    f32 speed_mul;           // +0x9C
-    u8  motion_vec[0x10];    // +0xA0 (v4sf direction vector)
-    u8  speed_mul_2nd[0x10]; // +0xB0
-    u8  update_flag;         // +0xC0
+
+    // +0x84 — ground transition state machine (reset to 2, 0xB == cliff)
+    // [derived: set_ground_trans_impl at 0x7102121080 stores 2;
+    //  is_cliff_ground_trans_impl at 0x7102121070 checks == 0xb]
+    u32 ground_trans;
+
+    // +0x88 — character facing direction (±1.0 for right/left)
+    // [derived: set_chara_dir_impl at 0x7102120fb0 writes via fcmp + conditional flip;
+    //  get_chara_dir_impl reads it; reverse_chara_dir_impl negates it]
+    f32 chara_dir;
+
+    // +0x8C — motion angle (radians)
+    // [derived: set_angle_impl at 0x7102120f60 str s0,[x0,#0x8c];
+    //  get_angle_impl at 0x7102121030 ldr s0,[x0,#0x8c]]
+    f32 angle;
+
+    // +0x90 — angle_whole (scratch copy of angle_whole_rad when mode==0)
+    // [derived: set_angle_whole_impl at 0x7102120f70 writes only when mode==0;
+    //  get_angle_whole_impl at 0x7102121040 ldr s0,[x0,#0x90]]
+    f32 angle_whole;
+
+    // +0x94 — angle_whole_rad (always the latest deg2rad-converted value)
+    // [derived: set_angle_whole_impl at 0x7102120f70 always writes this]
+    f32 angle_whole_rad;
+
+    // +0x98 — angle_whole mode selector (0 = sync angle_whole, nonzero = leave untouched)
+    // [derived: set_angle_whole_impl at 0x7102120f70 str w1,[x0,#0x98]]
+    s32 angle_whole_mode;
+
+    // +0x9C — speed multiplier (scalar)
+    // [derived: set_speed_mul_impl at 0x7102120fa0 str s0,[x0,#0x9c];
+    //  get_speed_mul_impl at 0x7102121060 ldr s0,[x0,#0x9c]]
+    f32 speed_mul;
+
+    // +0xA0 — 16-byte motion direction vector (v4sf)
+    // [derived: reverse_chara_dir_impl at 0x7102120fe0 loads q0,[x0,#0xa0],
+    //  negates lane 0, stores back. set_chara_dir_impl does the same conditionally.]
+    u8  motion_vec[0x10];
+
+    // +0xB0 — 16-byte secondary speed multiplier vector
+    // [derived: set_speed_mul_2nd_impl at 0x7102121010 copies 16 bytes as two u64 stores
+    //  at [x0,#0xb0] and [x0,#0xb8]]
+    u8  speed_mul_2nd[0x10];
+
+    // +0xC0 — update flag (bool-as-byte)
+    // [derived: set_update_flag_impl at 0x7102121000 does and w8,w1,#1; strb w8,[x0,#0xc0]]
+    u8  update_flag;
 };
 
 // deg2rad constant at original binary address (0x7104471000 + 0x6e0)
