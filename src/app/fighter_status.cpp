@@ -2551,6 +2551,25 @@ f32 distance_y_to_target_7100367270(void* L) {
     return __builtin_fabsf(self_y - get_ai_target_state(ai)->pos_y);
 }
 
+// [derived: like check_over_ground but looks up the PARENT fighter via
+//  parent_entry_id (+0x160) with slot clamp (w8 & 7) or -1 sentinel.
+//  Stores clamped idx on stack, passes its address to aiGetTargetById,
+//  then runs the same flags/floor/uniq/bit-1 check against the parent]
+// 0x7100367380 -- app::ai::check_parent_over_ground (116B)
+bool check_parent_over_ground_7100367380(void* L) {
+    FighterAI* ai = ai_from_L(L);
+    s32 raw = static_cast<s32>(ai->parent_entry_id);
+    s32 slot = (static_cast<u32>(raw) < 0x10) ? (raw & 7) : -1;
+    auto* target = static_cast<FighterAIState*>(
+        aiGetTargetById_7100314030(DAT_71052b5fd8, &slot));
+    u32 flags = target->stat_flags;
+    if ((flags & 1) == 0 && (target->floor_data->flags_0x5e & 2) == 0) {
+        return true;
+    }
+    if ((target->uniq_stat & ~1u) == 6) return true;
+    return (flags & 2) == 0;
+}
+
 // [derived: state->stat_flags bit0=air, floor_data->flags_0x5e bit1=over-ground
 //  override, state->uniq_stat & ~1 == 6 is another pass condition.]
 // 0x7100367a90 -- app::ai::check_over_ground (72B, 100% match)
