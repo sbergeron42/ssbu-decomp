@@ -19,7 +19,7 @@ extern "C" {
     void* je_aligned_alloc(u64, u64);
 }
 
-extern void FUN_71037aeec0(s64);
+extern void noop_71037aeec0(s64);
 extern void FUN_71031f4740(u64);
 extern u64  FUN_7103799b10();
 extern u32  FUN_71037aed30(u32, s64);
@@ -83,14 +83,14 @@ u64 *FUN_7103796c20(void)
     return (u64*)DAT_710593ab70;
 }
 
-// 0x71037b0b30 -- call FUN_71037aeec0 on three consecutive 8-byte fields
+// 0x71037b0b30 -- call noop_71037aeec0 on three consecutive 8-byte fields
 // param_1: struct with three 8-byte fields processed sequentially
-//   +0x00, +0x08, +0x10 [inferred: three consecutive 8-byte slots, each cleaned/reset by FUN_71037aeec0]
+//   +0x00, +0x08, +0x10 [inferred: three consecutive 8-byte slots, each cleaned/reset by noop_71037aeec0]
 void FUN_71037b0b30(s64 param_1)
 {
-    FUN_71037aeec0(param_1);
-    FUN_71037aeec0(param_1 + 8);
-    FUN_71037aeec0(param_1 + 0x10);
+    noop_71037aeec0(param_1);
+    noop_71037aeec0(param_1 + 8);
+    noop_71037aeec0(param_1 + 0x10);
 }
 
 // 0x71033640c0 -- vtable dispatch via x8 at offset 0x18, return 0

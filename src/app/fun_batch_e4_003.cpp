@@ -3,7 +3,7 @@
 
 #include "types.h"
 
-extern "C" void FUN_710392e590(void*);  // je_free
+extern "C" void jeFree_710392e590(void*);  // je_free
 
 // ---- Data symbols ----------------------------------------------------------
 
@@ -34,13 +34,13 @@ void FUN_7101b4d700(void* param_1)
     p[3] = reinterpret_cast<u64>(sub_vt);
     void* ptr1 = reinterpret_cast<void*>(p[4]);
     p[4] = 0;
-    if (ptr1 != nullptr) FUN_710392e590(ptr1);
+    if (ptr1 != nullptr) jeFree_710392e590(ptr1);
 
     // Sub-object 1 (+0x08/+0x10)
     void* ptr0 = reinterpret_cast<void*>(p[2]);
     p[1] = reinterpret_cast<u64>(sub_vt);
     p[2] = 0;
-    if (ptr0 != nullptr) FUN_710392e590(ptr0);
+    if (ptr0 != nullptr) jeFree_710392e590(ptr0);
 }
 
 // 0x7103576360 (96 bytes) — destructor: conditional frees based on flag bits
@@ -52,15 +52,15 @@ void FUN_7101b4d700(void* param_1)
 void FUN_7103576360(void* param_1)
 {
     void* ptr0 = *(void**)((u8*)param_1 + 0x60);
-    if (ptr0 != nullptr) FUN_710392e590(ptr0);
+    if (ptr0 != nullptr) jeFree_710392e590(ptr0);
 
     u16 flags = *(u16*)((u8*)param_1 + 0x02);
     if (((flags >> 1) & 1) || ((flags >> 2) & 1) || ((flags >> 3) & 1)) {
         void* ptr1 = *(void**)((u8*)param_1 + 0x68);
-        if (ptr1 != nullptr) FUN_710392e590(ptr1);
+        if (ptr1 != nullptr) jeFree_710392e590(ptr1);
     }
 
     void* ptr2 = *(void**)((u8*)param_1 + 0x70);
     *(void**)((u8*)param_1 + 0x70) = nullptr;
-    if (ptr2 != nullptr) FUN_710392e590(ptr2);
+    if (ptr2 != nullptr) jeFree_710392e590(ptr2);
 }

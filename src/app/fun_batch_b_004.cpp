@@ -8,7 +8,7 @@ extern "C" void FUN_7103779b70(s64, ...);
 extern "C" void FUN_7103779cd0(s64, const char *, ...);
 extern "C" void FUN_71037a1cc0(s64, u32 *, s32, s32);
 extern "C" void FUN_710326f0f0(s64 *, s32, s32, s32, s32, s32, s32);
-extern "C" void FUN_710392e590(...);
+extern "C" void jeFree_710392e590(...);
 extern "C" void FUN_7101c08b50(u8 *, u8 *, u8 *, u8 *, u8 *);
 
 // 0x7101bbbf80 -- training CPU behavior mel string dispatch
@@ -152,7 +152,7 @@ u32 FUN_7101c043c0(s64 param_1, s64 param_2, u8 param_3)
       list_size = list_end - list_begin;
       if (list_begin != 0) {
         list_end = list_begin;
-        FUN_710392e590();
+        jeFree_710392e590();
       }
       count = (s32)(list_size >> 3);
       if (count < 0) {
@@ -247,7 +247,7 @@ switchD_7101c045c8_caseD_0:
     list_size = list_end - list_begin;
     if (list_begin != 0) {
       list_end = list_begin;
-      FUN_710392e590();
+      jeFree_710392e590();
     }
     count = (s32)(list_size >> 3);
     if (count < 0) {

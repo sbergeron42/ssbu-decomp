@@ -6,7 +6,7 @@
 // ---- External declarations -----------------------------------------------
 
 extern void FUN_710356bb20(void);
-extern void FUN_710392e590(void *);
+extern void jeFree_710392e590(void *);
 
 namespace nu {
     extern void VirtualFreeHook(void *);
@@ -283,7 +283,7 @@ LAB_710356baec:
             if (*(u8 **)PTR_VirtualFreeHook_71052a7a70 != nullptr) {
                 nu::VirtualFreeHook(buf);
             }
-            FUN_710392e590(buf);
+            jeFree_710392e590(buf);
             return;
         }
         break;
@@ -345,7 +345,7 @@ void FUN_7103598a60(u32 type_tag, u64 *value)
         if (*(u8 **)PTR_VirtualFreeHook_71052a7a70 != nullptr) {
             nu::VirtualFreeHook(buf);
         }
-        FUN_710392e590(buf);
+        jeFree_710392e590(buf);
         return;
     }
     return;

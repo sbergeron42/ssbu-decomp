@@ -20,7 +20,7 @@ extern "C" void* bsearch(const void*, const void*, u64, u64, int(*)(const void*,
 
 // jemalloc (NX fork 5.1.0)
 extern "C" void* je_aligned_alloc(u64 alignment, u64 size);
-extern "C" void FUN_710392e590(void*);  // je_free
+extern "C" void jeFree_710392e590(void*);  // je_free
 
 // libc++ recursive_mutex PLT stubs
 // [derived: Ghidra shows std::__1::recursive_mutex::lock/unlock at these PLT entries]
@@ -146,7 +146,7 @@ void FUN_710353eff0(FilesystemInfo* fs, LoadedDirectory* dir) {
                 fs->unk2.end = puVar1 + 1;
                 fs->unk2.eos = (u32*)((u8*)__dest + uVar6 * 4);
                 if (__src != nullptr) {
-                    FUN_710392e590(__src);
+                    jeFree_710392e590(__src);
                 }
             } else {
                 *puVar1 = *puVar5;
@@ -159,7 +159,7 @@ void FUN_710353eff0(FilesystemInfo* fs, LoadedDirectory* dir) {
 
     if (release_vec.start != nullptr) {
         release_vec.end = release_vec.start;
-        FUN_710392e590(release_vec.start);
+        jeFree_710392e590(release_vec.start);
     }
 }
 
@@ -673,7 +673,7 @@ do_search:
                     }
                     *param_1 = *puVar1;
                     if (__dest != nullptr) {
-                        FUN_710392e590(__dest);
+                        jeFree_710392e590(__dest);
                     }
                     return;
                 }
@@ -683,7 +683,7 @@ do_search:
     }
 
     if (__dest != nullptr) {
-        FUN_710392e590(__dest);
+        jeFree_710392e590(__dest);
     }
     *param_1 = 0xffffff;
 }
@@ -838,7 +838,7 @@ void FUN_710353ec40(u64 param_1, u32* param_2, u64* param_3) {
     // Release redirection directory pointer if set
     if (*(u64*)((u64)param_2 + 0x28 + 0x10) != 0) {
         *(u64*)((u64)param_2 + 0x28 + 0x08) = *(u64*)((u64)param_2 + 0x28 + 0x10);
-        FUN_710392e590((void*)0);  // freed by caller
+        jeFree_710392e590((void*)0);  // freed by caller
     }
 
     // Release child path indices array
@@ -860,7 +860,7 @@ void FUN_710353ec40(u64 param_1, u32* param_2, u64* param_3) {
             *puVar19 = (u64)piVar13_2;
         }
         if (piVar14 != nullptr) {
-            FUN_710392e590((void*)piVar14);
+            jeFree_710392e590((void*)piVar14);
         }
     }
 

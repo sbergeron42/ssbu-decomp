@@ -25,7 +25,7 @@ struct StageManager {
 };
 
 extern "C" void FUN_71026084c0(void*, bool);
-extern "C" void FUN_71039c20a0(void*);
+extern "C" void abortWrapper_71039c20a0(void*);
 
 namespace app::lua_bind {
 
@@ -43,7 +43,7 @@ bool StageManager__is_discretion_final_enabled_impl(StageManager* sm) {
     s32 mode = inner->mode;
     if (mode == -1) return true;
     if ((u32)mode >= 3u) {
-        FUN_71039c20a0(sm);
+        abortWrapper_71039c20a0(sm);
         __builtin_unreachable();
     }
     auto* entry = inner->entries[(u32)mode];

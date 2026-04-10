@@ -9,7 +9,7 @@
 // ---- External functions ----
 
 extern "C" void  FUN_710395f4b0(u64);
-extern "C" void  FUN_710392e590(void*);   // je_free
+extern "C" void  jeFree_710392e590(void*);   // je_free
 
 // ---- External data ----
 

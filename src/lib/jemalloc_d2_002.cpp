@@ -16,7 +16,7 @@ u32   FUN_7103928560(u64);      // ffs_u64 inner (calls __builtin_ctzll)
 void* FUN_71039c7d10(u64);      // __builtin_ctzll equivalent
 void* FUN_710392c6b0(void*);    // extent field accessor +0x1b8
 void  FUN_7103956fa0(const char*, ...);  // malloc_printf
-void  FUN_71039c20a0(void);     // abort
+void  abortWrapper_71039c20a0(void);     // abort
 void* FUN_710392ac60(void);     // tsdn_fetch (in pool-a)
 void  FUN_710392acb0(void*);    // check_entry_exit_locking (in pool-a)
 void  FUN_7103958900(void*, void*, void*); // tsd_boot0 helper
@@ -173,7 +173,7 @@ void* FUN_710392c680(void*) {
 // 0x710392b350 (32 bytes, noreturn) — malloc abort
 // jemalloc 5.1.0: jemalloc.c — prints error message and aborts
 // FUN_7103956fa0 = malloc_printf
-// FUN_71039c20a0 = abort
+// abortWrapper_71039c20a0 = abort
 // STR_71044337f74 = abort message string
 // [derived: adrp+add to .rodata string, bl printf, bl abort]
 // =========================================================================
@@ -187,7 +187,7 @@ void FUN_710392b350(void) {
         "2: adrp x0, STR_71044337f74\n"
         "add x0, x0, :lo12:STR_71044337f74\n"
         "bl FUN_7103956fa0\n"
-        "bl FUN_71039c20a0\n"
+        "bl abortWrapper_71039c20a0\n"
     );
 }
 
@@ -342,7 +342,7 @@ void FUN_710392abf0(void) {
 // FUN_710395f070 = pthread_key_create
 // FUN_710395f1e0 = base_alloc (for tsd)
 // FUN_7103954000 = malloc_write (error print)
-// FUN_71039c20a0 = abort
+// abortWrapper_71039c20a0 = abort
 // FUN_71039bfcf0 = memset
 // FUN_71039bfb30 = memcpy
 // FUN_710392af50 = tsd_set (pthread_setspecific wrapper)
@@ -397,7 +397,7 @@ void* FUN_710392ae30(u32) {
         "12: adrp x0, STR_710442e4e12\n"
         "add x0, x0, :lo12:STR_710442e4e12\n"
         "bl FUN_7103954000\n"
-        "bl FUN_71039c20a0\n"
+        "bl abortWrapper_71039c20a0\n"
         // init allocated TSD
         "15: ldur x8, [x29, #-0x28]\n"
         "strb wzr, [x8]\n"

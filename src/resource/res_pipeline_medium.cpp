@@ -22,7 +22,7 @@
 
 // Memory management
 extern "C" void* je_aligned_alloc(unsigned long, unsigned long);
-extern "C" void FUN_710392e590(void*);  // je_free
+extern "C" void jeFree_710392e590(void*);  // je_free
 extern "C" void* memset(void*, int, unsigned long);
 extern "C" void* memcpy(void*, const void*, unsigned long);
 extern "C" int memcmp(const void*, const void*, unsigned long);
@@ -131,12 +131,12 @@ void string_tree_destroy(StringTreeNode* node) {
             if (PTR_VirtualFreeHook_71052a7a70 != nullptr) {
                 FUN_71039c1400(str_heap);
             }
-            FUN_710392e590(str_heap);
+            jeFree_710392e590(str_heap);
         }
         if (PTR_VirtualFreeHook_71052a7a70 != nullptr) {
             FUN_71039c1400((void*)node);
         }
-        FUN_710392e590((void*)node);
+        jeFree_710392e590((void*)node);
     }
 }
 
@@ -321,9 +321,9 @@ void pipeline_clear_material_map(PipelineContainer* pipeline) {
                 if (free_hook != nullptr) {
                     FUN_71039c1400(str_heap);
                 }
-                FUN_710392e590(str_heap);
+                jeFree_710392e590(str_heap);
             }
-            FUN_710392e590((void*)hash_node);
+            jeFree_710392e590((void*)hash_node);
             hash_node = (MaterialHashNode*)iter_addr;
         }
         // Zero all buckets (unrolled by 4)
@@ -977,7 +977,7 @@ LAB_e6b4:
             }
         }
         if (vec_start != nullptr) {
-            FUN_710392e590(vec_start);
+            jeFree_710392e590(vec_start);
         }
     }
 
@@ -1258,7 +1258,7 @@ LAB_eb84:
                         (*(void(**)(long*))(*(long*)vec_start))(vec_start);
                     }
                     if (old_vec_start != nullptr) {
-                        FUN_710392e590(old_vec_start);
+                        jeFree_710392e590(old_vec_start);
                     }
                 }
                 // Hash the entry's string key
@@ -1579,7 +1579,7 @@ LAB_d60c:
                 ctrl_ptr[1] = (long)(vec_ptr + 1);
                 ctrl_ptr[2] = (long)((long)new_alloc + retry_result * 8);
                 if (old_buf != nullptr) {
-                    FUN_710392e590(old_buf);
+                    jeFree_710392e590(old_buf);
                 }
             }
             if (pool_count <= loop_idx) goto LAB_d660;
@@ -1657,12 +1657,12 @@ LAB_d738:
                     if (poom_result != nullptr) {
                         FUN_71039c1400(move_end);
                     }
-                    FUN_710392e590(move_end);
+                    jeFree_710392e590(move_end);
                 }
             }
         }
         if (old_buf != nullptr) {
-            FUN_710392e590(old_buf);
+            jeFree_710392e590(old_buf);
         }
     }
 
@@ -1828,7 +1828,7 @@ LAB_d738:
                     ((std::__1::__shared_weak_count*)pool_mgr)->__release_weak();
                 }
             }
-            FUN_710392e590(vec_ptr);
+            jeFree_710392e590(vec_ptr);
             vec_ptr = (long*)pool_base;
         }
         loop_idx = pipeline->link_map.bucket_count;

@@ -13,7 +13,7 @@
 
 // Resolve target stat from AI manager + target tracking block address
 // [derived: all check_target_stat_* call this with (mgr, ctx+0xc50)]
-extern "C" AITargetStat* FUN_7100314030(void*, u64);
+extern "C" AITargetStat* aiGetTargetById_7100314030(void*, u64);
 
 // Lookup attack data entry by handle + hash40
 // [derived: attack_data_x0/x1/y0/y1 call this with (ctx->attack_handle, hash)]
@@ -33,12 +33,12 @@ extern "C" void* DAT_71052b5fd8 HIDDEN;
 // The target tracking block starts at FighterAI+0xc50 (target_entry_id).
 static inline AITargetStat* get_target_stat(u64 L) {
     FighterAI* ctx = get_ai_context(L);
-    return FUN_7100314030(DAT_71052b5fd8, reinterpret_cast<u64>(ctx) + 0xc50);
+    return aiGetTargetById_7100314030(DAT_71052b5fd8, reinterpret_cast<u64>(ctx) + 0xc50);
 }
 
 // ════════════════════════════════════════════════════════════════════
 // check_target_stat_* — AI target status queries
-// All resolve target via FUN_7100314030, then compare status_kind (+0x74)
+// All resolve target via aiGetTargetById_7100314030, then compare status_kind (+0x74)
 // ════════════════════════════════════════════════════════════════════
 
 // 0x7100366770 (48B) — check if target is in a "final" state (KO'd / eliminated)
@@ -197,7 +197,7 @@ bool is_update_count_odd_368190(u64 L) {
 // Resolves target stat, then checks entry_id >= 0, != self, and not flagged dead (bit 3).
 bool is_valid_target_3611f0(u64 L) {
     FighterAI* ctx = get_ai_context(L);
-    AITargetStat* stat = FUN_7100314030(DAT_71052b5fd8, reinterpret_cast<u64>(ctx) + 0xc50);
+    AITargetStat* stat = aiGetTargetById_7100314030(DAT_71052b5fd8, reinterpret_cast<u64>(ctx) + 0xc50);
     bool invalid;
     if (ctx->target_entry_id < 0 || ctx->target_entry_id == (s32)ctx->parent_entry_id) {
         invalid = true;

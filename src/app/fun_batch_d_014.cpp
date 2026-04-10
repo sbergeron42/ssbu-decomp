@@ -7,9 +7,9 @@
 // ---- External declarations -----------------------------------------------
 
 [[noreturn]] extern void FUN_710356bb20(void);
-extern void  FUN_710392e590(void);
+extern void  jeFree_710392e590(void);
 extern void  FUN_71037af2c0(u64);
-extern void  FUN_71037aeec0(u64);
+extern void  noop_71037aeec0(u64);
 extern void  FUN_71037b2b70(u64);
 extern void  FUN_71037b36d0(u64);
 extern void  FUN_71037b2870(u64, s64*, u64);
@@ -23,8 +23,8 @@ u8 FUN_71036de518(s64 *param_1)
     return (u8)(result == 0xffffffff);
 }
 
-// 0x710373e054 -- call FUN_710392e590, return 0 (44 bytes)
-u32 FUN_710373e054(void) { FUN_710392e590(); return 0; }
+// 0x710373e054 -- call jeFree_710392e590, return 0 (44 bytes)
+u32 FUN_710373e054(void) { jeFree_710392e590(); return 0; }
 
 // 0x71037b7b30 -- wrapper: FUN_71037b36d0(param_1) (48 bytes)
 void FUN_71037b7b30(u64 param_1) { FUN_71037b36d0(param_1); }
@@ -43,12 +43,12 @@ void FUN_71037bb640(s64 param_1)
 {
     FUN_71037b2b70(param_1 + 0x10);
     FUN_71037b2b70(param_1 + 0x34);
-    FUN_71037aeec0(param_1 + 0x5c);
-    FUN_71037aeec0(param_1 + 0x64);
+    noop_71037aeec0(param_1 + 0x5c);
+    noop_71037aeec0(param_1 + 0x64);
 }
 
-// 0x71037bc700 -- wrapper: FUN_71037aeec0(param_1) (48 bytes)
-void FUN_71037bc700(u64 param_1) { FUN_71037aeec0(param_1); }
+// 0x71037bc700 -- wrapper: noop_71037aeec0(param_1) (48 bytes)
+void FUN_71037bc700(u64 param_1) { noop_71037aeec0(param_1); }
 
 // 0x71037bcc60 -- vtable[1] (destructor), then memcpy via FUN_71037b2870 (64 bytes)
 void FUN_71037bcc60(s64 *param_1, u64 param_2)
@@ -57,8 +57,8 @@ void FUN_71037bcc60(s64 *param_1, u64 param_2)
     FUN_71037b2870(param_2, param_1, 0xd0);
 }
 
-// 0x71037bf4f0 -- wrapper: FUN_71037aeec0(param_1) (48 bytes)
-void FUN_71037bf4f0(u64 param_1) { FUN_71037aeec0(param_1); }
+// 0x71037bf4f0 -- wrapper: noop_71037aeec0(param_1) (48 bytes)
+void FUN_71037bf4f0(u64 param_1) { noop_71037aeec0(param_1); }
 
 // 0x71037bf920 -- vtable[1] (destructor), then memcpy via FUN_71037b2870 (64 bytes)
 void FUN_71037bf920(s64 *param_1, u64 param_2)
@@ -82,15 +82,15 @@ void FUN_71037bfda0(u32 *param_1)
 // 0x71037c0660 -- init two sub-objects at +0 and +8 (48 bytes)
 void FUN_71037c0660(s64 param_1)
 {
-    FUN_71037aeec0(param_1);
-    FUN_71037aeec0(param_1 + 8);
+    noop_71037aeec0(param_1);
+    noop_71037aeec0(param_1 + 8);
 }
 
 // 0x71037c1bf0 -- init two sub-objects at +0 and +8 (48 bytes)
 void FUN_71037c1bf0(s64 param_1)
 {
-    FUN_71037aeec0(param_1);
-    FUN_71037aeec0(param_1 + 8);
+    noop_71037aeec0(param_1);
+    noop_71037aeec0(param_1 + 8);
 }
 
 // 0x71037c24c0 -- vtable[1] (destructor), then memcpy via FUN_71037b2870 (64 bytes)

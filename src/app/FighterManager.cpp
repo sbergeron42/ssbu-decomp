@@ -6,7 +6,7 @@ using app::FighterManagerData;
 using app::FighterEntry;
 
 extern "C" [[noreturn]] void abort();
-extern "C" [[noreturn]] void FUN_71039c20a0();
+extern "C" [[noreturn]] void abortWrapper_71039c20a0();
 extern "C" __attribute__((visibility("hidden"))) u8 DAT_7104464700[];
 extern "C" __attribute__((visibility("hidden"))) u64* DAT_71053299d8;
 
@@ -60,13 +60,13 @@ u32 FighterManager__get_final_actor_entry_id_impl(FighterManager* mgr) {
 
 // 7102140f90 -- get_fighter_entry (10 instructions, bounds check + indexed)
 void* FighterManager__get_fighter_entry_impl(FighterManager* mgr, u32 index) {
-    if (index >= 8) { FUN_71039c20a0(); }
+    if (index >= 8) { abortWrapper_71039c20a0(); }
     return mgr->data->entries[index];
 }
 
 // 7102140fc0 -- get_fighter_information (11 instructions, bounds check + offset)
 void* FighterManager__get_fighter_information_impl(FighterManager* mgr, u32 index) {
-    if (index >= 8) { FUN_71039c20a0(); }
+    if (index >= 8) { abortWrapper_71039c20a0(); }
     return reinterpret_cast<u8*>(mgr->data->entries[index]) + 0xf0;
 }
 

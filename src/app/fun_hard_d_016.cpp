@@ -43,7 +43,7 @@ extern void FUN_71001af8a0(s64 *);
 extern void FUN_71001b1870(void *);
 extern void FUN_71001b17e0(s64 *);
 extern void FUN_71001b3ef0(s64 *);
-extern void FUN_71001b4910(s64 *);
+extern void stdFunctionCleanup_71001b4910(s64 *);
 extern void FUN_71001bef00(s64 *);
 
 extern "C" {
@@ -143,7 +143,7 @@ void FUN_710019c3b0(s64 param_1)
     nn::os::UnlockMutex((void *)(param_1 + 0x138));
 }
 
-// ---- vtable + set 2 fields to puVar1 + 2x FUN_71001b4910 (2 variants, 80 bytes each) ----
+// ---- vtable + set 2 fields to puVar1 + 2x stdFunctionCleanup_71001b4910 (2 variants, 80 bytes each) ----
 
 // 0x71001e6b00
 void FUN_71001e6b00(s64 *param_1)
@@ -151,9 +151,9 @@ void FUN_71001e6b00(s64 *param_1)
     u8 *puVar1 = PTR_DAT_71052a3d80 + 0x10;
     *param_1 = (s64)(PTR_DAT_71052a5fb0 + 0x10);
     param_1[7] = (s64)puVar1;
-    FUN_71001b4910((s64 *)(param_1 + 7));
+    stdFunctionCleanup_71001b4910((s64 *)(param_1 + 7));
     param_1[1] = (s64)puVar1;
-    FUN_71001b4910(param_1 + 1);
+    stdFunctionCleanup_71001b4910(param_1 + 1);
 }
 
 // 0x71001e6b50 — same + FUN_71001af8a0 (deleting dtor variant)
@@ -162,9 +162,9 @@ void FUN_71001e6b50(s64 *param_1)
     u8 *puVar1 = PTR_DAT_71052a3d80 + 0x10;
     *param_1 = (s64)(PTR_DAT_71052a5fb0 + 0x10);
     param_1[7] = (s64)puVar1;
-    FUN_71001b4910((s64 *)(param_1 + 7));
+    stdFunctionCleanup_71001b4910((s64 *)(param_1 + 7));
     param_1[1] = (s64)puVar1;
-    FUN_71001b4910(param_1 + 1);
+    stdFunctionCleanup_71001b4910(param_1 + 1);
     FUN_71001af8a0(param_1);
 }
 

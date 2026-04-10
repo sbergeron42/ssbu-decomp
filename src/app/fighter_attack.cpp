@@ -15,15 +15,15 @@ using namespace app;
 
 // AI target lookup: resolves target battle object from AI context
 // [derived: used by all target_* AI property accessors]
-extern "C" u64 FUN_7100314030(void*, void*);
+extern "C" u64 aiGetTargetById_7100314030(void*, void*);
 
 // BattleObjectWorld singleton — used for target resolution
-// [derived: DAT_71052b5fd8 in Ghidra, passed as first arg to FUN_7100314030]
+// [derived: DAT_71052b5fd8 in Ghidra, passed as first arg to aiGetTargetById_7100314030]
 extern "C" void* DAT_71052b5fd8 HIDDEN;
 
 // ---- AI target property accessors ------------------------------------------
 // Family of 10 functions, each 40 bytes, all follow the same pattern:
-//   1. Look up target info via FUN_7100314030(DAT_71052b5fd8, *(L-8) + 0xc50)
+//   1. Look up target info via aiGetTargetById_7100314030(DAT_71052b5fd8, *(L-8) + 0xc50)
 //   2. Return a specific field from the result struct
 // The target info struct layout is inferred from field offsets across the family.
 //
@@ -42,56 +42,56 @@ extern "C" void* DAT_71052b5fd8 HIDDEN;
 // 0x7100366de0 (40 bytes) — app::ai::target_height
 extern "C" f32 target_height(u64 L) {
     u64 ctx = *(u64*)(L - 8);
-    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     return *(f32*)(info + 0xc8);
 }
 
 // 0x7100366e10 (40 bytes) — app::ai::target_pos_x
 extern "C" f32 target_pos_x(u64 L) {
     u64 ctx = *(u64*)(L - 8);
-    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     return *(f32*)(info + 0x80);
 }
 
 // 0x7100366e40 (40 bytes) — app::ai::target_pos_y
 extern "C" f32 target_pos_y(u64 L) {
     u64 ctx = *(u64*)(L - 8);
-    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     return *(f32*)(info + 0x84);
 }
 
 // 0x7100366e70 (40 bytes) — app::ai::target_speed_x
 extern "C" f32 target_speed_x(u64 L) {
     u64 ctx = *(u64*)(L - 8);
-    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     return *(f32*)(info + 0xa0);
 }
 
 // 0x7100366ea0 (40 bytes) — app::ai::target_speed_y
 extern "C" f32 target_speed_y(u64 L) {
     u64 ctx = *(u64*)(L - 8);
-    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     return *(f32*)(info + 0xa4);
 }
 
 // 0x7100366ed0 (40 bytes) — app::ai::target_scale
 extern "C" f32 target_scale(u64 L) {
     u64 ctx = *(u64*)(L - 8);
-    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     return *(f32*)(info + 0xc0);
 }
 
 // 0x7100366fc0 (40 bytes) — app::ai::target_lr
 extern "C" f32 target_lr(u64 L) {
     u64 ctx = *(u64*)(L - 8);
-    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     return *(f32*)(info + 0xc4);
 }
 
 // 0x7100366ff0 (40 bytes) — app::ai::target_status_kind
 extern "C" u32 target_status_kind(u64 L) {
     u64 ctx = *(u64*)(L - 8);
-    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     return *(u32*)(info + 0x2c);
 }
 
@@ -99,14 +99,14 @@ extern "C" u32 target_status_kind(u64 L) {
 // Returns Hash40 (u64) — motion animation hash
 extern "C" u64 target_motion_kind(u64 L) {
     u64 ctx = *(u64*)(L - 8);
-    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     return *(u64*)(info + 0x38);
 }
 
 // 0x7100367050 (40 bytes) — app::ai::target_motion_frame
 extern "C" f32 target_motion_frame(u64 L) {
     u64 ctx = *(u64*)(L - 8);
-    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     return *(f32*)(info + 0x48);
 }
 
@@ -493,7 +493,7 @@ extern "C" bool check_cliffable_floor_lr(u64 L, f32 dir) {
 // +0x160 [inferred: own battle_object_id, s32, in ctx]
 extern "C" bool is_valid_target(u64 L) {
     u64 ctx = *(u64*)(L - 8);
-    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     if (*(s32*)(ctx + 0xc50) < 0 || *(s32*)(ctx + 0xc50) == *(s32*)(ctx + 0x160)) {
         return false;
     }
@@ -607,160 +607,160 @@ extern "C" bool check_command_23634_step(u64 L) {
     return false;
 }
 
-// ---- AI target state queries (target info via FUN_7100314030) ---------------
+// ---- AI target state queries (target info via aiGetTargetById_7100314030) ---------------
 // Target info struct mirrors the local AI state but for the opponent.
-// Obtained by calling FUN_7100314030(BattleObjectWorld, ctx + 0xc50).
+// Obtained by calling aiGetTargetById_7100314030(BattleObjectWorld, ctx + 0xc50).
 // Field layout matches the AI state struct at the same offsets.
 
 // 0x71003666e0 — check_target_stat_air (44B, word load, bit 0)
 extern "C" u32 check_target_stat_air(u64 L) {
     u64 ctx = *(u64*)(L - 8);
-    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     return *(u32*)(info + 0x54) & 1;
 }
 // 0x7100366710 — check_target_stat_build_up (44B, byte load, bit 3)
 extern "C" u8 check_target_stat_build_up(u64 L) {
     u64 ctx = *(u64*)(L - 8);
-    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     return (*(u8*)(info + 0x54) >> 3) & 1;
 }
 // 0x7100366740 — check_target_stat_attention (44B, byte load, bit 6)
 extern "C" u8 check_target_stat_attention(u64 L) {
     u64 ctx = *(u64*)(L - 8);
-    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     return (*(u8*)(info + 0x54) >> 6) & 1;
 }
 // 0x7100366770 — check_target_stat_final (48B, byte load, bits 0-1)
 extern "C" bool check_target_stat_final(u64 L) {
     u64 ctx = *(u64*)(L - 8);
-    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     return (*(u8*)(info + 0x55) & 3) != 0;
 }
 // 0x71003667a0 — check_target_stat_dead (44B, byte load, bit 3)
 extern "C" u8 check_target_stat_dead(u64 L) {
     u64 ctx = *(u64*)(L - 8);
-    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     return (*(u8*)(info + 0x55) >> 3) & 1;
 }
 // 0x71003667d0 — check_target_stat_invincible (44B, byte load, bit 5)
 extern "C" u8 check_target_stat_invincible(u64 L) {
     u64 ctx = *(u64*)(L - 8);
-    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     return (*(u8*)(info + 0x55) >> 5) & 1;
 }
 // 0x71003668b0 — check_target_stat_reflect (44B, byte load at +0x56, bit 2)
 extern "C" u8 check_target_stat_reflect(u64 L) {
     u64 ctx = *(u64*)(L - 8);
-    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     return (*(u8*)(info + 0x56) >> 2) & 1;
 }
 // 0x71003668e0 — check_target_stat_unguarded_hind (44B, byte load at +0x56, bit 5)
 extern "C" u8 check_target_stat_unguarded_hind(u64 L) {
     u64 ctx = *(u64*)(L - 8);
-    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     return (*(u8*)(info + 0x56) >> 5) & 1;
 }
 // 0x7100366910 — check_target_stat_unguarded (44B, byte load at +0x56, bit 6)
 extern "C" u8 check_target_stat_unguarded(u64 L) {
     u64 ctx = *(u64*)(L - 8);
-    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     return (*(u8*)(info + 0x56) >> 6) & 1;
 }
 // 0x7100366940 — check_target_stat_combo (44B, byte load at +0x56, bit 7)
 extern "C" u8 check_target_stat_combo(u64 L) {
     u64 ctx = *(u64*)(L - 8);
-    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     return *(u8*)(info + 0x56) >> 7;
 }
 // 0x7100366970 — check_target_stat_no_counter (44B, byte load at +0x57, bit 5)
 extern "C" u8 check_target_stat_no_counter(u64 L) {
     u64 ctx = *(u64*)(L - 8);
-    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     return (*(u8*)(info + 0x57) >> 5) & 1;
 }
 // 0x71003669a0 — check_target_stat_down (48B, status_kind == 4)
 extern "C" bool check_target_stat_down(u64 L) {
     u64 ctx = *(u64*)(L - 8);
-    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     return *(s32*)(info + 0x74) == 4;
 }
 // 0x71003669d0 — check_target_stat_fall_sp (48B, status_kind == 0x10)
 extern "C" bool check_target_stat_fall_sp(u64 L) {
     u64 ctx = *(u64*)(L - 8);
-    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     return *(s32*)(info + 0x74) == 0x10;
 }
 
 // 0x7100366a00 — check_target_stat_piyo (52B, status_kind in [9,10,11])
 extern "C" bool check_target_stat_piyo(u64 L) {
     u64 ctx = *(u64*)(L - 8);
-    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     return (u32)(*(s32*)(info + 0x74) - 9) < 3;
 }
 // 0x7100366a40 — check_target_stat_piyo_l (48B, status_kind == 0xb)
 extern "C" bool check_target_stat_piyo_l(u64 L) {
     u64 ctx = *(u64*)(L - 8);
-    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     return *(s32*)(info + 0x74) == 0xb;
 }
 // 0x7100366a70 — check_target_stat_dragoon (48B, status_kind == 0x11)
 extern "C" bool check_target_stat_dragoon(u64 L) {
     u64 ctx = *(u64*)(L - 8);
-    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     return *(s32*)(info + 0x74) == 0x11;
 }
 // 0x7100366aa0 — check_target_stat_cliff (48B, status_kind == 6)
 extern "C" bool check_target_stat_cliff(u64 L) {
     u64 ctx = *(u64*)(L - 8);
-    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     return *(s32*)(info + 0x74) == 6;
 }
 // 0x7100366ad0 — check_target_stat_cliff_act (48B, status_kind == 7)
 extern "C" bool check_target_stat_cliff_act(u64 L) {
     u64 ctx = *(u64*)(L - 8);
-    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     return *(s32*)(info + 0x74) == 7;
 }
 // 0x7100366b00 — check_target_stat_catch (48B, status_kind == 0xc)
 extern "C" bool check_target_stat_catch(u64 L) {
     u64 ctx = *(u64*)(L - 8);
-    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     return *(s32*)(info + 0x74) == 0xc;
 }
 // 0x7100366b60 — check_target_stat_guard (48B, status_kind == 0x1a)
 extern "C" bool check_target_stat_guard(u64 L) {
     u64 ctx = *(u64*)(L - 8);
-    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     return *(s32*)(info + 0x74) == 0x1a;
 }
 // 0x7100366b90 — check_target_stat_escape (48B, status_kind == 0x1e)
 extern "C" bool check_target_stat_escape(u64 L) {
     u64 ctx = *(u64*)(L - 8);
-    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     return *(s32*)(info + 0x74) == 0x1e;
 }
 // 0x7100366bc0 — check_target_stat_rebirth (48B, status_kind == 0x1f)
 extern "C" bool check_target_stat_rebirth(u64 L) {
     u64 ctx = *(u64*)(L - 8);
-    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     return *(s32*)(info + 0x74) == 0x1f;
 }
 // 0x7100366c70 — check_target_stat_squat (44B, byte at +0x58, bit 6)
 extern "C" u8 check_target_stat_squat(u64 L) {
     u64 ctx = *(u64*)(L - 8);
-    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     return (*(u8*)(info + 0x58) >> 6) & 1;
 }
 // 0x7100366cd0 — check_target_stat_unable_special (44B, byte at +0x59, bit 4)
 extern "C" u8 check_target_stat_unable_special(u64 L) {
     u64 ctx = *(u64*)(L - 8);
-    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     return (*(u8*)(info + 0x59) >> 4) & 1;
 }
 // 0x7100366d00 — check_target_stat_specialflag_hoist (44B, byte at +0x5c, bit 7)
 extern "C" u8 check_target_stat_specialflag_hoist(u64 L) {
     u64 ctx = *(u64*)(L - 8);
-    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     return *(u8*)(info + 0x5c) >> 7;
 }
 
@@ -768,7 +768,7 @@ extern "C" u8 check_target_stat_specialflag_hoist(u64 L) {
 // [derived: like check_chr_stat but for target fighter]
 extern "C" bool check_target_chr_stat(u64 L, u32 mask, s32 kind) {
     u64 ctx = *(u64*)(L - 8);
-    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     if ((kind == -1 || *(s32*)(info + 0x28) == kind) &&
         (*(u32*)(info + 0x68) & mask) != 0) {
         return true;
@@ -782,7 +782,7 @@ extern "C" bool check_target_chr_stat(u64 L, u32 mask, s32 kind) {
 // +0xc0 [inferred: scale, f32]
 extern "C" f32 target_width(u64 L) {
     u64 ctx = *(u64*)(L - 8);
-    u64 info = FUN_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     if (*(u64*)(info + 0x20) != 0) {
         return *(f32*)(*(u64*)(info + 0x20) + 0xb2c) * *(f32*)(info + 0xc0);
     }

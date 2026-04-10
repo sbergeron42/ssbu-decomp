@@ -198,7 +198,7 @@
 //   7. send_buffer[N+15..24] = encryption_key[16] (from session+0xDD0)
 //
 //   If UNENCRYPTED (is_host=0 or not relay mode):
-//     Fill 256 bytes of random padding via FUN_7100138620 (PRNG)
+//     Fill 256 bytes of random padding via xorshift128_7100138620 (PRNG)
 //     Total packet: payload_len + 0x12F bytes
 //
 //   If ENCRYPTED (online relay mode):

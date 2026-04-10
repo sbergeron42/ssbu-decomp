@@ -10,8 +10,8 @@
 extern "C" void FUN_7103775b40(u64);
 extern "C" void FUN_710376b3b0(u64);
 
-// FUN_710356bb30: [[noreturn]] panic/abort
-[[noreturn]] extern "C" void FUN_710356bb30(void);
+// abort_710356bb30: [[noreturn]] panic/abort
+[[noreturn]] extern "C" void abort_710356bb30(void);
 
 // ---- x9-register dispatch wrappers ----------------------------------------
 // x9 is a live register input (hidden param). Three dispatch variants:
@@ -119,48 +119,48 @@ u32 FUN_71033c8650(u64 param_1, s64 param_2)
     return ~flag & 1;
 }
 
-// ---- FUN_710356bb30 noreturn wrappers (16 bytes each) -----------------------
+// ---- abort_710356bb30 noreturn wrappers (16 bytes each) -----------------------
 // Callee is [[noreturn]]; u64 return type with no return statement
 // → Clang emits: stp + mov + bl + udf (unreachable trap)
 
 // 0x71035da3c0
-u64 FUN_71035da3c0(void) { FUN_710356bb30(); }
+u64 FUN_71035da3c0(void) { abort_710356bb30(); }
 
 // 0x71035dae20
-u64 FUN_71035dae20(void) { FUN_710356bb30(); }
+u64 FUN_71035dae20(void) { abort_710356bb30(); }
 
 // 0x71035f33d0
-u64 FUN_71035f33d0(void) { FUN_710356bb30(); }
+u64 FUN_71035f33d0(void) { abort_710356bb30(); }
 
 // 0x71036350d0
-u64 FUN_71036350d0(void) { FUN_710356bb30(); }
+u64 FUN_71036350d0(void) { abort_710356bb30(); }
 
 // 0x71036350e0
-u64 FUN_71036350e0(void) { FUN_710356bb30(); }
+u64 FUN_71036350e0(void) { abort_710356bb30(); }
 
 // 0x710363b690
-u64 FUN_710363b690(void) { FUN_710356bb30(); }
+u64 FUN_710363b690(void) { abort_710356bb30(); }
 
 // 0x7103662290
-u64 FUN_7103662290(void) { FUN_710356bb30(); }
+u64 FUN_7103662290(void) { abort_710356bb30(); }
 
 // 0x71036622a0
-u64 FUN_71036622a0(void) { FUN_710356bb30(); }
+u64 FUN_71036622a0(void) { abort_710356bb30(); }
 
 // 0x71036ac780
-u64 FUN_71036ac780(void) { FUN_710356bb30(); }
+u64 FUN_71036ac780(void) { abort_710356bb30(); }
 
 // 0x71036b1be0
-u64 FUN_71036b1be0(void) { FUN_710356bb30(); }
+u64 FUN_71036b1be0(void) { abort_710356bb30(); }
 
 // 0x71036c5e90
-u64 FUN_71036c5e90(void) { FUN_710356bb30(); }
+u64 FUN_71036c5e90(void) { abort_710356bb30(); }
 
 // 0x71036ccf30
-u64 FUN_71036ccf30(void) { FUN_710356bb30(); }
+u64 FUN_71036ccf30(void) { abort_710356bb30(); }
 
 // 0x71036d6450
-u64 FUN_71036d6450(void) { FUN_710356bb30(); }
+u64 FUN_71036d6450(void) { abort_710356bb30(); }
 
 // 0x71036d6460
-u64 FUN_71036d6460(void) { FUN_710356bb30(); }
+u64 FUN_71036d6460(void) { abort_710356bb30(); }

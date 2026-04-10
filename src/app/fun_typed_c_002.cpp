@@ -2,7 +2,7 @@
 
 // External functions
 extern "C" void FUN_71032ca770(void*);
-extern "C" void FUN_710392e590(void*);
+extern "C" void jeFree_710392e590(void*);
 extern "C" void FUN_71013c66e0(void*);
 extern "C" void FUN_710137c8e0(void*);
 extern "C" void FUN_71013b9a90(void*);
@@ -34,7 +34,7 @@ extern "C" void FUN_71037a2400(void*);
 // Pattern D2/D3/H utility functions
 extern "C" void FUN_71001af8a0(void*);
 extern "C" void FUN_71001b1870(void*);
-extern "C" void FUN_71001b4910(void*);
+extern "C" void stdFunctionCleanup_71001b4910(void*);
 extern "C" void FUN_71001b78a0(void*);
 extern "C" void FUN_71015336e0(void*);
 extern "C" void FUN_7101711810(void*, void*);
@@ -129,7 +129,7 @@ void FUN_710138d100(void** self) {
         if (inner) {
             FUN_71032ca770(inner);
         }
-        FUN_710392e590(sub);
+        jeFree_710392e590(sub);
     }
     FUN_71013c66e0(self);
 }
@@ -146,7 +146,7 @@ void FUN_710138f170(void** self) {
         if (inner) {
             FUN_71032ca770(inner);
         }
-        FUN_710392e590(sub);
+        jeFree_710392e590(sub);
     }
     FUN_71013c66e0(self);
 }
@@ -163,7 +163,7 @@ void FUN_7101397380(void** self) {
         if (inner) {
             FUN_71032ca770(inner);
         }
-        FUN_710392e590(sub);
+        jeFree_710392e590(sub);
     }
     FUN_71013c66e0(self);
 }
@@ -180,7 +180,7 @@ void FUN_71013a4520(void** self) {
         if (inner) {
             FUN_71032ca770(inner);
         }
-        FUN_710392e590(sub);
+        jeFree_710392e590(sub);
     }
     FUN_71013c66e0(self);
 }
@@ -197,7 +197,7 @@ void FUN_71013a4bd0(void** self) {
         if (inner) {
             FUN_71032ca770(inner);
         }
-        FUN_710392e590(sub);
+        jeFree_710392e590(sub);
     }
     FUN_71013c66e0(self);
 }
@@ -214,7 +214,7 @@ void FUN_71013a7fe0(void** self) {
         if (inner) {
             FUN_71032ca770(inner);
         }
-        FUN_710392e590(sub);
+        jeFree_710392e590(sub);
     }
     FUN_71013c66e0(self);
 }
@@ -231,7 +231,7 @@ void FUN_71013cc370(void** self) {
         if (inner) {
             FUN_71032ca770(inner);
         }
-        FUN_710392e590(sub);
+        jeFree_710392e590(sub);
     }
     FUN_71013c66e0(self);
 }
@@ -247,7 +247,7 @@ void FUN_71013d0250(void** self) {
     self[10] = nullptr;
     if (sub) {
         FUN_71013d0130(sub);
-        FUN_710392e590(sub);
+        jeFree_710392e590(sub);
     }
     FUN_71013c66e0(self);
 }
@@ -259,7 +259,7 @@ void FUN_71013ddbc0(void** self) {
     self[10] = nullptr;
     if (sub) {
         FUN_71013dd730(sub);
-        FUN_710392e590(sub);
+        jeFree_710392e590(sub);
     }
     FUN_71013c66e0(self);
 }
@@ -271,7 +271,7 @@ void FUN_71013e12b0(void** self) {
     self[10] = nullptr;
     if (sub) {
         FUN_71013e0d90(sub);
-        FUN_710392e590(sub);
+        jeFree_710392e590(sub);
     }
     FUN_71013c66e0(self);
 }
@@ -283,7 +283,7 @@ void FUN_71013e7810(void** self) {
     self[10] = nullptr;
     if (sub) {
         FUN_71013e70c0(sub);
-        FUN_710392e590(sub);
+        jeFree_710392e590(sub);
     }
     FUN_71013c66e0(self);
 }
@@ -299,9 +299,9 @@ void FUN_710137c890(void** self) {
     self[1] = nullptr;
     if (sub) {
         FUN_710137c8e0(sub);
-        FUN_710392e590(sub);
+        jeFree_710392e590(sub);
     }
-    FUN_710392e590(self);
+    jeFree_710392e590(self);
 }
 
 // 0x710138a6c0
@@ -311,9 +311,9 @@ void FUN_710138a6c0(void** self) {
     self[1] = nullptr;
     if (sub) {
         FUN_71013b9a90(sub);
-        FUN_710392e590(sub);
+        jeFree_710392e590(sub);
     }
-    FUN_710392e590(self);
+    jeFree_710392e590(self);
 }
 
 // 0x710143eb90
@@ -323,9 +323,9 @@ void FUN_710143eb90(void** self) {
     self[1] = nullptr;
     if (sub) {
         FUN_710143ebe0(sub);
-        FUN_710392e590(sub);
+        jeFree_710392e590(sub);
     }
-    FUN_710392e590(self);
+    jeFree_710392e590(self);
 }
 
 // 0x71014659e0
@@ -335,9 +335,9 @@ void FUN_71014659e0(void** self) {
     self[1] = nullptr;
     if (sub) {
         FUN_7101465760(sub);
-        FUN_710392e590(sub);
+        jeFree_710392e590(sub);
     }
-    FUN_710392e590(self);
+    jeFree_710392e590(self);
 }
 
 // 0x710149c420
@@ -347,9 +347,9 @@ void FUN_710149c420(void** self) {
     self[1] = nullptr;
     if (sub) {
         FUN_710149a8d0(sub);
-        FUN_710392e590(sub);
+        jeFree_710392e590(sub);
     }
-    FUN_710392e590(self);
+    jeFree_710392e590(self);
 }
 
 // ============================================================
@@ -362,7 +362,7 @@ void FUN_71014106f0(void** node) {
     if (!node) return;
     FUN_71014106f0(static_cast<void**>(node[0]));
     FUN_71014106f0(static_cast<void**>(node[1]));
-    FUN_710392e590(node);
+    jeFree_710392e590(node);
 }
 
 // 0x7101468100
@@ -370,7 +370,7 @@ void FUN_7101468100(void** node) {
     if (!node) return;
     FUN_7101468100(static_cast<void**>(node[0]));
     FUN_7101468100(static_cast<void**>(node[1]));
-    FUN_710392e590(node);
+    jeFree_710392e590(node);
 }
 
 // 0x71014879e0
@@ -378,7 +378,7 @@ void FUN_71014879e0(void** node) {
     if (!node) return;
     FUN_71014879e0(static_cast<void**>(node[0]));
     FUN_71014879e0(static_cast<void**>(node[1]));
-    FUN_710392e590(node);
+    jeFree_710392e590(node);
 }
 
 // 0x710160a610
@@ -386,7 +386,7 @@ void FUN_710160a610(void** node) {
     if (!node) return;
     FUN_710160a610(static_cast<void**>(node[0]));
     FUN_710160a610(static_cast<void**>(node[1]));
-    FUN_710392e590(node);
+    jeFree_710392e590(node);
 }
 
 // 0x71016b4870
@@ -394,7 +394,7 @@ void FUN_71016b4870(void** node) {
     if (!node) return;
     FUN_71016b4870(static_cast<void**>(node[0]));
     FUN_71016b4870(static_cast<void**>(node[1]));
-    FUN_710392e590(node);
+    jeFree_710392e590(node);
 }
 
 // 0x71016bd520
@@ -402,7 +402,7 @@ void FUN_71016bd520(void** node) {
     if (!node) return;
     FUN_71016bd520(static_cast<void**>(node[0]));
     FUN_71016bd520(static_cast<void**>(node[1]));
-    FUN_710392e590(node);
+    jeFree_710392e590(node);
 }
 
 // 0x710175cd20
@@ -410,7 +410,7 @@ void FUN_710175cd20(void** node) {
     if (!node) return;
     FUN_710175cd20(static_cast<void**>(node[0]));
     FUN_710175cd20(static_cast<void**>(node[1]));
-    FUN_710392e590(node);
+    jeFree_710392e590(node);
 }
 
 // 0x71017626c0
@@ -418,7 +418,7 @@ void FUN_71017626c0(void** node) {
     if (!node) return;
     FUN_71017626c0(static_cast<void**>(node[0]));
     FUN_71017626c0(static_cast<void**>(node[1]));
-    FUN_710392e590(node);
+    jeFree_710392e590(node);
 }
 
 // 0x7101aef220
@@ -426,7 +426,7 @@ void FUN_7101aef220(void** node) {
     if (!node) return;
     FUN_7101aef220(static_cast<void**>(node[0]));
     FUN_7101aef220(static_cast<void**>(node[1]));
-    FUN_710392e590(node);
+    jeFree_710392e590(node);
 }
 
 // 0x71017a91b0
@@ -434,7 +434,7 @@ void FUN_71017a91b0(void** node) {
     if (!node) return;
     FUN_71017a91b0(static_cast<void**>(node[0]));
     FUN_71017a91b0(static_cast<void**>(node[1]));
-    FUN_710392e590(node);
+    jeFree_710392e590(node);
 }
 
 // 0x71017c4f20
@@ -442,7 +442,7 @@ void FUN_71017c4f20(void** node) {
     if (!node) return;
     FUN_71017c4f20(static_cast<void**>(node[0]));
     FUN_71017c4f20(static_cast<void**>(node[1]));
-    FUN_710392e590(node);
+    jeFree_710392e590(node);
 }
 
 // 0x710184c5f0
@@ -450,7 +450,7 @@ void FUN_710184c5f0(void** node) {
     if (!node) return;
     FUN_710184c5f0(static_cast<void**>(node[0]));
     FUN_710184c5f0(static_cast<void**>(node[1]));
-    FUN_710392e590(node);
+    jeFree_710392e590(node);
 }
 
 // 0x710187cc40
@@ -458,7 +458,7 @@ void FUN_710187cc40(void** node) {
     if (!node) return;
     FUN_710187cc40(static_cast<void**>(node[0]));
     FUN_710187cc40(static_cast<void**>(node[1]));
-    FUN_710392e590(node);
+    jeFree_710392e590(node);
 }
 
 // 0x7101b1d1e0
@@ -466,7 +466,7 @@ void FUN_7101b1d1e0(void** node) {
     if (!node) return;
     FUN_7101b1d1e0(static_cast<void**>(node[0]));
     FUN_7101b1d1e0(static_cast<void**>(node[1]));
-    FUN_710392e590(node);
+    jeFree_710392e590(node);
 }
 
 // 0x7101d11020
@@ -474,7 +474,7 @@ void FUN_7101d11020(void** node) {
     if (!node) return;
     FUN_7101d11020(static_cast<void**>(node[0]));
     FUN_7101d11020(static_cast<void**>(node[1]));
-    FUN_710392e590(node);
+    jeFree_710392e590(node);
 }
 
 // 0x7101ed2180
@@ -482,7 +482,7 @@ void FUN_7101ed2180(void** node) {
     if (!node) return;
     FUN_7101ed2180(static_cast<void**>(node[0]));
     FUN_7101ed2180(static_cast<void**>(node[1]));
-    FUN_710392e590(node);
+    jeFree_710392e590(node);
 }
 
 // 0x7101f22470
@@ -490,7 +490,7 @@ void FUN_7101f22470(void** node) {
     if (!node) return;
     FUN_7101f22470(static_cast<void**>(node[0]));
     FUN_7101f22470(static_cast<void**>(node[1]));
-    FUN_710392e590(node);
+    jeFree_710392e590(node);
 }
 
 // 0x7101d88350
@@ -498,7 +498,7 @@ void FUN_7101d88350(void** node) {
     if (!node) return;
     FUN_7101d88350(static_cast<void**>(node[0]));
     FUN_7101d88350(static_cast<void**>(node[1]));
-    FUN_710392e590(node);
+    jeFree_710392e590(node);
 }
 
 // 0x7101f455e0
@@ -506,7 +506,7 @@ void FUN_7101f455e0(void** node) {
     if (!node) return;
     FUN_7101f455e0(static_cast<void**>(node[0]));
     FUN_7101f455e0(static_cast<void**>(node[1]));
-    FUN_710392e590(node);
+    jeFree_710392e590(node);
 }
 
 // ============================================================
@@ -520,8 +520,8 @@ void FUN_71019f0de0(void** self) {
     void* sub = self[1];
     self[0] = PTR_LAB_71050a7278;
     self[1] = nullptr;
-    if (sub) { FUN_71019f0e30(sub); FUN_710392e590(sub); }
-    FUN_710392e590(self);
+    if (sub) { FUN_71019f0e30(sub); jeFree_710392e590(sub); }
+    jeFree_710392e590(self);
 }
 
 // 0x7101af06f0
@@ -529,8 +529,8 @@ void FUN_7101af06f0(void** self) {
     void* sub = self[1];
     self[0] = PTR_LAB_71050a9148;
     self[1] = nullptr;
-    if (sub) { FUN_7101aef260(sub); FUN_710392e590(sub); }
-    FUN_710392e590(self);
+    if (sub) { FUN_7101aef260(sub); jeFree_710392e590(sub); }
+    jeFree_710392e590(self);
 }
 
 // 0x7101cbd5e0
@@ -538,8 +538,8 @@ void FUN_7101cbd5e0(void** self) {
     void* sub = self[1];
     self[0] = PTR_LAB_71050ad1f0;
     self[1] = nullptr;
-    if (sub) { FUN_7101cbb160(sub); FUN_710392e590(sub); }
-    FUN_710392e590(self);
+    if (sub) { FUN_7101cbb160(sub); jeFree_710392e590(sub); }
+    jeFree_710392e590(self);
 }
 
 // 0x7101cccde0
@@ -547,8 +547,8 @@ void FUN_7101cccde0(void** self) {
     void* sub = self[1];
     self[0] = PTR_LAB_71050ad2e0;
     self[1] = nullptr;
-    if (sub) { FUN_7101ccc180(sub); FUN_710392e590(sub); }
-    FUN_710392e590(self);
+    if (sub) { FUN_7101ccc180(sub); jeFree_710392e590(sub); }
+    jeFree_710392e590(self);
 }
 
 // 0x7101ce9e60
@@ -556,8 +556,8 @@ void FUN_7101ce9e60(void** self) {
     void* sub = self[1];
     self[0] = PTR_LAB_71050ad500;
     self[1] = nullptr;
-    if (sub) { FUN_7101ce9eb0(sub); FUN_710392e590(sub); }
-    FUN_710392e590(self);
+    if (sub) { FUN_7101ce9eb0(sub); jeFree_710392e590(sub); }
+    jeFree_710392e590(self);
 }
 
 // 0x7101f314a0
@@ -565,8 +565,8 @@ void FUN_7101f314a0(void** self) {
     void* sub = self[1];
     self[0] = PTR_LAB_71050b2ff0;
     self[1] = nullptr;
-    if (sub) { FUN_7101f314f0(sub); FUN_710392e590(sub); }
-    FUN_710392e590(self);
+    if (sub) { FUN_7101f314f0(sub); jeFree_710392e590(sub); }
+    jeFree_710392e590(self);
 }
 
 // 0x7101f358c0
@@ -574,8 +574,8 @@ void FUN_7101f358c0(void** self) {
     void* sub = self[1];
     self[0] = PTR_LAB_71050b3090;
     self[1] = nullptr;
-    if (sub) { FUN_7101f35910(sub); FUN_710392e590(sub); }
-    FUN_710392e590(self);
+    if (sub) { FUN_7101f35910(sub); jeFree_710392e590(sub); }
+    jeFree_710392e590(self);
 }
 
 // 0x7101f43a90
@@ -583,8 +583,8 @@ void FUN_7101f43a90(void** self) {
     void* sub = self[1];
     self[0] = PTR_LAB_71050b3358;
     self[1] = nullptr;
-    if (sub) { FUN_7101f43ae0(sub); FUN_710392e590(sub); }
-    FUN_710392e590(self);
+    if (sub) { FUN_7101f43ae0(sub); jeFree_710392e590(sub); }
+    jeFree_710392e590(self);
 }
 
 // 0x71037a2f10
@@ -592,8 +592,8 @@ void FUN_71037a2f10(void** self) {
     void* sub = self[1];
     self[0] = PTR_LAB_71052404c0;
     self[1] = nullptr;
-    if (sub) { FUN_71037a2400(sub); FUN_710392e590(sub); }
-    FUN_710392e590(self);
+    if (sub) { FUN_71037a2400(sub); jeFree_710392e590(sub); }
+    jeFree_710392e590(self);
 }
 
 // --- sub at [0xb] (+0x58), uses separate str for remote field ---
@@ -603,8 +603,8 @@ void FUN_7101813f80(void** self) {
     void* sub = self[0xb];
     self[0] = PTR_LAB_71050a0d00;
     self[0xb] = nullptr;
-    if (sub) { FUN_7101813d70(sub); FUN_710392e590(sub); }
-    FUN_710392e590(self);
+    if (sub) { FUN_7101813d70(sub); jeFree_710392e590(sub); }
+    jeFree_710392e590(self);
 }
 
 // 0x710181e9a0
@@ -612,8 +612,8 @@ void FUN_710181e9a0(void** self) {
     void* sub = self[0xb];
     self[0] = PTR_LAB_71050a1208;
     self[0xb] = nullptr;
-    if (sub) { FUN_710181e8a0(sub); FUN_710392e590(sub); }
-    FUN_710392e590(self);
+    if (sub) { FUN_710181e8a0(sub); jeFree_710392e590(sub); }
+    jeFree_710392e590(self);
 }
 
 // 0x710186fca0
@@ -621,8 +621,8 @@ void FUN_710186fca0(void** self) {
     void* sub = self[0xb];
     self[0] = PTR_LAB_71050a2b78;
     self[0xb] = nullptr;
-    if (sub) { FUN_710186fbb0(sub); FUN_710392e590(sub); }
-    FUN_710392e590(self);
+    if (sub) { FUN_710186fbb0(sub); jeFree_710392e590(sub); }
+    jeFree_710392e590(self);
 }
 
 // 0x71018e9150
@@ -630,8 +630,8 @@ void FUN_71018e9150(void** self) {
     void* sub = self[0xb];
     self[0] = PTR_LAB_71050a4588;
     self[0xb] = nullptr;
-    if (sub) { FUN_71018e2d40(sub); FUN_710392e590(sub); }
-    FUN_710392e590(self);
+    if (sub) { FUN_71018e2d40(sub); jeFree_710392e590(sub); }
+    jeFree_710392e590(self);
 }
 
 // 0x71018f75d0
@@ -639,8 +639,8 @@ void FUN_71018f75d0(void** self) {
     void* sub = self[0xb];
     self[0] = PTR_LAB_71050a4730;
     self[0xb] = nullptr;
-    if (sub) { FUN_71018f7490(sub); FUN_710392e590(sub); }
-    FUN_710392e590(self);
+    if (sub) { FUN_71018f7490(sub); jeFree_710392e590(sub); }
+    jeFree_710392e590(self);
 }
 
 // 0x710196df70
@@ -648,8 +648,8 @@ void FUN_710196df70(void** self) {
     void* sub = self[0xb];
     self[0] = PTR_LAB_71050a5ad0;
     self[0xb] = nullptr;
-    if (sub) { FUN_710196dde0(sub); FUN_710392e590(sub); }
-    FUN_710392e590(self);
+    if (sub) { FUN_710196dde0(sub); jeFree_710392e590(sub); }
+    jeFree_710392e590(self);
 }
 
 // --- sub at [2] (+0x10), uses separate str ---
@@ -659,8 +659,8 @@ void FUN_710171cff0(void** self) {
     void* sub = self[2];
     self[0] = PTR_LAB_710509cad8;
     self[2] = nullptr;
-    if (sub) { FUN_710171d040(sub); FUN_710392e590(sub); }
-    FUN_710392e590(self);
+    if (sub) { FUN_710171d040(sub); jeFree_710392e590(sub); }
+    jeFree_710392e590(self);
 }
 
 // --- sub at [1] for 7101cd2cc0 (96B, has extra cleanup) ---
@@ -697,7 +697,7 @@ void FUN_71015336a0(void** node) {
     FUN_71015336a0(static_cast<void**>(node[0]));
     FUN_71015336a0(static_cast<void**>(node[1]));
     FUN_71015336e0(&node[5]);
-    FUN_710392e590(node);
+    jeFree_710392e590(node);
 }
 
 // 0x710170e0f0 (96 bytes, 2 params, cleanup + sub-vtable set + free)
@@ -707,7 +707,7 @@ void FUN_710170e0f0(void* ctx, void** node) {
     FUN_710170e0f0(ctx, static_cast<void**>(node[1]));
     FUN_71001b78a0(&node[9]);
     node[4] = PTR_LAB_710509bc08;
-    FUN_71001b4910(&node[4]);
+    stdFunctionCleanup_71001b4910(&node[4]);
     FUN_71001b1870(node);
 }
 
@@ -722,13 +722,13 @@ void FUN_71013aad40(void** self) {
     void** node = static_cast<void**>(self[3]);
     while (node) {
         void** next = static_cast<void**>(node[0]);
-        FUN_710392e590(node);
+        jeFree_710392e590(node);
         node = next;
     }
     void* sub = self[1];
     self[1] = nullptr;
     if (!sub) return;
-    FUN_710392e590(sub);
+    jeFree_710392e590(sub);
 }
 
 // 0x71013aada0 (84 bytes, deleting dtor, list at [3], cleanup [1], free self)
@@ -737,15 +737,15 @@ void FUN_71013aada0(void** self) {
     void** node = static_cast<void**>(self[3]);
     while (node) {
         void** next = static_cast<void**>(node[0]);
-        FUN_710392e590(node);
+        jeFree_710392e590(node);
         node = next;
     }
     void* sub = self[1];
     self[1] = nullptr;
     if (sub) {
-        FUN_710392e590(sub);
+        jeFree_710392e590(sub);
     }
-    FUN_710392e590(self);
+    jeFree_710392e590(self);
 }
 
 // 0x7101611e90 (88 bytes, base dtor, list at [4], cleanup [2])
@@ -754,13 +754,13 @@ void FUN_7101611e90(void** self) {
     void** node = static_cast<void**>(self[4]);
     while (node) {
         void** next = static_cast<void**>(node[0]);
-        FUN_710392e590(node);
+        jeFree_710392e590(node);
         node = next;
     }
     void* sub = self[2];
     self[2] = nullptr;
     if (!sub) return;
-    FUN_710392e590(sub);
+    jeFree_710392e590(sub);
 }
 
 // ============================================================
@@ -776,7 +776,7 @@ void FUN_7101461660(void** self) {
     self[5] = nullptr;
     if (sub) {
         FUN_7101473f30(sub);
-        FUN_710392e590(sub);
+        jeFree_710392e590(sub);
     }
     FUN_71039c2140(self);
 }
@@ -789,7 +789,7 @@ void FUN_71014621e0(void** self) {
     self[5] = nullptr;
     if (sub) {
         FUN_710146bd70(sub);
-        FUN_710392e590(sub);
+        jeFree_710392e590(sub);
     }
     FUN_71039c2140(self);
 }
@@ -802,7 +802,7 @@ void FUN_71014622c0(void** self) {
     self[5] = nullptr;
     if (sub) {
         FUN_7101468040(sub);
-        FUN_710392e590(sub);
+        jeFree_710392e590(sub);
     }
     FUN_71039c2140(self);
 }
@@ -815,7 +815,7 @@ void FUN_7101462580(void** self) {
     self[5] = nullptr;
     if (sub) {
         FUN_710148ff30(sub);
-        FUN_710392e590(sub);
+        jeFree_710392e590(sub);
     }
     FUN_71039c2140(self);
 }
@@ -828,7 +828,7 @@ void FUN_71014a3780(void** self) {
     self[4] = nullptr;
     if (sub) {
         FUN_71014a44c0((char*)sub + 8);
-        FUN_710392e590(sub);
+        jeFree_710392e590(sub);
     }
     FUN_71039c2140(self);
 }
@@ -858,9 +858,9 @@ void FUN_7101cd2cc0(void** self) {
     self[1] = nullptr;
     if (sub) {
         FUN_7101cd2ae0(sub);
-        FUN_710392e590(sub);
+        jeFree_710392e590(sub);
     }
-    FUN_710392e590(self);
+    jeFree_710392e590(self);
 }
 
 // 0x7101d10fd0 (Pattern E variant, inner tree deletes before freeing sub)
@@ -872,9 +872,9 @@ void FUN_7101d10fd0(void** self) {
         void** s = static_cast<void**>(sub);
         FUN_7101d11020(static_cast<void**>(s[0x8d]));
         FUN_7101d11020(static_cast<void**>(s[0x8a]));
-        FUN_710392e590(sub);
+        jeFree_710392e590(sub);
     }
-    FUN_710392e590(self);
+    jeFree_710392e590(self);
 }
 
 // 0x7101ce7ce0 (Pattern E, field at [4], tail-call FUN_71032d6180)
@@ -884,7 +884,7 @@ void FUN_7101ce7ce0(void** self) {
     self[4] = nullptr;
     if (sub) {
         FUN_7101ce1520(sub);
-        FUN_710392e590(sub);
+        jeFree_710392e590(sub);
     }
     FUN_71032d6180(self);
 }
@@ -896,10 +896,10 @@ void FUN_7101ce7d30(void** self) {
     self[4] = nullptr;
     if (sub) {
         FUN_7101ce1520(sub);
-        FUN_710392e590(sub);
+        jeFree_710392e590(sub);
     }
     FUN_71032d6180(self);
-    FUN_710392e590(self);
+    jeFree_710392e590(self);
 }
 
 // ============================================================
@@ -912,13 +912,13 @@ void FUN_71033bff10(void** self) {
     void** node = static_cast<void**>(self[4]);
     while (node) {
         void** next = static_cast<void**>(node[0]);
-        FUN_710392e590(node);
+        jeFree_710392e590(node);
         node = next;
     }
     void* sub = self[2];
     self[2] = nullptr;
     if (!sub) return;
-    FUN_710392e590(sub);
+    jeFree_710392e590(sub);
 }
 
 // NOTE: Pattern H (multi-sub-vtable destructors) not included — code logic is

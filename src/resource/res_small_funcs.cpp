@@ -7,7 +7,7 @@
 inline void* operator new(unsigned long, void* p) noexcept { return p; }
 
 extern "C" void* je_aligned_alloc(unsigned long, unsigned long);
-extern "C" void FUN_710392e590(void*);  // je_free
+extern "C" void jeFree_710392e590(void*);  // je_free
 extern "C" void* memset(void*, int, unsigned long);
 extern "C" char* strcpy(char*, const char*);
 
@@ -106,7 +106,7 @@ void FUN_7103754500_3754500(long* param_1) {
                 if (vfh != nullptr) {
                     FUN_71039c1400(heap);
                 }
-                FUN_710392e590(heap);
+                jeFree_710392e590(heap);
             }
         }
     }

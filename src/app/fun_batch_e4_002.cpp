@@ -6,7 +6,7 @@
 // ---- Callee declarations ---------------------------------------------------
 
 extern "C" {
-void FUN_710392e590(void*);   // je_free
+void jeFree_710392e590(void*);   // je_free
 void FUN_71038b4b70(void*);   // tree node cleanup helper
 void FUN_7101958da0_cleanup(void*); // placeholder
 }
@@ -36,7 +36,7 @@ void FUN_71038b4b10(void* param_1)
     FUN_71038b4b10(right != nullptr ? (void*)((u8*)right - 0xa0) : nullptr);
 
     FUN_71038b4b70(param_1);
-    FUN_710392e590(param_1);
+    jeFree_710392e590(param_1);
 }
 
 // 0x7101bc8800 (80 bytes) — destructor: reset 2 sub-object vtables + conditional free
@@ -53,13 +53,13 @@ void FUN_7101bc8800(void* param_1)
     p[3] = reinterpret_cast<u64>(vtbl);
     void* ptr1 = reinterpret_cast<void*>(p[4]);
     p[4] = 0;
-    if (ptr1 != nullptr) FUN_710392e590(ptr1);
+    if (ptr1 != nullptr) jeFree_710392e590(ptr1);
 
     // Sub-object 1 (+0x08/+0x10): reset vtable, zero ptr, free old
     void* ptr0 = reinterpret_cast<void*>(p[2]);
     p[1] = reinterpret_cast<u64>(vtbl);
     p[2] = 0;
-    if (ptr0 != nullptr) FUN_710392e590(ptr0);
+    if (ptr0 != nullptr) jeFree_710392e590(ptr0);
 }
 
 // 0x7101b784a0 (96 bytes) — destructor: reset 3 sub-object vtables + conditional free
@@ -74,19 +74,19 @@ void FUN_7101b784a0(void* param_1)
     p[5] = reinterpret_cast<u64>(vtbl);
     void* ptr2 = reinterpret_cast<void*>(p[6]);
     p[6] = 0;
-    if (ptr2 != nullptr) FUN_710392e590(ptr2);
+    if (ptr2 != nullptr) jeFree_710392e590(ptr2);
 
     // Sub-object 2 (+0x18/+0x20)
     void* ptr1 = reinterpret_cast<void*>(p[4]);
     p[3] = reinterpret_cast<u64>(vtbl);
     p[4] = 0;
-    if (ptr1 != nullptr) FUN_710392e590(ptr1);
+    if (ptr1 != nullptr) jeFree_710392e590(ptr1);
 
     // Sub-object 1 (+0x08/+0x10)
     void* ptr0 = reinterpret_cast<void*>(p[2]);
     p[1] = reinterpret_cast<u64>(vtbl);
     p[2] = 0;
-    if (ptr0 != nullptr) FUN_710392e590(ptr0);
+    if (ptr0 != nullptr) jeFree_710392e590(ptr0);
 }
 
 // 0x7101b78e40 (80 bytes) — destructor: same pattern, 2 sub-objects
@@ -103,13 +103,13 @@ void FUN_7101b78e40(void* param_1)
     p[3] = reinterpret_cast<u64>(vtbl);
     void* ptr1 = reinterpret_cast<void*>(p[4]);
     p[4] = 0;
-    if (ptr1 != nullptr) FUN_710392e590(ptr1);
+    if (ptr1 != nullptr) jeFree_710392e590(ptr1);
 
     // Sub-object 1 (+0x08/+0x10)
     void* ptr0 = reinterpret_cast<void*>(p[2]);
     p[1] = reinterpret_cast<u64>(vtbl);
     p[2] = 0;
-    if (ptr0 != nullptr) FUN_710392e590(ptr0);
+    if (ptr0 != nullptr) jeFree_710392e590(ptr0);
 }
 
 // 0x7101b785d0 (96 bytes) — destructor: 3 sub-objects with PTR_LAB_710523c9e8
@@ -121,17 +121,17 @@ void FUN_7101b785d0(void* param_1)
     p[5] = reinterpret_cast<u64>(vtbl);
     void* ptr2 = reinterpret_cast<void*>(p[6]);
     p[6] = 0;
-    if (ptr2 != nullptr) FUN_710392e590(ptr2);
+    if (ptr2 != nullptr) jeFree_710392e590(ptr2);
 
     void* ptr1 = reinterpret_cast<void*>(p[4]);
     p[3] = reinterpret_cast<u64>(vtbl);
     p[4] = 0;
-    if (ptr1 != nullptr) FUN_710392e590(ptr1);
+    if (ptr1 != nullptr) jeFree_710392e590(ptr1);
 
     void* ptr0 = reinterpret_cast<void*>(p[2]);
     p[1] = reinterpret_cast<u64>(vtbl);
     p[2] = 0;
-    if (ptr0 != nullptr) FUN_710392e590(ptr0);
+    if (ptr0 != nullptr) jeFree_710392e590(ptr0);
 }
 
 // 0x7101b78630 (96 bytes) — destructor: 3 sub-objects with PTR_LAB_710523c9e8 + free self
@@ -144,17 +144,17 @@ void FUN_7101b78630(void* param_1)
     p[5] = reinterpret_cast<u64>(vtbl);
     void* ptr2 = reinterpret_cast<void*>(p[6]);
     p[6] = 0;
-    if (ptr2 != nullptr) FUN_710392e590(ptr2);
+    if (ptr2 != nullptr) jeFree_710392e590(ptr2);
 
     void* ptr1 = reinterpret_cast<void*>(p[4]);
     p[3] = reinterpret_cast<u64>(vtbl);
     p[4] = 0;
-    if (ptr1 != nullptr) FUN_710392e590(ptr1);
+    if (ptr1 != nullptr) jeFree_710392e590(ptr1);
 
     void* ptr0 = reinterpret_cast<void*>(p[2]);
     p[1] = reinterpret_cast<u64>(vtbl);
     p[2] = 0;
-    if (ptr0 != nullptr) FUN_710392e590(ptr0);
+    if (ptr0 != nullptr) jeFree_710392e590(ptr0);
 
-    FUN_710392e590(param_1);
+    jeFree_710392e590(param_1);
 }

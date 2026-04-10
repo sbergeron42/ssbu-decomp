@@ -11,7 +11,7 @@ using namespace resource;
 // jemalloc entry points (NintendoSDK 8.2.1 ships jemalloc 5.1.0)
 // [derived: je_aligned_alloc at 0x710392dce0, je_free at 0x710392e590 — PLT stubs]
 extern "C" void* je_aligned_alloc(unsigned long, unsigned long);
-extern "C" void  je_free(void*);                         // FUN_710392e590
+extern "C" void  je_free(void*);                         // jeFree_710392e590
 extern "C" void* je_realloc(void*, unsigned long);       // FUN_710392dd80
 extern "C" void* memset(void*, int, unsigned long);
 extern "C" int   je_posix_memalign(void**, unsigned long, unsigned long); // FUN_710392dc40

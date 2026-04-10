@@ -22,7 +22,7 @@ extern "C" void FUN_710353f1b0(FilesystemInfo*);        // process_stream_releas
 
 // Allocator and helpers
 extern "C" void* je_aligned_alloc(unsigned long, unsigned long);
-extern "C" void FUN_710392e590(void*);  // je_free
+extern "C" void jeFree_710392e590(void*);  // je_free
 
 // SDK
 extern "C" long GetCurrentThread();  // nn::os::GetCurrentThread — PLT at 0x71039c0840
@@ -275,7 +275,7 @@ void FUN_7103542d80(LoadedDirectory* dir, CppVector<u32>* release_vec) {
                 release_vec->end = insert_pos + 1;
                 release_vec->eos = (u32*)((u8*)new_buf + new_cap * 4);
                 if (old_start != nullptr) {
-                    FUN_710392e590(old_start);
+                    jeFree_710392e590(old_start);
                 }
             }
         }
@@ -311,7 +311,7 @@ void FUN_710353b1c0(void** node) {
     if (node != nullptr) {
         FUN_710353b1c0((void**)node[0]);
         FUN_710353b1c0((void**)node[1]);
-        FUN_710392e590(node);
+        jeFree_710392e590(node);
     }
 }
 
@@ -326,7 +326,7 @@ void FUN_710353fec0(void** node) {
     if (node != nullptr) {
         FUN_710353fec0((void**)node[0]);
         FUN_710353fec0((void**)node[1]);
-        FUN_710392e590(node);
+        jeFree_710392e590(node);
     }
 }
 
@@ -540,7 +540,7 @@ void FUN_7103540560(FilesystemInfo* fs, u32 filepath_index) {
         fs->loaded_filepath_list.end = insert_pos + 1;
         fs->loaded_filepath_list.eos = (u32*)((u8*)new_buf + new_cap * 4);
         if (old_start != nullptr) {
-            FUN_710392e590(old_start);
+            jeFree_710392e590(old_start);
         }
     }
 

@@ -6,7 +6,7 @@
 
 // Memory management
 extern "C" void* je_aligned_alloc(unsigned long, unsigned long);
-extern "C" void FUN_710392e590(void*);  // je_free
+extern "C" void jeFree_710392e590(void*);  // je_free
 extern "C" void* memset(void*, int, unsigned long);
 extern "C" void* memcpy(void*, const void*, unsigned long);
 extern "C" unsigned long strlen(const char*);
@@ -122,7 +122,7 @@ extern "C" void FUN_710354b370(long param_1)
         long worker = *ws2;
         if (worker != 0) {
             FUN_710354b4b0((void*)worker);
-            FUN_710392e590((void*)worker);
+            jeFree_710392e590((void*)worker);
         }
     }
 
@@ -131,7 +131,7 @@ extern "C" void FUN_710354b370(long param_1)
     long tw = *(long*)(param_1 + 0x48);
     if (tw != 0) {
         FUN_710354b4b0((void*)tw);
-        FUN_710392e590((void*)tw);
+        jeFree_710392e590((void*)tw);
     }
 
     // Cleanup shared_state at +0x08
@@ -140,7 +140,7 @@ extern "C" void FUN_710354b370(long param_1)
     if (ss != 0) {
         FUN_71039c13f0((void*)(ss + 0x90));
         FUN_710354b800((void*)ss);
-        FUN_710392e590((void*)ss);
+        jeFree_710392e590((void*)ss);
     }
 
     // Free worker_slots buffer
@@ -148,14 +148,14 @@ extern "C" void FUN_710354b370(long param_1)
     void* ws_buf = *(void**)(param_1 + 0x30);
     if (ws_buf != nullptr) {
         *(long*)(param_1 + 0x38) = (long)ws_buf;
-        FUN_710392e590(ws_buf);
+        jeFree_710392e590(ws_buf);
     }
 
     // Free threads buffer
     void* ts_buf = *(void**)(param_1 + 0x18);
     if (ts_buf != nullptr) {
         *(long*)(param_1 + 0x20) = (long)ts_buf;
-        FUN_710392e590(ts_buf);
+        jeFree_710392e590(ts_buf);
     }
 
     // Free TLS slot at +0x10
@@ -437,7 +437,7 @@ lab_ws_ok:
             *(long**)(param_1 + 0xE) = puVar4 + 1;
             *(void**)(param_1 + 0x10) = (void*)((long)pvVar6 + uVar7 * 8);
             if (pvVar13 != nullptr) {
-                FUN_710392e590(pvVar13);
+                jeFree_710392e590(pvVar13);
             }
         }
     }
@@ -577,7 +577,7 @@ lab_th_ok:
                     *(long**)(param_1 + 8) = puVar8 + 1;
                     *(void**)(param_1 + 0xA) = (void*)((long)pvVar6 + uVar7 * 8);
                     if (pvVar13 != nullptr) {
-                        FUN_710392e590(pvVar13);
+                        jeFree_710392e590(pvVar13);
                     }
                 }
             } else {

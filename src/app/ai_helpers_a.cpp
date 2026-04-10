@@ -361,7 +361,7 @@ extern void FUN_7100359e30(u64);
 
 // Target lookup: returns pointer to target's AI state snapshot
 // [derived: used by all target_* functions, first param is manager global]
-extern u64 FUN_7100314030(void*, u64);
+extern u64 aiGetTargetById_7100314030(void*, u64);
 
 // Threshold constants
 // [derived: distance threshold for lr_to_target, adrp+ldr pattern]
@@ -521,7 +521,7 @@ u32 floor_lr_367960(u64 L) {
 float distance_x_to_target_367230(u64 L) {
     FighterAI* ctx = get_ai_context(L);
     float self_x = ctx->state->pos_x;
-    u64 target = FUN_7100314030(DAT_71052b5fd8, reinterpret_cast<u64>(ctx) + 0xc50);
+    u64 target = aiGetTargetById_7100314030(DAT_71052b5fd8, reinterpret_cast<u64>(ctx) + 0xc50);
     return __builtin_fabsf(self_x - *(float*)(target + 0x80));
 }
 
@@ -533,7 +533,7 @@ float distance_x_to_target_367230(u64 L) {
 float distance_y_to_target_367270(u64 L) {
     FighterAI* ctx = get_ai_context(L);
     float self_y = ctx->state->pos_y;
-    u64 target = FUN_7100314030(DAT_71052b5fd8, reinterpret_cast<u64>(ctx) + 0xc50);
+    u64 target = aiGetTargetById_7100314030(DAT_71052b5fd8, reinterpret_cast<u64>(ctx) + 0xc50);
     return __builtin_fabsf(self_y - *(float*)(target + 0x84));
 }
 
@@ -544,7 +544,7 @@ float distance_y_to_target_367270(u64 L) {
 // ---------------------------------------------------------------------------
 bool is_target_on_same_floor_3672b0(u64 L) {
     FighterAI* ctx = get_ai_context(L);
-    u64 target = FUN_7100314030(DAT_71052b5fd8, reinterpret_cast<u64>(ctx) + 0xc50);
+    u64 target = aiGetTargetById_7100314030(DAT_71052b5fd8, reinterpret_cast<u64>(ctx) + 0xc50);
     return reinterpret_cast<u64>(ctx->state->floor_data) == *(u64*)(target + 0xd0);
 }
 
@@ -555,7 +555,7 @@ bool is_target_on_same_floor_3672b0(u64 L) {
 // ---------------------------------------------------------------------------
 v4sf_ret target_hit_collision_rect_367080(u64 L) {
     FighterAI* ctx = get_ai_context(L);
-    u64 target = FUN_7100314030(DAT_71052b5fd8, reinterpret_cast<u64>(ctx) + 0xc50);
+    u64 target = aiGetTargetById_7100314030(DAT_71052b5fd8, reinterpret_cast<u64>(ctx) + 0xc50);
     return *reinterpret_cast<v4sf_ret*>(target + 0x264);
 }
 
@@ -600,7 +600,7 @@ extern u64 FUN_71002f04f0(u64, u32, u32*, u32*, u32*);
 u32 lr_to_target_3670c0(u64 L) {
     FighterAI* ctx = get_ai_context(L);
     FighterAIState* state = ctx->state;
-    u64 target = FUN_7100314030(DAT_71052b5fd8, reinterpret_cast<u64>(ctx) + 0xc50);
+    u64 target = aiGetTargetById_7100314030(DAT_71052b5fd8, reinterpret_cast<u64>(ctx) + 0xc50);
     float self_x = state->pos_x;
     if (DAT_71044724d4 <= __builtin_fabsf(*(float*)(target + 0x80) - self_x)) {
         u32 result = 0xbf800000;  // -1.0f
@@ -620,7 +620,7 @@ u32 lr_to_target_3670c0(u64 L) {
 bool check_target_over_ground_367b00(u64 L) {
     FighterAI* ctx = get_ai_context(L);
     FighterAIState* target = reinterpret_cast<FighterAIState*>(
-        FUN_7100314030(DAT_71052b5fd8, reinterpret_cast<u64>(ctx) + 0xc50));
+        aiGetTargetById_7100314030(DAT_71052b5fd8, reinterpret_cast<u64>(ctx) + 0xc50));
     if ((target->stat_flags & 1) == 0 &&
         ((target->floor_data->flags_0x5e >> 1) & 1) == 0) {
         return true;
@@ -699,7 +699,7 @@ u32 parent_pos_y_367460(u64 L) {
     if (ctx->parent_entry_id > 0xf) {
         local[0] = 0xFFFFFFFF;
     }
-    u64 parent = FUN_7100314030(DAT_71052b5fd8, reinterpret_cast<u64>(local));
+    u64 parent = aiGetTargetById_7100314030(DAT_71052b5fd8, reinterpret_cast<u64>(local));
     return *(u32*)(parent + 0x84);
 }
 
@@ -716,7 +716,7 @@ u32 parent_speed_y_3674b0(u64 L) {
     if (ctx->parent_entry_id > 0xf) {
         local[0] = 0xFFFFFFFF;
     }
-    u64 parent = FUN_7100314030(DAT_71052b5fd8, reinterpret_cast<u64>(local));
+    u64 parent = aiGetTargetById_7100314030(DAT_71052b5fd8, reinterpret_cast<u64>(local));
     return *(u32*)(parent + 0xa4);
 }
 
@@ -733,7 +733,7 @@ bool check_parent_same_floor_367400(u64 L) {
     if (ctx->parent_entry_id > 0xf) {
         local[0] = 0xFFFFFFFF;
     }
-    u64 parent = FUN_7100314030(DAT_71052b5fd8, reinterpret_cast<u64>(local));
+    u64 parent = aiGetTargetById_7100314030(DAT_71052b5fd8, reinterpret_cast<u64>(local));
     return reinterpret_cast<u64>(ctx->state->floor_data) == *(u64*)(parent + 0xd0);
 }
 
@@ -904,7 +904,7 @@ extern void FUN_71002f9ca0(u64, u64, u64, u32);
 // ---------------------------------------------------------------------------
 float predict_target_landing_frame_369510(u64 L) {
     FighterAI* ctx = get_ai_context(L);
-    u64 target = FUN_7100314030(DAT_71052b5fd8, reinterpret_cast<u64>(ctx) + 0xc50);
+    u64 target = aiGetTargetById_7100314030(DAT_71052b5fd8, reinterpret_cast<u64>(ctx) + 0xc50);
     float result = 0.0f;
     if (ctx->target_entry_id >= 0 &&
         ctx->target_entry_id != (s32)ctx->parent_entry_id) {

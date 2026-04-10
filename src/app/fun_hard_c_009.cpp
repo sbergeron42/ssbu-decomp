@@ -3,7 +3,7 @@
 // HARD-tier FUN_* functions — 0x7102 address range, batch hard-c-009
 
 extern "C" {
-    __attribute__((noreturn)) void FUN_71039c20a0(void);
+    __attribute__((noreturn)) void abortWrapper_71039c20a0(void);
 }
 
 #define DAT_HIDDEN __attribute__((visibility("hidden")))
@@ -53,7 +53,7 @@ u32 FUN_71021afc20(u64 param_1)
         u64 *work = *(u64 **)(*(u64 *)(lVar5 + 0x20) + 0x50);
         u32 idx = ((u32 (*)(u64 *, u32))*(u64 *)(*(u64 *)work + 0x98))(work, 0x1000000au);
         if (idx >= 8u)
-            FUN_71039c20a0();
+            abortWrapper_71039c20a0();
         fmgr_data = *(u64 *)fmgr;
         lVar8 = (s64)*(s32 *)(*(u64 *)(*(u64 *)(fmgr_data + (s64)(s32)idx * 8 + 0x20) + 0xf8) + 0xd8);
         plVar3 = *(u64 **)(param_1 + 0x10);

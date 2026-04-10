@@ -337,7 +337,7 @@ after_check:
 
 // Additional extern declarations for FUN_710353d760
 extern "C" void* memcpy(void*, const void*, u64);
-extern "C" void FUN_710392e590(void*);  // je_free
+extern "C" void jeFree_710392e590(void*);  // je_free
 extern "C" [[noreturn]] void FUN_71039c0650(void*);  // __throw_length_error wrapper
 extern "C" [[noreturn]] void abort();
 
@@ -439,7 +439,7 @@ void FUN_710353d760(u64* param_1, u32 param_2)
         param_1[1] = (u64)result_end;
         param_1[2] = (u64)result_cap;
         if (alloc_start != nullptr) {
-            FUN_710392e590(alloc_start);
+            jeFree_710392e590(alloc_start);
         }
         return;
     }
@@ -660,7 +660,7 @@ growth_alloc_ok:
 
                     // Free old buffer
                     if (old_base != nullptr) {
-                        FUN_710392e590(old_base);
+                        jeFree_710392e590(old_base);
                     }
                 }
 growth_done:;
@@ -678,7 +678,7 @@ store_results:
     // Free child_folders copy buffer
     if (alloc_start != nullptr) {
         alloc_end_data = alloc_start;
-        FUN_710392e590(alloc_start);
+        jeFree_710392e590(alloc_start);
     }
 }
 

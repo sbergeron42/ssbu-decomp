@@ -14,7 +14,7 @@ extern "C" {
 void FUN_7103540560(void*, u32);
 
 // je_free @ 0x710392e590
-void FUN_710392e590(void*);
+void jeFree_710392e590(void*);
 
 // Base class destructor called from FUN_71016225c0
 void FUN_71004cc000(void*);
@@ -94,7 +94,7 @@ void FUN_71036defc0(void* param_1)
     void* ptr = *(void**)((u8*)param_1 + 0x90);
     if (ptr != nullptr) {
         *(void**)((u8*)param_1 + 0x98) = ptr;
-        FUN_710392e590(ptr);
+        jeFree_710392e590(ptr);
     }
 }
 
@@ -115,7 +115,7 @@ void FUN_71036dfcd0(void* param_1)
     void* ptr = *(void**)((u8*)param_1 + 0x50);
     if (ptr != nullptr) {
         *(void**)((u8*)param_1 + 0x58) = ptr;
-        FUN_710392e590(ptr);
+        jeFree_710392e590(ptr);
     }
 }
 
@@ -124,7 +124,7 @@ void FUN_71036dfcd0(void* param_1)
 // param_1 [inferred: tree node with left(u64*) at +0x00, right(u64*) at +0x08,
 //          resource handle(s32) at +0x28, sentinel 0xFFFFFF = invalid]
 // Calls self recursively on children, then FUN_7103540560 to release handle,
-// then FUN_710392e590 (je_free) to free node
+// then jeFree_710392e590 (je_free) to free node
 void FUN_710323b580(u64* param_1)
 {
     if (param_1 == nullptr) return;
@@ -134,7 +134,7 @@ void FUN_710323b580(u64* param_1)
         FUN_7103540560(DAT_7105331f20, *(s32*)(param_1 + 5));
         *(s32*)(param_1 + 5) = 0xffffff;
     }
-    FUN_710392e590(param_1);
+    jeFree_710392e590(param_1);
 }
 
 // 0x710357c8e0 (96 bytes) — destructor: release nested ptr, free container
@@ -171,9 +171,9 @@ void FUN_710357c8e0(void* param_1)
         *inner = nullptr;
         if (owned != nullptr) {
             FUN_710357bc00(owned);
-            FUN_710392e590(owned);
+            jeFree_710392e590(owned);
         }
-        FUN_710392e590(inner);
+        jeFree_710392e590(inner);
     }
 }
 
@@ -189,9 +189,9 @@ void FUN_71036f9ee0(u64* param_1)
     void* ptr = reinterpret_cast<void*>(param_1[0xd]);
     if (ptr != nullptr) {
         param_1[0xe] = reinterpret_cast<u64>(ptr);
-        FUN_710392e590(ptr);
+        jeFree_710392e590(ptr);
     }
-    FUN_710392e590(param_1);
+    jeFree_710392e590(param_1);
 }
 
 // 0x7101acb830 (96 bytes) — destructor: set vtable, clear bitmask, release ptr, call base
@@ -208,7 +208,7 @@ void FUN_7101acb830(u64* param_1)
     param_1[4] = 0;
     if (ptr != nullptr) {
         FUN_7101ac82a0(ptr);
-        FUN_710392e590(ptr);
+        jeFree_710392e590(ptr);
     }
     FUN_71032d6180(param_1);
 }
@@ -226,7 +226,7 @@ void FUN_7101d36880(u64* param_1)
     param_1[4] = 0;
     if (ptr != nullptr) {
         FUN_7101d30e10(ptr);
-        FUN_710392e590(ptr);
+        jeFree_710392e590(ptr);
     }
     FUN_71032d6180(param_1);
 }
@@ -241,7 +241,7 @@ void FUN_7101ca3b90(u64* param_1)
     param_1[4] = 0;
     if (ptr != nullptr) {
         FUN_7101ca2a00(ptr);
-        FUN_710392e590(ptr);
+        jeFree_710392e590(ptr);
     }
     FUN_71032d6180(param_1);
 }
@@ -256,7 +256,7 @@ void FUN_7101ace880(u64* param_1)
     param_1[4] = 0;
     if (ptr != nullptr) {
         FUN_7101acec10(ptr);
-        FUN_710392e590(ptr);
+        jeFree_710392e590(ptr);
     }
     FUN_71032d6180(param_1);
 }
@@ -271,7 +271,7 @@ void FUN_7101aea130(u64* param_1)
     param_1[4] = 0;
     if (ptr != nullptr) {
         FUN_7101ae82f0(ptr);
-        FUN_710392e590(ptr);
+        jeFree_710392e590(ptr);
     }
     FUN_71032d6180(param_1);
 }

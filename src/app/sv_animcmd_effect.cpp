@@ -18,7 +18,7 @@
 
 struct lua_State;
 
-extern "C" u64 FUN_71038f4000(lua_State*, s32, s32);
+extern "C" u64 l2cParamResolve_71038f4000(lua_State*, s32, s32);
 extern "C" u64 FUN_7103907950(u64, void*);
 extern "C" u8 DAT_7104861960[] HIDDEN;
 extern "C" u64 BattleObjectWorld_instance HIDDEN;  // lib::Singleton<app::BattleObjectWorld>::instance_
@@ -245,7 +245,7 @@ extern "C" void EFFECT_OFF(lua_State* param_1) {
         hash = 0;
         flag = false;
     } else {
-        hash = FUN_71038f4000(param_1, 1, 0);
+        hash = l2cParamResolve_71038f4000(param_1, 1, 0);
 #ifdef MATCHING_HACK_NX_CLANG
         asm("" : "+r"(nargs));
 #endif
@@ -284,9 +284,9 @@ extern "C" void EFFECT_WORK(lua_State* param_1) {
     bool a16 = false;
 
     if (nargs >= 1) {
-        hash1 = FUN_71038f4000(param_1, 1, 0);
+        hash1 = l2cParamResolve_71038f4000(param_1, 1, 0);
         if (nargs >= 2) {
-            hash2 = FUN_71038f4000(param_1, 2, 0);
+            hash2 = l2cParamResolve_71038f4000(param_1, 2, 0);
             if (nargs >= 3) {
                 a3 = acmd_read_float(L, 0x30);
                 if (nargs >= 4) {
@@ -381,9 +381,9 @@ extern "C" void EFFECT_VARIATION(lua_State* param_1) {
     bool a16 = false;
 
     if (nargs >= 1) {
-        hash1 = FUN_71038f4000(param_1, 1, 0);
+        hash1 = l2cParamResolve_71038f4000(param_1, 1, 0);
         if (nargs >= 2) {
-            hash2 = FUN_71038f4000(param_1, 2, 0);
+            hash2 = l2cParamResolve_71038f4000(param_1, 2, 0);
             if (nargs >= 3) {
                 a3 = acmd_read_float(L, 0x30);
                 if (nargs >= 4) {
@@ -444,7 +444,7 @@ extern "C" void EFFECT_VARIATION(lua_State* param_1) {
     if (nargs > 16) {
         u64 kind0 = eff->get_variation_effect_kind(hash1, 0);
         if (((kind0 ^ kind) & 0xFFFFFFFFFFULL) == 0) {
-            u64 offset_hash = FUN_71038f4000(param_1, 0x11, 0);
+            u64 offset_hash = l2cParamResolve_71038f4000(param_1, 0x11, 0);
             eff->set_offset_to_next(offset_hash);
         }
     }
@@ -482,7 +482,7 @@ extern "C" void EFFECT_OFF_KIND(lua_State* param_1) {
         flag1 = false;
         flag2 = false;
     } else {
-        hash = FUN_71038f4000(param_1, 1, 0);
+        hash = l2cParamResolve_71038f4000(param_1, 1, 0);
 #ifdef MATCHING_HACK_NX_CLANG
         asm("" : "+r"(nargs));
 #endif
@@ -529,9 +529,9 @@ extern "C" void EFFECT_FOLLOW(lua_State* param_1) {
     bool follow_flag = false;
 
     if (nargs >= 1) {
-        hash1 = FUN_71038f4000(param_1, 1, 0);
+        hash1 = l2cParamResolve_71038f4000(param_1, 1, 0);
         if (nargs >= 2) {
-            hash2 = FUN_71038f4000(param_1, 2, 0);
+            hash2 = l2cParamResolve_71038f4000(param_1, 2, 0);
             if (nargs >= 3) {
                 // Arg 3: offset_x as int
                 f32 f3 = acmd_read_float(L, 0x30);
@@ -604,7 +604,7 @@ extern "C" void EFFECT_REMOVE_ATTR(lua_State* param_1) {
         }
         hash = 0;
     } else if (nargs >= 1) {
-        hash = FUN_71038f4000(param_1, 1, 0);
+        hash = l2cParamResolve_71038f4000(param_1, 1, 0);
     } else {
         hash = 0;
     }
@@ -637,7 +637,7 @@ extern "C" void EFFECT_OFF_KIND_WORK(lua_State* param_1) {
         flag1 = false;
         flag2 = false;
     } else {
-        hash = FUN_71038f4000(param_1, 1, 0);
+        hash = l2cParamResolve_71038f4000(param_1, 1, 0);
 #ifdef MATCHING_HACK_NX_CLANG
         asm("" : "+r"(nargs));
 #endif
@@ -661,7 +661,7 @@ extern "C" void EFFECT_OFF_KIND_WORK(lua_State* param_1) {
 }
 
 // 0x7102290f90 (2016 bytes) — EFFECT_FOLLOW_WORK
-// Like EFFECT_FOLLOW but calls FUN_71038f4000(L,1,0) as side effect first,
+// Like EFFECT_FOLLOW but calls l2cParamResolve_71038f4000(L,1,0) as side effect first,
 // then again at end to get actual hash. Offsets nested inside arg2 block,
 // rotations at top level.
 // Calls EffectModule::req_follow (vtable slot 16, offset 0x80)
@@ -679,9 +679,9 @@ extern "C" void EFFECT_FOLLOW_WORK(lua_State* param_1) {
     u64 off_x = 0, off_y = 0, off_z = 0;
 
     if (nargs >= 1) {
-        FUN_71038f4000(param_1, 1, 0);  // side effect, result discarded
+        l2cParamResolve_71038f4000(param_1, 1, 0);  // side effect, result discarded
         if (nargs >= 2) {
-            hash2 = FUN_71038f4000(param_1, 2, 0);
+            hash2 = l2cParamResolve_71038f4000(param_1, 2, 0);
             if (nargs >= 3) {
                 f32 f3 = acmd_read_float(L, 0x30);
                 off_x = (u64)(u32)f3;
@@ -735,7 +735,7 @@ extern "C" void EFFECT_FOLLOW_WORK(lua_State* param_1) {
     // Get effect hash (arg 1, called again)
     u64 hash1;
     if (nargs >= 1) {
-        hash1 = FUN_71038f4000(param_1, 1, 0);
+        hash1 = l2cParamResolve_71038f4000(param_1, 1, 0);
     } else {
         hash1 = 0;
     }
@@ -766,9 +766,9 @@ extern "C" void EFFECT_FOLLOW_VARIATION(lua_State* param_1) {
     u64 off_x = 0, off_y = 0, off_z = 0;
 
     if (nargs >= 1) {
-        FUN_71038f4000(param_1, 1, 0);  // side effect, result discarded
+        l2cParamResolve_71038f4000(param_1, 1, 0);  // side effect, result discarded
         if (nargs >= 2) {
-            hash2 = FUN_71038f4000(param_1, 2, 0);
+            hash2 = l2cParamResolve_71038f4000(param_1, 2, 0);
             if (nargs >= 3) {
                 f32 f3 = acmd_read_float(L, 0x30);
                 off_x = (u64)(u32)f3;
@@ -823,7 +823,7 @@ extern "C" void EFFECT_FOLLOW_VARIATION(lua_State* param_1) {
     app::EffectModule* eff = acc->effect_module;
     u64 hash1;
     if (nargs >= 1) {
-        hash1 = FUN_71038f4000(param_1, 1, 0);
+        hash1 = l2cParamResolve_71038f4000(param_1, 1, 0);
     } else {
         hash1 = 0;
     }
@@ -835,10 +835,10 @@ extern "C" void EFFECT_FOLLOW_VARIATION(lua_State* param_1) {
     if (nargs >= 11) {
         // Re-read eff module and hash1 for second variation check
         app::EffectModule* eff2 = acc->effect_module;
-        u64 hash1_again = FUN_71038f4000(param_1, 1, 0);
+        u64 hash1_again = l2cParamResolve_71038f4000(param_1, 1, 0);
         u64 var_kind0 = eff2->get_variation_effect_kind(hash1_again, 0);
         if (((var_kind0 ^ var_kind) & 0xFFFFFFFFFFULL) == 0) {
-            alt_hash = FUN_71038f4000(param_1, 0xb, 0);
+            alt_hash = l2cParamResolve_71038f4000(param_1, 0xb, 0);
         } else {
             alt_hash = 0;
         }
@@ -877,9 +877,9 @@ extern "C" void EFFECT_ATTR(lua_State* param_1) {
     u64 attr_hash = 0;
 
     if (nargs >= 1) {
-        hash1 = FUN_71038f4000(param_1, 1, 0);
+        hash1 = l2cParamResolve_71038f4000(param_1, 1, 0);
         if (nargs >= 2) {
-            hash2 = FUN_71038f4000(param_1, 2, 0);
+            hash2 = l2cParamResolve_71038f4000(param_1, 2, 0);
             if (nargs >= 3) {
                 a3 = acmd_read_float(L, 0x30);
                 if (nargs >= 4) {
@@ -910,7 +910,7 @@ extern "C" void EFFECT_ATTR(lua_State* param_1) {
                                                                 if (nargs >= 16) {
                                                                     a16 = acmd_read_bool(L, 0x100);
                                                                     if (nargs >= 17) {
-                                                                        attr_hash = FUN_71038f4000(param_1, 0x11, 0);
+                                                                        attr_hash = l2cParamResolve_71038f4000(param_1, 0x11, 0);
                                                                     }
                                                                 }
                                                             }
@@ -963,7 +963,7 @@ extern "C" void EFFECT_OFF_HANDLE(lua_State* param_1) {
         }
         hash = 0;
     } else if (nargs >= 1) {
-        hash = FUN_71038f4000(param_1, 1, 0);
+        hash = l2cParamResolve_71038f4000(param_1, 1, 0);
     } else {
         hash = 0;
     }
@@ -995,12 +995,12 @@ extern "C" void EFFECT_DETACH_KIND(lua_State* param_1) {
         hash1 = 0;
         hash2 = 0;
     } else {
-        hash1 = FUN_71038f4000(param_1, 1, 0);
+        hash1 = l2cParamResolve_71038f4000(param_1, 1, 0);
         eff = acc->effect_module;
         if (nargs < 2) {
             hash2 = 0;
         } else {
-            hash2 = FUN_71038f4000(param_1, 2, 0);
+            hash2 = l2cParamResolve_71038f4000(param_1, 2, 0);
         }
     }
 
@@ -1030,12 +1030,12 @@ extern "C" void EFFECT_DETACH_KIND_WORK(lua_State* param_1) {
         hash1 = 0;
         hash2 = 0;
     } else {
-        hash1 = FUN_71038f4000(param_1, 1, 0);
+        hash1 = l2cParamResolve_71038f4000(param_1, 1, 0);
         eff = acc->effect_module;
         if (nargs < 2) {
             hash2 = 0;
         } else {
-            hash2 = FUN_71038f4000(param_1, 2, 0);
+            hash2 = l2cParamResolve_71038f4000(param_1, 2, 0);
         }
     }
 
@@ -1066,11 +1066,11 @@ extern "C" void EFFECT_LIGHT_END(lua_State* param_1) {
         hash1 = 0;
         hash2 = 0;
     } else {
-        hash1 = FUN_71038f4000(param_1, 1, 0);
+        hash1 = l2cParamResolve_71038f4000(param_1, 1, 0);
         if (nargs < 2) {
             hash2 = 0;
         } else {
-            hash2 = FUN_71038f4000(param_1, 2, 0);
+            hash2 = l2cParamResolve_71038f4000(param_1, 2, 0);
         }
     }
 
@@ -1222,7 +1222,7 @@ extern "C" void LAST_EFFECT_SET_WORK_INT(lua_State* param_1) {
         }
         hash = 0;
     } else if (nargs >= 1) {
-        hash = FUN_71038f4000(param_1, 1, 0);
+        hash = l2cParamResolve_71038f4000(param_1, 1, 0);
     } else {
         hash = 0;
     }
@@ -1330,9 +1330,9 @@ extern "C" void EFFECT_FOLLOW_NO_STOP(lua_State* param_1) {
     u64 off_x = 0, off_y = 0, off_z = 0;
 
     if (nargs >= 1) {
-        hash1 = FUN_71038f4000(param_1, 1, 0);
+        hash1 = l2cParamResolve_71038f4000(param_1, 1, 0);
         if (nargs >= 2) {
-            hash2 = FUN_71038f4000(param_1, 2, 0);
+            hash2 = l2cParamResolve_71038f4000(param_1, 2, 0);
             if (nargs >= 3) {
                 f32 f3 = acmd_read_float(L, 0x30);
                 off_x = (u64)(u32)f3;
@@ -1404,9 +1404,9 @@ void EFFECT_FOLLOW_arg11(lua_State* param_1) {
     u64 off_x = 0, off_y = 0, off_z = 0;
 
     if (nargs >= 1) {
-        hash1 = FUN_71038f4000(param_1, 1, 0);
+        hash1 = l2cParamResolve_71038f4000(param_1, 1, 0);
         if (nargs >= 2) {
-            hash2 = FUN_71038f4000(param_1, 2, 0);
+            hash2 = l2cParamResolve_71038f4000(param_1, 2, 0);
             if (nargs >= 3) {
                 f32 f3 = acmd_read_float(L, 0x30);
                 off_x = (u64)(u32)f3;
@@ -1454,7 +1454,7 @@ void EFFECT_FOLLOW_arg11(lua_State* param_1) {
 
     u64 alt_hash;
     if (nargs >= 11) {
-        alt_hash = FUN_71038f4000(param_1, 0xb, 0);
+        alt_hash = l2cParamResolve_71038f4000(param_1, 0xb, 0);
     } else {
         alt_hash = 0;
     }
@@ -1485,9 +1485,9 @@ extern "C" void EFFECT_FOLLOW_NO_SCALE(lua_State* param_1) {
     u64 off_x = 0, off_y = 0, off_z = 0;
 
     if (nargs >= 1) {
-        hash1 = FUN_71038f4000(param_1, 1, 0);
+        hash1 = l2cParamResolve_71038f4000(param_1, 1, 0);
         if (nargs >= 2) {
-            hash2 = FUN_71038f4000(param_1, 2, 0);
+            hash2 = l2cParamResolve_71038f4000(param_1, 2, 0);
             if (nargs >= 3) {
                 f32 f3 = acmd_read_float(L, 0x30);
                 off_x = (u64)(u32)f3;
@@ -1560,9 +1560,9 @@ extern "C" void EFFECT_FOLLOW_UNSYNC_VIS_WHOLE(lua_State* param_1) {
     u64 off_x = 0, off_y = 0, off_z = 0;
 
     if (nargs >= 1) {
-        hash1 = FUN_71038f4000(param_1, 1, 0);
+        hash1 = l2cParamResolve_71038f4000(param_1, 1, 0);
         if (nargs >= 2) {
-            hash2 = FUN_71038f4000(param_1, 2, 0);
+            hash2 = l2cParamResolve_71038f4000(param_1, 2, 0);
             if (nargs >= 3) {
                 f32 f3 = acmd_read_float(L, 0x30);
                 off_x = (u64)(u32)f3;
@@ -1640,9 +1640,9 @@ extern "C" void EFFECT_FLW_POS(lua_State* param_1) {
     bool follow_flag = false;
 
     if (nargs >= 1) {
-        hash1 = FUN_71038f4000(param_1, 1, 0);
+        hash1 = l2cParamResolve_71038f4000(param_1, 1, 0);
         if (nargs >= 2) {
-            hash2 = FUN_71038f4000(param_1, 2, 0);
+            hash2 = l2cParamResolve_71038f4000(param_1, 2, 0);
             if (nargs >= 3) {
                 off_x = acmd_read_float(L, 0x30);
                 if (nargs >= 4) {
@@ -1703,9 +1703,9 @@ extern "C" void EFFECT_FLW_POS_NO_STOP(lua_State* param_1) {
     bool follow_flag = false;
 
     if (nargs >= 1) {
-        hash1 = FUN_71038f4000(param_1, 1, 0);
+        hash1 = l2cParamResolve_71038f4000(param_1, 1, 0);
         if (nargs >= 2) {
-            hash2 = FUN_71038f4000(param_1, 2, 0);
+            hash2 = l2cParamResolve_71038f4000(param_1, 2, 0);
             if (nargs >= 3) {
                 off_x = acmd_read_float(L, 0x30);
                 if (nargs >= 4) {
@@ -1766,9 +1766,9 @@ extern "C" void EFFECT_FLW_POS_UNSYNC_VIS(lua_State* param_1) {
     bool follow_flag = false;
 
     if (nargs >= 1) {
-        hash1 = FUN_71038f4000(param_1, 1, 0);
+        hash1 = l2cParamResolve_71038f4000(param_1, 1, 0);
         if (nargs >= 2) {
-            hash2 = FUN_71038f4000(param_1, 2, 0);
+            hash2 = l2cParamResolve_71038f4000(param_1, 2, 0);
             if (nargs >= 3) {
                 off_x = acmd_read_float(L, 0x30);
                 if (nargs >= 4) {
@@ -1829,9 +1829,9 @@ extern "C" void EFFECT_FLW_UNSYNC_VIS(lua_State* param_1) {
     bool follow_flag = false;
 
     if (nargs >= 1) {
-        hash1 = FUN_71038f4000(param_1, 1, 0);
+        hash1 = l2cParamResolve_71038f4000(param_1, 1, 0);
         if (nargs >= 2) {
-            hash2 = FUN_71038f4000(param_1, 2, 0);
+            hash2 = l2cParamResolve_71038f4000(param_1, 2, 0);
             if (nargs >= 3) {
                 off_x = acmd_read_float(L, 0x30);
                 if (nargs >= 4) {
@@ -1954,9 +1954,9 @@ extern "C" void EFFECT_FOLLOW_COLOR(lua_State* param_1) {
     bool follow_flag = false;
 
     if (nargs >= 1) {
-        hash1 = FUN_71038f4000(param_1, 1, 0);
+        hash1 = l2cParamResolve_71038f4000(param_1, 1, 0);
         if (nargs >= 2) {
-            hash2 = FUN_71038f4000(param_1, 2, 0);
+            hash2 = l2cParamResolve_71038f4000(param_1, 2, 0);
             if (nargs >= 3) {
                 f32 f3 = acmd_read_float(L, 0x30);
                 off_x = (u64)(u32)f3;
@@ -2042,9 +2042,9 @@ extern "C" void EFFECT_FOLLOW_ALPHA(lua_State* param_1) {
     u64 off_x = 0, off_y = 0, off_z = 0;
 
     if (nargs >= 1) {
-        hash1 = FUN_71038f4000(param_1, 1, 0);
+        hash1 = l2cParamResolve_71038f4000(param_1, 1, 0);
         if (nargs >= 2) {
-            hash2 = FUN_71038f4000(param_1, 2, 0);
+            hash2 = l2cParamResolve_71038f4000(param_1, 2, 0);
             if (nargs >= 3) {
                 f32 f3 = acmd_read_float(L, 0x30);
                 off_x = (u64)(u32)f3;
@@ -2131,7 +2131,7 @@ extern "C" void EFFECT_FOLLOW_FLIP(lua_State* param_1) {
 #endif
         }
     } else if (nargs >= 3) {
-        bone_hash = FUN_71038f4000(param_1, 3, 0);
+        bone_hash = l2cParamResolve_71038f4000(param_1, 3, 0);
         if (nargs >= 4) {
             off_x = acmd_read_float(L, 0x40);
             if (nargs >= 5) {
@@ -2179,7 +2179,7 @@ extern "C" void EFFECT_FOLLOW_FLIP(lua_State* param_1) {
 #endif
         }
         if (nargs >= 1) {
-            effect_hash = FUN_71038f4000(param_1, 1, 0);
+            effect_hash = l2cParamResolve_71038f4000(param_1, 1, 0);
         } else {
             effect_hash = 0;
         }
@@ -2188,9 +2188,9 @@ extern "C" void EFFECT_FOLLOW_FLIP(lua_State* param_1) {
         if (param_1 == nullptr) {
             effect_hash = 0;
         } else if (nargs >= 2) {
-            effect_hash = FUN_71038f4000(param_1, 2, 0);
+            effect_hash = l2cParamResolve_71038f4000(param_1, 2, 0);
             if (nargs >= 12) {
-                alt_hash = FUN_71038f4000(param_1, 0xc, 0);
+                alt_hash = l2cParamResolve_71038f4000(param_1, 0xc, 0);
             }
         } else {
             effect_hash = 0;
@@ -2225,9 +2225,9 @@ extern "C" void EFFECT_FOLLOW_NO_STOP_FLIP(lua_State* param_1) {
     u64 off_x = 0, off_y = 0, off_z = 0;
 
     if (nargs >= 1) {
-        FUN_71038f4000(param_1, 1, 0);  // side effect, result discarded
+        l2cParamResolve_71038f4000(param_1, 1, 0);  // side effect, result discarded
         if (nargs >= 3) {
-            bone_hash = FUN_71038f4000(param_1, 3, 0);
+            bone_hash = l2cParamResolve_71038f4000(param_1, 3, 0);
             if (nargs >= 4) {
                 f32 f4 = acmd_read_float(L, 0x40);
                 off_x = (u64)(u32)f4;
@@ -2280,16 +2280,16 @@ extern "C" void EFFECT_FOLLOW_NO_STOP_FLIP(lua_State* param_1) {
     if ((is_flip & 1) == 0) {
         // Not flipped: use arg 1
         if (nargs >= 1) {
-            effect_hash = FUN_71038f4000(param_1, 1, 0);
+            effect_hash = l2cParamResolve_71038f4000(param_1, 1, 0);
         } else {
             effect_hash = 0;
         }
     } else {
         // Flipped: use arg 2
         if (nargs >= 2) {
-            effect_hash = FUN_71038f4000(param_1, 2, 0);
+            effect_hash = l2cParamResolve_71038f4000(param_1, 2, 0);
             if (nargs >= 12) {
-                alt_hash = FUN_71038f4000(param_1, 0xc, 0);
+                alt_hash = l2cParamResolve_71038f4000(param_1, 0xc, 0);
             }
         } else {
             effect_hash = 0;
@@ -2325,9 +2325,9 @@ extern "C" void EFFECT_FOLLOW_FLIP_COLOR(lua_State* param_1) {
     u64 off_x = 0, off_y = 0, off_z = 0;
 
     if (nargs >= 1) {
-        FUN_71038f4000(param_1, 1, 0);  // side effect, result discarded
+        l2cParamResolve_71038f4000(param_1, 1, 0);  // side effect, result discarded
         if (nargs >= 3) {
-            bone_hash = FUN_71038f4000(param_1, 3, 0);
+            bone_hash = l2cParamResolve_71038f4000(param_1, 3, 0);
             if (nargs >= 4) {
                 f32 f4 = acmd_read_float(L, 0x40);
                 off_x = (u64)(u32)f4;
@@ -2381,15 +2381,15 @@ extern "C" void EFFECT_FOLLOW_FLIP_COLOR(lua_State* param_1) {
     u64 alt_hash = 0;
     if ((is_flip & 1) == 0) {
         if (nargs >= 1) {
-            effect_hash = FUN_71038f4000(param_1, 1, 0);
+            effect_hash = l2cParamResolve_71038f4000(param_1, 1, 0);
         } else {
             effect_hash = 0;
         }
     } else {
         if (nargs >= 2) {
-            effect_hash = FUN_71038f4000(param_1, 2, 0);
+            effect_hash = l2cParamResolve_71038f4000(param_1, 2, 0);
             if (nargs >= 12) {
-                alt_hash = FUN_71038f4000(param_1, 0xc, 0);
+                alt_hash = l2cParamResolve_71038f4000(param_1, 0xc, 0);
             }
         } else {
             effect_hash = 0;
@@ -2437,9 +2437,9 @@ extern "C" void EFFECT_FOLLOW_FLIP_ALPHA(lua_State* param_1) {
     u64 off_x = 0, off_y = 0, off_z = 0;
 
     if (nargs >= 1) {
-        FUN_71038f4000(param_1, 1, 0);  // side effect, result discarded
+        l2cParamResolve_71038f4000(param_1, 1, 0);  // side effect, result discarded
         if (nargs >= 3) {
-            bone_hash = FUN_71038f4000(param_1, 3, 0);
+            bone_hash = l2cParamResolve_71038f4000(param_1, 3, 0);
             if (nargs >= 4) {
                 f32 f4 = acmd_read_float(L, 0x40);
                 off_x = (u64)(u32)f4;
@@ -2493,15 +2493,15 @@ extern "C" void EFFECT_FOLLOW_FLIP_ALPHA(lua_State* param_1) {
     u64 alt_hash = 0;
     if ((is_flip & 1) == 0) {
         if (nargs >= 1) {
-            effect_hash = FUN_71038f4000(param_1, 1, 0);
+            effect_hash = l2cParamResolve_71038f4000(param_1, 1, 0);
         } else {
             effect_hash = 0;
         }
     } else {
         if (nargs >= 2) {
-            effect_hash = FUN_71038f4000(param_1, 2, 0);
+            effect_hash = l2cParamResolve_71038f4000(param_1, 2, 0);
             if (nargs >= 12) {
-                alt_hash = FUN_71038f4000(param_1, 0xc, 0);
+                alt_hash = l2cParamResolve_71038f4000(param_1, 0xc, 0);
             }
         } else {
             effect_hash = 0;
@@ -2544,9 +2544,9 @@ void EFFECT_FOLLOW_FLIP_arg13(lua_State* param_1) {
     u64 off_x = 0, off_y = 0, off_z = 0;
 
     if (nargs >= 1) {
-        FUN_71038f4000(param_1, 1, 0);  // side effect, result discarded
+        l2cParamResolve_71038f4000(param_1, 1, 0);  // side effect, result discarded
         if (nargs >= 3) {
-            bone_hash = FUN_71038f4000(param_1, 3, 0);
+            bone_hash = l2cParamResolve_71038f4000(param_1, 3, 0);
             if (nargs >= 4) {
                 f32 f4 = acmd_read_float(L, 0x40);
                 off_x = (u64)(u32)f4;
@@ -2600,15 +2600,15 @@ void EFFECT_FOLLOW_FLIP_arg13(lua_State* param_1) {
     u64 alt_hash = 0;
     if ((is_flip & 1) == 0) {
         if (nargs >= 1) {
-            effect_hash = FUN_71038f4000(param_1, 1, 0);
+            effect_hash = l2cParamResolve_71038f4000(param_1, 1, 0);
         } else {
             effect_hash = 0;
         }
     } else {
         if (nargs >= 2) {
-            effect_hash = FUN_71038f4000(param_1, 2, 0);
+            effect_hash = l2cParamResolve_71038f4000(param_1, 2, 0);
             if (nargs >= 12) {
-                alt_hash = FUN_71038f4000(param_1, 0xc, 0);
+                alt_hash = l2cParamResolve_71038f4000(param_1, 0xc, 0);
             }
         } else {
             effect_hash = 0;
@@ -2618,7 +2618,7 @@ void EFFECT_FOLLOW_FLIP_arg13(lua_State* param_1) {
     // Read arg 13: joint hash
     u64 joint_hash = 0;
     if (nargs >= 13) {
-        joint_hash = FUN_71038f4000(param_1, 0xd, 0);
+        joint_hash = l2cParamResolve_71038f4000(param_1, 0xd, 0);
     }
 
     // req_follow with joint_hash in position 8
@@ -2780,16 +2780,16 @@ extern "C" void EFFECT_FLIP(lua_State* param_1) {
     if ((is_flip & 1) == 0) {
         // Not flipped: hash from arg 1
         if (nargs >= 1) {
-            out.hash1 = FUN_71038f4000(param_1, 1, 0);
+            out.hash1 = l2cParamResolve_71038f4000(param_1, 1, 0);
         } else {
             out.hash1 = 0;
         }
     } else {
         // Flipped: hash from arg 2, alt_hash from arg 18
         if (nargs >= 2) {
-            out.hash1 = FUN_71038f4000(param_1, 2, 0);
+            out.hash1 = l2cParamResolve_71038f4000(param_1, 2, 0);
             if (nargs >= 18) {
-                alt_hash = FUN_71038f4000(param_1, 0x12, 0);
+                alt_hash = l2cParamResolve_71038f4000(param_1, 0x12, 0);
             }
         } else {
             out.hash1 = 0;
@@ -2828,15 +2828,15 @@ extern "C" void EFFECT_FLIP_ALPHA(lua_State* param_1) {
     u64 alt_hash = 0;
     if ((is_flip & 1) == 0) {
         if (nargs >= 1) {
-            out.hash1 = FUN_71038f4000(param_1, 1, 0);
+            out.hash1 = l2cParamResolve_71038f4000(param_1, 1, 0);
         } else {
             out.hash1 = 0;
         }
     } else {
         if (nargs >= 2) {
-            out.hash1 = FUN_71038f4000(param_1, 2, 0);
+            out.hash1 = l2cParamResolve_71038f4000(param_1, 2, 0);
             if (nargs >= 18) {
-                alt_hash = FUN_71038f4000(param_1, 0x12, 0);
+                alt_hash = l2cParamResolve_71038f4000(param_1, 0x12, 0);
             }
         } else {
             alt_hash = 0;
@@ -2883,9 +2883,9 @@ extern "C" void EFFECT(lua_State* param_1) {
     bool a16 = false;
 
     if (nargs >= 1) {
-        hash1 = FUN_71038f4000(param_1, 1, 0);
+        hash1 = l2cParamResolve_71038f4000(param_1, 1, 0);
         if (nargs >= 2) {
-            hash2 = FUN_71038f4000(param_1, 2, 0);
+            hash2 = l2cParamResolve_71038f4000(param_1, 2, 0);
             if (nargs >= 3) {
                 a3 = acmd_read_float(L, 0x30);
                 if (nargs >= 4) {
@@ -2962,9 +2962,9 @@ extern "C" void EFFECT_WORK_R(lua_State* param_1) {
     u64 hash1 = 0, hash2 = 0;
     u64 a3 = 0, a4 = 0, a5 = 0;
     if (nargs >= 1) {
-        hash1 = FUN_71038f4000(param_1, 1, 0);
+        hash1 = l2cParamResolve_71038f4000(param_1, 1, 0);
         if (nargs >= 2) {
-            hash2 = FUN_71038f4000(param_1, 2, 0);
+            hash2 = l2cParamResolve_71038f4000(param_1, 2, 0);
             if (nargs >= 3) {
                 a3 = (u64)(u32)acmd_read_float(L, 0x30);
                 if (nargs >= 4) {
@@ -3063,7 +3063,7 @@ extern "C" void EFFECT_BRANCH_SITUATION(lua_State* param_1) {
         if ((situation & 1) != 0) {
             hash_arg = 2;
         }
-        hash1 = FUN_71038f4000(param_1, hash_arg, 0);
+        hash1 = l2cParamResolve_71038f4000(param_1, hash_arg, 0);
     }
 
     u64 hash2 = 0;
@@ -3073,7 +3073,7 @@ extern "C" void EFFECT_BRANCH_SITUATION(lua_State* param_1) {
     bool a17 = false;
 
     if (nargs >= 3) {
-        hash2 = FUN_71038f4000(param_1, 3, 0);
+        hash2 = l2cParamResolve_71038f4000(param_1, 3, 0);
         if (nargs >= 4) {
             a4 = acmd_read_float(L, 0x40);
             if (nargs >= 5) {
@@ -3168,9 +3168,9 @@ extern "C" void EFFECT_FOLLOW_RND(lua_State* param_1) {
     u64 hash1 = 0, hash2 = 0;
     u64 off_x = 0, off_y = 0, off_z = 0;
     if (nargs >= 1) {
-        hash1 = FUN_71038f4000(param_1, 1, 0);
+        hash1 = l2cParamResolve_71038f4000(param_1, 1, 0);
         if (nargs >= 2) {
-            hash2 = FUN_71038f4000(param_1, 2, 0);
+            hash2 = l2cParamResolve_71038f4000(param_1, 2, 0);
             if (nargs >= 3) {
                 off_x = (u64)(u32)acmd_read_float(L, 0x30);
                 if (nargs >= 4) {
@@ -3282,14 +3282,14 @@ extern "C" void EFFECT_FOLLOW_RND_WORK(lua_State* param_1) {
 
     // Prime read of arg 1 (result discarded for WORK variant)
     if (nargs >= 1 && param_1 != nullptr) {
-        FUN_71038f4000(param_1, 1, 0);
+        l2cParamResolve_71038f4000(param_1, 1, 0);
     }
 
     // Group 1: hash2 + offset (args 2-5, all as integers)
     u64 hash2 = 0;
     u64 off_x = 0, off_y = 0, off_z = 0;
     if (nargs >= 2) {
-        hash2 = FUN_71038f4000(param_1, 2, 0);
+        hash2 = l2cParamResolve_71038f4000(param_1, 2, 0);
         if (nargs >= 3) {
             off_x = (u64)(u32)acmd_read_float(L, 0x30);
             if (nargs >= 4) {
@@ -3327,7 +3327,7 @@ extern "C" void EFFECT_FOLLOW_RND_WORK(lua_State* param_1) {
     // Re-read hash1 from arg 1
     u64 hash1 = 0;
     if (nargs >= 1) {
-        hash1 = FUN_71038f4000(param_1, 1, 0);
+        hash1 = l2cParamResolve_71038f4000(param_1, 1, 0);
     }
 
     // Arg 10: RNG range for offset_x
@@ -3411,7 +3411,7 @@ extern "C" void EFFECT_FOLLOW_FLIP_RND(lua_State* param_1) {
 #endif
     } else {
         if (nargs >= 3) {
-            joint_hash = FUN_71038f4000(param_1, 3, 0);
+            joint_hash = l2cParamResolve_71038f4000(param_1, 3, 0);
         }
     }
 
@@ -3512,16 +3512,16 @@ extern "C" void EFFECT_FOLLOW_FLIP_RND(lua_State* param_1) {
                     if ((is_flip & 1) == 0) {
                         // Not flipped: use arg 1
                         if (nargs >= 1) {
-                            hash1 = FUN_71038f4000(param_1, 1, 0);
+                            hash1 = l2cParamResolve_71038f4000(param_1, 1, 0);
                         } else {
                             hash1 = 0;
                         }
                     } else {
                         // Flipped: use arg 2
                         if (nargs >= 2) {
-                            hash1 = FUN_71038f4000(param_1, 2, 0);
+                            hash1 = l2cParamResolve_71038f4000(param_1, 2, 0);
                             if (nargs >= 18) {
-                                alt_hash = FUN_71038f4000(param_1, 0x12, 0);
+                                alt_hash = l2cParamResolve_71038f4000(param_1, 0x12, 0);
                             }
                         } else {
                             hash1 = 0;
@@ -3559,15 +3559,15 @@ extern "C" void EFFECT_FOLLOW_FLIP_RND(lua_State* param_1) {
 #endif
         }
         if (nargs >= 1) {
-            hash1 = FUN_71038f4000(param_1, 1, 0);
+            hash1 = l2cParamResolve_71038f4000(param_1, 1, 0);
         } else {
             hash1 = 0;
         }
     } else {
         if (nargs >= 2) {
-            hash1 = FUN_71038f4000(param_1, 2, 0);
+            hash1 = l2cParamResolve_71038f4000(param_1, 2, 0);
             if (nargs >= 18) {
-                alt_hash = FUN_71038f4000(param_1, 0x12, 0);
+                alt_hash = l2cParamResolve_71038f4000(param_1, 0x12, 0);
             }
         } else {
             hash1 = 0;
@@ -3689,16 +3689,16 @@ extern "C" void LANDING_EFFECT_FLIP(lua_State* param_1) {
         if ((is_flip & 1) == 0) {
             // Not flipped: use arg 1
             if (nargs >= 1) {
-                out.hash1 = FUN_71038f4000(param_1, 1, 0);
+                out.hash1 = l2cParamResolve_71038f4000(param_1, 1, 0);
             } else {
                 out.hash1 = 0;
             }
         } else {
             // Flipped: use arg 2
             if (nargs >= 2) {
-                out.hash1 = FUN_71038f4000(param_1, 2, 0);
+                out.hash1 = l2cParamResolve_71038f4000(param_1, 2, 0);
                 if (nargs >= 18) {
-                    alt_hash = (u32)FUN_71038f4000(param_1, 0x12, 0);
+                    alt_hash = (u32)l2cParamResolve_71038f4000(param_1, 0x12, 0);
                 }
             } else {
                 out.hash1 = 0;
@@ -3791,15 +3791,15 @@ extern "C" void FOOT_EFFECT_FLIP(lua_State* param_1) {
         u32 alt_hash = 0;
         if ((is_flip & 1) == 0) {
             if (nargs >= 1) {
-                out.hash1 = FUN_71038f4000(param_1, 1, 0);
+                out.hash1 = l2cParamResolve_71038f4000(param_1, 1, 0);
             } else {
                 out.hash1 = 0;
             }
         } else {
             if (nargs >= 2) {
-                out.hash1 = FUN_71038f4000(param_1, 2, 0);
+                out.hash1 = l2cParamResolve_71038f4000(param_1, 2, 0);
                 if (nargs >= 18) {
-                    alt_hash = (u32)FUN_71038f4000(param_1, 0x12, 0);
+                    alt_hash = (u32)l2cParamResolve_71038f4000(param_1, 0x12, 0);
                 }
             } else {
                 out.hash1 = 0;
@@ -3889,7 +3889,7 @@ extern "C" void REMOVE_FINAL_SCREEN_EFFECT(lua_State* param_1) {
         }
         hash = 0;
     } else if (nargs >= 1) {
-        hash = FUN_71038f4000(param_1, 1, 0);
+        hash = l2cParamResolve_71038f4000(param_1, 1, 0);
     } else {
         hash = 0;
     }
@@ -3926,7 +3926,7 @@ extern "C" void PLAY_LANDING_SE(lua_State* param_1) {
     if (nargs < 1) {
         hash = 0;
     } else {
-        hash = FUN_71038f4000(param_1, 1, 0);
+        hash = l2cParamResolve_71038f4000(param_1, 1, 0);
     }
 
     void** snd = *(void***)(acc + 0x148);  // SoundModule [derived: accessor offset map]
@@ -3953,7 +3953,7 @@ extern "C" void REG_LANDING_SE(lua_State* param_1) {
     if (nargs < 1) {
         hash = 0;
     } else {
-        hash = FUN_71038f4000(param_1, 1, 0);
+        hash = l2cParamResolve_71038f4000(param_1, 1, 0);
     }
 
     void** snd = *(void***)(acc + 0x148);  // SoundModule [derived: accessor offset map]
@@ -4233,11 +4233,11 @@ extern "C" void SCREEN_EFFECT_SLOW_WHOLE(lua_State* param_1) {
         slow_kind = 0;
         frame_count = 0;
     } else {
-        slow_kind = (u8)FUN_71038f4000(param_1, 1, 0);
+        slow_kind = (u8)l2cParamResolve_71038f4000(param_1, 1, 0);
         if (nargs < 2) {
             frame_count = 0;
         } else {
-            frame_count = (s32)FUN_71038f4000(param_1, 2, 0);
+            frame_count = (s32)l2cParamResolve_71038f4000(param_1, 2, 0);
         }
     }
 
@@ -4507,9 +4507,9 @@ extern "C" void EFFECT_FOLLOW_LIGHT(lua_State* param_1) {
     u64 extra_z = 0;
 
     if (nargs >= 1) {
-        hash1 = FUN_71038f4000(param_1, 1, 0);
+        hash1 = l2cParamResolve_71038f4000(param_1, 1, 0);
         if (nargs >= 2) {
-            hash2 = FUN_71038f4000(param_1, 2, 0);
+            hash2 = l2cParamResolve_71038f4000(param_1, 2, 0);
             if (nargs >= 3) {
                 pos_x = acmd_read_float(L, 0x30);
                 if (nargs >= 4) {
@@ -4679,9 +4679,9 @@ void EFFECT_FOLLOW_arg12(lua_State* param_1) {
     u64 off_x = 0, off_y = 0, off_z = 0;
 
     if (nargs >= 1) {
-        hash1 = FUN_71038f4000(param_1, 1, 0);
+        hash1 = l2cParamResolve_71038f4000(param_1, 1, 0);
         if (nargs >= 2) {
-            hash2 = FUN_71038f4000(param_1, 2, 0);
+            hash2 = l2cParamResolve_71038f4000(param_1, 2, 0);
             if (nargs >= 3) {
                 f32 f3 = acmd_read_float(L, 0x30);
                 off_x = (u64)(u32)f3;
@@ -4730,9 +4730,9 @@ void EFFECT_FOLLOW_arg12(lua_State* param_1) {
     u64 alt_hash = 0;
     u32 joint_kind = 0;
     if (nargs >= 11) {
-        alt_hash = FUN_71038f4000(param_1, 0xb, 0);
+        alt_hash = l2cParamResolve_71038f4000(param_1, 0xb, 0);
         if (nargs >= 12) {
-            joint_kind = (u32)FUN_71038f4000(param_1, 0xc, 0);
+            joint_kind = (u32)l2cParamResolve_71038f4000(param_1, 0xc, 0);
             if (joint_kind >= 9) {
                 abort();
             }

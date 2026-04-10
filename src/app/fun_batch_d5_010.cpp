@@ -17,7 +17,7 @@ extern "C" void FUN_71000001c0(void *, void *, void *);
 extern "C" void FUN_7101763de0();
 extern "C" void FUN_710337a860(u64, u64, u64);   // hash-dispatch helper
 extern "C" void FUN_710181e8a0(s64);
-extern "C" void FUN_710392e590(s64);
+extern "C" void jeFree_710392e590(s64);
 extern "C" void FUN_71025e9900(s64);
 
 extern "C" s64 g_team_param_init_guard;
@@ -251,7 +251,7 @@ bool FUN_710181e9f0(s64 param_1)
     s32 iVar1 = *(s32 *)(*(s64 *)(*(s64 *)(lVar2 + 0x100) + 0x80) + 0xf8);
     if ((iVar1 == 7) && (*(u64 *)(param_1 + 0x58) = 0, lVar2 != 0)) {
         FUN_710181e8a0(lVar2);
-        FUN_710392e590(lVar2);
+        jeFree_710392e590(lVar2);
     }
     return iVar1 == 7;
 }

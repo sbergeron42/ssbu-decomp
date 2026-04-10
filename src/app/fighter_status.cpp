@@ -1745,16 +1745,16 @@ u32 target_status_count_7100376ae0(void* L) {
 }
 
 // ════════════════════════════════════════════════════════════════════
-// AI target — target_status_kind (uses FUN_7100314030 lookup)
+// AI target — target_status_kind (uses aiGetTargetById_7100314030 lookup)
 // ════════════════════════════════════════════════════════════════════
 
-extern "C" void* FUN_7100314030(void*, void*);
+extern "C" void* aiGetTargetById_7100314030(void*, void*);
 
 // ── 0x7100366ff0 -- app::ai::target_status_kind (40B) ─────────────
-// [derived: looks up target via FUN_7100314030, reads status_kind at +0x2c]
+// [derived: looks up target via aiGetTargetById_7100314030, reads status_kind at +0x2c]
 u32 target_status_kind_7100366ff0(void* L) {
     void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
-    void* target = FUN_7100314030(DAT_71052b5fd8,
+    void* target = aiGetTargetById_7100314030(DAT_71052b5fd8,
         reinterpret_cast<void*>(reinterpret_cast<u8*>(ctx) + 0xc50));
     return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(target) + 0x2c);
 }
@@ -1832,7 +1832,7 @@ u32 training_special_interval_710036c180(void* L) {
 // Pop stack arg, compare against StatusModule::get_status_kind vtable call
 // ════════════════════════════════════════════════════════════════════
 
-extern "C" u64 FUN_71038f4000(void*, s32, s32);
+extern "C" u64 l2cParamResolve_71038f4000(void*, s32, s32);
 
 // ── 0x71022ad5a0 -- app::sv_animcmd::IS_FIGHTER_STATUS_KIND (200B)─
 // [derived: pops 1 int arg from lua stack, calls StatusModule(+0x40)->vt[0x110/8]
@@ -1849,7 +1849,7 @@ u32 IS_FIGHTER_STATUS_KIND_71022ad5a0(void* L) {
     if (nargs < 1) {
         kind = 0;
     } else {
-        kind = static_cast<s32>(FUN_71038f4000(L, 1, 0));
+        kind = static_cast<s32>(l2cParamResolve_71038f4000(L, 1, 0));
     }
     // pop stack
     top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
@@ -1882,7 +1882,7 @@ u32 IS_STATUS_KIND_71022ad670(void* L) {
     if (nargs < 1) {
         kind = 0;
     } else {
-        kind = static_cast<s32>(FUN_71038f4000(L, 1, 0));
+        kind = static_cast<s32>(l2cParamResolve_71038f4000(L, 1, 0));
     }
     // pop stack
     top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
@@ -2457,95 +2457,95 @@ u32 check_cliffable_floor_lr_7100361b20(void* L, f32 lr) {
 }
 
 // ════════════════════════════════════════════════════════════════════
-// AI target queries — FUN_7100314030 lookup family
+// AI target queries — aiGetTargetById_7100314030 lookup family
 // ════════════════════════════════════════════════════════════════════
 
 // ── 0x7100366de0 -- app::ai::target_height (40B) ──────────────────
-// [derived: FUN_7100314030(global, ctx+0xc50) → +0xc8 (height)]
+// [derived: aiGetTargetById_7100314030(global, ctx+0xc50) → +0xc8 (height)]
 f32 target_height_7100366de0(void* L) {
     void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
-    void* target = FUN_7100314030(DAT_71052b5fd8,
+    void* target = aiGetTargetById_7100314030(DAT_71052b5fd8,
         reinterpret_cast<void*>(reinterpret_cast<u8*>(ctx) + 0xc50));
     return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(target) + 0xc8);
 }
 
 // ── 0x7100366e10 -- app::ai::target_pos_x (40B) ──────────────────
-// [derived: FUN_7100314030(global, ctx+0xc50) → +0x80 (pos.x)]
+// [derived: aiGetTargetById_7100314030(global, ctx+0xc50) → +0x80 (pos.x)]
 f32 target_pos_x_7100366e10(void* L) {
     void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
-    void* target = FUN_7100314030(DAT_71052b5fd8,
+    void* target = aiGetTargetById_7100314030(DAT_71052b5fd8,
         reinterpret_cast<void*>(reinterpret_cast<u8*>(ctx) + 0xc50));
     return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(target) + 0x80);
 }
 
 // ── 0x7100366e40 -- app::ai::target_pos_y (40B) ──────────────────
-// [derived: FUN_7100314030(global, ctx+0xc50) → +0x84 (pos.y)]
+// [derived: aiGetTargetById_7100314030(global, ctx+0xc50) → +0x84 (pos.y)]
 f32 target_pos_y_7100366e40(void* L) {
     void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
-    void* target = FUN_7100314030(DAT_71052b5fd8,
+    void* target = aiGetTargetById_7100314030(DAT_71052b5fd8,
         reinterpret_cast<void*>(reinterpret_cast<u8*>(ctx) + 0xc50));
     return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(target) + 0x84);
 }
 
 // ── 0x7100366e70 -- app::ai::target_speed_x (40B) ────────────────
-// [derived: FUN_7100314030(global, ctx+0xc50) → +0xa0 (speed.x)]
+// [derived: aiGetTargetById_7100314030(global, ctx+0xc50) → +0xa0 (speed.x)]
 f32 target_speed_x_7100366e70(void* L) {
     void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
-    void* target = FUN_7100314030(DAT_71052b5fd8,
+    void* target = aiGetTargetById_7100314030(DAT_71052b5fd8,
         reinterpret_cast<void*>(reinterpret_cast<u8*>(ctx) + 0xc50));
     return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(target) + 0xa0);
 }
 
 // ── 0x7100366ea0 -- app::ai::target_speed_y (40B) ────────────────
-// [derived: FUN_7100314030(global, ctx+0xc50) → +0xa4 (speed.y)]
+// [derived: aiGetTargetById_7100314030(global, ctx+0xc50) → +0xa4 (speed.y)]
 f32 target_speed_y_7100366ea0(void* L) {
     void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
-    void* target = FUN_7100314030(DAT_71052b5fd8,
+    void* target = aiGetTargetById_7100314030(DAT_71052b5fd8,
         reinterpret_cast<void*>(reinterpret_cast<u8*>(ctx) + 0xc50));
     return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(target) + 0xa4);
 }
 
 // ── 0x7100366ed0 -- app::ai::target_scale (40B) ──────────────────
-// [derived: FUN_7100314030(global, ctx+0xc50) → +0xc0 (scale)]
+// [derived: aiGetTargetById_7100314030(global, ctx+0xc50) → +0xc0 (scale)]
 f32 target_scale_7100366ed0(void* L) {
     void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
-    void* target = FUN_7100314030(DAT_71052b5fd8,
+    void* target = aiGetTargetById_7100314030(DAT_71052b5fd8,
         reinterpret_cast<void*>(reinterpret_cast<u8*>(ctx) + 0xc50));
     return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(target) + 0xc0);
 }
 
 // ── 0x7100366fc0 -- app::ai::target_lr (40B) ─────────────────────
-// [derived: FUN_7100314030(global, ctx+0xc50) → +0xc4 (lr direction)]
+// [derived: aiGetTargetById_7100314030(global, ctx+0xc50) → +0xc4 (lr direction)]
 f32 target_lr_7100366fc0(void* L) {
     void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
-    void* target = FUN_7100314030(DAT_71052b5fd8,
+    void* target = aiGetTargetById_7100314030(DAT_71052b5fd8,
         reinterpret_cast<void*>(reinterpret_cast<u8*>(ctx) + 0xc50));
     return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(target) + 0xc4);
 }
 
 // ── 0x7100367020 -- app::ai::target_motion_kind (40B) ─────────────
-// [derived: FUN_7100314030(global, ctx+0xc50) → +0x38 (motion kind hash)]
+// [derived: aiGetTargetById_7100314030(global, ctx+0xc50) → +0x38 (motion kind hash)]
 u64 target_motion_kind_7100367020(void* L) {
     void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
-    void* target = FUN_7100314030(DAT_71052b5fd8,
+    void* target = aiGetTargetById_7100314030(DAT_71052b5fd8,
         reinterpret_cast<void*>(reinterpret_cast<u8*>(ctx) + 0xc50));
     return *reinterpret_cast<u64*>(reinterpret_cast<u8*>(target) + 0x38);
 }
 
 // ── 0x7100367050 -- app::ai::target_motion_frame (40B) ────────────
-// [derived: FUN_7100314030(global, ctx+0xc50) → +0x48 (motion frame)]
+// [derived: aiGetTargetById_7100314030(global, ctx+0xc50) → +0x48 (motion frame)]
 f32 target_motion_frame_7100367050(void* L) {
     void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
-    void* target = FUN_7100314030(DAT_71052b5fd8,
+    void* target = aiGetTargetById_7100314030(DAT_71052b5fd8,
         reinterpret_cast<void*>(reinterpret_cast<u8*>(ctx) + 0xc50));
     return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(target) + 0x48);
 }
 
 // ── 0x71003666e0 -- app::ai::check_target_stat_air (44B) ──────────
-// [derived: FUN_7100314030(global, ctx+0xc50) → bit0 of +0x54]
+// [derived: aiGetTargetById_7100314030(global, ctx+0xc50) → bit0 of +0x54]
 u32 check_target_stat_air_71003666e0(void* L) {
     void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
-    void* target = FUN_7100314030(DAT_71052b5fd8,
+    void* target = aiGetTargetById_7100314030(DAT_71052b5fd8,
         reinterpret_cast<void*>(reinterpret_cast<u8*>(ctx) + 0xc50));
     return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(target) + 0x54) & 1;
 }

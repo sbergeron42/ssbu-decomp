@@ -9,7 +9,7 @@
 // External functions used by AI attack info / predict_hit functions
 extern "C" void* FUN_710033ba50(u32);
 extern "C" s32 FUN_71002f2820(u32, u32);
-extern "C" void* FUN_7100314030(void*, void*);
+extern "C" void* aiGetTargetById_7100314030(void*, void*);
 extern "C" void* FUN_710033c360(void*, u32);
 extern "C" void* FUN_710033c510(u32, u64);
 extern "C" u32 FUN_710033e5c0(void*, u64);
@@ -140,7 +140,7 @@ u8 FUN_7100369e10_369e10(void* lua_state, u32 cmd_id) {
 // ---------------------------------------------------------------------------
 bool FUN_710036a220_36a220(void* lua_state, u32 cmd_id) {
     u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(lua_state) - 8);
-    void* target = FUN_7100314030(DAT_71052b5fd8, ctx + 0xc50);
+    void* target = aiGetTargetById_7100314030(DAT_71052b5fd8, ctx + 0xc50);
 
     if (*reinterpret_cast<u32*>(ctx + 0xc50) >= 0x10u)
         return false;
@@ -183,7 +183,7 @@ u64 FUN_7100369560_369560(void* lua_state, u32 cmd_id, f32 param3, f32 param4) {
     if (*reinterpret_cast<u32*>(obj) == *target_ptr || *target_ptr >= 0x10u)
         return 0;
 
-    void* target = FUN_7100314030(DAT_71052b5fd8, target_ptr);
+    void* target = aiGetTargetById_7100314030(DAT_71052b5fd8, target_ptr);
 
     if ((*reinterpret_cast<u32*>(reinterpret_cast<u8*>(target) + 0x54) & 0x84000000u) != 0x80000000u)
         return 0;
@@ -211,7 +211,7 @@ u64 FUN_7100369630_369630(void* lua_state, u64 motion_hash, f32 param3, f32 para
     if (*reinterpret_cast<u32*>(obj) == *target_ptr || *target_ptr >= 0x10u)
         return 0;
 
-    void* target = FUN_7100314030(DAT_71052b5fd8, target_ptr);
+    void* target = aiGetTargetById_7100314030(DAT_71052b5fd8, target_ptr);
 
     if ((*reinterpret_cast<u32*>(reinterpret_cast<u8*>(target) + 0x54) & 0x84000000u) != 0x80000000u)
         return 0;

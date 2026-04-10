@@ -2,7 +2,7 @@
 
 // L2C dispatch + small functions for Search/Reflect/Reflector modules
 
-extern "C" u64 FUN_71038f4000(u64, int, int);
+extern "C" u64 l2cParamResolve_71038f4000(u64, int, int);
 extern "C" u64 FUN_7103907950(u64, u64*);
 extern u32 DAT_7104861960[];
 
@@ -152,7 +152,7 @@ u64 FUN_71015cbe00(u64 p) {
 }
 
 // ============================================================
-// Pattern B: FUN_71038f4000 arg extract + optional redirect + float return
+// Pattern B: l2cParamResolve_71038f4000 arg extract + optional redirect + float return
 // Module at *(acc+0xF0), redirect at *(obj+0x110)
 // ============================================================
 
@@ -170,7 +170,7 @@ u64 FUN_710207bbe0(u64 L) {
     u64 arg1;
 
     if (argc >= 1) {
-        arg1 = FUN_71038f4000(L, 1, 0);
+        arg1 = l2cParamResolve_71038f4000(L, 1, 0);
         if (argc != 1) goto resolve;
         top = *(u64*)(L + 0x10);
         goto adjust;
@@ -233,7 +233,7 @@ u64 FUN_710207be00(u64 L) {
     u64 arg1;
 
     if (argc >= 1) {
-        arg1 = FUN_71038f4000(L, 1, 0);
+        arg1 = l2cParamResolve_71038f4000(L, 1, 0);
         if (argc != 1) goto resolve;
         top = *(u64*)(L + 0x10);
         goto adjust;

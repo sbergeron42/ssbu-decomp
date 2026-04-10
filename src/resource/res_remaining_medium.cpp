@@ -8,7 +8,7 @@
 
 // Memory management
 extern "C" void* je_aligned_alloc(unsigned long, unsigned long);
-extern "C" void FUN_710392e590(void*);  // je_free
+extern "C" void jeFree_710392e590(void*);  // je_free
 extern "C" void* memset(void*, int, unsigned long);
 extern "C" void* memcpy(void*, const void*, unsigned long);
 
@@ -312,7 +312,7 @@ do_alloc:;
                         mgr->blocks_end = scan + 1;
                         mgr->blocks_capacity = (phx::PoolBlock**)((u64)new_buf + new_cap * 8);
                         if (old_start != nullptr) {
-                            FUN_710392e590(old_start);
+                            jeFree_710392e590(old_start);
                         }
                         freelist = new_block->freelist_head;
                         goto check_freelist;
@@ -329,7 +329,7 @@ null_alloc:;
                 mgr->blocks_end = scan + 1;
                 mgr->blocks_capacity = (phx::PoolBlock**)((u64)null_buf + new_cap * 8);
                 if (old_start != nullptr) {
-                    FUN_710392e590(old_start);
+                    jeFree_710392e590(old_start);
                 }
                 freelist = new_block->freelist_head;
             } else {
@@ -433,7 +433,7 @@ grow_alloc:;
         sched->work_end = dest + 1;
         sched->work_capacity = (phx::WorkEntry*)((u64)new_buf + new_cap * 0x20);
         if (old_start != nullptr) {
-            FUN_710392e590(old_start);
+            jeFree_710392e590(old_start);
         }
     }
 
@@ -529,7 +529,7 @@ void FUN_710354cc80_cc80(phx::SharedPtrListContainer* container) {
         }
 
         if (vec_end != nullptr) {
-            FUN_710392e590(vec_end);
+            jeFree_710392e590(vec_end);
         }
     }
 
@@ -551,7 +551,7 @@ void FUN_710354cc80_cc80(phx::SharedPtrListContainer* container) {
             phx::TaskNode* next_node = node->prev;
             shared_ptr_release(node->ctrl_block);
             if (node != nullptr) {
-                FUN_710392e590(node);
+                jeFree_710392e590(node);
             }
             node = next_node;
         }
@@ -645,7 +645,7 @@ alloc_ok:;
     }
 
     if (vec_end != 0) {
-        FUN_710392e590((void*)vec_end);
+        jeFree_710392e590((void*)vec_end);
     }
 }
 
@@ -810,9 +810,9 @@ void FUN_710354e180_e180(phx::HashVecContainer* container) {
                 if (free_hook != nullptr) {
                     FUN_71039c1400(owned);  // VirtualFreeHook
                 }
-                FUN_710392e590(owned);
+                jeFree_710392e590(owned);
             }
-            FUN_710392e590(node);
+            jeFree_710392e590(node);
             node = next;
         }
 
@@ -899,7 +899,7 @@ static void destroy_deque(phx::StdDeque8* deque) {
     u64 block_count;
     while (block_count = (u64)map_byte_size >> 3, 2 < block_count) {
         if (*map_cur != nullptr) {
-            FUN_710392e590(*map_cur);
+            jeFree_710392e590(*map_cur);
             map_cur = deque->map_start;
             map_end = deque->map_end;
         }
@@ -917,7 +917,7 @@ static void destroy_deque(phx::StdDeque8* deque) {
     if (map_cur != map_end) {
         do {
             if (*map_cur != nullptr) {
-                FUN_710392e590(*map_cur);
+                jeFree_710392e590(*map_cur);
             }
             map_cur++;
         } while (map_end != map_cur);
@@ -928,7 +928,7 @@ static void destroy_deque(phx::StdDeque8* deque) {
     }
 
     if (deque->map_alloc != nullptr) {
-        FUN_710392e590(deque->map_alloc);
+        jeFree_710392e590(deque->map_alloc);
     }
 }
 
@@ -968,7 +968,7 @@ void FUN_710354b800_b800(phx::StdDeque8* deques) {
         u64 block_count;
         while (block_count = (u64)map_byte_size >> 3, 2 < block_count) {
             if (*map_cur != nullptr) {
-                FUN_710392e590(*map_cur);
+                jeFree_710392e590(*map_cur);
                 map_cur = dq->map_start;
                 map_end = dq->map_end;
             }
@@ -985,7 +985,7 @@ void FUN_710354b800_b800(phx::StdDeque8* deques) {
 
         if (map_cur != map_end) {
             do {
-                if (*map_cur != nullptr) FUN_710392e590(*map_cur);
+                if (*map_cur != nullptr) jeFree_710392e590(*map_cur);
                 map_cur++;
             } while (map_end != map_cur);
             long end_val = (long)dq->map_end;
@@ -994,7 +994,7 @@ void FUN_710354b800_b800(phx::StdDeque8* deques) {
             }
         }
 
-        if (dq->map_alloc != nullptr) FUN_710392e590(dq->map_alloc);
+        if (dq->map_alloc != nullptr) jeFree_710392e590(dq->map_alloc);
     }
 
     // Deque 1 (at offset +0x00 from base = deques[0])
@@ -1025,7 +1025,7 @@ void FUN_710354b800_b800(phx::StdDeque8* deques) {
         u64 block_count;
         while (block_count = (u64)map_byte_size >> 3, 2 < block_count) {
             if (*map_cur != nullptr) {
-                FUN_710392e590(*map_cur);
+                jeFree_710392e590(*map_cur);
                 map_cur = dq->map_start;
                 map_end = dq->map_end;
             }
@@ -1047,7 +1047,7 @@ void FUN_710354b800_b800(phx::StdDeque8* deques) {
 skip_offset:
         if (map_cur != map_end) {
             do {
-                if (*map_cur != nullptr) FUN_710392e590(*map_cur);
+                if (*map_cur != nullptr) jeFree_710392e590(*map_cur);
                 map_cur++;
             } while (map_end != map_cur);
             long end_val = (long)dq->map_end;
@@ -1056,7 +1056,7 @@ skip_offset:
             }
         }
 
-        if (dq->map_alloc != nullptr) FUN_710392e590(dq->map_alloc);
+        if (dq->map_alloc != nullptr) jeFree_710392e590(dq->map_alloc);
     }
 }
 
@@ -1131,7 +1131,7 @@ void FUN_710354b4b0_b4b0(phx::FiberScheduler* sched) {
                 (u64)(back_idx + start_off & 0x1ff) * 8);
             if (fiber != nullptr) {
                 Fiber_dtor_353c210(fiber);
-                FUN_710392e590(fiber);
+                jeFree_710392e590(fiber);
                 deque_size = *deque_size_ptr;
                 start_off = sched->fiber_deque_start_offset;
                 back_idx = deque_size - 1;
@@ -1146,7 +1146,7 @@ void FUN_710354b4b0_b4b0(phx::FiberScheduler* sched) {
             if (0x3ff < (u64)((underflow - (long)start_off) + max_idx)) {
                 void** last_block = (void**)((long)*deque_map_end_ptr - 8);
                 if (*last_block != nullptr) {
-                    FUN_710392e590(*last_block);
+                    jeFree_710392e590(*last_block);
                     back_idx = *deque_size_ptr;
                     last_block = (void**)((long)*deque_map_end_ptr - 8);
                 }
@@ -1186,7 +1186,7 @@ void FUN_710354b4b0_b4b0(phx::FiberScheduler* sched) {
         u64 block_count;
         while (block_count = (u64)map_byte_size >> 3, 2 < block_count) {
             if (*map_cur != nullptr) {
-                FUN_710392e590(*map_cur);
+                jeFree_710392e590(*map_cur);
                 map_cur = sched->fiber_deque_map_start;
                 map_end = sched->fiber_deque_map_end;
             }
@@ -1208,7 +1208,7 @@ void FUN_710354b4b0_b4b0(phx::FiberScheduler* sched) {
 skip_set:
         if (map_cur != map_end) {
             do {
-                if (*map_cur != nullptr) FUN_710392e590(*map_cur);
+                if (*map_cur != nullptr) jeFree_710392e590(*map_cur);
                 map_cur++;
             } while (map_end != map_cur);
             long end_val = (long)sched->fiber_deque_map_end;
@@ -1217,17 +1217,17 @@ skip_set:
             }
         }
 
-        if (sched->fiber_deque_alloc != nullptr) FUN_710392e590(sched->fiber_deque_alloc);
+        if (sched->fiber_deque_alloc != nullptr) jeFree_710392e590(sched->fiber_deque_alloc);
     }
 
     // Free task vectors
     if (sched->task_vec_b_start != nullptr) {
         sched->task_vec_b_end = sched->task_vec_b_start;
-        FUN_710392e590(sched->task_vec_b_start);
+        jeFree_710392e590(sched->task_vec_b_start);
     }
     if (sched->task_vec_a_start != nullptr) {
         sched->task_vec_a_end = sched->task_vec_a_start;
-        FUN_710392e590(sched->task_vec_a_start);
+        jeFree_710392e590(sched->task_vec_a_start);
     }
 
     // Destroy mutex at +0xA0

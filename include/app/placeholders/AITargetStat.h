@@ -2,10 +2,10 @@
 
 #include "types.h"
 
-// AITargetStat — resolved target state from FUN_7100314030.
+// AITargetStat — resolved target state from aiGetTargetById_7100314030.
 // Contains status kind and flag fields used by check_target_stat_* functions.
 // [derived: all app::ai::check_target_stat_* resolve target via
-//  FUN_7100314030(FighterAIManager, ctx+0xc50) and read fields from the result]
+//  aiGetTargetById_7100314030(FighterAIManager, ctx+0xc50) and read fields from the result]
 struct AITargetStat {
     u8  unk_0x00[0x55];
     u8  final_flags;        // +0x55 [derived: check_target_stat_final checks (flags & 3) != 0;

@@ -10,13 +10,13 @@
 
 extern "C" {
     void FUN_71001af8a0(void *p);       // operator delete
-    void FUN_71001b4910(void *p);       // DeleteContent (container base dtor)
+    void stdFunctionCleanup_71001b4910(void *p);       // DeleteContent (container base dtor)
     void FUN_71001b1870(void *p);       // Free
     void FUN_71001d76e0(void *p);       // vector/container destructor
     void FUN_7101711810(void *p, void *root); // tree recursive destroy
     void FUN_7101713160(void *p, void *root); // tree recursive destroy variant
     void FUN_7101756f80(void *p);       // UI object cleanup
-    void FUN_710392e590(void *p);       // free_default
+    void jeFree_710392e590(void *p);       // free_default
     void FUN_71022b6f60(void *p);       // global resource release
     void FUN_71017e2ab0(void *p);       // linked list node recursive free
     void lock_71039c1410(void *p);      // mutex lock
@@ -49,12 +49,12 @@ void FUN_71017118d0(u64 *param_1)
 {
     param_1[0] = (u64)&DAT_710509c190;
     param_1[0x10] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[0x10]);
+    stdFunctionCleanup_71001b4910(&param_1[0x10]);
     FUN_7101711810(&param_1[0xc], (void *)param_1[0xd]);
     param_1[7] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[7]);
+    stdFunctionCleanup_71001b4910(&param_1[7]);
     param_1[2] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[2]);
+    stdFunctionCleanup_71001b4910(&param_1[2]);
 }
 
 // 0x7101711930  96B — D0 (deleting destructor)
@@ -62,12 +62,12 @@ void FUN_7101711930(u64 *param_1)
 {
     param_1[0] = (u64)&DAT_710509c190;
     param_1[0x10] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[0x10]);
+    stdFunctionCleanup_71001b4910(&param_1[0x10]);
     FUN_7101711810(&param_1[0xc], (void *)param_1[0xd]);
     param_1[7] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[7]);
+    stdFunctionCleanup_71001b4910(&param_1[7]);
     param_1[2] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[2]);
+    stdFunctionCleanup_71001b4910(&param_1[2]);
     FUN_71001af8a0(param_1);
 }
 
@@ -81,11 +81,11 @@ void FUN_7101711b30(u64 *param_1)
 {
     param_1[0] = (u64)&DAT_710509c230;
     param_1[0xe] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[0xe]);
+    stdFunctionCleanup_71001b4910(&param_1[0xe]);
     param_1[9] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[9]);
+    stdFunctionCleanup_71001b4910(&param_1[9]);
     param_1[4] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[4]);
+    stdFunctionCleanup_71001b4910(&param_1[4]);
 }
 
 // 0x7101711b80  96B — D0
@@ -93,11 +93,11 @@ void FUN_7101711b80(u64 *param_1)
 {
     param_1[0] = (u64)&DAT_710509c230;
     param_1[0xe] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[0xe]);
+    stdFunctionCleanup_71001b4910(&param_1[0xe]);
     param_1[9] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[9]);
+    stdFunctionCleanup_71001b4910(&param_1[9]);
     param_1[4] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[4]);
+    stdFunctionCleanup_71001b4910(&param_1[4]);
     FUN_71001af8a0(param_1);
 }
 
@@ -112,9 +112,9 @@ void FUN_7101711be0(u64 *param_1)
     param_1[0] = (u64)&DAT_710509c210;
     FUN_7101711810(&param_1[0xd], (void *)param_1[0xe]);
     param_1[7] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[7]);
+    stdFunctionCleanup_71001b4910(&param_1[7]);
     param_1[2] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[2]);
+    stdFunctionCleanup_71001b4910(&param_1[2]);
 }
 
 // 0x7101711c30  96B — D0
@@ -123,9 +123,9 @@ void FUN_7101711c30(u64 *param_1)
     param_1[0] = (u64)&DAT_710509c210;
     FUN_7101711810(&param_1[0xd], (void *)param_1[0xe]);
     param_1[7] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[7]);
+    stdFunctionCleanup_71001b4910(&param_1[7]);
     param_1[2] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[2]);
+    stdFunctionCleanup_71001b4910(&param_1[2]);
     FUN_71001af8a0(param_1);
 }
 
@@ -135,9 +135,9 @@ void FUN_7101711c90(u64 *param_1)
     param_1[0] = (u64)&DAT_710509c210;
     FUN_7101711810(&param_1[0xd], (void *)param_1[0xe]);
     param_1[7] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[7]);
+    stdFunctionCleanup_71001b4910(&param_1[7]);
     param_1[2] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[2]);
+    stdFunctionCleanup_71001b4910(&param_1[2]);
     FUN_71001af8a0(param_1);
 }
 
@@ -151,9 +151,9 @@ void FUN_71017123a0(u64 *param_1)
 {
     param_1[0] = (u64)&DAT_710509c2e8;
     param_1[7] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[7]);
+    stdFunctionCleanup_71001b4910(&param_1[7]);
     param_1[2] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[2]);
+    stdFunctionCleanup_71001b4910(&param_1[2]);
 }
 
 // 0x71017123e0  80B — D0
@@ -161,9 +161,9 @@ void FUN_71017123e0(u64 *param_1)
 {
     param_1[0] = (u64)&DAT_710509c2e8;
     param_1[7] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[7]);
+    stdFunctionCleanup_71001b4910(&param_1[7]);
     param_1[2] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[2]);
+    stdFunctionCleanup_71001b4910(&param_1[2]);
     FUN_71001af8a0(param_1);
 }
 
@@ -177,13 +177,13 @@ void FUN_7101712e60(u64 *param_1)
 {
     param_1[0] = (u64)&DAT_710509c3e8;
     param_1[0x11] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[0x11]);
+    stdFunctionCleanup_71001b4910(&param_1[0x11]);
     param_1[0xc] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[0xc]);
+    stdFunctionCleanup_71001b4910(&param_1[0xc]);
     param_1[7] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[7]);
+    stdFunctionCleanup_71001b4910(&param_1[7]);
     param_1[2] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[2]);
+    stdFunctionCleanup_71001b4910(&param_1[2]);
 }
 
 // 0x7101712ec0  96B — D0
@@ -191,13 +191,13 @@ void FUN_7101712ec0(u64 *param_1)
 {
     param_1[0] = (u64)&DAT_710509c3e8;
     param_1[0x11] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[0x11]);
+    stdFunctionCleanup_71001b4910(&param_1[0x11]);
     param_1[0xc] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[0xc]);
+    stdFunctionCleanup_71001b4910(&param_1[0xc]);
     param_1[7] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[7]);
+    stdFunctionCleanup_71001b4910(&param_1[7]);
     param_1[2] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[2]);
+    stdFunctionCleanup_71001b4910(&param_1[2]);
     FUN_71001af8a0(param_1);
 }
 
@@ -212,7 +212,7 @@ void FUN_7101714740(u64 *param_1)
     param_1[0] = (u64)&DAT_710509c638;
     FUN_7101713160(&param_1[0xf], (void *)param_1[0x10]);
     param_1[0xa] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[0xa]);
+    stdFunctionCleanup_71001b4910(&param_1[0xa]);
     if (param_1[2] != 0) {
         param_1[3] = param_1[2];
         FUN_71001b1870((void *)param_1[2]);
@@ -225,7 +225,7 @@ void FUN_71017147a0(u64 *param_1)
     param_1[0] = (u64)&DAT_710509c638;
     FUN_7101713160(&param_1[0xf], (void *)param_1[0x10]);
     param_1[0xa] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[0xa]);
+    stdFunctionCleanup_71001b4910(&param_1[0xa]);
     if (param_1[2] != 0) {
         param_1[3] = param_1[2];
         FUN_71001b1870((void *)param_1[2]);
@@ -243,11 +243,11 @@ void FUN_7101717d40(u64 *param_1)
 {
     param_1[0] = (u64)&DAT_710509c818;
     param_1[0xc] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[0xc]);
+    stdFunctionCleanup_71001b4910(&param_1[0xc]);
     param_1[7] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[7]);
+    stdFunctionCleanup_71001b4910(&param_1[7]);
     param_1[2] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[2]);
+    stdFunctionCleanup_71001b4910(&param_1[2]);
 }
 
 // 0x7101717d90  96B — D0
@@ -255,11 +255,11 @@ void FUN_7101717d90(u64 *param_1)
 {
     param_1[0] = (u64)&DAT_710509c818;
     param_1[0xc] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[0xc]);
+    stdFunctionCleanup_71001b4910(&param_1[0xc]);
     param_1[7] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[7]);
+    stdFunctionCleanup_71001b4910(&param_1[7]);
     param_1[2] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[2]);
+    stdFunctionCleanup_71001b4910(&param_1[2]);
     FUN_71001af8a0(param_1);
 }
 
@@ -276,7 +276,7 @@ void FUN_710171df30(u64 *param_1)
     FUN_71001d76e0(&param_1[0xe]);
     FUN_71001d76e0(&param_1[7]);
     param_1[2] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[2]);
+    stdFunctionCleanup_71001b4910(&param_1[2]);
 }
 
 // 0x710171df90  96B — D0
@@ -287,7 +287,7 @@ void FUN_710171df90(u64 *param_1)
     FUN_71001d76e0(&param_1[0xe]);
     FUN_71001d76e0(&param_1[7]);
     param_1[2] = (u64)&DAT_710509bc08;
-    FUN_71001b4910(&param_1[2]);
+    stdFunctionCleanup_71001b4910(&param_1[2]);
     FUN_71001af8a0(param_1);
 }
 
@@ -308,9 +308,9 @@ void FUN_7101758ba0(u64 *param_1)
     param_1[3] = 0;
     if (old != 0) {
         FUN_7101756f80(*(void **)((u8 *)old + 0x600028));
-        FUN_710392e590((void *)old);
+        jeFree_710392e590((void *)old);
     }
-    FUN_710392e590(param_1);
+    jeFree_710392e590(param_1);
 }
 
 // ===========================================================================
@@ -343,5 +343,5 @@ void FUN_71017e48e0(u64 *param_1)
     if ((param_1[5] & 0xffffffffffULL) != 0) {
         FUN_71022b6f60(*(void **)DAT_7105326cd0);
     }
-    FUN_710392e590(param_1);
+    jeFree_710392e590(param_1);
 }

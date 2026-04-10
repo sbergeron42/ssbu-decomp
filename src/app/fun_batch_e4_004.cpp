@@ -4,7 +4,7 @@
 #include "types.h"
 
 extern "C" {
-void FUN_710392e590(void*);   // je_free
+void jeFree_710392e590(void*);   // je_free
 void FUN_71038f1750(void*);   // sub-object cleanup
 void FUN_71039c1400(void*);   // nu::VirtualFreeHook dispatch
 }
@@ -54,7 +54,7 @@ void FUN_71036a1470(u64* param_1)
         if (PTR_VirtualFreeHook_71052a7a70 != nullptr) {
             FUN_71039c1400(ptr);
         }
-        FUN_710392e590(ptr);
+        jeFree_710392e590(ptr);
     }
 }
 
@@ -69,7 +69,7 @@ void FUN_71036a14d0(u64* param_1)
         if (PTR_VirtualFreeHook_71052a7a70 != nullptr) {
             FUN_71039c1400(ptr);
         }
-        FUN_710392e590(ptr);
+        jeFree_710392e590(ptr);
     }
-    FUN_710392e590(param_1);
+    jeFree_710392e590(param_1);
 }

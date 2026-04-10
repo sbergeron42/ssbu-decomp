@@ -25,7 +25,7 @@ extern "C" __attribute__((visibility("hidden"))) char DAT_710523ba90;
 extern long    FUN_7100239230(void*);
 extern void    FUN_71002430f0(void*, long, long, long);
 extern void    FUN_71037378c0(long*);
-extern void    FUN_710392e590(void*);
+extern void    jeFree_710392e590(void*);
 extern void    FUN_71000001c0(void*, void*, void*);
 extern void    FUN_710055bc00(void*);
 extern void    FUN_710059c110(void*);
@@ -43,14 +43,14 @@ void FUN_710046c0d0(long* param_1)
     if (node) {
         do {
             long next = *node;
-            FUN_710392e590(node);
+            jeFree_710392e590(node);
             node = (long*)next;
         } while (node);
     }
     long* item = (long*)param_1[2];
     param_1[2] = 0;
     if (item) {
-        FUN_710392e590(item);
+        jeFree_710392e590(item);
     }
 }
 
@@ -62,14 +62,14 @@ void FUN_71004e03e0(long* param_1)
     if (node) {
         do {
             long next = *node;
-            FUN_710392e590(node);
+            jeFree_710392e590(node);
             node = (long*)next;
         } while (node);
     }
     long* item = (long*)param_1[2];
     param_1[2] = 0;
     if (item) {
-        FUN_710392e590(item);
+        jeFree_710392e590(item);
     }
 }
 
@@ -81,9 +81,9 @@ void FUN_710055bda0(long* param_1)
     param_1[1] = 0;
     if (item) {
         FUN_710055bc00(item);
-        FUN_710392e590(item);
+        jeFree_710392e590(item);
     }
-    FUN_710392e590(param_1);
+    jeFree_710392e590(param_1);
 }
 
 // 0x710059c0c0 — destructor: vtable via adrp+add, zero field, free child (80 bytes)
@@ -94,9 +94,9 @@ void FUN_710059c0c0(long* param_1)
     *(char**)(param_1 + 0x17) = nullptr;
     if (item) {
         FUN_710059c110(item);
-        FUN_710392e590(item);
+        jeFree_710392e590(item);
     }
-    FUN_710392e590(param_1);
+    jeFree_710392e590(param_1);
 }
 
 // 0x71006f1860 — destructor: same linked-list pattern, offset 0x70 (96 bytes)
@@ -107,14 +107,14 @@ void FUN_71006f1860(long* param_1)
     if (node) {
         do {
             long next = *node;
-            FUN_710392e590(node);
+            jeFree_710392e590(node);
             node = (long*)next;
         } while (node);
     }
     long* item = (long*)*(long**)((char*)param_1 + 0x60);
     *(long**)((char*)param_1 + 0x60) = nullptr;
     if (item) {
-        FUN_710392e590(item);
+        jeFree_710392e590(item);
     }
 }
 
@@ -126,8 +126,8 @@ void FUN_710077d0b0(long* param_1)
     param_1[1] = 0;
     if (item) {
         FUN_710077e1c0(item);
-        FUN_710392e590(item);
+        jeFree_710392e590(item);
     }
-    FUN_710392e590(param_1);
+    jeFree_710392e590(param_1);
 }
 

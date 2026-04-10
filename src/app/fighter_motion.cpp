@@ -1219,7 +1219,7 @@ u16 flag(u8* L, u8* weapon) {
 // External helpers:
 //   FUN_710033ba50(u32 fighter_kind) — returns attack info table pointer
 //   FUN_71002f2820(u32 cmd_id, u32 fighter_kind) — remaps CmdId to motion status
-//   FUN_7100314030(void* world_ptr, void* target_slot) — resolves target entry
+//   aiGetTargetById_7100314030(void* world_ptr, void* target_slot) — resolves target entry
 //   FUN_710033c360(void* cmd_table, u32 cmd_id) — looks up attack entry by CmdId
 //   FUN_710033c510(u32 fighter_kind, u64 motion_hash) — looks up attack entry by motion hash
 //   FUN_710033e5c0(void* cmd_table, u64 motion_hash) — motion hash to CmdId
@@ -1227,7 +1227,7 @@ u16 flag(u8* L, u8* weapon) {
 
 extern "C" void* FUN_710033ba50(u32);
 extern "C" s32 FUN_71002f2820(u32, u32);
-extern "C" void* FUN_7100314030(void*, void*);
+extern "C" void* aiGetTargetById_7100314030(void*, void*);
 extern "C" void* FUN_710033c360(void*, u32);
 extern "C" void* FUN_710033c510(u32, u64);
 extern "C" u32 FUN_710033e5c0(void*, u64);
@@ -1264,12 +1264,12 @@ static inline s64 attack_info_index(s32 status) {
 // ---------------------------------------------------------------------------
 // 0x7100367020  40B  target_motion_kind
 // Returns Hash40 motion kind of current AI target.
-// [derived: resolves target via FUN_7100314030(*DAT_71052b5fd8, ctx+0xc50),
+// [derived: resolves target via aiGetTargetById_7100314030(*DAT_71052b5fd8, ctx+0xc50),
 //  reads u64 at target+0x38 — motion kind field in target info struct]
 // ---------------------------------------------------------------------------
 u64 target_motion_kind(void* L) {
     FighterAI* ai = *reinterpret_cast<FighterAI**>(reinterpret_cast<u8*>(L) - 8);
-    u8* target = reinterpret_cast<u8*>(FUN_7100314030(DAT_71052b5fd8, &ai->target_entry_id));
+    u8* target = reinterpret_cast<u8*>(aiGetTargetById_7100314030(DAT_71052b5fd8, &ai->target_entry_id));
     return *reinterpret_cast<u64*>(target + 0x38);
 }
 
@@ -1280,7 +1280,7 @@ u64 target_motion_kind(void* L) {
 // ---------------------------------------------------------------------------
 u32 target_motion_frame(void* L) {
     FighterAI* ai = *reinterpret_cast<FighterAI**>(reinterpret_cast<u8*>(L) - 8);
-    u8* target = reinterpret_cast<u8*>(FUN_7100314030(DAT_71052b5fd8, &ai->target_entry_id));
+    u8* target = reinterpret_cast<u8*>(aiGetTargetById_7100314030(DAT_71052b5fd8, &ai->target_entry_id));
     return *reinterpret_cast<u32*>(target + 0x48);
 }
 
@@ -1385,12 +1385,12 @@ u32 attack_info_distance(void* L, u32 cmd_id) {
 // ---------------------------------------------------------------------------
 // 0x7100369b00  108B  target_attack_start_frame
 // AI: resolves target, looks up attack entry by CmdId, returns start frame.
-// [derived: FUN_7100314030 for target, validates target_id < 16 and not self,
+// [derived: aiGetTargetById_7100314030 for target, validates target_id < 16 and not self,
 //  FUN_710033c360 for attack lookup on target, reads u32 at entry+8]
 // ---------------------------------------------------------------------------
 u32 target_attack_start_frame(void* L, u32 cmd_id) {
     FighterAI* ai = *reinterpret_cast<FighterAI**>(reinterpret_cast<u8*>(L) - 8);
-    u8* target = reinterpret_cast<u8*>(FUN_7100314030(DAT_71052b5fd8, &ai->target_entry_id));
+    u8* target = reinterpret_cast<u8*>(aiGetTargetById_7100314030(DAT_71052b5fd8, &ai->target_entry_id));
     s32 target_id = ai->target_entry_id;
 
     if (target_id < 0 || (u32)target_id == ai->parent_entry_id || (u32)target_id > 0xf)
@@ -1443,12 +1443,12 @@ s32 attack_cancel_frame(void* L, u32 cmd_id) {
 // ---------------------------------------------------------------------------
 // 0x710036a300  92B  target_motion_to_cmd_id
 // AI: resolves target, calls motion_to_cmd_id on target's cmd table.
-// [derived: validates target_id < 16, resolves target via FUN_7100314030,
+// [derived: validates target_id < 16, resolves target via aiGetTargetById_7100314030,
 //  tail-calls FUN_710033e5c0(target_obj+0x988, motion_hash)]
 // ---------------------------------------------------------------------------
 u64 target_motion_to_cmd_id(void* L, u64 motion_hash) {
     FighterAI* ai = *reinterpret_cast<FighterAI**>(reinterpret_cast<u8*>(L) - 8);
-    u8* target = reinterpret_cast<u8*>(FUN_7100314030(DAT_71052b5fd8, &ai->target_entry_id));
+    u8* target = reinterpret_cast<u8*>(aiGetTargetById_7100314030(DAT_71052b5fd8, &ai->target_entry_id));
 
     if ((u32)ai->target_entry_id >= 0x10u)
         return 0;
@@ -1495,12 +1495,12 @@ u64 current_attack_combo_next_motion(void* L) {
 // ---------------------------------------------------------------------------
 // 0x710036a140  212B  target_attack_info_needs_turn
 // AI: like attack_info_needs_turn but resolves target first.
-// [derived: validates target_id < 16, resolves via FUN_7100314030,
+// [derived: validates target_id < 16, resolves via aiGetTargetById_7100314030,
 //  then same attack_info_index + table read at +0x1d]
 // ---------------------------------------------------------------------------
 bool target_attack_info_needs_turn(void* L, u32 cmd_id) {
     FighterAI* ai = *reinterpret_cast<FighterAI**>(reinterpret_cast<u8*>(L) - 8);
-    u8* target = reinterpret_cast<u8*>(FUN_7100314030(DAT_71052b5fd8, &ai->target_entry_id));
+    u8* target = reinterpret_cast<u8*>(aiGetTargetById_7100314030(DAT_71052b5fd8, &ai->target_entry_id));
 
     if ((u32)ai->target_entry_id >= 0x10u)
         return false;
@@ -1529,7 +1529,7 @@ u64 target_current_attack_combo_next_motion(void* L) {
     FighterAI* ai = *reinterpret_cast<FighterAI**>(reinterpret_cast<u8*>(L) - 8);
     u64 result = 0x7fb997a80ULL;  // invalid/none
 
-    u8* target = reinterpret_cast<u8*>(FUN_7100314030(DAT_71052b5fd8, &ai->target_entry_id));
+    u8* target = reinterpret_cast<u8*>(aiGetTargetById_7100314030(DAT_71052b5fd8, &ai->target_entry_id));
     s32 target_id = ai->target_entry_id;
 
     if (target_id >= 0 && (u32)target_id != ai->parent_entry_id && (u32)target_id < 0x10) {
@@ -1563,7 +1563,7 @@ u64 target_current_attack_combo_next_motion(void* L) {
 // ---------------------------------------------------------------------------
 u32 target_attack_start_frame_from_motion(void* L, u64 motion_hash) {
     FighterAI* ai = *reinterpret_cast<FighterAI**>(reinterpret_cast<u8*>(L) - 8);
-    u8* target = reinterpret_cast<u8*>(FUN_7100314030(DAT_71052b5fd8, &ai->target_entry_id));
+    u8* target = reinterpret_cast<u8*>(aiGetTargetById_7100314030(DAT_71052b5fd8, &ai->target_entry_id));
     s32 target_id = ai->target_entry_id;
 
     if (target_id < 0 || (u32)target_id == ai->parent_entry_id || (u32)target_id > 0xf)

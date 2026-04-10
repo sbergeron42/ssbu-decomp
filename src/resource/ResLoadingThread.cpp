@@ -54,7 +54,7 @@ extern "C" void FUN_71039c7680(s64*, u64);  // nn::fs::GetFileSize(long*, FileHa
 
 // Memory
 extern "C" void* je_aligned_alloc(unsigned long, unsigned long);
-extern "C" void FUN_710392e590(void*);  // je_free
+extern "C" void jeFree_710392e590(void*);  // je_free
 extern "C" void* memcpy(void*, const void*, u64);
 extern "C" void* memset(void*, int, u64);
 extern "C" void* memmove(void*, const void*, u64);
@@ -204,7 +204,7 @@ insert:
         *end = ins + 1;
         *cap = (u32*)((u8*)new_buf + new_cap * 4);
         if (old_start != nullptr) {
-            FUN_710392e590(old_start);
+            jeFree_710392e590(old_start);
         }
     }
 }
@@ -901,7 +901,7 @@ void ResLoadingThread(ResServiceNX* service) {
                                                     } else if (alloc2 != nullptr) {
                                                         ((void(*)())(*(u64*)(*alloc2 + 0x28)))();
                                                     }
-                                                    FUN_710392e590(ptr);
+                                                    jeFree_710392e590(ptr);
                                                 }
                                             }
                                         }
@@ -998,7 +998,7 @@ void ResLoadingThread(ResServiceNX* service) {
             // Free directory index buffer
             if (dir_buf != nullptr) {
                 dir_buf_end = dir_buf;
-                FUN_710392e590(dir_buf);
+                jeFree_710392e590(dir_buf);
             }
             // Check for file read errors
             if (*(u8*)((u8*)service + 0x248)) {
@@ -1065,10 +1065,10 @@ void free_decomp_context(void** state) {
         void* sub0 = ((void**)ctx)[0];
         if (sub0 != nullptr) {
             void* buf_a8 = *(void**)((u8*)sub0 + 168);  // +0xA8
-            if (buf_a8 != nullptr) FUN_710392e590(buf_a8);
+            if (buf_a8 != nullptr) jeFree_710392e590(buf_a8);
             void* buf_58 = *(void**)((u8*)sub0 + 88);   // +0x58
-            if (buf_58 != nullptr) FUN_710392e590(buf_58);
-            FUN_710392e590(sub0);
+            if (buf_58 != nullptr) jeFree_710392e590(buf_58);
+            jeFree_710392e590(sub0);
         }
         // [derived: store null BEFORE loading next sub-context, matching binary at 0x3547264]
         ((void**)ctx)[0] = nullptr;
@@ -1077,16 +1077,16 @@ void free_decomp_context(void** state) {
         void* sub1 = ((void**)ctx)[1];
         if (sub1 != nullptr) {
             void* buf_40 = *(void**)((u8*)sub1 + 64);   // +0x40
-            if (buf_40 != nullptr) FUN_710392e590(buf_40);
+            if (buf_40 != nullptr) jeFree_710392e590(buf_40);
             void* buf_58b = *(void**)((u8*)sub1 + 88);  // +0x58
-            if (buf_58b != nullptr) FUN_710392e590(buf_58b);
-            FUN_710392e590(sub1);
+            if (buf_58b != nullptr) jeFree_710392e590(buf_58b);
+            jeFree_710392e590(sub1);
             // [derived: null store inside if-block — target skips it when sub1 was already null]
             ((void**)ctx)[1] = nullptr;
         }
 
         // Free container
-        FUN_710392e590(ctx);
+        jeFree_710392e590(ctx);
     }
     *state = nullptr;
 }
@@ -1110,7 +1110,7 @@ void cleanup_decomp_state(void** state) {
         u64 ext_flag = *(u64*)((u8*)sub0 + 0x1A8);
         if (ext_flag != 0) {
             // Externally managed — just free container and return
-            FUN_710392e590(ctx);
+            jeFree_710392e590(ctx);
             *state = nullptr;
             return;
         }
@@ -1122,7 +1122,7 @@ void cleanup_decomp_state(void** state) {
             void* dealloc_arg = *(void**)((u8*)sub0 + 0x1A0);
             dealloc(dealloc_arg, sub0);
         } else {
-            FUN_710392e590(sub0);
+            jeFree_710392e590(sub0);
         }
     }
     ((void**)ctx)[0] = nullptr;
@@ -1134,7 +1134,7 @@ void cleanup_decomp_state(void** state) {
     }
 
     // Free container
-    FUN_710392e590(ctx);
+    jeFree_710392e590(ctx);
     *state = nullptr;
 }
 
@@ -1147,7 +1147,7 @@ void cleanup_decomp_state(void** state) {
 // ============================================================================
 void zstd_custom_free(void* /*opaque*/, void* ptr) {
     if (ptr != nullptr) {
-        FUN_710392e590(ptr);
+        jeFree_710392e590(ptr);
     }
 }
 
@@ -1401,7 +1401,7 @@ next_stage:
 
         dctx->maxBufferSize = 0;
         if (dctx->tmpIn != nullptr) {
-            FUN_710392e590(dctx->tmpIn);
+            jeFree_710392e590(dctx->tmpIn);
             blockSize = dctx->maxBlockSize;
         }
 
@@ -1429,7 +1429,7 @@ next_stage:
         }
 
         if (dctx->tmpOutBuffer != nullptr) {
-            FUN_710392e590(dctx->tmpOutBuffer);
+            jeFree_710392e590(dctx->tmpOutBuffer);
         }
 
         {

@@ -17,7 +17,7 @@ extern "C" void FUN_71039c07b0(u32, u64);    // nn::os::SetTlsValue
 
 // Memory management
 extern "C" void* je_aligned_alloc(unsigned long, unsigned long);
-extern "C" void FUN_710392e590(void*);       // je_free
+extern "C" void jeFree_710392e590(void*);       // je_free
 extern "C" int FUN_710392dc40(void** out, u32 alignment, u64 size);  // je_memalign
 
 // Hook notifications
@@ -62,7 +62,7 @@ void Fiber_finalize_353c350(Fiber* self) {
     if (PTR_VirtualFreeHook_71052a7a70 != nullptr) {
         FUN_71039c1400(stack);            // nu::VirtualFreeHook
     }
-    FUN_710392e590(stack);                // je_free(stack)
+    jeFree_710392e590(stack);                // je_free(stack)
     // Destroy std::function: vtable dispatch on func_impl
     // [derived: +0x70 = SBO inline buffer, +0x90 = __f_ pointer]
     // [derived: vtable[4] (+0x20) = destroy_inline, vtable[5] (+0x28) = destroy_heap]
@@ -75,7 +75,7 @@ void Fiber_finalize_353c350(Fiber* self) {
         StdFuncDtor fn = (*(StdFuncDtor**)fi)[5];
         fn(fi);
     }
-    FUN_710392e590(impl);                 // je_free(impl)
+    jeFree_710392e590(impl);                 // je_free(impl)
 }
 
 // ============================================================================
@@ -103,7 +103,7 @@ void Fiber_dtor_353c210(Fiber* self) {
         if (PTR_VirtualFreeHook_71052a7a70 != nullptr) {
             FUN_71039c1400(stack);
         }
-        FUN_710392e590(stack);
+        jeFree_710392e590(stack);
         typedef void (*StdFuncDtor)(void*);
         void* fi = impl->func_impl;
         if ((void*)impl->func_buf == fi) {
@@ -113,7 +113,7 @@ void Fiber_dtor_353c210(Fiber* self) {
             StdFuncDtor fn = (*(StdFuncDtor**)fi)[5];
             fn(fi);
         }
-        FUN_710392e590(impl);
+        jeFree_710392e590(impl);
         // Re-read after cleanup (compiler artifact from inlined finalize)
         impl = self->impl;
         self->impl = nullptr;
@@ -128,7 +128,7 @@ void Fiber_dtor_353c210(Fiber* self) {
     if (PTR_VirtualFreeHook_71052a7a70 != nullptr) {
         FUN_71039c1400(stack2);
     }
-    FUN_710392e590(stack2);
+    jeFree_710392e590(stack2);
     {
         typedef void (*StdFuncDtor)(void*);
         void* fi2 = impl->func_impl;
@@ -140,7 +140,7 @@ void Fiber_dtor_353c210(Fiber* self) {
             fn(fi2);
         }
     }
-    FUN_710392e590(impl);
+    jeFree_710392e590(impl);
 }
 
 // ============================================================================

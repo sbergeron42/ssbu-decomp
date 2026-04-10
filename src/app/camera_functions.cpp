@@ -171,7 +171,7 @@ namespace lib { extern "C" void* Singleton_app_FighterManager_instance_ asm("_ZN
 
 // External functions
 extern "C" void FUN_71005162f0(void*, u32, u64);
-extern "C" void FUN_710392e590(void*);   // operator delete / free
+extern "C" void jeFree_710392e590(void*);   // operator delete / free
 
 // ---- Stage query leaf functions (tail-call through stage_info vtable) ----
 
@@ -290,19 +290,19 @@ extern "C" void FUN_71028350b0(StageEnd* self) {
     // Release owned ptr at +0x918 [derived: StageEnd field]
     void* p3 = self->owned_0x918;
     self->owned_0x918 = nullptr;
-    if (p3 != nullptr) FUN_710392e590(p3);
+    if (p3 != nullptr) jeFree_710392e590(p3);
 
     // Release owned ptr at +0x910 [derived: StageEnd field]
     void* p2 = self->owned_0x910;
     self->owned_0x910 = nullptr;
-    if (p2 != nullptr) FUN_710392e590(p2);
+    if (p2 != nullptr) jeFree_710392e590(p2);
 
     // Release owned object at +0x908 [derived: cleanup via FUN_7102837e00]
     void* p1 = self->owned_0x908;
     self->owned_0x908 = nullptr;
     if (p1 != nullptr) {
         FUN_7102837e00(p1);
-        FUN_710392e590(p1);
+        jeFree_710392e590(p1);
     }
 
     FUN_7102834b90(self->embedded_sub_0x778);  // Embedded sub-object cleanup
@@ -1330,8 +1330,8 @@ extern "C" void revert_camera_7101654b60(void) {
 
 // ---- Stage destructors ----
 
-// FUN_71025d7310 [derived: StageBase::~StageBase common destructor chain, tail-called by all stage dtors]
-extern "C" void FUN_71025d7310(StageBase*);
+// StageBase_dtor_71025d7310 [derived: StageBase::~StageBase common destructor chain, tail-called by all stage dtors]
+extern "C" void StageBase_dtor_71025d7310(StageBase*);
 
 // ---- ~StageNintendogs (0x7102ccf720, 136 bytes) ----
 // Sets vtable, releases sub-object at +0x738 (3 inner ptrs at +0x790, +0x788, +0x780),
@@ -1364,13 +1364,13 @@ extern "C" void FUN_7102ccf720(StageBase* param_1)
         u64 p780 = *(u64*)(sub + 0x780);
         *(u64*)(sub + 0x780) = 0;
         if (p780 != 0) {
-            FUN_710392e590((void*)p780);
+            jeFree_710392e590((void*)p780);
         }
         // Cleanup sub-object
         FUN_7102ccf300(sub + 0x10);
-        FUN_710392e590((void*)sub);
+        jeFree_710392e590((void*)sub);
     }
-    FUN_71025d7310(param_1);
+    StageBase_dtor_71025d7310(param_1);
 }
 
 // ---- ~StageFlatZoneX (0x71029240a0, 176 bytes) ----
@@ -1406,7 +1406,7 @@ extern "C" void FUN_71029240a0(StageFlatZoneX* self)
                 u64 elem = *prev;
                 if (elem != 0) {
                     iter[-2] = elem;
-                    FUN_710392e590((void*)elem);
+                    jeFree_710392e590((void*)elem);
                 }
                 iter = prev;
             } while (vec_data != iter);
@@ -1414,7 +1414,7 @@ extern "C" void FUN_71029240a0(StageFlatZoneX* self)
             self->vec_end_0x858 = (void*)vec_data;
         }
         if (vec_end != nullptr) {
-            FUN_710392e590(vec_end);
+            jeFree_710392e590(vec_end);
         }
     }
 
@@ -1422,10 +1422,10 @@ extern "C" void FUN_71029240a0(StageFlatZoneX* self)
     void* alloc = self->alloc_0x830;
     if (alloc != nullptr) {
         self->end_0x838 = alloc;
-        FUN_710392e590(alloc);
+        jeFree_710392e590(alloc);
     }
 
-    FUN_71025d7310(self);
+    StageBase_dtor_71025d7310(self);
 }
 
 // ---- ~StageStreetPass (0x7102f33f20, 192 bytes) ----
@@ -1461,7 +1461,7 @@ extern "C" void FUN_7102f33f20(StageStreetPass* self)
                 u64 elem = *prev;
                 if (elem != 0) {
                     iter[-2] = elem;
-                    FUN_710392e590((void*)elem);
+                    jeFree_710392e590((void*)elem);
                 }
                 iter = prev;
             } while (vec_data != iter);
@@ -1469,7 +1469,7 @@ extern "C" void FUN_7102f33f20(StageStreetPass* self)
             self->vec_end_0x910 = (void*)vec_data;
         }
         if (vec_end != nullptr) {
-            FUN_710392e590(vec_end);
+            jeFree_710392e590(vec_end);
         }
     }
 
@@ -1477,17 +1477,17 @@ extern "C" void FUN_7102f33f20(StageStreetPass* self)
     void* alloc1 = self->alloc_0x8b8;
     if (alloc1 != nullptr) {
         self->end_0x8c0 = alloc1;
-        FUN_710392e590(alloc1);
+        jeFree_710392e590(alloc1);
     }
 
     // Free allocation at +0x898 [derived: StageStreetPass field]
     void* alloc2 = self->alloc_0x898;
     if (alloc2 != nullptr) {
         self->end_0x8a0 = alloc2;
-        FUN_710392e590(alloc2);
+        jeFree_710392e590(alloc2);
     }
 
-    FUN_71025d7310(self);
+    StageBase_dtor_71025d7310(self);
 }
 
 // ---- ~StageDuckHunt (0x7102826d30, 212 bytes) ----
@@ -1506,17 +1506,17 @@ extern "C" void FUN_7102826d30(StageDuckHunt* self)
     self->vtable = reinterpret_cast<void**>(&PTR_LAB_71050e6d60);
 
     // Free simple ptrs at +0x870, +0x868, +0x860
-    if (self->owned_0x870 != nullptr) FUN_710392e590(self->owned_0x870);
-    if (self->owned_0x868 != nullptr) FUN_710392e590(self->owned_0x868);
-    if (self->owned_0x860 != nullptr) FUN_710392e590(self->owned_0x860);
+    if (self->owned_0x870 != nullptr) jeFree_710392e590(self->owned_0x870);
+    if (self->owned_0x868 != nullptr) jeFree_710392e590(self->owned_0x868);
+    if (self->owned_0x860 != nullptr) jeFree_710392e590(self->owned_0x860);
 
     // Complex sub-object at +0x858 (has inner allocs at +0x40, +0x58, +0x70)
     DuckHuntSubObj* sub = self->complex_sub_0x858;
     if (sub != nullptr) {
-        if (sub->inner_alloc_0x70 != nullptr) FUN_710392e590(sub->inner_alloc_0x70);
-        if (sub->inner_alloc_0x58 != nullptr) FUN_710392e590(sub->inner_alloc_0x58);
-        if (sub->inner_alloc_0x40 != nullptr) FUN_710392e590(sub->inner_alloc_0x40);
-        FUN_710392e590(sub);
+        if (sub->inner_alloc_0x70 != nullptr) jeFree_710392e590(sub->inner_alloc_0x70);
+        if (sub->inner_alloc_0x58 != nullptr) jeFree_710392e590(sub->inner_alloc_0x58);
+        if (sub->inner_alloc_0x40 != nullptr) jeFree_710392e590(sub->inner_alloc_0x40);
+        jeFree_710392e590(sub);
     }
 
     // Owned object at +0x850 (clears fields before free)
@@ -1524,28 +1524,28 @@ extern "C" void FUN_7102826d30(StageDuckHunt* self)
     if (obj != nullptr) {
         obj->field_0x20 = 0;
         obj->field_0x28 = 0;
-        FUN_710392e590(obj);
+        jeFree_710392e590(obj);
     }
 
     // 4 vector-style begin/end frees
     if (self->vec3_begin != nullptr) {
         self->vec3_end = self->vec3_begin;
-        FUN_710392e590(self->vec3_begin);
+        jeFree_710392e590(self->vec3_begin);
     }
     if (self->vec2_begin != nullptr) {
         self->vec2_end = self->vec2_begin;
-        FUN_710392e590(self->vec2_begin);
+        jeFree_710392e590(self->vec2_begin);
     }
     if (self->vec1_begin != nullptr) {
         self->vec1_end = self->vec1_begin;
-        FUN_710392e590(self->vec1_begin);
+        jeFree_710392e590(self->vec1_begin);
     }
     if (self->vec0_begin != nullptr) {
         self->vec0_end = self->vec0_begin;
-        FUN_710392e590(self->vec0_begin);
+        jeFree_710392e590(self->vec0_begin);
     }
 
-    FUN_71025d7310(self);
+    StageBase_dtor_71025d7310(self);
 }
 
 // ---- ~StageLuigiMansion (0x7102ada090, 288 bytes) ----
@@ -1574,8 +1574,8 @@ extern "C" void FUN_7102ada090(StageLuigiMansion* self)
     if (c820 != nullptr) {
         u64 inner = *c820;
         *c820 = 0;
-        if (inner != 0) FUN_710392e590((void*)inner);
-        FUN_710392e590(c820);
+        if (inner != 0) jeFree_710392e590((void*)inner);
+        jeFree_710392e590(c820);
     }
 
     // Release owned container at +0x818 (has inner ptr at +0x68)
@@ -1590,9 +1590,9 @@ extern "C" void FUN_7102ada090(StageLuigiMansion* self)
             if (sub68 != nullptr) {
                 reinterpret_cast<void(*)(long*)>((*(void***)(sub68))[1])(sub68);
             }
-            FUN_710392e590((void*)inner);
+            jeFree_710392e590((void*)inner);
         }
-        FUN_710392e590(c818);
+        jeFree_710392e590(c818);
     }
 
     // Zero-clear derived fields at +0x7D8, +0x7D0, +0x7C8, +0x7C0
@@ -1601,7 +1601,7 @@ extern "C" void FUN_7102ada090(StageLuigiMansion* self)
     self->data_0x7C8 = nullptr;
     self->data_0x7C0 = nullptr;
 
-    FUN_71025d7310(self);
+    StageBase_dtor_71025d7310(self);
 }
 
 // ---- ~StageWreckingCrew (0x7102fe2330, 300 bytes) ----
@@ -1629,17 +1629,17 @@ extern "C" void FUN_7102fe2330(StageWreckingCrew* self)
     void* v;
 
     v = self->owned_0xAF0;
-    if (v != nullptr) { FUN_7102fed000(v); FUN_710392e590(v); }
+    if (v != nullptr) { FUN_7102fed000(v); jeFree_710392e590(v); }
     v = self->owned_0xAE8;
-    if (v != nullptr) { FUN_710392e590(v); }
+    if (v != nullptr) { jeFree_710392e590(v); }
     v = self->owned_0xAE0;
-    if (v != nullptr) { FUN_7102ff2e20(v); FUN_710392e590(v); }
+    if (v != nullptr) { FUN_7102ff2e20(v); jeFree_710392e590(v); }
     v = self->owned_0xAD8;
-    if (v != nullptr) { FUN_7102ff2520(v); FUN_710392e590(v); }
+    if (v != nullptr) { FUN_7102ff2520(v); jeFree_710392e590(v); }
     v = self->owned_0xAD0;
-    if (v != nullptr) { FUN_7102feb430(v); FUN_710392e590(v); }
+    if (v != nullptr) { FUN_7102feb430(v); jeFree_710392e590(v); }
     v = self->owned_0xAC8;
-    if (v != nullptr) { FUN_7102ff02b0(v); FUN_710392e590(v); }
+    if (v != nullptr) { FUN_7102ff02b0(v); jeFree_710392e590(v); }
 
     // Container at +0xAC0 with inner buffer at +0x10
     ContainerWithBuf10* cont_ac0 = self->container_0xAC0;
@@ -1648,15 +1648,15 @@ extern "C" void FUN_7102fe2330(StageWreckingCrew* self)
         cont_ac0->buffer_end = inner;
         if (inner != nullptr) {
             cont_ac0->buffer_end = inner;
-            FUN_710392e590(inner);
+            jeFree_710392e590(inner);
         }
-        FUN_710392e590(cont_ac0);
+        jeFree_710392e590(cont_ac0);
     }
 
     v = self->owned_0xAB8;
-    if (v != nullptr) { FUN_7102ff2b40(v); FUN_710392e590(v); }
+    if (v != nullptr) { FUN_7102ff2b40(v); jeFree_710392e590(v); }
     v = self->owned_0xAB0;
-    if (v != nullptr) { FUN_7102ff1420(v); FUN_710392e590(v); }
+    if (v != nullptr) { FUN_7102ff1420(v); jeFree_710392e590(v); }
 
     // Owned container at +0x970 with inner buffer at +0x18
     ContainerWithBuf18* cont_970 = self->container_0x970;
@@ -1664,13 +1664,13 @@ extern "C" void FUN_7102fe2330(StageWreckingCrew* self)
         void* inner = cont_970->buffer_begin;
         if (inner != nullptr) {
             cont_970->buffer_end = inner;
-            FUN_710392e590(inner);
+            jeFree_710392e590(inner);
         }
-        FUN_710392e590(cont_970);
+        jeFree_710392e590(cont_970);
     }
 
     FUN_7102fe2250(&self->embedded_sub_0x738);  // Embedded sub-object cleanup
-    FUN_71025d7310(self);
+    StageBase_dtor_71025d7310(self);
 }
 
 // ---- ~StagePilotwings (0x7102de49b0, 304 bytes) ----
@@ -1704,19 +1704,19 @@ extern "C" void FUN_7102de49b0(StagePilotwings* self)
         if (sp2 != nullptr) {
             RELEASE_SHARED_PTR(&sp2, -8);
         }
-        FUN_710392e590(sp);
+        jeFree_710392e590(sp);
     }
 
     // Vector-style free at +0x768/+0x770
     if (self->alloc_0x768 != nullptr) {
         self->end_0x770 = self->alloc_0x768;
-        FUN_710392e590(self->alloc_0x768);
+        jeFree_710392e590(self->alloc_0x768);
     }
 
     // Vector-style free at +0x750/+0x758
     if (self->alloc_0x750 != nullptr) {
         self->end_0x758 = self->alloc_0x750;
-        FUN_710392e590(self->alloc_0x750);
+        jeFree_710392e590(self->alloc_0x750);
     }
 
     // Destroy vector at +0x738/+0x740 (elements are 0x60 bytes, dtor called on each)
@@ -1736,11 +1736,11 @@ extern "C" void FUN_7102de49b0(StagePilotwings* self)
             self->vec_end_0x740 = (void*)vec_data;
         }
         if (vec_end != nullptr) {
-            FUN_710392e590(vec_end);
+            jeFree_710392e590(vec_end);
         }
     }
 
-    FUN_71025d7310(self);
+    StageBase_dtor_71025d7310(self);
 }
 
 // ---- ~StagePictochat2 (0x7102d5bbf0, 280 bytes) ----
@@ -1765,8 +1765,8 @@ extern "C" void FUN_7102d5bbf0(StagePictochat2* self)
     if (c_c70 != nullptr) {
         u64 inner = *c_c70;
         *c_c70 = 0;
-        if (inner != 0) FUN_710392e590((void*)inner);
-        FUN_710392e590(c_c70);
+        if (inner != 0) jeFree_710392e590((void*)inner);
+        jeFree_710392e590(c_c70);
     }
 
     // Destroy vector of unique_ptrs at +0xC50/+0xC58
@@ -1789,14 +1789,14 @@ extern "C" void FUN_7102d5bbf0(StagePictochat2* self)
             self->vec_end_0xC58 = (void*)vec_data;
         }
         if (vec_data != nullptr) {
-            FUN_710392e590(vec_data);
+            jeFree_710392e590(vec_data);
         }
     }
 
     // Vector-style free at +0xC30/+0xC38
     if (self->alloc_0xC30 != nullptr) {
         self->end_0xC38 = self->alloc_0xC30;
-        FUN_710392e590(self->alloc_0xC30);
+        jeFree_710392e590(self->alloc_0xC30);
     }
 
     // Release unique_ptr at +0xC20 [derived: StagePictochat2 field]
@@ -1815,7 +1815,7 @@ extern "C" void FUN_7102d5bbf0(StagePictochat2* self)
         if (inner28 != 0) {
             FUN_71032ca770();
         }
-        FUN_710392e590((void*)v_c18);
+        jeFree_710392e590((void*)v_c18);
     }
 
     // Release unique_ptr at +0xC10 [derived: StagePictochat2 field]
@@ -1828,7 +1828,7 @@ extern "C" void FUN_7102d5bbf0(StagePictochat2* self)
     // Embedded sub-object cleanup at +0x740
     FUN_7102d5a8f0(&self->embedded_sub_0x740);
 
-    FUN_71025d7310(self);
+    StageBase_dtor_71025d7310(self);
 }
 
 // ---- Additional leaf functions (batch 2) ----

@@ -13,7 +13,7 @@ extern "C" void unlock_71039c14a0(void*);  // std::__1::recursive_mutex::unlock(
 
 // Allocator and helpers
 extern "C" void* je_aligned_alloc(unsigned long, unsigned long);
-extern "C" void FUN_710392e590(void*);  // je_free
+extern "C" void jeFree_710392e590(void*);  // je_free
 extern "C" void* memcpy(void*, const void*, u64);
 
 // Globals

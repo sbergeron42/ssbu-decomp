@@ -8,10 +8,10 @@
 // ---- app::ai ----
 
 // 0x71003611c0 — target_id (48B)
-extern s64 FUN_7100314030(s64*, s64);
+extern s64 aiGetTargetById_7100314030(s64*, s64);
 extern s64 DAT_71052b5fd8 __attribute__((visibility("hidden")));
 u32 FUN_71003611c0(void *boma) {
-    s64 target = FUN_7100314030((s64*)&DAT_71052b5fd8, *(s64*)((u8*)boma - 8) + 0xc50);
+    s64 target = aiGetTargetById_7100314030((s64*)&DAT_71052b5fd8, *(s64*)((u8*)boma - 8) + 0xc50);
     return *(u32*)(*(s64*)(target + 0x10) + 8);
 }
 

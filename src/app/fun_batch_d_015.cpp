@@ -20,7 +20,7 @@
 extern "C" int strcmp(const char*, const char*);
 
 extern void  FUN_710356bb20(void);
-extern void  FUN_710392e590(void*);
+extern void  jeFree_710392e590(void*);
 extern void  FUN_71037d7e30(void);
 extern void  FUN_71037d9830(void);
 
@@ -180,7 +180,7 @@ void FUN_71037dc3b0(void *param_1)
     if (*(u8 **)PTR_VirtualFreeHook_71052a7a70 != nullptr) {
         nu::VirtualFreeHook(param_1);
     }
-    FUN_710392e590(param_1);  // [inferred: operator delete or heap free]
+    jeFree_710392e590(param_1);  // [inferred: operator delete or heap free]
 }
 
 // 0x71037dc810 — destructor helper: same pattern, different notify (64 bytes)
@@ -191,7 +191,7 @@ void FUN_71037dc810(void *param_1)
     if (*(u8 **)PTR_VirtualFreeHook_71052a7a70 != nullptr) {
         nu::VirtualFreeHook(param_1);
     }
-    FUN_710392e590(param_1);
+    jeFree_710392e590(param_1);
 }
 
 // ---- Miscellaneous ----------------------------------------------------------

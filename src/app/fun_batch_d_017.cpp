@@ -10,7 +10,7 @@ extern "C" {
     void  free(void*);
 }
 
-extern void  FUN_71037aeec0(u64);
+extern void  noop_71037aeec0(u64);
 extern void  FUN_71037af2c0(u64);
 extern void  FUN_71037af320(u64);
 extern void  FUN_71037b0b30(u64);
@@ -69,9 +69,9 @@ void FUN_71037b2910(s32 param_1) { malloc((long)param_1); }
 // 0x71037b2940 -- free wrapper (48 bytes)
 void FUN_71037b2940(void *param_1) { free(param_1); }
 
-// 0x71037b2e20 -- call FUN_71037aeec0 at param_1 + 4 (48 bytes)
-// +0x04 [inferred: sub-field passed to FUN_71037aeec0]
-void FUN_71037b2e20(s64 param_1) { FUN_71037aeec0(param_1 + 4); }
+// 0x71037b2e20 -- call noop_71037aeec0 at param_1 + 4 (48 bytes)
+// +0x04 [inferred: sub-field passed to noop_71037aeec0]
+void FUN_71037b2e20(s64 param_1) { noop_71037aeec0(param_1 + 4); }
 
 // 0x71037b2e50 -- vtable call through double-pointer at +0x18, three-arg dispatch (64 bytes)
 // param_1 [inferred: struct with u32 value at +0x00 and pointer at +0x18]
@@ -86,14 +86,14 @@ void FUN_71037b2e50(u32 *param_1, u64 param_2)
     (*(void(*)(u32, s64*, u64))(*(s64*)(*lVar1 + 0x38)))(*param_1, lVar1, param_2);
 }
 
-// 0x71037b44a0 -- call FUN_71037aeec0 at +0 and +8 (48 bytes)
-// param_1 [inferred: struct with two 8-byte fields, both passed to FUN_71037aeec0]
+// 0x71037b44a0 -- call noop_71037aeec0 at +0 and +8 (48 bytes)
+// param_1 [inferred: struct with two 8-byte fields, both passed to noop_71037aeec0]
 //   +0x00 [inferred: first sub-field]
 //   +0x08 [inferred: second sub-field]
 void FUN_71037b44a0(s64 param_1)
 {
-    FUN_71037aeec0(param_1);
-    FUN_71037aeec0(param_1 + 8);
+    noop_71037aeec0(param_1);
+    noop_71037aeec0(param_1 + 8);
 }
 
 // 0x71037b5750 -- wrapper: FUN_71037b5780(param_1, param_1) (48 bytes)

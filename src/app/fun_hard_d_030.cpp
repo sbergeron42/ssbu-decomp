@@ -20,7 +20,7 @@ extern "C" void  FUN_71037759f0(u64);
 extern "C" s32   FUN_710330a4a0(u64, void*);
 extern "C" void  FUN_7103563720(u64, s32);
 extern "C" void  FUN_71032e5640(u64);
-extern "C" void  FUN_710392e590(void*);   // je_free
+extern "C" void  jeFree_710392e590(void*);   // je_free
 extern "C" void  FUN_7103607270(void*);   // sub-object cleanup
 extern "C" void  FUN_71039c2140(void*);   // shared_weak_count destructor
 extern "C" void  FUN_7103956fa0(s32, const char*);  // jemalloc message output
@@ -98,11 +98,11 @@ void FUN_7101b799b0(u64* param_1) {
         s64 inner = *(s64*)(sub + 8);  // sub+0x8 [inferred: inner resource]
         if (inner != 0) {
             *(s64*)(sub + 0x10) = inner;  // sub+0x10 [inferred: cleanup target]
-            FUN_710392e590((void*)inner);
+            jeFree_710392e590((void*)inner);
         }
-        FUN_710392e590((void*)sub);
+        jeFree_710392e590((void*)sub);
     }
-    FUN_710392e590(param_1);  // free self (tail-call)
+    jeFree_710392e590(param_1);  // free self (tail-call)
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -119,7 +119,7 @@ void FUN_7103600360(s64* param_1) {
     *(s64*)((u8*)param_1 + 0x18) = 0;        // null resource
     if (sub != 0) {
         FUN_7103607270((void*)sub);
-        FUN_710392e590((void*)sub);
+        jeFree_710392e590((void*)sub);
     }
     FUN_71039c2140(param_1);  // tail-call parent destructor
 }
@@ -136,7 +136,7 @@ void FUN_7103609340(s64* param_1) {
     *(s64*)((u8*)param_1 + 0x18) = 0;
     if (sub != 0) {
         FUN_7103607270((void*)sub);
-        FUN_710392e590((void*)sub);
+        jeFree_710392e590((void*)sub);
     }
     FUN_71039c2140(param_1);
 }

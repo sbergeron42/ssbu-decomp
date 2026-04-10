@@ -508,19 +508,19 @@ u32 FighterManager__get_final_actor_entry_id_fix(app::FighterManager* mgr) {
     return mgr->data->final_actor_entry_id;
 }
 
-extern "C" [[noreturn]] void FUN_71039c20a0();
+extern "C" [[noreturn]] void abortWrapper_71039c20a0();
 
 void* FighterManager__get_fighter_entry_fix(app::FighterManager* mgr, u32 index)
     asm("_ZN3app8lua_bind38FighterManager__get_fighter_entry_implEP14FighterManagerj");
 void* FighterManager__get_fighter_entry_fix(app::FighterManager* mgr, u32 index) {
-    if (index >= 8) { FUN_71039c20a0(); }
+    if (index >= 8) { abortWrapper_71039c20a0(); }
     return mgr->data->entries[index];
 }
 
 void* FighterManager__get_fighter_information_fix(app::FighterManager* mgr, u32 index)
     asm("_ZN3app8lua_bind44FighterManager__get_fighter_information_implEP14FighterManagerj");
 void* FighterManager__get_fighter_information_fix(app::FighterManager* mgr, u32 index) {
-    if (index >= 8) { FUN_71039c20a0(); }
+    if (index >= 8) { abortWrapper_71039c20a0(); }
     return reinterpret_cast<u8*>(mgr->data->entries[index]) + 0xf0;
 }
 

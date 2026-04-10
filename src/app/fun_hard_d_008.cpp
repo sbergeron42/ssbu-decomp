@@ -13,7 +13,7 @@ extern u8 *PTR_DAT_71052a6978 HIDDEN;
 
 // Tree free helpers
 extern void FUN_71001b1870(u64 *);
-extern void FUN_710392e590(u64 *);
+extern void jeFree_710392e590(u64 *);
 
 // Misc
 extern void FUN_71002b84e0(u64);
@@ -56,7 +56,7 @@ void FUN_7100293800(u64 param_1, u64 *param_2)
     }
 }
 
-// ---- Binary tree post-order traversals (FUN_710392e590 free) --------
+// ---- Binary tree post-order traversals (jeFree_710392e590 free) --------
 
 // 0x71004b06a0
 void FUN_71004b06a0(u64 *param_1)
@@ -64,7 +64,7 @@ void FUN_71004b06a0(u64 *param_1)
     if (param_1 != nullptr) {
         FUN_71004b06a0((u64 *)*param_1);
         FUN_71004b06a0((u64 *)param_1[1]);
-        FUN_710392e590(param_1);
+        jeFree_710392e590(param_1);
     }
 }
 
@@ -74,7 +74,7 @@ void FUN_71004e38a0(u64 *param_1)
     if (param_1 != nullptr) {
         FUN_71004e38a0((u64 *)*param_1);
         FUN_71004e38a0((u64 *)param_1[1]);
-        FUN_710392e590(param_1);
+        jeFree_710392e590(param_1);
     }
 }
 
@@ -85,7 +85,7 @@ void FUN_71004e38e0(u64 *param_1)
         FUN_71004e38e0((u64 *)*param_1);
         FUN_71004e38e0((u64 *)param_1[1]);
         FUN_71004e3920((u64 *)param_1[7]);
-        FUN_710392e590(param_1);
+        jeFree_710392e590(param_1);
     }
 }
 
@@ -95,7 +95,7 @@ void FUN_71004e3920(u64 *param_1)
     if (param_1 != nullptr) {
         FUN_71004e3920((u64 *)*param_1);
         FUN_71004e3920((u64 *)param_1[1]);
-        FUN_710392e590(param_1);
+        jeFree_710392e590(param_1);
     }
 }
 
@@ -105,7 +105,7 @@ void FUN_71004f98d0(u64 *param_1)
     if (param_1 != nullptr) {
         FUN_71004f98d0((u64 *)*param_1);
         FUN_71004f98d0((u64 *)param_1[1]);
-        FUN_710392e590(param_1);
+        jeFree_710392e590(param_1);
     }
 }
 
@@ -115,7 +115,7 @@ void FUN_71004f9910(u64 *param_1)
     if (param_1 != nullptr) {
         FUN_71004f9910((u64 *)*param_1);
         FUN_71004f9910((u64 *)param_1[1]);
-        FUN_710392e590(param_1);
+        jeFree_710392e590(param_1);
     }
 }
 
@@ -125,7 +125,7 @@ void FUN_7100508c30(u64 *param_1)
     if (param_1 != nullptr) {
         FUN_7100508c30((u64 *)*param_1);
         FUN_7100508c30((u64 *)param_1[1]);
-        FUN_710392e590(param_1);
+        jeFree_710392e590(param_1);
     }
 }
 
@@ -135,7 +135,7 @@ void FUN_7100510cf0(u64 *param_1)
     if (param_1 != nullptr) {
         FUN_7100510cf0((u64 *)*param_1);
         FUN_7100510cf0((u64 *)param_1[1]);
-        FUN_710392e590(param_1);
+        jeFree_710392e590(param_1);
     }
 }
 
@@ -145,7 +145,7 @@ void FUN_7100556950(u64 *param_1)
     if (param_1 != nullptr) {
         FUN_7100556950((u64 *)*param_1);
         FUN_7100556950((u64 *)param_1[1]);
-        FUN_710392e590(param_1);
+        jeFree_710392e590(param_1);
     }
 }
 
@@ -155,7 +155,7 @@ void FUN_7100556990(u64 *param_1)
     if (param_1 != nullptr) {
         FUN_7100556990((u64 *)*param_1);
         FUN_7100556990((u64 *)param_1[1]);
-        FUN_710392e590(param_1);
+        jeFree_710392e590(param_1);
     }
 }
 
@@ -165,7 +165,7 @@ void FUN_71005569d0(u64 *param_1)
     if (param_1 != nullptr) {
         FUN_71005569d0((u64 *)*param_1);
         FUN_71005569d0((u64 *)param_1[1]);
-        FUN_710392e590(param_1);
+        jeFree_710392e590(param_1);
     }
 }
 
@@ -175,7 +175,7 @@ void FUN_7100556a10(u64 *param_1)
     if (param_1 != nullptr) {
         FUN_7100556a10((u64 *)*param_1);
         FUN_7100556a10((u64 *)param_1[1]);
-        FUN_710392e590(param_1);
+        jeFree_710392e590(param_1);
     }
 }
 
@@ -185,7 +185,7 @@ void FUN_7100556a50(u64 *param_1)
     if (param_1 != nullptr) {
         FUN_7100556a50((u64 *)*param_1);
         FUN_7100556a50((u64 *)param_1[1]);
-        FUN_710392e590(param_1);
+        jeFree_710392e590(param_1);
     }
 }
 
@@ -195,7 +195,7 @@ void FUN_7100556a90(u64 *param_1)
     if (param_1 != nullptr) {
         FUN_7100556a90((u64 *)*param_1);
         FUN_7100556a90((u64 *)param_1[1]);
-        FUN_710392e590(param_1);
+        jeFree_710392e590(param_1);
     }
 }
 
@@ -205,7 +205,7 @@ void FUN_710057d630(u64 *param_1)
     if (param_1 != nullptr) {
         FUN_710057d630((u64 *)*param_1);
         FUN_710057d630((u64 *)param_1[1]);
-        FUN_710392e590(param_1);
+        jeFree_710392e590(param_1);
     }
 }
 

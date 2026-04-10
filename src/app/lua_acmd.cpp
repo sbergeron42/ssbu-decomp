@@ -286,14 +286,14 @@ void is_enable_couple_tech_for_lua(BattleObjectModuleAccessor* a) {
 // Pattern: if null return; recurse(left); recurse(right); free(self)
 // All 56 bytes, same structure with different function addresses
 // ============================================================
-extern "C" void FUN_710392e590(void*);  // je_aligned_free
+extern "C" void jeFree_710392e590(void*);  // je_aligned_free
 
 // 0x7103716100 (56 bytes)
 void FUN_7103716100(u8** node) {
     if (!node) return;
     FUN_7103716100(reinterpret_cast<u8**>(*node));
     FUN_7103716100(reinterpret_cast<u8**>(node[1]));
-    FUN_710392e590(node);
+    jeFree_710392e590(node);
 }
 
 // 0x710376a190 (56 bytes)
@@ -301,7 +301,7 @@ void FUN_710376a190(u8** node) {
     if (!node) return;
     FUN_710376a190(reinterpret_cast<u8**>(*node));
     FUN_710376a190(reinterpret_cast<u8**>(node[1]));
-    FUN_710392e590(node);
+    jeFree_710392e590(node);
 }
 
 // ============================================================
@@ -388,7 +388,7 @@ void dtor_L2CValue_7103733f20(lib::L2CValue* this_) {
     }
     FUN_7103733900(ptr);
     asm volatile("");
-    FUN_710392e590(ptr);
+    jeFree_710392e590(ptr);
     return;
 handle_8:
     // type 8: inner string — free heap buffer if SSO, then free struct
@@ -396,9 +396,9 @@ handle_8:
     if (!ptr) return;
     if ((ptr[0] & 1) != 0) {
         void* heap = *reinterpret_cast<void**>(ptr + 0x10);
-        if (heap) FUN_710392e590(heap);
+        if (heap) jeFree_710392e590(heap);
     }
-    FUN_710392e590(ptr);
+    jeFree_710392e590(ptr);
     return;
 handle_6:
     // type 6: inner function — decrement refcount at +8, free if zero
@@ -407,7 +407,7 @@ handle_6:
         s32 rc = --*reinterpret_cast<s32*>(ptr + 8);
         if (!ptr || rc > 0) return;
     }
-    FUN_710392e590(ptr);
+    jeFree_710392e590(ptr);
 }
 
 // ============================================================
@@ -1181,13 +1181,13 @@ lib::L2CValue operator_rsh_7103735d00(lib::L2CValue* this_, lib::L2CValue* other
 // 0x7103735db0 (64 bytes)
 // ============================================================
 
-extern "C" void* FUN_7103733d50(void*, u64*);
+extern "C" void* treeMapFindOrInsert_7103733d50(void*, u64*);
 
 void* operator_index_hash_7103735db0(lib::L2CValue* this_, u64 hash) {
     u64 local_hash = hash;
     if (this_->type != 5) return &DAT_710593a3a8;
     void* table = this_->ptr_val;
-    return FUN_7103733d50(table, &local_hash);
+    return treeMapFindOrInsert_7103733d50(table, &local_hash);
 }
 
 // ============================================================
@@ -1231,13 +1231,13 @@ void dtor_L2CAgent_710372da20(lib::L2CAgent* this_) {
     u8* node = this_->linked_list_head;
     while (node) {
         u8* next = *reinterpret_cast<u8**>(node);
-        FUN_710392e590(node);
+        jeFree_710392e590(node);
         node = next;
     }
     void* p = this_->alloc_ptr;
     this_->alloc_ptr = nullptr;
     if (p) {
-        FUN_710392e590(p);
+        jeFree_710392e590(p);
     }
 }
 
@@ -1248,15 +1248,15 @@ void dtor_D0_L2CAgent_710372da80(lib::L2CAgent* this_) {
     u8* node = this_->linked_list_head;
     while (node) {
         u8* next = *reinterpret_cast<u8**>(node);
-        FUN_710392e590(node);
+        jeFree_710392e590(node);
         node = next;
     }
     void* p = this_->alloc_ptr;
     this_->alloc_ptr = nullptr;
     if (p) {
-        FUN_710392e590(p);
+        jeFree_710392e590(p);
     }
-    FUN_710392e590(this_);
+    jeFree_710392e590(this_);
 }
 
 // ============================================================
@@ -1525,7 +1525,7 @@ void FUN_71037339b0(u8** node) {
     FUN_71037339b0(reinterpret_cast<u8**>(node[0]));
     FUN_71037339b0(reinterpret_cast<u8**>(node[1]));
     dtor_L2CValue_7103733f20(reinterpret_cast<lib::L2CValue*>(node + 5));
-    FUN_710392e590(node);
+    jeFree_710392e590(node);
 }
 
 // ============================================================
@@ -1544,7 +1544,7 @@ void FUN_7103733900(u8* this_) {
         *meta = rc;
         if (rc == 0 || old < 1) {
             FUN_7103733900(reinterpret_cast<u8*>(meta));
-            FUN_710392e590(meta);
+            jeFree_710392e590(meta);
         }
     }
     // Destroy RB tree nodes at +0x28
@@ -1564,7 +1564,7 @@ void FUN_7103733900(u8* this_) {
             *reinterpret_cast<u8**>(this_ + 0x10) = begin;
         }
         if (end != nullptr) {
-            FUN_710392e590(end);
+            jeFree_710392e590(end);
         }
     }
 }
@@ -1647,7 +1647,7 @@ handle_8:
     if (!ptr) goto phase2;
     if ((ptr[0] & 1) != 0) {
         void* heap = *reinterpret_cast<void**>(ptr + 0x10);
-        if (heap) FUN_710392e590(heap);
+        if (heap) jeFree_710392e590(heap);
     }
     goto free_old;
 handle_6:
@@ -1660,7 +1660,7 @@ handle_6:
         if (!ptr || (rc != 0 && old >= 1)) goto phase2;
     }
 free_old:
-    FUN_710392e590(ptr);
+    jeFree_710392e590(ptr);
 phase2:
     // Phase 2: Copy from source (inlined copy ctor)
     type = src->type;
@@ -1742,7 +1742,7 @@ u64 length_7103735ea0(lib::L2CValue* this_) {
 // ============================================================
 // operator[](L2CValue const&) — table index with L2CValue key
 // 0x7103735df0 (144 bytes)
-// [derived: Ghidra shows int/float → FUN_71037339f0, hash → FUN_7103733d50]
+// [derived: Ghidra shows int/float → FUN_71037339f0, hash → treeMapFindOrInsert_7103733d50]
 // ============================================================
 
 void* operator_index_lv_7103735df0(lib::L2CValue* this_, lib::L2CValue* key) {
@@ -1763,7 +1763,7 @@ void* operator_index_lv_7103735df0(lib::L2CValue* this_, lib::L2CValue* key) {
     if (key_type == 7) {
         u64 hash = key->raw;
         void* table = this_->ptr_val;
-        return FUN_7103733d50(table, &hash);
+        return treeMapFindOrInsert_7103733d50(table, &hash);
     }
     return &DAT_710593a3a8;
 }
@@ -1791,7 +1791,7 @@ void setmetatable_710372e950(lib::L2CValue* ret, u8* this_, lib::L2CValue* table
             *old_meta = new_rc;
             if (new_rc == 0 || old_val < 1) {
                 FUN_7103733900(reinterpret_cast<u8*>(old_meta));
-                FUN_710392e590(old_meta);
+                jeFree_710392e590(old_meta);
             }
         }
         // Increment refcount on new metatable
@@ -1817,27 +1817,27 @@ void FUN_7103728a40(u8* this_) {
     u8** node = *reinterpret_cast<u8***>(this_ + 0x40);
     while (node != nullptr) {
         u8** next = reinterpret_cast<u8**>(*node);
-        FUN_710392e590(node);
+        jeFree_710392e590(node);
         node = next;
     }
     // Free alloc at +0x30
     void* p = *reinterpret_cast<void**>(this_ + 0x30);
     *reinterpret_cast<u64*>(this_ + 0x30) = 0;
     if (p != nullptr) {
-        FUN_710392e590(p);
+        jeFree_710392e590(p);
     }
     // Walk and free linked list at +0x18
     node = *reinterpret_cast<u8***>(this_ + 0x18);
     while (node != nullptr) {
         u8** next = reinterpret_cast<u8**>(*node);
-        FUN_710392e590(node);
+        jeFree_710392e590(node);
         node = next;
     }
     // Free alloc at +0x8
     void* p2 = *reinterpret_cast<void**>(this_ + 0x08);
     *reinterpret_cast<u64*>(this_ + 0x08) = 0;
     if (p2 != nullptr) {
-        FUN_710392e590(p2);
+        jeFree_710392e590(p2);
     }
 }
 

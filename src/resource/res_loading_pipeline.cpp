@@ -15,7 +15,7 @@ extern "C" void unlock_71039c14a0(void*);  // std::__1::recursive_mutex::unlock(
 
 // Memory allocation
 extern "C" void* je_aligned_alloc(unsigned long, unsigned long);
-extern "C" void FUN_710392e590(void*);  // je_free
+extern "C" void jeFree_710392e590(void*);  // je_free
 
 // Error handlers
 extern "C" [[noreturn]] void __throw_length_error(void*);
@@ -213,7 +213,7 @@ LAB_after_alloc:
         }
 
         if (old_start != nullptr) {
-            FUN_710392e590(old_start);
+            jeFree_710392e590(old_start);
         }
     }
 }
@@ -331,7 +331,7 @@ LAB_insert:
         }
 
         if (old_start != nullptr) {
-            FUN_710392e590(old_start);
+            jeFree_710392e590(old_start);
         }
     }
 }
@@ -358,7 +358,7 @@ u32 FUN_7103541ae0(s64* param_1) {
         typedef void (*DeallocFn)(void*, void*);
         DeallocFn dealloc = *(DeallocFn*)(ctx + 0x198);
         if (dealloc == nullptr) {
-            FUN_710392e590((void*)ctx);
+            jeFree_710392e590((void*)ctx);
         } else {
             dealloc(*(void**)(ctx + 0x1a0), (void*)ctx);
         }
@@ -586,7 +586,7 @@ void FUN_7103542540(ResHashTable* ht, u64 new_count) {
         HashNode** old = ht->buckets;
         ht->buckets = nullptr;
         if (old != nullptr) {
-            FUN_710392e590(old);
+            jeFree_710392e590(old);
         }
         ht->bucket_count = 0;
         return;
@@ -619,7 +619,7 @@ LAB_allocated:
         HashNode** old = ht->buckets;
         ht->buckets = new_buf;
         if (old != nullptr) {
-            FUN_710392e590(old);
+            jeFree_710392e590(old);
         }
 
         // Zero the new bucket array (unrolled by 4)
@@ -855,7 +855,7 @@ u64 FUN_71035414c0(s64* param_1, s64 param_2) {
                  (DAT_7105331f00, &oom_flags, &oom_size);
         if ((r & 1) == 0) return 0;
         decomp_buf = (u8*)je_aligned_alloc(4, decomp_alloc);
-        if (decomp_buf == nullptr) { FUN_710392e590(decomp_buf); return 0; }
+        if (decomp_buf == nullptr) { jeFree_710392e590(decomp_buf); return 0; }
     }
 
     {
@@ -891,14 +891,14 @@ u64 FUN_71035414c0(s64* param_1, s64 param_2) {
         // Read compressed data
         if (*(u8*)(*param_1 + 0x22c) == 0 ||
             FUN_71037c6940((void*)*param_1, comp_buf, (u64)comp_size) != (s64)(u64)comp_size) {
-            FUN_710392e590(decomp_buf);
+            jeFree_710392e590(decomp_buf);
             decomp_buf = comp_buf;
             goto LAB_free_both_fail;
         }
 
         // Check sizes are valid
         if (comp_size == 0 || decomp_size == 0) {
-            FUN_710392e590(comp_buf);
+            jeFree_710392e590(comp_buf);
             goto LAB_free_both_fail;
         }
 
@@ -914,7 +914,7 @@ u64 FUN_71035414c0(s64* param_1, s64 param_2) {
                 FUN_710399f880((void*)(ctx_val)); \
                 typedef void (*DFn)(void*,void*); \
                 DFn d = *(DFn*)((ctx_val) + 0x198); \
-                if (d == nullptr) FUN_710392e590((void*)(ctx_val)); \
+                if (d == nullptr) jeFree_710392e590((void*)(ctx_val)); \
                 else d(*(void**)((ctx_val) + 0x1a0), (void*)(ctx_val)); \
                 state[0] = 0; \
             } \
@@ -996,10 +996,10 @@ u64 FUN_71035414c0(s64* param_1, s64 param_2) {
     LAB_free_comp:
         #undef CLEANUP_CTX
         #undef CLOSE_STREAM
-        FUN_710392e590(comp_buf);
+        jeFree_710392e590(comp_buf);
         if (err != 0) {
         LAB_free_both_fail:
-            FUN_710392e590(decomp_buf);
+            jeFree_710392e590(decomp_buf);
         LAB_return_null:
             return 0;
         }

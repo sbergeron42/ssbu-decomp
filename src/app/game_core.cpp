@@ -47,7 +47,7 @@ extern "C" void FUN_7103540560(s64);
 
 // Cleanup helpers
 extern "C" void FUN_7103726910(void*);
-extern "C" void FUN_710392e590(void*);
+extern "C" void jeFree_710392e590(void*);
 
 // Global state
 extern "C" u8 DAT_710593a548;

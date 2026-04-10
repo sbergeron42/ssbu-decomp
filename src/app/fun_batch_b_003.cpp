@@ -14,7 +14,7 @@ extern "C" void FUN_7103776360(u64 *, u64, const char *);
 extern "C" u64 FUN_7101704c50(s64);
 extern "C" void FUN_710326f0f0(s64 *, s32, s32, s32, s32, s32, s32);
 extern "C" u64 FUN_7101797640(u64, s32, s32);
-extern "C" void FUN_710392e590(s64);
+extern "C" void jeFree_710392e590(s64);
 extern "C" u64 FUN_7101aab430(s32);
 extern "C" s32 FUN_710328cae0(u64, u64);
 extern "C" u64 FUN_7103262bf0(u64, u64);

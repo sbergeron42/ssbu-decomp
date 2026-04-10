@@ -4,7 +4,7 @@
 #include "types.h"
 
 extern "C" {
-    void FUN_710392e590(void*);     // free_default
+    void jeFree_710392e590(void*);     // free_default
     void FUN_710171d040(void*);     // member cleanup
     void FUN_7101813d70(void*);     // member cleanup
     void FUN_710181e8a0(void*);     // member cleanup
@@ -27,7 +27,7 @@ void FUN_710184c5f0(u64* node) {
     if (!node) return;
     FUN_710184c5f0((u64*)node[0]);
     FUN_710184c5f0((u64*)node[1]);
-    FUN_710392e590(node);
+    jeFree_710392e590(node);
 }
 
 // =====================================================================
@@ -39,9 +39,9 @@ void FUN_710171cff0(u64* p) {
     p[2] = 0;
     if (old) {
         FUN_710171d040((void*)old);
-        FUN_710392e590((void*)old);
+        jeFree_710392e590((void*)old);
     }
-    FUN_710392e590(p);
+    jeFree_710392e590(p);
 }
 
 // =====================================================================
@@ -53,9 +53,9 @@ void FUN_7101813f80(u64* p) {
     p[0xb] = 0;
     if (old) {
         FUN_7101813d70((void*)old);
-        FUN_710392e590((void*)old);
+        jeFree_710392e590((void*)old);
     }
-    FUN_710392e590(p);
+    jeFree_710392e590(p);
 }
 
 // =====================================================================
@@ -67,9 +67,9 @@ void FUN_710181e9a0(u64* p) {
     p[0xb] = 0;
     if (old) {
         FUN_710181e8a0((void*)old);
-        FUN_710392e590((void*)old);
+        jeFree_710392e590((void*)old);
     }
-    FUN_710392e590(p);
+    jeFree_710392e590(p);
 }
 
 // =====================================================================
@@ -81,13 +81,13 @@ void FUN_7101611e90(u64* p) {
     u64* cur = (u64*)p[4];
     while (cur) {
         u64* next = (u64*)cur[0];
-        FUN_710392e590(cur);
+        jeFree_710392e590(cur);
         cur = next;
     }
     u64 old = p[2];
     p[2] = 0;
     if (old) {
-        FUN_710392e590((void*)old);
+        jeFree_710392e590((void*)old);
     }
 }
 
@@ -100,6 +100,6 @@ void FUN_71017fd430(u64 p) {
     *(u64*)(p + 0x58) = 0;
     if (old) {
         FUN_71017fb680(old);
-        FUN_710392e590((void*)old);
+        jeFree_710392e590((void*)old);
     }
 }

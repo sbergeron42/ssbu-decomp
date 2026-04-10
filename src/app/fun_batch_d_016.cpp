@@ -9,7 +9,7 @@ using app::BattleObjectModuleAccessor;
 
 // ---- External declarations -----------------------------------------------
 
-extern "C" [[noreturn]] void FUN_71039c20a0();  // abort
+extern "C" [[noreturn]] void abortWrapper_71039c20a0();  // abort
 
 extern void  FUN_71032e5480(u64);
 extern void  FUN_71032e47c0(u64, u32, u32, u32, u32, u32);
@@ -26,7 +26,7 @@ extern s64 DAT_710532e7c8;
 // ---- Functions ---------------------------------------------------------------
 
 // 0x7103344c38 -- abort wrapper (24 bytes)
-[[noreturn]] void FUN_7103344c38(void) { FUN_71039c20a0(); }
+[[noreturn]] void FUN_7103344c38(void) { abortWrapper_71039c20a0(); }
 
 // 0x71033625b8 -- vtable call at *param_1+8, return 0 (32 bytes)
 u32 FUN_71033625b8(s64 *param_1)

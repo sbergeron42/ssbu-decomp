@@ -11,8 +11,8 @@
 // ---- External function declarations ----------------------------------------
 
 extern "C" {
-    void FUN_710392e590(void *p);       // free_default
-    void FUN_71037aeec0(void *p);       // element destroy
+    void jeFree_710392e590(void *p);       // free_default
+    void noop_71037aeec0(void *p);       // element destroy
     void FUN_71037aef40(void *p);       // element init/reset
     void FUN_71037b0cb0(void *p);       // base class cleanup
     void FUN_71037b2940(void *p);       // node/buffer free
@@ -38,9 +38,9 @@ void FUN_710378e2f0(u64 *param_1)
     FUN_710378e2f0((u64 *)param_1[1]);
     if (param_1[0xd] != 0) {
         param_1[0xe] = param_1[0xd];
-        FUN_710392e590((void *)param_1[0xd]);
+        jeFree_710392e590((void *)param_1[0xd]);
     }
-    FUN_710392e590(param_1);
+    jeFree_710392e590(param_1);
 }
 
 // 0x71037c68e0  84B — close file handle, return error code via x8 (sret)
@@ -109,7 +109,7 @@ void FUN_71037b0bd0(u64 *param_1)
 {
     FUN_71037b0cb0(param_1);
     *param_1 = (u64)&DAT_7105240630;
-    FUN_71037aeec0(param_1 + 2);
+    noop_71037aeec0(param_1 + 2);
     *(u32 *)(param_1 + 1) = 0;
     *(u32 *)((u8 *)param_1 + 0xc) = 0;
     FUN_71037aef40(param_1 + 2);
@@ -122,7 +122,7 @@ void FUN_71037af2c0(u64 *param_1)
     u8 *end = (u8 *)param_1 + 0x10;
     u8 *cur = (u8 *)param_1;
     do {
-        FUN_71037aeec0(cur);
+        noop_71037aeec0(cur);
         cur = cur + 8;
     } while (cur - end != 0);
     *(u64 *)((u8 *)param_1 + 0x10) = 0;
@@ -140,19 +140,19 @@ void FUN_71037bc630(u64 *param_1)
         FUN_71037bc700(cur);
         cur = cur + 0x14;
     } while (cur - end != 0);
-    FUN_71037aeec0((u8 *)param_1 + 0x28);
-    FUN_71037aeec0((u8 *)param_1 + 0x30);
+    noop_71037aeec0((u8 *)param_1 + 0x28);
+    noop_71037aeec0((u8 *)param_1 + 0x30);
 }
 
 // 0x71037c0510  80B — call destroy on base, then loop 2 elements at stride 8
 __attribute__((optnone))
 void FUN_71037c0510(u64 *param_1)
 {
-    FUN_71037aeec0(param_1);
+    noop_71037aeec0(param_1);
     u8 *cur = (u8 *)param_1 + 8;
     u8 *end = (u8 *)param_1 + 0x18;
     do {
-        FUN_71037aeec0(cur);
+        noop_71037aeec0(cur);
         cur = cur + 8;
     } while (cur - end != 0);
 }

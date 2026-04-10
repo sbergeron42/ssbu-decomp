@@ -402,7 +402,7 @@ N+7     8      sequence_number (monotonic, incremented each send)
 N+15    16     encryption_key material
 
 --- Unencrypted mode (type 0): ---
-N+0x1F  256    random padding bytes (from FUN_7100138620 PRNG)
+N+0x1F  256    random padding bytes (from xorshift128_7100138620 PRNG)
                Total extra: 0x12F bytes after payload
 
 --- Encrypted mode (type 1): ---

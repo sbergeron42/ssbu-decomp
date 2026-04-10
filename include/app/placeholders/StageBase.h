@@ -3,7 +3,7 @@
 
 // StageBase -- base class for all stage types in SSBU
 // Constructor: FUN_71025d2dc0 (14,820 bytes)
-// Destructor:  FUN_71025d7310 (1,560 bytes)
+// Destructor:  StageBase_dtor_71025d7310 (1,560 bytes)
 // Vtable:      PTR_LAB_71050c44c8
 // Size:        0x728 bytes (last field at +0x720)
 //
@@ -21,7 +21,7 @@
 //     +-- StageWreckingCrew (vtable PTR_LAB_710515d6e0, adds +0x738..+0xAF0)
 //     +-- StagePilotwings (vtable PTR_LAB_710513be98, adds +0x738..+0x7A8)
 //
-// [derived: field map from constructor FUN_71025d2dc0, destructor FUN_71025d7310,
+// [derived: field map from constructor FUN_71025d2dc0, destructor StageBase_dtor_71025d7310,
 //  and virtual functions FUN_71025d7970/FUN_71025d8750]
 
 struct StageBase {

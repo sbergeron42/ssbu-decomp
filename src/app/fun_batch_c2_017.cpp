@@ -212,7 +212,7 @@ u32 search_710227e1f0(void* L) {
 // These operate on lua_State* and dispatch to KineticModule via accessor
 // _____________________________________________________________________________________________________________________________________________________________________________________________________________________________________________
 
-extern "C" u64 FUN_71038f4000(void*, s32, s32);
+extern "C" u64 l2cParamResolve_71038f4000(void*, s32, s32);
 
 // Helper: Lua stack "pop all" -- clears stack down to ci->base
 static inline void lua_pop_all(void* L) {
@@ -239,7 +239,7 @@ void enable_7102276a40(void* L) {
 
     u64 kind = 0;
     if (L && nargs > 0) {
-        kind = FUN_71038f4000(L, 1, 0);
+        kind = l2cParamResolve_71038f4000(L, 1, 0);
     }
 
     // [derived: KineticModule__get_energy_impl (.dynsym) -> vtable slot 0x60/8]
@@ -260,7 +260,7 @@ void unable_7102276b00(void* L) {
 
     u64 kind = 0;
     if (L && nargs > 0) {
-        kind = FUN_71038f4000(L, 1, 0);
+        kind = l2cParamResolve_71038f4000(L, 1, 0);
     }
 
     // [derived: KineticModule__get_energy_impl (.dynsym) -> vtable slot 0x60/8]
@@ -281,7 +281,7 @@ void clear_speed_7102276c90(void* L) {
 
     u64 kind = 0;
     if (L && nargs > 0) {
-        kind = FUN_71038f4000(L, 1, 0);
+        kind = l2cParamResolve_71038f4000(L, 1, 0);
     }
 
     // [derived: KineticModule__get_energy_impl (.dynsym) -> vtable slot 0x60/8]
@@ -303,7 +303,7 @@ void get_speed_7102277640(void* L) {
 
     u64 kind = 0;
     if (L && nargs > 0) {
-        kind = FUN_71038f4000(L, 1, 0);
+        kind = l2cParamResolve_71038f4000(L, 1, 0);
     }
 
     // [derived: KineticModule__get_energy_impl (.dynsym) -> vtable slot 0x60/8]

@@ -15,7 +15,7 @@ extern "C" void unlock_71039c14a0(void*);  // std::__1::recursive_mutex::unlock(
 
 // Allocator and helpers
 extern "C" void* je_aligned_alloc(unsigned long, unsigned long);
-extern "C" void FUN_710392e590(void*);  // je_free
+extern "C" void jeFree_710392e590(void*);  // je_free
 extern "C" void* memcpy(void*, const void*, unsigned long);
 extern "C" void* memset(void*, int, unsigned long);
 
@@ -74,7 +74,7 @@ void FUN_71035471c0(u64* param_1) {
             FUN_7103540560(DAT_7105331f20, *(u32*)((u8*)param_1 + 0x1c));
             *(u32*)((u8*)param_1 + 0x1c) = 0xffffff;
         }
-        FUN_710392e590(param_1);
+        jeFree_710392e590(param_1);
     }
 }
 
@@ -105,7 +105,7 @@ void FUN_7103547110(u64* param_1) {
             }
             *(u32*)((u8*)param_1 + 0x1c) = 0xffffff;
         }
-        FUN_710392e590(param_1);
+        jeFree_710392e590(param_1);
     }
 }
 

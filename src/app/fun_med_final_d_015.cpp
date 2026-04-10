@@ -51,7 +51,7 @@ long FUN_71035343e0(long param_1, long param_2, long param_3) { (void)param_1; (
 long FUN_710356b980(long param_1) { (void)param_1; return 0; }
 
 // 0x710356bb30  size=12 â€” calls abort (pure virtual stub)
-void FUN_710356bb30(void) { abort(); }
+void abort_710356bb30(void) { abort(); }
 
 // 0x710356bb40  size=12 — calls noreturn
 void FUN_710356bb40(void) { abort(); }

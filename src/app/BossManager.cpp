@@ -118,7 +118,7 @@ void send_event_on_boss_defeat(u8* lua_state) {
 
 extern "C" void FUN_71003ab390(void*, u32);
 extern "C" void FUN_71004eb4b0(void*, u32, u32, u64);
-extern "C" u64 FUN_71038f4000(u8*, s32, s32);
+extern "C" u64 l2cParamResolve_71038f4000(u8*, s32, s32);
 
 // 0x7102208bf0 (208B) — lua C callback: send_event_on_boss_defeat (different TU from 71015c8510)
 // [derived: Ghidra — identical entity list iteration pattern, returns 0]
@@ -152,7 +152,7 @@ extern "C" u64 FUN_7102208b10(u8* L) {
     u64 stack_top = *reinterpret_cast<u64*>(L + 0x10);
     u64 base = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(L + 0x20)) + 0x10;
     u64 diff = stack_top - base;
-    u64 hash40 = FUN_71038f4000(L, 1, 0);
+    u64 hash40 = l2cParamResolve_71038f4000(L, 1, 0);
     if (((diff >> 0x23) & 1) == 0) {
         *reinterpret_cast<u64*>(L + 0x10) = stack_top + (((s64)(diff * (u64)-0x10000000)) >> 0x1c);
     } else {

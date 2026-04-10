@@ -30,7 +30,7 @@ extern void FUN_71000bcf30(u32 *, u32 *);
 extern void FUN_7100165480(void *, long, int *, u64);
 extern void FUN_71000b1d10(void **, u32);
 extern void FUN_71000b1cf0(void **);
-extern u64  FUN_7100138620(long);
+extern u64  xorshift128_7100138620(long);
 extern u64  PTR_DAT_71052a3c28;
 extern u64  PTR_DAT_71052a3cf0;    // Debug/log transport global
 extern "C" void* memset(void*, int, unsigned long);
@@ -420,7 +420,7 @@ bool FUN_7100165540(long param_1, u64 param_2)
         FUN_71000b1cf0(local_60);
     }
     if (local_14 != 0) {
-        uVar1 = FUN_7100138620(param_1 + 0x4b8);
+        uVar1 = xorshift128_7100138620(param_1 + 0x4b8);
         return (int)((uVar1 & 0xFFFFFFFF) * 100 >> 0x20) < local_14;
     }
     return false;

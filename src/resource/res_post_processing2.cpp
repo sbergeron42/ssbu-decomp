@@ -17,7 +17,7 @@ extern "C" void unlock_71039c14a0(void*);  // std::__1::recursive_mutex::unlock(
 
 // Allocator and helpers
 extern "C" void* je_aligned_alloc(unsigned long, unsigned long);
-extern "C" void FUN_710392e590(void*);  // je_free
+extern "C" void jeFree_710392e590(void*);  // je_free
 extern "C" void* memcpy(void*, const void*, unsigned long);
 extern "C" void* memset(void*, int, unsigned long);
 
@@ -284,7 +284,7 @@ void* FUN_7103546d90(u64* param_1) {
                 param_1[3] = (u64)(insert_pos + 1);
                 param_1[4] = (u64)((u8*)new_buf + new_cap * 8);
                 if (old_start != nullptr) {
-                    FUN_710392e590(old_start);
+                    jeFree_710392e590(old_start);
                 }
             } else {
                 *vec_end = (u64)new_slab;
@@ -722,7 +722,7 @@ void* FUN_7103549f00(long param_1) {
         // Free the last page
         long* last_page = (long*)(*(long*)(param_1 + 0x120) - 8);
         if (*last_page != 0) {
-            FUN_710392e590((void*)*last_page);
+            jeFree_710392e590((void*)*last_page);
             last_page = (long*)(*(long*)(param_1 + 0x120) - 8);
         }
         *(long*)(param_1 + 0x120) = (long)last_page;
@@ -762,7 +762,7 @@ void* FUN_7103549f00(long param_1) {
     (p)[SZ] = 0; \
     while ((u64)(_diff >> 3) > 2) { \
         if (*_ms != 0) { \
-            FUN_710392e590((void*)*_ms); \
+            jeFree_710392e590((void*)*_ms); \
             _ms = (long*)(p)[MS]; \
             _me = (long*)(p)[ME]; \
         } \
@@ -775,7 +775,7 @@ void* FUN_7103549f00(long param_1) {
     else if (_pc == 2) { (p)[FO] = 0x200; } } \
     if (_ms != _me) { \
         do { \
-            if (*_ms != 0) { FUN_710392e590((void*)*_ms); } \
+            if (*_ms != 0) { jeFree_710392e590((void*)*_ms); } \
             _ms++; \
         } while (_me != _ms); \
         long _ev = (p)[ME]; \
@@ -783,7 +783,7 @@ void* FUN_7103549f00(long param_1) {
             (p)[ME] = _ev + (~((_ev - 8) - (p)[MS]) & 0xfffffffffffffff8ULL); \
         } \
     } \
-    if ((p)[AL] != 0) { FUN_710392e590((void*)(p)[AL]); } \
+    if ((p)[AL] != 0) { jeFree_710392e590((void*)(p)[AL]); } \
 } while(0)
 
 void FUN_710354b800(long* param_1) {
@@ -885,7 +885,7 @@ void FUN_710354b4b0(long param_1) {
                                     ((back_idx + front_off) & 0x1ff) * 8);
             if (fiber != nullptr) {
                 _ZN3phx5Fiber6dFiberEv(fiber);
-                FUN_710392e590(fiber);
+                jeFree_710392e590(fiber);
                 deque_size = *size_ptr;
                 front_off = *(long*)(param_1 + 0x130);
                 back_idx = deque_size - 1;
@@ -903,7 +903,7 @@ void FUN_710354b4b0(long param_1) {
             if ((u64)(excess + cap) > 0x3ff) {
                 long* last_page = (long*)(*map_end_ptr - 8);
                 if (*last_page != 0) {
-                    FUN_710392e590((void*)*last_page);
+                    jeFree_710392e590((void*)*last_page);
                     back_idx = *size_ptr;
                     last_page = (long*)(*map_end_ptr - 8);
                 }
@@ -940,7 +940,7 @@ void FUN_710354b4b0(long param_1) {
 
     while ((u64)(map_diff >> 3) > 2) {
         if (*map_start != 0) {
-            FUN_710392e590((void*)*map_start);
+            jeFree_710392e590((void*)*map_start);
             map_start = (long*)*(long*)(param_1 + 0x118);
             map_end = (long*)*(long*)(param_1 + 0x120);
         }
@@ -959,7 +959,7 @@ void FUN_710354b4b0(long param_1) {
     if (map_start != map_end) {
         do {
             if (*map_start != 0) {
-                FUN_710392e590((void*)*map_start);
+                jeFree_710392e590((void*)*map_start);
             }
             map_start++;
         } while (map_end != map_start);
@@ -972,19 +972,19 @@ void FUN_710354b4b0(long param_1) {
 
     // Free deque map allocation
     if (*(long*)(param_1 + 0x110) != 0) {
-        FUN_710392e590((void*)*(long*)(param_1 + 0x110));
+        jeFree_710392e590((void*)*(long*)(param_1 + 0x110));
     }
 
     // Free ready_tasks vector
     if (*(long*)(param_1 + 0xf8) != 0) {
         *(long*)(param_1 + 0x100) = *(long*)(param_1 + 0xf8);
-        FUN_710392e590((void*)*(long*)(param_1 + 0xf8));
+        jeFree_710392e590((void*)*(long*)(param_1 + 0xf8));
     }
 
     // Free pending_tasks vector
     if (*(long*)(param_1 + 0xe0) != 0) {
         *(long*)(param_1 + 0xe8) = *(long*)(param_1 + 0xe0);
-        FUN_710392e590((void*)*(long*)(param_1 + 0xe0));
+        jeFree_710392e590((void*)*(long*)(param_1 + 0xe0));
     }
 
     // Destroy mutex
@@ -1089,7 +1089,7 @@ void FUN_710354c720(u32 param_1, int* param_2) {
                 *(u64**)(tls_val + 0xe8) = insert + 4;
                 *(void**)(tls_val + 0xf0) = (void*)((u8*)new_buf + new_cap * 0x20);
                 if (old_start != nullptr) {
-                    FUN_710392e590(old_start);
+                    jeFree_710392e590(old_start);
                 }
             }
         }
@@ -1181,7 +1181,7 @@ void FUN_710354cc80(u64* param_1) {
 
         long alloc = (long)param_1[4];
         if (alloc != 0) {
-            FUN_710392e590((void*)alloc);
+            jeFree_710392e590((void*)alloc);
         }
     }
 
@@ -1209,7 +1209,7 @@ void FUN_710354cc80(u64* param_1) {
                 }
             }
             if (node != nullptr) {
-                FUN_710392e590(node);
+                jeFree_710392e590(node);
             }
             node = next;
         }

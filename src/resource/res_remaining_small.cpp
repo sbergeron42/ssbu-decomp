@@ -10,7 +10,7 @@
 extern "C" u64 FUN_71039c0510(u32);          // nn::os::GetTlsValue
 
 // Memory management
-extern "C" void FUN_710392e590(void*);       // je_free
+extern "C" void jeFree_710392e590(void*);       // je_free
 
 // VirtualFreeHook (PLT)
 extern "C" void FUN_71039c1400(void*);
@@ -152,12 +152,12 @@ void FUN_710354f900_354f900(u64* param_1) {
         if (PTR_VirtualFreeHook_71052a7a70 != nullptr) {
             FUN_71039c1400(heap_ptr);
         }
-        FUN_710392e590(heap_ptr);
+        jeFree_710392e590(heap_ptr);
     }
     if (PTR_VirtualFreeHook_71052a7a70 != nullptr) {
         FUN_71039c1400(param_1);
     }
-    FUN_710392e590(param_1);
+    jeFree_710392e590(param_1);
 }
 
 // ============================================================================

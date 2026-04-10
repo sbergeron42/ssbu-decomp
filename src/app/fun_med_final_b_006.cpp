@@ -14,7 +14,7 @@ extern "C" {
     void  FUN_71001b4200(void *out, void *in);
     void  FUN_71001b4300(void *dst, void *src);
     long  FUN_71001d6b80(long p);
-    void  FUN_71001b4910(void *p);
+    void  stdFunctionCleanup_71001b4910(void *p);
     void  FUN_71001d0c80(void *a, void *b, u32 c);
     void  FUN_710024c6d0(void *a, void *b);
     void  FUN_7100228e20(void *a, void *b);
@@ -292,11 +292,11 @@ void FUN_7100243a70(long param_1) {
         short lang    = FUN_71001e5d60(zone);
         if (!has_name || !lang) {
             name_obj[0] = PTR_DAT_71052a3d80 + 0x10;
-            FUN_71001b4910(name_obj);
+            stdFunctionCleanup_71001b4910(name_obj);
         } else {
             char use_filter = FUN_71001f2d10(zone);
             name_obj[0] = PTR_DAT_71052a3d80 + 0x10;
-            FUN_71001b4910(name_obj);
+            stdFunctionCleanup_71001b4910(name_obj);
             if (use_filter) {
                 void *filter[2] = {};
                 FUN_71001f1c90(filter);
@@ -308,7 +308,7 @@ void FUN_7100243a70(long param_1) {
                 FUN_71001f2f60((void **)fname, zone);
                 FUN_71001f2eb0(filter, fname);
                 fname[0] = PTR_DAT_71052a3d80 + 0x10;
-                FUN_71001b4910(fname);
+                stdFunctionCleanup_71001b4910(fname);
                 // build list node
                 extern u8 *PTR_DAT_71052a66b8;
                 extern u8 *PTR_DAT_71052a66c0;

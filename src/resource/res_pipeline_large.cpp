@@ -13,7 +13,7 @@ extern "C" void FUN_710354c720(u32 dispatch_id, void* count_ptr);
 
 // Memory allocation
 extern "C" void* je_aligned_alloc(unsigned long, unsigned long);
-extern "C" void FUN_710392e590(void*);  // je_free
+extern "C" void jeFree_710392e590(void*);  // je_free
 
 // Globals
 // [derived: DAT_7105332f58 — global array of pointers to dispatch info structs]

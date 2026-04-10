@@ -4,7 +4,7 @@
 #include "types.h"
 
 extern "C" {
-    __attribute__((noreturn)) void FUN_71039c20a0(void);
+    __attribute__((noreturn)) void abortWrapper_71039c20a0(void);
 }
 
 #define DAT_HIDDEN __attribute__((visibility("hidden")))
@@ -26,7 +26,7 @@ u32 FUN_7102145710(u64 param_1)
         uVar1 = 1;
     } else {
         if (uVar1 >= 3)
-            FUN_71039c20a0();
+            abortWrapper_71039c20a0();
         u64 sub = *(u64 *)(vtable + (u64)uVar1 * 8 + 0x110);
         u64 fn = *(u64 *)(*(u64 *)sub + 0x4a0);
         uVar1 = ((u32 (*)(u64))fn)(sub) & 1;

@@ -10,7 +10,7 @@ using app::BattleObjectModuleAccessor;
 
 // ── External functions ────────────────────────────────────────────────────────
 extern "C" void* FUN_71002f4830(void*);
-extern "C" void* FUN_7100314030(void*, void*);
+extern "C" void* aiGetTargetById_7100314030(void*, void*);
 extern "C" void* FUN_710033c360(void*);
 extern "C" void* FUN_710033c510(s32);
 extern "C" void* FUN_71003596f0(void*);
@@ -78,7 +78,7 @@ bool check_stat_floor_damage(void* p) {
 // NOTE: check_stat_unable_attack, catch_attack_cancel_frame, num_of_attack_123,
 // has_attack_100 moved to fun_batch_d5_043.cpp
 
-// ── Target-player lookup (FUN_7100314030) ────────────────────────────────────
+// ── Target-player lookup (aiGetTargetById_7100314030) ────────────────────────────────────
 
 // 71003665f0
 s32 target_fighter_kind(void* p) {
@@ -86,7 +86,7 @@ s32 target_fighter_kind(void* p) {
     asm("");
 #endif
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
-    void* r = FUN_7100314030(DAT_71052b5fd8, (u8*)a + 0xc50);
+    void* r = aiGetTargetById_7100314030(DAT_71052b5fd8, (u8*)a + 0xc50);
     return *reinterpret_cast<s32*>((u8*)r + 0x28);
 }
 
@@ -96,7 +96,7 @@ s32 target_copy_fighter_kind(void* p) {
     asm("");
 #endif
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
-    void* r = FUN_7100314030(DAT_71052b5fd8, (u8*)a + 0xc50);
+    void* r = aiGetTargetById_7100314030(DAT_71052b5fd8, (u8*)a + 0xc50);
     return *reinterpret_cast<s32*>((u8*)r + 0x1f4);
 }
 
@@ -106,7 +106,7 @@ s32 target_current_attack_start_frame(void* p) {
     asm("");
 #endif
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
-    void* r = FUN_7100314030(DAT_71052b5fd8, (u8*)a + 0xc50);
+    void* r = aiGetTargetById_7100314030(DAT_71052b5fd8, (u8*)a + 0xc50);
     return *reinterpret_cast<s32*>((u8*)r + 0x120);
 }
 
@@ -116,7 +116,7 @@ s32 target_current_attack_combo_end_frame(void* p) {
     asm("");
 #endif
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
-    void* r = FUN_7100314030(DAT_71052b5fd8, (u8*)a + 0xc50);
+    void* r = aiGetTargetById_7100314030(DAT_71052b5fd8, (u8*)a + 0xc50);
     return *reinterpret_cast<s32*>((u8*)r + 0x128);
 }
 
@@ -126,7 +126,7 @@ s32 target_current_attack_cancel_frame(void* p) {
     asm("");
 #endif
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
-    void* r = FUN_7100314030(DAT_71052b5fd8, (u8*)a + 0xc50);
+    void* r = aiGetTargetById_7100314030(DAT_71052b5fd8, (u8*)a + 0xc50);
     return *reinterpret_cast<s32*>((u8*)r + 0x12c);
 }
 
@@ -136,7 +136,7 @@ bool check_target_stat_attack_catch(void* p) {
     asm("");
 #endif
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
-    void* r = FUN_7100314030(DAT_71052b5fd8, (u8*)a + 0xc50);
+    void* r = aiGetTargetById_7100314030(DAT_71052b5fd8, (u8*)a + 0xc50);
     return (*reinterpret_cast<u8*>((u8*)r + 0x55) >> 6) & 1;
 }
 
@@ -146,7 +146,7 @@ bool check_target_stat_damage(void* p) {
     asm("");
 #endif
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
-    void* r = FUN_7100314030(DAT_71052b5fd8, (u8*)a + 0xc50);
+    void* r = aiGetTargetById_7100314030(DAT_71052b5fd8, (u8*)a + 0xc50);
     return *reinterpret_cast<s32*>((u8*)r + 0x74) == 5;
 }
 
@@ -156,7 +156,7 @@ bool check_target_stat_attack(void* p) {
     asm("");
 #endif
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
-    void* r = FUN_7100314030(DAT_71052b5fd8, (u8*)a + 0xc50);
+    void* r = aiGetTargetById_7100314030(DAT_71052b5fd8, (u8*)a + 0xc50);
     return (u32)(*reinterpret_cast<s32*>((u8*)r + 0x74) - 0x15) < 2;
 }
 
@@ -166,7 +166,7 @@ bool check_target_stat_attack_hold(void* p) {
     asm("");
 #endif
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
-    void* r = FUN_7100314030(DAT_71052b5fd8, (u8*)a + 0xc50);
+    void* r = aiGetTargetById_7100314030(DAT_71052b5fd8, (u8*)a + 0xc50);
     return (u32)(*reinterpret_cast<s32*>((u8*)r + 0x74) - 0x17) < 2;
 }
 
@@ -176,7 +176,7 @@ bool check_target_stat_unable_attack(void* p) {
     asm("");
 #endif
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
-    void* r = FUN_7100314030(DAT_71052b5fd8, (u8*)a + 0xc50);
+    void* r = aiGetTargetById_7100314030(DAT_71052b5fd8, (u8*)a + 0xc50);
     return (*reinterpret_cast<u8*>((u8*)r + 0x59) >> 3) & 1;
 }
 
@@ -186,7 +186,7 @@ float target_damage(void* p) {
     asm("");
 #endif
     void* a = *reinterpret_cast<void**>((u8*)p - 8);
-    void* r = FUN_7100314030(DAT_71052b5fd8, (u8*)a + 0xc50);
+    void* r = aiGetTargetById_7100314030(DAT_71052b5fd8, (u8*)a + 0xc50);
     return *reinterpret_cast<float*>((u8*)r + 0xe0);
 }
 

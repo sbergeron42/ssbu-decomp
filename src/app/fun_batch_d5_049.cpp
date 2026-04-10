@@ -14,7 +14,7 @@ extern "C" {
 // ---- External declarations ----
 
 extern void FUN_71037aeb30(float, float, void *);
-extern void FUN_71037aeec0(u64);
+extern void noop_71037aeec0(u64);
 extern void FUN_71037aeed0(float, float, void *);
 extern void FUN_71037aedd0(void *, void *);
 extern void FUN_71037b0c80(s64, s64);
@@ -29,7 +29,7 @@ extern void FUN_71037b3620(u32 *);
 __attribute__((optnone)) void FUN_71037b4a90(u64 param_1, u32 param_2);
 extern void FUN_71037bc730(u64);
 extern u64  FUN_71037aef60(u32, u32);
-extern void FUN_710392e590(void *);
+extern void jeFree_710392e590(void *);
 extern void FUN_71037f0c00(u64);
 extern void FUN_71038711e0(int);
 extern void FUN_71038e0640(int);
@@ -59,7 +59,7 @@ s64 FUN_71037bc140(s64 param_1) {
 __attribute__((optnone))
 u32 FUN_71037aee70(float *param_1) {
     u32 local_18[2];
-    FUN_71037aeec0((u64)local_18);
+    noop_71037aeec0((u64)local_18);
     FUN_71037aeb30(-*param_1, -param_1[1], local_18);
     return local_18[0];
 }
@@ -172,11 +172,11 @@ void FUN_71037c29d0(u64 param_1) {
 // 0x71037bf520 — init five sub-objects at fixed offsets (72 bytes)
 __attribute__((optnone))
 void FUN_71037bf520(s64 param_1) {
-    FUN_71037aeec0(param_1 + 8);
-    FUN_71037aeec0(param_1 + 0x10);
-    FUN_71037aeec0(param_1 + 0x18);
-    FUN_71037aeec0(param_1 + 0x20);
-    FUN_71037aeec0(param_1 + 0x2c);
+    noop_71037aeec0(param_1 + 8);
+    noop_71037aeec0(param_1 + 0x10);
+    noop_71037aeec0(param_1 + 0x18);
+    noop_71037aeec0(param_1 + 0x20);
+    noop_71037aeec0(param_1 + 0x2c);
 }
 
 // 0x71037b7440 — zero-init many fields (68 bytes)
@@ -217,7 +217,7 @@ void FUN_7103869bc0(u64 *param_1) {
         if (PTR_VirtualFreeHook_71052a7a70 != (u8 *)0) {
             nu::VirtualFreeHook(param_1);
         }
-        FUN_710392e590(param_1);
+        jeFree_710392e590(param_1);
     }
 }
 
@@ -230,7 +230,7 @@ void FUN_710386ddd0(u64 *param_1) {
         if (PTR_VirtualFreeHook_71052a7a70 != (u8 *)0) {
             nu::VirtualFreeHook(param_1);
         }
-        FUN_710392e590(param_1);
+        jeFree_710392e590(param_1);
     }
 }
 
@@ -243,7 +243,7 @@ void FUN_71038717a0(u64 *param_1) {
         if (PTR_VirtualFreeHook_71052a7a70 != (u8 *)0) {
             nu::VirtualFreeHook(param_1);
         }
-        FUN_710392e590(param_1);
+        jeFree_710392e590(param_1);
     }
 }
 

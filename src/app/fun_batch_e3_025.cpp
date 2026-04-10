@@ -6,7 +6,7 @@
 // MEDIUM-tier FUN_* functions — 0x7102 address range, batch e3-025
 // PostureModule 0x710206af80–0x710206b120, ReflectModule 0x710206ed10–0x710206ed80
 
-extern "C" u64 FUN_71038f4000(u64, int, int);
+extern "C" u64 l2cParamResolve_71038f4000(u64, int, int);
 
 // ---- PostureModule (accessor+0x38) — rot_x/y/z component extractors -------
 

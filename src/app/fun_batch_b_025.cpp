@@ -11,7 +11,7 @@
 
 // ______ External functions ________________________________________
 
-extern "C" void FUN_710392e590(void*);        // operator delete / free
+extern "C" void jeFree_710392e590(void*);        // operator delete / free
 extern "C" void FUN_71003aeef0(void*, u32, u16); // BOM register
 extern "C" void FUN_71003af040(void*, long);      // BOM unregister
 extern "C" void FUN_71003a6460(void*, void*, u32, u32, u64); // article init
@@ -47,7 +47,7 @@ void FUN_71003e5ba0(u64* node) {
     if (node != nullptr) {
         FUN_71003e5ba0(reinterpret_cast<u64*>(node[0]));
         FUN_71003e5ba0(reinterpret_cast<u64*>(node[1]));
-        FUN_710392e590(node);
+        jeFree_710392e590(node);
     }
 }
 
@@ -278,20 +278,20 @@ void FUN_71003cd650(u64* param_1) {
     if (data != nullptr) {
         long count = *reinterpret_cast<long*>(data - 8);
         if (count == 0) {
-            FUN_710392e590(data - 0x10);
+            jeFree_710392e590(data - 0x10);
         } else {
             long offset = count * 0x70;
             do {
                 FUN_71003cbf10(data + offset - 0x70);
                 offset -= 0x70;
             } while (offset != 0);
-            FUN_710392e590(data - 0x10);
+            jeFree_710392e590(data - 0x10);
             if (param_1 == nullptr) {
                 return;
             }
         }
     }
-    FUN_710392e590(param_1);
+    jeFree_710392e590(param_1);
 }
 
 // ── 0x71003cddb0 (136B) — vector-like destructor (identical TU) ────
@@ -303,20 +303,20 @@ void FUN_71003cddb0(u64* param_1) {
     if (data != nullptr) {
         long count = *reinterpret_cast<long*>(data - 8);
         if (count == 0) {
-            FUN_710392e590(data - 0x10);
+            jeFree_710392e590(data - 0x10);
         } else {
             long offset = count * 0x70;
             do {
                 FUN_71003cbf10(data + offset - 0x70);
                 offset -= 0x70;
             } while (offset != 0);
-            FUN_710392e590(data - 0x10);
+            jeFree_710392e590(data - 0x10);
             if (param_1 == nullptr) {
                 return;
             }
         }
     }
-    FUN_710392e590(param_1);
+    jeFree_710392e590(param_1);
 }
 
 // ════════════════════════════════════════════════════════════════════

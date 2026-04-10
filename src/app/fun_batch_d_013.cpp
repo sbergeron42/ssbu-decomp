@@ -21,7 +21,7 @@ extern void  FUN_710007db90();
 extern u64   FUN_71037223f0(s64);
 extern u64   FUN_7103721ea0(s64, u8);
 extern u64   FUN_71037228b0(s64, u64, u64, u64);
-extern void  FUN_71037aeec0(s64);
+extern void  noop_71037aeec0(s64);
 extern void  FUN_71037af350(s64);
 
 // External data
@@ -193,17 +193,17 @@ void FUN_71037aef00(float *vec) { sqrtf(vec[0] * vec[0] + vec[1] * vec[1]); }
 // 0x71037aef40 -- zero two u32 fields
 void FUN_71037aef40(u32 *out) { *out = 0; out[1] = 0; }
 
-// 0x71037af290 -- call FUN_71037aeec0 on two consecutive 8-byte fields
+// 0x71037af290 -- call noop_71037aeec0 on two consecutive 8-byte fields
 void FUN_71037af290(s64 param_1)
 {
-    FUN_71037aeec0(param_1);
-    FUN_71037aeec0(param_1 + 8);
+    noop_71037aeec0(param_1);
+    noop_71037aeec0(param_1 + 8);
 }
 
-// 0x71037af320 -- call FUN_71037aeec0 at +0, FUN_71037af350 at +8
+// 0x71037af320 -- call noop_71037aeec0 at +0, FUN_71037af350 at +8
 void FUN_71037af320(s64 param_1)
 {
-    FUN_71037aeec0(param_1);
+    noop_71037aeec0(param_1);
     FUN_71037af350(param_1 + 8);
 }
 

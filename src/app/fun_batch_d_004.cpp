@@ -17,7 +17,7 @@ extern "C" {
     void __cxa_guard_release(u64*);
 }
 
-extern void FUN_710392e590(void*);
+extern void jeFree_710392e590(void*);
 extern void FUN_71033137f0(u64, u32);
 
 // External data
@@ -58,10 +58,10 @@ void FUN_710395f890(void)
     return;
 }
 
-// 0x71038f9be4 -- wrapper: FUN_710392e590(param_2), return 0
+// 0x71038f9be4 -- wrapper: jeFree_710392e590(param_2), return 0
 u64 FUN_71038f9be4(u64 param_1, u64 param_2)
 {
-    FUN_710392e590((void*)param_2);
+    jeFree_710392e590((void*)param_2);
     return 0;
 }
 

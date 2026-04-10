@@ -20,7 +20,7 @@ extern void FUN_7103945810(u64);
 extern void FUN_710395cc80(u64, u32, u32);
 extern void FUN_7103540560(u64);
 extern void FUN_7103818550(u32, u64, u8, u8, u32);
-extern void FUN_710392e590(void*);
+extern void jeFree_710392e590(void*);
 extern u16  FUN_710003e210();
 
 namespace nu {
@@ -148,7 +148,7 @@ void FUN_7103655f40(u8 *param_1)
         if (*(u8 **)PTR_VirtualFreeHook_71052a7a70 != nullptr) {
             nu::VirtualFreeHook(ptr);
         }
-        FUN_710392e590(ptr);
+        jeFree_710392e590(ptr);
     }
     if ((*param_1 & 1) == 0) {
         return;
@@ -157,7 +157,7 @@ void FUN_7103655f40(u8 *param_1)
     if (*(u8 **)PTR_VirtualFreeHook_71052a7a70 != nullptr) {
         nu::VirtualFreeHook(ptr);
     }
-    FUN_710392e590(ptr);
+    jeFree_710392e590(ptr);
 }
 
 // 0x71037c6940 -- nn::fs::ReadFile wrapper, returns bytes read or 0 (128 bytes)

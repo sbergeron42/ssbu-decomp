@@ -19,17 +19,17 @@ extern "C" {
 // 0x71037* externals
 extern void FUN_710007db70(void);
 extern void FUN_710007db80(void);
-extern void FUN_710392e590(void *);
+extern void jeFree_710392e590(void *);
 extern void FUN_71037aeed0(float, float, void *);
 extern void FUN_71037aedd0(void *, void *);
 extern void FUN_71037aec40(u64, u64);
-extern void FUN_71037aeec0(u64);
+extern void noop_71037aeec0(u64);
 
 // Semaphore
 namespace nn { namespace os {
     void FinalizeSemaphore(void *sem);
 } }
-extern void FUN_710392e590_v(void *);
+extern void jeFree_710392e590_v(void *);
 
 // 0x71038 externals
 extern void   FUN_710381cc80(u32);
@@ -102,7 +102,7 @@ void FUN_71037cc620(u64 *param_1) {
     param_1[0] = (u64)&PTR_FUN_7105241098;
     if (pSVar1 != (void *)0) {
         nn::os::FinalizeSemaphore(pSVar1);
-        FUN_710392e590(pSVar1);
+        jeFree_710392e590(pSVar1);
         param_1[1] = 0;
     }
 }
@@ -113,10 +113,10 @@ void FUN_71037cc670(u64 *param_1) {
     param_1[0] = (u64)&PTR_FUN_7105241098;
     if (pSVar1 != (void *)0) {
         nn::os::FinalizeSemaphore(pSVar1);
-        FUN_710392e590(pSVar1);
+        jeFree_710392e590(pSVar1);
         param_1[1] = 0;
     }
-    FUN_710392e590(param_1);
+    jeFree_710392e590(param_1);
 }
 
 // ---- 0x71038* ----

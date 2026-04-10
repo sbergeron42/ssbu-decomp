@@ -5,7 +5,7 @@
 
 // ---- External declarations -----------------------------------------------
 
-extern "C" [[noreturn]] void FUN_71039c20a0();  // abort
+extern "C" [[noreturn]] void abortWrapper_71039c20a0();  // abort
 
 extern void FUN_7103540560(s64);
 extern void FUN_71035231c0(u64);
