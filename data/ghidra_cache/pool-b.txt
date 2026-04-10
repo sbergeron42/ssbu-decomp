@@ -304,3 +304,59 @@ FUN_71003ab390 + BossManager singleton + FUN_71004eb4b0
 == 0x7102211600 (84B) — Pac_Land ==
 FUN_710067a3a0(FM, 1) → push result&1 with type tag 1
 
+
+=== SESSION 2026-04-09 BATCH 5 (StageBase struct recovery) ===
+
+== 0x71025d7310 — StageBase::~StageBase (1560B) ==
+Sets vtable PTR_LAB_71050c44c8. Releases:
+  [0x67]=+0x338 complex owned obj (double-buffer alloc pattern)
+  FUN_7102619730(param_1+0x7a) = embedded sub at +0x3D0
+  [0x6b]=+0x358 owned with +0x50 flag
+  [0x6a]=+0x350 vector container iteration
+  [0x69]=+0x348 simple free
+  [0x68]=+0x340 simple free
+  [0x67] again (double-free guard)
+  [0x66]=+0x330 FUN_7102630e50 + free
+  [0x65]=+0x328 simple free
+  [0x64]=+0x320 linked list container
+  [99]=+0x318 unique_ptr (vt[1])
+  [0x62]=+0x310 unique_ptr (vt[1])
+  [0x61]=+0x308 unique_ptr (vt[1])
+  [0x60]=+0x300 unique_ptr (vt[1])
+  +0x26C flag cleared, +0x1D8 flag cleared
+  [0x38/0x39] vector of shared_ptrs
+  [0x35/0x36] vector of ptrs
+  [0x34]=+0x1A0 shared_ptr atomic release
+  [0x30/0x31] buffer free
+  Final: FUN_710260d570(StageManager, param_1[0x1a]) (unregister from SM at +0xD0)
+
+== 0x71025d2dc0 — StageBase ctor (14820B) ==
+Too large for inline cache. Fields: 0x008 through 0x720. Size ~0x728.
+Key inits: vtable=PTR_LAB_71050c44c8, +0xD0=self, +0xD8=flags,
+  +0xF8..+0x178 = 3 hash40 groups, +0x180/+0x188 buffer pair,
+  +0x1A0 shared_ptr, +0x300..+0x358 owned ptrs (zeroed),
+  +0x3D0 event listener vtable (PTR_FUN_71050c5ac0),
+  +0x4A0 sub-struct vtable (PTR_LAB_71050c5618),
+  +0x4E0 stage object ID, +0x5E8 active flag,
+  +0x600..+0x6AC u32 param array,
+  +0x6B8 sub listener vt (PTR_LAB_71050c5aa0),
+  +0x6F4 init_color_param=0x876500, +0x704=0xFFFFFFFF sentinel,
+  +0x718 allocated, +0x720=0.
+
+== 0x71025e55a0 — UnkStageIntermediate::~dtor (adds +0x740/+0x750/+0x768) ==
+Sets vtable PTR_LAB_71050c4d70.
+  [0xed]=+0x768 freed with FUN_71025f5c90
+  [0xea/0xeb]=+0x750 vector-style begin/end free
+  [0xe8]=+0x740 shared_ptr release (with embedded ref)
+  Tail-calls FUN_71025d7310 (StageBase dtor)
+
+== 0x71025d7970 (800B) — StageBase virtual (cleanup/update) ==
+Uses: +0x310 vt[3], +0x308 vt[5], +0x350 vector iteration,
+  +0x338 double-deref, +0x4E0 scene handle check/clear,
+  +0x5E8 flag clear, +0xD8 flags |= 4
+
+== 0x71025d8750 (152B) — StageBase virtual (iterate vector at +0x350) ==
+Iterates vec_container elements, checks +0x40 flag, calls vt[6] and vt[9]
+
+== 0x71025d67b0 (96B) — StageBase query (reads 5 params from +0x198 chain) ==
+Reads **(+0x198), passes to 5 param getter functions

@@ -5,6 +5,7 @@
 #include "app/modules/WorkModule.h"
 #include "app/BattleObjectModuleAccessor.h"
 #include "app/CameraController.h"
+#include "app/placeholders/StageBase.h"
 
 // ---- ~CameraQuake destructor ----
 // 0x7100515190 (3,192 bytes)
@@ -265,28 +266,32 @@ extern "C" void request_quake(u64 lua_state, u32 kind) {
 extern "C" u8 PTR_LAB_71050e7a18;
 extern "C" void FUN_7102837e00(void*);
 extern "C" void FUN_7102834b90(void*);
-extern "C" void FUN_71025e55a0(void*);
+extern "C" void FUN_71025e55a0(StageBase*);
 
-extern "C" void FUN_71028350b0(u64* param_1) {
-    *param_1 = (u64)&PTR_LAB_71050e7a18;
+extern "C" void FUN_71028350b0(StageBase* param_1) {
+    u64* p = reinterpret_cast<u64*>(param_1);
+    param_1->vtable = reinterpret_cast<void**>(&PTR_LAB_71050e7a18);
 
-    u64 p3 = param_1[0x123];
-    param_1[0x123] = 0;
+    // +0x918 [derived: StageEnd owned ptr]
+    u64 p3 = p[0x123];
+    p[0x123] = 0;
     if (p3 != 0) FUN_710392e590((void*)p3);
 
-    u64 p2 = param_1[0x122];
-    param_1[0x122] = 0;
+    // +0x910 [derived: StageEnd owned ptr]
+    u64 p2 = p[0x122];
+    p[0x122] = 0;
     if (p2 != 0) FUN_710392e590((void*)p2);
 
-    u64 p1 = param_1[0x121];
-    param_1[0x121] = 0;
+    // +0x908 [derived: StageEnd owned object, cleanup via FUN_7102837e00]
+    u64 p1 = p[0x121];
+    p[0x121] = 0;
     if (p1 != 0) {
         FUN_7102837e00((void*)p1);
         FUN_710392e590((void*)p1);
     }
 
-    FUN_7102834b90(param_1 + 0xef);
-    FUN_71025e55a0(param_1);
+    FUN_7102834b90(p + 0xef);  // +0x778 [derived: StageEnd embedded sub-object]
+    FUN_71025e55a0(param_1);   // [derived: ~StageBattleBase (intermediate dtor)]
 }
 
 // ---- Camera user operation functions ----
@@ -1311,7 +1316,7 @@ extern "C" void revert_camera_7101654b60(void) {
 // ---- Stage destructors ----
 
 // FUN_71025d7310 [derived: StageBase::~StageBase common destructor chain, tail-called by all stage dtors]
-extern "C" void FUN_71025d7310(void*);
+extern "C" void FUN_71025d7310(StageBase*);
 
 // ---- ~StageNintendogs (0x7102ccf720, 136 bytes) ----
 // Sets vtable, releases sub-object at +0x738 (3 inner ptrs at +0x790, +0x788, +0x780),
@@ -1322,11 +1327,12 @@ extern "C" void FUN_71025d7310(void*);
 extern "C" u8 PTR_LAB_710512e5e0 HIDDEN;
 extern "C" void FUN_7102ccf300(u64);
 
-extern "C" void FUN_7102ccf720(u64* param_1)
+extern "C" void FUN_7102ccf720(StageBase* param_1)
 {
-    u64 sub = param_1[0xe7];  // +0x738
-    *(void**)param_1 = &PTR_LAB_710512e5e0;
-    param_1[0xe7] = 0;
+    u64* p = reinterpret_cast<u64*>(param_1);
+    u64 sub = p[0xe7];  // +0x738 [derived: StageNintendogs sub-object]
+    param_1->vtable = reinterpret_cast<void**>(&PTR_LAB_710512e5e0);
+    p[0xe7] = 0;
     if (sub != 0) {
         // Release sub-objects at +0x790, +0x788 via vtable[1]
         u64 p790 = *(u64*)(sub + 0x790);
@@ -1360,24 +1366,25 @@ extern "C" void FUN_7102ccf720(u64* param_1)
 // PTR_LAB_71050f2f78 [derived: StageFlatZoneX vtable]
 extern "C" u8 PTR_LAB_71050f2f78 HIDDEN;
 
-extern "C" void FUN_71029240a0(u64* param_1)
+extern "C" void FUN_71029240a0(StageBase* param_1)
 {
-    *(void**)param_1 = &PTR_LAB_71050f2f78;
+    u64* p = reinterpret_cast<u64*>(param_1);
+    param_1->vtable = reinterpret_cast<void**>(&PTR_LAB_71050f2f78);
 
-    // Release unique_ptr at +0xc78
-    u64 uptr = param_1[0xc78 / 8];
-    param_1[0xc78 / 8] = 0;
+    // Release unique_ptr at +0xc78 [derived: StageFlatZoneX field]
+    u64 uptr = p[0xc78 / 8];
+    p[0xc78 / 8] = 0;
     if (uptr != 0) {
         reinterpret_cast<void(*)(u64)>((*(void***)(u64*)uptr)[1])(uptr);
     }
 
     // Destroy vector at +0x850..+0x858 (elements are 0x18 bytes each)
     // [derived: Ghidra shows plVar1/plVar2 reuse pattern, plVar1 used as final free arg]
-    u64* plVar2 = (u64*)param_1[0x850 / 8];
+    u64* plVar2 = (u64*)p[0x850 / 8];
     if (plVar2 != nullptr) {
-        u64* plVar1 = (u64*)param_1[0x858 / 8];
+        u64* plVar1 = (u64*)p[0x858 / 8];
         if (plVar1 == plVar2) {
-            param_1[0x858 / 8] = (u64)plVar2;
+            p[0x858 / 8] = (u64)plVar2;
             plVar1 = plVar2;
         } else {
             u64* iter = plVar1;
@@ -1390,18 +1397,18 @@ extern "C" void FUN_71029240a0(u64* param_1)
                 }
                 iter = plVar3;
             } while (plVar2 != iter);
-            plVar1 = (u64*)param_1[0x850 / 8];
-            param_1[0x858 / 8] = (u64)plVar2;
+            plVar1 = (u64*)p[0x850 / 8];
+            p[0x858 / 8] = (u64)plVar2;
         }
         if (plVar1 != nullptr) {
             FUN_710392e590(plVar1);
         }
     }
 
-    // Free allocation at +0x830
-    u64 alloc = param_1[0x830 / 8];
+    // Free allocation at +0x830 [derived: StageFlatZoneX field]
+    u64 alloc = p[0x830 / 8];
     if (alloc != 0) {
-        param_1[0x838 / 8] = alloc;
+        p[0x838 / 8] = alloc;
         FUN_710392e590((void*)alloc);
     }
 
@@ -1416,24 +1423,24 @@ extern "C" void FUN_71029240a0(u64* param_1)
 // PTR_LAB_71051520f8 [derived: StageStreetPass vtable]
 extern "C" u8 PTR_LAB_71051520f8 HIDDEN;
 
-extern "C" void FUN_7102f33f20(u64* param_1)
+extern "C" void FUN_7102f33f20(StageBase* param_1)
 {
-    *(void**)param_1 = &PTR_LAB_71051520f8;
+    u64* p = reinterpret_cast<u64*>(param_1);
+    param_1->vtable = reinterpret_cast<void**>(&PTR_LAB_71051520f8);
 
-    // Release unique_ptr at +0x950
-    // [derived: disasm shows cbz after ldr, then blr, then str xzr (store after release)]
-    u64 uptr = param_1[0x950 / 8];
+    // Release unique_ptr at +0x950 [derived: StageStreetPass field]
+    u64 uptr = p[0x950 / 8];
     if (uptr != 0) {
         reinterpret_cast<void(*)(u64)>((*(void***)(u64*)uptr)[1])(uptr);
-        param_1[0x950 / 8] = 0;
+        p[0x950 / 8] = 0;
     }
 
-    // Destroy vector at +0x908..+0x910 (elements 0x18 bytes)
-    u64* plVar2 = (u64*)param_1[0x908 / 8];
+    // Destroy vector at +0x908..+0x910 (elements 0x18 bytes) [derived: StageStreetPass field]
+    u64* plVar2 = (u64*)p[0x908 / 8];
     if (plVar2 != nullptr) {
-        u64* plVar1 = (u64*)param_1[0x910 / 8];
+        u64* plVar1 = (u64*)p[0x910 / 8];
         if (plVar1 == plVar2) {
-            param_1[0x910 / 8] = (u64)plVar2;
+            p[0x910 / 8] = (u64)plVar2;
             plVar1 = plVar2;
         } else {
             u64* iter = plVar1;
@@ -1446,25 +1453,25 @@ extern "C" void FUN_7102f33f20(u64* param_1)
                 }
                 iter = plVar3;
             } while (plVar2 != iter);
-            plVar1 = (u64*)param_1[0x908 / 8];
-            param_1[0x910 / 8] = (u64)plVar2;
+            plVar1 = (u64*)p[0x908 / 8];
+            p[0x910 / 8] = (u64)plVar2;
         }
         if (plVar1 != nullptr) {
             FUN_710392e590(plVar1);
         }
     }
 
-    // Free allocation at +0x8b8
-    u64 alloc1 = param_1[0x8b8 / 8];
+    // Free allocation at +0x8b8 [derived: StageStreetPass field]
+    u64 alloc1 = p[0x8b8 / 8];
     if (alloc1 != 0) {
-        param_1[0x8c0 / 8] = alloc1;
+        p[0x8c0 / 8] = alloc1;
         FUN_710392e590((void*)alloc1);
     }
 
-    // Free allocation at +0x898
-    u64 alloc2 = param_1[0x898 / 8];
+    // Free allocation at +0x898 [derived: StageStreetPass field]
+    u64 alloc2 = p[0x898 / 8];
     if (alloc2 != 0) {
-        param_1[0x8a0 / 8] = alloc2;
+        p[0x8a0 / 8] = alloc2;
         FUN_710392e590((void*)alloc2);
     }
 
