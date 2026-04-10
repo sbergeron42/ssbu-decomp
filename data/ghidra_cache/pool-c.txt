@@ -673,3 +673,53 @@ Strides confirmed again (matches get_battle_object_from_id):
   cat0 0xf940 (fighter), cat1 0x3c30 (weapon), cat2 0x60c0 (item),
   cat3 0x300 (enemy?), cat4 0x2b0 (area?)
 
+
+=== 0x71014b2a40 FUN_71014b2a40 — BattleObject match-setup wrapper ===
+Calls FUN_7101344cf0() first (the big pool init), then constructs 4 "match setup
+entries" (each wrapped in a puVar9/puVar11 pair) that get pushed into the linked
+list at DAT_71052c26c0. Each entry:
+  - puVar9 is a 0x20-byte "header" with vtable + list ptrs
+  - puVar11 is the actual payload, alloc sizes 0x50, 0x330, 0x210, 0x50, 0x18 (varies)
+The linked list root is itself lazy-initialized: DAT_71052c26c0 holds a pointer
+to a 0x8-byte slot which points to a 0x50-byte container header (vtable
+&PTR_FUN_7105069db0). The container's +0x08..+0x48 fields are the doubly-linked
+list head/tail pairs for the 4 entries.
+
+→ New singleton: **DAT_71052c26c0** — match-runtime linked-list root (4 entries
+registered after FUN_7101344cf0 init). Per-match mutable, must be snapshotted
+(but shallow — these are task/entry registration slots, not bulk state).
+
+Sizes touched: 0x50 (root container), 0x330 (entry A payload — fighter-setup?),
+0x210 (entry B — stage-setup?), 0x50 (entry C — plus three 0x30 sub-items),
+0x18 (entry D — smallest). Total new per-match allocation from this wrapper:
+~0x5f0 bytes (1520 B) on top of whatever FUN_7101344cf0 itself allocates.
+
+This function is a dead-end for pool-count extraction — it consumes rather
+than defines the pool capacity. Pool counts still need direct inspection of
+FUN_7101344cf0 to extract.
+
+
+=== 0x7101523b60 FUN_7101523b60 — second match-setup wrapper ===
+Also calls FUN_7101344cf0() first. Lazy-creates 3 additional match singletons:
+
+1. DAT_71052c2800 — main match-state root
+   wrapper (0x10 B, vtable &PTR_LAB_710506cd68) → payload 0x270 B
+   Sub-allocations linked from payload:
+     +0xf8  → 0x40 B sub (state-flags, Hash40 key 0x1750629f16, 0x9edd2b0fd)
+     +0x100 → 0x2e0 B sub (Hash40 0x26e5f4cf48, lots of f32 defaults)
+     +0x118 → 0x80 B sub (vtable &PTR_LAB_7105180b40, 4 linked-list heads)
+     +0x258 → 0xc8 B sub (vtable &PTR_LAB_710506cd48, task table)
+   Total chain: ~0x6d8 B ≈ 1,752 B
+
+2. DAT_71052c2860 — wrapper (0x10 B) → 0x48 B payload
+   Small struct with f32=1.0 default at +0x20, zero init
+
+3. DAT_71052c2858 — wrapper (0x08 B) → 0x10 B payload
+   Minimal: u64=0 + u32=0xFFFFFFFF + pad
+
+Grand total per-match allocation from this wrapper: ~1,880 B.
+
+→ New singletons for rollback snapshot:
+    DAT_71052c2800, DAT_71052c2860, DAT_71052c2858
+    Per-match mutable, shallow state, total <2 KB. MUST snapshot.
+
