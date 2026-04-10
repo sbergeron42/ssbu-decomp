@@ -23,6 +23,8 @@ extern "C" u64 DAT_71051635b8 __attribute__((visibility("hidden"))); // stage su
 extern "C" u64 DAT_7105163910 __attribute__((visibility("hidden"))); // stage sub-obj vtable (vt_910)
 extern "C" u64 DAT_7105163720 __attribute__((visibility("hidden"))); // stage sub-obj vtable (vt_720)
 extern "C" u64 DAT_7105163788 __attribute__((visibility("hidden"))); // stage sub-obj vtable (vt_788)
+extern "C" u64 DAT_7105162ed0 __attribute__((visibility("hidden"))); // stage sub-obj vtable (vt_ed0)
+extern "C" void stage_vt7105162ed0_payload_release_7102413d40(void*, s32) asm("FUN_7102413d40");
 
 // Cleanup helpers for the two small D0 destructors below. Both are tail-called
 // with the owned inner pointer's +0x28 field or the raw pointer.
@@ -242,6 +244,58 @@ extern "C" void stage_D0_dtor_71030525a0(StageSubObjVt* self)
         jeFree_710392e590(inner);
     }
     jeFree_710392e590(self);
+}
+
+// Inner object for stage_vt7105162ed0: 16-byte header then a sub-object pointer.
+struct StageInner_SubAt10 {
+    u8 head[16];                             // padding
+    struct StageSubObjInnerWithHandle* sub;  // at +16 [derived: cleared then freed]
+};
+
+// Sub-object owned by stage_vt7105162ed0 inner at +16. Layout:
+// - +0x00: pointer to a 2-level indirect handle provider. Its first slot is
+//          itself a pointer, and that pointer's +0x8 field is the payload we
+//          pass to the release helper:
+//              payload = *((void***)sub[0])[0]->[+8]
+//          i.e. sub->provider is a void***, ignoring vtable semantics.
+// - +0x1c: s32 id/index passed as the second arg to the release helper.
+struct HandleProviderSlot {
+    void* level1;   // +0x00 [derived: level1+0x8 is the payload]
+};
+
+struct StageSubObjInnerWithHandle {
+    HandleProviderSlot** provider; // at the start
+    u8 gap[20];                    // padding between provider and id
+    s32 id;                        // 28 bytes in [derived: s32 handle, passed to release helper]
+};
+
+// 0x710303e0a0 (100 bytes) — D1 destructor for stage sub-object with vtable
+// DAT_7105162ed0. Not a D0 variant (no final operator delete on self). Cleans
+// inner.sub_at_0x10 by looking up a payload via inner.sub->provider's vtable
+// slot 1, calling a release helper on it, then deleting the sub and the inner.
+// [derived: disasm at 0x710303e0a0 — ldr x20,[x19,#0x10]; str xzr; ldr x8,[x20]; ldr x8,[x8]; ldr w1,[x20,#0x1c]; ldr x0,[x8,#0x8]; bl release; bl delete sub; b delete inner]
+extern "C" void stage_vt7105162ed0_D1_dtor_710303e0a0(StageSubObjVt* self)
+{
+    auto* inner = static_cast<StageInner_SubAt10*>(self->owned_inner);
+    self->vtable = &DAT_7105162ed0;
+    self->owned_inner = nullptr;
+    if (inner == nullptr) return;
+    auto* sub = inner->sub;
+    inner->sub = nullptr;
+    if (sub != nullptr) {
+        // Release the handle. Walk: sub->provider → level1 → level1+8 = payload.
+        // Load order is significant for matching: level1, then id, then payload.
+        HandleProviderSlot* level1 = *sub->provider;
+        s32 id = sub->id;
+#ifdef MATCHING_HACK_NX_CLANG
+        asm("" ::: "memory");
+#endif
+        void* payload = *reinterpret_cast<void**>(
+            reinterpret_cast<u8*>(level1) + 8);
+        stage_vt7105162ed0_payload_release_7102413d40(payload, id);
+        jeFree_710392e590(sub);
+    }
+    jeFree_710392e590(inner);
 }
 
 // 0x7103052790 (100 bytes) — sibling of stage_D0_dtor_71030525a0 with the same
