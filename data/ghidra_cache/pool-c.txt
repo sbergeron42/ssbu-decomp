@@ -569,3 +569,79 @@ BossManager:         DAT_71052b7ef8 (was mis-labeled as BattleObjectManager in w
 === Per-match state size lower bound ===
 ~2 MB BattleObject pools + ~256 KB est. Lua VMs + ~40 KB manager bodies + ~0.2 KB RNG
 = ~2.5 MB raw per-frame savestate before module-level dirty-bit optimization.
+
+== Session 2026-04-10 — Rollback memory map pass 2 ==
+
+=== 0x71015ce700 app::stage::get_gravity_position ===
+Reads lib::Singleton<app::BattleObjectWorld>::instance_ via:
+  adrp x8, 0x71052b7000 ; ldr x8, [x8, #0x558]
+→ lib::Singleton<app::BattleObjectWorld>::instance_ = **0x71052b7558**
+Body: +0x5c byte flag ('use default gravity'). If 0 → returns &body+0x10 (gravity_pos vec4).
+Else returns &DAT_71052b7610 (static default, guard DAT_71052b7608). Default loaded from
+PTR_ConstantZero_71052a7a80 (8+8 bytes).
+
+=== 0x7101fca200 BattleObjectWorld__scale_z_impl ===
+  if (world[0xc]) return 1.0; else return *(float*)(world+8);
+→ +0x08 scale_z f32, +0x0c override-flag u8.
+
+=== 0x7101fca1f0 BattleObjectWorld__gravity_speed_coefficient_impl ===
+  return *(f32*)(world+4);
+→ +0x04 gravity_speed_coefficient f32.
+
+=== 0x7101fca220 BattleObjectWorld__gravity_pos_impl ===
+  +0x10 gravity_pos vec4 (when not default)
+  +0x5c use_default flag
+
+=== 0x7101fca2e0 BattleObjectWorld__move_speed_impl ===
+  return world + 0x20 → +0x20 move_speed vec4.
+
+So BattleObjectWorld struct layout (≥ 0x60 B):
+  +0x00 (u32?) unknown
+  +0x04 gravity_speed_coefficient (f32)
+  +0x08 scale_z (f32)
+  +0x0c scale_z override flag (u8)
+  +0x10 gravity_pos (vec4, 16B)
+  +0x20 move_speed (vec4, 16B)
+  +0x30..0x5b unknown (~0x2c bytes)
+  +0x5c use_default_gravity flag (u8)
+  +0x5d..0x?? unknown tail
+→ Minimum struct size: 0x60 bytes. Likely ≤ 0x100 in total.
+
+=== 0x2275400 sv_math::rand RNG dispatcher — confirmed RNG body layout ===
+Dispatches on Hash40 keys (9 branches + default). State at *DAT_71052c25b0 → read ptr →
+  +0x00 default (4 u32 state: state0/1/2/3, counter)
+  +0x14 0x77a08c3fc
+  +0x28 0x66933a7e6
+  +0x3c 0x5c27c9369
+  +0x50 0x2095191e5
+  +0x64 0x5fb9f5aa9
+  +0x78 0x41f1b251e
+  +0x8c 0x5f88ec384
+  +0xa0 0x63b1cee05
+Max offset touched: +0xb0 (counter of 9th stream). **No higher streams** in this dispatcher.
+Minimum RNG snapshot: 0xb4 = **180 bytes**. (Matches memory map, no new streams found.)
+
+=== 0x710260b9b0 FUN_710260b9b0 — EffectManager/secondary effect-table confirmed ===
+Two effect-related globals observed via ADRP 0x7105333000:
+  ldr x10,[x10, #0x920]  → lib::Singleton<lib::EffectManager>::instance_ @ **0x71053333920**
+    (actually 0x7105333920, confirms existing memory map)
+    Double-deref: *(0x7105333920) = EffectManager*, then (EffectMgr + idx * 0x300) = entry.
+    Stride = 0x300 (768 B per particle record).
+    Index = (u32field >> 0x18) — top byte → max 256 entries.
+    Entry validation: *(entry+4) == full u32 id; *(entry+0x2d7) zero-check.
+    Fields written: +0x2d2 (bool), +0x2d4 (bool).
+    → Pool upper bound: 256 × 0x300 = **786,432 B ≈ 768 KB worst case**.
+
+  ldr x10,[x10, #0x948]  → DAT_7105333948 (direct .data array, no double-deref)
+    Stride = 0x1b0 (432 B per entry).
+    Index = bits[25:19] but bounded `cmp w10, #0x4; b.hi` → only indices 0..4 allowed.
+    Fixed 5 entries × 0x1b0 = **2160 bytes** (< 3 KB).
+    Entry validation: *(entry+0) == id; writes u16 0 to +0x1a0 on some cleanup.
+    → Small fixed global, likely a 5-slot "reserved effect" table (stage/HUD effects).
+    Not a per-particle pool; keep in snapshot but cost is negligible.
+
+Other globals touched by this function (peripheral):
+  DAT_7105337018 + 0x18 — some manager's event-listener table (read-only in this path)
+  DAT_71053381f8 — a Hash40 key used for FUN_7103569a80 lookup
+  DAT_7105334e90 — another singleton/ptr chain (deref → +8 → +0x1190 → +0x28 → +8 = 0xFFFFFFFF)
+

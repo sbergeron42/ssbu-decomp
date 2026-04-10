@@ -32,9 +32,10 @@ These are the entry points a rollback walker traverses. Every address is the `.d
 | `lib::Singleton<app::FighterManager>::instance_` | `0x71052b84f8` | `FighterManager__*_impl` .dynsym all deref `mgr+0` | `FighterManagerData` ≥ 0xB88 B | See `include/app/FighterManager.h`. Reaches up to 8 `FighterEntry*` at `+0x20..+0x60` plus `finalbg_ptr`, `movie_ptr` sub-objects. |
 | `lib::Singleton<app::StageManager>::instance_` | `0x71053299d8` | `StageManager__*_impl`, `src/app/StageManager.cpp:9` | `StageManagerData` ≥ 0x180 B | 3 stage-mode `entries[]` at `+0x110`, embedded `stage_info_vt` sub-object at `+0x128`. |
 | `lib::Singleton<app::ItemManager>::instance_` | **`0x71052c3070`** | `find_active_item_from_id @ 0x71015ca930` disassembly: `adrp x8, 0x71052c3000; ldr x9, [x8, #0x70]` | Manages `ItemEntry**` active/pending lists at `+0x10..+0x30` | Already used correctly in `src/app/fighter_status.cpp`, `fun_batch_e3_001.cpp`, `ItemHelpers.cpp`, `gameplay_functions.cpp`. **Latent bug**: `src/app/FighterManager.cpp:33,391` declares and reads `DAT_71052c2b88` as the ItemManager singleton — this is wrong; that address is the `.begin` pointer of a `std::vector<u32>{0xe3}` inside the item-kind lookup table. The wrong dereference reads bytes past the end of a 4-byte allocation. Should be fixed to `DAT_71052c3070` in a future FighterManager-territory pass. |
-| `lib::Singleton<lib::EffectManager>::instance_` | `0x7105333920` | `src/app/fighter_effects.cpp:133` | unknown | Particle pool manager. |
+| `lib::Singleton<lib::EffectManager>::instance_` | `0x7105333920` | `src/app/fighter_effects.cpp:133`; `FUN_710260b9b0` disassembly @ `0x710260bc2c..0x710260bc34` (`adrp x10, 0x7105333000; ldr x10, [x10, #0x920]`) | Pool record stride **0x300 B** (see EffectManager section below) | Particle pool manager. Double-deref: `*instance_ = EffectManager*` which points to a flat array of 768-byte particle records. Max index is top byte of a u32 id (≤256 entries). |
+| `lib::Singleton<app::BattleObjectWorld>::instance_` | **`0x71052b7558`** | `app::stage::get_gravity_position @ 0x71015ce700` disassembly: `adrp x8, 0x71052b7000; ldr x8, [x8, #0x558]`; also `BattleObjectWorld__*_impl` family pass the pointer through .dynsym | `BattleObjectWorld` ≥ 0x60 B | **NEW (Q6 resolved).** Not a per-BattleObject struct despite the name — holds global physics-world overrides (gravity pos/coeff, scale_z, move_speed, reverse/move flags). Small, but per-match mutable. See BattleObjectWorld section below. |
 | BattleObjectManager pool-header array | `DAT_71052b7548` (**not** `DAT_71052b7ef8` as in `WORKER-pool-c.md`) | `get_battle_object_from_id @ 0x71003ac560` | Array of 5 `PoolHeader*` (one per category) | The task file listed `DAT_71052b7ef8`; xrefs confirm that address is the BossManager singleton, not BattleObjectManager. Correction below. |
-| Game global / RNG + (unknown) | `DAT_71052c25b0` | Dereferenced by `app::sv_math::rand` @ `0x7102275400` and every module's get-random impl | struct body ≥ 0xC0 B | Holds ≥ 9 independent XorShift128 streams (per-namespace RNG). **Rollback-critical**. See "RNG" below. |
+| Game global / RNG + (unknown) | `DAT_71052c25b0` | Dereferenced by `app::sv_math::rand` @ `0x7102275400` and every module's get-random impl | state body = **0xB4 B** (9 streams × 20 B, confirmed — no higher streams reached by dispatcher) | Holds 9 independent XorShift128 streams (per-namespace RNG). **Rollback-critical**. See "RNG" below. |
 
 ### Correction: `DAT_71052b7ef8`
 
@@ -157,7 +158,33 @@ Of the known fields, `entry_count`, `ready_go`, `ko_camera_enabled`, `final_acto
 Dynamic stage data (transforming platforms, hazard state) is reached through the `entries[mode]` pointer → sub-object vtable. Scope of this traversal is not yet mapped.
 
 ### 5. EffectManager particle pool (`*DAT_7105333920`)
-Unknown layout. Likely significant: particle pools in 60 fps fighting games run hundreds of instances per frame. Needs its own investigation.
+
+**Layout recovered (2026-04-10)** from `FUN_710260b9b0` disassembly (particle-deactivation path called during BattleObject teardown):
+
+```
+lVar9 = *lib::Singleton<lib::EffectManager>::instance_;  // EffectManager base
+entry  = lVar9 + (effect_id >> 0x18) * 0x300;            // flat array, 768 B stride
+if (entry->id == effect_id && entry->flag_0x2d7 == 0) {
+    entry->flag_0x2d2 = ...;  // vis bit
+    entry->flag_0x2d4 = ...;  // full-mask bit
+}
+```
+
+- **Record stride: 0x300 = 768 B** per particle.
+- **Index encoding**: high byte of a 32-bit effect handle (`id >> 24`), so **max 256 entries**.
+- **Validation**: `*(entry + 4) == effect_id` full u32 — stale handles fail this check, so the pool is a classic generational slab.
+- **Known fields per entry** (incomplete):
+  - `+0x00` (u32) status/type tag (set to `1` at teardown)
+  - `+0x04` (u32) full handle id (validation key)
+  - `+0x2d2` (u8) visibility flag
+  - `+0x2d4` (u8) active-mask-full flag
+  - `+0x2d7` (u8) teardown-in-progress flag
+
+**Upper-bound pool size: 256 × 0x300 = 786,432 B ≈ 768 KB worst case.** Realistic mid-match usage is probably 30–80 active particles, i.e. 23–60 KB of *active* records, but the whole 768 KB slab is the addressable region a rollback snapshot must handle if we choose to copy the slab wholesale. Selective snapshotting using the generation key lets us skip dead entries cheaply.
+
+There is a separate, small **fixed-5-entry secondary effect table at `DAT_7105333948`** (stride 0x1b0, hard cap `idx <= 4`, total **2,160 B**) that lives directly in `.data` — no double-deref. Same validation pattern (`*(entry+0) == id`) and similar flag fields. Likely a reserved slot pool for stage/HUD effects; negligible for rollback but include it for completeness.
+
+**Still unknown**: EffectManager body layout at `*DAT_7105333920` *before* the particle array — whether the first field is just the array base or whether the manager has a head struct of its own; whether there are secondary arrays (sound FX, trail meshes) behind adjacent singleton slots `DAT_71053339xx`.
 
 ### 6. Per-fighter Lua VM state
 `camera_functions.cpp` shows that `lua_state - 8` yields a wrapper struct whose `+0x1A0` field is the owning `BattleObject`. This means **each fighter owns a Lua VM instance** — not a shared global VM. The Lua stack of every active fighter is per-frame mutable and must be snapshotted. Memory size per VM is unknown; Lua 5.x with typical ACMD script depth is usually 8–64 KB per instance. **8 fighters × say 32 KB ≈ 256 KB Lua state per frame**.
@@ -166,6 +193,26 @@ This is likely the single biggest surprise cost in an SSBU rollback. Needs follo
 
 ### 7. BossManager (`*DAT_71052b7ef8`)
 Mis-identified in the worker brief. Probably small (boss-only modes). Rollback-relevant only in Stadium/Classic modes.
+
+### 8. BattleObjectWorld (`*DAT_71052b7558`) — physics-world overrides
+**NEW (2026-04-10, Q6 resolved.)** Despite the name suggesting "per-BattleObject" state, this is a singleton holding **per-match global physics overrides** that stage scripts can mutate. Recovered from `app::stage::get_gravity_position @ 0x71015ce700` disassembly and the `BattleObjectWorld__*_impl` .dynsym family.
+
+Struct layout (minimum known, ≥ 0x60 B):
+
+| Offset | Type | Name | Source |
+|---|---|---|---|
+| `+0x04` | f32 | `gravity_speed_coefficient` | `gravity_speed_coefficient_impl @ 0x7101fca1f0` returns `*(f32*)(world+4)` |
+| `+0x08` | f32 | `scale_z` | `scale_z_impl @ 0x7101fca200` returns `*(f32*)(world+8)` if override flag 0 |
+| `+0x0c` | u8 | `scale_z_use_default` | `scale_z_impl`: if `world[0xc]` non-zero, return hard-coded `1.0f` |
+| `+0x10` | vec4 | `gravity_pos` | `gravity_pos_impl @ 0x7101fca220`, 16-byte load via `ldr q0` |
+| `+0x20` | vec4 | `move_speed` | `move_speed_impl @ 0x7101fca2e0` returns `world + 0x20` |
+| `+0x5c` | u8 | `gravity_pos_use_default` | `gravity_pos_impl`: if `world[0x5c]` non-zero, falls back to guarded constant `DAT_71052b7610` |
+
+Unobserved offsets (`+0x30..+0x5b`, `+0x5d..`): likely additional override flags and boolean state for `is_gravity_normal_impl`, `is_move_impl`, `move_speed_impl`, `is_disable_reverse_impl` (all at `0x7101fca2b0..0x7101fca2f0`). Conservative upper bound: **≤ 0x100 bytes**.
+
+**Rollback verdict**: small mutable region, **YES to snapshot** (a few hundred bytes at most). Stage scripts mutate these during transforming stages (Kongo Falls water, New Pork City UFO) so skipping the snapshot would desync physics on any dynamic-gravity stage.
+
+**Static default constant**: `DAT_71052b7610` (16 B) is constructed once via `__cxa_guard_acquire(DAT_71052b7608)` and holds a copy of `*PTR_ConstantZero_71052a7a80` — this is read-only reference data, not per-match state, **exclude from snapshot**.
 
 ## Persistent / Read-Only Regions (savestate CAN exclude)
 
@@ -179,11 +226,11 @@ Things I confirmed are built once at startup or match-load and then never writte
 
 1. ~~**Where is the actual `app::ItemManager` singleton slot?**~~ **Resolved**: `DAT_71052c3070`, see the correction above. Latent bug in `src/app/FighterManager.cpp:33,391` should be fixed by the next pool assigned FighterManager territory.
 2. **Exact BattleObject pool instance counts**: `+0x18` count fields of the 5 PoolHeaders are set somewhere in `FUN_7101344cf0` (BattleObjectManager init, 31 KB). Extracting them gives us exact worst-case pool sizes.
-3. **EffectManager layout**: no decomp yet. Particle pool count and per-particle size are unknowns.
-4. **Lua VM size per fighter**: need to trace `FighterEntry → lua_state` allocation. Candidate starting point: `lua_state - 8 → +0x1A0` reverse lookup (`camera_functions.cpp:266`).
+3. ~~**EffectManager layout**~~ **Resolved (2026-04-10)**: record stride 0x300 B, max 256 entries, top-byte generational indexing. Worst case 768 KB. See §5 above. Still unknown: whether adjacent `.data` slots at `DAT_71053339xx` hold parallel pools (sound FX, trail meshes).
+4. **Lua VM size per fighter**: the wrapper struct at `lua_state - 8` is a `lib::L2CAgent` (`include/lib/L2CAgent.h`, sizeof=0x38), which holds the `lua_State*` at `+0x08` and the owning `BattleObject*` at `+0x1A0` of an outer struct. The `lua_State` itself (jemalloc-allocated in `lua_newstate`) is opaque; empirical sizing is the only realistic path (allocate a VM, instrument `je_aligned_alloc`, count reachable bytes). Estimate budget remains ~32 KB/fighter × 8 = **~256 KB** pending measurement.
 5. **Sound system mutable state**: not investigated. Some rollback implementations explicitly *do not* rewind audio, trading a minor audio blip for a huge state reduction. Worth documenting as an opt-out.
-6. **Physics / kinetic world state**: mostly per-BattleObject via `KineticModule` (already catalogued in `src/docs/game_state.md`). But `BattleObjectWorld` global state (`gravity_pos_impl` et al. at `0x7101fca220..`) also exists and needs a root address. Not found yet.
-7. **Higher RNG stream offsets in `*DAT_71052c25b0`**: only 9 Hash40 namespaces were proven by the `rand` dispatcher; the struct body may contain more streams beyond `+0xC0`.
+6. ~~**`BattleObjectWorld` global state root address**~~ **Resolved (2026-04-10)**: `lib::Singleton<app::BattleObjectWorld>::instance_` = `0x71052b7558`. Struct ≥ 0x60 B, ≤ 0x100 B conservative. See §8 above.
+7. ~~**Higher RNG stream offsets in `*DAT_71052c25b0`**~~ **Resolved (2026-04-10)**: full decompile of `app::sv_math::rand @ 0x7102275400` dispatcher confirms exactly **9 streams, highest offset +0xb0**. Minimum snapshot body = 180 B. No further streams reachable from the rand path.
 
 ## Persistent vs Per-Match Summary
 
@@ -197,7 +244,9 @@ Things I confirmed are built once at startup or match-load and then never writte
 | StageManager body | per-match | YES | unknown, likely tens of KB |
 | StageManager dynamic stage entries[3] | per-match | YES | unknown, per-stage |
 | RNG streams in `*DAT_71052c25b0` | per-match | **YES (critical)** | ~200 B (9 streams × 20 B) |
-| EffectManager particles | per-match | YES | **unknown — investigate** |
+| EffectManager particles | per-match | YES | ≤ 768 KB worst case (256 × 0x300, see §5); realistic 20–60 KB active |
+| Secondary effect table `DAT_7105333948` | per-match | YES | 2,160 B (5 × 0x1b0) |
+| BattleObjectWorld overrides `*0x71052b7558` | per-match | YES | ≤ 0x100 B (see §8) |
 | Per-fighter Lua VM × 8 | per-match | **YES (expensive)** | ~256 KB estimated |
 | BossManager | per-match (boss modes only) | YES if mode active | unknown |
 | Sound manager | per-match | maybe-opt-out | unknown |
@@ -206,7 +255,7 @@ Things I confirmed are built once at startup or match-load and then never writte
 | jemalloc internal metadata | persistent | **NO — never touch** | — |
 | Global config (SDK heap setup) | persistent | NO | — |
 
-**Current lower-bound estimate for a per-frame savestate: ~2.5 MB raw** (~2 MB BattleObject pools + ~256 KB Lua state + ~40 KB manager bodies + ~0.2 KB RNG + effect/sound unknowns). With module-level dirty tracking this can plausibly be brought down to the **200–500 KB** range, which is where rollback starts being viable at 60 fps.
+**Current lower-bound estimate for a per-frame savestate: ~3.3 MB raw worst case** (~2.2 MB BattleObject pools + ~0.77 MB EffectManager particle slab + ~0.26 MB Lua state (estimated) + ~0.04 MB manager bodies + ~0.2 KB RNG + small odds-and-ends). With the EffectManager generational key used to skip dead slots and module-level dirty tracking on BattleObjects, this can plausibly be brought down to the **250–600 KB** range. The biggest remaining unknown is the Lua VM size — if it turns out to be the textbook 32 KB/fighter figure we stay in budget, if it's closer to 100 KB/fighter rollback becomes harder.
 
 ## Recommended Next Steps
 
@@ -219,9 +268,12 @@ Things I confirmed are built once at startup or match-load and then never writte
 ## Sources
 
 - `get_battle_object_from_id @ 0x71003ac560` — BattleObject pool strides and category count
-- `app::sv_math::rand @ 0x7102275400` — RNG stream layout in `*DAT_71052c25b0`
+- `app::sv_math::rand @ 0x7102275400` — RNG stream layout in `*DAT_71052c25b0` (9 streams confirmed, no more)
 - `FUN_7100417d10` — item-kind lookup table static init (confirmed persistent)
-- `include/app/FighterManager.h`, `include/app/ItemManager.h`, `src/app/StageManager.cpp` — singleton struct layouts
+- `FUN_710260b9b0` (disassembly, not decompile) — EffectManager singleton @ `0x7105333920`, pool stride `0x300`, top-byte generational index, secondary 5-slot table @ `0x7105333948` stride `0x1b0`
+- `app::stage::get_gravity_position @ 0x71015ce700` — `BattleObjectWorld` singleton @ `0x71052b7558`
+- `BattleObjectWorld__*_impl` family @ `0x7101fca1f0..0x7101fca2f0` — struct layout (`+0x04..+0x5c`)
+- `include/app/FighterManager.h`, `include/app/ItemManager.h`, `src/app/StageManager.cpp`, `include/lib/L2CAgent.h` — singleton / wrapper struct layouts
 - `src/docs/game_state.md` — companion document on per-object module state
 - `CLAUDE.md § Resource Service Guidelines` — OOM-retry pattern
 - Memory `project_jemalloc.md` — jemalloc 5.1.0 Nintendo fork confirmation
