@@ -524,3 +524,48 @@ The correct code:
       (*(void(**)(long*))(*obj + 0x388))(obj);
   }
 Verified byte-matching with this form + standard build pipeline.
+
+== Session 2026-04-10 (rollback memory map) ==
+
+=== 0x71003ac560 (get_battle_object_from_id) ===
+Dispatches on (id>>28)&0xF to 5 BattleObject pool categories via DAT_71052b7548[cat].
+Each pool has header {+0x08 array base, +0x18 count}. Lookup: base + (id & 0xFFF0000)>>16 * stride.
+Object strides (== sizeof per category):
+  cat 0: 0xF940 (Fighter, ~61 KB)
+  cat 1: 0x3C30 (Weapon, ~15 KB)
+  cat 2: 0x60C0 (Item, ~24 KB)
+  cat 3: 0x300 (unknown, 768 B)
+  cat 4: 0x2B0 (unknown, 688 B)
+DAT_71052b7548 is the canonical BattleObjectManager root (NOT DAT_71052b7ef8 which is BossManager).
+
+=== 0x7102275400 (app::sv_math::rand) ===
+XorShift128 RNG dispatcher. Reads *DAT_71052c25b0 (game global).
+Struct body contains >=9 independent streams keyed by Hash40:
+  +0x00 default, +0x14 (0x77a08c3fc), +0x28 (0x66933a7e6), +0x3C (0x5c27c9369),
+  +0x50 (0x2095191e5), +0x64 (0x5fb9f5aa9), +0x78 (0x41f1b251e),
+  +0x8C (0x5f88ec384), +0xA0 (0x63b1cee05).
+Each stream is 20 bytes (16 B xorshift state + 4 B call counter).
+Rollback-critical: every stream must be snapshotted or desync on item/crit/gimmick RNG.
+
+=== 0x7100417d10 (FUN_7100417d10, ItemManager item-kind lookup table init) ===
+Static initializer. 65 je_aligned_alloc calls, every alloc is a std::vector<u32> of item kinds.
+Total ~1.8 KB across DAT_71052c2960..71052c2f90. All PERSISTENT (const lookup tables).
+DAT_71052c2b88 is the .begin of vector<u32>{0xe3}, NOT the ItemManager singleton.
+(Existing comment in src/app/FighterManager.cpp:33 is wrong; correction documented in memory_map.md.)
+
+=== 0x710392dce0 (je_aligned_alloc) ===
+Only named jemalloc symbol. Every manager init calls this directly.
+No per-subsystem arena partitioning (no je_mallocx + MALLOCX_ARENA pattern).
+OOM retry uses DAT_7105331f00->vt[0x30] handler.
+
+=== Singleton root set (validated against xrefs) ===
+FighterManager:      DAT_71052b84f8
+StageManager:        DAT_71053299d8
+EffectManager:       DAT_7105333920
+BattleObjectManager: DAT_71052b7548 (array of 5 PoolHeader*)
+Game global / RNG:   DAT_71052c25b0 (contains per-namespace XorShift128 streams)
+BossManager:         DAT_71052b7ef8 (was mis-labeled as BattleObjectManager in worker brief)
+
+=== Per-match state size lower bound ===
+~2 MB BattleObject pools + ~256 KB est. Lua VMs + ~40 KB manager bodies + ~0.2 KB RNG
+= ~2.5 MB raw per-frame savestate before module-level dirty-bit optimization.
