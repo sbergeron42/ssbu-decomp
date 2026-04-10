@@ -1494,9 +1494,9 @@ void COL_NORMAL_71022a2870(void* L) {
     auto* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(
         *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0));
     auto* cb = acc->color_blend_module;
-    void** vt = *reinterpret_cast<void***>(cb);
-    u32 flag = reinterpret_cast<u32(*)(void*)>(vt[0x170 / 8])(cb);
-    reinterpret_cast<void(*)(void*, u32)>(vt[0x60 / 8])(cb, flag & 1);
+    s32 flag = cb->get_status();
+    // vtable slot 0x60/8 (set_normal) — not yet in ColorBlendModule header
+    reinterpret_cast<void(*)(app::ColorBlendModule*, u32)>(cb->_vt[0x60 / 8])(cb, flag & 1);
     u64 base = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20));
     u64 top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
     while (top < base + 0x10) {
@@ -1514,9 +1514,8 @@ void BURN_COLOR_NORMAL_71022a28f0(void* L) {
     auto* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(
         *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0));
     auto* cb = acc->color_blend_module;
-    void** vt = *reinterpret_cast<void***>(cb);
-    u32 flag = reinterpret_cast<u32(*)(void*)>(vt[0x170 / 8])(cb);
-    reinterpret_cast<void(*)(void*, u32)>(vt[0xa0 / 8])(cb, flag & 1);
+    s32 flag = cb->get_status();
+    cb->off_burn_color(flag & 1);
     u64 base = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20));
     u64 top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
     while (top < base + 0x10) {
@@ -3072,9 +3071,7 @@ void init_explosion_no_damage_71015c55c0(void* L) {
     ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
     acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(
         *reinterpret_cast<void**>(ctx + 0x1a0));
-    auto* hit_mod = acc->hit_module;
-    void** avt = *reinterpret_cast<void***>(hit_mod);
-    reinterpret_cast<void(*)(void*, s32, s32)>(avt[0xd0/8])(hit_mod, 2, 0);
+    acc->hit_module->set_whole(2, 0);
 
     wvt = *reinterpret_cast<void***>(work_mod);
     reinterpret_cast<void(*)(void*, u32)>(wvt[0x110/8])(work_mod, 0x20000017u);
