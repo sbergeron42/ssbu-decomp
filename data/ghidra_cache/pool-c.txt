@@ -374,3 +374,33 @@ Reads ctx+0x160, masks &7. If >0xf: uses 0xFFFFFFFF. Lookups parent via FUN_7100
 
 === 0x71003674b0 (68B) app::ai::parent_speed_y ===
 Same as parent_pos_y but returns target+0xa4 (speed_y instead of pos_y).
+
+=== 0x71003681e0 (48B) app::ai::get_cmd_id_from_req_id ===
+Non-leaf. Creates 3 stack-local u32s. Calls FUN_71002f04f0(ctx+0x180, req_id, &a, &b, &c).
+
+=== 0x7100367b00 (104B) app::ai::check_target_over_ground ===
+Gets target. Same logic as check_over_ground: stat_flags bits 0-1, floor+0x5e bit 1, uniq_stat 6/7.
+
+=== 0x7100367400 (84B) app::ai::check_parent_same_floor ===
+Parent entry lookup (ctx+0x160 &7, >0xf→0xFFFF). Compares state->floor_data == parent+0xd0.
+
+=== 0x7100361c70 (104B) app::ai::jump_rest_available ===
+Multi-branch: if uniq_stat==0x10→0. If flags_0x59 bit 5→0.
+If fighter_kind==0x22: check flags_0x68 bit 2. If 0x29: check flags_0x68 bit 0.
+Otherwise return state+0xcc (u16 jump_rest).
+Fields: state+0x59, state+0x68, state+0xcc.
+
+=== 0x7100361310 (20B) app::ai::check_stat_build_max ===
+Returns (state+0x54 >> 2) & 1 (stat_flags bit 2).
+
+=== 0x7100361330 (20B) app::ai::check_stat_build_up ===
+Returns (state+0x54 >> 3) & 1 (stat_flags bit 3).
+
+=== 0x7100361350 (32B) app::ai::check_stat_gorogoro ===
+Returns (stat_flags & 0x80020) != 0 (bits 5 and 19).
+
+=== 0x7100361370 (20B) app::ai::check_stat_attention ===
+Returns (state+0x54 >> 6) & 1 (stat_flags bit 6).
+
+=== 0x71003613b0 (20B) app::ai::check_stat_final_act ===
+Returns (state+0x55 >> 1) & 1 (stat_flags bit 9).
