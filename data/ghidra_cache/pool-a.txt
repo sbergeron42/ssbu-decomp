@@ -641,3 +641,97 @@ and motion_flag at +0x198 == 0x6038 or 0x6046 → returns 2. Else 0.
 === is_input_available_for_entry-like pattern using FighterAIManager inner+0xc8 ===
 FighterAIManager inner+0xc8 is the AI context's BattleObjectModuleAccessor pointer
 used by ground/line checks. AIManager singleton: DAT_71052b5fd8.
+
+=== app::sv_math::rand @ 0x7102275320 ===
+Signature: uint app::sv_math::rand(phx::Hash40 channel, int max)
+Returns: max > 0 ? (w % max) : w (full u32)
+Algorithm: xorshift128 (Marsaglia 2003)
+  uVar1 = w  // state[3]
+  counter++  // state[4]
+  uVar2 = x ^ (x << 11)
+  x = y
+  uVar2 ^= (uVar2 >> 8) ^ w ^ (w >> 19)
+  y = z
+  z = w
+  w = uVar2
+Per-channel state at global singleton [*DAT_71052c25b0]:
+  Channel hash -> base offset (state 4*u32, counter u32):
+    default       -> +0x00
+    0x77a08c3fc   -> +0x14
+    0x66933a7e6   -> +0x28
+    0x5c27c9369   -> +0x3c
+    0x2095191e5   -> +0x50
+    0x5fb9f5aa9   -> +0x64
+    0x41f1b251e   -> +0x78
+    0x5f88ec384   -> +0x8c
+    0x63b1cee05   -> +0xa0
+  Each channel: state[4] at +0, counter u32 at +0x10. Size 0x14.
+  Total: 9 channels * 0x14 = 0xb4 bytes + default at +0 = actually 9 channels at +0..+0xa0, last at +0xa0..+0xb4 = 0xb4 total.
+
+=== app::sv_math::randf @ 0x71022756c0 ===
+Signature: float app::sv_math::randf(phx::Hash40 channel, float scale)
+Returns: (float)w_new * scale * (1.0f/2^32 likely) -> uniform [0, scale)
+Same xorshift128 update, same channel dispatch, same state singleton.
+Scale constant DAT_7104472710 (likely 2.3283064e-10 = 1.0/2^32)
+
+=== app::random:: wrappers (channel +0x78, hash 0x41f1b251e) ===
+  get_float  @ 0x71015cf234 -> (float)w * DAT_7104472710
+  range_int  @ 0x71015cf294 -> (w % (hi-lo+1)) + lo
+  range_float @ 0x71015cf2f4 -> (hi-lo) * (float)w * DAT_7104472710 + lo
+  is_percent @ 0x71015cf354 -> (float)w * DAT_710447291c * DAT_7104472710 <= arg
+
+=== app::ai_random:: wrappers (channel +0x50, hash 0x2095191e5) ===
+  get_float  @ 0x7100376774
+  range_int  @ 0x71003766d4
+  range_float @ 0x71003767d4
+  is_percent @ 0x7100376834
+  (same structure as app::random, different channel base)
+
+=== setup_no_sync_seed_from_date @ 0x710366d110 ===
+- Seeds 4-u32 xorshift at DAT_71052381b0..bc from arg seed (MT LCG *0x6c078965 +0/+1/+2/+3)
+- Alloc 0x30 PosixTime helper (vtable PTR_DAT_710522ea38) via je_aligned_alloc
+- nn::time::StandardUserSystemClock::GetCurrentTime -> ms-of-day
+- Seeds another 4-u32 xorshift at DAT_71052381c0..cc from ms-of-day
+- Advances first xorshift once, calls libc srand(result)
+- IMPORTANT: This is the NO-SYNC RNG. NOT the gameplay RNG. Not part of rollback state.
+
+=== Init of sync RNG (inside FUN_7101344cf0) ===
+Disasm at 0x71013454b0..0x7101345534:
+  w19 = [x21+0xf8]               ; u32 seed from parent/GameSetup-like object
+  [x21+0x50] = w19
+  x20 = [0x71052c25b0]            ; Randomizer* singleton
+  x8 = [x20]                      ; state buffer base
+  [x8+0x18] = w19                 ; stash seed into slot1 state[1]
+  bl setup_no_sync_seed_from_date(w19)
+  x9 = [x20]; (x8,x9) = [x9]      ; load (begin,end) from buffer header
+  if (begin == end) skip
+  w10 = (seed ^ seed>>30) * 0x6c078965                 ; state[0]
+  w11 = (w10 ^ w10>>30) * 0x6c078965 + 1               ; state[1]
+  w12 = (w11 ^ w11>>30) * 0x6c078965 + 2               ; state[2]
+  w13 = (w12 ^ w12>>30) * 0x6c078965 + 3               ; state[3]
+  loop p in [begin, end) step 0x14:
+    p.state[0..3] = (w10, w11, w12, w13)
+    p.counter = 0
+Note: all 9 channels seeded with the SAME tuple. They diverge only by call frequency.
+
+=== RNG read pattern — global 0x71052c25b0 ===
+Every reader: `lVar4 = *(long *)*DAT_71052c25b0; [lVar4 + channel_off + field]`
+Two derefs: [0x71052c25b0] -> Randomizer*; [Randomizer*] -> channels_base (u32*).
+Ghidra reports 200+ direct xrefs to the global — because NX Clang inlines
+sv_math::rand at every call site (Hash40 arg is compile-time constant).
+The xref on sv_math::rand ITSELF returns only 2 entries (Lua binding + dynsym).
+
+=== Channels (offset -> hash40 -> namespace) ===
+  +0x00 default       (fallback; Hero lot_critical, attack SE swap)
+  +0x14 0x77a08c3fc   (attack SE lot)
+  +0x28 0x66933a7e6   (unnamed)
+  +0x3c 0x5c27c9369   (unnamed)
+  +0x50 0x2095191e5   app::ai_random
+  +0x64 0x5fb9f5aa9   (unnamed)
+  +0x78 0x41f1b251e   app::random (main gameplay)
+  +0x8c 0x5f88ec384   (unnamed)
+  +0xa0 0x63b1cee05   (unnamed)
+
+=== FUN_7100138620 (xorshift128 raw advance) ===
+Takes uint* (4 u32 state, NO counter). Body = identical Marsaglia (11,8,19) walk,
+returns new w. Used by callers that don't need channel dispatch.
