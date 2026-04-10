@@ -33,7 +33,7 @@ extern "C" s32 FUN_7103542f30(u32* version) {
         return (s32)0xFFFF;
     }
     u32 local[2];
-    local[0] = ((PathInformation*)DAT_7105331f20->path_info)->arc->fs_header->version & 0xFFFFFF;
+    local[0] = DAT_7105331f20->path_info->arc->fs_header->version & 0xFFFFFF;
     if (local[0] == 0xFFFF) {
         return (s32)0xFFFF;
     }

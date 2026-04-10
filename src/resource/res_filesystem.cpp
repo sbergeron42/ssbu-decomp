@@ -577,8 +577,7 @@ bool does_file_use_extension(u32 filepath_index, char* ext) {
     }
 
     // Look up extension hash from LoadedArc
-    PathInformation* path_info = (PathInformation*)fs->path_info;
-    LoadedArc* arc = path_info->arc;
+    LoadedArc* arc = fs->path_info->arc;
     FileSystemHeader* header = arc->fs_header;
     if (header->file_info_path_count <= filepath_index) {
         return false;
