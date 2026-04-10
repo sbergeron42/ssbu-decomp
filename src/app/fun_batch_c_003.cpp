@@ -94,40 +94,6 @@ u32 FUN_7102043d40(s64 *obj)
     return 0;
 }
 
-// 0x7102044100 -- vtable dispatch via x8 at 0xb0
-// naked asm: not in functions.csv, fix_x8_regalloc.py can't patch
-__attribute__((naked)) u32 FUN_7102044100(s64 *obj)
-{
-    asm volatile(
-        "stp x29, x30, [sp, #-0x10]!\n"
-        "mov x29, sp\n"
-        "ldr x9, [x8]\n"
-        "ldr x9, [x9, #0xb0]\n"
-        "mov x0, x8\n"
-        "blr x9\n"
-        "ldp x29, x30, [sp], #0x10\n"
-        "mov w0, wzr\n"
-        "ret\n"
-    );
-}
-
-// 0x71020441b0 -- vtable dispatch via x8 at 0xb8
-// naked asm: not in functions.csv, fix_x8_regalloc.py can't patch
-__attribute__((naked)) u32 FUN_71020441b0(s64 *obj)
-{
-    asm volatile(
-        "stp x29, x30, [sp, #-0x10]!\n"
-        "mov x29, sp\n"
-        "ldr x9, [x8]\n"
-        "ldr x9, [x9, #0xb8]\n"
-        "mov x0, x8\n"
-        "blr x9\n"
-        "ldp x29, x30, [sp], #0x10\n"
-        "mov w0, wzr\n"
-        "ret\n"
-    );
-}
-
 // 0x7102046a80 -- vtable dispatch via x8 at 0x168, store x10
 u32 FUN_7102046a80(s64 *out, s64 param_2)
 {
@@ -195,40 +161,6 @@ u32 FUN_710205b550(s64 *out, s64 param_2)
     *(u64 *)((char *)out + 0x10) = in_x10;
     (**(void (**)(s64 *))(*in_x8 + 0x1c0))(in_x8);
     return 0;
-}
-
-// 0x710205c720 -- vtable dispatch via x8 at 0x358
-// naked asm: not in functions.csv, fix_x8_regalloc.py can't patch
-__attribute__((naked)) u32 FUN_710205c720(s64 *obj)
-{
-    asm volatile(
-        "stp x29, x30, [sp, #-0x10]!\n"
-        "mov x29, sp\n"
-        "ldr x9, [x8]\n"
-        "ldr x9, [x9, #0x358]\n"
-        "mov x0, x8\n"
-        "blr x9\n"
-        "ldp x29, x30, [sp], #0x10\n"
-        "mov w0, wzr\n"
-        "ret\n"
-    );
-}
-
-// 0x710205c7d0 -- vtable dispatch via x8 at 0x360
-// naked asm: not in functions.csv, fix_x8_regalloc.py can't patch
-__attribute__((naked)) u32 FUN_710205c7d0(s64 *obj)
-{
-    asm volatile(
-        "stp x29, x30, [sp, #-0x10]!\n"
-        "mov x29, sp\n"
-        "ldr x9, [x8]\n"
-        "ldr x9, [x9, #0x360]\n"
-        "mov x0, x8\n"
-        "blr x9\n"
-        "ldp x29, x30, [sp], #0x10\n"
-        "mov w0, wzr\n"
-        "ret\n"
-    );
 }
 
 // 0x71020619b0 -- vtable dispatch via x8 at 0x218
@@ -436,23 +368,6 @@ u32 FUN_7102068510(s64 *out, s64 param_2)
     *(u64 *)((char *)out + 0x10) = in_x10;
     (**(void (**)(s64 *))(*in_x8 + 0x5f8))(in_x8);
     return 0;
-}
-
-// 0x710206a1b0 -- vtable dispatch via x8 at 0x90
-// naked asm: not in functions.csv, fix_x8_regalloc.py can't patch
-__attribute__((naked)) u32 FUN_710206a1b0(s64 *obj)
-{
-    asm volatile(
-        "stp x29, x30, [sp, #-0x10]!\n"
-        "mov x29, sp\n"
-        "ldr x9, [x8]\n"
-        "ldr x9, [x9, #0x90]\n"
-        "mov x0, x8\n"
-        "blr x9\n"
-        "ldp x29, x30, [sp], #0x10\n"
-        "mov w0, wzr\n"
-        "ret\n"
-    );
 }
 
 // 0x710206a338 -- vtable dispatch via x8 at 0x98, store x10
