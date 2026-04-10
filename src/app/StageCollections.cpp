@@ -21,6 +21,7 @@ extern "C" u64 DAT_7105162e58 __attribute__((visibility("hidden"))); // stage su
 extern "C" u64 DAT_7105163290 __attribute__((visibility("hidden"))); // stage sub-obj vtable (vt_290)
 extern "C" u64 DAT_71051635b8 __attribute__((visibility("hidden"))); // stage sub-obj vtable (vt_5b8)
 extern "C" u64 DAT_7105163910 __attribute__((visibility("hidden"))); // stage sub-obj vtable (vt_910)
+extern "C" u64 DAT_7105163720 __attribute__((visibility("hidden"))); // stage sub-obj vtable (vt_720)
 
 // Cleanup helpers for the two small D0 destructors below. Both are tail-called
 // with the owned inner pointer's +0x28 field or the raw pointer.
@@ -211,6 +212,36 @@ struct StageInner_NestedAt08 {
     u8 head[8];             // padding before the nested pointer
     NestedPoly* nested;     // [derived: cleared + destroy() in D0 dtor]
 };
+
+// Inner object layout for stage_vt7105163720: polymorphic at +0x00, raw buffer at +0x10.
+struct StageInner_PolyAndBuf {
+    NestedPoly* nested;   // +0x00 [derived: cleared + destroy() in D0 dtor]
+    u8 unk_head[8];       // +0x08
+    void* buf;            // +0x10 [derived: raw malloc buffer, cleared + jeFree]
+};
+
+// 0x71030525a0 (100 bytes) — D0 destructor for stage sub-object with vtable
+// DAT_7105163720. Inner has 2 owned things: a polymorphic object at +0x00
+// (cleaned via its vt[1] destroy) and a raw buffer at +0x10 (jeFree'd).
+// Note the cleanup order is buf first, then nested — matches the compiler's
+// instruction scheduling for the decompilation.
+// [derived: disasm at 0x71030525a0 — ldr x0,[x20,#0x10]; bl jeFree; ldr x0,[x20]; ldr x8,[x0]; ldr x8,[x8,#0x8]; blr]
+extern "C" void stage_D0_dtor_71030525a0(StageSubObjVt* self)
+{
+    auto* inner = static_cast<StageInner_PolyAndBuf*>(self->owned_inner);
+    self->vtable = &DAT_7105163720;
+    self->owned_inner = nullptr;
+    if (inner != nullptr) {
+        void* buf = inner->buf;
+        inner->buf = nullptr;
+        if (buf != nullptr) jeFree_710392e590(buf);
+        NestedPoly* nested = inner->nested;
+        inner->nested = nullptr;
+        if (nested != nullptr) nested->destroy();
+        jeFree_710392e590(inner);
+    }
+    jeFree_710392e590(self);
+}
 
 // 0x710304de30 (84 bytes) — D0 destructor for stage sub-object with vtable
 // DAT_71051635b8. Pattern: clear inner->nested@+0x20 via nested's vt[1],
