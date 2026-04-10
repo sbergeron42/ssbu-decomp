@@ -1,19 +1,22 @@
 #include "types.h"
+#include "app/BattleObject.h"
 #include "app/BattleObjectModuleAccessor.h"
 #include "app/modules/KineticModule.h"
 #include "app/modules/MotionModule.h"
 #include "app/modules/PostureModule.h"
 #include "app/modules/WorkModule.h"
+#include "app/placeholders/FighterAI.h"
+#include "app/placeholders/WeaponParams.h"
 
 using namespace app;
 
 // Helper: get MotionModule* from item lua context
-// Pattern: *(L-8) -> battle_object -> +0x1a0 -> accessor -> motion_module
+// Pattern: *(L-8) -> battle_object -> module_accessor -> motion_module
 // [derived: all app::item:: functions load battle object from lua_State-8,
 //  then accessor at +0x1a0, then motion_module at accessor+0x88]
 static inline MotionModule* item_motion(u8* L) {
-    u8* obj = *reinterpret_cast<u8**>(L - 8);
-    BattleObjectModuleAccessor* acc = *reinterpret_cast<BattleObjectModuleAccessor**>(obj + 0x1a0);
+    BattleObject* obj = *reinterpret_cast<BattleObject**>(L - 8);
+    BattleObjectModuleAccessor* acc = obj->module_accessor;
     return static_cast<MotionModule*>(acc->motion_module);
 }
 
@@ -69,14 +72,15 @@ namespace app::sv_fighter_util {
 // +0x198 on battle object is fighter_kind [derived: compared against 0x3c-0x3d range and 0x1c]
 // Uses PostureModule::lr() to check facing direction
 u64 get_attack_hi3_motion(u8* L) {
-    u8* obj = *reinterpret_cast<u8**>(L - 8);
-    int kind = *reinterpret_cast<int*>(obj + 0x198);
+    BattleObject* obj = *reinterpret_cast<BattleObject**>(L - 8);
+    // +0x198 is fighter_kind — Fighter-specific field beyond BattleObject base
+    int kind = *reinterpret_cast<int*>(reinterpret_cast<u8*>(obj) + 0x198);
     u32 diff = static_cast<u32>(kind) - 0x3c;
     if (diff < 2) {
         return 0xc2500ccc8;  // [derived: literal Hash40 in binary]
     }
     if (kind == 0x1c) {
-        BattleObjectModuleAccessor* acc = *reinterpret_cast<BattleObjectModuleAccessor**>(obj + 0x1a0);
+        BattleObjectModuleAccessor* acc = obj->module_accessor;
         PostureModule* pm = static_cast<PostureModule*>(acc->posture_module);
         if (pm->lr() == -1.0f) {
             return 0xca808c13d;  // [derived: literal Hash40 in binary]
@@ -150,8 +154,8 @@ void set_partial_motion_frame(u8* L, u64 slot, f32 frame) {
 // [derived: all boss_private/item kinetic functions load battle object from lua_State-8,
 //  then accessor at +0x1a0, then kinetic_module at accessor+0x68]
 static inline KineticModule* item_kinetic(u8* L) {
-    u8* obj = *reinterpret_cast<u8**>(L - 8);
-    BattleObjectModuleAccessor* acc = *reinterpret_cast<BattleObjectModuleAccessor**>(obj + 0x1a0);
+    BattleObject* obj = *reinterpret_cast<BattleObject**>(L - 8);
+    BattleObjectModuleAccessor* acc = obj->module_accessor;
     return static_cast<KineticModule*>(acc->item_kinetic_module);
 }
 
@@ -274,8 +278,8 @@ namespace app::kinetic_energy_outer {
 f32 get_speed_x(u8* L) {
     KineticModule* km = item_kinetic(L);
     KineticEnergy* energy = km->get_energy(1);
-    void* speed = energy->get_speed();
-    return *reinterpret_cast<f32*>(speed);
+    Vector2f* speed = static_cast<Vector2f*>(energy->get_speed());
+    return speed->x;
 }
 
 // 0x71015d0130 (60 bytes)
@@ -284,8 +288,8 @@ f32 get_speed_x(u8* L) {
 f32 get_speed_y(u8* L) {
     KineticModule* km = item_kinetic(L);
     KineticEnergy* energy = km->get_energy(1);
-    void* speed = energy->get_speed();
-    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(speed) + 4);
+    Vector2f* speed = static_cast<Vector2f*>(energy->get_speed());
+    return speed->y;
 }
 
 } // namespace app::kinetic_energy_outer
@@ -298,8 +302,8 @@ namespace app::kinetic_energy_gravity {
 f32 get_speed_y(u8* L) {
     KineticModule* km = item_kinetic(L);
     KineticEnergy* energy = km->get_energy(2);
-    void* speed = energy->get_speed();
-    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(speed) + 4);
+    Vector2f* speed = static_cast<Vector2f*>(energy->get_speed());
+    return speed->y;
 }
 
 } // namespace app::kinetic_energy_gravity
@@ -312,8 +316,8 @@ namespace app::kinetic_energy_ground {
 f32 get_speed_y(u8* L) {
     KineticModule* km = item_kinetic(L);
     KineticEnergy* energy = km->get_energy(3);
-    void* speed = energy->get_speed();
-    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(speed) + 4);
+    Vector2f* speed = static_cast<Vector2f*>(energy->get_speed());
+    return speed->y;
 }
 
 } // namespace app::kinetic_energy_ground
@@ -326,8 +330,8 @@ namespace app::kinetic_energy_control {
 f32 get_speed_x(u8* L) {
     KineticModule* km = item_kinetic(L);
     KineticEnergy* energy = km->get_energy(4);
-    void* speed = energy->get_speed();
-    return *reinterpret_cast<f32*>(speed);
+    Vector2f* speed = static_cast<Vector2f*>(energy->get_speed());
+    return speed->x;
 }
 
 // 0x71015d04b0 (60 bytes)
@@ -336,8 +340,8 @@ f32 get_speed_x(u8* L) {
 f32 get_speed_y(u8* L) {
     KineticModule* km = item_kinetic(L);
     KineticEnergy* energy = km->get_energy(4);
-    void* speed = energy->get_speed();
-    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(speed) + 4);
+    Vector2f* speed = static_cast<Vector2f*>(energy->get_speed());
+    return speed->y;
 }
 
 } // namespace app::kinetic_energy_control
@@ -350,8 +354,8 @@ namespace app::kinetic_energy_motion {
 f32 get_speed_x(u8* L) {
     KineticModule* km = item_kinetic(L);
     KineticEnergy* energy = km->get_energy(6);
-    void* speed = energy->get_speed();
-    return *reinterpret_cast<f32*>(speed);
+    Vector2f* speed = static_cast<Vector2f*>(energy->get_speed());
+    return speed->x;
 }
 
 // 0x71015d0830 (60 bytes)
@@ -360,8 +364,8 @@ f32 get_speed_x(u8* L) {
 f32 get_speed_y(u8* L) {
     KineticModule* km = item_kinetic(L);
     KineticEnergy* energy = km->get_energy(6);
-    void* speed = energy->get_speed();
-    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(speed) + 4);
+    Vector2f* speed = static_cast<Vector2f*>(energy->get_speed());
+    return speed->y;
 }
 
 } // namespace app::kinetic_energy_motion
@@ -374,8 +378,8 @@ namespace app::kinetic_energy_stop {
 f32 get_speed_x(u8* L) {
     KineticModule* km = item_kinetic(L);
     KineticEnergy* energy = km->get_energy(7);
-    void* speed = energy->get_speed();
-    return *reinterpret_cast<f32*>(speed);
+    Vector2f* speed = static_cast<Vector2f*>(energy->get_speed());
+    return speed->x;
 }
 
 } // namespace app::kinetic_energy_stop
@@ -388,8 +392,8 @@ namespace app::kinetic_energy_damage {
 f32 get_speed_x(u8* L) {
     KineticModule* km = item_kinetic(L);
     KineticEnergy* energy = km->get_energy(8);
-    void* speed = energy->get_speed();
-    return *reinterpret_cast<f32*>(speed);
+    Vector2f* speed = static_cast<Vector2f*>(energy->get_speed());
+    return speed->x;
 }
 
 } // namespace app::kinetic_energy_damage
@@ -402,8 +406,8 @@ namespace app::kinetic_energy_jostle {
 f32 get_speed_x(u8* L) {
     KineticModule* km = item_kinetic(L);
     KineticEnergy* energy = km->get_energy(9);
-    void* speed = energy->get_speed();
-    return *reinterpret_cast<f32*>(speed);
+    Vector2f* speed = static_cast<Vector2f*>(energy->get_speed());
+    return speed->x;
 }
 
 } // namespace app::kinetic_energy_jostle
@@ -416,8 +420,8 @@ namespace app::kinetic_energy_ground_movement {
 f32 get_speed_x(u8* L) {
     KineticModule* km = item_kinetic(L);
     KineticEnergy* energy = km->get_energy(10);
-    void* speed = energy->get_speed();
-    return *reinterpret_cast<f32*>(speed);
+    Vector2f* speed = static_cast<Vector2f*>(energy->get_speed());
+    return speed->x;
 }
 
 } // namespace app::kinetic_energy_ground_movement
@@ -430,8 +434,8 @@ namespace app::kinetic_energy_motion_linked_main {
 f32 get_speed_x(u8* L) {
     KineticModule* km = item_kinetic(L);
     KineticEnergy* energy = km->get_energy(0xc);
-    void* speed = energy->get_speed();
-    return *reinterpret_cast<f32*>(speed);
+    Vector2f* speed = static_cast<Vector2f*>(energy->get_speed());
+    return speed->x;
 }
 
 // 0x71015d0d00 (60 bytes)
@@ -440,8 +444,8 @@ f32 get_speed_x(u8* L) {
 f32 get_speed_y(u8* L) {
     KineticModule* km = item_kinetic(L);
     KineticEnergy* energy = km->get_energy(0xc);
-    void* speed = energy->get_speed();
-    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(speed) + 4);
+    Vector2f* speed = static_cast<Vector2f*>(energy->get_speed());
+    return speed->y;
 }
 
 } // namespace app::kinetic_energy_motion_linked_main
@@ -454,8 +458,8 @@ namespace app::kinetic_energy_motion_linked_sub1 {
 f32 get_speed_x(u8* L) {
     KineticModule* km = item_kinetic(L);
     KineticEnergy* energy = km->get_energy(0xd);
-    void* speed = energy->get_speed();
-    return *reinterpret_cast<f32*>(speed);
+    Vector2f* speed = static_cast<Vector2f*>(energy->get_speed());
+    return speed->x;
 }
 
 // 0x71015d0e40 (60 bytes)
@@ -464,8 +468,8 @@ f32 get_speed_x(u8* L) {
 f32 get_speed_y(u8* L) {
     KineticModule* km = item_kinetic(L);
     KineticEnergy* energy = km->get_energy(0xd);
-    void* speed = energy->get_speed();
-    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(speed) + 4);
+    Vector2f* speed = static_cast<Vector2f*>(energy->get_speed());
+    return speed->y;
 }
 
 } // namespace app::kinetic_energy_motion_linked_sub1
@@ -535,7 +539,7 @@ namespace app::kinetic_energy_outer {
 void* get_accel(u8* L) {
     KineticModule* km = item_kinetic(L);
     KineticEnergy* energy = km->get_energy(1);
-    return reinterpret_cast<u8*>(energy) + 0x40;
+    return &energy->accel_x;
 }
 
 // 0x71015d1720 (48 bytes)
@@ -544,7 +548,7 @@ void* get_accel(u8* L) {
 void* get_limit_speed(u8* L) {
     KineticModule* km = item_kinetic(L);
     KineticEnergy* energy = km->get_energy(1);
-    return reinterpret_cast<u8*>(energy) + 0x70;
+    return &energy->limit_speed_x;
 }
 
 } // namespace app::kinetic_energy_outer
@@ -573,52 +577,48 @@ namespace app::kinetic_energy_gravity {
 f32 get_accel(u8* L) {
     KineticModule* km = item_kinetic(L);
     KineticEnergy* energy = km->get_energy(2);
-    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(energy) + 0x34);
+    return energy->gravity_accel;
 }
 
 // 0x71015d1b20 (48 bytes)
 // Returns limit speed from gravity energy (slot 2) at energy+0x40
-// [derived: get_energy(2), return *(f32*)(energy+0x40)]
+// [derived: get_energy(2), return *(f32*)(energy+0x40) — gravity uses accel_x as limit_speed]
 f32 get_limit_speed(u8* L) {
     KineticModule* km = item_kinetic(L);
     KineticEnergy* energy = km->get_energy(2);
-    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(energy) + 0x40);
+    return energy->accel_x;  // gravity energy reuses 2D accel_x offset as limit_speed
 }
 
 // 0x71015d1ba0 (60 bytes)
 // Sets accel on gravity energy (slot 2) at energy+0x34
-// [derived: get_energy(2), str s8 at energy+0x34]
 void set_accel(u8* L, f32 val) {
     KineticModule* km = item_kinetic(L);
     KineticEnergy* energy = km->get_energy(2);
-    *reinterpret_cast<f32*>(reinterpret_cast<u8*>(energy) + 0x34) = val;
+    energy->gravity_accel = val;
 }
 
 // 0x71015d1be0 (60 bytes)
 // Sets stable speed on gravity energy (slot 2) at energy+0x38
-// [derived: get_energy(2), str s8 at energy+0x38]
 void set_stable_speed(u8* L, f32 val) {
     KineticModule* km = item_kinetic(L);
     KineticEnergy* energy = km->get_energy(2);
-    *reinterpret_cast<f32*>(reinterpret_cast<u8*>(energy) + 0x38) = val;
+    energy->gravity_stable_speed = val;
 }
 
 // 0x71015d1c20 (60 bytes)
 // Sets brake on gravity energy (slot 2) at energy+0x3c
-// [derived: get_energy(2), str s8 at energy+0x3c]
 void set_brake(u8* L, f32 val) {
     KineticModule* km = item_kinetic(L);
     KineticEnergy* energy = km->get_energy(2);
-    *reinterpret_cast<f32*>(reinterpret_cast<u8*>(energy) + 0x3c) = val;
+    energy->gravity_brake = val;
 }
 
 // 0x71015d1c60 (60 bytes)
 // Sets limit speed on gravity energy (slot 2) at energy+0x40
-// [derived: get_energy(2), str s8 at energy+0x40]
 void set_limit_speed(u8* L, f32 val) {
     KineticModule* km = item_kinetic(L);
     KineticEnergy* energy = km->get_energy(2);
-    *reinterpret_cast<f32*>(reinterpret_cast<u8*>(energy) + 0x40) = val;
+    energy->accel_x = val;  // gravity energy reuses 2D accel_x offset as limit_speed
 }
 
 } // namespace app::kinetic_energy_gravity
@@ -862,7 +862,7 @@ void resume(u8* L) {
 void* get_accel(u8* L) {
     KineticModule* km = item_kinetic(L);
     KineticEnergy* energy = km->get_energy(4);
-    return reinterpret_cast<u8*>(energy) + 0x40;
+    return &energy->accel_x;
 }
 
 // 0x71015d1260 (48 bytes)
@@ -871,7 +871,7 @@ void* get_accel(u8* L) {
 void* get_limit_speed(u8* L) {
     KineticModule* km = item_kinetic(L);
     KineticEnergy* energy = km->get_energy(4);
-    return reinterpret_cast<u8*>(energy) + 0x70;
+    return &energy->limit_speed_x;
 }
 
 // 0x71015d1290 (64 bytes)
@@ -880,7 +880,7 @@ void* get_limit_speed(u8* L) {
 void set_accel(u8* L, void* vec) {
     KineticModule* km = item_kinetic(L);
     KineticEnergy* energy = km->get_energy(4);
-    __builtin_memcpy(reinterpret_cast<u8*>(energy) + 0x40, vec, 16);
+    __builtin_memcpy(&energy->accel_x, vec, 16);
 }
 
 // 0x71015d12d0 (64 bytes)
@@ -889,7 +889,7 @@ void set_accel(u8* L, void* vec) {
 void set_stable_speed(u8* L, void* vec) {
     KineticModule* km = item_kinetic(L);
     KineticEnergy* energy = km->get_energy(4);
-    __builtin_memcpy(reinterpret_cast<u8*>(energy) + 0x50, vec, 16);
+    __builtin_memcpy(&energy->brake_x, vec, 16);
 }
 
 // 0x71015d1310 (64 bytes)
@@ -898,7 +898,7 @@ void set_stable_speed(u8* L, void* vec) {
 void set_brake(u8* L, void* vec) {
     KineticModule* km = item_kinetic(L);
     KineticEnergy* energy = km->get_energy(4);
-    __builtin_memcpy(reinterpret_cast<u8*>(energy) + 0x60, vec, 16);
+    __builtin_memcpy(&energy->stable_speed_x, vec, 16);
 }
 
 // 0x71015d1350 (64 bytes)
@@ -907,7 +907,7 @@ void set_brake(u8* L, void* vec) {
 void set_limit_speed(u8* L, void* vec) {
     KineticModule* km = item_kinetic(L);
     KineticEnergy* energy = km->get_energy(4);
-    __builtin_memcpy(reinterpret_cast<u8*>(energy) + 0x70, vec, 16);
+    __builtin_memcpy(&energy->limit_speed_x, vec, 16);
 }
 
 } // namespace app::kinetic_energy_control
@@ -1144,42 +1144,40 @@ namespace app::ai_param {
 // Returns fall_speed_y_max from AI param block
 // [derived: *(obj-8)->0x168 is AI param ptr, +0x228 is fall_speed_y_max field]
 f32 fall_speed_y_max(u8* L) {
-    u8* obj = *reinterpret_cast<u8**>(L - 8);
-    u8* p = *reinterpret_cast<u8**>(obj + 0x168);
-    return *reinterpret_cast<f32*>(p + 0x228);
+    FighterAI* ai = *reinterpret_cast<FighterAI**>(L - 8);
+    return ai->state->fall_speed_y_max;
 }
 
 // 0x710036ba10 (16 bytes)
 // Returns dive_speed_y_max from AI param block
 // [derived: same base as fall_speed_y_max, offset +0x22c]
 f32 dive_speed_y_max(u8* L) {
-    u8* obj = *reinterpret_cast<u8**>(L - 8);
-    u8* p = *reinterpret_cast<u8**>(obj + 0x168);
-    return *reinterpret_cast<f32*>(p + 0x22c);
+    FighterAI* ai = *reinterpret_cast<FighterAI**>(L - 8);
+    return ai->state->dive_speed_y_max;
 }
 
 // 0x710036b9d0 (12 bytes)
 // Returns catch attack cancel frame from AI object
-// [derived: *(obj + 0xbaa) direct byte access, no indirection]
+// [derived: *(ai + 0xbaa) direct byte access, no indirection]
 u8 catch_attack_cancel_frame(u8* L) {
-    u8* obj = *reinterpret_cast<u8**>(L - 8);
-    return *reinterpret_cast<u8*>(obj + 0xbaa);
+    FighterAI* ai = *reinterpret_cast<FighterAI**>(L - 8);
+    return *reinterpret_cast<u8*>(reinterpret_cast<u8*>(ai) + 0xbaa);
 }
 
 // 0x710036ba80 (12 bytes)
 // Returns number of attack 123 combo hits from AI object
-// [derived: *(obj + 0xb14) direct u32 access]
+// [derived: *(ai + 0xb14) direct u32 access]
 u32 num_of_attack_123(u8* L) {
-    u8* obj = *reinterpret_cast<u8**>(L - 8);
-    return *reinterpret_cast<u32*>(obj + 0xb14);
+    FighterAI* ai = *reinterpret_cast<FighterAI**>(L - 8);
+    return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(ai) + 0xb14);
 }
 
 // 0x710036ba90 (12 bytes)
 // Returns whether fighter has attack 100 (rapid jab) from AI object
-// [derived: *(obj + 0xb18) direct byte access]
+// [derived: *(ai + 0xb18) direct byte access]
 u8 has_attack_100(u8* L) {
-    u8* obj = *reinterpret_cast<u8**>(L - 8);
-    return *reinterpret_cast<u8*>(obj + 0xb18);
+    FighterAI* ai = *reinterpret_cast<FighterAI**>(L - 8);
+    return *reinterpret_cast<u8*>(reinterpret_cast<u8*>(ai) + 0xb18);
 }
 
 } // namespace app::ai_param
@@ -1190,9 +1188,8 @@ namespace app::ai_weapon {
 // Returns item kind from AI weapon param block
 // [derived: *(*(obj+0x168)+0x108) — AI param at +0x168, weapon item kind at +0x108]
 u32 have_item_kind(u8* L) {
-    u8* obj = *reinterpret_cast<u8**>(L - 8);
-    u8* p = *reinterpret_cast<u8**>(obj + 0x168);
-    return *reinterpret_cast<u32*>(p + 0x108);
+    FighterAI* ai = *reinterpret_cast<FighterAI**>(L - 8);
+    return ai->state->have_item_kind;
 }
 
 // 0x710036b0b0 (20 bytes)
@@ -1271,8 +1268,8 @@ static inline s64 attack_info_index(s32 status) {
 //  reads u64 at target+0x38 — motion kind field in target info struct]
 // ---------------------------------------------------------------------------
 u64 target_motion_kind(void* L) {
-    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
-    u8* target = reinterpret_cast<u8*>(FUN_7100314030(DAT_71052b5fd8, ctx + 0xc50));
+    FighterAI* ai = *reinterpret_cast<FighterAI**>(reinterpret_cast<u8*>(L) - 8);
+    u8* target = reinterpret_cast<u8*>(FUN_7100314030(DAT_71052b5fd8, &ai->target_entry_id));
     return *reinterpret_cast<u64*>(target + 0x38);
 }
 
@@ -1282,8 +1279,8 @@ u64 target_motion_kind(void* L) {
 // [derived: same target resolution as target_motion_kind, reads u32 at +0x48]
 // ---------------------------------------------------------------------------
 u32 target_motion_frame(void* L) {
-    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
-    u8* target = reinterpret_cast<u8*>(FUN_7100314030(DAT_71052b5fd8, ctx + 0xc50));
+    FighterAI* ai = *reinterpret_cast<FighterAI**>(reinterpret_cast<u8*>(L) - 8);
+    u8* target = reinterpret_cast<u8*>(FUN_7100314030(DAT_71052b5fd8, &ai->target_entry_id));
     return *reinterpret_cast<u32*>(target + 0x48);
 }
 
@@ -1294,8 +1291,8 @@ u32 target_motion_frame(void* L) {
 //  +0x1d is needs_turn — compared with attack_info_no_shield (+0x24) pattern]
 // ---------------------------------------------------------------------------
 u8 attack_info_needs_turn(void* L, u32 cmd_id) {
-    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
-    u32 obj_id = *reinterpret_cast<u32*>(ctx + 0x988);
+    FighterAI* ai = *reinterpret_cast<FighterAI**>(reinterpret_cast<u8*>(L) - 8);
+    u32 obj_id = ai->fighter_kind_for_cmd;
     u8* attack_data = reinterpret_cast<u8*>(FUN_710033ba50(obj_id));
     s32 status = FUN_71002f2820(cmd_id, obj_id);
 
@@ -1311,8 +1308,8 @@ u8 attack_info_needs_turn(void* L, u32 cmd_id) {
 //  u32 return type matches Ghidra undefined4 at that offset]
 // ---------------------------------------------------------------------------
 u32 attack_info_reaction(void* L, u32 cmd_id) {
-    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
-    u32 obj_id = *reinterpret_cast<u32*>(ctx + 0x988);
+    FighterAI* ai = *reinterpret_cast<FighterAI**>(reinterpret_cast<u8*>(L) - 8);
+    u32 obj_id = ai->fighter_kind_for_cmd;
     u8* attack_data = reinterpret_cast<u8*>(FUN_710033ba50(obj_id));
     s32 status = FUN_71002f2820(cmd_id, obj_id);
 
@@ -1327,8 +1324,8 @@ u32 attack_info_reaction(void* L, u32 cmd_id) {
 // [derived: same pattern, +0x25 immediately after no_shield (+0x24)]
 // ---------------------------------------------------------------------------
 u8 attack_info_meteor(void* L, u32 cmd_id) {
-    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
-    u32 obj_id = *reinterpret_cast<u32*>(ctx + 0x988);
+    FighterAI* ai = *reinterpret_cast<FighterAI**>(reinterpret_cast<u8*>(L) - 8);
+    u32 obj_id = ai->fighter_kind_for_cmd;
     u8* attack_data = reinterpret_cast<u8*>(FUN_710033ba50(obj_id));
     s32 status = FUN_71002f2820(cmd_id, obj_id);
 
@@ -1343,8 +1340,8 @@ u8 attack_info_meteor(void* L, u32 cmd_id) {
 // [derived: same pattern, +0x5 — note lower offset than others, near start of entry]
 // ---------------------------------------------------------------------------
 u8 attack_info_reflectable(void* L, u32 cmd_id) {
-    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
-    u32 obj_id = *reinterpret_cast<u32*>(ctx + 0x988);
+    FighterAI* ai = *reinterpret_cast<FighterAI**>(reinterpret_cast<u8*>(L) - 8);
+    u32 obj_id = ai->fighter_kind_for_cmd;
     u8* attack_data = reinterpret_cast<u8*>(FUN_710033ba50(obj_id));
     s32 status = FUN_71002f2820(cmd_id, obj_id);
 
@@ -1359,8 +1356,8 @@ u8 attack_info_reflectable(void* L, u32 cmd_id) {
 // [derived: same pattern, +0x6 — adjacent to reflectable at +0x5]
 // ---------------------------------------------------------------------------
 u8 attack_is_as_weapon(void* L, u32 cmd_id) {
-    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
-    u32 obj_id = *reinterpret_cast<u32*>(ctx + 0x988);
+    FighterAI* ai = *reinterpret_cast<FighterAI**>(reinterpret_cast<u8*>(L) - 8);
+    u32 obj_id = ai->fighter_kind_for_cmd;
     u8* attack_data = reinterpret_cast<u8*>(FUN_710033ba50(obj_id));
     s32 status = FUN_71002f2820(cmd_id, obj_id);
 
@@ -1375,8 +1372,8 @@ u8 attack_is_as_weapon(void* L, u32 cmd_id) {
 // [derived: same pattern, +0x18 — 4-byte read, likely f32 distance threshold]
 // ---------------------------------------------------------------------------
 u32 attack_info_distance(void* L, u32 cmd_id) {
-    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
-    u32 obj_id = *reinterpret_cast<u32*>(ctx + 0x988);
+    FighterAI* ai = *reinterpret_cast<FighterAI**>(reinterpret_cast<u8*>(L) - 8);
+    u32 obj_id = ai->fighter_kind_for_cmd;
     u8* attack_data = reinterpret_cast<u8*>(FUN_710033ba50(obj_id));
     s32 status = FUN_71002f2820(cmd_id, obj_id);
 
@@ -1392,11 +1389,11 @@ u32 attack_info_distance(void* L, u32 cmd_id) {
 //  FUN_710033c360 for attack lookup on target, reads u32 at entry+8]
 // ---------------------------------------------------------------------------
 u32 target_attack_start_frame(void* L, u32 cmd_id) {
-    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
-    u8* target = reinterpret_cast<u8*>(FUN_7100314030(DAT_71052b5fd8, ctx + 0xc50));
-    u32 target_id = *reinterpret_cast<u32*>(ctx + 0xc50);
+    FighterAI* ai = *reinterpret_cast<FighterAI**>(reinterpret_cast<u8*>(L) - 8);
+    u8* target = reinterpret_cast<u8*>(FUN_7100314030(DAT_71052b5fd8, &ai->target_entry_id));
+    s32 target_id = ai->target_entry_id;
 
-    if ((s32)target_id < 0 || target_id == *reinterpret_cast<u32*>(ctx + 0x160) || target_id > 0xf)
+    if (target_id < 0 || (u32)target_id == ai->parent_entry_id || (u32)target_id > 0xf)
         return 0;
 
     u8* target_obj = *reinterpret_cast<u8**>(target + 0x20);
@@ -1418,8 +1415,9 @@ u32 target_attack_start_frame(void* L, u32 cmd_id) {
 //  -1 sentinel triggers fallback to motion module end_frame (vtable slot 0x188/8)]
 // ---------------------------------------------------------------------------
 s32 attack_cancel_frame(void* L, u32 cmd_id) {
-    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
-    u8* entry = reinterpret_cast<u8*>(FUN_710033c360(ctx + 0x988, cmd_id));
+    FighterAI* ai = *reinterpret_cast<FighterAI**>(reinterpret_cast<u8*>(L) - 8);
+    u8* entry = reinterpret_cast<u8*>(FUN_710033c360(
+        reinterpret_cast<u8*>(ai) + 0x988, cmd_id));
 
     if (!entry)
         return 0;
@@ -1427,9 +1425,9 @@ s32 attack_cancel_frame(void* L, u32 cmd_id) {
     s32 frame = *reinterpret_cast<s32*>(entry + 0x14);
     if (frame == -1) {
         // Fallback: get end frame from MotionModule
-        // [derived: ctx+0x168 is AI fighter obj, +0x10 is battle object,
+        // [derived: ai->state (+0x168) is FighterAIState*, +0x10 is battle object,
         //  +0x20 is accessor, +0x88 is motion_module, vtable slot 0x188/8 = end_frame]
-        u8* ai_obj = *reinterpret_cast<u8**>(ctx + 0x168);
+        u8* ai_obj = reinterpret_cast<u8*>(ai->state);
         u8* battle_obj = *reinterpret_cast<u8**>(ai_obj + 0x10);
         u8* acc = *reinterpret_cast<u8**>(battle_obj + 0x20);
         void** motion_mod = *reinterpret_cast<void***>(acc + 0x88);
@@ -1449,10 +1447,10 @@ s32 attack_cancel_frame(void* L, u32 cmd_id) {
 //  tail-calls FUN_710033e5c0(target_obj+0x988, motion_hash)]
 // ---------------------------------------------------------------------------
 u64 target_motion_to_cmd_id(void* L, u64 motion_hash) {
-    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
-    u8* target = reinterpret_cast<u8*>(FUN_7100314030(DAT_71052b5fd8, ctx + 0xc50));
+    FighterAI* ai = *reinterpret_cast<FighterAI**>(reinterpret_cast<u8*>(L) - 8);
+    u8* target = reinterpret_cast<u8*>(FUN_7100314030(DAT_71052b5fd8, &ai->target_entry_id));
 
-    if (*reinterpret_cast<u32*>(ctx + 0xc50) >= 0x10u)
+    if ((u32)ai->target_entry_id >= 0x10u)
         return 0;
 
     u8* target_obj = *reinterpret_cast<u8**>(target + 0x20);
@@ -1474,9 +1472,9 @@ u64 target_motion_to_cmd_id(void* L, u64 motion_hash) {
 //   fallback: FUN_710033c510 entry+0x28 or 0x7fb997a80 = invalid
 // ---------------------------------------------------------------------------
 u64 current_attack_combo_next_motion(void* L) {
-    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
-    u8* ai_obj = *reinterpret_cast<u8**>(ctx + 0x168);
-    u64 motion_raw = *reinterpret_cast<u64*>(ai_obj + 0x38);
+    FighterAI* ai = *reinterpret_cast<FighterAI**>(reinterpret_cast<u8*>(L) - 8);
+    FighterAIState* st = ai->state;
+    u64 motion_raw = st->motion_kind;
     u64 motion = motion_raw & 0xFFFFFFFFFFULL;
 
     if (motion == 0xea274b695ULL)   // attack_11
@@ -1487,7 +1485,7 @@ u64 current_attack_combo_next_motion(void* L) {
         return 0xa5598d745ULL;       // attack_100
 
     u8* entry = reinterpret_cast<u8*>(
-        FUN_710033c510(*reinterpret_cast<u32*>(ctx + 0x988), motion_raw));
+        FUN_710033c510(ai->fighter_kind_for_cmd, motion_raw));
     if (entry)
         return *reinterpret_cast<u64*>(entry + 0x28);
 
@@ -1501,10 +1499,10 @@ u64 current_attack_combo_next_motion(void* L) {
 //  then same attack_info_index + table read at +0x1d]
 // ---------------------------------------------------------------------------
 bool target_attack_info_needs_turn(void* L, u32 cmd_id) {
-    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
-    u8* target = reinterpret_cast<u8*>(FUN_7100314030(DAT_71052b5fd8, ctx + 0xc50));
+    FighterAI* ai = *reinterpret_cast<FighterAI**>(reinterpret_cast<u8*>(L) - 8);
+    u8* target = reinterpret_cast<u8*>(FUN_7100314030(DAT_71052b5fd8, &ai->target_entry_id));
 
-    if (*reinterpret_cast<u32*>(ctx + 0xc50) >= 0x10u)
+    if ((u32)ai->target_entry_id >= 0x10u)
         return false;
 
     u8* target_obj = *reinterpret_cast<u8**>(target + 0x20);
@@ -1528,13 +1526,13 @@ bool target_attack_info_needs_turn(void* L, u32 cmd_id) {
 //  fallback via FUN_710033c510 on target's cmd table]
 // ---------------------------------------------------------------------------
 u64 target_current_attack_combo_next_motion(void* L) {
-    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    FighterAI* ai = *reinterpret_cast<FighterAI**>(reinterpret_cast<u8*>(L) - 8);
     u64 result = 0x7fb997a80ULL;  // invalid/none
 
-    u8* target = reinterpret_cast<u8*>(FUN_7100314030(DAT_71052b5fd8, ctx + 0xc50));
-    u32 target_id = *reinterpret_cast<u32*>(ctx + 0xc50);
+    u8* target = reinterpret_cast<u8*>(FUN_7100314030(DAT_71052b5fd8, &ai->target_entry_id));
+    s32 target_id = ai->target_entry_id;
 
-    if ((s32)target_id >= 0 && target_id != *reinterpret_cast<u32*>(ctx + 0x160) && target_id < 0x10) {
+    if (target_id >= 0 && (u32)target_id != ai->parent_entry_id && (u32)target_id < 0x10) {
         u64 motion_raw = *reinterpret_cast<u64*>(target + 0x38);
         u64 motion = motion_raw & 0xFFFFFFFFFFULL;
 
@@ -1564,11 +1562,11 @@ u64 target_current_attack_combo_next_motion(void* L) {
 //  reads u32 at entry+8 for start frame]
 // ---------------------------------------------------------------------------
 u32 target_attack_start_frame_from_motion(void* L, u64 motion_hash) {
-    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
-    u8* target = reinterpret_cast<u8*>(FUN_7100314030(DAT_71052b5fd8, ctx + 0xc50));
-    u32 target_id = *reinterpret_cast<u32*>(ctx + 0xc50);
+    FighterAI* ai = *reinterpret_cast<FighterAI**>(reinterpret_cast<u8*>(L) - 8);
+    u8* target = reinterpret_cast<u8*>(FUN_7100314030(DAT_71052b5fd8, &ai->target_entry_id));
+    s32 target_id = ai->target_entry_id;
 
-    if ((s32)target_id < 0 || target_id == *reinterpret_cast<u32*>(ctx + 0x160) || target_id > 0xf)
+    if (target_id < 0 || (u32)target_id == ai->parent_entry_id || (u32)target_id > 0xf)
         return 0;
 
     u8* target_obj = *reinterpret_cast<u8**>(target + 0x20);
@@ -1638,9 +1636,10 @@ namespace app::item {
 //  calls unable_energy(4) via vtable+0x130]
 // ---------------------------------------------------------------------------
 void unable_control_energy(u8* L) {
-    u8* obj = *reinterpret_cast<u8**>(L - 8);
-    u8* acc = *reinterpret_cast<u8**>(obj + 0x1a0);
-    u8* item_mod = *reinterpret_cast<u8**>(acc + 400);
+    BattleObject* obj = *reinterpret_cast<BattleObject**>(L - 8);
+    BattleObjectModuleAccessor* acc = obj->module_accessor;
+    // +400 (0x190) on accessor — item sub-accessor, not a standard module offset
+    u8* item_mod = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(acc) + 400);
     u8* kinetic_sub = *reinterpret_cast<u8**>(item_mod + 0x220);
     void** km = *reinterpret_cast<void***>(kinetic_sub + 0x100);
     void** vt = reinterpret_cast<void**>(*km);
@@ -1684,133 +1683,54 @@ u32 get_energy_max_frame() {
 // ════════════════════════════════════════════════════════════════════════════
 
 // Helper: load mechakoopa param base pointer
-static inline u8* mechakoopa_params() {
+static inline MechakoopaParams* mechakoopa_params() {
     u8* pa = reinterpret_cast<u8*>(DAT_71052bb3b0);
     u8* char_params = *reinterpret_cast<u8**>(pa + 0xd20);
-    return *reinterpret_cast<u8**>(char_params + 0x198);
+    return *reinterpret_cast<MechakoopaParams**>(char_params + 0x198);
 }
 
 namespace app::mechakoopa {
 
 // 0x71016611e0 (24B) — burst frame before explosion
-// [derived: *(*(FPA2+0xd20+0x198)) — double deref at base, +0x0]
-u32 MECHAKOOPA_BURST_FRAME() {
-    return *reinterpret_cast<u32*>(mechakoopa_params());
-}
-
+u32 MECHAKOOPA_BURST_FRAME() { return mechakoopa_params()->burst_frame; }
 // 0x7101661200 (24B) — countdown frame before activation
-// [derived: *(FPA2+0xd20+0x198) + 0x4]
-u32 MECHAKOOPA_COUNT_DOWN_FRAME() {
-    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x4);
-}
-
+u32 MECHAKOOPA_COUNT_DOWN_FRAME() { return mechakoopa_params()->count_down_frame; }
 // 0x71016612e0 (24B) — hit points
-// [derived: *(FPA2+0xd20+0x198) + 0x8]
-u32 MECHAKOOPA_HP() {
-    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x8);
-}
-
+u32 MECHAKOOPA_HP() { return mechakoopa_params()->hp; }
 // 0x71016612a0 (24B) — gravity acceleration
-// [derived: *(FPA2+0xd20+0x198) + 0x10]
-u32 MECHAKOOPA_GRAVITY() {
-    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x10);
-}
-
+u32 MECHAKOOPA_GRAVITY() { return mechakoopa_params()->gravity; }
 // 0x7101661320 (24B) — limit speed Y
-// [derived: *(FPA2+0xd20+0x198) + 0x14]
-u32 MECHAKOOPA_LIMIT_SPEED_Y() {
-    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x14);
-}
-
+u32 MECHAKOOPA_LIMIT_SPEED_Y() { return mechakoopa_params()->limit_speed_y; }
 // 0x7101661360 (24B) — shoot speed X
-// [derived: *(FPA2+0xd20+0x198) + 0x18]
-u32 MECHAKOOPA_SHOOT_SPEED_X() {
-    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x18);
-}
-
+u32 MECHAKOOPA_SHOOT_SPEED_X() { return mechakoopa_params()->shoot_speed_x; }
 // 0x7101661380 (24B) — shoot brake deceleration
-// [derived: *(FPA2+0xd20+0x198) + 0x1c]
-u32 MECHAKOOPA_SHOOT_BRAKE() {
-    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x1c);
-}
-
+u32 MECHAKOOPA_SHOOT_BRAKE() { return mechakoopa_params()->shoot_brake; }
 // 0x71016612c0 (24B) — bound speed threshold
-// [derived: *(FPA2+0xd20+0x198) + 0x20]
-u32 MECHAKOOPA_BOUND_SPEED_THRESHOLD() {
-    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x20);
-}
-
+u32 MECHAKOOPA_BOUND_SPEED_THRESHOLD() { return mechakoopa_params()->bound_speed_threshold; }
 // 0x71016613a0 (24B) — bound speed X
-// [derived: *(FPA2+0xd20+0x198) + 0x24]
-u32 MECHAKOOPA_BOUND_SPEED_X() {
-    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x24);
-}
-
+u32 MECHAKOOPA_BOUND_SPEED_X() { return mechakoopa_params()->bound_speed_x; }
 // 0x71016613c0 (24B) — bound speed Y
-// [derived: *(FPA2+0xd20+0x198) + 0x28]
-u32 MECHAKOOPA_BOUND_SPEED_Y() {
-    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x28);
-}
-
+u32 MECHAKOOPA_BOUND_SPEED_Y() { return mechakoopa_params()->bound_speed_y; }
 // 0x71016613e0 (24B) — bound brake
-// [derived: *(FPA2+0xd20+0x198) + 0x2c]
-u32 MECHAKOOPA_BOUND_BRAKE() {
-    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x2c);
-}
-
+u32 MECHAKOOPA_BOUND_BRAKE() { return mechakoopa_params()->bound_brake; }
 // 0x7101661300 (24B) — walk speed X
-// [derived: *(FPA2+0xd20+0x198) + 0x30]
-u32 MECHAKOOPA_SPEED_X() {
-    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x30);
-}
-
+u32 MECHAKOOPA_SPEED_X() { return mechakoopa_params()->speed_x; }
 // 0x7101661400 (24B) — turn count
-// [derived: *(FPA2+0xd20+0x198) + 0x34]
-u32 MECHAKOOPA_TURN_NUM() {
-    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x34);
-}
-
+u32 MECHAKOOPA_TURN_NUM() { return mechakoopa_params()->turn_num; }
 // 0x7101661260 (24B) — hop speed X
-// [derived: *(FPA2+0xd20+0x198) + 0x38]
-u32 MECHAKOOPA_HOP_SPEED_X() {
-    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x38);
-}
-
+u32 MECHAKOOPA_HOP_SPEED_X() { return mechakoopa_params()->hop_speed_x; }
 // 0x7101661280 (24B) — hop speed Y
-// [derived: *(FPA2+0xd20+0x198) + 0x3c]
-u32 MECHAKOOPA_HOP_SPEED_Y() {
-    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x3c);
-}
-
+u32 MECHAKOOPA_HOP_SPEED_Y() { return mechakoopa_params()->hop_speed_y; }
 // 0x7101661220 (24B) — hop burst frame
-// [derived: *(FPA2+0xd20+0x198) + 0x40]
-u32 MECHAKOOPA_HOP_BURST_FRAME() {
-    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x40);
-}
-
+u32 MECHAKOOPA_HOP_BURST_FRAME() { return mechakoopa_params()->hop_burst_frame; }
 // 0x7101661420 (24B) — dead burst frame
-// [derived: *(FPA2+0xd20+0x198) + 0x44]
-u32 MECHAKOOPA_DEAD_BURST_FRAME() {
-    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x44);
-}
-
+u32 MECHAKOOPA_DEAD_BURST_FRAME() { return mechakoopa_params()->dead_burst_frame; }
 // 0x7101661240 (24B) — hop lost frame
-// [derived: *(FPA2+0xd20+0x198) + 0x48]
-u32 MECHAKOOPA_HOP_LOST_FRAME() {
-    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x48);
-}
-
+u32 MECHAKOOPA_HOP_LOST_FRAME() { return mechakoopa_params()->hop_lost_frame; }
 // 0x7101661520 (24B) — stop speed multiplier
-// [derived: *(FPA2+0xd20+0x198) + 0x4c]
-u32 MECHAKOOPA_STOP_SPEED_MUL() {
-    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x4c);
-}
-
+u32 MECHAKOOPA_STOP_SPEED_MUL() { return mechakoopa_params()->stop_speed_mul; }
 // 0x7101661540 (24B) — stop brake
-// [derived: *(FPA2+0xd20+0x198) + 0x50]
-u32 MECHAKOOPA_STOP_BRAKE() {
-    return *reinterpret_cast<u32*>(mechakoopa_params() + 0x50);
-}
+u32 MECHAKOOPA_STOP_BRAKE() { return mechakoopa_params()->stop_brake; }
 
 } // namespace app::mechakoopa
 
@@ -1823,30 +1743,25 @@ u32 MECHAKOOPA_STOP_BRAKE() {
 // ════════════════════════════════════════════════════════════════════════════
 
 // Helper: load holywater param base by fighter kind
-static inline u8* holywater_params(s32 fighter_kind) {
+static inline HolywaterParams* holywater_params(s32 fighter_kind) {
     u8* pa = reinterpret_cast<u8*>(DAT_71052bb3b0);
     u8* char_params = *reinterpret_cast<u8**>(pa + (fighter_kind == 0x44 ? 0xf50 : 0xf18));
-    return *reinterpret_cast<u8**>(char_params + 0x240);
+    return *reinterpret_cast<HolywaterParams**>(char_params + 0x240);
 }
 
 namespace app::holywater {
 
 // 0x7101670dd0 (40B) — reflect shield gravity acceleration
-// [derived: FPA2+0xf18/0xf50 → +0x240 → +0x18]
 u32 HOLYWATER_REFLECT_SHIELD_GRAVITY_ACCEL(s32 fighter_kind) {
-    return *reinterpret_cast<u32*>(holywater_params(fighter_kind) + 0x18);
+    return holywater_params(fighter_kind)->reflect_shield_gravity_accel;
 }
-
 // 0x7101670e00 (40B) — reflect shield gravity accel max
-// [derived: FPA2+0xf18/0xf50 → +0x240 → +0x1c]
 u32 HOLYWATER_REFLECT_SHIELD_GRAVITY_ACCEL_MAX(s32 fighter_kind) {
-    return *reinterpret_cast<u32*>(holywater_params(fighter_kind) + 0x1c);
+    return holywater_params(fighter_kind)->reflect_shield_gravity_accel_max;
 }
-
 // 0x7101670e30 (40B) — reflect shield rotation speed
-// [derived: FPA2+0xf18/0xf50 → +0x240 → +0x20]
 u32 HOLYWATER_REFLECT_SHIELD_ROT_SPEED(s32 fighter_kind) {
-    return *reinterpret_cast<u32*>(holywater_params(fighter_kind) + 0x20);
+    return holywater_params(fighter_kind)->reflect_shield_rot_speed;
 }
 
 } // namespace app::holywater
@@ -1857,49 +1772,33 @@ u32 HOLYWATER_REFLECT_SHIELD_ROT_SPEED(s32 fighter_kind) {
 // [derived: same pattern as DAISY (FPA2+0x380→+0x158) but for Peach fighter]
 // ════════════════════════════════════════════════════════════════════════════
 
-static inline u8* peach_daikon_params() {
+static inline PeachDaikonParams* peach_daikon_params() {
     u8* pa = reinterpret_cast<u8*>(DAT_71052bb3b0);
     u8* char_params = *reinterpret_cast<u8**>(pa + 0x348);
-    return *reinterpret_cast<u8**>(char_params + 0x158);
+    return *reinterpret_cast<PeachDaikonParams**>(char_params + 0x158);
 }
 
 namespace app::peachdaikon {
 
 // PROB accessors — probability weights for each daikon variant
-// 0x7101668c90 (24B) [derived: FPA2+0x348→+0x158→+0x40]
-u32 PEACH_PEACHDAIKON_DAIKON_1_PROB() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x40); }
-// 0x7101668cb0 (24B) [derived: +0x44]
-u32 PEACH_PEACHDAIKON_DAIKON_2_PROB() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x44); }
-// 0x7101668cd0 (24B) [derived: +0x48]
-u32 PEACH_PEACHDAIKON_DAIKON_3_PROB() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x48); }
-// 0x7101668cf0 (24B) [derived: +0x4c]
-u32 PEACH_PEACHDAIKON_DAIKON_4_PROB() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x4c); }
-// 0x7101668d10 (24B) [derived: +0x50]
-u32 PEACH_PEACHDAIKON_DAIKON_5_PROB() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x50); }
-// 0x7101668d30 (24B) [derived: +0x54]
-u32 PEACH_PEACHDAIKON_DAIKON_6_PROB() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x54); }
-// 0x7101668d50 (24B) [derived: +0x58]
-u32 PEACH_PEACHDAIKON_DAIKON_7_PROB() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x58); }
-// 0x7101668d70 (24B) [derived: +0x5c]
-u32 PEACH_PEACHDAIKON_DAIKON_8_PROB() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x5c); }
+u32 PEACH_PEACHDAIKON_DAIKON_1_PROB() { return peach_daikon_params()->daikon_1_prob; }  // 0x7101668c90
+u32 PEACH_PEACHDAIKON_DAIKON_2_PROB() { return peach_daikon_params()->daikon_2_prob; }  // 0x7101668cb0
+u32 PEACH_PEACHDAIKON_DAIKON_3_PROB() { return peach_daikon_params()->daikon_3_prob; }  // 0x7101668cd0
+u32 PEACH_PEACHDAIKON_DAIKON_4_PROB() { return peach_daikon_params()->daikon_4_prob; }  // 0x7101668cf0
+u32 PEACH_PEACHDAIKON_DAIKON_5_PROB() { return peach_daikon_params()->daikon_5_prob; }  // 0x7101668d10
+u32 PEACH_PEACHDAIKON_DAIKON_6_PROB() { return peach_daikon_params()->daikon_6_prob; }  // 0x7101668d30
+u32 PEACH_PEACHDAIKON_DAIKON_7_PROB() { return peach_daikon_params()->daikon_7_prob; }  // 0x7101668d50
+u32 PEACH_PEACHDAIKON_DAIKON_8_PROB() { return peach_daikon_params()->daikon_8_prob; }  // 0x7101668d70
 
 // POWER accessors — damage power for each daikon variant
-// 0x7101668d90 (24B) [derived: +0x20]
-u32 PEACH_PEACHDAIKON_DAIKON_1_POWER() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x20); }
-// 0x7101668db0 (24B) [derived: +0x24]
-u32 PEACH_PEACHDAIKON_DAIKON_2_POWER() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x24); }
-// 0x7101668dd0 (24B) [derived: +0x28]
-u32 PEACH_PEACHDAIKON_DAIKON_3_POWER() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x28); }
-// 0x7101668df0 (24B) [derived: +0x2c]
-u32 PEACH_PEACHDAIKON_DAIKON_4_POWER() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x2c); }
-// 0x7101668e10 (24B) [derived: +0x30]
-u32 PEACH_PEACHDAIKON_DAIKON_5_POWER() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x30); }
-// 0x7101668e30 (24B) [derived: +0x34]
-u32 PEACH_PEACHDAIKON_DAIKON_6_POWER() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x34); }
-// 0x7101668e50 (24B) [derived: +0x38]
-u32 PEACH_PEACHDAIKON_DAIKON_7_POWER() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x38); }
-// 0x7101668e70 (24B) [derived: +0x3c]
-u32 PEACH_PEACHDAIKON_DAIKON_8_POWER() { return *reinterpret_cast<u32*>(peach_daikon_params() + 0x3c); }
+u32 PEACH_PEACHDAIKON_DAIKON_1_POWER() { return peach_daikon_params()->daikon_1_power; }  // 0x7101668d90
+u32 PEACH_PEACHDAIKON_DAIKON_2_POWER() { return peach_daikon_params()->daikon_2_power; }  // 0x7101668db0
+u32 PEACH_PEACHDAIKON_DAIKON_3_POWER() { return peach_daikon_params()->daikon_3_power; }  // 0x7101668dd0
+u32 PEACH_PEACHDAIKON_DAIKON_4_POWER() { return peach_daikon_params()->daikon_4_power; }  // 0x7101668df0
+u32 PEACH_PEACHDAIKON_DAIKON_5_POWER() { return peach_daikon_params()->daikon_5_power; }  // 0x7101668e10
+u32 PEACH_PEACHDAIKON_DAIKON_6_POWER() { return peach_daikon_params()->daikon_6_power; }  // 0x7101668e30
+u32 PEACH_PEACHDAIKON_DAIKON_7_POWER() { return peach_daikon_params()->daikon_7_power; }  // 0x7101668e50
+u32 PEACH_PEACHDAIKON_DAIKON_8_POWER() { return peach_daikon_params()->daikon_8_power; }  // 0x7101668e70
 
 } // namespace app::peachdaikon
 
@@ -1910,53 +1809,36 @@ u32 PEACH_PEACHDAIKON_DAIKON_8_POWER() { return *reinterpret_cast<u32*>(peach_da
 //  +0x178 is doll weapon sub-params. SHAPE_TYPE uses +0x1c0 instead]
 // ════════════════════════════════════════════════════════════════════════════
 
-static inline u8* doll_params() {
+static inline DollParams* doll_params() {
     u8* pa = reinterpret_cast<u8*>(DAT_71052bb3b0);
     u8* char_params = *reinterpret_cast<u8**>(pa + 0xc08);
-    return *reinterpret_cast<u8**>(char_params + 0x178);
+    return *reinterpret_cast<DollParams**>(char_params + 0x178);
 }
 
-static inline u8* doll_shape_params() {
+static inline DollShapeParams* doll_shape_params() {
     u8* pa = reinterpret_cast<u8*>(DAT_71052bb3b0);
     u8* char_params = *reinterpret_cast<u8**>(pa + 0xc08);
-    return *reinterpret_cast<u8**>(char_params + 0x1c0);
+    return *reinterpret_cast<DollShapeParams**>(char_params + 0x1c0);
 }
 
 namespace app::doll {
 
-// 0x710165c510 (24B) — base speed Y [derived: +0x0, double deref]
-u32 DOLL_SPEED_Y() { return *reinterpret_cast<u32*>(doll_params()); }
-// 0x710165c530 (24B) — rotation speed Z [derived: +0x8]
-u32 DOLL_ROT_SPEED_Z() { return *reinterpret_cast<u32*>(doll_params() + 0x8); }
-// 0x710165c3f0 (24B) — reaction multiplier [derived: +0xc]
-u32 DOLL_REACTION_MUL() { return *reinterpret_cast<u32*>(doll_params() + 0xc); }
-// 0x710165c450 (24B) — smash max speed X [derived: +0x10]
-u32 DOLL_SMASH_MAX_SPEED_X() { return *reinterpret_cast<u32*>(doll_params() + 0x10); }
-// 0x710165c470 (24B) — smash max speed Y [derived: +0x14]
-u32 DOLL_SMASH_MAX_SPEED_Y() { return *reinterpret_cast<u32*>(doll_params() + 0x14); }
-// 0x710165c430 (24B) — smash accel Y [derived: +0x20]
-u32 DOLL_SMASH_ACCEL_Y() { return *reinterpret_cast<u32*>(doll_params() + 0x20); }
-// 0x710165c4f0 (24B) — rotation speed min [derived: +0x24]
-u32 DOLL_ROT_SPEED_MIN() { return *reinterpret_cast<u32*>(doll_params() + 0x24); }
-// 0x710165c4d0 (24B) — rotation speed max [derived: +0x28]
-u32 DOLL_ROT_SPEED_MAX() { return *reinterpret_cast<u32*>(doll_params() + 0x28); }
-// 0x710165c4b0 (24B) — power min [derived: +0x2c]
-u32 DOLL_POWER_MIN() { return *reinterpret_cast<u32*>(doll_params() + 0x2c); }
-// 0x710165c490 (24B) — power max [derived: +0x30]
-u32 DOLL_POWER_MAX() { return *reinterpret_cast<u32*>(doll_params() + 0x30); }
-// 0x710165c3d0 (24B) — life [derived: +0x34]
-u32 DOLL_LIFE() { return *reinterpret_cast<u32*>(doll_params() + 0x34); }
-// 0x710165c410 (24B) — life decay multiplier [derived: +0x38]
-u32 DOLL_LIFE_DEC_MUL() { return *reinterpret_cast<u32*>(doll_params() + 0x38); }
-// 0x710165c630 (24B) — min degree Y [derived: +0x3c]
-u32 DOLL_MIN_DEGREE_Y() { return *reinterpret_cast<u32*>(doll_params() + 0x3c); }
-// 0x710165c610 (24B) — max degree Y [derived: +0x40]
-u32 DOLL_MAX_DEGREE_Y() { return *reinterpret_cast<u32*>(doll_params() + 0x40); }
-// 0x710165c550 (24B) — rotation Z ratio [derived: +0x44]
-u32 DOLL_ROT_Z_RATIO() { return *reinterpret_cast<u32*>(doll_params() + 0x44); }
-// 0x710165c5f0 (24B) — shape type (different sub-struct at +0x1c0)
-// [derived: FPA2+0xc08→+0x1c0→+0x0 — separate sub-struct from main doll params]
-u32 DOLL_SHAPE_TYPE() { return *reinterpret_cast<u32*>(doll_shape_params()); }
+u32 DOLL_SPEED_Y() { return doll_params()->speed_y; }                          // 0x710165c510
+u32 DOLL_ROT_SPEED_Z() { return doll_params()->rot_speed_z; }                  // 0x710165c530
+u32 DOLL_REACTION_MUL() { return doll_params()->reaction_mul; }                // 0x710165c3f0
+u32 DOLL_SMASH_MAX_SPEED_X() { return doll_params()->smash_max_speed_x; }      // 0x710165c450
+u32 DOLL_SMASH_MAX_SPEED_Y() { return doll_params()->smash_max_speed_y; }      // 0x710165c470
+u32 DOLL_SMASH_ACCEL_Y() { return doll_params()->smash_accel_y; }              // 0x710165c430
+u32 DOLL_ROT_SPEED_MIN() { return doll_params()->rot_speed_min; }              // 0x710165c4f0
+u32 DOLL_ROT_SPEED_MAX() { return doll_params()->rot_speed_max; }              // 0x710165c4d0
+u32 DOLL_POWER_MIN() { return doll_params()->power_min; }                      // 0x710165c4b0
+u32 DOLL_POWER_MAX() { return doll_params()->power_max; }                      // 0x710165c490
+u32 DOLL_LIFE() { return doll_params()->life; }                                // 0x710165c3d0
+u32 DOLL_LIFE_DEC_MUL() { return doll_params()->life_dec_mul; }                // 0x710165c410
+u32 DOLL_MIN_DEGREE_Y() { return doll_params()->min_degree_y; }                // 0x710165c630
+u32 DOLL_MAX_DEGREE_Y() { return doll_params()->max_degree_y; }                // 0x710165c610
+u32 DOLL_ROT_Z_RATIO() { return doll_params()->rot_z_ratio; }                  // 0x710165c550
+u32 DOLL_SHAPE_TYPE() { return doll_shape_params()->shape_type; }              // 0x710165c5f0
 
 } // namespace app::doll
 
@@ -1967,42 +1849,28 @@ u32 DOLL_SHAPE_TYPE() { return *reinterpret_cast<u32*>(doll_shape_params()); }
 //  +0x108 is explosionbomb weapon sub-params pointer]
 // ════════════════════════════════════════════════════════════════════════════
 
-static inline u8* explosionbomb_params() {
+static inline ExplosionBombParams* explosionbomb_params() {
     u8* pa = reinterpret_cast<u8*>(DAT_71052bb3b0);
     u8* char_params = *reinterpret_cast<u8**>(pa + 0x3f0);
-    return *reinterpret_cast<u8**>(char_params + 0x108);
+    return *reinterpret_cast<ExplosionBombParams**>(char_params + 0x108);
 }
 
 namespace app::explosionbomb {
 
-// 0x710165d2c0 (24B) [derived: +0x0, double deref]
-u32 EXPLOSIONBOMB_GRAVITY() { return *reinterpret_cast<u32*>(explosionbomb_params()); }
-// 0x710165d2e0 (24B) [derived: +0x4]
-u32 EXPLOSIONBOMB_LIMIT_GRAVITY() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0x4); }
-// 0x710165d300 (24B) [derived: +0x8]
-u32 EXPLOSIONBOMB_HOP_SPEED_MUL_X() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0x8); }
-// 0x710165d320 (24B) [derived: +0xc]
-u32 EXPLOSIONBOMB_HOP_SPEED_Y() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0xc); }
-// 0x710165d360 (24B) [derived: +0x10]
-u32 EXPLOSIONBOMB_BOUND_SPEED_MUL_X() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0x10); }
-// 0x710165d380 (24B) [derived: +0x14]
-u32 EXPLOSIONBOMB_BOUND_SPEED_MUL_Y() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0x14); }
-// 0x710165d340 (24B) [derived: +0x18]
-u32 EXPLOSIONBOMB_BOUND_NUM() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0x18); }
-// 0x710165d3a0 (24B) [derived: +0x1c]
-u32 EXPLOSIONBOMB_IGNITION_FRAME() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0x1c); }
-// 0x710165d3c0 (24B) [derived: +0x20]
-u32 EXPLOSIONBOMB_WIRE_SPEED_X() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0x20); }
-// 0x710165d3e0 (24B) [derived: +0x24]
-u32 EXPLOSIONBOMB_WIRE_SPEED_Y() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0x24); }
-// 0x710165d400 (24B) [derived: +0x28]
-u32 EXPLOSIONBOMB_WIRE_GRAVITY() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0x28); }
-// 0x710165d420 (24B) [derived: +0x2c]
-u32 EXPLOSIONBOMB_WIRE_BOUND_MUL_Y() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0x2c); }
-// 0x710165d440 (24B) [derived: +0x30]
-u32 EXPLOSIONBOMB_BURST_FRAME() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0x30); }
-// 0x710165d460 (24B) [derived: +0x38 — gap at +0x34]
-u32 EXPLOSIONBOMB_LIFE_MISFIRE() { return *reinterpret_cast<u32*>(explosionbomb_params() + 0x38); }
+u32 EXPLOSIONBOMB_GRAVITY() { return explosionbomb_params()->gravity; }                    // 0x710165d2c0
+u32 EXPLOSIONBOMB_LIMIT_GRAVITY() { return explosionbomb_params()->limit_gravity; }        // 0x710165d2e0
+u32 EXPLOSIONBOMB_HOP_SPEED_MUL_X() { return explosionbomb_params()->hop_speed_mul_x; }    // 0x710165d300
+u32 EXPLOSIONBOMB_HOP_SPEED_Y() { return explosionbomb_params()->hop_speed_y; }            // 0x710165d320
+u32 EXPLOSIONBOMB_BOUND_SPEED_MUL_X() { return explosionbomb_params()->bound_speed_mul_x; }// 0x710165d360
+u32 EXPLOSIONBOMB_BOUND_SPEED_MUL_Y() { return explosionbomb_params()->bound_speed_mul_y; }// 0x710165d380
+u32 EXPLOSIONBOMB_BOUND_NUM() { return explosionbomb_params()->bound_num; }                // 0x710165d340
+u32 EXPLOSIONBOMB_IGNITION_FRAME() { return explosionbomb_params()->ignition_frame; }      // 0x710165d3a0
+u32 EXPLOSIONBOMB_WIRE_SPEED_X() { return explosionbomb_params()->wire_speed_x; }          // 0x710165d3c0
+u32 EXPLOSIONBOMB_WIRE_SPEED_Y() { return explosionbomb_params()->wire_speed_y; }          // 0x710165d3e0
+u32 EXPLOSIONBOMB_WIRE_GRAVITY() { return explosionbomb_params()->wire_gravity; }          // 0x710165d400
+u32 EXPLOSIONBOMB_WIRE_BOUND_MUL_Y() { return explosionbomb_params()->wire_bound_mul_y; }  // 0x710165d420
+u32 EXPLOSIONBOMB_BURST_FRAME() { return explosionbomb_params()->burst_frame; }            // 0x710165d440
+u32 EXPLOSIONBOMB_LIFE_MISFIRE() { return explosionbomb_params()->life_misfire; }           // 0x710165d460
 
 } // namespace app::explosionbomb
 
@@ -2013,17 +1881,15 @@ u32 EXPLOSIONBOMB_LIFE_MISFIRE() { return *reinterpret_cast<u32*>(explosionbomb_
 //  +0x120 is arrow item sub-params pointer]
 // ════════════════════════════════════════════════════════════════════════════
 
-static inline u8* linkarrow_params() {
+static inline LinkArrowParams* linkarrow_params() {
     u8* pa = reinterpret_cast<u8*>(DAT_71052bb3b0);
     u8* char_params = *reinterpret_cast<u8**>(pa + 0xe0);
-    return *reinterpret_cast<u8**>(char_params + 0x120);
+    return *reinterpret_cast<LinkArrowParams**>(char_params + 0x120);
 }
 
 namespace app::linkarrow {
 
-// 0x710165eb30 (24B) — arrow item lifetime [derived: +0x2c]
-u32 LINKARROW_ITEM_LIFE() { return *reinterpret_cast<u32*>(linkarrow_params() + 0x2c); }
-// 0x710165eb50 (24B) — arrow throw angle [derived: +0x30]
-u32 LINKARROW_ITEM_THROW_DEGREE() { return *reinterpret_cast<u32*>(linkarrow_params() + 0x30); }
+u32 LINKARROW_ITEM_LIFE() { return linkarrow_params()->item_life; }                // 0x710165eb30
+u32 LINKARROW_ITEM_THROW_DEGREE() { return linkarrow_params()->item_throw_degree; }// 0x710165eb50
 
 } // namespace app::linkarrow

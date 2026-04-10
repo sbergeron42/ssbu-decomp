@@ -13,7 +13,8 @@ struct FighterParamAccessor2PhysicsParams {
     u8   unk_0x00[0x230];
     u32  init_bound_frame;             // +0x230 [derived: FUN_71016593a0 reads as u32]
     f32  special_lw_gravity;           // +0x234 [derived: FUN_71016593c0 reads as f32]
-    u8   unk_0x238[0x8];
+    f32  special_lw_speed_y_max;       // +0x238 [derived: BUDDYBOMB macro at 71016593e0]
+    u8   unk_0x23c[0x4];
     f32  length_gravity;               // +0x240 [derived: FUN_7101659400]
     f32  length_speed_y_max;           // +0x244 [derived: FUN_7101659420]
     u8   unk_0x248[0x18];
@@ -26,10 +27,12 @@ struct FighterParamAccessor2PhysicsParams {
     f32  side_angle_x_velocity;        // +0x28C [derived: FUN_71016594e0]
     f32  side_angle_y_velocity;        // +0x290 [derived: FUN_7101659500]
     f32  side_angle_z_velocity;        // +0x294 [derived: FUN_7101659520]
-    u8   unk_0x298[0xC];
+    u8   unk_0x298[0x8];
+    u32  life;                         // +0x2A0 [derived: BUDDYBOMB life_7101659540]
     u32  flashing_frame_before_life_over; // +0x2A4 [derived: FUN_7101659560 reads as u32]
     f32  rebound_speed_x_add;          // +0x2A8 [derived: FUN_7101659580]
     f32  rebound_speed_y_add;          // +0x2AC [derived: FUN_71016595a0]
+    f32  bound_se_speed_less;          // +0x2B0 [derived: BUDDYBOMB bound_se_speed_less_71016595c0]
 };
 
 // FighterParamAccessor2 — singleton accessed via lib::Singleton<app::FighterParamAccessor2>::instance_.

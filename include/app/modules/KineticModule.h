@@ -147,9 +147,17 @@ struct KineticEnergy {
     u8 _rotation[0x10];       // +0x20 [derived: KineticEnergy__get_rotation_impl at 0x71020f64c0 returns &this+0x20]
     u8 enabled;               // +0x30 [derived: enable_impl writes 1, unable_impl writes 0, is_enable_impl reads]
     u8 field_0x31_u8;         // +0x31 [inferred: set/cleared alongside enabled in 40+ lua_bind functions]
-    u8 _unk_0x32[0x0E];       // +0x32 to +0x3F (unknown padding)
+    u8 _unk_0x32[0x2];        // +0x32 to +0x33 (unknown padding)
+
+    // Gravity energy subclass scalar fields (1D energies at slots 2, 0xc, 0xd, etc.)
+    // These overlap with the _unk region for non-gravity energies.
+    // [derived: kinetic_energy_gravity get_accel/set_accel/set_stable_speed/set_brake at +0x34..+0x3c]
+    f32 gravity_accel;         // +0x34 [derived: gravity set_accel writes here]
+    f32 gravity_stable_speed;  // +0x38 [derived: gravity set_stable_speed writes here]
+    f32 gravity_brake;         // +0x3c [derived: gravity set_brake writes here]
 
     // Speed/physics vectors — each is an {x, y} pair of f32
+    // For 2D energies: accel vector. For gravity energy: limit_speed scalar at +0x40.
     // [derived: sv_kinetic_energy lua_bind readers at 0x7102222280-0x7102222400
     //  read these fields directly from KineticEnergy* returned by get_energy()]
     f32 accel_x;              // +0x40 [derived: FUN_7102222280 (get_energy3_accel_xy) reads +0x40]
