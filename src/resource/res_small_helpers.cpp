@@ -451,7 +451,7 @@ void FUN_710353d480(u32* param_1, u64 param_2) {
 
     {
         FilesystemInfo* fs = DAT_7105331f20;
-        PathInformation* pi = (PathInformation*)fs->path_info;
+        PathInformation* pi = fs->path_info;
         LoadedArc* arc = pi->arc;
         FileInfoBucket* buckets = arc->file_info_buckets;
         HashToIndex* hash_to_path = arc->file_hash_to_path_index;
@@ -527,7 +527,7 @@ u64 FUN_710353e4e0(u32 param_1) {
 
     {
         FilesystemInfo* fs = DAT_7105331f20;
-        PathInformation* pi = (PathInformation*)fs->path_info;
+        PathInformation* pi = fs->path_info;
         long search = (long)pi->search;
         long body = *(long*)(search + 0x08);
 
