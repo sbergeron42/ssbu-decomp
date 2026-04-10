@@ -14,6 +14,8 @@
 #include "app/modules/HitModule.h"
 #include "app/modules/KineticModule.h"
 #include "app/modules/AttackModule.h"
+#include "app/modules/ControlModule.h"
+#include "app/placeholders/FighterAI.h"
 
 // Fighter status and scripting utility functions — pool-c
 // Range: 0x7102275xxx -- 0x7102284xxx
@@ -3297,4 +3299,118 @@ u8 is_hp_mode_7100693df0(app::BattleObjectModuleAccessor* acc) {
     // [derived: is_hp_mode disasm loads ldrb [x8, #0x90] from FighterInformationData]
     auto* fi_data = *reinterpret_cast<app::FighterInformationData**>(entry + 0xf8);
     return fi_data->hp_mode_fighter;
+}
+
+// ────────────────────────────────────────────────────────────
+// AI status accessors — used by CPU AI scripts
+// ────────────────────────────────────────────────────────────
+
+// ── 0x7100361c10 -- app::ai::status_kind (12B) ─────────────
+// Returns the current status_kind of the AI's own fighter.
+// [derived: FighterAI→state→status_kind]
+u32 ai_status_kind_7100361c10(void* L) {
+    auto* ai = get_ai_context(reinterpret_cast<u64>(L));
+    return ai->state->status_kind;
+}
+
+// ── 0x7100361c20 -- app::ai::prev_status_kind (12B) ────────
+// Returns the previous status_kind of the AI's own fighter.
+// [derived: FighterAI→state→prev_status_kind]
+u32 ai_prev_status_kind_7100361c20(void* L) {
+    auto* ai = get_ai_context(reinterpret_cast<u64>(L));
+    return ai->state->prev_status_kind;
+}
+
+// ── 0x710036a570 -- app::ai_notify_event::status_kind (40B) ─
+// Helper: get BattleObjectModuleAccessor from AI event notify chain
+// [derived: FighterAI→state→accessor_chain→+0x20 = BattleObjectModuleAccessor*]
+struct AIEventChain {
+    u8 pad_0x00[0x20];
+    app::BattleObjectModuleAccessor* accessor;  // +0x20 [derived: notify_event functions deref +0x20]
+};
+static inline app::BattleObjectModuleAccessor* get_ai_event_accessor(FighterAI* ai) {
+    auto* chain = static_cast<AIEventChain*>(ai->state->accessor_chain);
+    return chain->accessor;
+}
+
+// Returns status_kind of the BattleObject associated with an AI notify event.
+// [derived: FighterAI→state→accessor_chain→+0x20 = BattleObjectModuleAccessor,
+//  then acc→status_module→vtable→StatusKind()]
+void ai_notify_event_status_kind_710036a570(void* L) {
+    auto* ai = get_ai_context(reinterpret_cast<u64>(L));
+    auto* acc = get_ai_event_accessor(ai);
+    auto* status_mod = static_cast<app::StatusModule*>(acc->status_module);
+    status_mod->vtbl->StatusKind(status_mod);
+}
+
+// ────────────────────────────────────────────────────────────
+// Ground/position utility functions
+// ────────────────────────────────────────────────────────────
+
+// ── 0x710069bf80 -- FighterUtil::get_pos_on_line (44B) ──────
+// Computes position on a ground collision line. Tail call to internal helper.
+// [derived: disasm shows 1 instruction: b FUN_710069bfb0]
+extern "C" void get_pos_on_line_impl_710069bfb0(
+    app::BattleObjectModuleAccessor*, void*, f32, f32, void*);
+
+void get_pos_on_line_710069bf80(
+    app::BattleObjectModuleAccessor* acc, void* line, f32 p2, f32 p3, void* out_vec) {
+    get_pos_on_line_impl_710069bfb0(acc, line, p2, p3, out_vec);
+}
+
+// ── 0x710069cc40 -- FighterUtil::is_neighbor_floor_line (72B)
+// Checks if two ground collision lines are neighbors (bidirectional check).
+// [derived: calls FUN_710069cc90 both ways, returns true only if both succeed]
+extern "C" bool check_line_neighbor_710069cc90(void* line_a, void* line_b, bool flag);
+
+bool is_neighbor_floor_line_710069cc40(void* line_a, void* line_b) {
+    if (!check_line_neighbor_710069cc90(line_a, line_b, true)) return false;
+    return check_line_neighbor_710069cc90(line_b, line_a, true);
+}
+
+// get_cliff_trans (0x7100694190, 80B) — deferred: needs Vector3f struct for reviewer compliance
+
+// ────────────────────────────────────────────────────────────
+// AI weapon accessors — used by CPU AI for projectile tracking
+// ────────────────────────────────────────────────────────────
+
+// ── 0x710036b0f0 -- ai_weapon::pos_x (20B) ─────────────────
+// Returns X position of an AI weapon target, or 0.0 if null.
+// Uses FighterAIWeapon (see include/app/placeholders/FighterAI.h for related types)
+// [derived: null check param_2, then ldr s0 at +0x40]
+f32 ai_weapon_pos_x_710036b0f0(void* L, void* weapon) {
+    if (!weapon) return 0.0f;
+    return *reinterpret_cast<f32*>(static_cast<u8*>(weapon) + 0x40);
+}
+
+// ── 0x710036b110 -- ai_weapon::speed_x (20B) ────────────────
+// Returns X speed of an AI weapon target, or 0.0 if null.
+// [derived: null check param_2, then ldr s0 at +0x50]
+f32 ai_weapon_speed_x_710036b110(void* L, void* weapon) {
+    if (!weapon) return 0.0f;
+    return *reinterpret_cast<f32*>(static_cast<u8*>(weapon) + 0x50);
+}
+
+// ── 0x710036a590 -- ai_notify_event::motion_kind (32B) ──────
+// Returns motion_kind of the BattleObject in an AI notify event.
+// [derived: FighterAI→state→accessor_chain→+0x20 = accessor,
+//  accessor→motion_module→vtable→motion_kind() = vtable+0x138]
+void ai_notify_event_motion_kind_710036a590(void* L) {
+    auto* ai = get_ai_context(reinterpret_cast<u64>(L));
+    auto* acc = get_ai_event_accessor(ai);
+    auto* motion = acc->motion_module;
+    reinterpret_cast<u64(*)(app::MotionModule*)>(motion->_vt[0x138 / 8])(motion);
+}
+
+// ── 0x7100376730 -- ai_system::is_input_available_for_entry (56B)
+// Returns true if input is available for the fighter (inverts ControlModule check).
+// [derived: FighterAI→state→accessor_chain→+0x20 = accessor,
+//  accessor→control_module→vtable+0x288 (is_disable_input), inverted result]
+u32 is_input_available_for_entry_7100376730(void* L) {
+    auto* ai = get_ai_context(reinterpret_cast<u64>(L));
+    auto* acc = get_ai_event_accessor(ai);
+    auto* ctrl = acc->fighter_control_module;
+    u32 disabled = reinterpret_cast<u32(*)(app::ControlModule*)>(
+        ctrl->_vt[0x288 / 8])(ctrl);
+    return (~disabled) & 1;
 }
