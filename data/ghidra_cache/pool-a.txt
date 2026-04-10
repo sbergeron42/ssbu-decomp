@@ -541,3 +541,43 @@ Same as walk_speed_max, field +0x20
 
 --- get_default_fighter_param_air_brake_x @ 0x7102282370 (72 bytes) ---
 Same, field +0x64
+
+=== FUN_7103974820 (100 bytes) ===
+u64 FUN_7103974820(long param_1, int param_2)
+  if param_2 != 0: call FUN_71039839d0(param_1, param_2, 0), return 0
+  *(u16*)(param_1+0x510) = 0
+  if field_0x6f==0 && field_0x85==0: *(u8*)(param_1+0x6e)=0
+  else if field_0x70==0 && (field_0x85==0 || field_0x234!=0): *(u16*)(param_1+0x6e)=0, *(u8*)(param_1+0x70)=0
+  return 0
+
+=== FUN_71001b0fd0 (switch decoder, 544 bytes) ===
+int FUN_71001b0fd0(u32 *param_1)
+  Pure switch on (*param_1 >> 16) & 0x7FF
+  Cases: 1-6, 0x65, 0x67-0x75
+  Each case computes: adjusted + base + result
+  Jump table at 0x71044997e8 (0x75 entries)
+  Default returns -1, negative values return early 0
+
+=== FUN_7100018910 (192 bytes, leaf function) ===
+u64 FUN_7100018910(u64* param_1, u32* param_2, int param_3)
+  Tail-call to func at param_1[0x10B]+0x58 if non-null
+  Otherwise: bitmask check on *(u32*)(*param_1 + 0x224)
+  flags & 0x15 == 1: write param_1+0x870 to *param_2
+  flags & 0x2A == 2: compare +0x870 vs +0x874, indexed store to param_2[bit0]
+  Returns combination of flags (0, 1, 0x10001, etc.)
+
+=== MEDIUM vtable dispatchers (x8 param - unmatchable) ===
+FUN_7102027170: vtable[0x490](self), return 0  [x8 calling convention]
+FUN_7102044100: vtable[0xb0](self), return 0   [x8 calling convention]
+FUN_71020441b0: vtable[0xb8](self), return 0   [x8 calling convention]
+FUN_710205c720: vtable[0x358](self), return 0  [x8 calling convention]
+FUN_710205c7d0: vtable[0x360](self), return 0  [x8 calling convention]
+FUN_710206a1b0: vtable[0x90](self), return 0   [x8 calling convention]
+
+=== __throw_out_of_range wrappers (x8/x9 param - unmatchable) ===
+FUN_7101bca270, FUN_7102a2b28c, FUN_7102b398a0, FUN_7102baccd0,
+FUN_7102f53a60, FUN_710304ac2c, FUN_71031cedf4, FUN_71032cb748,
+FUN_710358fb24: all call std::__throw_out_of_range with x8/x9 param
+
+=== 4-byte nop functions (unmatchable without naked asm) ===
+22 functions at 0x7100407e0c..0x710044793c: all single nop instruction
