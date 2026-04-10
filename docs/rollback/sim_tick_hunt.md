@@ -1458,3 +1458,120 @@ xrefs. Strong next moves in priority order:
   `FUN_71022b7100` as timed-out for next session)
 - Ghidra renames: `FUN_7103757140` and `FUN_71014f10c0` as noted
   above.
+
+---
+
+## Pool A — FighterManager slot-release helper (2026-04-10, same session)
+
+Decomped `FUN_710066e850` (renamed in Ghidra to
+`FighterManager_releaseEightSlotPair_710066e850`). Reached via pool-a's
+earlier decomp of the match-shutdown function `FUN_71022cd350`, which
+called it on `lib::Singleton<app::FighterManager>::instance_` during
+teardown. Full C is short enough to inline:
+
+The function walks **8 paired slots** on its target object:
+
+| Primary slot | Secondary slot | Width |
+|---|---|---|
+| `+0x20` | `+0x60` | 8 bytes each (pointer) |
+| `+0x28` | `+0x68` | 8 bytes each |
+| `+0x30` | `+0x70` | 8 bytes each |
+| `+0x38` | `+0x78` | 8 bytes each |
+| `+0x40` | `+0x80` | 8 bytes each |
+| `+0x48` | `+0x88` | 8 bytes each |
+| `+0x50` | `+0x90` | 8 bytes each |
+| `+0x58` | `+0x98` | 8 bytes each |
+
+Plus a counter field at `+0xA0` (s32, incremented when promoting a
+secondary into a primary and decremented on successful release) and a
+flag byte at `+0xB20` cleared to 0 at function exit. Object size is
+therefore **at least 0xB21 bytes** — big enough to be FighterManager's
+primary data block.
+
+**Promotion pattern** (for each of the 8 pairs):
+```
+if (secondary != null && primary == null) {
+    primary = secondary;
+    secondary = null;
+    counter++;
+}
+if (primary != null) {
+    FUN_7100653490(primary, 1);   // slot release step 1
+    FUN_71006524e0(primary);       // slot release step 2
+    FUN_7100652160(primary);       // slot release step 3
+    FUN_710392e590(primary);       // je_free / operator delete
+    primary = null;
+    counter--;
+}
+```
+
+**Interpretation.** The 8 pairs almost certainly encode the **8-player
+max SSBU match roster with a two-form-per-fighter slot design**. The
+primary/secondary pair smells like "current form / alternate form" for
+transforming characters (Zelda↔Sheik, Samus↔ZSS, Pokemon Trainer's 3
+pokemon, etc.), where the currently active form sits in the primary
+slot and inactive forms park in the secondary slot. The "promote
+secondary into primary if primary is empty" logic on teardown confirms
+this: if the fighter was in their alternate form at match end, the
+teardown still has to release the primary-slot memory of that form.
+
+The `FUN_7100653490` / `FUN_71006524e0` / `FUN_7100652160` /
+`FUN_710392e590` chain is the canonical BattleObject destructor
+sequence:
+1. step 1: mark-for-release / detach from managers
+2. step 2: run virtual finalizer
+3. step 3: run base-class dtor chain
+4. step 4: `je_free`
+
+### Does this prove +0x2da8 lives on FighterManager?
+
+**No.** This helper only touches offsets `0x20`–`0x98`, `0xA0`, and
+`0xB20` on its target. It does not reach `0x2da8`. So nothing said here
+confirms or denies Pool-B's hypothesis that Dispatcher A's walk list
+at `[**(DAT_710593a6a0+0x24e8)+0x2da8]` is a field on FighterManager.
+
+However, **the chain makes sense if `mii_db->field_0x24e8` is a raw
+back-reference to FighterManager**:
+- Mii database holds a vector of per-fighter CharInfo entries.
+- It keeps a back-ref to FighterManager at `+0x24e8` to look up live
+  fighter state when installing CharInfos.
+- FighterManager at `+0x2da8` has its observer/sub-manager list that
+  Dispatcher A iterates each frame.
+
+This would make `FighterManager + 0x2da8` the **actual** sub-manager
+tick list Dispatcher A walks. The per-frame method called is slot
+`+0x28` on each node's vtable, and the walk has an early-out on first
+truthy return — which is still pattern-inconsistent with a sim-tick
+dispatcher (sim ticks run ALL entities), but consistent with "find
+first active game phase and run its frame hook."
+
+### Where to look next (pool A handoff)
+
+Confirming the hypothesis requires decompiling **FighterManager's full
+constructor** (find it by xref-sweeping `lib::Singleton<app::FighterManager>::instance_`
+for the WRITE with an allocator) or its **full destructor**
+(which is a different function than the helper above — the helper's
+caller, visible in FUN_71022cd350 at line ~231 onward). A 0x2da8-sized
+object ctor or dtor will enumerate the sub-manager list layout and
+prove/disprove +0x2da8.
+
+If the FighterManager ctor is tractable, it also exposes the primary/
+secondary slot allocation pattern, which is rollback-useful because
+those slots are where per-fighter simulation state actually lives.
+
+### Renames this session
+
+- `FUN_7103757140` → `MiiFighterDatabase_dtor_7103757140`
+- `FUN_71014f10c0` → `GameState_finalizeMatch_71014f10c0`
+- `FUN_710066e850` → `FighterManager_releaseEightSlotPair_710066e850`
+
+### Cached decomps this session (all gitignored under data/ghidra_cache/)
+
+- `pool-a_FUN_71014f10c0.md` (2120 lines)
+- `pool-a_FUN_71022cd350.md` (4103 lines)
+- `pool-a_FUN_7103757140.md` (annotated Mii database dtor)
+- `manual_extraction_needed.md` now lists `FUN_71022b7100`
+
+No src/ changes — this entire session was research / doc / Ghidra
+labeling per WORKER-pool-a.md "Documentation is the primary
+deliverable."
