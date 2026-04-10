@@ -30,9 +30,41 @@ void FighterKineticEnergyMotion__set_angle_impl(FighterKineticEnergyMotion* ke, 
     ke->angle = val;
 }
 
+// 7102120f70 -- 9 insns: deg2rad, store mode, store rad, cbz mode, store angle_whole
+// [derived: adrp/ldr loads DAT_71044716e0 (deg2rad), fmul applies conversion,
+//  stores to +0x98 (mode) and +0x94 (rad), conditional store to +0x90 (angle_whole)]
+// NOTE: partial match (5/9) — NX Clang emits fmul with operand order `s0,s0,s1` (angle*const)
+// while upstream Clang 8.0.0 emits `s0,s1,s0`. Also NX schedules str mode after fmul while
+// upstream schedules it before. adrp/ldr reloc differs under flat-link verification.
+void FighterKineticEnergyMotion__set_angle_whole_impl(FighterKineticEnergyMotion* ke, f32 angle, s32 mode) {
+    f32 rad = angle * DAT_71044716e0;
+    ke->angle_whole_mode = mode;
+    ke->angle_whole_rad = rad;
+    if (mode != 0) return;
+    ke->angle_whole = rad;
+}
+
 // 7102120fa0 -- str s0,[x0,#0x9c]; ret
 void FighterKineticEnergyMotion__set_speed_mul_impl(FighterKineticEnergyMotion* ke, f32 val) {
     ke->speed_mul = val;
+}
+
+// 7102120fb0 -- 9 insns: if new != old, store new and negate motion_vec[0]
+// [derived: ldr/fcmp old vs new, skip-on-equal via forward branch, body stores new and flips motion_vec.x]
+// Compiler reuses old dir register for negation (since v[0] == old by invariant).
+// NOTE: partial match (5/9) — upstream Clang 8.0.0 writes fneg into a fresh register (s2)
+// preserving s1, then mov-inserts s2 into v1[0]; NX Clang overwrites s1 in place. The
+// selected SIMD register also differs (q1 vs q2). Semantics identical.
+void FighterKineticEnergyMotion__set_chara_dir_impl(FighterKineticEnergyMotion* ke, f32 new_dir) {
+    f32 old = ke->chara_dir;
+    if (old != new_dir) {
+        auto* v = reinterpret_cast<v4sf*>(ke->motion_vec);
+        v4sf vec = *v;
+        f32 neg_old = -old;
+        ke->chara_dir = new_dir;
+        vec[0] = neg_old;
+        *v = vec;
+    }
 }
 
 // 7102120fe0 -- reverse_chara_dir: negate vec[0] at +0xa0 and float at +0x88
