@@ -22,6 +22,7 @@ extern "C" u64 DAT_7105163290 __attribute__((visibility("hidden"))); // stage su
 extern "C" u64 DAT_71051635b8 __attribute__((visibility("hidden"))); // stage sub-obj vtable (vt_5b8)
 extern "C" u64 DAT_7105163910 __attribute__((visibility("hidden"))); // stage sub-obj vtable (vt_910)
 extern "C" u64 DAT_7105163720 __attribute__((visibility("hidden"))); // stage sub-obj vtable (vt_720)
+extern "C" u64 DAT_7105163788 __attribute__((visibility("hidden"))); // stage sub-obj vtable (vt_788)
 
 // Cleanup helpers for the two small D0 destructors below. Both are tail-called
 // with the owned inner pointer's +0x28 field or the raw pointer.
@@ -230,6 +231,26 @@ extern "C" void stage_D0_dtor_71030525a0(StageSubObjVt* self)
 {
     auto* inner = static_cast<StageInner_PolyAndBuf*>(self->owned_inner);
     self->vtable = &DAT_7105163720;
+    self->owned_inner = nullptr;
+    if (inner != nullptr) {
+        void* buf = inner->buf;
+        inner->buf = nullptr;
+        if (buf != nullptr) jeFree_710392e590(buf);
+        NestedPoly* nested = inner->nested;
+        inner->nested = nullptr;
+        if (nested != nullptr) nested->destroy();
+        jeFree_710392e590(inner);
+    }
+    jeFree_710392e590(self);
+}
+
+// 0x7103052790 (100 bytes) — sibling of stage_D0_dtor_71030525a0 with the same
+// inner layout (StageInner_PolyAndBuf) but a different vtable (DAT_7105163788).
+// [derived: disasm at 0x7103052790 — identical to 0x71030525a0 save for the vtable imm]
+extern "C" void stage_D0_dtor_7103052790(StageSubObjVt* self)
+{
+    auto* inner = static_cast<StageInner_PolyAndBuf*>(self->owned_inner);
+    self->vtable = &DAT_7105163788;
     self->owned_inner = nullptr;
     if (inner != nullptr) {
         void* buf = inner->buf;
