@@ -47,21 +47,8 @@ u8 FUN_7103534380(u64 param_1, s64 param_2)
     return (u8)(iVar1 != 1);
 }
 
-// 0x710353cfd0 -- return current thread == DAT_7105331f18 (48 bytes)
-u8 FUN_710353cfd0(void)
-{
-    s64 lVar1 = (s64)nn::os::GetCurrentThread();
-    return (u8)(DAT_7105331f18 == lVar1);
-}
-
-// 0x710353d5a0 -- conditional reset of *param_1 to 0xffffff (64 bytes)
-void FUN_710353d5a0(s32 *param_1)
-{
-    if (*param_1 != 0xffffff) {
-        FUN_7103540560(DAT_7105331f20);
-        *param_1 = 0xffffff;
-    }
-}
+// FUN_710353cfd0 — moved to src/resource/res_load_helpers.cpp (typed version)
+// FUN_710353d5a0 — moved to src/resource/res_load_helpers.cpp (typed version)
 
 // 0x71037f7a90 -- abs check then abort if out of range 0-1 (64 bytes)
 void FUN_71037f7a90(u32 param_1)

@@ -670,3 +670,18 @@ void FUN_710353e030(u32* param_1, u32 param_2) {
 LAB_e030_fail:
     *param_1 = 0xffffff;
 }
+
+// ============================================================================
+// status_710353cfb0 — get status from resource context
+// Dereferences param_1[0] and returns the u32 at offset +0xb0.
+// Returns 0 if the inner pointer is null.
+// [derived: single deref + offset read pattern, status/state getter]
+// Address: 0x710353cfb0 (24 bytes)
+// ============================================================================
+u32 status_710353cfb0(void** param_1) {
+    void* inner = *param_1;
+    if (inner != nullptr) {
+        return *(u32*)((u8*)inner + 0xb0);
+    }
+    return 0;
+}

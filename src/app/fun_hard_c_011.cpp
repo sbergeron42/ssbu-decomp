@@ -262,25 +262,8 @@ void FUN_710334be10(u64 *param_1)
     }
 }
 
-// 0x710353b1c0 — recursive tree delete
-void FUN_710353b1c0(u64 *param_1)
-{
-    if (param_1) {
-        FUN_710353b1c0((u64 *)param_1[0]);
-        FUN_710353b1c0((u64 *)param_1[1]);
-        jeFree_710392e590(param_1);
-    }
-}
-
-// 0x710353fec0 — recursive tree delete
-void FUN_710353fec0(u64 *param_1)
-{
-    if (param_1) {
-        FUN_710353fec0((u64 *)param_1[0]);
-        FUN_710353fec0((u64 *)param_1[1]);
-        jeFree_710392e590(param_1);
-    }
-}
+// FUN_710353b1c0 — moved to src/resource/res_load_helpers.cpp (typed version)
+// FUN_710353fec0 — moved to src/resource/res_load_helpers.cpp (typed version)
 
 // 0x71035470c0 — recursive tree delete with two cleanup calls
 void FUN_71035470c0(u64 *param_1)

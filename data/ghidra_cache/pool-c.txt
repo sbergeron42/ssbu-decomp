@@ -404,3 +404,24 @@ Returns (state+0x54 >> 6) & 1 (stat_flags bit 6).
 
 === 0x71003613b0 (20B) app::ai::check_stat_final_act ===
 Returns (state+0x55 >> 1) & 1 (stat_flags bit 9).
+
+== Session 2026-04-10 (resource module audit) ==
+
+=== Resource module completeness audit ===
+All resource functions in 0x710353c-0x710354f range are now in source files EXCEPT:
+- 0x7103541cb0 (524B) — complex cleanup/destructor with linked list traversal,
+  array zeroing, doubly-linked list unlinking, and std::string destruction.
+  Needs Ghidra MCP for proper decompilation.
+
+Duplicate removals: FUN_710353cfd0, FUN_710353d5a0 from fun_batch_d_019.cpp;
+FUN_710353b1c0, FUN_710353fec0 from fun_hard_c_011.cpp;
+FUN_7103542ad0 from fun_batch_e4_004.cpp.
+
+=== 0x710353cfb0 (24B) status_710353cfb0 ===
+Deref param[0], return *(u32*)(inner + 0xb0). Returns 0 if null. 100% match.
+
+=== 0x710353d360 (288B) does_file_use_extension ===
+Computes Hash40 (CRC32 + length) of extension string, compares against
+LoadedArc.file_paths[filepath_index].ext. Shrink-wrap divergence — NX Clang
+defers prologue past early returns, upstream Clang 8 does not. CRC32 table
+at 0x7104753084.
