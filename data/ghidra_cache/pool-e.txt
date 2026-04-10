@@ -143,3 +143,34 @@
 ## 0x710372be40 (340B) — SKIP: linked list search + alloc + vtable setup
 ## 0x71037364e0 (380B) — SKIP: vsnprintf sprintf_to_string, SSO alloc
 ## 0x71037339f0 (860B) — SKIP: table index access with vector growth + RB tree fallback (too large)
+
+=== Phase 5: New decomp targets ===
+
+--- 71020cc8c0 set_throw_param_impl (12B) ---
+ldr x0,[x0, #0x68]; and w3,w3,#1; b FUN_71016192b0
+→ Load module, mask bool, tail-call
+
+--- 71020ccb30 add_speed_damage_impl (8B) ---
+ldr x0,[x0, #0x68]; b FUN_7101616b30
+→ Load module, tail-call
+
+--- 71020ccca0 set_motion_trans_angle_impl (24B) ---
+adrp+ldr DAT_71044716e0; fmul; ldr module; str to +0xa90
+→ angle * deg2rad → store
+
+--- 71020cccc0 get_motion_trans_angle_impl (36B) ---
+ldr module+0xa90; fmul by DAT_7104471fbc; fdiv by DAT_7104470d10
+→ load radians, convert to degrees
+
+--- 71020ccd20 set_motion_trans_angle_2nd_impl (24B) ---
+Same as set_motion_trans_angle but stores to +0xab0
+
+--- 71020d1af0 is_smash_damage_impl (48B) ---
+Loads threshold from ItemParamAccessor singleton +0x73068
+Compares: (damage <= 0) & (threshold <= knockback)
+
+--- 71020f45a0 common_param_float_impl (36B) ---
+ItemParamAccessor singleton, index*0x284 + param_id*4 + 0x3908
+
+--- 71020f45d0 common_param_int_impl (44B) ---
+ItemParamAccessor singleton, index*0xac + param_id*4 + 0x477c8

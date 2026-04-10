@@ -2,6 +2,10 @@
 
 #define DMG(acc) (acc->damage_module)
 #define VT(mod) (*reinterpret_cast<void***>(mod))
+#define HIDDEN __attribute__((visibility("hidden")))
+
+// lib::Singleton<app::ItemParamAccessor>::instance_
+extern "C" void* DAT_71052c31e0 HIDDEN;
 
 namespace app::lua_bind {
 
@@ -41,27 +45,13 @@ u32 ItemDamageModuleImpl__damage_log_value_int_impl(BattleObjectModuleAccessor* 
     return 0;
 }
 
-// 71020d1af0 -- x0 (accessor) unused; loads global item param singleton (adrp),
-//   reads float s2 at +0x73068, returns (val1 <= 0.0f) & (s2 <= val2)
-// NOTE: uses adrp → .inst for exact bytes
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
-u32 ItemDamageModuleImpl__is_smash_damage_impl(BattleObjectModuleAccessor*, f32 val1, f32 val2) {
-    asm(
-        ".inst 0xD0018F88\n"    // adrp x8, <singleton page>
-        ".inst 0xF940F108\n"    // ldr x8, [x8, #0x1e0]
-        ".inst 0xF9400108\n"    // ldr x8, [x8]
-        ".inst 0x52860D09\n"    // mov w9, #0x3068
-        ".inst 0x72A000E9\n"    // movk w9, #0x7, LSL #16
-        ".inst 0xBC696902\n"    // ldr s2, [x8, w9, UXTW]
-        ".inst 0x1E202008\n"    // fcmp s0, #0.0
-        ".inst 0x1A9F87E8\n"    // cset w8, ls
-        ".inst 0x1E212040\n"    // fcmp s2, s1
-        ".inst 0x1A9F87E9\n"    // cset w9, ls
-        ".inst 0x0A090100\n"    // and w0, w8, w9
-        ".inst 0xD65F03C0\n"    // ret
-    );
+// 71020d1af0 -- check if damage values are within smash thresholds
+// Loads threshold from ItemParamAccessor singleton at offset 0x73068
+bool ItemDamageModuleImpl__is_smash_damage_impl(BattleObjectModuleAccessor* a, f32 damage, f32 knockback) {
+    u8* params = *reinterpret_cast<u8**>(DAT_71052c31e0);
+    f32 threshold = *reinterpret_cast<f32*>(params + 0x73068);
+    return (damage <= 0.0f) & (threshold <= knockback);
 }
-#endif
 
 } // namespace app::lua_bind
+

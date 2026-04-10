@@ -20,29 +20,6 @@ u32 GetShaderStage(u32 idx) {
     return DAT_710446f56c[idx];
 }
 
-// 7100037460 (64B) -- pack stage-bits flags into a 6-bit field
-// Upstream Clang produces different bit-manipulation sequence; use naked asm.
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
-u32 GetShaderStageBits(u64 /*flags*/) {
-    asm(
-        "lsr w9, w0, #1\n"
-        "and w10, w0, #1\n"
-        "bfm w10, w9, #29, #0\n"
-        "lsr w8, w0, #2\n"
-        "bfm w10, w8, #28, #0\n"
-        "and w8, w9, #4\n"
-        "lsr w9, w0, #3\n"
-        "and w9, w9, #2\n"
-        "orr w8, w8, w10\n"
-        "orr w8, w9, w8\n"
-        "and w9, w0, #0x20\n"
-        "orr w0, w9, w8\n"
-        "ret\n"
-    );
-}
-#endif
-
 // 7100038100 (32B) -- get shader code pointer at type-indexed offset
 u8* GetShaderCodePtr(u8* p0, u32 p1) {
     return *reinterpret_cast<u8**>(p0 + DAT_7104470aa8[p1]);
@@ -151,3 +128,4 @@ void draw_line(void*, void*, int) {}               // 7102284af0 (16B)
 void draw_circle(void*, float, int) {}             // 7102284b00 (16B)
 
 } // namespace app::sv_debug_draw
+

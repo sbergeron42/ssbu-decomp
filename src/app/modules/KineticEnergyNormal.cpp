@@ -11,29 +11,6 @@ void KineticEnergyNormal__set_speed_impl(KineticEnergyNormal* ke, v4sf* src) {
     v4sf v = *src; v[2] = 0.0f; v[3] = 0.0f;
     *reinterpret_cast<v4sf*>(reinterpret_cast<u8*>(ke) + 0x10) = v;
 }
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
-void KineticEnergyNormal__set_speed_3d_impl(KineticEnergyNormal* ke, v4sf* src) {
-    asm("ldr q0, [x1]\n"
-        "fmov s1, wzr\n"
-        "ext v2.16b, v0.16b, v0.16b, #8\n"
-        "mov v2.s[1], v1.s[0]\n"
-        "mov v0.d[1], v2.d[0]\n"
-        "str q0, [x0, #0x10]\n"
-        "ret\n");
-}
-#else
-void KineticEnergyNormal__set_speed_3d_impl(KineticEnergyNormal* ke, v4sf* src) {
-    v4sf v = *src;
-    f32 zero = 0.0f;
-    v4sf rot = __builtin_shufflevector(v, v, 2, 3, 0, 1);
-    rot[1] = zero;
-    typedef unsigned long long v2di __attribute__((vector_size(16)));
-    v2di vi = (v2di)v;
-    vi[1] = ((v2di)rot)[0];
-    *reinterpret_cast<v4sf*>(reinterpret_cast<u8*>(ke) + 0x10) = (v4sf)vi;
-}
-#endif
 
 // Getters -- return pointer to field
 void* KineticEnergyNormal__get_accel_impl(KineticEnergyNormal* ke) { return reinterpret_cast<u8*>(ke) + 0x40; }
@@ -57,3 +34,4 @@ u8 KineticEnergyNormal__is_consider_ground_normal_impl(KineticEnergyNormal* ke) 
 }
 
 } // namespace app::lua_bind
+

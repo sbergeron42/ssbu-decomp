@@ -47,29 +47,5 @@ u8 KineticEnergy__is_enable_impl(KineticEnergy* ke) {
     return *reinterpret_cast<u8*>(reinterpret_cast<u8*>(ke) + 0x30);
 }
 
-// 71020f6430 -- framed vtable call, ldr d0,[x0], movi d1,#0, mov v0.D[1],v1.D[0]
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
-void KineticEnergy__get_speed_impl(KineticEnergy* ke) {
-    asm("stp x29, x30, [sp, #-0x10]!\n"
-        "mov x29, sp\n"
-        "ldr x8, [x0]\n"
-        "ldr x8, [x8, #0x20]\n"
-        "blr x8\n"
-        "ldr d0, [x0]\n"
-        "movi d1, #0\n"
-        "mov v0.d[1], v1.d[0]\n"
-        "ldp x29, x30, [sp], #0x10\n"
-        "ret\n");
-}
-#else
-typedef double v2f64 __attribute__((vector_size(16)));
-v2f64 KineticEnergy__get_speed_impl(KineticEnergy* ke) {
-    auto fn = reinterpret_cast<double*(*)(KineticEnergy*)>(VT(ke)[0x20/8]);
-    double* ptr = fn(ke);
-    asm("");
-    return {*ptr, 0.0};
-}
-#endif
-
 } // namespace app::lua_bind
+
