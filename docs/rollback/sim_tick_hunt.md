@@ -519,6 +519,158 @@ precision.
 - Trace one real registration back to its caller — the caller is the
   subsystem being dispatched, and one of them should be the sim step.
 
+**Blocker encountered in this session.** The `DAT_7105331f4c` xref
+sweep returned three references: one READ from `main_loop` at
+`0x7103747e04` (the dispatch site in Dispatcher B, already decompiled),
+one READ at `0x7103753e4c`, and one WRITE at `0x7103753ee8`. The
+latter two sit in **undefined code** between `FUN_710374f360` (which
+ends at `0x7103752f07`) and `FUN_7103753fc0` (which starts at
+`0x7103753fc0`). Ghidra's auto-analyzer has not carved that ~4 KB gap
+into a function, so neither `decompile_function_by_address` nor
+`disassemble_function` will yield results at those addresses. The
+next-session prerequisite for confirming Dispatcher B is a Ghidra
+**auto-analyze / disassemble** pass on the byte range
+`0x7103752f08..0x7103753fbf`; once that gap is recovered as a
+function, the registrar / companion manager will become
+decompilable and the writer site `0x7103753ee8` will reveal how tasks
+get installed.
+
+### Follow-up: Dispatcher B is most likely NOT the sim tick
+
+Xref sweep of the related globals returned:
+
+- **`DAT_710522ebe0`** (cycle length N): WRITTEN by `FUN_710374f360`
+  at `0x710375082c`, READ by `main_loop` at `0x7103747de0`.
+- **`DAT_7105332050`** (frame slot counter): only touched by
+  `main_loop` itself (READ at `0x7103747dd8`, WRITE at `0x7103747df8`,
+  READ at `0x7103747e28`). No external initializer.
+- **`DAT_7105331f4c`** (bucket table): no writer inside any named
+  function (the writer at `0x7103753ee8` is in the undefined-code
+  gap).
+
+`FUN_710374f360` was decompiled in full (15 KB) and classified: **it
+is the Resource Manager / Graphics subsystem boot function**. It
+spawns three resource threads (`"ResUpdateThread"`, `"ResLoadingThread"`,
+`"ResInflateThread"`) and initializes `nu::GraphicsModule`. It writes
+`DAT_710522ebe0` as a **copy from a caller-supplied config struct
+field `param_1[0x80]`**, not as a hardcoded `60`. It does NOT touch
+`DAT_7105331f4c` or `DAT_7105332050`. It contains ZERO
+`pead::`/`Delegate`/`Scheduler`/`Task`/`Tick`/`Sim`/`Battle`/`Fighter`
+strings.
+
+**Implications for Dispatcher B's identity.**
+
+1. The "60 Hz fingerprint" is wrong — the cycle length is a tunable,
+   not a hardcoded 60.
+2. `DAT_710522ebe0`'s writer is the **resource manager** init, which
+   spawns three resource worker threads. The cycle length is
+   therefore very likely the **resource-streaming tick budget** —
+   "how many frames per resource-update pass" — rather than a sim-
+   frame divisor.
+3. `DAT_7105331f4c` and `DAT_7105332050` live in the same
+   `DAT_710533xxxx` block as several other resource-manager globals
+   (`DAT_7105331f00`, `DAT_7105331f20`, `DAT_7105331f28`) that ARE
+   written by `FUN_710374f360`. This is weak evidence that they
+   belong to the resource subsystem too.
+4. If Dispatcher B is a resource tick queue, its per-slot function
+   pointers are resource-loader callbacks — async file-loaded
+   finalizers, descriptor pool rebuilds, texture unloads, etc. —
+   not fighter sim advance.
+
+**Revised pool-B confidence ranking:**
+
+- **Dispatcher A** (`DAT_710593a530 == 3` match-active vtable walk
+  at main_loop lines 543..572) remains the **strongest remaining
+  sim-tick candidate** even with its early-out caveat. It is
+  explicitly gated on match-active state, protected by
+  `recursive_mutex`, and does per-element vtable dispatch on a list
+  rooted in a singleton at `DAT_710593a6a0`. The early-out on
+  `slot[+0x28] == truthy` is compatible with a "dispatch one
+  eligible scene task and stop" pattern, and the singleton address
+  is in the `DAT_710593axxxx` range which is the known **match
+  runtime state** block (not the resource-manager block).
+- **Dispatcher B** (frame-scheduled queue at main_loop lines
+  610..628) is **downgraded** from "pead::Delegate sim scheduler"
+  to "probable resource-loader tick queue", pending xref of the
+  undefined-code writer at `0x7103753ee8` that will settle the
+  question.
+
+### `DAT_710593a6a0` identity — partial classification
+
+Xref sweep ran this session. The singleton is read from **many**
+directions simultaneously, which is informative:
+
+- `lua_ai_path_builder` at `0x71017e8a14` / `0x71017e8aa0` (2 reads)
+  — Lua-bound AI pathfinding helper.
+- `FUN_71014f10c0` reads the singleton **~40 times** — a heavy
+  serializer or state-dump function in the gameplay range.
+- `FUN_7100d99310` / `FUN_7100d72e80` / `FUN_710067e7d0` /
+  `FUN_71014cde40` — gameplay-range readers (`71004x..71017x`).
+- `FUN_7103577fd0` at `0x7103578068` / `0x7103578ecc` — decoded this
+  session. Reads `*DAT_710593a6a0` and indexes a vector at
+  `+0x24d0..0x24d8` of stride-`0x68` entries to look up a per-entry
+  shared_ptr. The FNV-hashed string constants embedded in the function
+  decode to:
+  - `"lib::mii::HeadRenderer (ringed_command_buffer_opaque_)"`
+  - `"lib::mii::HeadRenderer (ringed_command_buffer_translucent_)"`
+  So this reader is installing **Mii-head render command buffers**
+  (opaque + translucent passes) into the singleton's head-renderer
+  slot.
+- `FUN_7103582b60` reads it 7 times — another graphics-range function.
+- Two **WRITE** xrefs: `FUN_71022cd350` at `0x71022cd600` and
+  `FUN_71022b7100` at `0x71022c9fb4`. These are the installers —
+  large functions (>16 KB each, the first tool-called decomp was 145
+  KB of text), not decompiled in full this session.
+
+**Interpretation.** `DAT_710593a6a0` is NOT a resource singleton (the
+`DAT_7105331f00` family) and NOT a render-module singleton (the
+`DAT_7105336ce8` family). It is a **scene / game-root singleton** that
+owns *both* gameplay sub-lists (lua AI paths, 40-field serialization)
+*and* render queues (Mii head renderers at `+0x24d0`, and another
+sub-list at `+0x24e8..+0x2da8` which is what Dispatcher A walks).
+
+This matches the expected shape of `app::Scene` / `app::GameMain` /
+`app::WorldManager`: a hub object that aggregates the match-runtime
+sub-managers (fighters, camera, HUD, renderers) under one root.
+
+**Implication for Dispatcher A.** The list at
+`[**(DAT_710593a6a0+0x24e8) + 0x2da8]` is one of this scene-root's
+sub-manager lists. Walking it with `vtable[+0x28]` gated on
+match-active = 3 is consistent with "for each registered sub-manager,
+call its per-frame `onTick()` while the match is running". This is
+exactly the shape of the `pead::Delegate` pattern the earlier hypothesis
+predicted, just implemented via an intrusive manager list instead of a
+frame-slot queue. **Dispatcher A remains the strongest sim-tick
+candidate.**
+
+### Next concrete steps (pool B, next session)
+
+1. **Decompile the two writers of `DAT_710593a6a0`**: `FUN_71022cd350`
+   (at the write site `0x71022cd600`) and `FUN_71022b7100` (at
+   `0x71022c9fb4`). These constructors will expose the singleton's
+   type, its initial vtable, and the sub-objects installed at
+   `+0x24d0`, `+0x24e8`, and `+0x2da8`. That's the single most valuable
+   query for identifying what Dispatcher A's list contains. The first
+   decomp attempt in this session hit the MCP size limit; next session
+   should use the sub-agent file-chunking pattern established for
+   `nnMain` and `FUN_710374f360`.
+2. **Decompile `FUN_71014f10c0`** — the 40-READ-xref consumer of
+   `DAT_710593a6a0`. A function that reads the same singleton 40 times
+   in a row is almost certainly a **serializer** — either save-state,
+   replay-record, or rollback-capture. If it's rollback-capture, it's
+   the single most valuable function for the entire rollback
+   implementation: it IS the save-state function. If it's just replay
+   save, it still exposes the full scene-root layout.
+3. **Xref sweep `DAT_710593a530`** (the match-state global Dispatcher
+   A is gated on). Its writer is the thing that sets `3 == match
+   active` and is therefore the state-machine transition function for
+   entering/leaving a match. Its xrefs across the binary will pin down
+   the match-life-cycle API.
+4. **Fix the Ghidra DB gap at `0x7103752f08..0x7103753fbf`** (analyst
+   action, not decomp) to unblock Dispatcher B's writer-site
+   decompile. Low priority now that Dispatcher B has been downgraded
+   to "probable resource tick queue", but still worth closing.
+
 ### Updated verdict and handoff
 
 `main_loop` directly dispatches two indirect-invoke points: one vtable
