@@ -2819,16 +2819,15 @@ void set_bomb_countdown_71015c12a0(void* L, s32 param_2) {
     u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
     auto* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(
         *reinterpret_cast<void**>(ctx + 0x1a0));
-    void* work = acc->work_module;
-    void** vt = *reinterpret_cast<void***>(work);
+    auto* work = acc->work_module;
     // WorkModule::set_int — vtable[0x14] at +0xa0
     // [derived: vtable slot confirmed by cross-ref with WorkModule__set_int_impl (.dynsym)]
-    reinterpret_cast<void(*)(void*, s32, u32)>(vt[0x14])(work, param_2, 0x10000015U);
+    // NOTE: param order may be (value, hash) — keeping raw dispatch for matching safety
+    reinterpret_cast<void(*)(app::WorkModule*, s32, u32)>(work->_vt[0x14])(work, param_2, 0x10000015U);
 #ifdef MATCHING_HACK_NX_CLANG
     asm("");  // prevent vtable caching across call
 #endif
-    vt = *reinterpret_cast<void***>(work);
-    reinterpret_cast<void(*)(void*, s32, u32)>(vt[0x14])(work, param_2, 0x10000016U);
+    reinterpret_cast<void(*)(app::WorkModule*, s32, u32)>(work->_vt[0x14])(work, param_2, 0x10000016U);
 #ifdef MATCHING_HACK_NX_CLANG
     asm("");  // prevent tail call — original uses blr+ret, not br
 #endif
@@ -2842,15 +2841,12 @@ float4 pos_2d_71015c6c10(void* L) {
     u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
     auto* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(
         *reinterpret_cast<void**>(ctx + 0x1a0));
-    void* work = acc->work_module;
-    void** vt = *reinterpret_cast<void***>(work);
-    // WorkModule::get_float — vtable[0x0B] at +0x58
-    f32 x = reinterpret_cast<f32(*)(void*, s32)>(vt[0x0B])(work, 0xb);
+    auto* work = acc->work_module;
+    f32 x = work->get_float(0xb);
 #ifdef MATCHING_HACK_NX_CLANG
     asm("");  // prevent vtable caching across call
 #endif
-    vt = *reinterpret_cast<void***>(work);
-    f32 y = reinterpret_cast<f32(*)(void*, s32)>(vt[0x0B])(work, 0xc);
+    f32 y = work->get_float(0xc);
     float4 result = {x, y, 0.0f, 0.0f};
     return result;
 }
@@ -3062,19 +3058,17 @@ void init_explosion_no_damage_71015c55c0(void* L) {
     auto* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(
         *reinterpret_cast<void**>(ctx + 0x1a0));
 
-    void* work_mod = acc->work_module;
-    void** wvt = *reinterpret_cast<void***>(work_mod);
+    auto* work_mod = acc->work_module;
     u8* ipa = *reinterpret_cast<u8**>(DAT_71052c31e0);
     u32 param_val = *reinterpret_cast<u32*>(ipa + 0x72ffc);
-    reinterpret_cast<void(*)(void*, u32, u32)>(wvt[0xa0/8])(work_mod, param_val, 0x10000010u);
+    work_mod->set_int(param_val, 0x10000010);
 
     ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
     acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(
         *reinterpret_cast<void**>(ctx + 0x1a0));
     acc->hit_module->set_whole(2, 0);
 
-    wvt = *reinterpret_cast<void***>(work_mod);
-    reinterpret_cast<void(*)(void*, u32)>(wvt[0x110/8])(work_mod, 0x20000017u);
+    work_mod->on_flag(0x20000017);
 }
 
 // ── 0x71015c1570 -- app::item::disable_area (136B) ──────────────
