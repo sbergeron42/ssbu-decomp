@@ -107,6 +107,10 @@ struct EffectModule {
     // -- variation [88] --
     u32 get_variation_effect_kind(u64 p1, u64 p2) { return ((u32(*)(EffectModule*,u64,u64))_vt[88])(this,p1,p2); }
 
+    // -- light [92] --
+    // [derived: EFFECT_LIGHT_END dispatcher at 0x7102297520 calls vtable[0x2E0/8] with (hash1, hash2)]
+    void end_light(u64 hash1, u64 hash2) { ((void(*)(EffectModule*,u64,u64))_vt[92])(this,hash1,hash2); }
+
     // -- color/alpha/frame [95-106] --
     void set_rgb(u64 p1) { ((void(*)(EffectModule*,u64))_vt[95])(this,p1); }
     void set_rgb_partial_last() { ((void(*)(EffectModule*))_vt[96])(this); }
@@ -120,6 +124,10 @@ struct EffectModule {
     void set_alpha_last() { ((void(*)(EffectModule*))_vt[105])(this); }
     void set_disable_system_slow(bool p1) { ((void(*)(EffectModule*,bool))_vt[106])(this,p1); }
 
+    // -- camera offset [110] --
+    // [derived: LAST_EFFECT_SET_OFFSET_TO_CAMERA_FLAT dispatcher at 0x71022aeb10 calls vtable[0x370/8] with (f32)]
+    void set_offset_to_camera_flat(f32 offset) { ((void(*)(EffectModule*,f32))_vt[110])(this,offset); }
+
     // -- slow/velocity [111-115] --
     void set_slow_rate_mul() { ((void(*)(EffectModule*))_vt[111])(this); }
     void set_slow_rate_no_stop_mul() { ((void(*)(EffectModule*))_vt[112])(this); }
@@ -127,8 +135,12 @@ struct EffectModule {
     void set_material_anim_last(u64 p1) { ((void(*)(EffectModule*,u64))_vt[114])(this,p1); }
     void set_disable_render_offset_last() { ((void(*)(EffectModule*))_vt[115])(this); }
 
-    // -- handle/ground [116, 125] --
+    // -- handle/ground/terrain [116, 122-125] --
     u64 get_last_handle() { return ((u64(*)(EffectModule*))_vt[116])(this); }
+    // [derived: FOOT_EFFECT / FOOT_EFFECT_FLIP dispatchers call vtable[0x3D0/8] to check foot effect enabled]
+    u64 is_foot_enabled() { return ((u64(*)(EffectModule*))_vt[122])(this); }
+    // [derived: LANDING_EFFECT / LANDING_EFFECT_FLIP dispatchers call vtable[0x3D8/8] to check landing effect enabled]
+    u64 is_landing_enabled() { return ((u64(*)(EffectModule*))_vt[123])(this); }
     bool is_enable_ground_effect() { return ((bool(*)(EffectModule*))_vt[125])(this); }
 
     // -- status/sync [127-136] --

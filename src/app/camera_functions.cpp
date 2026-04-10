@@ -5,6 +5,7 @@
 #include "app/GroundCollisionLine.h"
 #include "app/modules/WorkModule.h"
 #include "app/BattleObjectModuleAccessor.h"
+#include "app/modules/PostureModule.h"
 #include "app/CameraController.h"
 #include "app/placeholders/StageBase.h"
 #include "app/placeholders/StageEnd.h"
@@ -263,8 +264,8 @@ namespace app::item {
 extern "C" void request_quake(u64 lua_state, u32 kind) {
     u8* base = *(u8**)DAT_71052b7f00;
     u8* battle_obj = *(u8**)(*(u8**)(lua_state - 8) + 0x1a0);
-    void** posture = *(void***)(battle_obj + 0x38);
-    u64 pos = reinterpret_cast<u64(*)(void**)>(((void**)*posture)[0x60/8])(posture);
+    app::PostureModule* posture = reinterpret_cast<app::BattleObjectModuleAccessor*>(battle_obj)->posture_module;
+    u64 pos = reinterpret_cast<u64>(posture->pos());
     FUN_71005162f0(base + 0x2b0, kind, pos);
 }
 } // namespace app::item
@@ -691,11 +692,11 @@ extern "C" void entry_to_stage(u32 param_1) {
 namespace app::stage {
 extern "C" float lr_to_stage_center(u64 lua_state) {
     u8* battle_obj = *(u8**)(*(u8**)(lua_state - 8) + 0x1a0);
-    void** posture = *(void***)(battle_obj + 0x38);
+    app::PostureModule* posture = reinterpret_cast<app::BattleObjectModuleAccessor*>(battle_obj)->posture_module;
     u8* stage_info = *(u8**)SM_INSTANCE + 0x128;
     void** si_vt = *(void***)stage_info;
     float* bounds = reinterpret_cast<float*(*)(void*)>(si_vt[0x140/8])(stage_info);
-    float* pos = reinterpret_cast<float*(*)(void**)>(((void**)*posture)[0x60/8])(posture);
+    float* pos = posture->pos();
     float px = *pos;
     float center = *bounds + (bounds[1] - *bounds) * 0.5f;
     if (px > center) {
@@ -711,11 +712,11 @@ extern "C" float lr_to_stage_center(u64 lua_state) {
 namespace app::stage {
 extern "C" bool is_looking_at_stage_center(u64 lua_state) {
     u8* battle_obj = *(u8**)(*(u8**)(lua_state - 8) + 0x1a0);
-    void** posture = *(void***)(battle_obj + 0x38);
+    app::PostureModule* posture = reinterpret_cast<app::BattleObjectModuleAccessor*>(battle_obj)->posture_module;
     u8* stage_info = *(u8**)SM_INSTANCE + 0x128;
     void** si_vt = *(void***)stage_info;
     float* bounds = reinterpret_cast<float*(*)(void*)>(si_vt[0x140/8])(stage_info);
-    float* pos = reinterpret_cast<float*(*)(void**)>(((void**)*posture)[0x60/8])(posture);
+    float* pos = posture->pos();
     float px = *pos;
     float center = *bounds + (bounds[1] - *bounds) * 0.5f;
     float lr;
@@ -724,7 +725,7 @@ extern "C" bool is_looking_at_stage_center(u64 lua_state) {
     } else {
         lr = 1.0f;
     }
-    float facing = reinterpret_cast<float(*)(void**)>(((void**)*posture)[0xb0/8])(posture);
+    float facing = posture->lr();
     return facing == lr;
 }
 } // namespace app::stage
@@ -769,8 +770,8 @@ extern "C" u64 get_dead_up_camera_hit_my_distance_group(u64 lua_state) {
 namespace app::sv_fighter_util {
 extern "C" void stage_restart_scroll(u64 lua_state) {
     u8* battle_obj = *(u8**)(*(u8**)(lua_state - 8) + 0x1a0);
-    void** posture = *(void***)(battle_obj + 0x38);
-    float4* pos = reinterpret_cast<float4*(*)(void**)>(((void**)*posture)[0x60/8])(posture);
+    app::PostureModule* posture = reinterpret_cast<app::BattleObjectModuleAccessor*>(battle_obj)->posture_module;
+    float4* pos = reinterpret_cast<float4*>(posture->pos());
     u8* stage_info = *(u8**)SM_INSTANCE + 0x128;
     void** si_vt = *(void***)stage_info;
     float4 offset = reinterpret_cast<float4(*)(void*)>(si_vt[0x58/8])(stage_info);
@@ -779,7 +780,7 @@ extern "C" void stage_restart_scroll(u64 lua_state) {
     new_pos[0] = p[0] + offset[0];
     new_pos[1] = p[1] + offset[1];
     new_pos[2] = p[2] + offset[2];
-    reinterpret_cast<void(*)(void**, float4*)>(((void**)*posture)[0x70/8])(posture, &new_pos);
+    posture->set_pos(&new_pos);
 }
 } // namespace app::sv_fighter_util
 

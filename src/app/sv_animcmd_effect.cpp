@@ -1,6 +1,8 @@
 #include "types.h"
 #include "app/BattleObjectModuleAccessor.h"
 #include "app/modules/EffectModule.h"
+#include "app/modules/MotionModule.h"
+#include "app/modules/WorkModule.h"
 
 // ACMD effect dispatcher functions — app::sv_animcmd namespace
 // Pool-a worker: Effect template functions (68 targets in 0x71022xxxxx range)
@@ -202,7 +204,7 @@ namespace app { namespace sv_animcmd {
 // Calls FUN_710228ea70 with constant args (hash=0, scale=1.0f, flag=0)
 extern "C" void EFFECT_GLOBAL(lua_State* param_1) {
     u64 L = (u64)param_1;
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     struct { u64 hash; u32 nargs; u32 pad; lua_State* L; u8 flag; } ctrl;
@@ -211,7 +213,7 @@ extern "C" void EFFECT_GLOBAL(lua_State* param_1) {
     ctrl.nargs = (u32)nargs;
     ctrl.L = param_1;
 
-    FUN_710228ea70(ConstantZero, 0x3f800000, acc, &ctrl, 0);
+    FUN_710228ea70(ConstantZero, 0x3f800000, reinterpret_cast<u64>(acc), &ctrl, 0);
 
     acmd_consume(L);
 }
@@ -221,7 +223,7 @@ extern "C" void EFFECT_GLOBAL(lua_State* param_1) {
 // Calls EffectModule::kill_all (vtable slot 30, offset 0xF0)
 extern "C" void EFFECT_OFF(lua_State* param_1) {
     u64 L = (u64)param_1;
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     u64 hash;
@@ -250,7 +252,7 @@ extern "C" void EFFECT_OFF(lua_State* param_1) {
         }
     }
 
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
     eff->kill_all(hash, flag, true);
 
     acmd_consume(L);
@@ -268,7 +270,7 @@ extern "C" void EFFECT_WORK(lua_State* param_1) {
         __builtin_trap();
 #endif
     }
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     u64 hash1 = 0, hash2 = 0;
@@ -347,7 +349,7 @@ extern "C" void EFFECT_WORK(lua_State* param_1) {
 
     // EffectModule::req_on_joint (vtable[14], offset 0x70)
     // Call signature: (this, hash1, hash2, &pos, &rot, &scale, &extra, bool, 0, 0, 0) + float rate in s0
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
 
     reinterpret_cast<void(*)(void*, u64, u64, void*, void*, void*, void*, bool, s32, s32, s32, f32)>
         (eff->_vt[0x70 / 8])(eff, hash1, hash2, &vec_pos, &vec_rot, &vec_scale, &vec_extra, a16, 0, 0, 0, a8);
@@ -365,7 +367,7 @@ extern "C" void EFFECT_VARIATION(lua_State* param_1) {
         __builtin_trap();
 #endif
     }
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     u64 hash1 = 0, hash2 = 0;
@@ -431,7 +433,7 @@ extern "C" void EFFECT_VARIATION(lua_State* param_1) {
     struct { f32 x; f32 y; u64 z; } vec_extra  = { a13, a14, (u64)(u32)a15 };
 
     // Get variation effect kind via EffectModule vtable[88] (offset 0x2c0)
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
     u64 kind = eff->get_variation_effect_kind(hash1, (u64)(s32)-1);
 
     // If nargs > 16: check if variation changed, and if not, apply offset
@@ -456,7 +458,7 @@ extern "C" void EFFECT_VARIATION(lua_State* param_1) {
 // Calls EffectModule::kill_kind (vtable slot 28, offset 0xE0)
 extern "C" void EFFECT_OFF_KIND(lua_State* param_1) {
     u64 L = (u64)param_1;
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     u64 hash;
@@ -494,7 +496,7 @@ extern "C" void EFFECT_OFF_KIND(lua_State* param_1) {
     }
 
     // EffectModule::kill_kind(hash, flag1, flag2)
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
     eff->kill_kind(hash, flag1, flag2);
 
     acmd_consume(L);
@@ -511,7 +513,7 @@ extern "C" void EFFECT_FOLLOW(lua_State* param_1) {
         __builtin_trap();
 #endif
     }
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     u64 hash1 = 0, hash2 = 0;
@@ -572,7 +574,7 @@ extern "C" void EFFECT_FOLLOW(lua_State* param_1) {
 
     // EffectModule::req_follow (vtable[16], offset 0x80)
     // (scale_f, eff, hash1, hash2, &off_vec, &rot_vec, 0, flags, 0, -1, 0, 0, 0, 0)
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
 
     reinterpret_cast<void(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, s32, s32, s32, f32)>
         (eff->_vt[0x80 / 8])(eff, hash1, hash2, &off_vec, &rot_vec, 0, flags, 0, (s32)-1, 0, 0, 0, scale_f);
@@ -585,7 +587,7 @@ extern "C" void EFFECT_FOLLOW(lua_State* param_1) {
 // Calls EffectModule::remove_attr (vtable slot 26, offset 0xD0)
 extern "C" void EFFECT_REMOVE_ATTR(lua_State* param_1) {
     u64 L = (u64)param_1;
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     u64 hash;
@@ -603,7 +605,7 @@ extern "C" void EFFECT_REMOVE_ATTR(lua_State* param_1) {
         hash = 0;
     }
 
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
     eff->remove_all(hash, 0);
 
     acmd_consume(L);
@@ -620,7 +622,7 @@ extern "C" void EFFECT_OFF_KIND_WORK(lua_State* param_1) {
         __builtin_trap();
 #endif
     }
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     u64 hash;
@@ -648,7 +650,7 @@ extern "C" void EFFECT_OFF_KIND_WORK(lua_State* param_1) {
         }
     }
 
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
     eff->kill_kind(hash, flag1, flag2);
 
     acmd_consume(L);
@@ -666,7 +668,7 @@ extern "C" void EFFECT_FOLLOW_WORK(lua_State* param_1) {
         __builtin_trap();
 #endif
     }
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     u64 hash2 = 0;
@@ -734,7 +736,7 @@ extern "C" void EFFECT_FOLLOW_WORK(lua_State* param_1) {
         hash1 = 0;
     }
 
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
 
     reinterpret_cast<void(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, s32, s32, s32, f32)>
         (eff->_vt[0x80 / 8])(eff, hash1, hash2, &off_vec, &rot_vec, 0, flags, 0, (s32)-1, 0, 0, 0, scale_f);
@@ -753,7 +755,7 @@ extern "C" void EFFECT_FOLLOW_VARIATION(lua_State* param_1) {
         __builtin_trap();
 #endif
     }
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     u64 hash2 = 0;
@@ -814,7 +816,7 @@ extern "C" void EFFECT_FOLLOW_VARIATION(lua_State* param_1) {
     u64 flags = follow_flag ? 0xc000ULL : 0x8000ULL;
 
     // Get effect hash (arg 1, called again)
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
     u64 hash1;
     if (nargs >= 1) {
         hash1 = FUN_71038f4000(param_1, 1, 0);
@@ -828,7 +830,7 @@ extern "C" void EFFECT_FOLLOW_VARIATION(lua_State* param_1) {
     u64 alt_hash;
     if (nargs >= 11) {
         // Re-read eff module and hash1 for second variation check
-        app::EffectModule* eff2 = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+        app::EffectModule* eff2 = acc->effect_module;
         u64 hash1_again = FUN_71038f4000(param_1, 1, 0);
         u64 var_kind0 = eff2->get_variation_effect_kind(hash1_again, 0);
         if (((var_kind0 ^ var_kind) & 0xFFFFFFFFFFULL) == 0) {
@@ -841,7 +843,7 @@ extern "C" void EFFECT_FOLLOW_VARIATION(lua_State* param_1) {
     }
 
     // EffectModule::req_follow (vtable[16], offset 0x80)
-    app::EffectModule* eff3 = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff3 = acc->effect_module;
 
     reinterpret_cast<void(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, s32, s32, s32, s32, f32)>
         (eff3->_vt[0x80 / 8])(eff3, var_kind, hash2, &off_vec, &rot_vec, 0, flags, alt_hash, (s32)-1, 0, 0, 0, 0, scale_f);
@@ -860,7 +862,7 @@ extern "C" void EFFECT_ATTR(lua_State* param_1) {
         __builtin_trap();
 #endif
     }
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     u64 hash1 = 0, hash2 = 0;
@@ -931,7 +933,7 @@ extern "C" void EFFECT_ATTR(lua_State* param_1) {
 
     // EffectModule::req_on_joint with attr (vtable[14], offset 0x70)
     // rate (a9) in s0, attr_hash after bool on stack
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
 
     reinterpret_cast<void(*)(void*, u64, u64, void*, void*, void*, void*, bool, u64, s32, s32, f32)>
         (eff->_vt[0x70 / 8])(eff, hash1, hash2, &vec_pos, &vec_rot, &vec_scale, &vec_color, a16, attr_hash, 0, 0, a9);
@@ -944,7 +946,7 @@ extern "C" void EFFECT_ATTR(lua_State* param_1) {
 // Calls EffectModule::kill_handle (vtable offset 0xC8)
 extern "C" void EFFECT_OFF_HANDLE(lua_State* param_1) {
     u64 L = (u64)param_1;
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     u64 hash;
@@ -962,7 +964,7 @@ extern "C" void EFFECT_OFF_HANDLE(lua_State* param_1) {
         hash = 0;
     }
 
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
     eff->remove(hash, 0);
 
     acmd_consume(L);
@@ -978,19 +980,19 @@ extern "C" void EFFECT_DETACH_KIND(lua_State* param_1) {
         __builtin_trap();
 #endif
     }
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     u64 hash1, hash2;
     app::EffectModule* eff;
 
     if (nargs < 1) {
-        eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+        eff = acc->effect_module;
         hash1 = 0;
         hash2 = 0;
     } else {
         hash1 = FUN_71038f4000(param_1, 1, 0);
-        eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+        eff = acc->effect_module;
         if (nargs < 2) {
             hash2 = 0;
         } else {
@@ -1013,19 +1015,19 @@ extern "C" void EFFECT_DETACH_KIND_WORK(lua_State* param_1) {
         __builtin_trap();
 #endif
     }
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     u64 hash1, hash2;
     app::EffectModule* eff;
 
     if (nargs < 1) {
-        eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+        eff = acc->effect_module;
         hash1 = 0;
         hash2 = 0;
     } else {
         hash1 = FUN_71038f4000(param_1, 1, 0);
-        eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+        eff = acc->effect_module;
         if (nargs < 2) {
             hash2 = 0;
         } else {
@@ -1043,7 +1045,7 @@ extern "C" void EFFECT_DETACH_KIND_WORK(lua_State* param_1) {
 // Calls EffectModule::end_light (vtable offset 0x2E0)
 extern "C" void EFFECT_LIGHT_END(lua_State* param_1) {
     u64 L = (u64)param_1;
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     u64 hash1, hash2;
@@ -1068,9 +1070,9 @@ extern "C" void EFFECT_LIGHT_END(lua_State* param_1) {
         }
     }
 
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
 
-    reinterpret_cast<void(*)(void*, u64, u64)>(eff->_vt[0x2e0 / 8])(eff, hash1, hash2);
+    eff->end_light(hash1, hash2);
 
     acmd_consume(L);
 }
@@ -1080,7 +1082,7 @@ extern "C" void EFFECT_LIGHT_END(lua_State* param_1) {
 // Calls EffectModule::set_rate (vtable offset 0x338)
 extern "C" void LAST_EFFECT_SET_RATE(lua_State* param_1) {
     u64 L = (u64)param_1;
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     f32 rate;
@@ -1099,7 +1101,7 @@ extern "C" void LAST_EFFECT_SET_RATE(lua_State* param_1) {
         }
     }
 
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
 
     reinterpret_cast<void(*)(void*, f32)>(eff->_vt[0x338 / 8])(eff, rate);
 
@@ -1110,7 +1112,7 @@ extern "C" void LAST_EFFECT_SET_RATE(lua_State* param_1) {
 // Identical to LAST_EFFECT_SET_RATE (vtable offset 0x338)
 extern "C" void LAST_EFFECT_SET_RATE_WORK(lua_State* param_1) {
     u64 L = (u64)param_1;
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     f32 rate;
@@ -1129,7 +1131,7 @@ extern "C" void LAST_EFFECT_SET_RATE_WORK(lua_State* param_1) {
         }
     }
 
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
 
     reinterpret_cast<void(*)(void*, f32)>(eff->_vt[0x338 / 8])(eff, rate);
 
@@ -1141,7 +1143,7 @@ extern "C" void LAST_EFFECT_SET_RATE_WORK(lua_State* param_1) {
 // Calls EffectModule::set_alpha (vtable offset 0x348)
 extern "C" void LAST_EFFECT_SET_ALPHA(lua_State* param_1) {
     u64 L = (u64)param_1;
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     f32 alpha;
@@ -1160,7 +1162,7 @@ extern "C" void LAST_EFFECT_SET_ALPHA(lua_State* param_1) {
         }
     }
 
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
 
     reinterpret_cast<void(*)(void*, f32)>(eff->_vt[0x348 / 8])(eff, alpha);
 
@@ -1189,10 +1191,10 @@ extern "C" void LAST_EFFECT_SET_DISABLE_SYSTEM_SLOW(lua_State* param_1) {
         flag = false;
     }
 
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
+    app::EffectModule* eff = acc->effect_module;
 
-    reinterpret_cast<void(*)(void*, bool)>(eff->_vt[0x350 / 8])(eff, flag);
+    eff->set_disable_system_slow(flag);
 
     acmd_consume(L);
 }
@@ -1203,7 +1205,7 @@ extern "C" void LAST_EFFECT_SET_DISABLE_SYSTEM_SLOW(lua_State* param_1) {
 // sets work int via WorkModule vtable[0xA0]
 extern "C" void LAST_EFFECT_SET_WORK_INT(lua_State* param_1) {
     u64 L = (u64)param_1;
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     u64 hash;
@@ -1222,14 +1224,14 @@ extern "C" void LAST_EFFECT_SET_WORK_INT(lua_State* param_1) {
     }
 
     // WorkModule at acc+0x50
-    void** work = *(void***)(acc + 0x50);
+    app::WorkModule* work = acc->work_module;
 
     // EffectModule::get_last_handle (vtable[0x3A0])
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
     u64 handle = eff->get_last_handle();
 
     // WorkModule::set_int (vtable[0xA0])
-    reinterpret_cast<void(*)(void*, u64, u64)>((*(void***)work)[0xa0 / 8])(work, handle, hash);
+    reinterpret_cast<void(*)(void*, u64, u64)>(work->_vt[0xa0 / 8])(work, handle, hash);
 
     acmd_consume(L);
 }
@@ -1239,7 +1241,7 @@ extern "C" void LAST_EFFECT_SET_WORK_INT(lua_State* param_1) {
 // Packs into vec3 struct, calls EffectModule::set_scale (vtable offset 0x340)
 extern "C" void LAST_EFFECT_SET_SCALE_W(lua_State* param_1) {
     u64 L = (u64)param_1;
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     u64 a1 = 0, a2 = 0, a3 = 0;
@@ -1265,7 +1267,7 @@ extern "C" void LAST_EFFECT_SET_SCALE_W(lua_State* param_1) {
 
     struct { u32 x; u32 y; u64 z; } scale_vec = { (u32)a1, (u32)a2, a3 };
 
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
 
     reinterpret_cast<void(*)(void*, void*)>(eff->_vt[0x340 / 8])(eff, &scale_vec);
 
@@ -1277,7 +1279,7 @@ extern "C" void LAST_EFFECT_SET_SCALE_W(lua_State* param_1) {
 // Gets last handle via vtable[0x3A0], then sets color via vtable[0x2F8]
 extern "C" void LAST_EFFECT_SET_COLOR(lua_State* param_1) {
     u64 L = (u64)param_1;
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     f32 r = 0, g = 0, b = 0;
@@ -1298,9 +1300,9 @@ extern "C" void LAST_EFFECT_SET_COLOR(lua_State* param_1) {
         }
     }
 
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
 
-    u64 handle = reinterpret_cast<u64(*)(void*)>(eff->_vt[0x3a0 / 8])(eff);
+    u64 handle = eff->get_last_handle();
     reinterpret_cast<void(*)(void*, u64, f32, f32, f32)>(eff->_vt[0x2f8 / 8])(eff, handle, r, g, b);
 
     acmd_consume(L);
@@ -1317,7 +1319,7 @@ extern "C" void EFFECT_FOLLOW_NO_STOP(lua_State* param_1) {
         __builtin_trap();
 #endif
     }
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     u64 hash1 = 0, hash2 = 0;
@@ -1372,7 +1374,7 @@ extern "C" void EFFECT_FOLLOW_NO_STOP(lua_State* param_1) {
 
     u64 flags = follow_flag ? 0x4000ULL : 0;
 
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
 
     reinterpret_cast<void(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, s32, s32, s32, f32)>
         (eff->_vt[0x80 / 8])(eff, hash1, hash2, &off_vec, &rot_vec, 0, flags, 0, (s32)-1, 0, 0, 0, scale_f);
@@ -1391,7 +1393,7 @@ void EFFECT_FOLLOW_arg11(lua_State* param_1) {
         __builtin_trap();
 #endif
     }
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     u64 hash1 = 0, hash2 = 0;
@@ -1453,7 +1455,7 @@ void EFFECT_FOLLOW_arg11(lua_State* param_1) {
         alt_hash = 0;
     }
 
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
 
     reinterpret_cast<void(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, s32, s32, s32, f32)>
         (eff->_vt[0x80 / 8])(eff, hash1, hash2, &off_vec, &rot_vec, 0, flags, alt_hash, (s32)-1, 0, 0, 0, scale_f);
@@ -1472,7 +1474,7 @@ extern "C" void EFFECT_FOLLOW_NO_SCALE(lua_State* param_1) {
         __builtin_trap();
 #endif
     }
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     u64 hash1 = 0, hash2 = 0;
@@ -1527,7 +1529,7 @@ extern "C" void EFFECT_FOLLOW_NO_SCALE(lua_State* param_1) {
 
     u64 flags = follow_flag ? 0xc000ULL : 0x8000ULL;
 
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
 
     // Note: 13th arg is 1 (no_scale flag), not 0
     reinterpret_cast<void(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, s32, s32, s32, f32)>
@@ -1547,7 +1549,7 @@ extern "C" void EFFECT_FOLLOW_UNSYNC_VIS_WHOLE(lua_State* param_1) {
         __builtin_trap();
 #endif
     }
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     u64 hash1 = 0, hash2 = 0;
@@ -1605,7 +1607,7 @@ extern "C" void EFFECT_FOLLOW_UNSYNC_VIS_WHOLE(lua_State* param_1) {
         }
     }
 
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
 
     reinterpret_cast<void(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, s32, s32, s32, f32)>
         (eff->_vt[0x80 / 8])(eff, hash1, hash2, &off_vec, &rot_vec, 0, flags, 0, (s32)-1, 0, 0, 0, scale_f);
@@ -1625,7 +1627,7 @@ extern "C" void EFFECT_FLW_POS(lua_State* param_1) {
         __builtin_trap();
 #endif
     }
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     u64 hash1 = 0, hash2 = 0;
@@ -1671,7 +1673,7 @@ extern "C" void EFFECT_FLW_POS(lua_State* param_1) {
 
     u64 flags = follow_flag ? 0xc000ULL : 0x8000ULL;
 
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
 
     reinterpret_cast<void(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, s32, s32, s32, s32, f32)>
         (eff->_vt[0x80 / 8])(eff, hash1, hash2, &off_vec, &rot_vec, 1, flags, 0, (s32)-1, 0, 0, 0, 0, scale);
@@ -1688,7 +1690,7 @@ extern "C" void EFFECT_FLW_POS_NO_STOP(lua_State* param_1) {
         __builtin_trap();
 #endif
     }
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     u64 hash1 = 0, hash2 = 0;
@@ -1734,7 +1736,7 @@ extern "C" void EFFECT_FLW_POS_NO_STOP(lua_State* param_1) {
 
     u64 flags = follow_flag ? 0x4000ULL : 0;
 
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
 
     reinterpret_cast<void(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, s32, s32, s32, s32, f32)>
         (eff->_vt[0x80 / 8])(eff, hash1, hash2, &off_vec, &rot_vec, 1, flags, 0, (s32)-1, 0, 0, 0, 0, scale);
@@ -1751,7 +1753,7 @@ extern "C" void EFFECT_FLW_POS_UNSYNC_VIS(lua_State* param_1) {
         __builtin_trap();
 #endif
     }
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     u64 hash1 = 0, hash2 = 0;
@@ -1797,7 +1799,7 @@ extern "C" void EFFECT_FLW_POS_UNSYNC_VIS(lua_State* param_1) {
 
     u64 flags = follow_flag ? 0x40c000ULL : 0x408000ULL;
 
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
 
     reinterpret_cast<void(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, s32, s32, s32, s32, f32)>
         (eff->_vt[0x80 / 8])(eff, hash1, hash2, &off_vec, &rot_vec, 1, flags, 0, (s32)-1, 0, 0, 0, 0, scale);
@@ -1814,7 +1816,7 @@ extern "C" void EFFECT_FLW_UNSYNC_VIS(lua_State* param_1) {
         __builtin_trap();
 #endif
     }
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     u64 hash1 = 0, hash2 = 0;
@@ -1860,7 +1862,7 @@ extern "C" void EFFECT_FLW_UNSYNC_VIS(lua_State* param_1) {
 
     u64 flags = follow_flag ? 0x40c000ULL : 0x408000ULL;
 
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
 
     reinterpret_cast<void(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, s32, s32, s32, s32, f32)>
         (eff->_vt[0x80 / 8])(eff, hash1, hash2, &off_vec, &rot_vec, 0, flags, 0, (s32)-1, 0, 0, 0, 0, scale);
@@ -1879,16 +1881,16 @@ extern "C" void LAST_EFFECT_SET_OFFSET_TO_CAMERA_FLAT(lua_State* param_1) {
     // Check BattleObjectWorld singleton: skip if null, or flag at +0xc set, or speed at +0x8 == 1.0
     u64 instance = BattleObjectWorld_instance;
     if (instance != 0 && *(u8*)(instance + 0xc) == 0 && *(f32*)(instance + 8) != 1.0f) {
-        u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+        app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
 
         f32 offset = 0.0f;
         if (nargs >= 1) {
             offset = acmd_read_float(L, 0x10);
         }
 
-        app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+        app::EffectModule* eff = acc->effect_module;
     
-        reinterpret_cast<void(*)(void*, f32)>(eff->_vt[0x370 / 8])(eff, offset);
+        eff->set_offset_to_camera_flat(offset);
     }
 
     acmd_consume(L);
@@ -1899,7 +1901,7 @@ extern "C" void LAST_EFFECT_SET_OFFSET_TO_CAMERA_FLAT(lua_State* param_1) {
 // Calls EffectModule::set_particle_color (vtable offset 0x300)
 extern "C" void LAST_PARTICLE_SET_COLOR(lua_State* param_1) {
     u64 L = (u64)param_1;
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     f32 r = 0, g = 0, b = 0;
@@ -1920,7 +1922,7 @@ extern "C" void LAST_PARTICLE_SET_COLOR(lua_State* param_1) {
         }
     }
 
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
 
     reinterpret_cast<void(*)(void*, f32, f32, f32)>(eff->_vt[0x300 / 8])(eff, r, g, b);
 
@@ -1937,7 +1939,7 @@ extern "C" void EFFECT_FOLLOW_COLOR(lua_State* param_1) {
         __builtin_trap();
 #endif
     }
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     u64 hash1 = 0, hash2 = 0;
@@ -1996,7 +1998,7 @@ extern "C" void EFFECT_FOLLOW_COLOR(lua_State* param_1) {
     u64 flags = follow_flag ? 0xc000ULL : 0x8000ULL;
 
     // req_follow → returns handle
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
     u32 handle = reinterpret_cast<u32(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, s32, s32, s32, s32, f32)>
         (eff->_vt[0x80 / 8])(eff, hash1, hash2, &off_vec, &rot_vec, 0, flags, 0, (s32)-1, 0, 0, 0, 0, scale_f);
 
@@ -2013,7 +2015,7 @@ extern "C" void EFFECT_FOLLOW_COLOR(lua_State* param_1) {
     }
 
     // EffectModule::set_color (vtable offset 0x2F8)
-    eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    eff = acc->effect_module;
     reinterpret_cast<void(*)(void*, u32, f32, f32, f32)>(eff->_vt[0x2f8 / 8])(eff, handle, r, g, b);
 
     acmd_consume(L);
@@ -2029,7 +2031,7 @@ extern "C" void EFFECT_FOLLOW_ALPHA(lua_State* param_1) {
         __builtin_trap();
 #endif
     }
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     u64 hash1 = 0, hash2 = 0;
@@ -2085,7 +2087,7 @@ extern "C" void EFFECT_FOLLOW_ALPHA(lua_State* param_1) {
     u64 flags = follow_flag ? 0xc000ULL : 0x8000ULL;
 
     // req_follow → returns handle
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
     u32 handle = reinterpret_cast<u32(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, s32, s32, s32, s32, f32)>
         (eff->_vt[0x80 / 8])(eff, hash1, hash2, &off_vec, &rot_vec, 0, flags, 0, (s32)-1, 0, 0, 0, 0, scale_f);
 
@@ -2096,7 +2098,7 @@ extern "C" void EFFECT_FOLLOW_ALPHA(lua_State* param_1) {
     }
 
     // EffectModule::set_alpha_last (vtable offset 0x308)
-    eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    eff = acc->effect_module;
     reinterpret_cast<void(*)(void*, u32, f32)>(eff->_vt[0x308 / 8])(eff, handle, alpha);
 
     acmd_consume(L);
@@ -2110,7 +2112,7 @@ extern "C" void EFFECT_FOLLOW_ALPHA(lua_State* param_1) {
 // Calls MotionModule vtable[0x390/8] for flip check, then req_follow (vtable 0x80)
 extern "C" void EFFECT_FOLLOW_FLIP(lua_State* param_1) {
     u64 L = (u64)param_1;
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     u64 bone_hash = 0;
@@ -2160,8 +2162,8 @@ extern "C" void EFFECT_FOLLOW_FLIP(lua_State* param_1) {
     u64 flags = follow_flag ? 0xc000ULL : 0x8000ULL;
 
     // Check MotionModule flip state (vtable[0x390/8] at acc+0x88)
-    void** motion = *(void***)(acc + 0x88);
-    u64 is_flip = reinterpret_cast<u64(*)(void*)>((*(void***)motion)[0x390 / 8])(motion);
+    app::MotionModule* motion = acc->motion_module;
+    u64 is_flip = reinterpret_cast<u64(*)(void*)>(motion->_vt[0x390 / 8])(motion);
 
     u64 effect_hash;
     u64 alt_hash = 0;
@@ -2192,7 +2194,7 @@ extern "C" void EFFECT_FOLLOW_FLIP(lua_State* param_1) {
     }
 
     // req_follow with flip
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
 
     reinterpret_cast<void(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, u64, s32, s32, s32, f32)>
         (eff->_vt[0x80 / 8])(eff, effect_hash, bone_hash, &off_vec, &rot_vec, 0, flags, 0, (s32)-1, alt_hash, 0, 0, 0, scale);
@@ -2212,7 +2214,7 @@ extern "C" void EFFECT_FOLLOW_NO_STOP_FLIP(lua_State* param_1) {
         __builtin_trap();
 #endif
     }
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     u64 bone_hash = 0;
@@ -2266,8 +2268,8 @@ extern "C" void EFFECT_FOLLOW_NO_STOP_FLIP(lua_State* param_1) {
     }
 
     // Check MotionModule flip state
-    void** motion = *(void***)(acc + 0x88);
-    u64 is_flip = reinterpret_cast<u64(*)(void*)>((*(void***)motion)[0x390 / 8])(motion);
+    app::MotionModule* motion = acc->motion_module;
+    u64 is_flip = reinterpret_cast<u64(*)(void*)>(motion->_vt[0x390 / 8])(motion);
 
     u64 effect_hash;
     u64 alt_hash = 0;
@@ -2292,7 +2294,7 @@ extern "C" void EFFECT_FOLLOW_NO_STOP_FLIP(lua_State* param_1) {
 
     u64 flags = follow_flag ? 0x4000ULL : 0;
 
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
 
     reinterpret_cast<void(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, u64, s32, s32, s32, f32)>
         (eff->_vt[0x80 / 8])(eff, effect_hash, bone_hash, &off_vec, &rot_vec, 0, flags, 0, (s32)-1, alt_hash, 0, 0, 0, scale_f);
@@ -2312,7 +2314,7 @@ extern "C" void EFFECT_FOLLOW_FLIP_COLOR(lua_State* param_1) {
         __builtin_trap();
 #endif
     }
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     u64 bone_hash = 0;
@@ -2368,8 +2370,8 @@ extern "C" void EFFECT_FOLLOW_FLIP_COLOR(lua_State* param_1) {
     u64 flags = follow_flag ? 0xc000ULL : 0x8000ULL;
 
     // Check MotionModule flip state
-    void** motion = *(void***)(acc + 0x88);
-    u64 is_flip = reinterpret_cast<u64(*)(void*)>((*(void***)motion)[0x390 / 8])(motion);
+    app::MotionModule* motion = acc->motion_module;
+    u64 is_flip = reinterpret_cast<u64(*)(void*)>(motion->_vt[0x390 / 8])(motion);
 
     u64 effect_hash;
     u64 alt_hash = 0;
@@ -2391,7 +2393,7 @@ extern "C" void EFFECT_FOLLOW_FLIP_COLOR(lua_State* param_1) {
     }
 
     // req_follow → returns handle
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
     u32 handle = reinterpret_cast<u32(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, u64, s32, s32, s32, f32)>
         (eff->_vt[0x80 / 8])(eff, effect_hash, bone_hash, &off_vec, &rot_vec, 0, flags, 0, (s32)-1, alt_hash, 0, 0, 0, scale_f);
 
@@ -2408,7 +2410,7 @@ extern "C" void EFFECT_FOLLOW_FLIP_COLOR(lua_State* param_1) {
     }
 
     // EffectModule::set_color (vtable offset 0x2F8)
-    eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    eff = acc->effect_module;
     reinterpret_cast<void(*)(void*, u32, f32, f32, f32)>(eff->_vt[0x2f8 / 8])(eff, handle, r, g, b);
 
     acmd_consume(L);
@@ -2424,7 +2426,7 @@ extern "C" void EFFECT_FOLLOW_FLIP_ALPHA(lua_State* param_1) {
         __builtin_trap();
 #endif
     }
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     u64 bone_hash = 0;
@@ -2480,8 +2482,8 @@ extern "C" void EFFECT_FOLLOW_FLIP_ALPHA(lua_State* param_1) {
     u64 flags = follow_flag ? 0xc000ULL : 0x8000ULL;
 
     // Check MotionModule flip state
-    void** motion = *(void***)(acc + 0x88);
-    u64 is_flip = reinterpret_cast<u64(*)(void*)>((*(void***)motion)[0x390 / 8])(motion);
+    app::MotionModule* motion = acc->motion_module;
+    u64 is_flip = reinterpret_cast<u64(*)(void*)>(motion->_vt[0x390 / 8])(motion);
 
     u64 effect_hash;
     u64 alt_hash = 0;
@@ -2503,7 +2505,7 @@ extern "C" void EFFECT_FOLLOW_FLIP_ALPHA(lua_State* param_1) {
     }
 
     // req_follow → returns handle
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
     u32 handle = reinterpret_cast<u32(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, u64, s32, s32, s32, f32)>
         (eff->_vt[0x80 / 8])(eff, effect_hash, bone_hash, &off_vec, &rot_vec, 0, flags, 0, (s32)-1, alt_hash, 0, 0, 0, scale_f);
 
@@ -2514,7 +2516,7 @@ extern "C" void EFFECT_FOLLOW_FLIP_ALPHA(lua_State* param_1) {
     }
 
     // EffectModule::set_alpha_last (vtable offset 0x308)
-    eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    eff = acc->effect_module;
     reinterpret_cast<void(*)(void*, u32, f32)>(eff->_vt[0x308 / 8])(eff, handle, alpha);
 
     acmd_consume(L);
@@ -2531,7 +2533,7 @@ void EFFECT_FOLLOW_FLIP_arg13(lua_State* param_1) {
         __builtin_trap();
 #endif
     }
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     u64 bone_hash = 0;
@@ -2587,8 +2589,8 @@ void EFFECT_FOLLOW_FLIP_arg13(lua_State* param_1) {
     u64 flags = follow_flag ? 0xc000ULL : 0x8000ULL;
 
     // Check MotionModule flip state
-    void** motion = *(void***)(acc + 0x88);
-    u64 is_flip = reinterpret_cast<u64(*)(void*)>((*(void***)motion)[0x390 / 8])(motion);
+    app::MotionModule* motion = acc->motion_module;
+    u64 is_flip = reinterpret_cast<u64(*)(void*)>(motion->_vt[0x390 / 8])(motion);
 
     u64 effect_hash;
     u64 alt_hash = 0;
@@ -2616,7 +2618,7 @@ void EFFECT_FOLLOW_FLIP_arg13(lua_State* param_1) {
     }
 
     // req_follow with joint_hash in position 8
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
 
     reinterpret_cast<void(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, u64, s32, s32, s32, f32)>
         (eff->_vt[0x80 / 8])(eff, effect_hash, bone_hash, &off_vec, &rot_vec, 0, flags, joint_hash, (s32)-1, alt_hash, 0, 0, 0, scale_f);
@@ -2629,7 +2631,7 @@ void EFFECT_FOLLOW_FLIP_arg13(lua_State* param_1) {
 // float args (17-19) for RGB and calls set_color (vtable offset 0x2F8)
 extern "C" void EFFECT_COLOR(lua_State* param_1) {
     u64 L = (u64)param_1;
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     acmd_effect_ctrl ctrl;
@@ -2642,14 +2644,14 @@ extern "C" void EFFECT_COLOR(lua_State* param_1) {
     FUN_7102288620(&out, &ctrl, 0);
 
     // req_on_joint → returns handle
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
     f32 rate = *(f32*)&out.rate_bits;
     u32 handle = reinterpret_cast<u32(*)(void*, u64, u64, void*, void*, void*, void*, bool, u64, u64, s32, f32)>
         (eff->_vt[0x70 / 8])(eff, out.hash1, out.hash2, &out.pos_xy, &out.rot_xy, &out.scale_xy, &out.color_xy, out.follow_flag, 0, 0, 0, rate);
 
     // Read RGB: args 17-19 (offsets 0x110, 0x120, 0x130)
     f32 r = 0, g = 0, b = 0;
-    eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    eff = acc->effect_module;
 
     if (param_1 == nullptr) {
         // null path — dead code
@@ -2673,7 +2675,7 @@ extern "C" void EFFECT_COLOR(lua_State* param_1) {
 // Identical to EFFECT_COLOR
 extern "C" void EFFECT_COLOR_WORK(lua_State* param_1) {
     u64 L = (u64)param_1;
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     acmd_effect_ctrl ctrl;
@@ -2685,13 +2687,13 @@ extern "C" void EFFECT_COLOR_WORK(lua_State* param_1) {
     acmd_effect_out out;
     FUN_7102288620(&out, &ctrl, 0);
 
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
     f32 rate = *(f32*)&out.rate_bits;
     u32 handle = reinterpret_cast<u32(*)(void*, u64, u64, void*, void*, void*, void*, bool, u64, u64, s32, f32)>
         (eff->_vt[0x70 / 8])(eff, out.hash1, out.hash2, &out.pos_xy, &out.rot_xy, &out.scale_xy, &out.color_xy, out.follow_flag, 0, 0, 0, rate);
 
     f32 r = 0, g = 0, b = 0;
-    eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    eff = acc->effect_module;
 
     if (param_1 == nullptr) {
         // null path — dead code
@@ -2715,7 +2717,7 @@ extern "C" void EFFECT_COLOR_WORK(lua_State* param_1) {
 // float arg (17) for alpha and calls set_alpha_last (vtable offset 0x308)
 extern "C" void EFFECT_ALPHA(lua_State* param_1) {
     u64 L = (u64)param_1;
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     acmd_effect_ctrl ctrl;
@@ -2728,7 +2730,7 @@ extern "C" void EFFECT_ALPHA(lua_State* param_1) {
     FUN_7102288620(&out, &ctrl, 0);
 
     // req_on_joint → returns handle
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
     f32 rate = *(f32*)&out.rate_bits;
     u32 handle = reinterpret_cast<u32(*)(void*, u64, u64, void*, void*, void*, void*, bool, u64, u64, s32, f32)>
         (eff->_vt[0x70 / 8])(eff, out.hash1, out.hash2, &out.pos_xy, &out.rot_xy, &out.scale_xy, &out.color_xy, out.follow_flag, 0, 0, 0, rate);
@@ -2743,7 +2745,7 @@ extern "C" void EFFECT_ALPHA(lua_State* param_1) {
     }
 
     // EffectModule::set_alpha_last (vtable offset 0x308)
-    eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    eff = acc->effect_module;
     reinterpret_cast<void(*)(void*, u32, f32)>(eff->_vt[0x308 / 8])(eff, handle, alpha);
 
     acmd_consume(L);
@@ -2754,7 +2756,7 @@ extern "C" void EFFECT_ALPHA(lua_State* param_1) {
 // swaps hash arg, then calls req_on_joint (vtable 0x70)
 extern "C" void EFFECT_FLIP(lua_State* param_1) {
     u64 L = (u64)param_1;
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     acmd_effect_ctrl ctrl;
@@ -2767,8 +2769,8 @@ extern "C" void EFFECT_FLIP(lua_State* param_1) {
     FUN_7102288620(&out, &ctrl, 1);  // mode=1 for flip (shifts arg indices by 1)
 
     // Check MotionModule flip state (vtable[0x390/8] at acc+0x88)
-    void** motion = *(void***)(acc + 0x88);
-    u64 is_flip = reinterpret_cast<u64(*)(void*)>((*(void***)motion)[0x390 / 8])(motion);
+    app::MotionModule* motion = acc->motion_module;
+    u64 is_flip = reinterpret_cast<u64(*)(void*)>(motion->_vt[0x390 / 8])(motion);
 
     u64 alt_hash = 0;
     if ((is_flip & 1) == 0) {
@@ -2791,7 +2793,7 @@ extern "C" void EFFECT_FLIP(lua_State* param_1) {
     }
 
     // req_on_joint with parsed args + alt_hash
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
     f32 rate = *(f32*)&out.rate_bits;
     reinterpret_cast<void(*)(void*, u64, u64, void*, void*, void*, void*, bool, u64, u64, s32, f32)>
         (eff->_vt[0x70 / 8])(eff, out.hash1, out.hash2, &out.pos_xy, &out.rot_xy, &out.scale_xy, &out.color_xy, out.follow_flag, 0, alt_hash, 0, rate);
@@ -2803,7 +2805,7 @@ extern "C" void EFFECT_FLIP(lua_State* param_1) {
 // Like EFFECT_FLIP but reads alpha at arg 19 (offset 0x130) and calls set_alpha_last
 extern "C" void EFFECT_FLIP_ALPHA(lua_State* param_1) {
     u64 L = (u64)param_1;
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     acmd_effect_ctrl ctrl;
@@ -2816,8 +2818,8 @@ extern "C" void EFFECT_FLIP_ALPHA(lua_State* param_1) {
     FUN_7102288620(&out, &ctrl, 1);
 
     // Check MotionModule flip state
-    void** motion = *(void***)(acc + 0x88);
-    u64 is_flip = reinterpret_cast<u64(*)(void*)>((*(void***)motion)[0x390 / 8])(motion);
+    app::MotionModule* motion = acc->motion_module;
+    u64 is_flip = reinterpret_cast<u64(*)(void*)>(motion->_vt[0x390 / 8])(motion);
 
     u64 alt_hash = 0;
     if ((is_flip & 1) == 0) {
@@ -2839,7 +2841,7 @@ extern "C" void EFFECT_FLIP_ALPHA(lua_State* param_1) {
     }
 
     // req_on_joint → returns handle
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
     f32 rate = *(f32*)&out.rate_bits;
     u32 handle = reinterpret_cast<u32(*)(void*, u64, u64, void*, void*, void*, void*, bool, u64, u64, s32, f32)>
         (eff->_vt[0x70 / 8])(eff, out.hash1, out.hash2, &out.pos_xy, &out.rot_xy, &out.scale_xy, &out.color_xy, out.follow_flag, 0, alt_hash, 0, rate);
@@ -2851,7 +2853,7 @@ extern "C" void EFFECT_FLIP_ALPHA(lua_State* param_1) {
     }
 
     // EffectModule::set_alpha_last (vtable offset 0x308)
-    eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    eff = acc->effect_module;
     reinterpret_cast<void(*)(void*, u32, f32)>(eff->_vt[0x308 / 8])(eff, handle, alpha);
 
     acmd_consume(L);
@@ -2867,7 +2869,7 @@ extern "C" void EFFECT(lua_State* param_1) {
         __builtin_trap();
 #endif
     }
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     u64 hash1 = 0, hash2 = 0;
@@ -2931,7 +2933,7 @@ extern "C" void EFFECT(lua_State* param_1) {
     struct { f32 x; f32 y; u64 z; } vec_scale  = { a10, a11, (u64)(u32)a12 };
     struct { f32 x; f32 y; u64 z; } vec_color  = { a13, a14, (u64)(u32)a15 };
 
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
 
     reinterpret_cast<void(*)(void*, u64, u64, void*, void*, void*, void*, bool, s32, s32, s32, f32)>
         (eff->_vt[0x70 / 8])(eff, hash1, hash2, &vec_pos, &vec_rot, &vec_scale, &vec_color, a16, 0, 0, 0, a9);
@@ -2949,7 +2951,7 @@ extern "C" void EFFECT_WORK_R(lua_State* param_1) {
         __builtin_trap();
 #endif
     }
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     // Group 1: hashes + pos (args 1-5)
@@ -3020,7 +3022,7 @@ extern "C" void EFFECT_WORK_R(lua_State* param_1) {
         follow = acmd_read_bool(L, 0x100);
     }
 
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
 
     reinterpret_cast<void(*)(void*, u64, u64, void*, void*, void*, void*, bool, s32, s32, s32, f32)>
         (eff->_vt[0x70 / 8])(eff, hash1, hash2, &vec_pos, &vec_rot, &vec_scale, &vec_color, follow, 0, 0, 0, (f32)(u32)rate_int);
@@ -3033,13 +3035,13 @@ extern "C" void EFFECT_WORK_R(lua_State* param_1) {
 // Args: 1=ground_hash, 2=air_hash, 3=joint_hash, 4-17=pos/rot/rate/scale/color/follow
 extern "C" void EFFECT_BRANCH_SITUATION(lua_State* param_1) {
     u64 L = (u64)param_1;
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     u64 saved_top = *(u64*)(L + 0x10);
     u64 saved_base = **(u64**)(L + 0x20);
 
     // Check situation via EffectModule vtable[125] (offset 0x3E8)
-    app::EffectModule* eff_check = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
-    u32 situation = reinterpret_cast<u32(*)(void*)>(eff_check->_vt[1000 / 8])(eff_check);
+    app::EffectModule* eff_check = acc->effect_module;
+    u32 situation = (u32)eff_check->is_enable_ground_effect();
 
     if (param_1 == nullptr) {
 #ifdef MATCHING_HACK_NX_CLANG
@@ -3118,7 +3120,7 @@ extern "C" void EFFECT_BRANCH_SITUATION(lua_State* param_1) {
     struct { f32 x; f32 y; u64 z; } vec_scale  = { a11, a12, (u64)(u32)a13 };
     struct { f32 x; f32 y; u64 z; } vec_color  = { a14, a15, (u64)(u32)a16 };
 
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
 
     reinterpret_cast<void(*)(void*, u64, u64, void*, void*, void*, void*, bool, s32, s32, s32, f32)>
         (eff->_vt[0x70 / 8])(eff, hash1, hash2, &vec_pos, &vec_rot, &vec_scale, &vec_color, a17, 0, 0, 0, a10);
@@ -3155,7 +3157,7 @@ extern "C" void EFFECT_FOLLOW_RND(lua_State* param_1) {
         __builtin_trap();
 #endif
     }
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     // Group 1: hashes + offset (args 1-5, offsets as integers)
@@ -3258,7 +3260,7 @@ extern "C" void EFFECT_FOLLOW_RND(lua_State* param_1) {
     }
 
     // EffectModule::req_follow (vtable[16], offset 0x80)
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
 
     reinterpret_cast<void(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, s32, s32, s32, f32)>
         (eff->_vt[0x80 / 8])(eff, hash1, hash2, &off_vec, &rot_vec, 0, (u64)flags, 0, (s32)-1, 0, 0, 0, scale);
@@ -3271,7 +3273,7 @@ extern "C" void EFFECT_FOLLOW_RND(lua_State* param_1) {
 // Reads arg 1 hash twice (once to prime, once for the vtable call)
 extern "C" void EFFECT_FOLLOW_RND_WORK(lua_State* param_1) {
     u64 L = (u64)param_1;
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     // Prime read of arg 1 (result discarded for WORK variant)
@@ -3379,7 +3381,7 @@ extern "C" void EFFECT_FOLLOW_RND_WORK(lua_State* param_1) {
     }
 
     // EffectModule::req_follow (vtable[16], offset 0x80)
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
 
     reinterpret_cast<void(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, s32, s32, s32, f32)>
         (eff->_vt[0x80 / 8])(eff, hash1, hash2, &off_vec, &rot_vec, 0, (u64)follow_flags, 0, (s32)-1, 0, 0, 0, scale);
@@ -3393,7 +3395,7 @@ extern "C" void EFFECT_FOLLOW_RND_WORK(lua_State* param_1) {
 //       10=scale, 11-16=rng ranges, 17=follow
 extern "C" void EFFECT_FOLLOW_FLIP_RND(lua_State* param_1) {
     u64 L = (u64)param_1;
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     // Read joint hash (arg 3)
@@ -3497,8 +3499,8 @@ extern "C" void EFFECT_FOLLOW_FLIP_RND(lua_State* param_1) {
                     }
 
                     // Check MotionModule flip state (vtable offset 0x390)
-                    void** motion = *(void***)(acc + 0x88);
-                    u64 is_flip = reinterpret_cast<u64(*)(void*)>((*(void***)motion)[0x390 / 8])(motion);
+                    app::MotionModule* motion = acc->motion_module;
+                    u64 is_flip = reinterpret_cast<u64(*)(void*)>(motion->_vt[0x390 / 8])(motion);
 
                     // Select hash based on flip
                     u64 hash1;
@@ -3523,7 +3525,7 @@ extern "C" void EFFECT_FOLLOW_FLIP_RND(lua_State* param_1) {
                     }
 
                     // EffectModule::req_follow (vtable[16], offset 0x80)
-                    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+                    app::EffectModule* eff = acc->effect_module;
                 
                     reinterpret_cast<void(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, u64, s32, s32, f32)>
                         (eff->_vt[0x80 / 8])(eff, hash1, joint_hash, &off_vec, &rot_vec, 0, (u64)follow_flags, 0, (s32)-1, alt_hash, 0, 0, scale_val);
@@ -3541,8 +3543,8 @@ extern "C" void EFFECT_FOLLOW_FLIP_RND(lua_State* param_1) {
     u32 follow_flags = 0x8000;
 
     // Check MotionModule flip state
-    void** motion = *(void***)(acc + 0x88);
-    u64 is_flip = reinterpret_cast<u64(*)(void*)>((*(void***)motion)[0x390 / 8])(motion);
+    app::MotionModule* motion = acc->motion_module;
+    u64 is_flip = reinterpret_cast<u64(*)(void*)>(motion->_vt[0x390 / 8])(motion);
 
     u64 hash1;
     u64 alt_hash = 0;
@@ -3568,7 +3570,7 @@ extern "C" void EFFECT_FOLLOW_FLIP_RND(lua_State* param_1) {
         }
     }
 
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
 
     reinterpret_cast<void(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, u64, s32, s32, f32)>
         (eff->_vt[0x80 / 8])(eff, hash1, joint_hash, &off_vec_def, &rot_vec_def, 0, (u64)follow_flags, 0, (s32)-1, alt_hash, 0, 0, 0.0f);
@@ -3580,7 +3582,7 @@ extern "C" void EFFECT_FOLLOW_FLIP_RND(lua_State* param_1) {
 // Uses FUN_7102288620 shared parser, checks landing enabled, terrain lookup via StageManager
 extern "C" void LANDING_EFFECT(lua_State* param_1) {
     u64 L = (u64)param_1;
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
 
     acmd_effect_ctrl ctrl;
     ctrl.hash = 0;
@@ -3589,8 +3591,8 @@ extern "C" void LANDING_EFFECT(lua_State* param_1) {
     ctrl.L = param_1;
 
     // Check EffectModule::is_landing_enabled (vtable[0x3d8/8])
-    app::EffectModule* eff_check = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
-    u64 enabled = reinterpret_cast<u64(*)(void*)>(eff_check->_vt[0x3d8 / 8])(eff_check);
+    app::EffectModule* eff_check = acc->effect_module;
+    u64 enabled = eff_check->is_landing_enabled();
     if ((enabled & 1) == 0) goto landing_consume;
 
     acmd_effect_out out;
@@ -3598,7 +3600,7 @@ extern "C" void LANDING_EFFECT(lua_State* param_1) {
 
     // GroundModule::get_terrain_kind (vtable[0x478/8]) with arg 8
     {
-        void** ground = *(void***)(acc + 0x58);
+        void** ground = reinterpret_cast<void**>(acc->ground_module);
         int terrain_kind = reinterpret_cast<int(*)(void*, int)>((*(void***)ground)[0x478 / 8])(ground, 8);
 
         u32 terrain_flag = 0;
@@ -3616,13 +3618,13 @@ extern "C" void LANDING_EFFECT(lua_State* param_1) {
         }
 
         // First req_on_joint call with primary hash
-        app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+        app::EffectModule* eff = acc->effect_module;
         u64 hash1_masked = out.hash1 & 0xffffffffffULL;
         if (hash1_masked == 0xe3c234564ULL || hash1_masked == 0x14a422ea56ULL || hash1_masked == 0x11b722b99fULL) {
             u64 fpa2 = (u64)lib::Singleton<app::FighterParamAccessor2>::instance_;
             u32 param_val = *(u32*)(*(u64*)(fpa2 + 0x50) + 0x162c);
             eff->preset_limit_num(param_val);
-            eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+            eff = acc->effect_module;
         }
         f32 rate = *(f32*)&out.rate_bits;
         reinterpret_cast<void(*)(void*, u64, u64, void*, void*, void*, void*, bool, u32, u32, s32, f32)>
@@ -3634,14 +3636,14 @@ extern "C" void LANDING_EFFECT(lua_State* param_1) {
             u64 terrain_this2 = stage_mgr2 + 0x128;
             u64 terrain_data2 = reinterpret_cast<u64(*)(u64, int)>(*(u64*)(*(u64*)terrain_this2 + 0x1f8))(terrain_this2, terrain_kind);
 
-            eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+            eff = acc->effect_module;
             u64 secondary_hash = *(u64*)(terrain_data2 + 0x48);
             u64 sec_masked = secondary_hash & 0xffffffffffULL;
             if (sec_masked == 0xe3c234564ULL || sec_masked == 0x14a422ea56ULL || sec_masked == 0x11b722b99fULL) {
                 u64 fpa2 = (u64)lib::Singleton<app::FighterParamAccessor2>::instance_;
                 u32 param_val = *(u32*)(*(u64*)(fpa2 + 0x50) + 0x162c);
                 eff->preset_limit_num(param_val);
-                eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+                eff = acc->effect_module;
                 secondary_hash = *(u64*)(terrain_data2 + 0x48);
             }
             reinterpret_cast<void(*)(void*, u64, u64, void*, void*, void*, void*, bool, u32, u32, s32, f32)>
@@ -3657,7 +3659,7 @@ landing_consume:
 // Like LANDING_EFFECT but with MotionModule flip check for hash swap
 extern "C" void LANDING_EFFECT_FLIP(lua_State* param_1) {
     u64 L = (u64)param_1;
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
 
     acmd_effect_ctrl ctrl;
     ctrl.hash = 0;
@@ -3667,8 +3669,8 @@ extern "C" void LANDING_EFFECT_FLIP(lua_State* param_1) {
     ctrl.L = param_1;
 
     // Check EffectModule::is_landing_enabled (vtable[0x3d8/8])
-    app::EffectModule* eff_check = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
-    u64 enabled = reinterpret_cast<u64(*)(void*)>(eff_check->_vt[0x3d8 / 8])(eff_check);
+    app::EffectModule* eff_check = acc->effect_module;
+    u64 enabled = eff_check->is_landing_enabled();
     if ((enabled & 1) == 0) goto landing_flip_consume;
 
     {
@@ -3676,8 +3678,8 @@ extern "C" void LANDING_EFFECT_FLIP(lua_State* param_1) {
         FUN_7102288620(&out, &ctrl, 1);  // mode 1 = flip-aware parsing
 
         // MotionModule flip check (vtable[0x390/8])
-        void** motion = *(void***)(acc + 0x88);
-        u64 is_flip = reinterpret_cast<u64(*)(void*)>((*(void***)motion)[0x390 / 8])(motion);
+        app::MotionModule* motion = acc->motion_module;
+        u64 is_flip = reinterpret_cast<u64(*)(void*)>(motion->_vt[0x390 / 8])(motion);
 
         u32 alt_hash = 0;
         if ((is_flip & 1) == 0) {
@@ -3701,7 +3703,7 @@ extern "C" void LANDING_EFFECT_FLIP(lua_State* param_1) {
         }
 
         // GroundModule::get_terrain_kind
-        void** ground = *(void***)(acc + 0x58);
+        void** ground = reinterpret_cast<void**>(acc->ground_module);
         int terrain_kind = reinterpret_cast<int(*)(void*, int)>((*(void***)ground)[0x478 / 8])(ground, 8);
 
         u32 terrain_flag = 0;
@@ -3717,13 +3719,13 @@ extern "C" void LANDING_EFFECT_FLIP(lua_State* param_1) {
         }
 
         // First req_on_joint
-        app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+        app::EffectModule* eff = acc->effect_module;
         u64 hash1_masked = out.hash1 & 0xffffffffffULL;
         if (hash1_masked == 0xe3c234564ULL || hash1_masked == 0x14a422ea56ULL || hash1_masked == 0x11b722b99fULL) {
             u64 fpa2 = (u64)lib::Singleton<app::FighterParamAccessor2>::instance_;
             u32 param_val = *(u32*)(*(u64*)(fpa2 + 0x50) + 0x162c);
             eff->preset_limit_num(param_val);
-            eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+            eff = acc->effect_module;
         }
         f32 rate = *(f32*)&out.rate_bits;
         reinterpret_cast<void(*)(void*, u64, u64, void*, void*, void*, void*, bool, u32, u32, s32, f32)>
@@ -3735,14 +3737,14 @@ extern "C" void LANDING_EFFECT_FLIP(lua_State* param_1) {
             u64 terrain_this2 = stage_mgr2 + 0x128;
             u64 terrain_data2 = reinterpret_cast<u64(*)(u64, int)>(*(u64*)(*(u64*)terrain_this2 + 0x1f8))(terrain_this2, terrain_kind);
 
-            eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+            eff = acc->effect_module;
             u64 secondary_hash = *(u64*)(terrain_data2 + 0x48);
             u64 sec_masked = secondary_hash & 0xffffffffffULL;
             if (sec_masked == 0xe3c234564ULL || sec_masked == 0x14a422ea56ULL || sec_masked == 0x11b722b99fULL) {
                 u64 fpa2 = (u64)lib::Singleton<app::FighterParamAccessor2>::instance_;
                 u32 param_val = *(u32*)(*(u64*)(fpa2 + 0x50) + 0x162c);
                 eff->preset_limit_num(param_val);
-                eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+                eff = acc->effect_module;
                 secondary_hash = *(u64*)(terrain_data2 + 0x48);
             }
             reinterpret_cast<void(*)(void*, u64, u64, void*, void*, void*, void*, bool, u32, u32, s32, f32)>
@@ -3760,7 +3762,7 @@ landing_flip_consume:
 extern "C" void FOOT_EFFECT_FLIP(lua_State* param_1) {
     u64 L = (u64)param_1;
     u64 wrapper = *(u64*)(L - 8);
-    u64 acc = *(u64*)(wrapper + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(wrapper + 0x1a0));
 
     acmd_effect_ctrl ctrl;
     ctrl.hash = 0;
@@ -3770,8 +3772,8 @@ extern "C" void FOOT_EFFECT_FLIP(lua_State* param_1) {
     ctrl.L = param_1;
 
     // Check EffectModule::is_foot_enabled (vtable[0x3d0/8])
-    app::EffectModule* eff_check = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
-    u64 enabled = reinterpret_cast<u64(*)(void*)>(eff_check->_vt[0x3d0 / 8])(eff_check);
+    app::EffectModule* eff_check = acc->effect_module;
+    u64 enabled = eff_check->is_foot_enabled();
     if ((enabled & 1) == 0) goto foot_flip_consume;
 
     {
@@ -3779,8 +3781,8 @@ extern "C" void FOOT_EFFECT_FLIP(lua_State* param_1) {
         FUN_7102288620(&out, &ctrl, 1);
 
         // MotionModule flip check
-        void** motion = *(void***)(acc + 0x88);
-        u64 is_flip = reinterpret_cast<u64(*)(void*)>((*(void***)motion)[0x390 / 8])(motion);
+        app::MotionModule* motion = acc->motion_module;
+        u64 is_flip = reinterpret_cast<u64(*)(void*)>(motion->_vt[0x390 / 8])(motion);
 
         u32 alt_hash = 0;
         if ((is_flip & 1) == 0) {
@@ -3802,7 +3804,7 @@ extern "C" void FOOT_EFFECT_FLIP(lua_State* param_1) {
         }
 
         // GroundModule::get_terrain_kind
-        void** ground = *(void***)(acc + 0x58);
+        void** ground = reinterpret_cast<void**>(acc->ground_module);
         int terrain_kind = reinterpret_cast<int(*)(void*, int)>((*(void***)ground)[0x478 / 8])(ground, 8);
 
         if (terrain_kind != 0) {
@@ -3815,12 +3817,12 @@ extern "C" void FOOT_EFFECT_FLIP(lua_State* param_1) {
             u64 terrain_hash = *(u64*)(terrain_data + 0x18);
             u64 th_masked = terrain_hash & 0xffffffffffULL;
 
-            app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+            app::EffectModule* eff = acc->effect_module;
             if (th_masked == 0xe3c234564ULL || th_masked == 0x14a422ea56ULL || th_masked == 0x11b722b99fULL) {
                 u64 fpa2 = (u64)lib::Singleton<app::FighterParamAccessor2>::instance_;
                 u32 param_val = *(u32*)(*(u64*)(fpa2 + 0x50) + 0x162c);
                 eff->preset_limit_num(param_val);
-                eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+                eff = acc->effect_module;
                 terrain_hash = *(u64*)(terrain_data + 0x18);
             }
 
@@ -3836,11 +3838,11 @@ extern "C" void FOOT_EFFECT_FLIP(lua_State* param_1) {
                 u64 sec_pos_xy = *(u64*)(param_base + 0x1630);
                 u64 sec_pos_z = (u64)*(u32*)(param_base + 0x1638);
 
-                eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+                eff = acc->effect_module;
                 u32 param_val = *(u32*)(param_base + 0x162c);
                 eff->preset_limit_num(param_val);
 
-                eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+                eff = acc->effect_module;
                 struct { u64 xy; u64 z; } sec_pos = { sec_pos_xy, sec_pos_z };
                 u64 sec_effect_hash = 0x14a422ea56ULL;
                 reinterpret_cast<void(*)(void*, u64, u64, void*, void*, void*, void*, bool, u32, u32, s32, f32)>
@@ -3855,7 +3857,7 @@ extern "C" void FOOT_EFFECT_FLIP(lua_State* param_1) {
 
         // Fallback req_on_joint if hash != sentinel
         if ((out.hash1 & 0xffffffffffULL) != 0x425cbfc4fULL) {
-            app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+            app::EffectModule* eff = acc->effect_module;
             f32 rate = *(f32*)&out.rate_bits;
             reinterpret_cast<void(*)(void*, u64, u64, void*, void*, void*, void*, bool, u32, u32, s32, f32)>
                 (eff->_vt[0x70 / 8])(eff, out.hash1, out.hash2, &out.pos_xy, &out.rot_xy, &out.scale_xy, &out.color_xy, out.follow_flag, 0, alt_hash, 0, rate);
@@ -3913,7 +3915,7 @@ extern "C" void PLAY_LANDING_SE(lua_State* param_1) {
         __builtin_trap();
 #endif
     }
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     u64 hash;
@@ -3940,7 +3942,7 @@ extern "C" void REG_LANDING_SE(lua_State* param_1) {
         __builtin_trap();
 #endif
     }
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     u64 hash;
@@ -3963,7 +3965,7 @@ extern "C" void REG_LANDING_SE(lua_State* param_1) {
 //   entry+4 = handle validation, entry+0x26c = flags
 extern "C" void EFFECT_GLOBAL_BACK_GROUND(lua_State* param_1) {
     u64 L = (u64)param_1;
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
 
     acmd_effect_ctrl ctrl;
     ctrl.hash = 0;
@@ -3972,7 +3974,7 @@ extern "C" void EFFECT_GLOBAL_BACK_GROUND(lua_State* param_1) {
     ctrl.nargs = (u32)nargs;
     ctrl.L = param_1;
 
-    u32 handle = FUN_710228ea70(ConstantZero, 0x3f800000, acc, &ctrl, 0x2000000);
+    u32 handle = FUN_710228ea70(ConstantZero, 0x3f800000, reinterpret_cast<u64>(acc), &ctrl, 0x2000000);
 
     if (nargs >= 10) {
         bool bg_flag = acmd_read_bool(L, 0xa0);
@@ -4004,7 +4006,7 @@ extern "C" void EFFECT_GLOBAL_BACK_GROUND(lua_State* param_1) {
 // Uses NEON rsqrt approximation in original — scalar math here (size mismatch expected).
 extern "C" void EFFECT_GLOBAL_BACK_GROUND_CENTER_TOP_NODE(lua_State* param_1) {
     u64 L = (u64)param_1;
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
 
     acmd_effect_ctrl ctrl;
     ctrl.hash = 0;
@@ -4083,7 +4085,7 @@ extern "C" void EFFECT_GLOBAL_BACK_GROUND_CENTER_TOP_NODE(lua_State* param_1) {
     }
 
     u32 rate = *(u32*)(cutin_data + 0x340);
-    u32 handle = FUN_710228ea70(pos, rate, acc, &ctrl, 0x2000000);
+    u32 handle = FUN_710228ea70(pos, rate, reinterpret_cast<u64>(acc), &ctrl, 0x2000000);
 
     if (nargs >= 10) {
         bool bg_flag = acmd_read_bool(L, 0xa0);
@@ -4113,7 +4115,7 @@ extern "C" void EFFECT_GLOBAL_BACK_GROUND_CENTER_TOP_NODE(lua_State* param_1) {
 // and rate from FighterCutInManager+0x340
 extern "C" void EFFECT_GLOBAL_BACK_GROUND_CUT_IN_CENTER_POS(lua_State* param_1) {
     u64 L = (u64)param_1;
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
 
     acmd_effect_ctrl ctrl;
     ctrl.hash = 0;
@@ -4125,7 +4127,7 @@ extern "C" void EFFECT_GLOBAL_BACK_GROUND_CUT_IN_CENTER_POS(lua_State* param_1) 
     u64 cutin = (u64)lib::Singleton<app::FighterCutInManager>::instance_;
     u64 pos = *(u64*)(cutin + 0x2f0);
     u32 rate = *(u32*)(cutin + 0x340);
-    u32 handle = FUN_710228ea70(pos, rate, acc, &ctrl, 0x2000000);
+    u32 handle = FUN_710228ea70(pos, rate, reinterpret_cast<u64>(acc), &ctrl, 0x2000000);
 
     if (nargs >= 10) {
         bool bg_flag = acmd_read_bool(L, 0xa0);
@@ -4157,7 +4159,7 @@ extern "C" void EFFECT_GLOBAL_BACK_GROUND_CUT_IN_CENTER_POS(lua_State* param_1) 
 // +0x140 = EffectModule [derived: accessor offset map]
 extern "C" void LAST_EFFECT_SET_TOP_OFFSET(lua_State* param_1) {
     u64 L = (u64)param_1;
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
 
     u64 base = **(u64**)(L + 0x20) + 0x10;
     int nargs = (int)((*(u64*)(L + 0x10) - base) >> 4);
@@ -4183,7 +4185,7 @@ extern "C" void LAST_EFFECT_SET_TOP_OFFSET(lua_State* param_1) {
     }
 
     // PostureModule vtable[12] (offset 0x60) → get_pos() returns Vec3* (x,y,z)
-    void** posture = *(void***)(acc + 0x38);
+    void** posture = reinterpret_cast<void**>(acc->posture_module);
     u64* pos = reinterpret_cast<u64*(*)(void*)>((*(void***)posture)[0x60 / 8])(posture);
 
     // pos[0] = {f32 x, f32 y}, pos[1] = {f32 z, ...}
@@ -4197,7 +4199,7 @@ extern "C" void LAST_EFFECT_SET_TOP_OFFSET(lua_State* param_1) {
     out_pos.z = pos_z_raw;
 
     // EffectModule: vtable[0x3a0/8] = get_last_handle(), vtable[0x150/8] = set_pos(handle, pos)
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
     u32 last_handle = (u32)eff->get_last_handle();
     reinterpret_cast<void(*)(void*, u32, void*)>(eff->_vt[0x150 / 8])(eff, last_handle, &out_pos);
 
@@ -4370,7 +4372,7 @@ bg_consume:
 extern "C" void FOOT_EFFECT(lua_State* param_1) {
     u64 L = (u64)param_1;
     u64 wrapper = *(u64*)(L - 8);
-    u64 acc = *(u64*)(wrapper + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(wrapper + 0x1a0));
 
     acmd_effect_ctrl ctrl;
     ctrl.hash = 0;
@@ -4379,8 +4381,8 @@ extern "C" void FOOT_EFFECT(lua_State* param_1) {
     ctrl.L = param_1;
 
     // Check EffectModule::is_foot_enabled (vtable[0x3d0/8])
-    app::EffectModule* eff_check = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
-    u64 enabled = reinterpret_cast<u64(*)(void*)>(eff_check->_vt[0x3d0 / 8])(eff_check);
+    app::EffectModule* eff_check = acc->effect_module;
+    u64 enabled = eff_check->is_foot_enabled();
     if ((enabled & 1) == 0) goto foot_consume;
 
     {
@@ -4388,7 +4390,7 @@ extern "C" void FOOT_EFFECT(lua_State* param_1) {
         FUN_7102288620(&out, &ctrl, 0);
 
         // GroundModule::get_terrain_kind (vtable[0x478/8]) with arg 8
-        void** ground = *(void***)(acc + 0x58);
+        void** ground = reinterpret_cast<void**>(acc->ground_module);
         int terrain_kind = reinterpret_cast<int(*)(void*, int)>((*(void***)ground)[0x478 / 8])(ground, 8);
 
         if (terrain_kind != 0) {
@@ -4401,12 +4403,12 @@ extern "C" void FOOT_EFFECT(lua_State* param_1) {
             u64 terrain_hash = *(u64*)(terrain_data + 0x18);
             u64 th_masked = terrain_hash & 0xffffffffffULL;
 
-            app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+            app::EffectModule* eff = acc->effect_module;
             if (th_masked == 0xe3c234564ULL || th_masked == 0x14a422ea56ULL || th_masked == 0x11b722b99fULL) {
                 u64 fpa2 = (u64)lib::Singleton<app::FighterParamAccessor2>::instance_;
                 u32 param_val = *(u32*)(*(u64*)(fpa2 + 0x50) + 0x162c);
                 eff->preset_limit_num(param_val);
-                eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+                eff = acc->effect_module;
                 terrain_hash = *(u64*)(terrain_data + 0x18);
             }
 
@@ -4421,11 +4423,11 @@ extern "C" void FOOT_EFFECT(lua_State* param_1) {
                 u64 sec_pos_xy = *(u64*)(param_base + 0x1630);
                 u64 sec_pos_z = (u64)*(u32*)(param_base + 0x1638);
 
-                eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+                eff = acc->effect_module;
 
                 // Check MotionModule motion kind for negate
-                void** motion = *(void***)(acc + 0x88);
-                u64 motion_kind = reinterpret_cast<u64(*)(void*)>((*(void***)motion)[0x138 / 8])(motion);
+                app::MotionModule* motion = acc->motion_module;
+                u64 motion_kind = reinterpret_cast<u64(*)(void*)>(motion->_vt[0x138 / 8])(motion);
                 u64 mk_masked = motion_kind & 0xffffffffffULL;
 
                 // If certain motion kinds, negate x position
@@ -4443,7 +4445,7 @@ extern "C" void FOOT_EFFECT(lua_State* param_1) {
 
                 u32 param_val2 = *(u32*)(param_base + 0x162c);
                 eff->preset_limit_num(param_val2);
-                eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+                eff = acc->effect_module;
                 u64 sec_effect_hash = 0x14a422ea56ULL;
                 reinterpret_cast<void(*)(void*, u64, u64, void*, void*, void*, void*, bool, u32, u32, s32, f32)>
                     (eff->_vt[0x70 / 8])(eff, sec_effect_hash, out.hash2, &sec_pos, &out.rot_xy, &out.scale_xy, &out.color_xy, false, terrain_flag, 0, 0, rate);
@@ -4457,13 +4459,13 @@ extern "C" void FOOT_EFFECT(lua_State* param_1) {
 
         // Fallback req_on_joint if hash != sentinel
         if ((out.hash1 & 0xffffffffffULL) != 0x425cbfc4fULL) {
-            app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+            app::EffectModule* eff = acc->effect_module;
             u64 h1_masked = out.hash1 & 0xffffffffffULL;
             if (h1_masked == 0xe3c234564ULL || h1_masked == 0x14a422ea56ULL || h1_masked == 0x11b722b99fULL) {
                 u64 fpa2 = (u64)lib::Singleton<app::FighterParamAccessor2>::instance_;
                 u32 param_val = *(u32*)(*(u64*)(fpa2 + 0x50) + 0x162c);
                 eff->preset_limit_num(param_val);
-                eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+                eff = acc->effect_module;
             }
             f32 rate = *(f32*)&out.rate_bits;
             reinterpret_cast<void(*)(void*, u64, u64, void*, void*, void*, void*, bool, u32, u32, s32, f32)>
@@ -4487,7 +4489,7 @@ extern "C" void EFFECT_FOLLOW_LIGHT(lua_State* param_1) {
         __builtin_trap();
 #endif
     }
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     u64 hash1 = 0, hash2 = 0;
@@ -4560,13 +4562,13 @@ extern "C" void EFFECT_FOLLOW_LIGHT(lua_State* param_1) {
     u64 flags = follow ? 0xc000ULL : 0x8000ULL;
 
     // EffectModule::req_follow (vtable[0x80/8]) → returns handle
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
 
     u32 handle = reinterpret_cast<u32(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, s32, s32, s32, s32, f32)>
         (eff->_vt[0x80 / 8])(eff, hash1, hash2, &pos_vec, &rot_vec, 0, flags, 0, (s32)-1, 0, 0, 0, 0, rate);
 
     // PostureModule vtable[0xb0/8] → get LR direction (float)
-    void** posture = *(void***)(acc + 0x38);
+    void** posture = reinterpret_cast<void**>(acc->posture_module);
     f32 lr = reinterpret_cast<f32(*)(void*)>((*(void***)posture)[0xb0 / 8])(posture);
 
     // Pack light color vector: {color_b * lr, extra, extra_z}
@@ -4593,7 +4595,7 @@ extern "C" void DOWN_EFFECT(lua_State* param_1) {
         __builtin_trap();
 #endif
     }
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
 
     acmd_effect_ctrl ctrl;
     ctrl.hash = 0;
@@ -4605,8 +4607,8 @@ extern "C" void DOWN_EFFECT(lua_State* param_1) {
     FUN_7102288620(&out, &ctrl, 0);
 
     // GroundModule::get_terrain_kind (vtable[0x478/8]) with arg 8
-    void** ground = *(void***)(acc + 0x58);
-    app::EffectModule* eff_mod = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    void** ground = reinterpret_cast<void**>(acc->ground_module);
+    app::EffectModule* eff_mod = acc->effect_module;
     int terrain_kind = reinterpret_cast<int(*)(void*, int)>((*(void***)ground)[0x478 / 8])(ground, 8);
 
     if (terrain_kind != 0) {
@@ -4666,7 +4668,7 @@ void EFFECT_FOLLOW_arg12(lua_State* param_1) {
         __builtin_trap();
 #endif
     }
-    u64 acc = *(u64*)(*(u64*)(L - 8) + 0x1a0);
+    app::BattleObjectModuleAccessor* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(*(u64*)(*(u64*)(L - 8) + 0x1a0));
     int nargs = acmd_nargs(L);
 
     u64 hash1 = 0, hash2 = 0;
@@ -4735,9 +4737,9 @@ void EFFECT_FOLLOW_arg12(lua_State* param_1) {
 
     // Resolve joint via function pointer table
     // PTR_FUN_7104f68c38[joint_kind](acc) → returns joint id
-    u32 joint_result = reinterpret_cast<u32(*)(u64)>(PTR_FUN_7104f68c38[joint_kind])(acc);
+    u32 joint_result = reinterpret_cast<u32(*)(u64)>(PTR_FUN_7104f68c38[joint_kind])(reinterpret_cast<u64>(acc));
 
-    app::EffectModule* eff = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc)->effect_module;
+    app::EffectModule* eff = acc->effect_module;
 
     reinterpret_cast<void(*)(void*, u64, u64, void*, void*, u64, u64, u64, s32, s32, s32, s32, s32, f32)>
         (eff->_vt[0x80 / 8])(eff, hash1, hash2, &off_vec, &rot_vec, 0, flags, alt_hash, (s32)joint_result, 0, 0, 0, 0, rate_f);
