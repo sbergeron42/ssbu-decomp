@@ -610,8 +610,7 @@ void FUN_710353e030(u32* param_1, u32 param_2) {
 
         lock_71039c1490(mutex);
 
-        PathInformation* pi = (PathInformation*)fs->path_info;
-        LoadedArc* arc = pi->arc;
+        LoadedArc* arc = fs->path_info->arc;
         // DirInfo is 0x34 bytes in binary (no alignment padding)
         DirInfo* dir = (DirInfo*)((char*)arc->dir_infos + (u64)param_2 * 0x34);
         u64 parent_raw = dir->parent;  // +0x10
@@ -627,8 +626,7 @@ void FUN_710353e030(u32* param_1, u32 param_2) {
 
     {
         FilesystemInfo* fs2 = DAT_7105331f20;
-        PathInformation* pi2 = (PathInformation*)fs2->path_info;
-        LoadedArc* arc2 = pi2->arc;
+        LoadedArc* arc2 = fs2->path_info->arc;
 
         HashToIndex* dir_hash = arc2->dir_hash_to_info_index;
         u32 dir_count = arc2->fs_header->folder_count;
