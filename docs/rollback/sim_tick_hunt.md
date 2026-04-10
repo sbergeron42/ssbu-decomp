@@ -262,13 +262,71 @@ inside `main_loop`'s direct-call graph at a call site already classified
 as "neutral" or "unknown" — most likely via `pead::Thread::runDelegates`
 or similar.
 
-Next concrete step (not yet done): find the `pead::Delegate::operator()`
-/ `pead::Thread::runDelegates()` implementation in the binary (string
-table already has `pead::DelegateBase`, and `FUN_710013c570` is the
-only xref to the `"pead::MainThread"` literal, so the `pead::` vtable
-layout is likely reachable from there). Then xref the install sites
-(`pead::Delegate2<...>` constructors) to find every delegate posted to
-`pead::MainThread` and classify each by its function-pointer constant.
+### `main_loop` contains its own internal frame loop (new finding)
+
+Decompiling the only xref-to-`main_loop` caller — `nnMain` at
+`0x71002c48f0`, call site `0x71002c5cec` — proved a subtle but
+important structural point. **`nnMain` calls `main_loop` exactly once.**
+It is not wrapped in a `while`, `for`, or `do-while`. The pre-call work
+is argv/LDN/ResourceService init plus a 1 ms polling wait for a
+resource-ready flag; the post-call work is a ~2,400-line C++ destructor
+cascade that tears down ~93 refcounted resources held by the
+application root pointer that `main_loop` returns. There is **no**
+`nn::os::CreateThread` / `StartThread` anywhere in `nnMain`, **no**
+`pead::` / `Delegate` / `Scheduler` / `Fighter` string, and **no**
+`FighterManager` or `BattleObject` vtable touches.
+
+This means:
+
+- **`main_loop` is not a "one frame" function that some outer loop
+  calls per frame. It is itself the per-frame loop.** Its 84 unique BL
+  targets are therefore all called per frame (except any gated behind
+  first-use guards, which are explicitly `__cxa_guard_acquire`/`release`
+  pairs).
+- The sim-tick dispatcher lives **inside** `main_loop`. It is not above
+  it and it is not on a separate worker thread. (Recall: `main_loop` is
+  `pead::MainThread`'s body, which is the process's initial thread, and
+  `nnMain` never spawns a second thread.)
+- The sim dispatcher either (a) lives inside the body of one of the BL
+  targets already classified as "unknown" / "neutral" but not yet
+  audited deeply enough, or (b) is reached through an **indirect
+  dispatch** — a vtable call, a function-pointer field invoked inside a
+  BL target whose body doesn't statically show `FighterManager` access.
+
+The `pead::Delegate` hypothesis remains the best single explanation for
+(b): a delegate object with a stored function pointer, invoked from
+inside `main_loop` via a vtable slot on `pead::Thread*` or similar. The
+first static xref sweep on `FighterManager` found zero per-frame
+dispatchers, which is exactly what we'd expect if the dispatcher is
+reached via a delegate's function-pointer field rather than by name.
+
+Additionally, `nnMain` sets a global pointer `DAT_710593a2d8` to a
+stack-allocated 16-byte context blob `{0x68, 0x52, 0x0b, 0x7105, ...}`
+immediately before calling `main_loop`. **This is the only context
+hand-off from `nnMain` to `main_loop`.** If `main_loop` reads
+`DAT_710593a2d8` to find a subsystem root (e.g. the pead::ThreadMgr, or
+a delegate queue head), that is a very high-value xref to sweep in the
+next pass.
+
+### Next concrete steps (pool B, next session)
+
+1. **Xref sweep on `DAT_710593a2d8`.** Find every read of it in the
+   binary. Any reader inside `main_loop`'s call graph that dispatches a
+   vtable call on it is a direct candidate for the sim tick.
+2. **Find `pead::Thread::runDelegates` / `pead::Delegate::operator()`.**
+   The `pead::DelegateBase` string literal in the binary's RODATA at
+   ~`0x71049` is the anchor. Disassemble its xrefs and walk into the
+   vtable slot that invokes the delegate's stored function pointer.
+3. **Classify the `pead::MainThread` vtable at `PTR_DAT_71052a4d40 +
+   0x10`.** `FUN_710013c570` installs this vtable on the wrapped
+   current thread. Its slots should include a `run()` / `onRun()` /
+   `update()` method. If any slot points at a function that iterates
+   `FighterManager` or runs delegates, that is the sim dispatcher.
+4. **Audit every currently-"unknown" BL target in `main_loop`'s
+   classification table in `main_loop.md` §3** — stop deferring them.
+   In particular, the `FUN_71036eb680` / `FUN_7103871c90` / `FUN_71035727d0`
+   / `FUN_710354c720` tier has not been touched and could hide the
+   dispatcher behind a "helper" name.
 
 ---
 
