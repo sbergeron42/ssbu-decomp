@@ -252,9 +252,9 @@ extern "C" bool is_large_stage(void) {
 // DAT_71052b7f00 +0x2dc: quake array (u32[]), +0x824: quake bitmask
 namespace app::item {
 extern "C" void stop_quake(u32 kind) {
-    u8* base = *(u8**)DAT_71052b7f00;
-    *(u32*)(base + (u64)kind * 4 + 0x2dc) = 0;
-    *(u32*)(base + 0x824) &= ~(1u << ((kind - 1) & 0x1f));
+    auto* ctrl = (app::CameraController*)(*(u8**)DAT_71052b7f00);
+    ctrl->quake_array[kind] = 0;
+    ctrl->quake_bitmask &= ~(1u << ((kind - 1) & 0x1f));
 }
 } // namespace app::item
 
@@ -262,11 +262,11 @@ extern "C" void stop_quake(u32 kind) {
 // Gets posture position via vtable, dispatches to FUN_71005162f0
 namespace app::item {
 extern "C" void request_quake(u64 lua_state, u32 kind) {
-    u8* base = *(u8**)DAT_71052b7f00;
+    auto* ctrl = (app::CameraController*)(*(u8**)DAT_71052b7f00);
     u8* battle_obj = *(u8**)(*(u8**)(lua_state - 8) + 0x1a0);
     app::PostureModule* posture = reinterpret_cast<app::BattleObjectModuleAccessor*>(battle_obj)->posture_module;
     u64 pos = reinterpret_cast<u64>(posture->pos());
-    FUN_71005162f0(base + 0x2b0, kind, pos);
+    FUN_71005162f0(ctrl->quake_base, kind, pos);
 }
 } // namespace app::item
 
@@ -319,7 +319,7 @@ extern "C" void set_enabled_camera_user_operation(u64 lua_state) {
     u8* cam = *(u8**)(*(u8**)(*(u8**)(battle_obj + 0x190) + 0x220) + 0x90);
     if (*(u8*)(cam + 0x168) != 0) return;
     *(u8*)(cam + 0x168) = 1;
-    *(s32*)(*(u8**)DAT_71052b7f00 + 0xc9c) += 1;
+    ((app::CameraController*)(*(u8**)DAT_71052b7f00))->camera_ref_count += 1;
 }
 } // namespace app::item
 
@@ -330,7 +330,7 @@ extern "C" void set_disabled_camera_user_operation(u64 lua_state) {
     u8* cam = *(u8**)(*(u8**)(*(u8**)(battle_obj + 0x190) + 0x220) + 0x90);
     if (*(u8*)(cam + 0x168) == 0) return;
     *(u8*)(cam + 0x168) = 0;
-    *(s32*)(*(u8**)DAT_71052b7f00 + 0xc9c) -= 1;
+    ((app::CameraController*)(*(u8**)DAT_71052b7f00))->camera_ref_count -= 1;
 }
 } // namespace app::item
 
@@ -340,7 +340,7 @@ extern "C" void set_disabled_camera_user_operation(u64 lua_state) {
 // Checks if camera mode field == 1
 namespace app::devil {
 extern "C" bool is_camera_mode_melee(void) {
-    return *(s32*)(*(u8**)DAT_71052b7f00 + 4) == 1;
+    return ((app::CameraController*)(*(u8**)DAT_71052b7f00))->camera_mode == 1;
 }
 } // namespace app::devil
 
@@ -589,17 +589,17 @@ extern "C" void camera_sleep(u64 lua_state) {
 // +0xf58 [inferred: width-to-height ratio], +0xeb0 [inferred: camera center pos (x,y) packed]
 namespace app::camera {
 extern "C" float4 get_camera_range(void) {
-    u8* inner = *(u8**)DAT_71052b7f00;
-    float half_h_scale = *(float*)(inner + 0xf38);
-    float aspect       = *(float*)(inner + 0xf68);
+    auto* ctrl = (app::CameraController*)(*(u8**)DAT_71052b7f00);
+    float half_h_scale = ctrl->camera_half_height_scale;
+    float aspect       = ctrl->aspect_ratio;
     float half_h = half_h_scale * aspect;
-    float ratio  = *(float*)(inner + 0xf58);
+    float ratio  = ctrl->width_height_ratio;
     float half_w = half_h * ratio;
 #ifdef MATCHING_HACK_NX_CLANG
     asm("" :: "w"(half_w));
 #endif
     // Vector load of center position — expected codegen: ldr q3,[x8,#0xeb0]
-    float4 center = *(float4*)(inner + 0xeb0);
+    float4 center = *(float4*)ctrl->camera_center_pos;
     float center_y = center[1];
     float bottom = center_y - half_h;
     float top = half_h + center_y;
