@@ -830,6 +830,117 @@ f32 dive_speed_y_max_710036ba10(void* L) { return *reinterpret_cast<f32*>(STAT_M
 // ── 0x710036ba70 -- escape_air_cancel_frame (16B) ───────────────
 f32 escape_air_cancel_frame_710036ba70(void* L) { return *reinterpret_cast<f32*>(STAT_MODULE(L) + 0x234); }
 
+// ════════════════════════════════════════════════════════════════════
+// ai::line_segment_check family — ground/wall ray casts for AI pathing
+// All load stat_module base pos, compute start + rel vector,
+// call FUN_71003029b0 with a collision-type bitmask.
+// FighterAIManager singleton +0xc8 = collision scene data
+// [derived: line_segment_check (.dynsym) loads *(mgr+0xc8), reads stat_module+0x90 as Vector4]
+// ════════════════════════════════════════════════════════════════════
+
+extern "C" __attribute__((visibility("hidden"))) void* DAT_71052b5fd8;
+
+extern "C" void* lineSegmentCheckRaw_71003029b0(
+    void* scene, const float4* start, const float4* end,
+    u32 mask, void* excluded, void* out_hit, u32 flag);
+
+extern "C" void* aiGetTargetById_7100314030(void*, void*);
+
+// Helper: FighterAIManager → inner → +0xc8 (scene/collision context)
+static inline void* get_ai_collision_scene() {
+    u8* mgr_inner = *reinterpret_cast<u8**>(DAT_71052b5fd8);
+    return *reinterpret_cast<void**>(mgr_inner + 0xc8);
+}
+
+// Helper: typed FighterAI from lua_State*
+static inline FighterAI* ai_from_L(void* L) {
+    return get_ai_context(reinterpret_cast<u64>(L));
+}
+
+// Helper: typed target FighterAIState from AI target lookup
+static inline FighterAIState* get_ai_target_state(FighterAI* ai) {
+    return static_cast<FighterAIState*>(aiGetTargetById_7100314030(
+        DAT_71052b5fd8, &ai->target_entry_id));
+}
+
+// Helper: casts state->center_pos (f32[4]) to float4*
+static inline float4* as_float4(f32* p) { return reinterpret_cast<float4*>(p); }
+
+// [derived: state->center_pos (Vector4 at +0x90), arg1 = relative offset]
+// 0x7100366380 -- app::ai::line_segment_check (100B)
+bool line_segment_check_7100366380(void* L, const float4* rel) {
+    FighterAI* ai = ai_from_L(L);
+    void* scene = get_ai_collision_scene();
+    float4* base = as_float4(ai->state->center_pos);
+    float4 end = *base + *rel;
+    return lineSegmentCheckRaw_71003029b0(
+        scene, base, &end, 0xff, nullptr, nullptr, 0) != nullptr;
+}
+
+// [derived: reads state +0x80 (as Vector4), computes 2-vector offset chain]
+// 0x71003663f0 -- app::ai::line_segment_check_from_top_n (112B)
+bool line_segment_check_from_top_n_71003663f0(void* L, const float4* v1, const float4* v2) {
+    FighterAI* ai = ai_from_L(L);
+    float4 start = *as_float4(&ai->state->pos_x) + *v1;
+    float4 end = start + *v2;
+    void* scene = get_ai_collision_scene();
+    return lineSegmentCheckRaw_71003029b0(
+        scene, &start, &end, 0xff, nullptr, nullptr, 0) != nullptr;
+}
+
+// [derived: same as line_segment_check but mask = 0x4 (ceiling-only)]
+// 0x7100366460 -- app::ai::line_segment_check_only_roof (100B)
+bool line_segment_check_only_roof_7100366460(void* L, const float4* rel) {
+    FighterAI* ai = ai_from_L(L);
+    float4* base = as_float4(ai->state->center_pos);
+    float4 end = *base + *rel;
+    void* scene = get_ai_collision_scene();
+    return lineSegmentCheckRaw_71003029b0(
+        scene, base, &end, 0x4, nullptr, nullptr, 0) != nullptr;
+}
+
+// [derived: same as line_segment_check but mask = 0x2 (floor-only)]
+// 0x71003664d0 -- app::ai::line_segment_check_only_floor (100B)
+bool line_segment_check_only_floor_71003664d0(void* L, const float4* rel) {
+    FighterAI* ai = ai_from_L(L);
+    float4* base = as_float4(ai->state->center_pos);
+    float4 end = *base + *rel;
+    void* scene = get_ai_collision_scene();
+    return lineSegmentCheckRaw_71003029b0(
+        scene, base, &end, 0x2, nullptr, nullptr, 0) != nullptr;
+}
+
+// [derived: same as line_segment_check but mask = 0x18 (wall L|R bits)]
+// 0x7100366540 -- app::ai::line_segment_check_only_wall (100B)
+bool line_segment_check_only_wall_7100366540(void* L, const float4* rel) {
+    FighterAI* ai = ai_from_L(L);
+    float4* base = as_float4(ai->state->center_pos);
+    float4 end = *base + *rel;
+    void* scene = get_ai_collision_scene();
+    return lineSegmentCheckRaw_71003029b0(
+        scene, base, &end, 0x18, nullptr, nullptr, 0) != nullptr;
+}
+
+// Returns a command-input category based on the fighter's identity and
+// current action_id. Fighters 0x3c, 0x3d (dedicated command characters)
+// return 1; fighter 0x55 returns 2. For Kirby with copied fighter 0x3c/0x3d,
+// checks action_id == 0x6038 or 0x6046 → 1.
+// [derived: state->fighter_kind at +0x28, state->copy_fighter_kind at +0x1f4,
+//  ctx->action_id at +0x198]
+// 0x7100361dd0 -- app::ai::check_use_command_type (104B)
+u32 check_use_command_type_7100361dd0(void* L) {
+    FighterAI* ai = ai_from_L(L);
+    u32 fighter = ai->state->fighter_kind;
+    if ((fighter - 0x3cu) < 2) return 1;
+    if (fighter == 0x55) return 2;
+    u32 copy = ai->state->copy_fighter_kind & ~1u;
+    if (copy != 0x3c) return 0;
+    u16 action = ai->action_id;
+    if (action == 0x6038) return 1;
+    if (action == 0x6046) return 1;
+    return 0;
+}
+
 #undef STAT_MODULE
 
 // ════════════════════════════════════════════════════════════════════
@@ -2378,6 +2489,172 @@ void reset_stick_71003762f0(void* L) {
     u64 z1 = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(DAT_71052a7a80) + 8);
     *reinterpret_cast<u64*>(reinterpret_cast<u8*>(ctx) + 0xc38) = z1;
     *reinterpret_cast<u64*>(reinterpret_cast<u8*>(ctx) + 0xc30) = z0;
+}
+
+// [derived: ldr q0 from ctx+0xc30, vec add from arg, str q0 back]
+// 0x7100376240 -- app::ai_system::add_stick_abs (24B)
+void add_stick_abs_7100376240(void* L, const float4* v) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    auto* slot = reinterpret_cast<float4*>(ctx + 0xc30);
+    *slot = *slot + *v;
+}
+
+// [derived: multiplies v.x by stat_module->lr (+0xc4), preserves v.y,
+//  zeroes high lanes, adds to ctx+0xc30 stick accumulator]
+// 0x7100376210 -- app::ai_system::add_stick (48B)
+void add_stick_7100376210(void* L, const float4* v) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u8* mod = *reinterpret_cast<u8**>(ctx + 0x168);
+    float4 in = *v;
+    f32 lr = *reinterpret_cast<f32*>(mod + 0xc4);
+    float4 scaled = {lr * in[0], in[1], 0.0f, 0.0f};
+    auto* slot = reinterpret_cast<float4*>(ctx + 0xc30);
+    *slot = *slot + scaled;
+}
+
+// AI personality table (+0xc24 = enabled flag, +0x988 = table base)
+extern "C" f32 personalityTableLookup_710033fec0(void* table);
+
+// [derived: checks ctx+0xc24 (enabled), tail-calls FUN_710033fec0 with ctx+0x988,
+//  or returns 0.0f if disabled]
+// 0x7100376010 -- app::ai::personality_up_rate (40B)
+f32 personality_up_rate_7100376010(void* L) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    if (ctx[0xc24] == 0) return 0.0f;
+    return personalityTableLookup_710033fec0(ctx + 0x988);
+}
+
+// [derived: ctx+0xc24 enabled, ctx+0x98c is f32 array indexed by arg*4,
+//  clamped to 0x47 max — return 1.0f if arg > 0x47]
+// 0x71003760e0 -- app::ai::personality_probability (48B)
+f32 personality_probability_71003760e0(void* L, s32 idx) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    if (ctx[0xc24] == 0) return 0.0f;
+    if (static_cast<u32>(idx) > 0x47) return 1.0f;
+    return *reinterpret_cast<f32*>(ctx + 0x98c + static_cast<s64>(idx) * 4);
+}
+
+// [derived: state->pos_x (+0x80). Saves self_x into d8 (callee-saved) across
+//  aiGetTargetById call. Returns |self.x - target.x|]
+// 0x7100367230 -- app::ai::distance_x_to_target (60B)
+f32 distance_x_to_target_7100367230(void* L) {
+    FighterAI* ai = ai_from_L(L);
+    f32 self_x = ai->state->pos_x;
+    return __builtin_fabsf(self_x - get_ai_target_state(ai)->pos_x);
+}
+
+// [derived: same as distance_x_to_target but reads pos_y (+0x84)]
+// 0x7100367270 -- app::ai::distance_y_to_target (60B)
+f32 distance_y_to_target_7100367270(void* L) {
+    FighterAI* ai = ai_from_L(L);
+    f32 self_y = ai->state->pos_y;
+    return __builtin_fabsf(self_y - get_ai_target_state(ai)->pos_y);
+}
+
+// [derived: like check_over_ground but looks up the PARENT fighter via
+//  parent_entry_id (+0x160) with slot clamp (w8 & 7) or -1 sentinel.
+//  Stores clamped idx on stack, passes its address to aiGetTargetById,
+//  then runs the same flags/floor/uniq/bit-1 check against the parent]
+// 0x7100367380 -- app::ai::check_parent_over_ground (116B)
+bool check_parent_over_ground_7100367380(void* L) {
+    FighterAI* ai = ai_from_L(L);
+    s32 raw = static_cast<s32>(ai->parent_entry_id);
+    s32 slot = (static_cast<u32>(raw) < 0x10) ? (raw & 7) : -1;
+    auto* target = static_cast<FighterAIState*>(
+        aiGetTargetById_7100314030(DAT_71052b5fd8, &slot));
+    u32 flags = target->stat_flags;
+    if ((flags & 1) == 0 && (target->floor_data->flags_0x5e & 2) == 0) {
+        return true;
+    }
+    if ((target->uniq_stat & ~1u) == 6) return true;
+    return (flags & 2) == 0;
+}
+
+// [derived: state->stat_flags bit0=air, floor_data->flags_0x5e bit1=over-ground
+//  override, state->uniq_stat & ~1 == 6 is another pass condition.]
+// 0x7100367a90 -- app::ai::check_over_ground (72B, 100% match)
+bool check_over_ground_7100367a90(void* L) {
+    FighterAIState* state = ai_from_L(L)->state;
+    u32 flags = state->stat_flags;
+    if ((flags & 1) == 0) {
+        if ((state->floor_data->flags_0x5e & 2) == 0) {
+            return true;
+        }
+    }
+    if ((state->uniq_stat & ~1u) == 6) return true;
+    return (flags & 2) == 0;
+}
+
+// [derived: compares state->floor_data pointer between self and target]
+// 0x71003672b0 -- app::ai::is_target_on_same_floor (64B)
+bool is_target_on_same_floor_71003672b0(void* L) {
+    FighterAI* ai = ai_from_L(L);
+    return ai->state->floor_data == get_ai_target_state(ai)->floor_data;
+}
+
+// target_range_middle (0x710036bb10) and target_range_long (0x710036bb80)
+// deferred: target_id clamp logic compiles to different ccmp pattern than
+// the original binary. 33% match after 3 attempts — skipping per worker rules.
+
+// [derived: zeroes 23 u64 slots from ctx+0x5e8 to ctx+0x698. Original emits
+//  individual str xzr stores in decreasing address order — unrolled loop
+//  over the range in reverse to match.]
+// 0x7100368ee0 -- app::ai::reset_cmd_id_probability_add_2nd (100B)
+void reset_cmd_id_probability_add_2nd_7100368ee0(void* L) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    *reinterpret_cast<u64*>(ctx + 0x698) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x690) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x688) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x680) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x678) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x670) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x668) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x660) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x658) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x650) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x648) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x640) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x638) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x630) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x628) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x620) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x618) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x610) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x608) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x600) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x5f8) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x5f0) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x5e8) = 0;
+}
+
+// [derived: tail-call to aiGetTargetById, read hit_collision_rect[4] from
+//  state->+0x264. Clang emits ldr s0 + 3×ld1 inserts because +0x264 is
+//  4-byte aligned but not 16-byte aligned.]
+// 0x7100367080 -- app::ai::target_hit_collision_rect (64B)
+float4 target_hit_collision_rect_7100367080(void* L) {
+    FighterAIState* target = get_ai_target_state(ai_from_L(L));
+    float4 r;
+    r[0] = target->hit_collision_rect[0];
+    r[1] = target->hit_collision_rect[1];
+    r[2] = target->hit_collision_rect[2];
+    r[3] = target->hit_collision_rect[3];
+    return r;
+}
+
+// [derived: computes DAT_71044791c - personality_probability value.
+//  DAT_71044791c is a global f32 constant (probably 1.0f or similar)]
+// 0x7100376110 -- app::ai::personality_probability_inverse (60B)
+extern "C" __attribute__((visibility("hidden"))) f32 DAT_710447291c;
+f32 personality_probability_inverse_7100376110(void* L, s32 idx) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    if (ctx[0xc24] == 0) return 0.0f;
+    f32 val;
+    if (static_cast<u32>(idx) > 0x47) {
+        val = 1.0f;
+    } else {
+        val = *reinterpret_cast<f32*>(ctx + 0x98c + static_cast<s64>(idx) * 4);
+    }
+    return DAT_710447291c - val;
 }
 
 // ── 0x710036b810 -- app::ai_param::width (24B) ─────────────────

@@ -610,3 +610,34 @@ Loop over entries, vtable 0x518 + 0x438
 
 === set_dead_up_camera_hit_cursor_status_impl @ 0x7102141670 (320B) ===
 Complex camera ref-count control
+
+=== line_segment_check @ 0x7100366380 (100B) — app::ai::line_segment_check ===
+Pattern: get stat_module from ctx+0x168, get ground accessor from FighterAIManager
+inner+0xc8, compute base = stat_module+0x90 + p1, call FUN_71003029b0 with mask=0xFF.
+Returns bool: acc_cmp_nonzero of returned line pointer.
+Args: x0=L, x1=Vector4* rel
+Call: FUN_71003029b0(ground_acc, stat_module+0x90, &stack_vec, 0xff, 0, 0, 0)
+       orr w3, wzr, #0xff  (bitmask imm — no fix_orr needed)
+
+=== line_segment_check_from_top_n @ 0x71003663f0 (112B) ===
+Two-vector variant. Reads from stat_module+0x80 (not +0x90).
+Two stack slots: slot1 = stat[0x80]+p1, slot0 = slot1 + p2.
+Call: FUN_71003029b0(ground_acc, &slot1, &slot0, 0xff, 0, 0, 0)
+
+=== line_segment_check_only_roof @ 0x7100366460 (100B) ===
+Same as line_segment_check but mask = 0x4 (mov w3, #0x4)
+
+=== line_segment_check_only_floor @ 0x71003664d0 (100B) ===
+Same as line_segment_check but mask = 0x2 (mov w3, #0x2)
+
+=== line_segment_check_only_wall @ 0x7100366540 (100B) ===
+Same as line_segment_check but mask = 0x18 (orr w3, wzr, #0x18)
+
+=== check_use_command_type @ 0x7100361dd0 (104B) — app::ai::check_use_command_type ===
+Reads stat_module->motion_kind at +0x28. If in range [0x3c, 0x3d] returns 1.
+If == 0x55 returns 2. Else check command_int at +0x1f4 cleared of bit 0 == 0x3c,
+and motion_flag at +0x198 == 0x6038 or 0x6046 → returns 2. Else 0.
+
+=== is_input_available_for_entry-like pattern using FighterAIManager inner+0xc8 ===
+FighterAIManager inner+0xc8 is the AI context's BattleObjectModuleAccessor pointer
+used by ground/line checks. AIManager singleton: DAT_71052b5fd8.

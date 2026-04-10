@@ -100,7 +100,10 @@ struct FighterAIState {
     u8 unk_0x78[0x8];
     f32 pos_x;                 // +0x80 [derived: floor_lr, lr_to_target, distance_to_target (lo 32)]
     f32 pos_y;                 // +0x84 [derived: distance_to_target reads (hi 32) as pos_y]
-    u8 unk_0x88[0x3C];
+    // +0x80 as Vector4: line_segment_check_from_top_n reads ldr q0 from here (top position)
+    u8 unk_0x88[0x8];
+    f32 center_pos[4];         // +0x90 [derived: line_segment_check reads ldr q0 from here as Vector4]
+    u8 unk_0xa0[0x24];
     f32 lr;                    // +0xc4 [derived: app::ai::lr reads this; lr_to_target fallback]
     u8 unk_0xc8[0x4];
     u16 jump_rest;             // +0xcc [derived: jump_rest_available returns this]
@@ -132,7 +135,8 @@ struct FighterAIState {
     s32 fighter_kind_index;    // +0x240 [derived: sp_u_high, sp_u_length index by this * 4]
     u8 unk_0x244[0x18];
     u32 stop_frame;            // +0x25c [derived: app::ai::stop_frame reads this]
-    u8 unk_0x260[0x14];
+    u8 unk_0x260[0x4];
+    f32 hit_collision_rect[4]; // +0x264 [derived: target_hit_collision_rect reads 4 f32s from +0x264..+0x270]
     s32 predict_landing_frame; // +0x274 [derived: predict_landing_frame reads as s32, scvtf]
 };
 
