@@ -84,6 +84,12 @@ bool check_target_stat_cliff_act_366ad0(u64 L) {
     return get_target_stat(L)->status_kind == 7;
 }
 
+// 0x7100366a00 (52B) — check if target is in any piyo state (status_kind 9, 10, or 11)
+// [derived: app::ai::check_target_stat_piyo in .dynsym]
+bool check_target_stat_piyo_366a00(u64 L) {
+    return (u32)(get_target_stat(L)->status_kind - 9) < 3;
+}
+
 // 0x7100366b00 (48B) — check if target is caught (status_kind == 0xc)
 // [derived: app::ai::check_target_stat_catch in .dynsym]
 bool check_target_stat_catch_366b00(u64 L) {
@@ -250,6 +256,122 @@ u64 check_stat_floor_damage_361640(u64 L) {
     FighterAIState* state = get_ai_context(L)->state;
     s32 floor_state = *reinterpret_cast<s32*>(reinterpret_cast<u8*>(state) + 0xd8);
     if (floor_state != 2 && (state->floor_data->flags_0x5e & 1) != 0) {
+        return 1;
+    }
+    return 0;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// check_stat_* extended — ground/air/command/invincibility checks
+// ════════════════════════════════════════════════════════════════════
+
+// 0x71003616d0 (100B) — check if target is in "ground free 2" state (variant with status_kind filter)
+// [derived: app::ai::check_stat_ground_free2 in .dynsym]
+u64 check_stat_ground_free2_3616d0(u64 L) {
+    FighterAIState* state = get_ai_context(L)->state;
+    if ((state->stat_flags >> 30) & 1) return 0;
+    if (state->uniq_stat == 1 && state->status_kind != 0x17) return 1;
+    u32 flags_64 = *reinterpret_cast<u32*>(reinterpret_cast<u8*>(state) + 0x64);
+    if ((~flags_64 & 0x99) == 0) return 1;
+    if ((state->stat_flags & 1) == 0 && (s8)state->unk_0x58 < 0) return 1;
+    return 0;
+}
+
+// 0x71003613f0 (92B) — check if fighter is invincible (long form)
+// [derived: app::ai::check_stat_invincible_l in .dynsym]
+// Checks stat_flags bit 13, floor flags, invincibility counter, and uniq_stat.
+bool check_stat_invincible_l_3613f0(u64 L) {
+    FighterAIState* state = get_ai_context(L)->state;
+    if (((state->stat_flags >> 13) & 1) == 0) {
+        return false;
+    }
+    if ((state->unk_0x5a[4] >> 4) & 1) {
+        return true;
+    }
+    s32 invinc_counter = *reinterpret_cast<s32*>(&state->unk_0xf8[0x24]);
+    if (invinc_counter > 0) {
+        return true;
+    }
+    return (u32)(state->uniq_stat - 0x11) < 2 || state->uniq_stat == 0xb;
+}
+
+// 0x7100361ad0 (68B) — check if fighter can grab cliff (position-based)
+// [derived: app::ai::check_cliffable in .dynsym]
+// NON-MATCHING: 29% (5/17 — float load scheduling: binary loads all from floor_data before computing)
+// Selects left (0x40) or right (0x80) mask based on position vs floor center,
+// then checks against floor collision flags at +0x5c.
+bool check_cliffable_361ad0(u64 L) {
+    FighterAIState* state = get_ai_context(L)->state;
+    AIFloorCollisionData* floor = state->floor_data;
+    f32 left = floor->left_edge;
+    f32 right = floor->right_edge;
+    u32 floor_flags = *reinterpret_cast<u32*>(reinterpret_cast<u8*>(floor) + 0x5c);
+    u32 mask = 0x40;
+    if ((left + right) * 0.5f <= state->pos_x) {
+        mask = 0x80;
+    }
+    return (mask & floor_flags) != 0;
+}
+
+// 0x7100361d70 (88B) — check if AI should use command input
+// [derived: app::ai::check_use_command in .dynsym]
+// Returns 1 if fighter_kind is 0x3c/0x3d, or copy_fighter_kind is and action_id matches.
+u64 check_use_command_361d70(u64 L) {
+    FighterAI* ctx = get_ai_context(L);
+    FighterAIState* state = ctx->state;
+    if ((state->fighter_kind & ~1u) == 0x3c) return 1;
+    if ((state->copy_fighter_kind & ~1u) == 0x3c) {
+        s16 action = ctx->action_id;
+        if (action == 0x6038 || action == 0x6046) return 1;
+    }
+    return 0;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// check_command_*_step — command input recognition by fighter kind
+// All check fighter_kind against specific values and test flag bits.
+// ════════════════════════════════════════════════════════════════════
+
+// 0x7100361ec0 (92B) — check 41236 (half-circle forward) command step
+// [derived: app::ai::check_command_41236_step in .dynsym]
+u64 check_command_41236_step_361ec0(u64 L) {
+    FighterAIState* state = get_ai_context(L)->state;
+    s32 kind = state->fighter_kind;
+    if (kind == 6) {
+        if ((state->unk_0x69[0] >> 2) & 1) return 1;
+    } else if (kind == 0x3d) {
+        if ((state->flags_0x68 >> 4) & 1) return 1;
+    } else if (kind == 0x3c && ((state->flags_0x68 >> 4) & 1)) {
+        return 1;
+    }
+    return 0;
+}
+
+// 0x7100361f20 (92B) — check 214 (quarter-circle back) command step
+// [derived: app::ai::check_command_214_step in .dynsym]
+u64 check_command_214_step_361f20(u64 L) {
+    FighterAIState* state = get_ai_context(L)->state;
+    s32 kind = state->fighter_kind;
+    if (kind == 0x55) {
+        if ((state->flags_0x68 >> 4) & 1) return 1;
+    } else if (kind == 0x3d) {
+        if ((state->flags_0x68 >> 5) & 1) return 1;
+    } else if (kind == 0x3c && ((state->flags_0x68 >> 5) & 1)) {
+        return 1;
+    }
+    return 0;
+}
+
+// 0x7100361f80 (92B) — check 623 (dragon punch) command step
+// [derived: app::ai::check_command_623_step in .dynsym]
+u64 check_command_623_step_361f80(u64 L) {
+    FighterAIState* state = get_ai_context(L)->state;
+    s32 kind = state->fighter_kind;
+    if (kind == 0x55) {
+        if ((state->flags_0x68 >> 5) & 1) return 1;
+    } else if (kind == 0x3d) {
+        if ((state->flags_0x68 >> 6) & 1) return 1;
+    } else if (kind == 0x3c && ((state->flags_0x68 >> 6) & 1)) {
         return 1;
     }
     return 0;
