@@ -200,12 +200,26 @@ extern "C" u8 check_stat_attention(u64 L) { return (*(u8*)(AI_STATE(L) + 0x54) >
 extern "C" u8 check_stat_final_act(u64 L) { return (*(u8*)(AI_STATE(L) + 0x55) >> 1) & 1; }
 // 0x71003613d0 — check_stat_invincible (byte load at +0x55, bit 5)
 extern "C" u8 check_stat_invincible(u64 L) { return (*(u8*)(AI_STATE(L) + 0x55) >> 5) & 1; }
+// 0x7100361450 — check_stat_damage_elec (byte load at +0x56, bit 1)
+// [inferred: electric damage state flag]
+extern "C" u8 check_stat_damage_elec(u64 L) { return (*(u8*)(AI_STATE(L) + 0x56) >> 1) & 1; }
 // 0x7100361470 — check_stat_sp_dir (byte load at +0x56, bit 4)
 extern "C" u8 check_stat_sp_dir(u64 L) { return (*(u8*)(AI_STATE(L) + 0x56) >> 4) & 1; }
 // 0x7100361490 — check_stat_unguarded_hind (byte load at +0x56, bit 5)
 extern "C" u8 check_stat_unguarded_hind(u64 L) { return (*(u8*)(AI_STATE(L) + 0x56) >> 5) & 1; }
 // 0x71003614b0 — check_stat_unguarded (byte load at +0x56, bit 6)
 extern "C" u8 check_stat_unguarded(u64 L) { return (*(u8*)(AI_STATE(L) + 0x56) >> 6) & 1; }
+// 0x7100361590 — check_stat_damage (s32 status_kind comparison)
+// [inferred: returns true if status_kind at +0x74 == 5 (STATUS_KIND_DAMAGE)]
+extern "C" bool check_stat_damage(u64 L) {
+    return *(s32*)(AI_STATE(L) + 0x74) == 5;
+}
+// 0x71003615d0 — check_stat_attack_hold (s32 status_kind range check)
+// [inferred: returns true if status_kind in {23, 24} (attack hold states)]
+extern "C" bool check_stat_attack_hold(u64 L) {
+    u32 v = (u32)(*(s32*)(AI_STATE(L) + 0x74) - 23);
+    return v < 2;
+}
 // 0x71003617a0 — check_stat_touch_u (byte load at +0x58, bit 2)
 extern "C" u8 check_stat_touch_u(u64 L) { return (*(u8*)(AI_STATE(L) + 0x58) >> 2) & 1; }
 // 0x71003617c0 — check_stat_touch_l (word load at +0x58, bit 0)
@@ -220,6 +234,9 @@ extern "C" u8 check_stat_dive(u64 L) { return (*(u8*)(AI_STATE(L) + 0x58) >> 5) 
 extern "C" u8 check_stat_unable_cliff_xlu(u64 L) { return (*(u8*)(AI_STATE(L) + 0x59) >> 1) & 1; }
 // 0x7100361860 — check_stat_unable_escape_air (byte load at +0x59, bit 2)
 extern "C" u8 check_stat_unable_escape_air(u64 L) { return (*(u8*)(AI_STATE(L) + 0x59) >> 2) & 1; }
+// 0x7100361880 — check_stat_unable_attack (byte load at +0x59, bit 3)
+// [inferred: flag indicating fighter cannot attack]
+extern "C" u8 check_stat_unable_attack(u64 L) { return (*(u8*)(AI_STATE(L) + 0x59) >> 3) & 1; }
 // 0x71003618a0 — check_stat_unable_special (byte load at +0x59, bit 4)
 extern "C" u8 check_stat_unable_special(u64 L) { return (*(u8*)(AI_STATE(L) + 0x59) >> 4) & 1; }
 // 0x71003618c0 — check_stat_unable_jump (byte load at +0x59, bit 5)
@@ -453,6 +470,16 @@ extern "C" u8 check_passable(u64 L) {
 extern "C" f32 shield_rate(u64 L) {
     u64 ai = AI_STATE(L);
     return *(f32*)(ai + 0xe8) / *(f32*)(ai + 0xec);
+}
+// 0x71003612c0 — current_attack_cancel_frame (16B, s32 field read)
+// [inferred: current attack's cancel frame from AI state +0x12c]
+extern "C" s32 current_attack_cancel_frame(u64 L) {
+    return *(s32*)(AI_STATE(L) + 0x12c);
+}
+// 0x71003612e0 — attack_phase (16B, s32 field read)
+// [inferred: current attack phase from AI state +0x130]
+extern "C" s32 attack_phase(u64 L) {
+    return *(s32*)(AI_STATE(L) + 0x130);
 }
 // 0x7100361ce0 — is_sp_u_available (16B, tail-call)
 // [derived: checks if up-special is available, passes AI state + mode 0]
@@ -845,6 +872,39 @@ extern "C" u32 is_1on1() {
 extern "C" u8 is_hp() {
     u8* mgr = *(u8**)DAT_71052b84f8;
     return *(u8*)(mgr + 0xc3);
+}
+
+// ---- AI context direct-read accessors (read from *(L-8) directly) ----------
+// These read from the AI control struct at *(L-8) without going through +0x168
+
+// 0x710036b9d0 (12 bytes) — app::ai::catch_attack_cancel_frame
+// [inferred: reads u8 flag/frame from ctx+0xBAA]
+extern "C" u8 catch_attack_cancel_frame(u64 L) {
+    return *(u8*)(*(u64*)(L - 8) + 0xbaa);
+}
+// 0x710036ba80 (12 bytes) — app::ai::num_of_attack_123
+// [inferred: number of 1/2/3 attack sequences, s32 at ctx+0xB14]
+extern "C" s32 num_of_attack_123(u64 L) {
+    return *(s32*)(*(u64*)(L - 8) + 0xb14);
+}
+// 0x710036ba90 (12 bytes) — app::ai::has_attack_100
+// [inferred: boolean flag for 100-hit combo attack, u8 at ctx+0xB18]
+extern "C" u8 has_attack_100(u64 L) {
+    return *(u8*)(*(u64*)(L - 8) + 0xb18);
+}
+
+// ---- Status kind classification helpers ------------------------------------
+// Pure comparison functions — no pointer chains, just check status_kind range
+
+// 0x7100f0a970 (16 bytes) — is_status_kind_attack
+// [inferred: returns true if status_kind is an attack (481..490, 0x1E1..0x1EA)]
+extern "C" bool is_status_kind_attack(s32 status) {
+    return (u32)(status - 0x1e1) < 10;
+}
+// 0x7101227750 (16 bytes) — is_status_kind_attack (wider range)
+// [inferred: returns true if status_kind is an attack or extended attack (481..496)]
+extern "C" bool is_status_kind_attack_7101227750(s32 status) {
+    return (u32)(status - 0x1e1) < 16;
 }
 
 // ---- Item param accessors (leaf, singleton + indexed array load) ------------
