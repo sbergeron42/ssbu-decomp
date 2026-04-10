@@ -43,8 +43,8 @@ void final_start_exit(Fighter *);
 void final_ready_init(Fighter *);
 }
 }
-extern "C" void FUN_71006eadc0(u64);
-extern "C" void FUN_71006eafb0(u64);
+extern "C" void playVoiceFurAsleep_71006eadc0(u64);
+extern "C" void playVoiceWakeup_71006eafb0(u64);
 extern "C" void FUN_7101610890(u64);
 extern "C" void FUN_710260c800(u64);
 extern "C" void FUN_71026084c0(u64);
@@ -176,7 +176,7 @@ u32 FUN_71020c6598(s64 param_1)
     return 0;
 }
 
-// 0x71020c6690 -- x9: FUN_71006eadc0(*(x9+0x148))
+// 0x71020c6690 -- x9: playVoiceFurAsleep_71006eadc0(*(x9+0x148))
 u32 FUN_71020c6690(s64 param_1)
 {
     register s64 in_x9 asm("x9");
@@ -184,11 +184,11 @@ u32 FUN_71020c6690(s64 param_1)
     asm volatile("" : "+r"(in_x9));
     asm volatile("" : "+r"(in_x10));
     *(u64 *)(param_1 + 0x10) = in_x10;
-    FUN_71006eadc0(*(u64 *)(in_x9 + 0x148));
+    playVoiceFurAsleep_71006eadc0(*(u64 *)(in_x9 + 0x148));
     return 0;
 }
 
-// 0x71020c6750 -- x9: FUN_71006eafb0(*(x9+0x148))
+// 0x71020c6750 -- x9: playVoiceWakeup_71006eafb0(*(x9+0x148))
 u32 FUN_71020c6750(s64 param_1)
 {
     register s64 in_x9 asm("x9");
@@ -196,7 +196,7 @@ u32 FUN_71020c6750(s64 param_1)
     asm volatile("" : "+r"(in_x9));
     asm volatile("" : "+r"(in_x10));
     *(u64 *)(param_1 + 0x10) = in_x10;
-    FUN_71006eafb0(*(u64 *)(in_x9 + 0x148));
+    playVoiceWakeup_71006eafb0(*(u64 *)(in_x9 + 0x148));
     return 0;
 }
 

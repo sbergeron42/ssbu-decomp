@@ -10,6 +10,8 @@ python tools/setup_worktrees.py              # Create all worktrees (pool-a thro
 python tools/setup_worktrees.py --device2    # Create Device 2 pools only (pool-f through pool-j)
 bash tools/launch_pools.sh                   # Launch all pools (unattended, --dangerously-skip-permissions)
 bash tools/launch_pools.sh a b c             # Launch specific pools
+bash tools/stop_pools.sh                     # Gracefully stop all pools
+bash tools/stop_pools.sh a c                 # Stop specific pools
 python tools/review_diff.py pool-a           # *** Review code quality BEFORE merge ***
 python tools/review_diff.py pool-a --strict  # Strict mode: warnings also cause rejection
 bash tools/merge_worker.sh pool-a            # Merge a worker branch (AFTER review passes)
@@ -53,38 +55,29 @@ The orchestrator checks `--status` as part of its merge cycle. If nearing limit,
 - Pools finish their current session and auto-commit
 - Handoff to Device 2 via git push (WORKER-pool-{letter}.md carries all state)
 
-## Multi-Device Scaling + Handoff
+## Multi-Device Scaling
 
-### Pool Namespacing
-```
-Device 1 (Desktop, Account 1): pool-a through pool-e
-Device 2 (Laptop,  Account 2): pool-f through pool-j
-```
+### Shared Pool Model
+All 10 pools (a-j) are shared across devices. Lock files in `data/pool_locks/` prevent
+two devices from running the same pool simultaneously.
 
-Each device has its own orchestrator and pools. No overlap.
+- `launch_pools.sh` acquires a lock before starting each pool, skips pools locked by another device
+- `stop_pools.sh` releases locks on cleanup
+- Stale locks (>1 hour with no activity) are auto-broken
+- Set `DEVICE_ID=mydevice` to override hostname-based device identification
 
-### Handoff Protocol (happens multiple times per day)
+### Handoff Protocol
+1. Device 1 stops: `bash tools/stop_pools.sh` (commits work, releases locks)
+2. Device 1 pushes: `git push`
+3. Device 2 pulls: `git pull`
+4. Device 2 launches: `bash tools/launch_pools.sh` (skips pools without WORKER.md or worktrees)
 
-**Device 1 hitting limit → Device 2 picks up:**
-1. Usage monitor signals BACKOFF → pools a-e stop after current work
-2. Auto-commit saves all progress to WORKER-pool-{letter}.md
-3. `git push` from Device 1
-4. Device 2: `git pull` → reads WORKER-pool-{letter}.md from a-e → assigns same work to f-j
-5. Device 2: `bash tools/launch_pools.sh f g h i j`
-
-**Device 2 hitting limit → Device 1 picks up (after 5h reset):**
-1. Same process in reverse
-2. `python tools/usage_monitor.py --reset` on Device 1
-3. `bash tools/launch_pools.sh a b c d e`
-
-WORKER-pool-{letter}.md IS the handoff note — it has progress, skip list, file territory, and "continue with" targets.
-
-### Setup on Device 2
+### Setup on a new device
 ```bash
 git clone <repo> "SSBU Decomp"
 cd "SSBU Decomp"
-python tools/setup_worktrees.py --device2    # Creates pool-f through pool-j
-bash tools/launch_pools.sh f g h i j
+python tools/setup_worktrees.py              # Creates all 10 pool worktrees
+bash tools/launch_pools.sh                   # Launches all assigned pools (skips locked/unassigned)
 ```
 
 ## Merge Protocol

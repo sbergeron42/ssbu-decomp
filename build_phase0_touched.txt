@@ -1,0 +1,129 @@
+Source files: 679
+  fighter_attack.cpp
+  fighter_effects.cpp
+  fighter_motion.cpp
+  fun_batch_c2_017.cpp
+  fun_batch_c2_018.cpp
+  fun_batch_c2_019.cpp
+  fun_batch_c_006.cpp
+  fun_batch_c_007.cpp
+  fun_batch_c_008.cpp
+  fun_batch_c_009.cpp
+  fun_batch_c_010.cpp
+  fun_batch_c_011.cpp
+  fun_batch_c_012.cpp
+  fun_batch_c_013.cpp
+  fun_batch_d5_010.cpp
+  fun_batch_d5_014.cpp
+  fun_batch_d5_017.cpp
+  fun_batch_d5_043.cpp
+  fun_batch_d5_044.cpp
+  fun_batch_d_002.cpp
+  ERROR: fun_batch_d_002.cpp
+C:\Users\seanb\Dev\SSBU Decomp\src\app\fun_batch_d_002.cpp:93:21: error: static_cast from 'app::WorkModule *' to 's64 *' (aka 'long long *') is not allowed
+    s64* work_mod = static_cast<s64*>(acc->work_module);
+                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\seanb\Dev\SSBU Decomp\src\app\fun_batch_d_002.cpp:130:23: error: static_cast from 'app::StatusModule *' to 's64 *' (aka 'long long *') is not allowed
+    s64* status_mod = static_cast<s64*>(acc->status_module);
+           
+  fun_batch_d_003.cpp
+  fun_batch_d_004.cpp
+  fun_batch_d_006.cpp
+  ERROR: fun_batch_d_006.cpp
+C:\Users\seanb\Dev\SSBU Decomp\src\app\fun_batch_d_006.cpp:197:23: error: static_cast from 'app::GroundModule *' to 's64 *' (aka 'long long *') is not allowed
+    s64 *ground_mod = static_cast<s64*>(acc->ground_module);
+                      ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1 error generated.
+
+  fun_batch_d_016.cpp
+  ERROR: fun_batch_d_016.cpp
+C:\Users\seanb\Dev\SSBU Decomp\src\app\fun_batch_d_016.cpp:52:23: error: static_cast from 'app::StatusModule *' to 's64 *' (aka 'long long *') is not allowed
+    s64* status_mod = static_cast<s64*>(acc->status_module);
+                      ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\seanb\Dev\SSBU Decomp\src\app\fun_batch_d_016.cpp:61:23: error: static_cast from 'app::StatusModule *' to 's64 *' (aka 'long long *') is not allowed
+    s64* status_mod = static_cast<s64*>(acc->status_module);
+  
+  fun_batch_e3_021.cpp
+  fun_batch_e3_022.cpp
+  fun_batch_e3_023.cpp
+  fun_batch_e3_025.cpp
+  fun_typed_b_002.cpp
+  fun_typed_d_001.cpp
+  fun_typed_d_002.cpp
+  fun_typed_d_003.cpp
+  fun_typed_d_004.cpp
+  fun_typed_d_005.cpp
+  fun_typed_d_006.cpp
+  fun_typed_d_009.cpp
+  fun_typed_d_010.cpp
+  fun_typed_d_011.cpp
+  fun_typed_d_012.cpp
+  fun_typed_d_013.cpp
+  fun_typed_e_004.cpp
+  fun_typed_e_005.cpp
+  fun_typed_e_006.cpp
+  fun_typed_e_007.cpp
+  LuaModule.cpp
+  lua_acmd.cpp
+  SlopeModule.cpp
+  AbsorberModule.cpp
+  AreaModule.cpp
+  ArticleModule.cpp
+  AttackModule.cpp
+  CameraModule.cpp
+  CancelModule.cpp
+  CaptureModule.cpp
+  CatchModule.cpp
+  ColorBlendModule.cpp
+  ComboModule.cpp
+  ControlModule.cpp
+  DamageModule.cpp
+  EffectModule.cpp
+  FighterAreaModuleImpl.cpp
+  FighterControlModuleImpl.cpp
+  FighterMotionModuleImpl.cpp
+  FighterStatusModuleImpl.cpp
+  FighterStopModuleImpl.cpp
+  FighterWorkModuleImpl.cpp
+  GrabModule.cpp
+  GroundModule.cpp
+  HitModule.cpp
+  InkPaintModule.cpp
+  ItemCameraModuleImpl.cpp
+  ItemDamageModuleImpl.cpp
+  ItemInkPaintModuleImpl.cpp
+  ItemKineticModuleImpl.cpp
+  ItemModule.cpp
+  JostleModule.cpp
+  KineticModule.cpp
+  LinkModule.cpp
+  ModelModule.cpp
+  MotionAnimcmdModule.cpp
+  MotionModule.cpp
+  PhysicsModule.cpp
+  PostureModule.cpp
+  ReflectModule.cpp
+  ReflectorModule.cpp
+  SearchModule.cpp
+  ShadowModule.cpp
+  ShakeModule.cpp
+  ShieldModule.cpp
+  SlowModule.cpp
+  SoundModule.cpp
+  StatusModule.cpp
+  StopModule.cpp
+  TeamModule.cpp
+  TurnModule.cpp
+  VisibilityModule.cpp
+  WorkModule.cpp
+
+Compiled: 94, Skipped: 582, Errors: 3
+BUILD FAILED with 3 error(s).
+
+Post-processing...
+  fix_plt_stubs...
+  fix_movz_to_orr...
+  fix_prologue_sched...
+  gen_epilogue_list + fix_epilogue...
+
+Build complete.

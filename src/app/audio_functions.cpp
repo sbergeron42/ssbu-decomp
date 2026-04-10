@@ -19,8 +19,8 @@ extern "C" void FUN_71015c1770(void*, u32, u64, u32, void*, u64, u32);
 // FighterUtil voice helpers. Pass the SoundModule* to the heavy voice-hash
 // builder / dispatch at 71006eadc0 / 71006eafb0 (both 480+ bytes; U-quality).
 // [derived: 2-instruction tail call with ldr x0, [x0, #0x148]; b target]
-extern "C" void FUN_71006eadc0(void* sound_module);
-extern "C" void FUN_71006eafb0(void* sound_module);
+extern "C" void playVoiceFurAsleep_71006eadc0(void* sound_module);
+extern "C" void playVoiceWakeup_71006eafb0(void* sound_module);
 
 namespace app::kozukatasight {
 
@@ -123,7 +123,7 @@ namespace app::FighterUtil {
 // [derived: 2-instruction body ldr x0, [x0, #0x148]; b 71006eadc0 --
 //           accessor->sound_module is the sole argument, tail-called]
 void play_sleep_voice(BattleObjectModuleAccessor* acc) {
-    FUN_71006eadc0(acc->sound_module);
+    playVoiceFurAsleep_71006eadc0(acc->sound_module);
 }
 
 // 710069a640 (8B) -- play_wake_up_voice
@@ -131,7 +131,7 @@ void play_sleep_voice(BattleObjectModuleAccessor* acc) {
 // (crc32 of "VC_<KIND>_FURA_WAKEUP" per Ghidra format-string evidence in that helper).
 // [derived: 2-instruction body ldr x0, [x0, #0x148]; b 71006eafb0]
 void play_wake_up_voice(BattleObjectModuleAccessor* acc) {
-    FUN_71006eafb0(acc->sound_module);
+    playVoiceWakeup_71006eafb0(acc->sound_module);
 }
 
 } // namespace app::FighterUtil

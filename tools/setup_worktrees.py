@@ -83,31 +83,31 @@ WORKERS = {
         ],
         'desc': 'Serialization functions (store/load_l2c_table) + data structs + misc remaining',
     },
-    # Device 2 pools (f-j) — assigned dynamically by orchestrator via WORKER.md
+    # Extra pools (f-j) — assigned dynamically by orchestrator via WORKER.md
     'pool-f': {
         'branch': 'worker/pool-f',
         'modules': ['UNASSIGNED'],
-        'desc': 'Device 2 pool — assign work via WORKER-pool-{letter}.md, then run sync_assignments.py',
+        'desc': 'Unassigned — assign work via WORKER-pool-{letter}.md, then run sync_assignments.py',
     },
     'pool-g': {
         'branch': 'worker/pool-g',
         'modules': ['UNASSIGNED'],
-        'desc': 'Device 2 pool — assign work via WORKER-pool-{letter}.md, then run sync_assignments.py',
+        'desc': 'Unassigned — assign work via WORKER-pool-{letter}.md, then run sync_assignments.py',
     },
     'pool-h': {
         'branch': 'worker/pool-h',
         'modules': ['UNASSIGNED'],
-        'desc': 'Device 2 pool — assign work via WORKER-pool-{letter}.md, then run sync_assignments.py',
+        'desc': 'Unassigned — assign work via WORKER-pool-{letter}.md, then run sync_assignments.py',
     },
     'pool-i': {
         'branch': 'worker/pool-i',
         'modules': ['UNASSIGNED'],
-        'desc': 'Device 2 pool — assign work via WORKER-pool-{letter}.md, then run sync_assignments.py',
+        'desc': 'Unassigned — assign work via WORKER-pool-{letter}.md, then run sync_assignments.py',
     },
     'pool-j': {
         'branch': 'worker/pool-j',
         'modules': ['UNASSIGNED'],
-        'desc': 'Device 2 pool — assign work via WORKER-pool-{letter}.md, then run sync_assignments.py',
+        'desc': 'Unassigned — assign work via WORKER-pool-{letter}.md, then run sync_assignments.py',
     },
 }
 
@@ -285,7 +285,7 @@ def main():
     print("  git log master..worker/pool-a --oneline  # check worker progress")
     print("  bash tools/merge_worker.sh pool-a         # merge a worker")
     print("  python tools/usage_monitor.py --status    # check token usage")
-    print("  python tools/sync_assignments.py          # sync WORKER.md → pool_assignments.md")
+    print("  python tools/sync_assignments.py          # sync WORKER.md -> pool_assignments.md")
 
 
 if __name__ == '__main__':

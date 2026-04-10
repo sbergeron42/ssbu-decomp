@@ -11,7 +11,7 @@ struct Weapon;
 struct FighterModuleAccessor;
 
 [[noreturn]] extern "C" void abort();
-extern "C" void FUN_71006eafb0(u64);
+extern "C" void playVoiceWakeup_71006eafb0(u64);
 
 namespace app {
     namespace FighterUtil {
@@ -71,7 +71,7 @@ namespace app {
 // Pattern: str x10,[x0,#0x10]; mov x0,x8; bl <func>; mov w0,wzr
 // x0 = lua state buffer (param_1), x8 = typed object (in_x8, implicit register param)
 
-// 0x71020c6750 — load sound module ptr via x9, call FUN_71006eafb0 (32 bytes)
+// 0x71020c6750 — load sound module ptr via x9, call playVoiceWakeup_71006eafb0 (32 bytes)
 // Note: x9 holds the module accessor; loads sound ptr at +0x148
 u32 FUN_71020c6750(s64 *param_1)
 {
@@ -80,7 +80,7 @@ u32 FUN_71020c6750(s64 *param_1)
     asm volatile("" : "+r"(in_x9));
     asm volatile("" : "+r"(in_x10));
     *(u64 *)((char *)param_1 + 0x10) = in_x10;
-    FUN_71006eafb0(*(u64 *)(in_x9 + 0x148));
+    playVoiceWakeup_71006eafb0(*(u64 *)(in_x9 + 0x148));
     return 0;
 }
 

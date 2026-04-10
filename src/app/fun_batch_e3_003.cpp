@@ -15,7 +15,7 @@ namespace std { namespace __1 {
 #define VT(m) (*reinterpret_cast<void***>(m))
 
 // Sound module callee
-extern void FUN_71006eadc0(u64);
+extern void playVoiceFurAsleep_71006eadc0(u64);
 
 // Singleton guard for FUN_71023ed1e0/250
 extern u64 DAT_71053134d8;  // guard at 0x7105313000+0x4d8
@@ -30,15 +30,15 @@ extern u8  PTR_LOOP_7104f16000;
 
 // ---- x9-register sound_module dispatch -----------------------------------
 
-// 0x71020c6690 (192 bytes) — sound_module (acc+0x148), call FUN_71006eadc0(mod)
-// Disasm: str x10,[x0,#0x10]; ldr x0,[x9,#0x148]; bl FUN_71006eadc0; mov w0,wzr; ldp; ret
+// 0x71020c6690 (192 bytes) — sound_module (acc+0x148), call playVoiceFurAsleep_71006eadc0(mod)
+// Disasm: str x10,[x0,#0x10]; ldr x0,[x9,#0x148]; bl playVoiceFurAsleep_71006eadc0; mov w0,wzr; ldp; ret
 u64 FUN_71020c6690(u64 param_1)
 {
     register u8 *acc asm("x9");
     register u64 in_x10 asm("x10");
     asm volatile("" : "+r"(acc), "+r"(in_x10));
     *(u64 *)(param_1 + 0x10) = in_x10;
-    FUN_71006eadc0(*(u64 *)(acc + 0x148));
+    playVoiceFurAsleep_71006eadc0(*(u64 *)(acc + 0x148));
     return 0;
 }
 

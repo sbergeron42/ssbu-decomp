@@ -38,6 +38,7 @@ build_output.txt
 data/ghidra_cache/
 data/pool_logs/
 data/pool_signals/
+data/pool_locks/
 
 # Python
 __pycache__/
