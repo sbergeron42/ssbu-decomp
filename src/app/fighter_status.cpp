@@ -2577,6 +2577,37 @@ bool is_target_on_same_floor_71003672b0(void* L) {
     return self_floor == target_floor;
 }
 
+// [derived: zeroes 23 u64 slots from ctx+0x5e8 to ctx+0x698. Original emits
+//  individual str xzr stores in decreasing address order — unrolled loop
+//  over the range in reverse to match.]
+// 0x7100368ee0 -- app::ai::reset_cmd_id_probability_add_2nd (100B)
+void reset_cmd_id_probability_add_2nd_7100368ee0(void* L) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    *reinterpret_cast<u64*>(ctx + 0x698) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x690) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x688) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x680) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x678) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x670) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x668) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x660) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x658) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x650) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x648) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x640) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x638) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x630) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x628) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x620) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x618) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x610) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x608) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x600) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x5f8) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x5f0) = 0;
+    *reinterpret_cast<u64*>(ctx + 0x5e8) = 0;
+}
+
 // [derived: tail-call to aiGetTargetById, read 4 f32 values individually
 //  (rect bounds: xmin, xmax, ymin, ymax). Target+0x264 is not 16-byte
 //  aligned so Clang emits ldr s0 + ld1 inserts rather than ldr q0]
