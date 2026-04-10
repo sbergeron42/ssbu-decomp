@@ -425,3 +425,41 @@ Computes Hash40 (CRC32 + length) of extension string, compares against
 LoadedArc.file_paths[filepath_index].ext. Shrink-wrap divergence — NX Clang
 defers prologue past early returns, upstream Clang 8 does not. CRC32 table
 at 0x7104753084.
+
+=== 0x7103541cb0 (524B) FUN_7103541cb0 — ONLY UNIMPLEMENTED RESOURCE FUNC ===
+Complex cleanup/destructor. Takes single pointer param (object at x0).
+Structure:
+1. Lock mutex at param+0x10 (nn::os::MutexLock, NOT recursive_mutex)
+2. Walk linked list at +0x40: for each node, free node->+0x18->+0x08, free node->+0x18, advance via [node+0]
+3. If +0x48 != 0: free all list nodes at +0x40 (separate pass), zero-fill array[+0x30][0..+0x38] with unrolled loop (stride 4, 4x unroll)
+4. If +0x68 != 0: unlink doubly-linked list at +0x58/+0x60, free all non-sentinel nodes
+5. Store zero to +0x08
+6. Unlock mutex at param+0x10 (nn::os::MutexUnlock)
+7. Destroy 3 local std::string-like objects via vtable dispatch (SSO pattern: vtable+0x20 if inline, vtable+0x28 if heap)
+   - Calls FUN_71037c8dd0 and FUN_710353b930 as part of cleanup
+Registers: x20=param, x19=mutex(param+0x10), x22/x21=temps
+Stack: 0xC0 bytes. Local objects at [x29-0x50], [sp+0x30], [sp]
+
+=== 0x7103541cb0 (524B) FUN_7103541cb0 — Ghidra 13.0.4 decompilation ===
+void FUN_7103541cb0(long param_1):
+1. mutex::lock() on param_1+0x10
+2. Walk linked list at +0x40: for each node, free [node+0x18]+8, free [node+0x18], advance
+3. If +0x48 != 0: free all list nodes at +0x40, zero-fill hash table [+0x30][0..+0x38], clear +0x48
+4. If +0x68 != 0: unlink doubly-linked list +0x58/+0x60, free non-sentinel nodes
+5. Clear +0x08
+6. mutex::unlock() on param_1+0x10
+7. Swap two std::function via FUN_71037c8dd0, destroy both
+8. Call FUN_710353b930 on stack local, destroy result
+
+=== Resource module match quality summary (2026-04-10) ===
+90 total resource functions compiled:
+- 2 perfect 100% byte match (FUN_7103542ad0, FUN_7103542d20)
+- 9 reloc-only (functionally 100%): FUN_710353d5a0, FUN_710353cfd0, FUN_710353b1c0, FUN_710353fec0, FUN_710353cf40, FUN_71037c5ff0, FUN_7103542f30, status_710353cfb0 + 1 more
+- 13 prologue+reloc near-match (handled by fix_prologue_sched): FUN_710353cb90, FUN_710353e150, FUN_710353eab0, FUN_710353e980, FUN_7103548310, etc.
+- 66 with code structure issues (Ghidra paste, not struct-rewritten)
+
+Key low-match causes:
+- Cached mutex (void* mtx = fs->mutex) vs re-read pattern causes different regalloc
+- LoadedDirectory* dir vs separate array access (one madd vs two)
+- NX shrink-wrapping (prologue deferred past early returns)
+- Vector grow inline code with OOM handler has complex control flow
