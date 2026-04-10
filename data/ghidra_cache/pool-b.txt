@@ -866,8 +866,19 @@ rollback index.
 == Updated hunt priorities ==
 
 Because main_loop IS pead::MainThread (not one of many threads), the sim
-MUST be inside its call chain. Remaining targets to decompile:
-  a) FUN_7103593c40   (792B, phase 5)   ← unknown
+MUST be inside its call chain. Remaining targets decompiled this session:
+  FUN_7103593c40 (792B, phase 5): 4-slot ring-buffer advance on a huge
+    struct (offsets at +0x502/+0x504/+0x508/+0x510 and
+    +0x69fc6/+0x69fc8/+0x69fcc/+0x69fd4 with (idx+1)&3 cycling). Two
+    std::mutex-guarded shared_ptr refcount releases at +0x3f0..408 and
+    +0x418..430 (dirty-flag-gated at +0x3e0/+0x3e1). Sets big state
+    byte +0x4dcab8=1, magic +0x4dcda4=0x700000003. Calls 4 helpers on
+    param_1+0x68 (mutex obj). Vtable constant at PTR_LAB_710522ed48.
+    No entity walk, no per-fighter dispatch. Looks like a batch
+    dispatch or audio/animation buffer rotate. NOT sim.
+
+Remaining targets to decompile (next pass):
+  a) FUN_7103593c40   DONE (not sim, see above)
   b) FUN_71035c13d0   (1048B, phase 6)  ← unknown
   c) FUN_71036186d0   (1188B, phase 7)  ← unknown
   d) FUN_7103619080   (432B,  phase 7)  ← unknown (Event A neighborhood)
