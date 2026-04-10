@@ -8,8 +8,10 @@ bytes a rollback fork of Eden must capture and restore each frame.
 
 - The "sync" gameplay RNG is **9 independent xorshift128 streams** (Marsaglia 2003),
   selected by a `phx::Hash40` channel argument.
-- The 9 streams live contiguously in a 180-byte (0xb4) buffer owned by a singleton
-  reachable at `[[0x71052c25b0]]` (two pointer dereferences from a fixed BSS slot).
+- The 9 streams live contiguously in a 180-byte (0xb4) heap buffer owned (at two
+  levels of indirection) by a singleton whose pointer lives at `0x71052c25b0`.
+  Reaching the 180 bytes takes **three** pointer dereferences from that address, not
+  two. See §2 for the exact chain — getting the deref count wrong corrupts the game.
 - **Snapshot / restore exactly those 180 bytes each frame.** That is sufficient to
   re-simulate deterministically, regardless of which fighter/item/effect asks for a roll.
 - Per-call, each stream writes all 4 state words + 1 u32 counter (20 bytes), so there is
@@ -100,9 +102,10 @@ otherwise replay diagnostics will diverge even when the state matches.
 
 ### Channel array layout — 180 bytes (0xb4)
 
-`sv_math::rand` dispatches on a `phx::Hash40` to a fixed channel offset. The mapping
-is exhaustive — there is no hash-table lookup, just a binary-search tree of compile-time
-constants. Any hash that does not match any case uses the default slot at offset 0.
+`sv_math::rand` dispatches on a `phx::Hash40` to a fixed channel offset within a
+180-byte heap buffer. The mapping is exhaustive — there is no hash-table lookup,
+just a binary-search tree of compile-time constants. Any hash that does not match
+any case uses the default slot at offset 0.
 
 | Channel index | Offset | Hash40 | Known use |
 |---|---|---|---|
@@ -116,7 +119,7 @@ constants. Any hash that does not match any case uses the default slot at offset
 | 7 | `+0x8c` | `0x5f88ec384` | (unnamed) |
 | 8 | `+0xa0` | `0x63b1cee05` | (unnamed) |
 
-Total: 9 × 0x14 = **0xb4 bytes**. Header: `app::RandomizerChannels` in
+Total: 9 × 0x14 = **0xb4 bytes**. Struct: `app::RandomizerChannels` in
 `include/app/Randomizer.h`.
 
 Note that the unnamed channels likely have meaningful community names once Lua scripts
@@ -124,37 +127,79 @@ are inspected — a grep through the Lua script dump for the literal hash values
 `0x77a08c3fc`) will reveal them. This is a follow-up task; for rollback it does not
 matter which channel is which, only that all 180 bytes are captured together.
 
-### Global accessor — `[[0x71052c25b0]]`
+### The owning `RandomizerChannelVec` (32 bytes)
 
-Every decompiled reader uses the same two-deref pattern:
+The 180-byte channel array does **not** sit inside the singleton. It is a separate
+heap allocation pointed at by a 32-byte "vector header" object, which itself is
+pointed at by the 8-byte `Randomizer` singleton. The constructor (FUN_7101344cf0
+at 0x7101344d50..0x7101344e28) allocates all three objects in sequence:
 
-```c
-// in rand / namespaced wrappers / inlined copies:
-long state_base = *(long *)*DAT_71052c25b0;
-// then access (state_base + channel_offset + field)
+```
+aligned_alloc(16, 8)   → Randomizer*             (the singleton value itself)
+aligned_alloc(16, 32)  → RandomizerChannelVec*   (vector header)
+FUN_710143ab00(vec, 9) → inside that call: allocates 9 * 20 = 180 bytes and
+                         writes begin/end into the vec header
 ```
 
-In AArch64 asm (from `sv_math::rand`):
+The vec header layout is:
+
+```
++0x00  RandomizerChannels* begin       // points at the 180-byte array
++0x08  Xorshift128*        end         // begin + 9
++0x10  u64                 unk (0)
++0x18  u32                 seed        // 0x87654321 placeholder at construction;
+                                       //   overwritten with the real u32 match seed
+                                       //   at 0x71013454c8 (`str w19, [x8, #0x18]`).
++0x1c  u32                 pad
+```
+
+The `0x87654321` value written at construction is a debug placeholder, not a
+persistent sentinel — once the match-start seed-init code runs, that slot holds
+the u32 seed that was used to derive all 9 channels. Capturing the 180-byte
+channel buffer under rollback does **not** need to include this slot; it is
+written once per match and stays constant for the entire match.
+
+### Global accessor — three loads from `0x71052c25b0`
+
+Every decompiled reader uses the same three-deref pattern. In AArch64 asm
+(`sv_math::rand` at 0x7102275374 — identical sequence in every inlined reader):
 
 ```
 adrp x8, 0x71052c2000
-ldr  x0, [x8, #0x5b0]      ; x0 = Randomizer*     (singleton ptr)
-ldr  x1, [x0]              ; x1 = channels base   (= &RandomizerChannels)
-; x1 + offset is the selected Xorshift128
+ldr  x8, [x8, #0x5b0]      ; load 1 → Randomizer*            (singleton)
+ldr  x8, [x8]              ; load 2 → RandomizerChannelVec*  (vec header)
+ldr  x8, [x8]              ; load 3 → RandomizerChannels*    (180-byte buffer)
+; x8 + channel_offset + field_offset is the target
 ```
 
-So the sequence of dereferences for Eden is:
+Ghidra decompile output is easy to misread here. The expression
 
-1. Read `u64 singleton = *(u64*)0x71052c25b0;` — stable across frames after init.
-2. Read `u64 channels = *(u64*)singleton;` — stable across frames after the state
-   buffer is allocated (the `Randomizer` constructor heap-allocates the channel array
-   during boot and never reallocates; see §3).
-3. Snapshot `memcpy(snapshot, (void*)channels, 0xb4);` — this is the rollback payload.
-4. Restore: `memcpy((void*)channels, snapshot, 0xb4);`
+```c
+lVar4 = *(long *)*DAT_71052c25b0;
+```
 
-**Important:** `singleton` and `channels` are themselves stable pointers after game
-boot. Eden can cache them once when the match begins; they are NOT part of the
-per-frame snapshot.
+represents **three** loads, not two: `DAT_71052c25b0` is the Ghidra symbol for the
+*value loaded from* 0x71052c25b0 (load 1 = Randomizer*), the bare `*` adds another
+load (load 2 = ChannelVec*), and the `*(long*)` cast-and-deref adds the third load
+(load 3 = channel array begin). The earlier version of this document claimed two
+loads and that is incorrect.
+
+So the sequence Eden must follow is:
+
+1. `Randomizer* r = *(Randomizer**)0x71052c25b0;`  — load 1.
+2. `RandomizerChannelVec* v = r->vec;`             — load 2 (i.e. `*(u64*)r`).
+3. `RandomizerChannels* channels = v->channels;`   — load 3 (i.e. `*(u64*)v`).
+4. `memcpy(snapshot, channels, 0xb4);`             — the rollback payload.
+5. On rollback: `memcpy(channels, snapshot, 0xb4);`.
+
+**Important:** All three pointers (`r`, `v`, `channels`) are stable across frames
+after match start. The constructor never reallocates the 180-byte buffer and
+nothing else writes through the chain. Eden can cache `channels` once when the
+match begins; it is **not** part of the per-frame snapshot.
+
+**Do not** `memcpy(v, snapshot, 0xb4)` — that would overwrite the vec header's
+`begin`/`end` pointers with RNG state bytes, corrupting the heap. This is the
+bug that the previous two-deref description of this path would have produced.
 
 ## 3. Seed init
 
@@ -168,12 +213,12 @@ two things: seeding the sync RNG and calling the no-sync seed helper.
 ldr  w19, [x21, #0xf8]      ; w19 = u32 seed from parent object
 str  w19, [x21, #0x50]      ; copy seed to a neighbouring field (for later read)
 adrp x8,  0x71052c2000
-ldr  x20, [x8, #0x5b0]      ; x20 = Randomizer* singleton
-ldr  x8,  [x20]             ; x8  = channels buffer base
-str  w19, [x8, #0x18]       ; stash seed at channels+0x18 (inside slot 1)
+ldr  x20, [x8, #0x5b0]      ; x20 = Randomizer* singleton             (load 1)
+ldr  x8,  [x20]             ; x8  = RandomizerChannelVec*              (load 2)
+str  w19, [x8, #0x18]       ; stash seed at vec+0x18 (overwrites 0x87654321 marker)
 bl   0x710366d110           ; setup_no_sync_seed_from_date(seed)
-ldr  x9,  [x20]             ; reload buffer base (BL may have clobbered)
-ldp  x8,  x9, [x9]          ; x8 = begin, x9 = end   (vector header at +0x00 / +0x08)
+ldr  x9,  [x20]             ; reload vec ptr (BL may have clobbered)
+ldp  x8,  x9, [x9]          ; x8 = vec->channels (begin), x9 = vec->end (load 3+4)
 cmp  x9, x8
 b.eq skip_loop
 
@@ -212,13 +257,15 @@ Key observations:
 - The seed-derivation constants (`0x6c078965`, `x ^ (x>>30)`) are Matsumoto & Nishimura's
   MT19937 `init_genrand` recurrence, repurposed here to seed xorshift instead of the
   Mersenne Twister state vector.
-- The loop header load `ldp x8, x9, [x9]` treats the first 16 bytes of the buffer as
-  `(begin, end)` pointers. This strongly suggests the buffer is actually an inline
-  `std::vector<Xorshift128>` where the vector header overlaps slot 0's x/y at init
-  time; once the seed loop writes through those addresses, the header is clobbered and
-  the data reader interpretation takes over. We have not fully nailed down the vector
-  vs. flat array distinction because the inline access pattern in readers is what
-  matters for rollback. The 180-byte snapshot is what you want regardless.
+- The `ldp x8, x9, [x9]` load reads the first 16 bytes of the 32-byte
+  `RandomizerChannelVec` as a `(begin, end)` pair. The 180 bytes of state are a
+  separately-allocated buffer pointed at by `begin`, **not** an inline extension of
+  the vec header. See §2 "The owning `RandomizerChannelVec` (32 bytes)" for the full
+  layout and the allocator chain that constructs it (FUN_7101344cf0 @ 0x7101344d50).
+- The seed loop writes every channel (`stp w13, wzr, [x8, #0xc]` etc.) through the
+  `begin..end` range. The vec header itself is untouched by the loop body; what the
+  previous version of this document described as "header overlapping slot 0" was
+  wrong — they live in separate allocations.
 
 ### `setup_no_sync_seed_from_date` (`0x710366d110`)
 
@@ -311,7 +358,7 @@ libc, or the `Randomizer.no_sync_get` Lua metatable:
 
 Check which global it reads:
 
-- Reads from `[0x71052c25b0]` (two derefs) → **sync, capture under rollback**.
+- Reads from `[0x71052c25b0]` (three derefs — see §2) → **sync, capture under rollback**.
 - Reads from `[0x71052381b0]` / `[0x71052381bc]` / `[0x71052381c0]` / `[0x71052381cc]`,
   or calls `rand()` / `srand()` → **no-sync, ignore**.
 - Reads from `BattleObjectWorld + 0x20` (`get_world_move_seed`) → this is a
@@ -325,7 +372,8 @@ Check which global it reads:
 // Once, when the match has started (after app::GameSetupData::finalize returns):
 const uintptr_t kRandomizerSingletonGlobal = 0x71052c25b0;
 auto* singleton = *reinterpret_cast<app::Randomizer**>(kRandomizerSingletonGlobal);
-auto* channels  = singleton->channels;  // 180 bytes, 9 x Xorshift128
+auto* vec       = singleton->vec;        // 32-byte vec header
+auto* channels  = vec->channels;         // 180 bytes, 9 x Xorshift128  (THIRD deref)
 
 // Per frame (before advancing the simulation):
 u8 rng_snapshot[0xb4];
@@ -337,6 +385,11 @@ std::memcpy(channels, rng_snapshot, 0xb4);
 // simulation re-runs deterministically
 ```
 
+If you ever get a crash on rollback restore that looks like a heap corruption with
+begin/end pointers replaced by plausible-looking u32 values, double-check the deref
+count: you almost certainly `memcpy`'d into `vec` (the 32-byte header) instead of
+`channels` (the 180-byte data buffer).
+
 Do **not** snapshot `DAT_71052381b0..cf`, do **not** re-seed libc `srand()`, and do
 **not** touch the `Randomizer.no_sync_*` Lua entries. Those are intentionally divergent
 across rollbacks and resimulating over them will only hurt visual continuity without
@@ -347,9 +400,9 @@ affecting gameplay outcomes.
 - Name the remaining 7 channels by grepping Lua scripts for the literal hash constants.
 - Nail down the parent object at `x21 + 0xf8` that holds the sync seed; this is
   interesting for "force a known seed" dev modes.
-- Decompile the `Randomizer` constructor cleanly so the `singleton->channels` field
-  layout can be nailed down past offset `+0x00` (currently the rest of the singleton
-  is opaque in `app::Randomizer`).
+- Identify `FUN_710143ab00` — the helper that resizes the channel vec to 9 entries
+  and allocates the 180-byte buffer during construction. Likely a `phx::Vector::resize`
+  or similar template instantiation; worth a rename once confirmed.
 - Sweep the ~200 singleton-reader xrefs and build a full gameplay-vs-cosmetic
   classification table. Useful for desync auditing after rollback ships but not
   required for the capture/restore path.
@@ -358,9 +411,11 @@ affecting gameplay outcomes.
 
 - Function addresses come from Ghidra on the SSBU 13.0.4 build
   (`search_functions_by_name rand`).
-- The disassembly of the seed-init path was pulled via
-  `disassemble_function 0x7101344cf0` (cached at
-  `.claude/.../tool-results/mcp-ghidra-disassemble_function-1775848823189.txt`).
+- The disassembly of the seed-init path and the constructor allocation sequence
+  at `0x7101344d50..0x7101344e28` was pulled via `disassemble_function 0x7101344cf0`.
+  The three-deref reader pattern was verified against the full disassembly of
+  `sv_math::rand` at `0x7102275374..0x7102275380` (see `decompile_function_by_address
+  0x7102275320` output in the session tool-results cache).
 - The decompiled bodies of `sv_math::rand`, `sv_math::randf`, the two `*::random*`
   namespaces, `lot_critical`, `FUN_7100826750`, and `setup_no_sync_seed_from_date`
   are cached in `data/ghidra_cache/pool-a.txt`.

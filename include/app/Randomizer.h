@@ -16,7 +16,9 @@ struct Xorshift128 {
 };
 static_assert(sizeof(Xorshift128) == 0x14, "Xorshift128 must be 20 bytes");
 
-// The gameplay sync RNG: an array of 9 xorshift128 channels, selected by phx::Hash40.
+// 9 xorshift128 channels selected by phx::Hash40. The live data block that a
+// rollback snapshot must capture. Allocated separately from the owning
+// RandomizerChannelVec — reach it via `vec->channels` (not by casting the vec).
 // [derived: app::sv_math::rand dispatches on a Hash40 arg to base offsets 0, +0x14,
 //  +0x28, +0x3c, +0x50, +0x64, +0x78, +0x8c, +0xa0 — each slot is one Xorshift128]
 struct RandomizerChannels {
@@ -34,20 +36,44 @@ struct RandomizerChannels {
 };
 static_assert(sizeof(RandomizerChannels) == 0xb4, "RandomizerChannels must be 180 bytes");
 
-// Owner of the gameplay RNG state. Accessed via the global singleton pointer at 0x71052c25b0.
-// Reads in decomp look like: `lVar = *(long *)*DAT_71052c25b0; lVar + channel_offset`.
-// That means: singleton = [0x71052c25b0]; state = [singleton + 0x00]; then add channel offset.
-// [derived: every reader of DAT_71052c25b0 (hundreds of sites) uses this exact two-deref pattern]
-struct Randomizer {
-    RandomizerChannels* channels;   // +0x00  [derived: init at 0x71013454c0 does `ldr x8,[x20]`]
-    // Remaining layout not yet recovered — the init routine also takes a vector begin/end
-    // pair, suggesting the channels live inside a std::vector header. Treat the rest as
-    // opaque until a constructor is decompiled.
+// 32-byte vector-like header that owns the 180-byte channel array as a separate
+// heap allocation. The first two fields form a `[begin, end)` span walked by the
+// seed-init loop. The +0x18 slot is initialised to the debug marker 0x87654321
+// during construction and is later overwritten by the u32 match seed
+// (0x7101344e0c writes the marker; 0x71013454c8 writes the real seed).
+// [derived: FUN_7101344cf0 @ 0x7101344dac-0x7101344e28 — allocates 32 bytes via
+//  aligned_alloc(16, 32), zeroes [0..0x10), writes magic at +0x18, then calls
+//  FUN_710143ab00(vec, 9) which populates begin/end with a fresh 180-byte buffer.
+//  Seed loop at 0x71013454d4 loads (begin,end) via `ldp x8,x9,[x9]`.]
+struct RandomizerChannelVec {
+    RandomizerChannels* channels;  // +0x00  begin pointer — points at the 180-byte array
+    Xorshift128*        end;       // +0x08  begin + 9 (one past the last channel)
+    u64                 unk_0x10;  // +0x10  zero after construction; purpose unknown
+    u32                 match_seed;// +0x18  [derived: 0x71013454c8 `str w19,[x8,#0x18]`
+                                   //         writes the u32 seed pulled from match params]
+    u32                 pad_0x1c;  // +0x1c  padding
 };
+static_assert(sizeof(RandomizerChannelVec) == 0x20, "RandomizerChannelVec must be 32 bytes");
+
+// Outer singleton allocated by FUN_7101344cf0. It is just a single pointer to
+// the channel vector — the actual 180 bytes of RNG state live two levels deeper.
+// [derived: 0x7101344d50 `mov w1,#0x8; bl alloc` allocates 8 bytes; 0x7101344e18
+//  `str x0,[x20]` stores the newly constructed RandomizerChannelVec into it.]
+struct Randomizer {
+    RandomizerChannelVec* vec;     // +0x00
+};
+static_assert(sizeof(Randomizer) == 0x8, "Randomizer outer must be 8 bytes");
 
 // libapp writes/reads this global. It is the address of the Randomizer singleton pointer.
-// [derived: adrp x8,0x71052c2000 ; ldr x20,[x8, #0x5b0] at 0x71013454b8..71013454bc,
-//  and `*DAT_71052c25b0` in every Ghidra decompile of a rand caller]
+// Every caller reads it through a THREE-level indirection chain:
+//     ldr xN, [xBase, #0x5b0]   ; load 1: xN = Randomizer*
+//     ldr xN, [xN]              ; load 2: xN = RandomizerChannelVec*
+//     ldr xN, [xN]              ; load 3: xN = RandomizerChannels* (= vec->channels)
+// The third load is easy to miss in Ghidra decompile output because the decompiler
+// collapses the first indirection into its `DAT_` symbol notation.
+// [derived: adrp x8,0x71052c2000 ; ldr x20,[x8, #0x5b0] at 0x71013454b8..71013454bc;
+//  identical three-load sequence at 0x7102275374-80 (sv_math::rand), 0x710134a4e4-f0
+//  (seed init), and every other reader sampled.]
 extern Randomizer* g_randomizer_instance_71052c25b0;
 
 } // namespace app
