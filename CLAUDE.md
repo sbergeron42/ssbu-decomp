@@ -106,6 +106,20 @@ python tools/review_diff.py pool-{letter}
 ```
 If the score is below 50 or there are REJECT violations, fix them before committing. The orchestrator WILL reject your diff otherwise.
 
+### Stop-and-document rule for Ghidra MCP failures
+If `mcp__ghidra__*` returns an error, timeout, or "request failed":
+1. **DO NOT retry** the same address. Retrying wastes the entire session on a function the MCP server cannot handle.
+2. Append the address + reason to `data/ghidra_cache/manual_extraction_needed.md` (create if missing) in this format:
+   ```
+   ## 0xXXXXXXXX (FUN_XXXXXXXX or known name)
+   - Pool: pool-{letter}
+   - Reason: timeout / too large / unknown error
+   - Why we need it: [one-line context]
+   ```
+3. Move on to the next task. The orchestrator will manually extract the function and write it to `data/ghidra_cache/<addr>.txt` for the next session to read.
+
+This rule exists because some functions are too large for Ghidra MCP (>100KB output) and pools used to spend their entire session timing out on the same function.
+
 ### Resource Service Guidelines
 - **Use ARCropolis community names.** Field names come from `ARCropolis` (Rust mod loader) and `smash-arc` (ARC format library). These are empirically validated by millions of mod installations. Tag with `[derived: ARCropolis field_name]`.
 - **OOM retry pattern.** Many resource functions use: `alloc(); if (!ptr && OOM_handler) { OOM_handler->retry(); alloc(); }`. Factor this into `alloc_with_oom_retry()` rather than inlining it everywhere.
