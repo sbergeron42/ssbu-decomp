@@ -850,22 +850,22 @@ static inline void* get_ai_collision_scene() {
     return *reinterpret_cast<void**>(mgr_inner + 0xc8);
 }
 
-// [derived: stat_module+0x90 = Vector4 position, arg1 = relative offset]
+// [derived: state->center_pos (Vector4 at +0x90), arg1 = relative offset]
 // 0x7100366380 -- app::ai::line_segment_check (100B)
 bool line_segment_check_7100366380(void* L, const float4* rel) {
-    u8* mod = STAT_MODULE(L);
+    FighterAI* ai = get_ai_context(reinterpret_cast<u64>(L));
     void* scene = get_ai_collision_scene();
-    auto* base = reinterpret_cast<float4*>(mod + 0x90);
+    auto* base = reinterpret_cast<float4*>(ai->state->center_pos);
     float4 end = *base + *rel;
     return lineSegmentCheckRaw_71003029b0(
         scene, base, &end, 0xff, nullptr, nullptr, 0) != nullptr;
 }
 
-// [derived: reads stat_module+0x80, computes 2-vector offset chain]
+// [derived: reads state +0x80 (as Vector4), computes 2-vector offset chain]
 // 0x71003663f0 -- app::ai::line_segment_check_from_top_n (112B)
 bool line_segment_check_from_top_n_71003663f0(void* L, const float4* v1, const float4* v2) {
-    u8* mod = STAT_MODULE(L);
-    float4 start = *reinterpret_cast<float4*>(mod + 0x80) + *v1;
+    FighterAI* ai = get_ai_context(reinterpret_cast<u64>(L));
+    float4 start = *reinterpret_cast<float4*>(&ai->state->pos_x) + *v1;
     float4 end = start + *v2;
     void* scene = get_ai_collision_scene();
     return lineSegmentCheckRaw_71003029b0(
@@ -875,8 +875,8 @@ bool line_segment_check_from_top_n_71003663f0(void* L, const float4* v1, const f
 // [derived: same as line_segment_check but mask = 0x4 (ceiling-only)]
 // 0x7100366460 -- app::ai::line_segment_check_only_roof (100B)
 bool line_segment_check_only_roof_7100366460(void* L, const float4* rel) {
-    u8* mod = STAT_MODULE(L);
-    auto* base = reinterpret_cast<float4*>(mod + 0x90);
+    FighterAI* ai = get_ai_context(reinterpret_cast<u64>(L));
+    auto* base = reinterpret_cast<float4*>(ai->state->center_pos);
     float4 end = *base + *rel;
     void* scene = get_ai_collision_scene();
     return lineSegmentCheckRaw_71003029b0(
@@ -886,8 +886,8 @@ bool line_segment_check_only_roof_7100366460(void* L, const float4* rel) {
 // [derived: same as line_segment_check but mask = 0x2 (floor-only)]
 // 0x71003664d0 -- app::ai::line_segment_check_only_floor (100B)
 bool line_segment_check_only_floor_71003664d0(void* L, const float4* rel) {
-    u8* mod = STAT_MODULE(L);
-    auto* base = reinterpret_cast<float4*>(mod + 0x90);
+    FighterAI* ai = get_ai_context(reinterpret_cast<u64>(L));
+    auto* base = reinterpret_cast<float4*>(ai->state->center_pos);
     float4 end = *base + *rel;
     void* scene = get_ai_collision_scene();
     return lineSegmentCheckRaw_71003029b0(
@@ -897,8 +897,8 @@ bool line_segment_check_only_floor_71003664d0(void* L, const float4* rel) {
 // [derived: same as line_segment_check but mask = 0x18 (wall L|R bits)]
 // 0x7100366540 -- app::ai::line_segment_check_only_wall (100B)
 bool line_segment_check_only_wall_7100366540(void* L, const float4* rel) {
-    u8* mod = STAT_MODULE(L);
-    auto* base = reinterpret_cast<float4*>(mod + 0x90);
+    FighterAI* ai = get_ai_context(reinterpret_cast<u64>(L));
+    auto* base = reinterpret_cast<float4*>(ai->state->center_pos);
     float4 end = *base + *rel;
     void* scene = get_ai_collision_scene();
     return lineSegmentCheckRaw_71003029b0(
@@ -2604,19 +2604,19 @@ void reset_cmd_id_probability_add_2nd_7100368ee0(void* L) {
     *reinterpret_cast<u64*>(ctx + 0x5e8) = 0;
 }
 
-// [derived: tail-call to aiGetTargetById, read 4 f32 values individually
-//  (rect bounds: xmin, xmax, ymin, ymax). Target+0x264 is not 16-byte
-//  aligned so Clang emits ldr s0 + ld1 inserts rather than ldr q0]
+// [derived: tail-call to aiGetTargetById, read hit_collision_rect[4] from
+//  state->+0x264. Clang emits ldr s0 + 3×ld1 inserts because +0x264 is
+//  4-byte aligned but not 16-byte aligned.]
 // 0x7100367080 -- app::ai::target_hit_collision_rect (64B)
 float4 target_hit_collision_rect_7100367080(void* L) {
-    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
-    u8* target = reinterpret_cast<u8*>(aiGetTargetById_7100314030(
-        DAT_71052b5fd8, reinterpret_cast<void*>(ctx + 0xc50)));
+    FighterAI* ai = get_ai_context(reinterpret_cast<u64>(L));
+    auto* target = reinterpret_cast<FighterAIState*>(aiGetTargetById_7100314030(
+        DAT_71052b5fd8, &ai->target_entry_id));
     float4 r;
-    r[0] = *reinterpret_cast<f32*>(target + 0x264);
-    r[1] = *reinterpret_cast<f32*>(target + 0x268);
-    r[2] = *reinterpret_cast<f32*>(target + 0x26c);
-    r[3] = *reinterpret_cast<f32*>(target + 0x270);
+    r[0] = target->hit_collision_rect[0];
+    r[1] = target->hit_collision_rect[1];
+    r[2] = target->hit_collision_rect[2];
+    r[3] = target->hit_collision_rect[3];
     return r;
 }
 
