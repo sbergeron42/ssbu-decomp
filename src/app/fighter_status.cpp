@@ -830,6 +830,101 @@ f32 dive_speed_y_max_710036ba10(void* L) { return *reinterpret_cast<f32*>(STAT_M
 // ── 0x710036ba70 -- escape_air_cancel_frame (16B) ───────────────
 f32 escape_air_cancel_frame_710036ba70(void* L) { return *reinterpret_cast<f32*>(STAT_MODULE(L) + 0x234); }
 
+// ════════════════════════════════════════════════════════════════════
+// ai::line_segment_check family — ground/wall ray casts for AI pathing
+// All load stat_module base pos, compute start + rel vector,
+// call FUN_71003029b0 with a collision-type bitmask.
+// FighterAIManager singleton +0xc8 = collision scene data
+// [derived: line_segment_check (.dynsym) loads *(mgr+0xc8), reads stat_module+0x90 as Vector4]
+// ════════════════════════════════════════════════════════════════════
+
+extern "C" __attribute__((visibility("hidden"))) void* DAT_71052b5fd8;
+
+extern "C" void* lineSegmentCheckRaw_71003029b0(
+    void* scene, const float4* start, const float4* end,
+    u32 mask, void* excluded, void* out_hit, u32 flag);
+
+// Helper: FighterAIManager → inner → +0xc8 (scene/collision context)
+static inline void* get_ai_collision_scene() {
+    u8* mgr_inner = *reinterpret_cast<u8**>(DAT_71052b5fd8);
+    return *reinterpret_cast<void**>(mgr_inner + 0xc8);
+}
+
+// [derived: stat_module+0x90 = Vector4 position, arg1 = relative offset]
+// 0x7100366380 -- app::ai::line_segment_check (100B)
+bool line_segment_check_7100366380(void* L, const float4* rel) {
+    u8* mod = STAT_MODULE(L);
+    void* scene = get_ai_collision_scene();
+    auto* base = reinterpret_cast<float4*>(mod + 0x90);
+    float4 end = *base + *rel;
+    return lineSegmentCheckRaw_71003029b0(
+        scene, base, &end, 0xff, nullptr, nullptr, 0) != nullptr;
+}
+
+// [derived: reads stat_module+0x80, computes 2-vector offset chain]
+// 0x71003663f0 -- app::ai::line_segment_check_from_top_n (112B)
+bool line_segment_check_from_top_n_71003663f0(void* L, const float4* v1, const float4* v2) {
+    u8* mod = STAT_MODULE(L);
+    float4 start = *reinterpret_cast<float4*>(mod + 0x80) + *v1;
+    float4 end = start + *v2;
+    void* scene = get_ai_collision_scene();
+    return lineSegmentCheckRaw_71003029b0(
+        scene, &start, &end, 0xff, nullptr, nullptr, 0) != nullptr;
+}
+
+// [derived: same as line_segment_check but mask = 0x4 (ceiling-only)]
+// 0x7100366460 -- app::ai::line_segment_check_only_roof (100B)
+bool line_segment_check_only_roof_7100366460(void* L, const float4* rel) {
+    u8* mod = STAT_MODULE(L);
+    auto* base = reinterpret_cast<float4*>(mod + 0x90);
+    float4 end = *base + *rel;
+    void* scene = get_ai_collision_scene();
+    return lineSegmentCheckRaw_71003029b0(
+        scene, base, &end, 0x4, nullptr, nullptr, 0) != nullptr;
+}
+
+// [derived: same as line_segment_check but mask = 0x2 (floor-only)]
+// 0x71003664d0 -- app::ai::line_segment_check_only_floor (100B)
+bool line_segment_check_only_floor_71003664d0(void* L, const float4* rel) {
+    u8* mod = STAT_MODULE(L);
+    auto* base = reinterpret_cast<float4*>(mod + 0x90);
+    float4 end = *base + *rel;
+    void* scene = get_ai_collision_scene();
+    return lineSegmentCheckRaw_71003029b0(
+        scene, base, &end, 0x2, nullptr, nullptr, 0) != nullptr;
+}
+
+// [derived: same as line_segment_check but mask = 0x18 (wall L|R bits)]
+// 0x7100366540 -- app::ai::line_segment_check_only_wall (100B)
+bool line_segment_check_only_wall_7100366540(void* L, const float4* rel) {
+    u8* mod = STAT_MODULE(L);
+    auto* base = reinterpret_cast<float4*>(mod + 0x90);
+    float4 end = *base + *rel;
+    void* scene = get_ai_collision_scene();
+    return lineSegmentCheckRaw_71003029b0(
+        scene, base, &end, 0x18, nullptr, nullptr, 0) != nullptr;
+}
+
+// Returns a command-input category based on stat_module motion_kind and
+// ctx motion hash. 1 = basic QCF/QCB range, 2 = forward-smash analog,
+// 1 = explicit QCF via hash 0x6038/0x6046, 0 = none.
+// [derived: stat_module+0x28 motion_kind, stat_module+0x1f4 command bits,
+//  ctx+0x198 u16 motion hash]
+// 0x7100361dd0 -- app::ai::check_use_command_type (104B)
+u32 check_use_command_type_7100361dd0(void* L) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u8* mod = *reinterpret_cast<u8**>(ctx + 0x168);
+    s32 motion = *reinterpret_cast<s32*>(mod + 0x28);
+    if (static_cast<u32>(motion - 0x3c) < 2) return 1;
+    if (motion == 0x55) return 2;
+    s32 cmd = *reinterpret_cast<s32*>(mod + 0x1f4) & ~1;
+    if (cmd != 0x3c) return 0;
+    u16 hash = *reinterpret_cast<u16*>(ctx + 0x198);
+    if (hash == 0x6038) return 1;
+    if (hash == 0x6046) return 1;
+    return 0;
+}
+
 #undef STAT_MODULE
 
 // ════════════════════════════════════════════════════════════════════
