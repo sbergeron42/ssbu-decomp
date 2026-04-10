@@ -2,57 +2,52 @@
 
 ## Model: Opus
 
-## Task: Phase 2 — Rewrite res_pipeline_medium.cpp with typed struct access
+## Task: Phase 3 — Define StageBase struct + rewrite all stage users
 
-## Priority: QUALITY REWRITE (not new decomp)
+## Priority: TYPE RECOVERY (struct definition + consumer rewrite)
 
 ## Context
-This file is 1,876 lines of Ghidra paste with 1,378 default variable names. It compiles but has zero verified matches and zero structural value. Your job is to rewrite it using the existing resource service types in `include/resource/`.
+`StageBase` is the base class for all stage types (~150 raw offset references across 10+ files). Stage destructors, camera hooks, and collision setup all operate on this type via raw offsets. The accessor is typed, the reviewer rejects >10% cast density, and placeholder structs go in `include/app/placeholders/`.
 
 ## File Territory
-- `src/resource/res_pipeline_medium.cpp` (REWRITE)
-- `include/resource/` (extend existing headers as needed)
-
-## Available Struct Headers
-- `include/resource/ResServiceNX.h` — resource service singleton, file loading
-- `include/resource/LoadedArc.h` — ARC archive structures (ARCropolis-derived names)
-- `include/resource/PathResolver.h` — filepath/directory handle resolution
-- `include/resource/containers.h` — FixedString, vector-like containers
-- `include/resource/FixedString.h` — FixedString<N> template
-- `include/resource/Fiber.h` — fiber/coroutine context
-- `include/resource/LZ4Frame.h` — LZ4 frame decompression
+- `include/app/placeholders/StageBase.h` (CREATE — or `include/app/StageBase.h` if confident in the name)
+- Any `src/` files with stage-related raw offset access (camera_functions.cpp stage destructors, StageWufuIsland.cpp, etc.)
 
 ## What To Do
 
-### Step 1: Read and understand the existing headers
-Read ALL headers in `include/resource/` first. Understand what types are already available before touching the source.
+### Step 1: Map the struct layout using Ghidra
+Use `mcp__ghidra__decompile_function_by_address` on stage destructors and constructors to map the field layout:
+- Pool-c's `camera_functions.cpp` already has stage destructors at 0x7102ccf720 (~StageNintendogs), 0x71029240a0 (~StageFlatZoneX), 0x7102f33f20 (~StageStreetPass)
+- These show: vtable at +0x0, sub-object at +0x738, vectors at +0x830/+0x850/+0x898/+0x908, unique_ptrs at +0x950/+0xc78
+- Look for the common destructor `FUN_71025d7310` (StageBase::~StageBase) — its offsets define the base class fields
 
-### Step 2: Identify the functions
-The file has ~50-80 functions. For each one:
-1. Read the Ghidra paste version
-2. Identify which struct types are being accessed (by offset patterns)
-3. Rewrite using struct field access from the headers
-4. If a needed struct doesn't exist, define it in the appropriate header with `unk_0xNN` for unknown fields
+### Step 2: Define the struct
+```cpp
+struct StageBase {
+    void** vtable;           // +0x00
+    u8 unk_0x08[0x730];
+    void* sub_object;        // +0x738 [derived: loaded in all stage dtors]
+    // ... fill in from Ghidra analysis
+};
+```
+Use `unk_0xNN` for gaps. Document every named field with `[derived:]` or `[inferred:]`.
 
-### Step 3: Rename Ghidra variables
-After struct access is in place, rename `uVar1`, `lVar2` etc. to meaningful names.
+### Step 3: Rewrite stage functions
+Replace raw offset access with struct field access. Target the stage destructors first (they reveal the most fields), then other stage functions.
 
-### Step 4: Delete functions you can't properly type
-If a function is too opaque to rewrite with struct access (no recognizable patterns), DELETE it rather than keeping the paste. An honest gap is better than fake progress.
+### Step 4: Log in undefined_types.md
+If the real class name is uncertain, add an entry to `data/undefined_types.md` with research leads.
 
 ## Rules
-- **Every named field needs a `[derived:]` or `[inferred:]` comment**
-- **Use ARCropolis community names** where available (tag with `[derived: ARCropolis]`)
-- **0xFFFFFF sentinel** = invalid index, use named constant
-- **OOM retry pattern**: `alloc(); if (!ptr && handler) { handler->retry(); alloc(); }` — factor into helper
-- **NO Ghidra variable names** in final code (uVar, lVar, plVar = auto-REJECT)
-- **NO raw vtable dispatch** — use typed wrappers or add them to headers
+- Cast density must stay under 10% or your diff gets REJECTED
+- Create placeholder structs for any new unknown types you encounter
+- Every named field needs `[derived:]` or `[inferred:]` provenance
+- NO Ghidra variable names, NO naked asm, NO raw vtable dispatch
 
-## Self-Check (MANDATORY before committing)
+## Self-Check
 ```bash
 python tools/review_diff.py pool-b
 ```
-Must have zero REJECT violations. The reviewer now rejects raw vtable dispatch too.
 
 ## Build
 ```bash
