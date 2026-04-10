@@ -360,3 +360,34 @@ Iterates vec_container elements, checks +0x40 flag, calls vt[6] and vt[9]
 
 == 0x71025d67b0 (96B) — StageBase query (reads 5 params from +0x198 chain) ==
 Reads **(+0x198), passes to 5 param getter functions
+
+=== SESSION 2026-04-09 BATCH 6 (camera/stage query functions) ===
+
+== 0x7102282ec0 — app::sv_camera_manager::get_fov (44B) ==
+Leaf: returns (*(float*)(inner+0xdac) * DAT_7104471fbc) / DAT_7104470d10
+inner = *DAT_71052b7f00
+
+== 0x7102284a50 — app::sv_ground_collision_line::get_left_pos (52B) ==
+Null-check param, read endpoint0 (+0x88), return position (+0x10) as float4.
+Fallback: PTR_ConstantZero_71052a7a80.
+
+== 0x7102284a90 — app::sv_ground_collision_line::get_right_pos (52B) ==
+Same as get_left_pos but reads endpoint1 (+0x90).
+
+== 0x7102275a50 — app::sv_math::vec2_is_zero (44B) ==
+NEON fcmeq: checks if both floats == 0.0. Uses ext+and pattern. SKIP (NEON intrinsics needed).
+
+== 0x7102275da0 — app::sv_math::vec3_is_zero (48B) ==
+Same NEON pattern for 3 floats. SKIP.
+
+== 0x71022848e0 — app::sv_ground_collision_line::get_center_pos (48B) ==
+Average of endpoint0 and endpoint1 positions. Complex NEON arithmetic. SKIP.
+
+== 0x71022ad2b0 — app::sv_animcmd::get_value_int (52B) ==
+Jump table: PTR_FUN_7104f68c38[param_2], bounds check < 9. Outside pool-b territory.
+
+== 0x71022ad2f0 — app::sv_animcmd::get_value_float (52B) ==
+Jump table: PTR_LAB_7104f68c80[param_2], bounds check < 7. Outside pool-b territory.
+
+== 0x71022b5150 — app::sv_animcmd::is_excute (48B) ==
+Reads byte at animcmd_state+0x8, pushes to lua stack with type tag 1.

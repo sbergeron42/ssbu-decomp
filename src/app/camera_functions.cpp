@@ -2494,3 +2494,45 @@ extern "C" float4 convert_pos_dead_range_gravity(u8* lua_state, float x, float y
     return result;
 }
 }} // namespace app::sv_camera_manager
+
+// ---- Camera manager queries (non-lua) ----
+
+// DAT_7104471fbc [derived: camera FOV conversion constant]
+extern "C" float DAT_7104471fbc HIDDEN;
+// DAT_7104470d10 [derived: camera FOV divisor constant]
+extern "C" float DAT_7104470d10 HIDDEN;
+
+// 0x7102282ec0 (44 bytes) — app::sv_camera_manager::get_fov
+// Leaf: reads FOV from camera parameter singleton at +0xdac, applies conversion
+// [derived: Ghidra decompilation at 0x7102282ec0]
+extern "C" float get_fov_7102282ec0(void) {
+    return (*(float*)(*(u8**)DAT_71052b7f00 + 0xdac) * DAT_7104471fbc) / DAT_7104470d10;
+}
+
+// ---- Stage collision line query functions ----
+
+namespace app { namespace sv_ground_collision_line {
+
+// 0x7102284a50 (52 bytes) — app::sv_ground_collision_line::get_left_pos
+// Returns left endpoint position of collision line
+// [derived: Ghidra decompilation at 0x7102284a50]
+extern "C" float4 get_left_pos(GroundCollisionLine* param_1) {
+    float4* fallback = (float4*)&PTR_ConstantZero_71052a7a80;
+    if (param_1 == nullptr) return *fallback;
+    CollisionEndpoint* ep = param_1->endpoint0;  // +0x88 [derived: GroundCollisionLine.h]
+    if (ep == nullptr) return *fallback;
+    return *(float4*)ep->position;  // +0x10 [derived: CollisionEndpoint position]
+}
+
+// 0x7102284a90 (52 bytes) — app::sv_ground_collision_line::get_right_pos
+// Returns right endpoint position of collision line
+// [derived: Ghidra decompilation at 0x7102284a90]
+extern "C" float4 get_right_pos(GroundCollisionLine* param_1) {
+    float4* fallback = (float4*)&PTR_ConstantZero_71052a7a80;
+    if (param_1 == nullptr) return *fallback;
+    CollisionEndpoint* ep = param_1->endpoint1;  // +0x90 [derived: GroundCollisionLine.h]
+    if (ep == nullptr) return *fallback;
+    return *(float4*)ep->position;  // +0x10 [derived: CollisionEndpoint position]
+}
+
+}} // namespace app::sv_ground_collision_line
