@@ -2,57 +2,78 @@
 
 ## Model: Opus
 
-## Task: Phase 2 — Rewrite res_remaining_medium.cpp with typed struct access
+## Task: Phase 3 — Define FighterAI struct + rewrite AI helper functions
 
-## Priority: QUALITY REWRITE (not new decomp)
+## Priority: TYPE RECOVERY (struct definition + consumer rewrite)
 
 ## Context
-This file is 1,268 lines of Ghidra paste with 824 default variable names. It compiles but has zero verified matches and zero structural value. Your job is to rewrite it using the existing resource service types in `include/resource/`.
+`FighterAI` is the context object for AI decision-making (~60 raw offset references across 3+ files). AI helpers in `ai_helpers_a.cpp` use macros `AI_CTX(L)` and `AI_STATE(L)` that hide raw deref chains. The reviewer rejects >10% cast density, and placeholder structs go in `include/app/placeholders/`.
 
 ## File Territory
-- `src/resource/res_remaining_medium.cpp` (REWRITE)
-- `include/resource/` (extend existing headers as needed)
-
-## Available Struct Headers
-- `include/resource/ResServiceNX.h` — resource service singleton, file loading
-- `include/resource/LoadedArc.h` — ARC archive structures (ARCropolis-derived names)
-- `include/resource/PathResolver.h` — filepath/directory handle resolution
-- `include/resource/containers.h` — FixedString, vector-like containers
-- `include/resource/FixedString.h` — FixedString<N> template
-- `include/resource/Fiber.h` — fiber/coroutine context
-- `include/resource/LZ4Frame.h` — LZ4 frame decompression
+- `include/app/placeholders/FighterAI.h` (CREATE — define FighterAI and FighterAIState)
+- `src/app/ai_helpers_a.cpp` (rewrite to use struct access)
+- Any other `src/` files with AI context offset access
 
 ## What To Do
 
-### Step 1: Read and understand the existing headers
-Read ALL headers in `include/resource/` first. Understand what types are already available before touching the source.
+### Step 1: Map the struct layout
+The AI context is accessed via `*(u64*)(L - 8)` in all AI functions. Known offsets from `ai_helpers_a.cpp`:
+- ctx + 0x168 = AI state object pointer
+- ctx + 0x170 = analyst object pointer (status history)
 
-### Step 2: Identify the functions
-For each function:
-1. Read the Ghidra paste version
-2. Identify which struct types are being accessed (by offset patterns)
-3. Rewrite using struct field access from the headers
-4. If a needed struct doesn't exist, define it in the appropriate header with `unk_0xNN` for unknown fields
+The AI state object has:
+- +0x274: predict_landing_frame (s32, scvtf'd to float)
+- +0xd0: floor collision rect pointer
+- +0xad0..+0xb74: indexed param tables
 
-### Step 3: Rename Ghidra variables
-After struct access is in place, rename `uVar1`, `lVar2` etc. to meaningful names.
+Use `mcp__ghidra__decompile_function_by_address` on functions at 0x710036xxxx (app::ai::* cluster) to map more fields.
 
-### Step 4: Delete functions you can't properly type
-If a function is too opaque to rewrite with struct access, DELETE it rather than keeping the paste. An honest gap is better than fake progress.
+### Step 2: Define the structs
+Create `FighterAI`, `FighterAIState`, and `AIAnalyst` structs. Use `unk_0xNN` for gaps:
+```cpp
+struct FighterAIState {
+    u8 unk_0x00[0xd0];
+    void* floor_data;       // +0xd0 [derived: floor_width/floor_center read through this]
+    u8 unk_0xd8[0x19c];
+    s32 predict_landing;    // +0x274 [derived: predict_landing_frame reads as s32]
+    // ...
+};
+
+struct FighterAI {
+    u8 unk_0x00[0x168];
+    FighterAIState* state;   // +0x168 [derived: all AI helpers deref this]
+    void* analyst;           // +0x170 [derived: status_prev/status_count use this]
+    // ...
+};
+```
+
+### Step 3: Rewrite ai_helpers_a.cpp
+Replace the `AI_CTX`/`AI_STATE` macros and raw offset access with typed struct access:
+```cpp
+// BEFORE:
+float predict_landing_frame(u64 L) {
+    return (float)*(s32*)(AI_STATE(L) + 0x274);
+}
+
+// AFTER:
+float predict_landing_frame(u64 L) {
+    FighterAI* ctx = get_ai_context(L);
+    return (float)ctx->state->predict_landing;
+}
+```
+
+### Step 4: Log in undefined_types.md
+Add entries for FighterAI, FighterAIState, AIAnalyst with research leads.
 
 ## Rules
-- **Every named field needs a `[derived:]` or `[inferred:]` comment**
-- **Use ARCropolis community names** where available (tag with `[derived: ARCropolis]`)
-- **0xFFFFFF sentinel** = invalid index, use named constant
-- **OOM retry pattern**: factor into `alloc_with_oom_retry()` helper
-- **NO Ghidra variable names** in final code (auto-REJECT)
-- **NO raw vtable dispatch** (auto-REJECT)
+- Cast density must stay under 10% or your diff gets REJECTED
+- Create placeholder structs for any new unknown types you encounter
+- Every named field needs `[derived:]` or `[inferred:]` provenance
 
-## Self-Check (MANDATORY before committing)
+## Self-Check
 ```bash
 python tools/review_diff.py pool-c
 ```
-Must have zero REJECT violations.
 
 ## Build
 ```bash
