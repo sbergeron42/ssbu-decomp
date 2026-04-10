@@ -2,54 +2,32 @@
 
 ## Model: Opus
 
-## Task: Phase 4 — Naked asm audit (batch A: files A-F + fun_batch_c2_019)
+## Task: Clean up fighter_status.cpp — replace raw casts/offsets with typed module access
 
-## Priority: REMOVE NAKED ASM (banned by project rules)
+## Priority: QUALITY CLEANUP
 
 ## Context
-`__attribute__((naked))` is banned. 218 naked asm functions exist across 51 non-jemalloc files. Your job: delete them. Naked asm inflates progress metrics without recovering source code. Jemalloc files are excluded (library code).
+`fighter_status.cpp` is the single dirtiest file: 1,461 reinterpret_casts, 908 raw offsets, 3,254 lines. The typed module headers exist (`WorkModule.h`, `StatusModule.h`, `MotionModule.h`, `ControlModule.h`, `GroundModule.h`, etc.) and the accessor is typed. Most casts are loading a module from the accessor then doing raw vtable dispatch — exactly the pattern the headers replace.
 
 ## File Territory
-All non-jemalloc files from A through F that contain naked asm:
-- `src/app/AreaContactLog.cpp`
-- `src/app/AttackAbsoluteData.cpp`
-- `src/app/AttackData.cpp`
-- `src/app/audio_functions.cpp`
-- `src/app/BattleObjectSlow.cpp`
-- `src/app/BattleObjectWorld.cpp`
-- `src/app/BossManager.cpp`
-- `src/app/Circle.cpp`
-- `src/app/DamageInfo.cpp`
-- `src/app/DamageLog.cpp`
-- `src/app/FighterBayonettaFinalModule.cpp`
-- `src/app/FighterCutInManager.cpp`
-- `src/app/FighterInformation.cpp`
-- `src/app/FighterKineticEnergyMotion.cpp`
-- `src/app/FighterManager.cpp`
-- `src/app/FighterParamAccessor2.cpp`
-- `src/app/fun_batch_c2_019.cpp` (55 naked functions — biggest single file)
-- `src/app/fun_batch_c_001.cpp`
-- `src/app/fun_batch_c_003.cpp`
+- `src/app/fighter_status.cpp` (CLEANUP — do not add new functions, only clean existing code)
+- `include/app/modules/*.h` (extend if needed — add missing vtable slot wrappers)
+- `include/app/placeholders/` (create placeholder structs for non-module types)
 
 ## What To Do
+1. Add `#include` for all module headers this file uses
+2. Replace `reinterpret_cast<Type*>(acc->work_module)` → just use `acc->work_module` (already typed)
+3. Replace `VT(mod)[slot]` dispatch → `mod->method_name(...)` using the headers
+4. For vtable slots that don't have wrappers yet, add them to the module header
+5. For non-module pointer types (FighterManager, FighterInformation, etc.), use existing structs or create placeholders
+6. Run `python tools/review_diff.py pool-a` — cast density must stay under 10%
 
-For each file:
-1. Find all `__attribute__((naked))` functions
-2. **DELETE the entire function** — do not try to decomp it, do not replace it with a stub
-3. If the file becomes empty after deletion, delete the file itself
-4. If the file has non-naked functions that are valuable, keep those
-
-## Important
-- Do NOT touch jemalloc files (`src/app/jemalloc_*.cpp`, `src/resource/jemalloc_*.cpp`)
-- Do NOT try to re-decomp these functions — that's future work, not this task
-- The goal is honest accounting: remove fake progress from the metrics
-- Build must still pass after deletions
-
-## Self-Check
-```bash
-python tools/build.py 2>&1 | tee build_output.txt
-grep -r '__attribute__.*naked' src/app/AreaContactLog.cpp src/app/AttackData.cpp  # should find nothing
-```
+## Do NOT
+- Delete functions
+- Add new functions
+- Rename functions
+- Change function signatures
+- This is purely internal cleanup of existing code
 
 ## Build
 ```bash
