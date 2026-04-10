@@ -437,6 +437,73 @@ Before closing this pass, the remaining `WaitEvent(0x71039c06c0)` callers outsid
 
 ---
 
+## 6e. Thread framework: `pead::` + `nn::pia` confirmed; `main_loop` = `pead::MainThread`
+
+String-table scans turned up the thread framework SSBU uses and the location of `main_loop` in it.
+
+### `pead::` is the game's thread/heap/delegate framework
+
+Strings observed (at `7104968xx` and `7104929xx` RODATA ranges) include:
+
+- `pead::MainThread`
+- `pead::ThreadMgr`, `pead::Thread`, `pead::DelegateThread`, `pead::DelegateBase`, `pead::Event`, `pead::Mutex`, `pead::CriticalSection`
+- `pead::HeapMgr`, `pead::ExpHeap`, `pead::Heap`, `pead::FixedSafeString<N>`
+
+`pead::` is a small Bandai Namco / internal framework layered on top of `nn::os`. It owns threads, heaps, delegates, and fixed strings. **`pead::MainThread`** is the wrapped identity of the process's initial thread.
+
+### `main_loop` *is* the `pead::MainThread` body
+
+`FUN_710013c570` (the only xref to the `"pead::MainThread"` string at `710428ff04`) is the pead `ThreadMgr::adoptCurrentThread` path. Its body:
+
+```c
+pTVar5 = nn::os::GetCurrentThread();
+plVar6 = alloc_pead_thread_object(0xf0);   // FUN_7100130810(0xf0, …)
+plVar6[4] = &RTTI("pead::Thread");
+plVar6[5] = "pead::MainThread";             // ← the string literal
+plVar6[0x19..0x1a] = pTVar5;                // wrap the nn::os handle
+plVar6[0x1d] = nn::os::GetThreadPriority(pTVar5);
+nn::os::SetTlsValue(param_1->tls_slot, plVar6);
+```
+
+Because this adopts the current thread (the one already created by `nn::oe` for the process entry) and because `main_loop` is what that thread runs for every presentation frame, **`main_loop` is literally the `pead::MainThread` body**. All sim, render, and housekeeping has to either happen inside this call chain or on a thread spawned from it.
+
+### `nn::pia` is present and owns its own thread family
+
+`pia` (Nintendo's peer-to-peer integration layer — the substrate Smash Ultimate uses for rollback-capable online play) is in the binary with its own dedicated threads:
+
+- `"Pia Send"`, `"Pia Receive"`, `"Pia Send Broadcast"`, `"Pia Send Unicast"`
+- `"Pia SendThreadStream"`, `"Pia ReceiveThreadStream"`
+- `"Pia BackgroundScheduler"`
+- Strings for `nn::pia::common::BackgroundScheduler`, `nn::pia::session::*`, `nn::pia::lan::*`, `nn::pia::nex::*`
+
+These are all **network** threads, not sim threads, but they are the framework the rollback implementation will plug into. `nn::pia::common::BackgroundScheduler` delegates work to `pead::Thread` via `pead::Delegate2<BackgroundScheduler, void(pead::Thread*, long)>` — the sim resim step for rollback would be scheduled through this exact interface when running online.
+
+### `FUN_710386fc30` is `nu::GraphicsModule::BeginFrame` — correcting earlier docs
+
+The function called just before Event A is signalled — previously labelled "the dt producer" on first-pass heuristics — was decompiled and is actually **`nu::GraphicsModule::BeginFrame`** (or the equivalent frame-begin method on `nu::GraphicsModule`). Evidence:
+
+- Three explicit calls to `nu::ModuleInitializer<nu::GraphicsModule, nu::GraphicsModuleDesc>::Instance()`.
+- `DAT_7105940878` invoked with timeout `0xffffffffffffffff` on a fence pointer at `[graphics_obj + 0x58] + 0xb8` — classic **GPU fence wait-for-completion** (infinite timeout).
+- Error codes `-0xffbbff9` / `-0xffbbffb` follow the `nn::gr::ResultFatalErr` / `ResultTimeout` family (`0x0fbbffX` base).
+- Swapchain index rotation: swaps the four fields at `param_2 + 0xf0 .. 0xfc` based on the three `u8` flags at `+0xec / +0xed / +0xee` (double/triple-buffer select).
+- Per-frame command-pool rewind: walks the list at `param_2 + 0x110` and calls `FUN_7103813120` on each entry to reset its command buffer.
+- Per-frame transient-memory free: iterates `[param_2 + 0x1528]` allocations and frees them via `VirtualFreeHook` + `FUN_710392e590` (jemalloc `free`).
+
+**Critical correction: `local_23f0` is not `dt`.** It is the **retired-GPU-frames delta** — the number of frames the GPU finished since the previous `BeginFrame`. Explicitly set at `*param_3 = lVar8;` where `lVar8 = pending_fences_submitted - pending_fences_retired`. So the `DAT_710593a440 += (int)local_23f0 + 1` atomic at the end of `main_loop`'s frame-timing phase is really **"presentation frames completed = frames-known-retired-by-GPU + 1"**, i.e., a GPU-backpressure counter, **not** a CPU dt. Even less useful as a rollback index than I thought.
+
+### All four `WaitEvent(0x71039c06c0)` callers + all main_loop phases are now classified
+
+With `FUN_710386fc30 = BeginFrame` and all four 0x71039c06c0 waiters cleared, every direct and indirect piece of evidence points the same way: `main_loop` is the CPU-side frame head that runs on `pead::MainThread` and drives render begin → render command build → render submit (Event A) → GPU-completion bookkeeping → LDN gate (Event B). The simulation advance lives **inside** the `main_loop` call chain somewhere — just not along any of the paths checked so far.
+
+### Updated next-pass priorities
+
+1. **Decompile the phase-6/7 children** that were previously left `unknown`: `FUN_71035c13d0` (1,048 B, after scene state machine), `FUN_71036186d0` (1,188 B), `FUN_7103619080` (432 B), and especially `FUN_7103593c40` (792 B, phase 5). At least one of these must be the sim dispatch since `main_loop` *is* the game's main thread and there is no separate sim thread.
+2. **Audit the `FUN_71035763c0` call sites** (12 of them in `main_loop`, each with different args). We established the function is a keyframe sampler, but the 12 callers pass different `TrackDesc*` — listing those 12 track descriptors identifies which subsystem runs those tracks.
+3. **Decompile `FUN_7103632850`** (scene state machine, 4,268 B). We previously skimmed it as "scene/UI panel state transitions" based on the 0/1/2 state switch, but a match-active case (`DAT_710593a530 == 3` in main_loop) might route into it and do per-fighter work.
+4. **Xref `FighterManager` vtable directly**, bottom-up: find the vtable load site, xref to callers, walk up until one of them is reachable from `main_loop`.
+
+---
+
 ## 7. Open questions for the next pass
 
 | Question | How to answer |

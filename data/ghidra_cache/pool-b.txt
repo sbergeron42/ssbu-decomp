@@ -798,19 +798,86 @@ EventType* (not 0x71039c06c0) or a different synchronization primitive
 (condvar, direct function call, or blocking-polled spin). The main_loop-
 adjacent search space is fully exhausted.
 
-FINAL TAKEAWAY for rollback research:
+FINAL TAKEAWAY for rollback research (superseded by pead finding below):
 The main_loop at 0x7103747270 is definitively the presentation/housekeeping
 frame loop. Its signal/wait handshakes are render-buffer-kick + LDN-tick
-wait. None of its direct or near-direct children (FUN_7101344cf0,
-FUN_71035763c0 x12, FUN_71036f2c00, FUN_71036f2d40, FUN_7103619410,
-FUN_71036185d0, FUN_7103721a40) mutate fighter simulation state.
+wait.
 
-The sim tick must be found via a different entry point:
-  - Top-level xrefs to nn::os::CreateThread (look for thread bodies that
-    iterate FighterManager)
-  - Direct xrefs to FighterManager vtable slots from a top-level function
-  - The actual animation/dt producer at FUN_710386fc30 if it touches sim
-  - Direct call chains from game_main_entry / NintendoMain
+== pead framework + pia confirmed; main_loop IS pead::MainThread ==
+
+String scan turned up the thread framework layer SSBU uses. Top hits:
+  - "pead::MainThread"  (only xref: FUN_710013c570 data load)
+  - "pead::ThreadMgr", "pead::Thread", "pead::DelegateThread"
+  - "pead::HeapMgr", "pead::ExpHeap", "pead::Heap"
+  - "pead::Event", "pead::Mutex", "pead::CriticalSection"
+  - "pead::FixedSafeString<N>" (N = 32, 128, 1024)
+
+pead is a Bandai-Namco thread/heap/delegate framework layered on nn::os.
+FUN_710013c570 is the ThreadMgr::adoptCurrentThread path:
+    pTVar5 = nn::os::GetCurrentThread();
+    plVar6 = alloc_pead_thread(0xf0);
+    plVar6[5] = "pead::MainThread";       // the string
+    plVar6[0x19..0x1a] = pTVar5;           // wrap nn::os handle
+    plVar6[0x1d] = nn::os::GetThreadPriority(pTVar5);
+    SetTlsValue(mgr->tls_slot, plVar6);
+
+Since this adopts the CURRENT thread (not creates one), main_loop IS
+the body of pead::MainThread. There is NO separate sim worker thread
+created just for sim advance. The sim tick must run INSIDE main_loop's
+call chain somewhere, along a path not yet inspected.
+
+== nn::pia confirmed in binary (rollback-capable network stack) ==
+
+Strings: "Pia Send", "Pia Receive", "Pia Send Broadcast", "Pia Send Unicast",
+"Pia SendThreadStream", "Pia ReceiveThreadStream", "Pia BackgroundScheduler",
+"nn::pia::common::BackgroundScheduler", "nn::pia::session::*",
+"nn::pia::lan::*", "nn::pia::nex::*".
+
+pia is Nintendo's peer-to-peer rollback-capable networking layer. Smash uses
+it for online play. The BackgroundScheduler delegates work to pead::Thread
+via pead::Delegate2<BackgroundScheduler, void(pead::Thread*,long)>. This is
+the framework a rollback resim step would plug into when online.
+
+Pia threads are NETWORK workers, not sim workers, but they identify the
+place rollback-layer code will live.
+
+== FUN_710386fc30 = nu::GraphicsModule::BeginFrame (correcting earlier doc) ==
+
+Previously called "the dt producer" based on first-pass heuristics. Actually:
+- 3 calls to nu::ModuleInitializer<nu::GraphicsModule, nu::GraphicsModuleDesc>::Instance()
+- DAT_7105940878 called with timeout 0xffffffffffffffff on fence at
+  [graphics_obj+0x58]+0xb8 → GPU fence wait-for-completion (infinite)
+- Error codes -0xffbbff9 / -0xffbbffb (nn::gr::Result* family, base 0xfbbff*)
+- Swapchain index rotation: swaps 4 fields at param_2+0xf0..0xfc based on
+  3 u8 flags at +0xec/+0xed/+0xee (double/triple-buffer select)
+- Per-frame cmd-pool rewind: walks list at param_2+0x110, calls
+  FUN_7103813120 on each buffer
+- Per-frame transient-memory free: iterates [param_2+0x1528] alloc count
+  and frees via VirtualFreeHook + FUN_710392e590 (jemalloc free)
+
+CRITICAL CORRECTION: local_23f0 (the value main_loop adds to its atomic
+counter) is NOT dt. It is the RETIRED-GPU-FRAMES DELTA, set at:
+    *param_3 = lVar8;    // lVar8 = pending_submitted - pending_retired
+The atomic DAT_710593a440 += (int)local_23f0 + 1 at main_loop line ~535
+is therefore "presentation frames completed = GPU-retired + 1" — a GPU
+backpressure counter, NOT a CPU time delta. Even less useful as a
+rollback index.
+
+== Updated hunt priorities ==
+
+Because main_loop IS pead::MainThread (not one of many threads), the sim
+MUST be inside its call chain. Remaining targets to decompile:
+  a) FUN_7103593c40   (792B, phase 5)   ← unknown
+  b) FUN_71035c13d0   (1048B, phase 6)  ← unknown
+  c) FUN_71036186d0   (1188B, phase 7)  ← unknown
+  d) FUN_7103619080   (432B,  phase 7)  ← unknown (Event A neighborhood)
+  e) FUN_7103632850   (4268B, phase 6 scene state machine) -- re-examine
+     the DAT_710593a530 == 3 case branch for per-fighter dispatch
+  f) Audit the 12 different TrackDesc* args passed to FUN_71035763c0 to
+     identify which tracks are being sampled (one may be a Fighter
+     transform track)
+  g) FighterManager vtable xrefs bottom-up to find a call chain that
+     reaches main_loop
 
 
 
