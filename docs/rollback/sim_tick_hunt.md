@@ -1283,3 +1283,178 @@ the server is responsive.
   pseudocode).
 - No `src/` changes — documentation-only pass per
   `WORKER-pool-a.md`'s primary deliverable.
+
+---
+
+## Pool A — DAT_710593a6a0 identity CORRECTION (2026-04-10)
+
+**Major revision to pool-B's earlier classification.** The singleton at
+`DAT_710593a6a0` is **NOT** the app-wide scene root. It is a
+**Mii fighter-face database singleton** — an object that wraps
+`nn::mii::Database` plus a per-fighter Mii entry vector and two head-
+renderer command buffer shared_ptrs. This changes the interpretation
+of almost every earlier pool-B finding on this singleton.
+
+### Evidence chain
+
+1. Pool-a decompiled `FUN_71022cd350` (writer site `0x71022cd600`).
+   It is a **4100-line match-shutdown function** that destroys ~130
+   battle-time singletons and ends with:
+   ```c
+   lVar14 = DAT_710593a6a0;
+   if (DAT_710593a6a0 != 0) {
+       FUN_7103757140(DAT_710593a6a0);   // dtor
+       FUN_710392e590(lVar14);            // operator delete
+       DAT_710593a6a0 = 0;                // null the global
+   }
+   ```
+   It writes *null*, not a new object. So `FUN_71022cd350` is not the
+   constructor we wanted — it's the "delete g_foo; g_foo = nullptr;"
+   shutdown path. (Pool-B assumed both write xrefs were installers.
+   They are not — at least one is a nuller.)
+
+2. Pool-a then decompiled the destructor that shutdown called:
+   **`FUN_7103757140`** (renamed in Ghidra to
+   `MiiFighterDatabase_dtor_7103757140`, cached at
+   `data/ghidra_cache/pool-a_FUN_7103757140.md`). It's small and
+   tractable. The full body reveals:
+
+   ```c
+   // Field walk inside the destructor:
+   this = (mutex*) *param_1;     // pointer-to-pointer deref
+   *param_1 = 0;
+   // +0x2500: shared_ptr release (ctrl block at +0x2508)
+   // +0x24f0: shared_ptr release (ctrl block at +0x24f8)
+   // +0x24d0/+0x24d8: std::vector<FighterMiiEntry>, stride 0x68,
+   //                  entry.ctrl at entry+0x60, release then free buffer
+   nn::mii::Database::~Database((Database*)(this + 0x20));
+   std::__1::mutex::~mutex(this);    // mutex at offset 0
+   FUN_710392e590(this);              // free the object
+   ```
+
+3. The `nn::mii::Database::~Database` call at offset `+0x20` is the
+   smoking gun. `nn::mii::Database` is the NintendoSDK class that
+   owns the console's Mii storage. Only a Mii-data singleton would
+   embed one.
+
+4. The two shared_ptrs at `+0x24f0` and `+0x2500` match **exactly**
+   pool-C's FUN_7103577fd0 finding (that function decoded FNV strings
+   `"lib::mii::HeadRenderer (ringed_command_buffer_opaque_)"` and
+   `"lib::mii::HeadRenderer (ringed_command_buffer_translucent_)"`).
+   Two command buffer shared_ptrs for two render passes — a perfect
+   fit. FUN_7103577fd0 installs those two renderers into the Mii
+   database singleton.
+
+5. The 0x68-byte entries at `+0x24d0` vector each contain an
+   `nn::mii::CharInfo` blob (0x58 bytes) followed by a `shared_ptr`
+   pair (+0x58, +0x60). This exactly matches the `FighterRosterEntry`
+   layout pool-a derived from `FUN_71014f10c0` — **and also explains
+   why the 8 fighter-info pointers in FUN_71014f10c0 read a u16
+   "mii index" at `FighterInfo + 0x68` and used it to look up an
+   entry in this vector**. The index is a Mii database index, not a
+   fighter-roster index.
+
+### Corrected struct layout for DAT_710593a6a0's target
+
+```
+struct MiiFighterDatabase {   // size >= 0x2508
+    std::mutex       mutex;                  // +0x00 (embedded, no vtable)
+    /* +0x18 padding / mutex internals */
+    nn::mii::Database db;                    // +0x20 (SDK member)
+    /* +0x??..+0x24cf unknown */
+    std::vector<FighterMiiEntry> entries;    // +0x24d0 begin, +0x24d8 end
+    /* +0x24e0..+0x24ef unknown */
+    std::shared_ptr<HeadRendererCmdBuf> opaque_cmd_buf;       // +0x24f0
+    std::shared_ptr<HeadRendererCmdBuf> translucent_cmd_buf;  // +0x2500
+    /* object total size determined by allocator, not visible in dtor */
+};
+
+struct FighterMiiEntry {   // size 0x68
+    nn::mii::CharInfo char_info;   // +0x00 (0x58 bytes)
+    std::shared_ptr<???> ptr;      // +0x58 / +0x60 (ctrl block)
+};
+```
+
+This struct has **NO virtual methods** — the first member is a mutex,
+not a vtable pointer. It's a plain singleton struct, not a polymorphic
+class.
+
+### What this invalidates
+
+1. **Dispatcher A's "sim tick" lead at
+   `[**(DAT_710593a6a0+0x24e8)+0x2da8]` is now suspect.** This dtor
+   doesn't touch `+0x24e8` or any fields past `+0x2500`, which implies
+   either:
+   - The field at +0x24e8 isn't owned by this singleton (it's a raw
+     back-reference to a sub-object owned elsewhere — consistent with
+     "list of registered observers for Mii-data changes"), OR
+   - Pool-B misread the offset chain in `main_loop` and the dispatcher
+     is rooted in a different singleton entirely.
+
+   Either way, **a Mii face-data singleton is an implausible home
+   for the per-frame sim tick dispatcher**. The sim tick hunt should
+   stop chasing `DAT_710593a6a0` and move to the other strong lead:
+   Dispatcher B (the frame-scheduled queue) and the main_loop children
+   `FUN_71035c13d0`, `FUN_71036186d0`, `FUN_7103619080`, `FUN_7103593c40`,
+   `FUN_7103632850`.
+
+2. **`FUN_71014f10c0` (renamed `GameState_finalizeMatch_71014f10c0`)
+   is still correctly classified** as match-teardown, but its ~40
+   reads of `DAT_710593a6a0` are specifically releasing per-fighter
+   Mii face data at the end of a match — not fighter *state* and
+   definitely not any form of state serialization. The Mii CharInfo
+   is effectively constant for a match, so rollback does **not** need
+   to snapshot it.
+
+3. **"DAT_710593a6a0 is the scene root" from pool-B's
+   "DAT_710593a6a0 identity — partial classification" section
+   (2026-xx-xx) is wrong.** It is not a scene/match-runtime block.
+   It is a Mii subsystem singleton. The text describing it as
+   `app::Scene` / `app::GameMain` / `app::WorldManager` should be
+   treated as superseded.
+
+### Still open — FUN_71022b7100 (second writer)
+
+The second WRITE xref at `0x71022c9fb4` (inside `FUN_71022b7100`)
+**timed out** on Ghidra MCP. Logged to
+`data/ghidra_cache/manual_extraction_needed.md` per the
+stop-and-document rule. If it turns out to be the allocator/ctor, it
+will either confirm or extend this struct layout. Best guess: it's a
+lazy singleton getter that allocates + constructs the object + stores
+it into DAT_710593a6a0 the first time it is accessed.
+
+### Recommended renames in Ghidra
+
+- `FUN_7103757140` → `MiiFighterDatabase_dtor_7103757140` **(done)**
+- `FUN_71014f10c0` → `GameState_finalizeMatch_71014f10c0` **(done)**
+- `DAT_710593a6a0` → `g_mii_fighter_database_710593a6a0` *(not yet —
+  pool-B's existing docs all reference the `DAT_` name; leaving it
+  unchanged to avoid a documentation stampede)*
+
+### What rollback actually needs now
+
+The rollback team should **stop investing in the 40-read lead**. The
+real save-state walker is not discoverable through this singleton's
+xrefs. Strong next moves in priority order:
+
+1. Decompile the remaining main_loop phase children
+   (`FUN_71035c13d0`, `FUN_71036186d0`, `FUN_7103619080`,
+   `FUN_7103593c40`, `FUN_7103632850`) to find where the sim tick
+   actually lives.
+2. Xref-sweep `DAT_710593a530` (the match-state global Dispatcher A
+   is gated on). Its writer is the match-life-cycle transition
+   function and should name the true scene/match runtime root.
+3. Decompile `FUN_71022b7100` once Ghidra MCP can handle it (or
+   extract it manually) to confirm whether it's the Mii database
+   ctor or a third unrelated writer.
+
+### Artifacts this pass added
+
+- `data/ghidra_cache/pool-a_FUN_71014f10c0.md` (2120 lines)
+- `data/ghidra_cache/pool-a_FUN_71022cd350.md` (4103 lines)
+- `data/ghidra_cache/pool-a_FUN_7103757140.md` (the dtor — with
+  fully annotated field offsets)
+- `data/ghidra_cache/manual_extraction_needed.md` (logs
+  `FUN_71022b7100` as timed-out for next session)
+- Ghidra renames: `FUN_7103757140` and `FUN_71014f10c0` as noted
+  above.
