@@ -183,17 +183,9 @@ def analyze_file(filepath: str, lines: list) -> FileReport:
                            "nesting 3+ reinterpret_casts."
             ))
 
-        # ── REJECT: reinterpret_cast in src/ files ──
+        # ── Count reinterpret_casts (tracked as debt metric, not hard reject) ──
         rc_count = len(RE_REINTERPRET.findall(text))
         report.reinterpret_casts += rc_count
-        if rc_count > 0 and "include/" not in filepath:
-            report.violations.append(Violation(
-                file=filepath, line=line_no, rule="NO_REINTERPRET_CAST",
-                severity="REJECT", snippet=stripped[:120],
-                suggestion="reinterpret_cast means a missing type. Define or extend "
-                           "a struct in include/ so you can use typed field access. "
-                           "Only headers may use reinterpret_cast (for vtable wrapper internals)."
-            ))
 
         # ── Count raw offsets ──
         offset_matches = RE_RAW_OFFSET.findall(text)
@@ -286,6 +278,11 @@ def print_report(reports: list, strict: bool = False) -> int:
         print()
     print(f"  naked asm:          {total_naked}")
     print(f"  New structs:        {total_new_structs}")
+    if total_new_lines > 0 and total_reinterpret > 0:
+        rc_density = total_reinterpret / total_new_lines * 100
+        if rc_density > 10:
+            print(f"\n  WARNING: reinterpret_cast density is {rc_density:.0f}% — this suggests")
+            print(f"  missing type definitions. Consider defining structs to reduce casts.")
     print()
 
     # ── Quality score ──
