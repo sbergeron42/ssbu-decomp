@@ -7,48 +7,47 @@
 ## Priority: HIGHEST — blocks downstream rollback netcode work
 
 ## Context
-A rollback netcode fork of Eden (Yuzu) intercepting Smash's LDN traffic needs to capture/restore RNG state every frame. Without this, every rollback resimulation desyncs on frame 1. This is THE largest blocker for the rollback effort.
+A rollback netcode fork of Eden (Yuzu) intercepting Smash's LDN traffic needs to capture/restore RNG state every frame. Without this, every rollback resimulation desyncs on frame 1.
+
+## IMPORTANT: Pre-cached decomps
+**Two huge functions have already been decompiled to disk** (Ghidra MCP times out on them):
+- `data/ghidra_cache/main_loop_7103747270.txt` (24KB function, 3947 lines)
+- `data/ghidra_cache/FUN_7101344cf0.txt` (65KB function, 5891 lines — likely per-frame fighter update)
+
+**Read these files with `Read` instead of calling Ghidra MCP for those addresses.** Both files contain Ghidra decompiler output (with Ghidra default variable names — that's expected, you're reading reference material, not committing it).
 
 ## What To Find
 
 ### 1. The RNG function itself
-- **Search Ghidra** for `app::sv_math::rand` (or `sv_math::rand`, or just `rand` in the `app` namespace)
+- Search Ghidra for `app::sv_math::rand` (or `sv_math::rand`, or `rand` in `app` namespace)
 - Use `mcp__ghidra__search_functions_by_name` with terms like `rand`, `random`, `sv_math`
-- Document the function signature, address, and what it returns (uniform u32? float? bounded int?)
-- There may be multiple — `rand_int`, `rand_float`, `rand_range` etc. Find them all.
+- Document the function signature, address, and what it returns
+- We already know `xorshift128_7100138620` exists. Check if it IS the gameplay RNG or separate.
 
 ### 2. The RNG state
-- Find where RNG state is stored. Likely a global or singleton.
-- Look for the seed initialization — `srand`, `seed`, or wherever the function reads/writes its state
-- Document the struct layout: is it a single u64? An xorshift state? A Mersenne Twister?
-- Hint: We already know `xorshift128_7100138620` exists (4 u32 state, classic xorshift128). It might BE the gameplay RNG, or there may be a separate one.
+- Find where RNG state is stored (likely a global or singleton)
+- Document the struct layout
+- Find the seed init function
 
 ### 3. Every call site
-- Use `mcp__ghidra__get_function_xrefs` on the RNG function(s) to find all callers
-- Document them in a list: address, calling function name, what it's doing with the result
-- Categorize: gameplay (item spawns, hitlag shake, tripping, Peach turnips, G&W hammer) vs. cosmetic (UI animations, menu effects)
+- Use `mcp__ghidra__get_function_xrefs` on the RNG function(s)
+- Categorize each: gameplay (item spawns, hitlag shake, tripping) vs cosmetic (UI, menus)
+- **Both `main_loop` and `FUN_7101344cf0` likely call rand many times — search the cached files for "rand" or for the RNG address you find**
 
 ## Output
 
 Create `docs/rollback/rng.md` with:
 1. RNG function(s): signature, address, return semantics
 2. State struct: layout with `[derived:]` provenance
-3. Seed init function: where and when it's called
+3. Seed init function: where and when
 4. All call sites: table of `address | function | category | notes`
 
-Also define a proper `RngState` struct in `include/app/` (not placeholders/) since the name is essentially confirmed by the `sv_math::rand` symbol in `.dynsym`.
-
-## Approach Hints
-- Try `mcp__ghidra__list_strings` for "rand" or "seed" — debug strings sometimes exist
-- Cross-reference with KnokoDecomp-S — Captain Toad uses the same SDK, may have a similar RNG
-- Item spawn code is a good entry point — `app::ItemManager` functions that determine which item drops will call rand
-- If you find `xorshift128_7100138620` IS the gameplay RNG, rename it to `rng_advance_7100138620` or similar and document accordingly
+Define a proper `RngState` struct in `include/app/RngState.h` (not placeholders/) since `sv_math::rand` is `.dynsym`-confirmed.
 
 ## Quality Rules
-- This is research first, decomp second. Documenting findings is the primary deliverable.
-- If you decomp the rand function itself, do it cleanly with the typed RngState struct.
-- NO `FUN_` names, NO Ghidra vars, NO raw vtable dispatch
 - Cast density under 10%
+- NO `FUN_` names, NO Ghidra vars, NO raw vtable dispatch in committed code
+- The cached files contain Ghidra paste — that's reference material, NOT something to commit
 
 ## Build
 ```bash
