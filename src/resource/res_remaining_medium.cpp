@@ -1,9 +1,10 @@
 // res_remaining_medium.cpp — Resource service medium infrastructure functions
-// Pool-b assignment: pool allocator, fiber scheduler, container operations
-// See WORKER.md for full target list.
+// Pool allocator, fiber scheduler, container operations for phx task system.
+// See WORKER-pool-c.md for assignment details.
 
 #include "types.h"
 #include "resource/Fiber.h"
+#include "resource/TaskInfra.h"
 
 // Memory management
 extern "C" void* je_aligned_alloc(unsigned long, unsigned long);
@@ -51,8 +52,8 @@ extern "C" void* FUN_7103549f00(long);
 // Deque push_back helper
 extern "C" void FUN_710354a7e0(long);
 
-// Pool init (defined in this file, called by pool_acquire)
-void FUN_7103546c40_6c40(long* param_1, long param_2, u32 param_3, long param_4, long* param_5);
+// Forward declaration
+void pool_block_init(phx::PoolBlock* block, long elem_size, u32 count, long alloc_func_ptr, long* dealloc_func_ptr);
 
 // libc error handlers
 extern "C" [[noreturn]] void abort();
@@ -69,194 +70,226 @@ extern "C" void Fiber_dtor_353c210(phx::Fiber*);
 extern "C" void Fiber_switch_to_fiber_353c400(phx::Fiber*);
 
 // ============================================================================
-// FUN_7103546c40 — pool_block_init
-// Initializes a pool block: stores element config, clones a std::function
-// allocator from param_5 to the block at +0x30, then allocates
-// count*element_size bytes via the allocator in param_4, zeroes the buffer,
-// and builds a freelist through the allocated elements.
-// [derived: pool block layout: +0x00=freelist_head, +0x08=element_size(u32),
-//   +0x0C=count(u32), +0x10=base_ptr, +0x18=end_ptr, +0x20=count_copy(u32),
-//   +0x30=std::function(allocator)]
-// [derived: freelist built by chaining elements, each element[0]=prev_ptr]
-// Address: 0x7103546c40 (336 bytes)
+// OOM retry helper — attempts allocation, retries once via OOM handler if
+// the first attempt fails and an OOM handler singleton is registered.
+// [derived: pattern appears in pool_acquire, vector growth, and emplace_back]
 // ============================================================================
-void FUN_7103546c40_6c40(long* param_1, long param_2, u32 param_3, long param_4, long* param_5) {
-    long local_80[4];
-    long* local_60 = (long*)local_80;
+static void* alloc_with_oom_retry(u64 alignment, u64 size) {
+    void* ptr = je_aligned_alloc(alignment, size);
+    if (ptr != nullptr) return ptr;
 
-    *(u32*)((char*)param_1 + 8) = (u32)param_2;
-    *(u32*)((char*)param_1 + 0xC) = param_3;
+    if (DAT_7105331f00 != nullptr) {
+        u32 unused = 0;
+        long alloc_size = (long)size;
+        u64 result = ((u64(*)(s64*, u32*, long*))(*(s64*)(*DAT_7105331f00 + 0x30)))
+                     (DAT_7105331f00, &unused, &alloc_size);
+        if ((result & 1) != 0) {
+            ptr = je_aligned_alloc(alignment, size);
+            if (ptr != nullptr) return ptr;
+        }
+    }
+    return nullptr;
+}
 
-    // Clone std::function from param_5 to local
-    // [derived: param_5[4] = __f_ pointer, param_5 = SBO inline buffer]
-    long* plVar3 = (long*)param_5[4];
-    if (plVar3 == nullptr) {
-        local_60 = nullptr;
-    } else if (param_5 == plVar3) {
-        // Inline: vtable[3] (+0x18) = move_construct(src, dst)
-        ((void(*)(long*, long*))((long*)*plVar3)[3])(plVar3, local_80);
+// ============================================================================
+// std::function clone/destroy helpers — these operate on StdFunction32
+// (libc++ std::function with 32-byte SBO buffer). The vtable layout is:
+//   [2] = clone (heap), [3] = move_construct (SBO), [4] = destroy_local, [5] = destroy_heap
+// [derived: pool_block_init at 0x7103546c40 uses all four vtable slots]
+// ============================================================================
+
+// Clone src function into local buffer + impl pointer.
+// After return, local_buf holds SBO data and local_impl points to either
+// local_buf (SBO), a heap clone, or nullptr (empty).
+static void stdfunc32_clone(phx::StdFunction32* src, long* local_buf, long** local_impl) {
+    long* src_impl = (long*)src->impl;
+    if (src_impl == nullptr) {
+        *local_impl = nullptr;
+    } else if (src->buf == src_impl) {
+        // SBO: move_construct into local buffer
+        *local_impl = local_buf;
+        ((void(*)(long*, long*))((long*)*src_impl)[3])(src_impl, local_buf);
     } else {
-        // Heap: vtable[2] (+0x10) = clone()
-        local_60 = (long*)((long*(*)(void))((long*)*plVar3)[2])();
+        // Heap: clone
+        *local_impl = (long*)((long*(*)(void))((long*)*src_impl)[2])();
     }
+}
 
-    // Move the cloned function to param_1+0x30
-    FUN_7101f6f1f0(local_80, param_1 + 6);
-
-    // Destroy the local clone
-    if ((long*)local_80 == local_60) {
-        ((void(*)(void))((long*)*local_60)[4])();
-    } else if (local_60 != nullptr) {
-        ((void(*)(void))((long*)*local_60)[5])();
+// Destroy a locally-cloned std::function.
+static void stdfunc32_destroy_local(long* local_buf, long* local_impl) {
+    if (local_buf == local_impl) {
+        ((void(*)(void))((long*)*local_impl)[4])();
+    } else if (local_impl != nullptr) {
+        ((void(*)(void))((long*)*local_impl)[5])();
     }
+}
 
-    // Allocate buffer: count * element_size bytes
-    u64 n = (u64)param_3 * (u64)param_2;
-    long local_48 = 8;  // alignment
-    long* plVar = *(long**)(param_4 + 0x20);
-    local_80[0] = (long)n;
-    if (plVar == nullptr) {
-        abort();
-    }
-
-    // Call allocator via vtable[6] (+0x30) = allocate(this, &size, &alignment)
-    long* buf = (long*)((long*(*)(long*, long*, long*))((long*)*plVar)[6])(plVar, local_80, &local_48);
-    memset(buf, 0, n);
-    void* end = (void*)((long)buf + n);
-
-    // Set pool block fields
-    param_1[0] = 0;           // +0x00: freelist head
-    param_1[2] = (long)buf;   // +0x10: base_ptr
-    param_1[3] = (long)end;   // +0x18: end_ptr
-    *(u32*)(param_1 + 4) = param_3;  // +0x20: count
-
-    // Build freelist: chain elements from base to end
-    if ((void*)((long)buf + param_2) <= end) {
-        long* prev = nullptr;
-        do {
-            *buf = (long)prev;
-            param_1[0] = (long)buf;
-            long* next_buf = (long*)((long)buf + param_2);
-            prev = buf;
-            buf = next_buf;
-        } while ((void*)((long)buf + param_2) <= end);
+// Release a shared_ptr control block: decrement refcount, destroy + release_weak if zero.
+static void shared_ptr_release(void* ctrl_raw) {
+    long* ctrl = (long*)ctrl_raw;
+    if (ctrl != nullptr) {
+        long old = __atomic_fetch_sub(ctrl + 1, 1, __ATOMIC_RELAXED);
+        if (old == 0) {
+            ((void(*)(long*))((long*)*ctrl)[2])(ctrl);
+            reinterpret_cast<std::__1::__shared_weak_count*>(ctrl)->__release_weak();
+        }
     }
 }
 
 // ============================================================================
-// FUN_7103546d90 — pool_acquire
-// Acquires a free element from the pool. Scans the block array for a block
-// with a non-empty freelist. If none found, allocates a new 0x60-byte block,
-// initializes it with FUN_7103546c40, and adds it to the block array (with
-// vector-style growth). Pops and returns the first free element.
-// [derived: pool manager layout: +0x00=config_a(u64), +0x08=config_b(u32),
-//   +0x10=blocks_start, +0x18=blocks_end, +0x20=blocks_capacity,
-//   +0x30..+0x57=std::function_a, +0x60..+0x87=std::function_b]
+// pool_block_init — Initializes a pool block
+// Stores element config, clones a std::function allocator, allocates
+// count*element_size bytes via the allocator, zeroes the buffer,
+// and builds a freelist through the allocated elements.
+// Address: 0x7103546c40 (336 bytes)
+// ============================================================================
+void pool_block_init(phx::PoolBlock* block, long elem_size, u32 count, long alloc_func_ptr, long* dealloc_func_ptr) {
+    long local_buf[4];
+    long* local_impl = (long*)local_buf;
+
+    block->element_size = (u32)elem_size;
+    block->max_count = count;
+
+    // Clone std::function from dealloc_func_ptr to local
+    phx::StdFunction32* src_func = reinterpret_cast<phx::StdFunction32*>(dealloc_func_ptr);
+    stdfunc32_clone(src_func, local_buf, &local_impl);
+
+    // Move the cloned function to block+0x30
+    FUN_7101f6f1f0(local_buf, &block->allocator);
+
+    // Destroy the local clone
+    stdfunc32_destroy_local(local_buf, local_impl);
+
+    // Allocate buffer: count * element_size bytes
+    u64 total_size = (u64)count * (u64)elem_size;
+    long alignment = 8;
+    phx::StdFunction32* alloc = reinterpret_cast<phx::StdFunction32*>(alloc_func_ptr);
+    long* alloc_impl = *(long**)(alloc_func_ptr + 0x20);
+    local_buf[0] = (long)total_size;
+    if (alloc_impl == nullptr) {
+        abort();
+    }
+
+    // Call allocator via vtable[6] (+0x30) = allocate(this, &size, &alignment)
+    void* buf = (void*)((long*(*)(long*, long*, long*))((long*)*alloc_impl)[6])(alloc_impl, local_buf, &alignment);
+    memset(buf, 0, total_size);
+    void* end = (void*)((u64)buf + total_size);
+
+    // Set pool block fields
+    block->freelist_head = nullptr;
+    block->base_ptr = buf;
+    block->end_ptr = end;
+    block->free_count = count;
+
+    // Build freelist: chain elements from base to end
+    u8* cursor = (u8*)buf;
+    if (cursor + elem_size <= (u8*)end) {
+        void* prev = nullptr;
+        do {
+            *(void**)cursor = prev;
+            block->freelist_head = cursor;
+            u8* next_cursor = cursor + elem_size;
+            prev = cursor;
+            cursor = next_cursor;
+        } while (cursor + elem_size <= (u8*)end);
+    }
+}
+
+// ============================================================================
+// pool_acquire — Acquires a free element from the pool
+// Scans the block array for a block with a non-empty freelist. If none found,
+// allocates a new PoolBlock, initializes it, and adds it to the block array
+// (with vector-style growth). Pops and returns the first free element.
 // Address: 0x7103546d90 (816 bytes)
 // ============================================================================
-void* FUN_7103546d90_6d90(long* param_1) {
-    long local_c0[4];
-    long* local_a0;
-    long local_90[4];
-    long* local_70;
-    long local_60;
-    u32 local_54;
+void* FUN_7103546d90_6d90(phx::PoolManager* mgr) {
+    long alloc_clone_buf[4];
+    long* alloc_clone_impl;
+    long dealloc_clone_buf[4];
+    long* dealloc_clone_impl;
+    long grow_size;
+    u32 grow_unused;
 
-    long** puVar1 = (long**)param_1[2];  // blocks_start
-    long* plVar8;
-    long* plVar3;
+    phx::PoolBlock** scan = mgr->blocks_start;
+    phx::PoolBlock* found_block;
+    void* freelist;
 
     while (true) {
-        if (puVar1 == (long**)param_1[3]) {  // blocks_end: no free slot found
-            // Allocate new pool block (0x60 bytes)
-            plVar8 = (long*)je_aligned_alloc(0x10, 0x60);
-            if (plVar8 == nullptr) {
-                if (DAT_7105331f00 != nullptr) {
-                    local_c0[0] = 0;
-                    local_90[0] = 0x60;
-                    u64 r = ((u64(*)(s64*, long*, long*))(*(s64*)(*DAT_7105331f00 + 0x30)))
-                             (DAT_7105331f00, local_c0, local_90);
-                    if (((r & 1) != 0) &&
-                        (plVar8 = (long*)je_aligned_alloc(0x10, 0x60), plVar8 != nullptr))
-                        goto block_ok;
-                }
-                plVar8 = nullptr;
+        if (scan == mgr->blocks_end) {
+            // No free slot in any existing block — allocate a new one
+            phx::PoolBlock* new_block = (phx::PoolBlock*)alloc_with_oom_retry(0x10, 0x60);
+
+            if (new_block == nullptr) {
+                new_block = nullptr;
             }
-block_ok:
+
             // Zero-init the new block
-            plVar8[10] = 0;  // +0x50
-            *(u32*)(plVar8 + 4) = 0;  // +0x20
-            plVar8[2] = 0;  // +0x10
-            plVar8[3] = 0;  // +0x18
-            plVar8[0] = 0;  // +0x00
-            plVar8[1] = 0;  // +0x08
+            new_block->allocator.impl = nullptr;  // +0x50
+            new_block->free_count = 0;
+            new_block->base_ptr = nullptr;
+            new_block->end_ptr = nullptr;
+            new_block->freelist_head = nullptr;
+            *(u64*)&new_block->element_size = 0;   // zeroes both element_size and max_count
 
             // Copy config from pool manager
-            long uVar9 = param_1[0];                // +0x00 = element_size
-            u32 uVar2 = *(u32*)(param_1 + 1);       // +0x08 = count
+            u64 elem_size = mgr->element_size;
+            u32 init_count = mgr->initial_count;
 
-            // Clone std::function_a from param_1+0x30 (param_1[10]=+0x50 is __f_)
-            plVar3 = (long*)param_1[10];
-            if (plVar3 == nullptr) {
-                local_70 = nullptr;
-                plVar3 = (long*)param_1[16];  // +0x80 is __f_ of function_b
-                if (plVar3 != nullptr) goto clone_b;
-                local_a0 = nullptr;
+            // Clone alloc_func from manager
+            long* alloc_impl = (long*)mgr->alloc_func.impl;
+            long* dealloc_impl;
+            if (alloc_impl == nullptr) {
+                alloc_clone_impl = nullptr;
+                dealloc_impl = (long*)mgr->dealloc_func.impl;
+                if (dealloc_impl != nullptr) goto clone_dealloc;
+                dealloc_clone_impl = nullptr;
             } else {
-                if (param_1 + 6 == plVar3) {
-                    local_70 = (long*)local_90;
-                    ((void(*)(long*, long*))((long*)*plVar3)[3])(plVar3, local_90);
-                    plVar3 = (long*)param_1[16];
-                    if (plVar3 != nullptr) goto clone_b;
-                    local_a0 = nullptr;
+                if ((long*)mgr->alloc_func.buf == alloc_impl) {
+                    alloc_clone_impl = (long*)dealloc_clone_buf;
+                    ((void(*)(long*, long*))((long*)*alloc_impl)[3])(alloc_impl, dealloc_clone_buf);
+                    dealloc_impl = (long*)mgr->dealloc_func.impl;
+                    if (dealloc_impl != nullptr) goto clone_dealloc;
+                    dealloc_clone_impl = nullptr;
                 } else {
-                    local_70 = (long*)((long*(*)(void))((long*)*plVar3)[2])();
-                    plVar3 = (long*)param_1[16];
-                    if (plVar3 == nullptr) {
-                        local_a0 = nullptr;
+                    alloc_clone_impl = (long*)((long*(*)(void))((long*)*alloc_impl)[2])();
+                    dealloc_impl = (long*)mgr->dealloc_func.impl;
+                    if (dealloc_impl == nullptr) {
+                        dealloc_clone_impl = nullptr;
                     } else {
-clone_b:
-                        if (param_1 + 12 == plVar3) {
-                            local_a0 = (long*)local_c0;
-                            ((void(*)(long*, long*))((long*)*plVar3)[3])(plVar3, local_c0);
+clone_dealloc:
+                        if ((long*)mgr->dealloc_func.buf == dealloc_impl) {
+                            dealloc_clone_impl = (long*)alloc_clone_buf;
+                            ((void(*)(long*, long*))((long*)*dealloc_impl)[3])(dealloc_impl, alloc_clone_buf);
                         } else {
-                            local_a0 = (long*)((long*(*)(void))((long*)*plVar3)[2])();
+                            dealloc_clone_impl = (long*)((long*(*)(void))((long*)*dealloc_impl)[2])();
                         }
                     }
                 }
             }
 
-            // Init the new block via pool_init
-            FUN_7103546c40_6c40(plVar8, uVar9, uVar2, (long)local_90, local_c0);
+            // Init the new block
+            pool_block_init(new_block, elem_size, init_count, (long)dealloc_clone_buf, alloc_clone_buf);
 
-            // Destroy local clone of function_b
-            if ((long*)local_c0 == local_a0) {
-                ((void(*)(void))((long*)*local_a0)[4])();
-            } else if (local_a0 != nullptr) {
-                ((void(*)(void))((long*)*local_a0)[5])();
-            }
+            // Destroy local clone of dealloc function
+            stdfunc32_destroy_local(alloc_clone_buf, dealloc_clone_impl);
 
-            // Destroy local clone of function_a
-            if ((long*)local_90 == local_70) {
-                ((void(*)(void))((long*)*local_70)[4])();
-            } else if (local_70 != nullptr) {
-                ((void(*)(void))((long*)*local_70)[5])();
-            }
+            // Destroy local clone of alloc function
+            stdfunc32_destroy_local(dealloc_clone_buf, alloc_clone_impl);
 
             // Push new block pointer into blocks array
-            puVar1 = (long**)param_1[3];  // blocks_end
-            if (puVar1 == (long**)param_1[4]) {  // blocks_capacity: need to grow
+            scan = mgr->blocks_end;
+            if (scan == mgr->blocks_capacity) {
                 // Vector growth: allocate new array, copy, free old
-                void* old_start = (void*)param_1[2];
-                u64 old_n = (long)puVar1 - (long)old_start;
-                u64 new_count = (old_n >> 3) + 1;
+                void* old_start = (void*)mgr->blocks_start;
+                u64 old_byte_count = (u64)scan - (u64)old_start;
+                u64 new_count = (old_byte_count >> 3) + 1;
                 if ((new_count >> 0x3d) != 0) {
                     std::__1::__throw_length_error("vector");
                 }
-                u64 old_cap = (long)param_1[4] - (long)old_start;
+                u64 old_cap_bytes = (u64)mgr->blocks_capacity - (u64)old_start;
                 u64 new_cap;
-                if ((u64)(old_cap >> 3) < 0xfffffffffffffffULL) {
-                    new_cap = old_cap >> 2;
+                if ((u64)(old_cap_bytes >> 3) < 0xfffffffffffffffULL) {
+                    new_cap = old_cap_bytes >> 2;
                     if (new_count > new_cap) new_cap = new_count;
                     if (new_cap != 0) {
                         if ((new_cap >> 0x3d) != 0) abort();
@@ -268,1001 +301,940 @@ clone_b:
 do_alloc:;
                     u64 alloc_size = new_cap * 8;
                     if (alloc_size == 0) alloc_size = 1;
-                    void* new_buf = je_aligned_alloc(0x10, alloc_size);
-                    if (new_buf == nullptr) {
-                        if (DAT_7105331f00 != nullptr) {
-                            local_54 = 0;
-                            local_60 = (long)alloc_size;
-                            u64 r = ((u64(*)(s64*, u32*, long*))(*(s64*)(*DAT_7105331f00 + 0x30)))
-                                     (DAT_7105331f00, &local_54, &local_60);
-                            if (((r & 1) != 0) &&
-                                (new_buf = je_aligned_alloc(0x10, alloc_size), new_buf != nullptr))
-                                goto vec_alloc_ok;
+                    void* new_buf = alloc_with_oom_retry(0x10, alloc_size);
+                    if (new_buf != nullptr) {
+                        scan = (phx::PoolBlock**)((u64)new_buf + (old_byte_count >> 3) * 8);
+                        *scan = new_block;
+                        if (0 < (long)old_byte_count) {
+                            memcpy(new_buf, old_start, old_byte_count);
                         }
-                        goto null_alloc;
+                        mgr->blocks_start = (phx::PoolBlock**)new_buf;
+                        mgr->blocks_end = scan + 1;
+                        mgr->blocks_capacity = (phx::PoolBlock**)((u64)new_buf + new_cap * 8);
+                        if (old_start != nullptr) {
+                            FUN_710392e590(old_start);
+                        }
+                        freelist = new_block->freelist_head;
+                        goto check_freelist;
                     }
-vec_alloc_ok:;
-                    puVar1 = (long**)((long)new_buf + (old_n >> 3) * 8);
-                    *puVar1 = plVar8;
-                    if (0 < (long)old_n) {
-                        memcpy(new_buf, old_start, old_n);
-                    }
-                    param_1[2] = (long)new_buf;
-                    param_1[3] = (long)(puVar1 + 1);
-                    param_1[4] = (long)new_buf + new_cap * 8;
-                    if (old_start != nullptr) {
-                        FUN_710392e590(old_start);
-                    }
-                    plVar3 = (long*)*plVar8;
-                    goto check_freelist;
                 }
 null_alloc:;
-                void* new_buf2 = nullptr;
-                puVar1 = (long**)((long)new_buf2 + (old_n >> 3) * 8);
-                *puVar1 = plVar8;
-                if (0 < (long)old_n) {
-                    memcpy(new_buf2, old_start, old_n);
+                void* null_buf = nullptr;
+                scan = (phx::PoolBlock**)((u64)null_buf + (old_byte_count >> 3) * 8);
+                *scan = new_block;
+                if (0 < (long)old_byte_count) {
+                    memcpy(null_buf, old_start, old_byte_count);
                 }
-                param_1[2] = (long)new_buf2;
-                param_1[3] = (long)(puVar1 + 1);
-                param_1[4] = (long)new_buf2 + new_cap * 8;
+                mgr->blocks_start = (phx::PoolBlock**)null_buf;
+                mgr->blocks_end = scan + 1;
+                mgr->blocks_capacity = (phx::PoolBlock**)((u64)null_buf + new_cap * 8);
                 if (old_start != nullptr) {
                     FUN_710392e590(old_start);
                 }
-                plVar3 = (long*)*plVar8;
+                freelist = new_block->freelist_head;
             } else {
-                *puVar1 = plVar8;
-                param_1[3] = param_1[3] + 8;
-                plVar3 = (long*)*plVar8;
+                *scan = new_block;
+                mgr->blocks_end = (phx::PoolBlock**)((u64)mgr->blocks_end + 8);
+                freelist = new_block->freelist_head;
             }
 check_freelist:
-            if (plVar3 == nullptr) {
+            if (freelist == nullptr) {
                 return nullptr;
             }
+            found_block = new_block;
             break;
         }
 
-        plVar8 = *puVar1;       // dereference block pointer
-        plVar3 = (long*)*plVar8; // freelist head
-        puVar1++;
-        if (plVar3 != nullptr) break;  // found a block with free elements
+        found_block = *scan;
+        freelist = found_block->freelist_head;
+        scan++;
+        if (freelist != nullptr) break;
     }
 
     // Pop from freelist
-    *plVar8 = *plVar3;                               // head = head->next
-    *(u32*)(plVar8 + 4) = *(u32*)(plVar8 + 4) - 1;  // decrement free count
+    found_block->freelist_head = *(void**)freelist;
+    found_block->free_count = found_block->free_count - 1;
 
-    return (void*)plVar3;
+    return freelist;
 }
 
 // ============================================================================
-// FUN_710354c720 — fiber_scheduler_push_task
-// Pushes a task onto the fiber scheduler's work queue. Gets the scheduler
-// from TLS, stores task data into a 0x20-byte entry in the work vector.
-// If no active fiber exists, creates one and switches to it.
-// [derived: scheduler layout at TLS: +0xC0=current_task, +0xC8=current_param,
-//   +0xD0=current_fiber, +0xD8=current_id(u32), +0xE0=work_vector_start,
-//   +0xE8=work_vector_end, +0xF0=work_vector_capacity]
+// fiber_scheduler_push_task — Pushes a task onto the fiber scheduler work queue
+// Gets the scheduler context from TLS, stores task data into a 0x20-byte
+// WorkEntry in the work vector. If no active fiber exists, creates one and
+// switches to it.
 // Address: 0x710354c720 (544 bytes)
 // ============================================================================
-void FUN_710354c720_c720(u32 param_1, int* param_2) {
-    long lVar6;
-    if (param_1 == 0xFFFFFFFF) {
-        lVar6 = 0;
+void FUN_710354c720_c720(u32 tls_slot, int* task_count) {
+    phx::FiberSchedulerTLS* sched;
+    if (tls_slot == 0xFFFFFFFF) {
+        sched = nullptr;
     } else {
-        lVar6 = (long)FUN_71039c0510(param_1);
+        sched = (phx::FiberSchedulerTLS*)FUN_71039c0510(tls_slot);
     }
 
-    if (*param_2 < 1) return;
+    if (*task_count < 1) return;
 
-    long* puVar2 = *(long**)(lVar6 + 0xe8);
-    long* puVar1 = (long*)(lVar6 + 0xc0);
-    *(int**)(lVar6 + 0xc8) = param_2;
-    long lVar8;
+    phx::WorkEntry* vec_end = sched->work_end;
+    void** current_task_ptr = (void**)&sched->current_task;
+    sched->current_param = task_count;
 
-    if (puVar2 != *(long**)(lVar6 + 0xf0)) {
-        long uVar3 = *puVar1;
-        long uVar4 = *(long*)(lVar6 + 0xc8);
-        long uVar5 = *(long*)(lVar6 + 0xd8);
-        puVar2[2] = *(long*)(lVar6 + 0xd0);
-        puVar2[3] = uVar5;
-        puVar2[0] = uVar3;
-        puVar2[1] = uVar4;
-        *(long*)(lVar6 + 0xe8) = *(long*)(lVar6 + 0xe8) + 0x20;
-        lVar8 = *(long*)(lVar6 + 0xd0);
+    if (vec_end != sched->work_capacity) {
+        // Append to existing vector
+        void* saved_task = sched->current_task;
+        void* saved_param = sched->current_param;
+        u64 saved_id = *(u64*)&sched->current_id;
+        vec_end->fiber = sched->current_fiber;
+        *(u64*)&vec_end->id = saved_id;
+        vec_end->task = saved_task;
+        vec_end->param = saved_param;
+        sched->work_end = vec_end + 1;
     } else {
-        void* __src = *(void**)(lVar6 + 0xe0);
-        u64 __n = (long)puVar2 - (long)__src;
-        u64 uVar10 = (__n >> 5) + 1;
-        if ((uVar10 >> 0x3b) != 0) {
+        // Vector full — grow with OOM retry
+        void* old_start = (void*)sched->work_start;
+        u64 old_byte_count = (u64)vec_end - (u64)old_start;
+        u64 new_count = (old_byte_count >> 5) + 1;
+        if ((new_count >> 0x3b) != 0) {
             std::__1::__throw_length_error("vector");
         }
-        long lVar8b = *(long*)(lVar6 + 0xf0) - (long)__src;
-        void* __dest;
-        u64 uVar9;
-        if ((u64)(lVar8b >> 5) < 0x3fffffffffffffffULL) {
-            uVar9 = lVar8b >> 4;
-            if (uVar10 > uVar9) uVar9 = uVar10;
-            if (uVar9 != 0) {
-                if ((uVar9 >> 0x3b) != 0) abort();
-                goto LAB_c7f4;
+        u64 old_cap_bytes = (u64)sched->work_capacity - (u64)old_start;
+        void* new_buf;
+        u64 new_cap;
+        if ((u64)(old_cap_bytes >> 5) < 0x3fffffffffffffffULL) {
+            new_cap = old_cap_bytes >> 4;
+            if (new_count > new_cap) new_cap = new_count;
+            if (new_cap != 0) {
+                if ((new_cap >> 0x3b) != 0) abort();
+                goto grow_alloc;
             }
-            __dest = nullptr;
+            new_buf = nullptr;
         } else {
-            uVar9 = 0x7fffffffffffffffULL;
-LAB_c7f4:
-            lVar8b = (long)(uVar9 * 0x20);
-            if (lVar8b == 0) lVar8b = 1;
-            __dest = je_aligned_alloc(0x10, lVar8b);
-            if (__dest == nullptr) {
-                if (DAT_7105331f00 != nullptr) {
-                    u32 local_54 = 0;
-                    long local_60 = lVar8b;
-                    uVar9 = ((u64(*)(s64*, u32*, long*))(*(s64*)(*DAT_7105331f00 + 0x30)))
-                             (DAT_7105331f00, &local_54, &local_60);
-                    if (((uVar9 & 1) != 0) &&
-                        (__dest = je_aligned_alloc(0x10, lVar8b), __dest != nullptr))
-                        goto LAB_c858;
-                }
-                __dest = nullptr;
+            new_cap = 0x7fffffffffffffffULL;
+grow_alloc:;
+            u64 alloc_size = new_cap * 0x20;
+            if (alloc_size == 0) alloc_size = 1;
+            new_buf = alloc_with_oom_retry(0x10, alloc_size);
+            if (new_buf == nullptr) {
+                new_buf = nullptr;
             }
         }
-LAB_c858:;
-        long uVar3 = *puVar1;
-        long uVar4 = *(long*)(lVar6 + 0xc8);
-        puVar2 = (long*)((long)__dest + (__n >> 5) * 0x20);
-        long uVar5 = *(long*)(lVar6 + 0xd8);
-        puVar2[2] = *(long*)(lVar6 + 0xd0);
-        puVar2[3] = uVar5;
-        puVar2[0] = uVar3;
-        puVar2[1] = uVar4;
-        if (0 < (long)__n) {
-            memcpy(__dest, __src, __n);
+        void* saved_task = sched->current_task;
+        void* saved_param = sched->current_param;
+        phx::WorkEntry* dest = (phx::WorkEntry*)((u64)new_buf + (old_byte_count >> 5) * 0x20);
+        u64 saved_id = *(u64*)&sched->current_id;
+        dest->fiber = sched->current_fiber;
+        *(u64*)&dest->id = saved_id;
+        dest->task = saved_task;
+        dest->param = saved_param;
+        if (0 < (long)old_byte_count) {
+            memcpy(new_buf, old_start, old_byte_count);
         }
-        *(void**)(lVar6 + 0xe0) = __dest;
-        *(long**)(lVar6 + 0xe8) = puVar2 + 4;
-        *(void**)(lVar6 + 0xf0) = (void*)((long)__dest + uVar9 * 0x20);
-        if (__src != nullptr) {
-            FUN_710392e590(__src);
+        sched->work_start = (phx::WorkEntry*)new_buf;
+        sched->work_end = dest + 1;
+        sched->work_capacity = (phx::WorkEntry*)((u64)new_buf + new_cap * 0x20);
+        if (old_start != nullptr) {
+            FUN_710392e590(old_start);
         }
-        lVar8 = *(long*)(lVar6 + 0xd0);
     }
 
-    if (lVar8 == 0) {
-        phx::Fiber* pFVar7 = (phx::Fiber*)FUN_7103549f00(lVar6);
-        *(phx::Fiber**)(lVar6 + 0xd0) = pFVar7;
-        Fiber_switch_to_fiber_353c400(pFVar7);
-        *(long*)(lVar6 + 0xc8) = 0;
-        *(long*)(lVar6 + 0xd0) = 0;
-        *puVar1 = 0;
-        *(u32*)(lVar6 + 0xd8) = 0xFFFFFFFF;
+    phx::Fiber* fiber = sched->current_fiber;
+    if (fiber == nullptr) {
+        phx::Fiber* new_fiber = (phx::Fiber*)FUN_7103549f00((long)sched);
+        sched->current_fiber = new_fiber;
+        Fiber_switch_to_fiber_353c400(new_fiber);
+        sched->current_param = nullptr;
+        sched->current_fiber = nullptr;
+        sched->current_task = nullptr;
+        sched->current_id = 0xFFFFFFFF;
         return;
     }
-    *puVar1 = 0;
-    *(long*)(lVar6 + 0xc8) = 0;
-    *(long*)(lVar6 + 0xd0) = 0;
-    *(u32*)(lVar6 + 0xd8) = 0xFFFFFFFF;
-    phx::Fiber* pFVar7 = (phx::Fiber*)FUN_7103549f00(lVar6);
-    *(phx::Fiber**)(lVar6 + 0xd0) = pFVar7;
-    Fiber_switch_to_fiber_353c400(pFVar7);
+    sched->current_task = nullptr;
+    sched->current_param = nullptr;
+    sched->current_fiber = nullptr;
+    sched->current_id = 0xFFFFFFFF;
+    phx::Fiber* new_fiber = (phx::Fiber*)FUN_7103549f00((long)sched);
+    sched->current_fiber = new_fiber;
+    Fiber_switch_to_fiber_353c400(new_fiber);
 }
 
 // ============================================================================
-// FUN_710354e320 — task_object_destructor
-// Destructor for a large task/request object (~0x790 bytes). Inherits from
-// std::__1::__shared_weak_count. Sets vtable, locks internal mutex, resets
-// all task fields to defaults, releases shared_ptr if held, unlocks,
-// then destroys mutex and calls ~__shared_weak_count.
-// [derived: vtable at PTR_FUN_710522eda8, object inherits __shared_weak_count]
-// [derived: field at +0x300 holds optional shared_ptr control block]
+// task_request_destructor — Destructor for TaskRequest (~0x790 bytes)
+// Inherits from std::__1::__shared_weak_count. Sets vtable, locks internal
+// mutex, resets all task fields to defaults, releases shared_ptr if held,
+// unlocks, then destroys mutex and calls ~__shared_weak_count.
 // Address: 0x710354e320 (448 bytes)
 // ============================================================================
-void FUN_710354e320_e320(long* param_1) {
-    // Set vtable (base class destructor vtable)
-    *(void**)param_1 = &PTR_FUN_710522eda8;
+void FUN_710354e320_e320(phx::TaskRequest* req) {
+    req->vtable = &PTR_FUN_710522eda8;
 
-    // Lock internal mutex (location inferred from Ghidra — register analysis)
-    FUN_71039c14b0(param_1);  // mutex::lock on the object itself
+    FUN_71039c14b0(req);  // mutex::lock
 
-    param_1[0x1a] = 1;                          // +0xD0: reset state to 1
-    *(u16*)(param_1 + 0x18) = 0;                 // +0xC0: clear u16 field
-    *(long*)(param_1 + 0x20) = -1LL;            // +0x100: set to 0xFFFFFFFFFFFFFFFF
+    req->state = 1;
+    req->status_flags = 0;
+    req->sentinel = (u64)-1LL;
 
-    // Release shared_ptr at +0x300 if held
-    if (*(long**)(param_1 + 0x60) != nullptr) {
-        // Call release method via vtable: vtable[1] (+0x08)
-        ((void(*)(void))((long*)(**(long**)(param_1 + 0x60)))[1])();
-        *(long*)(param_1 + 0x60) = 0;
+    // Release shared_ptr control block at +0x300 if held
+    if (req->shared_ctrl != nullptr) {
+        long* ctrl = (long*)req->shared_ctrl;
+        ((void(*)(void))((long*)*ctrl)[1])();
+        req->shared_ctrl = nullptr;
     }
 
-    param_1[0xe9] = 0;                          // +0x748
-    *(long*)(param_1 + 0x28) = 0;               // +0x140
-    *(long*)(param_1 + 0x30) = 0;               // +0x180
-    *(long*)(param_1 + 0x38) = 0;               // +0x1C0
-    param_1[0x68] = 0;                          // +0x340
-    *(long*)(param_1 + 0x58) = 0;               // +0x2C0
-    *(long*)(param_1 + 0x60) = 0;               // +0x300
-    *(long*)(param_1 + 0x48) = 0;               // +0x240
-    *(long*)(param_1 + 0x50) = 0;               // +0x280
+    req->field_748 = 0;
+    req->field_140 = 0;
+    req->field_180 = 0;
+    req->field_1c0 = 0;
+    req->field_340 = 0;
+    req->field_2c0 = 0;
+    req->shared_ctrl = nullptr;
+    req->field_240 = 0;
+    req->field_280 = 0;
 
-    FUN_71039c14c0(param_1);  // mutex::unlock
+    FUN_71039c14c0(req);  // mutex::unlock
 
-    FUN_71039c14d0(param_1 + 0xf0);  // mutex::~mutex at +0x780
+    FUN_71039c14d0(req->internal_mutex);  // mutex::~mutex at +0x780
 
-    // ~__shared_weak_count()
-    reinterpret_cast<std::__1::__shared_weak_count*>(param_1)->~__shared_weak_count();
+    reinterpret_cast<std::__1::__shared_weak_count*>(req)->~__shared_weak_count();
 }
 
 // ============================================================================
-// FUN_710354cc80 — container_destructor_with_recursive_mutex
-// Destructor for a container holding a vector of shared_ptrs and a doubly-
-// linked list. Sets vtable, destroys recursive_mutex, releases shared_ptrs
-// in the vector (with atomic ref count decrement), then unlinks and frees
-// all nodes in the doubly-linked list.
-// [derived: vtable at PTR_FUN_710522ed28]
-// [derived: vector at +0x20..+0x28 (start/end), list at +0x08..+0x18]
+// shared_ptr_list_container_destructor — Destructor for SharedPtrListContainer
+// Sets vtable, destroys recursive_mutex, releases shared_ptrs in the vector
+// (with atomic ref count decrement), then unlinks and frees all nodes in the
+// doubly-linked list.
 // Address: 0x710354cc80 (400 bytes)
 // ============================================================================
-void FUN_710354cc80_cc80(long* param_1) {
-    *param_1 = (long)&PTR_FUN_710522ed28;
+void FUN_710354cc80_cc80(phx::SharedPtrListContainer* container) {
+    container->vtable = &PTR_FUN_710522ed28;
 
-    // Destroy recursive mutex at +0x38 (param_1[7])
-    FUN_71039c1480(param_1 + 7);
+    // Destroy recursive mutex at +0x38
+    FUN_71039c1480(&container->recursive_mutex);
 
     // Release shared_ptrs in vector at +0x20..+0x28
-    long lVar8 = param_1[4];   // +0x20: vector start
-    if (lVar8 != 0) {
-        long lVar9 = param_1[5];  // +0x28: vector end
+    phx::SharedPtrElement* vec_start = container->vec_start;
+    if (vec_start != nullptr) {
+        phx::SharedPtrElement* vec_end = container->vec_end;
 
-        if (lVar9 == lVar8) {
-            param_1[5] = lVar8;
-            lVar9 = lVar8;
+        if (vec_end == vec_start) {
+            container->vec_end = vec_start;
         } else {
+            // Release each shared_ptr in reverse order
+            phx::SharedPtrElement* cursor = vec_end;
             do {
-                long* plVar7 = *(long**)(lVar9 - 0x10);
-                lVar9 -= 0x18;
-                if (plVar7 != nullptr) {
-                    long old = __atomic_fetch_sub(plVar7 + 1, 1, __ATOMIC_RELAXED);
-                    if (old == 0) {
-                        ((void(*)(long*))((long*)*plVar7)[2])(plVar7);
-                        reinterpret_cast<std::__1::__shared_weak_count*>(plVar7)->__release_weak();
-                    }
-                }
-            } while (lVar9 != lVar8);
-            lVar9 = param_1[4];
-            param_1[5] = lVar8;
+                cursor--;
+                shared_ptr_release(cursor->ctrl_block);
+            } while (cursor != vec_start);
+            container->vec_end = vec_start;
+            vec_end = container->vec_start;
         }
 
-        if (lVar9 != 0) {
-            FUN_710392e590((void*)lVar9);
+        if (vec_end != nullptr) {
+            FUN_710392e590(vec_end);
         }
     }
 
     // Unlink and free doubly-linked list at +0x08..+0x18
-    if (param_1[3] != 0) {  // +0x18: list size
-        long lVar8b = param_1[1];  // +0x08: first node
-        long* plVar7 = (long*)param_1[2];  // +0x10: last node
+    if (container->list_size != 0) {
+        phx::TaskNode* first = container->list_head;
+        phx::TaskNode* last = container->list_tail;
 
-        // Unlink this container from the list
-        *(long*)(*plVar7 + 8) = *(long*)(lVar8b + 8);
-        **(long**)(lVar8b + 8) = *plVar7;
+        // Unlink this range from the circular list
+        last->next->prev = first->prev;
+        *(phx::TaskNode**)first->prev = last->next;
 
-        param_1[3] = 0;
+        container->list_size = 0;
 
         // Free all nodes in the list
-        long* plVar1;
-        while (plVar1 = plVar7, plVar1 != param_1 + 1) {
-            plVar7 = (long*)plVar1[1];  // next node
-            long* plVar6 = (long*)plVar1[3];  // shared_ptr control block
-
-            if (plVar6 != nullptr) {
-                long old = __atomic_fetch_sub(plVar6 + 1, 1, __ATOMIC_RELAXED);
-                if (old == 0) {
-                    ((void(*)(long*))((long*)*plVar6)[2])(plVar6);
-                    reinterpret_cast<std::__1::__shared_weak_count*>(plVar6)->__release_weak();
-                }
+        phx::TaskNode* sentinel = reinterpret_cast<phx::TaskNode*>(&container->list_head);
+        phx::TaskNode* node = last;
+        while (node != sentinel) {
+            phx::TaskNode* next_node = node->prev;
+            shared_ptr_release(node->ctrl_block);
+            if (node != nullptr) {
+                FUN_710392e590(node);
             }
-
-            if (plVar1 != nullptr) {
-                FUN_710392e590(plVar1);
-            }
+            node = next_node;
         }
     }
 }
 
 // ============================================================================
-// FUN_710354d130 — vector_emplace_back_shared_ptr
-// Grows a vector of 0x18-byte elements (shared_ptr + bool flag) by one.
-// Allocates new storage with OOM retry, copies the new element, moves
-// existing elements, and releases old storage. Includes atomic refcount
-// increment for the shared_ptr control block.
-// [derived: each element = { void* ptr, __shared_weak_count* ctrl, u8 flag }]
+// vector_emplace_back_shared_ptr — Grows a vector of SharedPtrElement by one
+// Allocates new storage with OOM retry, copies the new element, moves existing
+// elements, and releases old storage. Includes atomic refcount increment for
+// the shared_ptr control block.
 // Address: 0x710354d130 (720 bytes)
 // ============================================================================
-void FUN_710354d130_d130(long* param_1, long* param_2) {
-    long lVar10 = *param_1;         // vector start
-    long lVar14 = param_1[1];       // vector end
-    long lVar7 = (lVar14 - lVar10) >> 3;
-    u64 uVar15 = 0xaaaaaaaaaaaaaaaULL;
-    u64 uVar6 = lVar7 * (-0x5555555555555555LL) + 1;
+void FUN_710354d130_d130(long* vec_fields, phx::SharedPtrElement* new_elem) {
+    long vec_start = vec_fields[0];
+    long vec_end = vec_fields[1];
+    long elem_count = (vec_end - vec_start) / sizeof(phx::SharedPtrElement);
+    u64 max_capacity = 0xaaaaaaaaaaaaaaaULL;
+    u64 needed = (u64)elem_count + 1;
 
-    if (0xaaaaaaaaaaaaaaaULL < uVar6) {
+    if (0xaaaaaaaaaaaaaaaULL < needed) {
         std::__1::__throw_length_error("vector");
     }
 
-    long lVar11 = param_1[2] - lVar10;
-    long lVar5;
-    u64 uVar9;
+    long vec_cap = vec_fields[2] - vec_start;
+    long new_buf_base;
+    u64 new_cap;
 
-    if ((u64)(lVar11 * (-0x5555555555555555LL)) < 0x555555555555555ULL) {
-        uVar9 = lVar11 * 0x5555555555555556LL;
-        uVar15 = uVar6;
-        if (uVar6 <= uVar9) uVar15 = uVar9;
-        if (uVar15 != 0) goto do_alloc;
+    u64 cap_elems = (u64)vec_cap / sizeof(phx::SharedPtrElement);
+    if (cap_elems < 0x555555555555555ULL) {
+        new_cap = cap_elems * 2;
+        if (needed > new_cap) new_cap = needed;
+        if (new_cap != 0) goto do_alloc;
     } else {
 do_alloc:
-        lVar11 = (long)(uVar15 * 0x18);
-        if (lVar11 == 0) lVar11 = 1;
+        if (new_cap == 0) new_cap = max_capacity;
+        long alloc_size = (long)(new_cap * sizeof(phx::SharedPtrElement));
+        if (alloc_size == 0) alloc_size = 1;
 
-        lVar5 = (long)je_aligned_alloc(0x10, lVar11);
-        if (lVar5 == 0) {
-            if (DAT_7105331f00 != nullptr) {
-                u32 local_44 = 0;
-                long local_58 = lVar11;
-                uVar6 = ((u64(*)(s64*, u32*, long*))(*(s64*)(*DAT_7105331f00 + 0x30)))
-                         (DAT_7105331f00, &local_44, &local_58);
-                if (((uVar6 & 1) != 0) &&
-                    (lVar5 = (long)je_aligned_alloc(0x10, lVar11), lVar5 != 0))
-                    goto alloc_ok;
-            }
-        } else {
-            goto alloc_ok;
-        }
+        new_buf_base = (long)alloc_with_oom_retry(0x10, alloc_size);
+        if (new_buf_base != 0) goto alloc_ok;
     }
-    lVar5 = 0;
+    new_buf_base = 0;
 alloc_ok:;
-    long* puVar8 = (long*)(lVar5 + lVar7 * 8);
-    *puVar8 = *param_2;
-    lVar11 = param_2[1];
-    puVar8[1] = lVar11;
+    phx::SharedPtrElement* insert_pos = (phx::SharedPtrElement*)(new_buf_base + elem_count * sizeof(phx::SharedPtrElement));
+    insert_pos->ptr = new_elem->ptr;
+    long ctrl = (long)new_elem->ctrl_block;
+    insert_pos->ctrl_block = (void*)ctrl;
 
-    if (lVar11 != 0) {
+    if (ctrl != 0) {
         // Atomic increment refcount of shared_ptr control block
-        __atomic_fetch_add((long*)(lVar11 + 8), 1, __ATOMIC_RELAXED);
-        lVar10 = *param_1;
-        lVar14 = param_1[1];
+        __atomic_fetch_add((long*)(ctrl + 8), 1, __ATOMIC_RELAXED);
+        vec_start = vec_fields[0];
+        vec_end = vec_fields[1];
     }
 
-    *(u8*)(lVar5 + lVar7 * 8 + 0x10) = *(u8*)(param_2 + 2);
-    long* puVar1 = puVar8 + 3;
+    insert_pos->flag = new_elem->flag;
+    phx::SharedPtrElement* after_insert = insert_pos + 1;
 
-    // Move existing elements from old to new buffer
-    long lVar7b = lVar14;
-    long lVar12 = 0;
-    if (lVar14 != lVar10) {
-        lVar7b = 0;
+    // Move existing elements from old to new buffer (reverse order)
+    long move_end = vec_end;
+    long move_offset = 0;
+    if (vec_end != vec_start) {
+        long offset = 0;
         do {
-            long lVar11b = lVar14 + lVar7b;
-            lVar12 = lVar7b - 0x18;
-            *(long*)((long)puVar8 + lVar7b - 0x18) = *(long*)(lVar11b - 0x18);
-            *(long*)((long)puVar8 + lVar7b - 0x10) = *(long*)(lVar11b - 0x10);
-            *(long*)(lVar11b - 0x18) = 0;
-            *(long*)(lVar11b - 0x10) = 0;
-            *(u8*)((long)puVar8 + lVar7b - 8) = *(u8*)(lVar11b - 8);
-            lVar7b = lVar12;
-        } while (lVar10 - lVar14 != lVar12);
-        lVar14 = *param_1;
-        puVar8 = (long*)((long)puVar8 + lVar12);
-        lVar7b = param_1[1];
+            long src_pos = vec_end + offset;
+            phx::SharedPtrElement* dst = (phx::SharedPtrElement*)((long)insert_pos + offset - sizeof(phx::SharedPtrElement));
+            phx::SharedPtrElement* src = (phx::SharedPtrElement*)(src_pos - sizeof(phx::SharedPtrElement));
+            dst->ptr = src->ptr;
+            dst->ctrl_block = src->ctrl_block;
+            src->ptr = nullptr;
+            src->ctrl_block = nullptr;
+            *(u8*)((long)insert_pos + offset - 8) = *(u8*)(src_pos - 8);
+            move_offset = offset - (long)sizeof(phx::SharedPtrElement);
+            offset = move_offset;
+        } while (vec_start - vec_end != move_offset);
+        vec_end = vec_fields[0];
+        insert_pos = (phx::SharedPtrElement*)((long)insert_pos + move_offset);
+        move_end = vec_fields[1];
     }
 
-    *param_1 = (long)puVar8;
-    param_1[1] = (long)puVar1;
-    param_1[2] = lVar5 + (long)(uVar15 * 0x18);
+    vec_fields[0] = (long)insert_pos;
+    vec_fields[1] = (long)after_insert;
+    vec_fields[2] = new_buf_base + (long)(new_cap * sizeof(phx::SharedPtrElement));
 
     // Release old shared_ptrs and free old buffer
-    while (lVar7b != lVar14) {
-        long* plVar13 = *(long**)(lVar7b - 0x10);
-        lVar7b -= 0x18;
-        if (plVar13 != nullptr) {
-            long old = __atomic_fetch_sub(plVar13 + 1, 1, __ATOMIC_RELAXED);
-            if (old == 0) {
-                ((void(*)(long*))((long*)*plVar13)[2])(plVar13);
-                reinterpret_cast<std::__1::__shared_weak_count*>(plVar13)->__release_weak();
-            }
-        }
+    while (move_end != vec_end) {
+        long* old_ctrl = *(long**)(move_end - 0x10);
+        move_end -= sizeof(phx::SharedPtrElement);
+        shared_ptr_release(old_ctrl);
     }
 
-    if (lVar14 != 0) {
-        FUN_710392e590((void*)lVar14);
+    if (vec_end != 0) {
+        FUN_710392e590((void*)vec_end);
     }
 }
 
 // ============================================================================
-// FUN_710354ce10 — merge_sort_linked_list
-// Merge sort on a doubly-linked list, comparing elements via vtable call
-// at vtable offset 0x2a8 (slot 85). Returns the new head of the sorted list.
-// [derived: node layout: [0]=next, [1]=prev, [2]=data_with_vtable]
-// [derived: comparison via vtable[85] (+0x2a8) returns a priority byte]
+// merge_sort_linked_list — Merge sort on a doubly-linked list of TaskNodes
+// Compares elements via vtable call at vtable[0x55] (+0x2a8) on node->data,
+// which returns a u8 priority. Returns the new head of the sorted list.
 // Address: 0x710354ce10 (704 bytes)
 // ============================================================================
-long* FUN_710354ce10_ce10(long* param_1, long* param_2, u64 param_3) {
-    if (param_3 < 2) {
-        return param_1;
+phx::TaskNode* FUN_710354ce10_ce10(phx::TaskNode* head, phx::TaskNode* sentinel, u64 count) {
+    if (count < 2) {
+        return head;
     }
 
-    if (param_3 == 2) {
+    if (count == 2) {
         // Base case: 2 elements, swap if needed
-        param_2 = (long*)*param_2;
-        u8 bVar2 = ((u8(*)(void))((long*)(*(long*)param_2[2]))[0x55])();
-        u8 bVar3 = ((u8(*)(void))((long*)(*(long*)param_1[2]))[0x55])();
-        if (bVar2 < bVar3) {
-            *(long*)(*param_2 + 8) = param_2[1];
-            *(long*)param_2[1] = *param_2;
-            *(long**)(*param_1 + 8) = param_2;
-            *param_2 = *param_1;
-            *param_1 = (long)param_2;
-            param_2[1] = (long)param_1;
-            param_1 = param_2;
+        phx::TaskNode* second = (phx::TaskNode*)sentinel->next;
+        u8 second_priority = ((u8(*)(void))((long*)(*(long*)(long)second->data))[0x55])();
+        u8 head_priority = ((u8(*)(void))((long*)(*(long*)(long)head->data))[0x55])();
+        if (second_priority < head_priority) {
+            second->next->prev = second->prev;
+            *(phx::TaskNode**)second->prev = second->next;
+            head->next->prev = second;
+            second->next = head->next;
+            head->next = (phx::TaskNode*)second;
+            second->prev = (phx::TaskNode*)head;
+            head = second;
         }
-        return param_1;
+        return head;
     }
 
     // Recursive case: split, sort halves, merge
-    u64 uVar5 = param_3 >> 1;
-    long* plVar7 = param_1;
-    if (uVar5 != 0) {
-        long lVar4 = (long)uVar5 + 1;
+    u64 half = count >> 1;
+    phx::TaskNode* mid = head;
+    if (half != 0) {
+        long steps = (long)half + 1;
         do {
-            plVar7 = (long*)plVar7[1];
-            lVar4--;
-        } while (1 < lVar4);
-        param_1 = FUN_710354ce10_ce10(param_1, plVar7, uVar5);
+            mid = mid->prev;
+            steps--;
+        } while (1 < steps);
+        head = FUN_710354ce10_ce10(head, mid, half);
     }
-    plVar7 = FUN_710354ce10_ce10(plVar7, param_2, param_3 - uVar5);
+    mid = FUN_710354ce10_ce10(mid, sentinel, count - half);
 
     // Merge two sorted halves
-    u8 bVar2 = ((u8(*)(void))((long*)(*(long*)plVar7[2]))[0x55])();
-    u8 bVar3 = ((u8(*)(void))((long*)(*(long*)param_1[2]))[0x55])();
+    u8 mid_priority = ((u8(*)(void))((long*)(*(long*)(long)mid->data))[0x55])();
+    u8 head_priority = ((u8(*)(void))((long*)(*(long*)(long)head->data))[0x55])();
 
-    long* plVar8;
-    long* plVar9;
-    long* plVar6;
-    long* plVar10;
+    phx::TaskNode* merge_cursor;
+    phx::TaskNode* right_cursor;
+    phx::TaskNode* splice_end;
+    phx::TaskNode* tracked;
 
-    if (bVar2 < bVar3) {
-        // plVar7's head is smaller — splice it before param_1's head
-        for (plVar9 = (long*)plVar7[1]; plVar6 = param_2, plVar9 != param_2;
-             plVar9 = (long*)plVar9[1]) {
-            bVar2 = ((u8(*)(void))((long*)(*(long*)plVar9[2]))[0x55])();
-            bVar3 = ((u8(*)(void))((long*)(*(long*)param_1[2]))[0x55])();
-            plVar6 = plVar9;
-            if (bVar3 <= bVar2) break;
+    if (mid_priority < head_priority) {
+        // mid's head is smaller — splice it before head
+        phx::TaskNode* scan;
+        for (scan = mid->prev; splice_end = sentinel, scan != sentinel;
+             scan = scan->prev) {
+            mid_priority = ((u8(*)(void))((long*)(*(long*)(long)scan->data))[0x55])();
+            head_priority = ((u8(*)(void))((long*)(*(long*)(long)head->data))[0x55])();
+            splice_end = scan;
+            if (head_priority <= mid_priority) break;
         }
-        long lVar4 = *plVar6;
-        *(long*)(*plVar7 + 8) = *(long*)(lVar4 + 8);
-        **(long**)(lVar4 + 8) = *plVar7;
-        plVar8 = (long*)param_1[1];
-        *(long**)(*param_1 + 8) = plVar7;
-        *plVar7 = *param_1;
-        *param_1 = lVar4;
-        *(long**)(lVar4 + 8) = param_1;
-        plVar10 = plVar9;
-        param_1 = plVar7;
-        if (plVar6 == plVar8) {
-            return plVar7;
+        phx::TaskNode* after_splice = splice_end->next;
+        mid->next->prev = (phx::TaskNode*)((long)after_splice->prev);
+        *(phx::TaskNode**)after_splice->prev = mid->next;
+        merge_cursor = head->prev;
+        head->next->prev = mid;
+        mid->next = head->next;
+        head->next = after_splice;
+        after_splice->prev = (phx::TaskNode*)head;
+        tracked = scan;
+        head = mid;
+        if (splice_end == merge_cursor) {
+            return mid;
         }
     } else {
-        plVar8 = (long*)param_1[1];
-        plVar9 = plVar7;
-        plVar6 = plVar7;
-        plVar10 = plVar7;
-        if (plVar7 == plVar8) {
-            return param_1;
+        merge_cursor = head->prev;
+        right_cursor = mid;
+        splice_end = mid;
+        tracked = mid;
+        if (mid == merge_cursor) {
+            return head;
         }
     }
 
     // Continue merging
+    right_cursor = tracked;
     do {
-        if (plVar9 == param_2) {
-            return param_1;
+        if (right_cursor == sentinel) {
+            return head;
         }
-        bVar2 = ((u8(*)(void))((long*)(*(long*)plVar9[2]))[0x55])();
-        bVar3 = ((u8(*)(void))((long*)(*(long*)plVar8[2]))[0x55])();
-        if (bVar2 < bVar3) {
-            long* plVar11;
-            long* plVar7b;
-            for (plVar11 = (long*)plVar9[1]; plVar7b = param_2, plVar11 != param_2;
-                 plVar11 = (long*)plVar11[1]) {
-                bVar2 = ((u8(*)(void))((long*)(*(long*)plVar11[2]))[0x55])();
-                bVar3 = ((u8(*)(void))((long*)(*(long*)plVar8[2]))[0x55])();
-                plVar7b = plVar11;
-                if (bVar3 <= bVar2) break;
+        u8 right_pri = ((u8(*)(void))((long*)(*(long*)(long)right_cursor->data))[0x55])();
+        u8 left_pri = ((u8(*)(void))((long*)(*(long*)(long)merge_cursor->data))[0x55])();
+        if (right_pri < left_pri) {
+            phx::TaskNode* scan2;
+            phx::TaskNode* splice_end2;
+            for (scan2 = right_cursor->prev; splice_end2 = sentinel, scan2 != sentinel;
+                 scan2 = scan2->prev) {
+                right_pri = ((u8(*)(void))((long*)(*(long*)(long)scan2->data))[0x55])();
+                left_pri = ((u8(*)(void))((long*)(*(long*)(long)merge_cursor->data))[0x55])();
+                splice_end2 = scan2;
+                if (left_pri <= right_pri) break;
             }
-            long lVar4 = *plVar7b;
-            long* plVar1;
-            if (plVar6 != plVar9) {
-                plVar1 = plVar10;
+            phx::TaskNode* after = splice_end2->next;
+            phx::TaskNode* new_tracked;
+            if (splice_end != right_cursor) {
+                new_tracked = tracked;
             } else {
-                plVar1 = plVar11;
+                new_tracked = scan2;
             }
-            *(long*)(*plVar9 + 8) = *(long*)(lVar4 + 8);
-            **(long**)(lVar4 + 8) = *plVar9;
-            long* plVar7c = (long*)plVar8[1];
-            *(long**)(*plVar8 + 8) = plVar9;
-            *plVar9 = *plVar8;
-            *plVar8 = lVar4;
-            *(long**)(lVar4 + 8) = plVar8;
-            plVar9 = plVar11;
-            plVar10 = plVar1;
+            right_cursor->next->prev = (phx::TaskNode*)((long)after->prev);
+            *(phx::TaskNode**)after->prev = right_cursor->next;
+            phx::TaskNode* next_merge = merge_cursor->prev;
+            merge_cursor->next->prev = right_cursor;
+            right_cursor->next = merge_cursor->next;
+            merge_cursor->next = after;
+            after->prev = (phx::TaskNode*)merge_cursor;
+            right_cursor = scan2;
+            tracked = new_tracked;
         } else {
-            long* plVar7c = (long*)plVar8[1];
-            plVar8 = plVar7c;
+            merge_cursor = merge_cursor->prev;
         }
-        plVar6 = plVar10;
-        // Ghidra: plVar8 = plVar7c (already set above)
-    } while (plVar8 != plVar10);
+        splice_end = tracked;
+    } while (merge_cursor != tracked);
 
-    return param_1;
+    return head;
 }
 
 // ============================================================================
-// FUN_710354e180 — container_destructor_with_vectors_and_hashmap
-// Destructor that clears a vector of 0x20-byte entries (destroying each via
-// vtable), frees nodes from a hash map linked list, zeroes the hash buckets,
-// then destroys two more reversed vectors of entries.
-// [derived: field layout: +0x20=hash_head, +0x28=hash_count, +0x10=hash_buckets,
-//   +0x18=hash_bucket_count, +0x38/+0x40=vector_a, +0x50/+0x58=vector_b]
+// hash_vec_container_destructor — Destructor that clears vectors of VtableEntry
+// elements (destroying each via vtable), frees nodes from a hash map linked
+// list, zeroes the hash buckets, then destroys two more reversed vectors.
 // Address: 0x710354e180 (416 bytes)
 // ============================================================================
-void FUN_710354e180_e180(long param_1) {
-    // Clear forward vector at +0x50..+0x58
-    long lVar6 = *(long*)(param_1 + 0x58);
-    void* puVar4 = PTR_VirtualFreeHook_71052a7a70;
+void FUN_710354e180_e180(phx::HashVecContainer* container) {
+    // Clear forward vector B at +0x50..+0x58
+    phx::VtableEntry* vec_b_end = container->vec_b_end;
+    void* free_hook = PTR_VirtualFreeHook_71052a7a70;
 
-    for (long lVar11 = *(long*)(param_1 + 0x50); lVar11 != lVar6; lVar11 += 0x20) {
-        PTR_VirtualFreeHook_71052a7a70 = puVar4;
-        long* plVar1 = *(long**)(lVar11 + 8);
-        long* plVar3 = *(long**)(lVar11 + 0x10);
-        long lVar7 = *(long*)(lVar11 + 0x18);
-        *(long*)(lVar11 + 8) = 0;
-        *(long*)(lVar11 + 0x10) = 0;
-        *(long*)(lVar11 + 0x18) = 0;
-        if (plVar3 != nullptr && plVar1 != nullptr && *plVar3 == lVar7) {
-            ((void(*)(void))((long*)*plVar1)[1])();
+    for (phx::VtableEntry* entry = container->vec_b_start; entry != vec_b_end; entry++) {
+        PTR_VirtualFreeHook_71052a7a70 = free_hook;
+        void* guard_vtable = entry->guard_vtable;
+        void* guard_ptr = entry->guard_ptr;
+        u64 expected = entry->expected_value;
+        entry->guard_vtable = nullptr;
+        entry->guard_ptr = nullptr;
+        entry->expected_value = 0;
+        if (guard_ptr != nullptr && guard_vtable != nullptr && *(u64*)guard_ptr == expected) {
+            ((void(*)(void))((long*)*(long*)guard_vtable)[1])();
         }
-        puVar4 = PTR_VirtualFreeHook_71052a7a70;
+        free_hook = PTR_VirtualFreeHook_71052a7a70;
     }
 
     // Free hash map nodes at +0x20 if count > 0
-    if (*(long*)(param_1 + 0x28) != 0) {
-        long* plVar1 = *(long**)(param_1 + 0x20);
-        while (plVar1 != nullptr) {
-            long lVar11 = *plVar1;
-            if ((*(u8*)(plVar1 + 2) & 1) != 0) {
-                void* pvVar10 = (void*)plVar1[4];
-                if (puVar4 != nullptr) {
-                    FUN_71039c1400(pvVar10);  // VirtualFreeHook
+    if (container->hash_count != 0) {
+        phx::HashNode* node = container->hash_head;
+        while (node != nullptr) {
+            phx::HashNode* next = node->next;
+            if ((node->flags & 1) != 0) {
+                void* owned = node->owned_ptr;
+                if (free_hook != nullptr) {
+                    FUN_71039c1400(owned);  // VirtualFreeHook
                 }
-                FUN_710392e590(pvVar10);
+                FUN_710392e590(owned);
             }
-            FUN_710392e590(plVar1);
-            plVar1 = (long*)lVar11;
+            FUN_710392e590(node);
+            node = next;
         }
 
         // Zero hash buckets
-        u64 uVar8 = *(u64*)(param_1 + 0x18);
-        *(long*)(param_1 + 0x20) = 0;
-        if (uVar8 != 0) {
-            u64 uVar5 = uVar8 & 3;
-            long lVar11;
-            if (uVar8 - 1 < 3) {
-                lVar11 = 0;
+        u64 bucket_count = container->hash_bucket_count;
+        container->hash_head = nullptr;
+        if (bucket_count != 0) {
+            u64 remainder = bucket_count & 3;
+            u64 idx;
+            if (bucket_count - 1 < 3) {
+                idx = 0;
             } else {
-                lVar11 = 0;
+                idx = 0;
                 do {
-                    long lVar6b = lVar11 * 8;
-                    lVar11 += 4;
-                    *(long*)(*(long*)(param_1 + 0x10) + lVar6b) = 0;
-                    *(long*)(*(long*)(param_1 + 0x10) + lVar6b + 8) = 0;
-                    *(long*)(*(long*)(param_1 + 0x10) + lVar6b + 0x10) = 0;
-                    *(long*)(*(long*)(param_1 + 0x10) + lVar6b + 0x18) = 0;
-                } while (uVar8 - uVar5 != (u64)lVar11);
+                    u64 byte_offset = idx * 8;
+                    idx += 4;
+                    container->hash_buckets[byte_offset / 8] = nullptr;
+                    container->hash_buckets[byte_offset / 8 + 1] = nullptr;
+                    container->hash_buckets[byte_offset / 8 + 2] = nullptr;
+                    container->hash_buckets[byte_offset / 8 + 3] = nullptr;
+                } while (bucket_count - remainder != idx);
             }
-            if (uVar5 != 0) {
-                lVar11 <<= 3;
-                long lVar6b = -(long)uVar5;
+            if (remainder != 0) {
+                u64 byte_idx = idx;
+                long remaining = -(long)remainder;
                 do {
-                    *(long*)(*(long*)(param_1 + 0x10) + lVar11) = 0;
-                    lVar11 += 8;
-                    lVar6b++;
-                } while (lVar6b != 0);
+                    container->hash_buckets[byte_idx] = nullptr;
+                    byte_idx++;
+                    remaining++;
+                } while (remaining != 0);
             }
         }
-        *(long*)(param_1 + 0x28) = 0;
+        container->hash_count = 0;
     }
 
-    // Destroy reversed vector_b at +0x50..+0x58
-    long* puVar2 = *(long**)(param_1 + 0x50);
-    long* puVar9 = *(long**)(param_1 + 0x58);
-    while (puVar9 != puVar2) {
-        puVar9 -= 4;
-        ((void(*)(long*))((long*)*puVar9)[0])(puVar9);
+    // Destroy reversed vector B at +0x50..+0x58
+    phx::VtableEntry* vec_b_start = container->vec_b_start;
+    phx::VtableEntry* cursor = container->vec_b_end;
+    while (cursor != vec_b_start) {
+        cursor--;
+        ((void(*)(phx::VtableEntry*))((long*)*(long*)cursor)[0])(cursor);
     }
-    *(long**)(param_1 + 0x58) = puVar2;
+    container->vec_b_end = vec_b_start;
 
-    // Destroy reversed vector_a at +0x38..+0x40
-    puVar2 = *(long**)(param_1 + 0x38);
-    puVar9 = *(long**)(param_1 + 0x40);
-    while (puVar9 != puVar2) {
-        puVar9 -= 4;
-        ((void(*)(long*))((long*)*puVar9)[0])(puVar9);
+    // Destroy reversed vector A at +0x38..+0x40
+    phx::VtableEntry* vec_a_start = container->vec_a_start;
+    cursor = container->vec_a_end;
+    while (cursor != vec_a_start) {
+        cursor--;
+        ((void(*)(phx::VtableEntry*))((long*)*(long*)cursor)[0])(cursor);
     }
-    *(long**)(param_1 + 0x40) = puVar2;
+    container->vec_a_end = vec_a_start;
 }
 
 // ============================================================================
-// FUN_710354b800 — destroy_three_deques
-// Destroys 3 std::deque-like structures stored at consecutive offsets in
-// param_1. Each deque uses a map of 4096-byte blocks with 512 8-byte elements.
-// Pattern: clear iterator, shrink map, free blocks and map.
-// [derived: deque layout per instance = 6 longs: [0]=allocator, [1..2]=map_start/end,
-//   [3]=unused, [4]=start_offset, [5]=size]
+// destroy_deque — Destroys a single StdDeque8 (std::deque<T*> with 4096-byte
+// blocks and 512 8-byte elements per block). Clears elements, shrinks map,
+// frees blocks and map allocation.
+// Address: part of 0x710354b800
+// ============================================================================
+static void destroy_deque(phx::StdDeque8* deque) {
+    void** map_cur = deque->map_start;
+    void** map_end = deque->map_end;
+    long map_byte_size = (long)map_end - (long)map_cur;
+
+    if (map_byte_size != 0) {
+        u64 start = deque->start_offset;
+        void** block_ptr = (void**)((u64)map_cur + (start >> 6 & 0x3fffffffffffff8ULL));
+        long elem_addr = (long)*block_ptr + (start & 0x1ff) * 8;
+        u64 end_offset = deque->size + start;
+        long end_addr = *(long*)((u64)map_cur + (end_offset >> 6 & 0x3fffffffffffff8ULL)) +
+                        (long)(end_offset & 0x1ff) * 8;
+        while (end_addr != elem_addr) {
+            elem_addr += 8;
+            if (elem_addr - (long)*block_ptr == 0x1000) {
+                block_ptr++;
+                elem_addr = (long)*block_ptr;
+            }
+        }
+    }
+
+    deque->size = 0;
+
+    u64 block_count;
+    while (block_count = (u64)map_byte_size >> 3, 2 < block_count) {
+        if (*map_cur != nullptr) {
+            FUN_710392e590(*map_cur);
+            map_cur = deque->map_start;
+            map_end = deque->map_end;
+        }
+        map_cur++;
+        deque->map_start = map_cur;
+        map_byte_size = (long)map_end - (long)map_cur;
+    }
+
+    if (block_count == 1) {
+        deque->start_offset = 0x100;
+    } else if (block_count == 2) {
+        deque->start_offset = 0x200;
+    }
+
+    if (map_cur != map_end) {
+        do {
+            if (*map_cur != nullptr) {
+                FUN_710392e590(*map_cur);
+            }
+            map_cur++;
+        } while (map_end != map_cur);
+        long end_val = (long)deque->map_end;
+        if (end_val != (long)deque->map_start) {
+            deque->map_end = (void**)(end_val + (~((end_val - 8) - (long)deque->map_start) & 0xfffffffffffffff8ULL));
+        }
+    }
+
+    if (deque->map_alloc != nullptr) {
+        FUN_710392e590(deque->map_alloc);
+    }
+}
+
+// ============================================================================
+// destroy_three_deques — Destroys 3 consecutive StdDeque8 structures
 // Address: 0x710354b800 (912 bytes)
 // ============================================================================
-static void destroy_deque(long* base) {
-    // base: pointer to deque internal fields
-    // layout: [0xd]=map_start, [0xe]=map_end, [0x10]=start_offset, [0x11]=size
-    // But for clarity, we use the same raw offsets as Ghidra
-    long* plVar5 = (long*)base[0xd];
-    long* plVar6 = (long*)base[0xe];
-    long lVar1 = (long)plVar6 - (long)plVar5;
+void FUN_710354b800_b800(phx::StdDeque8* deques) {
+    // Deque 3 (at offset +0x60 from base = deques[2])
+    destroy_deque(&deques[2]);
 
-    if (lVar1 != 0) {
-        u64 uVar4 = base[0x10];
-        long* plVar2 = (long*)((long)plVar5 + (uVar4 >> 6 & 0x3fffffffffffff8ULL));
-        long lVar3 = *plVar2 + (uVar4 & 0x1ff) * 8;
-        while (*(long*)((long)plVar5 + (base[0x11] + uVar4 >> 6 & 0x3fffffffffffff8ULL)) +
-               (base[0x11] + uVar4 & 0x1ff) * 8 != lVar3) {
-            lVar3 += 8;
-            if (lVar3 - *plVar2 == 0x1000) {
-                plVar2++;
-                lVar3 = *plVar2;
-            }
-        }
-    }
-
-    base[0x11] = 0;
-
-    u64 uVar4;
-    while (uVar4 = lVar1 >> 3, 2 < uVar4) {
-        if (*plVar5 != 0) {
-            FUN_710392e590((void*)*plVar5);
-            plVar5 = (long*)base[0xd];
-            plVar6 = (long*)base[0xe];
-        }
-        plVar5++;
-        base[0xd] = (long)plVar5;
-        lVar1 = (long)plVar6 - (long)plVar5;
-    }
-
-    if (uVar4 == 1) {
-        base[0x10] = 0x100;
-    } else if (uVar4 == 2) {
-        base[0x10] = 0x200;
-    }
-
-    if (plVar5 != plVar6) {
-        do {
-            if (*plVar5 != 0) {
-                FUN_710392e590((void*)*plVar5);
-            }
-            plVar5++;
-        } while (plVar6 != plVar5);
-        lVar1 = base[0xe];
-        if (lVar1 != base[0xd]) {
-            base[0xe] = lVar1 + (~((lVar1 - 8) - base[0xd]) & 0xfffffffffffffff8ULL);
-        }
-    }
-
-    if (base[0xc] != 0) {
-        FUN_710392e590((void*)base[0xc]);
-    }
-}
-
-void FUN_710354b800_b800(long* param_1) {
-    // Deque 1: at param_1 offsets [0xd..0x11] → byte offsets +0x68..+0x88
-    destroy_deque(param_1);
-
-    // Deque 2: at param_1 offsets [7..0xb] → byte offsets +0x38..+0x58
+    // Deque 2 (at offset +0x30 from base = deques[1])
     {
-        long* plVar5 = (long*)param_1[7];
-        long* plVar6 = (long*)param_1[8];
-        long lVar1 = (long)plVar6 - (long)plVar5;
+        phx::StdDeque8* dq = &deques[1];
+        void** map_cur = dq->map_start;
+        void** map_end = dq->map_end;
+        long map_byte_size = (long)map_end - (long)map_cur;
 
-        if (lVar1 != 0) {
-            u64 uVar4 = param_1[10];
-            long* plVar2 = (long*)((long)plVar5 + (uVar4 >> 6 & 0x3fffffffffffff8ULL));
-            long lVar3 = *plVar2 + (uVar4 & 0x1ff) * 8;
-            while (*(long*)((long)plVar5 + (param_1[0xb] + uVar4 >> 6 & 0x3fffffffffffff8ULL)) +
-                   (param_1[0xb] + uVar4 & 0x1ff) * 8 != lVar3) {
-                lVar3 += 8;
-                if (lVar3 - *plVar2 == 0x1000) {
-                    plVar2++;
-                    lVar3 = *plVar2;
+        if (map_byte_size != 0) {
+            u64 start = dq->start_offset;
+            void** block_ptr = (void**)((u64)map_cur + (start >> 6 & 0x3fffffffffffff8ULL));
+            long elem_addr = (long)*block_ptr + (start & 0x1ff) * 8;
+            u64 end_offset = dq->size + start;
+            long end_addr = *(long*)((u64)map_cur + (end_offset >> 6 & 0x3fffffffffffff8ULL)) +
+                            (long)(end_offset & 0x1ff) * 8;
+            while (end_addr != elem_addr) {
+                elem_addr += 8;
+                if (elem_addr - (long)*block_ptr == 0x1000) {
+                    block_ptr++;
+                    elem_addr = (long)*block_ptr;
                 }
             }
         }
 
-        param_1[0xb] = 0;
+        dq->size = 0;
 
-        u64 uVar4b;
-        while (uVar4b = lVar1 >> 3, 2 < uVar4b) {
-            if (*plVar5 != 0) {
-                FUN_710392e590((void*)*plVar5);
-                plVar5 = (long*)param_1[7];
-                plVar6 = (long*)param_1[8];
+        u64 block_count;
+        while (block_count = (u64)map_byte_size >> 3, 2 < block_count) {
+            if (*map_cur != nullptr) {
+                FUN_710392e590(*map_cur);
+                map_cur = dq->map_start;
+                map_end = dq->map_end;
             }
-            plVar5++;
-            param_1[7] = (long)plVar5;
-            lVar1 = (long)plVar6 - (long)plVar5;
+            map_cur++;
+            dq->map_start = map_cur;
+            map_byte_size = (long)map_end - (long)map_cur;
         }
 
-        if (uVar4b == 1) {
-            param_1[10] = 0x100;
-        } else if (uVar4b == 2) {
-            param_1[10] = 0x200;
+        if (block_count == 1) {
+            dq->start_offset = 0x100;
+        } else if (block_count == 2) {
+            dq->start_offset = 0x200;
         }
 
-        if (plVar5 != plVar6) {
+        if (map_cur != map_end) {
             do {
-                if (*plVar5 != 0) FUN_710392e590((void*)*plVar5);
-                plVar5++;
-            } while (plVar6 != plVar5);
-            long lVar1b = param_1[8];
-            if (lVar1b != param_1[7]) {
-                param_1[8] = lVar1b + (~((lVar1b - 8) - param_1[7]) & 0xfffffffffffffff8ULL);
+                if (*map_cur != nullptr) FUN_710392e590(*map_cur);
+                map_cur++;
+            } while (map_end != map_cur);
+            long end_val = (long)dq->map_end;
+            if (end_val != (long)dq->map_start) {
+                dq->map_end = (void**)(end_val + (~((end_val - 8) - (long)dq->map_start) & 0xfffffffffffffff8ULL));
             }
         }
 
-        if (param_1[6] != 0) FUN_710392e590((void*)param_1[6]);
+        if (dq->map_alloc != nullptr) FUN_710392e590(dq->map_alloc);
     }
 
-    // Deque 3: at param_1 offsets [1..5] → byte offsets +0x08..+0x28
+    // Deque 1 (at offset +0x00 from base = deques[0])
     {
-        long* plVar5 = (long*)param_1[1];
-        long* plVar6 = (long*)param_1[2];
-        long lVar1 = (long)plVar6 - (long)plVar5;
+        phx::StdDeque8* dq = &deques[0];
+        void** map_cur = dq->map_start;
+        void** map_end = dq->map_end;
+        long map_byte_size = (long)map_end - (long)map_cur;
 
-        if (lVar1 != 0) {
-            u64 uVar4 = param_1[4];
-            long* plVar2 = (long*)((long)plVar5 + (uVar4 >> 6 & 0x3fffffffffffff8ULL));
-            long lVar3 = *plVar2 + (uVar4 & 0x1ff) * 8;
-            while (*(long*)((long)plVar5 + (param_1[5] + uVar4 >> 6 & 0x3fffffffffffff8ULL)) +
-                   (param_1[5] + uVar4 & 0x1ff) * 8 != lVar3) {
-                lVar3 += 8;
-                if (lVar3 - *plVar2 == 0x1000) {
-                    plVar2++;
-                    lVar3 = *plVar2;
+        if (map_byte_size != 0) {
+            u64 start = dq->start_offset;
+            void** block_ptr = (void**)((u64)map_cur + (start >> 6 & 0x3fffffffffffff8ULL));
+            long elem_addr = (long)*block_ptr + (start & 0x1ff) * 8;
+            u64 end_offset = dq->size + start;
+            long end_addr = *(long*)((u64)map_cur + (end_offset >> 6 & 0x3fffffffffffff8ULL)) +
+                            (long)(end_offset & 0x1ff) * 8;
+            while (end_addr != elem_addr) {
+                elem_addr += 8;
+                if (elem_addr - (long)*block_ptr == 0x1000) {
+                    block_ptr++;
+                    elem_addr = (long)*block_ptr;
                 }
             }
         }
 
-        param_1[5] = 0;
+        dq->size = 0;
 
-        u64 uVar4b;
-        while (uVar4b = lVar1 >> 3, 2 < uVar4b) {
-            if (*plVar5 != 0) {
-                FUN_710392e590((void*)*plVar5);
-                plVar5 = (long*)param_1[1];
-                plVar6 = (long*)param_1[2];
+        u64 block_count;
+        while (block_count = (u64)map_byte_size >> 3, 2 < block_count) {
+            if (*map_cur != nullptr) {
+                FUN_710392e590(*map_cur);
+                map_cur = dq->map_start;
+                map_end = dq->map_end;
             }
-            plVar5++;
-            param_1[1] = (long)plVar5;
-            lVar1 = (long)plVar6 - (long)plVar5;
+            map_cur++;
+            dq->map_start = map_cur;
+            map_byte_size = (long)map_end - (long)map_cur;
         }
 
-        if (uVar4b == 1) {
-            lVar1 = 0x100;
-        } else if (uVar4b != 2) {
+        long offset_reset;
+        if (block_count == 1) {
+            offset_reset = 0x100;
+        } else if (block_count != 2) {
             goto skip_offset;
         } else {
-            lVar1 = 0x200;
+            offset_reset = 0x200;
         }
-        param_1[4] = lVar1;
+        dq->start_offset = offset_reset;
 
 skip_offset:
-        if (plVar5 != plVar6) {
+        if (map_cur != map_end) {
             do {
-                if (*plVar5 != 0) FUN_710392e590((void*)*plVar5);
-                plVar5++;
-            } while (plVar6 != plVar5);
-            lVar1 = param_1[2];
-            if (lVar1 != param_1[1]) {
-                param_1[2] = lVar1 + (~((lVar1 - 8) - param_1[1]) & 0xfffffffffffffff8ULL);
+                if (*map_cur != nullptr) FUN_710392e590(*map_cur);
+                map_cur++;
+            } while (map_end != map_cur);
+            long end_val = (long)dq->map_end;
+            if (end_val != (long)dq->map_start) {
+                dq->map_end = (void**)(end_val + (~((end_val - 8) - (long)dq->map_start) & 0xfffffffffffffff8ULL));
             }
         }
 
-        if (*param_1 != 0) FUN_710392e590((void*)*param_1);
+        if (dq->map_alloc != nullptr) FUN_710392e590(dq->map_alloc);
     }
 }
 
 // ============================================================================
-// FUN_710354b4b0 — fiber_scheduler_destructor
-// Destructor for a fiber-based task scheduler. Drains pending task vectors
-// into a deque, destroys all fibers in the deque, cleans up deques, destroys
-// mutex, and calls FUN_710354b800 to destroy sub-deques.
-// [derived: scheduler layout: +0xA0=mutex, +0xE0..+0xF0=task_vector_a,
-//   +0xF8..+0x100=task_vector_b, +0x110..=deque(s), +0x148=LightEvent]
+// fiber_scheduler_destructor — Destructor for FiberScheduler
+// Drains pending task vectors into a deque, destroys all fibers in the deque,
+// cleans up deques, destroys mutex, and calls destroy_three_deques for sub-deques.
 // Address: 0x710354b4b0 (848 bytes)
 // ============================================================================
-void FUN_710354b4b0_b4b0(long param_1) {
-    // Drain task vector at +0xE0..+0xE8 into deque
-    long lVar11 = *(long*)(param_1 + 0xe0);
-    long lVar9 = *(long*)(param_1 + 0xe8);
-    if (lVar11 != lVar9) {
-        long lVar6 = *(long*)(param_1 + 0x138);
+void FUN_710354b4b0_b4b0(phx::FiberScheduler* sched) {
+    // Drain task vector A at +0xE0..+0xE8 into fiber deque
+    phx::WorkEntry* task_a_cur = sched->task_vec_a_start;
+    phx::WorkEntry* task_a_end = sched->task_vec_a_end;
+    if (task_a_cur != task_a_end) {
+        u64 deque_size = sched->fiber_deque_size;
         do {
-            long lVar8 = *(long*)(param_1 + 0x118);
-            long lVar5 = *(long*)(param_1 + 0x120) - lVar8;
-            long uVar14 = *(long*)(lVar11 + 0x10);
-            u64 uVar12 = lVar6 + *(long*)(param_1 + 0x130);
-            u64 uVar3 = 0;
-            if (lVar5 != 0) uVar3 = (u64)lVar5 * 0x40 - 1;
-            if (uVar3 == uVar12) {
-                FUN_710354a7e0(param_1 + 0x110);
-                lVar8 = *(long*)(param_1 + 0x118);
-                uVar12 = *(long*)(param_1 + 0x130) + *(long*)(param_1 + 0x138);
+            void** deque_map = sched->fiber_deque_map_start;
+            long map_span = (long)sched->fiber_deque_map_end - (long)deque_map;
+            phx::Fiber* fiber = (phx::Fiber*)task_a_cur->fiber;
+            u64 total_offset = deque_size + sched->fiber_deque_start_offset;
+            u64 max_idx = 0;
+            if (map_span != 0) max_idx = (u64)map_span * 0x40 - 1;
+            if (max_idx == total_offset) {
+                FUN_710354a7e0((long)&sched->fiber_deque_alloc);
+                deque_map = sched->fiber_deque_map_start;
+                total_offset = sched->fiber_deque_start_offset + sched->fiber_deque_size;
             }
-            lVar11 += 0x20;
-            *(long*)(*(long*)(lVar8 + (uVar12 >> 6 & 0x3fffffffffffff8ULL)) + (uVar12 & 0x1ff) * 8) = uVar14;
-            lVar6 = *(long*)(param_1 + 0x138) + 1;
-            *(long*)(param_1 + 0x138) = lVar6;
-        } while (lVar9 != lVar11);
+            task_a_cur++;
+            *(phx::Fiber**)(*(long*)((long)deque_map + (total_offset >> 6 & 0x3fffffffffffff8ULL)) + (long)(total_offset & 0x1ff) * 8) = fiber;
+            deque_size = sched->fiber_deque_size + 1;
+            sched->fiber_deque_size = deque_size;
+        } while (task_a_end != task_a_cur);
     }
 
-    // Drain task vector at +0xF8..+0x100 into same deque
-    lVar11 = *(long*)(param_1 + 0xf8);
-    lVar9 = *(long*)(param_1 + 0x100);
-    long* plVar1 = (long*)(param_1 + 0x138);
-    long lVar6;
-    if (lVar11 == lVar9) {
-        lVar6 = *(long*)(param_1 + 0x138);
+    // Drain task vector B at +0xF8..+0x100 into same deque
+    phx::WorkEntry* task_b_cur = sched->task_vec_b_start;
+    phx::WorkEntry* task_b_end = sched->task_vec_b_end;
+    u64* deque_size_ptr = &sched->fiber_deque_size;
+    u64 deque_size;
+    if (task_b_cur == task_b_end) {
+        deque_size = sched->fiber_deque_size;
     } else {
-        lVar6 = *(long*)(param_1 + 0x138);
+        deque_size = sched->fiber_deque_size;
         do {
-            long lVar8 = *(long*)(param_1 + 0x118);
-            long lVar5 = *(long*)(param_1 + 0x120) - lVar8;
-            long uVar14 = *(long*)(lVar11 + 0x10);
-            u64 uVar12 = lVar6 + *(long*)(param_1 + 0x130);
-            u64 uVar3 = 0;
-            if (lVar5 != 0) uVar3 = (u64)lVar5 * 0x40 - 1;
-            if (uVar3 == uVar12) {
-                FUN_710354a7e0(param_1 + 0x110);
-                lVar8 = *(long*)(param_1 + 0x118);
-                uVar12 = *(long*)(param_1 + 0x130) + *(long*)(param_1 + 0x138);
+            void** deque_map = sched->fiber_deque_map_start;
+            long map_span = (long)sched->fiber_deque_map_end - (long)deque_map;
+            phx::Fiber* fiber = (phx::Fiber*)task_b_cur->fiber;
+            u64 total_offset = deque_size + sched->fiber_deque_start_offset;
+            u64 max_idx = 0;
+            if (map_span != 0) max_idx = (u64)map_span * 0x40 - 1;
+            if (max_idx == total_offset) {
+                FUN_710354a7e0((long)&sched->fiber_deque_alloc);
+                deque_map = sched->fiber_deque_map_start;
+                total_offset = sched->fiber_deque_start_offset + sched->fiber_deque_size;
             }
-            lVar11 += 0x20;
-            *(long*)(*(long*)(lVar8 + (uVar12 >> 6 & 0x3fffffffffffff8ULL)) + (uVar12 & 0x1ff) * 8) = uVar14;
-            lVar6 = *plVar1 + 1;
-            *plVar1 = lVar6;
-        } while (lVar9 != lVar11);
+            task_b_cur++;
+            *(phx::Fiber**)(*(long*)((long)deque_map + (total_offset >> 6 & 0x3fffffffffffff8ULL)) + (long)(total_offset & 0x1ff) * 8) = fiber;
+            deque_size = *deque_size_ptr + 1;
+            *deque_size_ptr = deque_size;
+        } while (task_b_end != task_b_cur);
     }
 
     // Pop and destroy fibers from deque
-    if (lVar6 != 0) {
-        long* plVar2 = (long*)(param_1 + 0x120);
+    if (deque_size != 0) {
+        void*** deque_map_end_ptr = &sched->fiber_deque_map_end;
         do {
-            long lVar8 = *(long*)(param_1 + 0x130);
-            long lVar9b = lVar6 - 1;
-            lVar11 = *(long*)(param_1 + 0x118);
+            u64 start_off = sched->fiber_deque_start_offset;
+            u64 back_idx = deque_size - 1;
+            void** deque_map = sched->fiber_deque_map_start;
             phx::Fiber* fiber = *(phx::Fiber**)
-                (*(long*)(lVar11 + ((u64)(lVar9b + lVar8) >> 6 & 0x3fffffffffffff8ULL)) +
-                (u64)(lVar9b + lVar8 & 0x1ff) * 8);
+                (*(long*)((long)deque_map + ((u64)(back_idx + start_off) >> 6 & 0x3fffffffffffff8ULL)) +
+                (u64)(back_idx + start_off & 0x1ff) * 8);
             if (fiber != nullptr) {
                 Fiber_dtor_353c210(fiber);
                 FUN_710392e590(fiber);
-                lVar6 = *plVar1;
-                lVar8 = *(long*)(param_1 + 0x130);
-                lVar9b = lVar6 - 1;
-                lVar11 = *(long*)(param_1 + 0x118);
+                deque_size = *deque_size_ptr;
+                start_off = sched->fiber_deque_start_offset;
+                back_idx = deque_size - 1;
+                deque_map = sched->fiber_deque_map_start;
             }
-            *plVar1 = lVar9b;
-            lVar11 = *plVar2 - lVar11;
-            long lVar7 = 1 - lVar6;
-            long lVar5 = 0;
-            if (lVar11 != 0) lVar5 = lVar11 * 0x40 - 1;
-            lVar6 = lVar9b;
-            if (0x3ff < (u64)((lVar7 - lVar8) + lVar5)) {
-                long* plVar13 = (long*)(*plVar2 - 8);
-                if (*plVar13 != 0) {
-                    FUN_710392e590((void*)*plVar13);
-                    lVar9b = *plVar1;
-                    plVar13 = (long*)(*plVar2 - 8);
+            *deque_size_ptr = back_idx;
+            long map_span = (long)*deque_map_end_ptr - (long)deque_map;
+            long underflow = 1 - (long)deque_size;
+            long max_idx = 0;
+            if (map_span != 0) max_idx = map_span * 0x40 - 1;
+            deque_size = back_idx;
+            if (0x3ff < (u64)((underflow - (long)start_off) + max_idx)) {
+                void** last_block = (void**)((long)*deque_map_end_ptr - 8);
+                if (*last_block != nullptr) {
+                    FUN_710392e590(*last_block);
+                    back_idx = *deque_size_ptr;
+                    last_block = (void**)((long)*deque_map_end_ptr - 8);
                 }
-                *plVar2 = (long)plVar13;
-                lVar6 = lVar9b;
+                *deque_map_end_ptr = last_block;
+                deque_size = back_idx;
             }
-        } while (lVar6 != 0);
+        } while (deque_size != 0);
     }
 
     // Finalize light event at +0x148
-    FUN_71039c0610((void*)(param_1 + 0x148));
+    FUN_71039c0610(sched->light_event);
 
     // Cleanup deque internals at +0x118..+0x138
     {
-        long* plVar13 = *(long**)(param_1 + 0x118);
-        long* plVar4 = plVar13;
-        long* plVar15 = *(long**)(param_1 + 0x120);
-        lVar11 = (long)plVar15 - (long)plVar13;
+        void** map_base = sched->fiber_deque_map_start;
+        void** map_cur = map_base;
+        void** map_end = sched->fiber_deque_map_end;
+        long map_byte_size = (long)map_end - (long)map_base;
 
-        if (lVar11 != 0) {
-            u64 uVar12 = *(u64*)(param_1 + 0x130);
-            long* plVar10 = (long*)((long)plVar13 + (uVar12 >> 6 & 0x3fffffffffffff8ULL));
-            long lVar9c = *plVar10 + (uVar12 & 0x1ff) * 8;
-            while (*(long*)((long)plVar13 + (*plVar1 + uVar12 >> 6 & 0x3fffffffffffff8ULL)) +
-                   (*plVar1 + uVar12 & 0x1ff) * 8 != lVar9c) {
-                lVar9c += 8;
-                if (lVar9c - *plVar10 == 0x1000) {
-                    plVar10++;
-                    lVar9c = *plVar10;
+        if (map_byte_size != 0) {
+            u64 start = sched->fiber_deque_start_offset;
+            void** block_ptr = (void**)((u64)map_base + (start >> 6 & 0x3fffffffffffff8ULL));
+            long elem_addr = (long)*block_ptr + (start & 0x1ff) * 8;
+            u64 end_offset = *deque_size_ptr + start;
+            long end_addr = *(long*)((u64)map_base + (end_offset >> 6 & 0x3fffffffffffff8ULL)) +
+                            (long)(end_offset & 0x1ff) * 8;
+            while (end_addr != elem_addr) {
+                elem_addr += 8;
+                if (elem_addr - (long)*block_ptr == 0x1000) {
+                    block_ptr++;
+                    elem_addr = (long)*block_ptr;
                 }
             }
         }
 
-        *plVar1 = 0;
-        u64 uVar12;
-        while (uVar12 = lVar11 >> 3, 2 < uVar12) {
-            if (*plVar4 != 0) {
-                FUN_710392e590((void*)*plVar4);
-                plVar4 = *(long**)(param_1 + 0x118);
-                plVar15 = *(long**)(param_1 + 0x120);
+        *deque_size_ptr = 0;
+        u64 block_count;
+        while (block_count = (u64)map_byte_size >> 3, 2 < block_count) {
+            if (*map_cur != nullptr) {
+                FUN_710392e590(*map_cur);
+                map_cur = sched->fiber_deque_map_start;
+                map_end = sched->fiber_deque_map_end;
             }
-            plVar4++;
-            *(long*)(param_1 + 0x118) = (long)plVar4;
-            lVar11 = (long)plVar15 - (long)plVar4;
+            map_cur++;
+            sched->fiber_deque_map_start = map_cur;
+            map_byte_size = (long)map_end - (long)map_cur;
         }
 
-        long uVar14;
-        if (uVar12 == 1) {
-            uVar14 = 0x100;
-        } else if (uVar12 == 2) {
-            uVar14 = 0x200;
+        u64 offset_reset;
+        if (block_count == 1) {
+            offset_reset = 0x100;
+        } else if (block_count == 2) {
+            offset_reset = 0x200;
         } else {
             goto skip_set;
         }
-        *(long*)(param_1 + 0x130) = uVar14;
+        sched->fiber_deque_start_offset = offset_reset;
 
 skip_set:
-        if (plVar4 != plVar15) {
+        if (map_cur != map_end) {
             do {
-                if (*plVar4 != 0) FUN_710392e590((void*)*plVar4);
-                plVar4++;
-            } while (plVar15 != plVar4);
-            lVar11 = *(long*)(param_1 + 0x120);
-            if (lVar11 != *(long*)(param_1 + 0x118)) {
-                *(long*)(param_1 + 0x120) = lVar11 + (~((lVar11 - 8) - *(long*)(param_1 + 0x118)) & 0xfffffffffffffff8ULL);
+                if (*map_cur != nullptr) FUN_710392e590(*map_cur);
+                map_cur++;
+            } while (map_end != map_cur);
+            long end_val = (long)sched->fiber_deque_map_end;
+            if (end_val != (long)sched->fiber_deque_map_start) {
+                sched->fiber_deque_map_end = (void**)(end_val + (~((end_val - 8) - (long)sched->fiber_deque_map_start) & 0xfffffffffffffff8ULL));
             }
         }
 
-        if (*(long*)(param_1 + 0x110) != 0) FUN_710392e590(*(void**)(param_1 + 0x110));
+        if (sched->fiber_deque_alloc != nullptr) FUN_710392e590(sched->fiber_deque_alloc);
     }
 
     // Free task vectors
-    if (*(long*)(param_1 + 0xf8) != 0) {
-        *(long*)(param_1 + 0x100) = *(long*)(param_1 + 0xf8);
-        FUN_710392e590(*(void**)(param_1 + 0xf8));
+    if (sched->task_vec_b_start != nullptr) {
+        sched->task_vec_b_end = sched->task_vec_b_start;
+        FUN_710392e590(sched->task_vec_b_start);
     }
-    if (*(long*)(param_1 + 0xe0) != 0) {
-        *(long*)(param_1 + 0xe8) = *(long*)(param_1 + 0xe0);
-        FUN_710392e590(*(void**)(param_1 + 0xe0));
+    if (sched->task_vec_a_start != nullptr) {
+        sched->task_vec_a_end = sched->task_vec_a_start;
+        FUN_710392e590(sched->task_vec_a_start);
     }
 
     // Destroy mutex at +0xA0
-    FUN_71039c14d0((void*)(param_1 + 0xa0));
+    FUN_71039c14d0(sched->mutex);
 
-    // Destroy sub-deques via FUN_710354b800
-    FUN_710354b800_b800((long*)(param_1 + 0x10));
+    // Destroy sub-deques via destroy_three_deques
+    FUN_710354b800_b800(sched->sub_deques);
 }
 
 // End of file

@@ -2,61 +2,57 @@
 
 ## Model: Opus
 
-## Task: Phase 1 — EffectModule typed wrapper adoption
+## Task: Phase 2 — Rewrite res_remaining_medium.cpp with typed struct access
 
-## Priority: QUALITY REFACTOR (not new decomp)
+## Priority: QUALITY REWRITE (not new decomp)
 
 ## Context
-The `BattleObjectModuleAccessor` fields are now typed (`EffectModule*` not `void*`).
-A code reviewer (`tools/review_diff.py`) now gates all merges.
-Your job is to replace raw vtable dispatch with typed method wrappers.
+This file is 1,268 lines of Ghidra paste with 824 default variable names. It compiles but has zero verified matches and zero structural value. Your job is to rewrite it using the existing resource service types in `include/resource/`.
 
 ## File Territory
-- `src/app/sv_animcmd_effect.cpp` (42 raw VT calls to convert — biggest single file)
-- `src/app/fighter_effects.cpp` (6 raw EffectModule VT calls)
-- `src/app/modules/EffectModule.cpp` (3 remaining raw VT calls)
-- `src/app/camera_functions.cpp` (fix your 6 STRUCT_REQUIRED violations)
+- `src/resource/res_remaining_medium.cpp` (REWRITE)
+- `include/resource/` (extend existing headers as needed)
 
-## Step 1: Fix your own pending REJECT violations
-Your diff scored 80/100 but has 6 STRUCT_REQUIRED rejections in camera_functions.cpp. These functions access 3-8 distinct offsets without structs:
-- `send_event_on_start_boss_entry`, `find_active_item_from_id` (4 offsets each)
-- `remove_item_from_id` (3 offsets)
-- `get_near_pos` (3 offsets)
-- `restore_pos_dead_range_gravity`, `convert_pos_dead_range_gravity` (5-8 offsets)
+## Available Struct Headers
+- `include/resource/ResServiceNX.h` — resource service singleton, file loading
+- `include/resource/LoadedArc.h` — ARC archive structures (ARCropolis-derived names)
+- `include/resource/PathResolver.h` — filepath/directory handle resolution
+- `include/resource/containers.h` — FixedString, vector-like containers
+- `include/resource/FixedString.h` — FixedString<N> template
+- `include/resource/Fiber.h` — fiber/coroutine context
+- `include/resource/LZ4Frame.h` — LZ4 frame decompression
 
-Define stub structs in `include/` for the types these functions operate on, then rewrite with field access.
+## What To Do
 
-## Step 2: Convert sv_animcmd_effect.cpp
-This file has 42 raw effect module vtable calls. Add `#include "app/modules/EffectModule.h"`. Replace:
-```cpp
-// BEFORE:
-void** vt = *reinterpret_cast<void***>(effect_mod);
-reinterpret_cast<u64(*)(void*, u64, ...)>(vt[0x80/8])(effect_mod, hash, ...);
+### Step 1: Read and understand the existing headers
+Read ALL headers in `include/resource/` first. Understand what types are already available before touching the source.
 
-// AFTER:
-acc->effect_module->req_follow(hash, ...);
-```
+### Step 2: Identify the functions
+For each function:
+1. Read the Ghidra paste version
+2. Identify which struct types are being accessed (by offset patterns)
+3. Rewrite using struct field access from the headers
+4. If a needed struct doesn't exist, define it in the appropriate header with `unk_0xNN` for unknown fields
 
-## Key vtable slot -> method mapping
-| Slot | Method | Occurrences |
-|------|--------|-------------|
-| 0x80/8 | `req_follow` | 20 (most common!) |
-| 0x70/8 | `req_on_joint` | 6 |
-| 0xd8/8 | `kill` | 3 |
-| 0x108/8 | `detach` | 3 |
-| 0x88/8 | `req` | 2 |
-| 0xe0/8 | `kill_kind` | 2 |
+### Step 3: Rename Ghidra variables
+After struct access is in place, rename `uVar1`, `lVar2` etc. to meaningful names.
 
-See `include/app/modules/EffectModule.h` for the complete list (89 methods).
+### Step 4: Delete functions you can't properly type
+If a function is too opaque to rewrite with struct access, DELETE it rather than keeping the paste. An honest gap is better than fake progress.
 
-## Step 3: Clean up EffectModule.cpp
-3 remaining raw VT calls for `req_after_image` variants. Check if the header signatures match; if not, add/fix the wrappers in the header.
+## Rules
+- **Every named field needs a `[derived:]` or `[inferred:]` comment**
+- **Use ARCropolis community names** where available (tag with `[derived: ARCropolis]`)
+- **0xFFFFFF sentinel** = invalid index, use named constant
+- **OOM retry pattern**: factor into `alloc_with_oom_retry()` helper
+- **NO Ghidra variable names** in final code (auto-REJECT)
+- **NO raw vtable dispatch** (auto-REJECT)
 
 ## Self-Check (MANDATORY before committing)
 ```bash
 python tools/review_diff.py pool-c
 ```
-Must score 50+ with zero REJECT violations.
+Must have zero REJECT violations.
 
 ## Build
 ```bash
