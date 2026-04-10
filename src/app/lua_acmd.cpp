@@ -1887,4 +1887,59 @@ u32 FUN_71037293d0(u8* agent, u8* node) {
     return 1;
 }
 
+// ============================================================
+// L2CValue simple type-check accessors
+// All are leaf functions returning raw union value if type matches
+// ============================================================
+
+// lib::L2CValue::as_hash() const — 0x7103735e80 (32 bytes)
+// [derived: Ghidra prototype. Accepts type 7 (hash) OR 2 (integer).
+//  Uses ccmp (compare-then-conditional-compare) for dual check.]
+u64 as_hash_7103735e80(lib::L2CValue* this_) {
+    u32 type = this_->type;
+    if (type == 7 || type == 2) {
+        return this_->raw;
+    }
+    return 0;
+}
+
+// lib::L2CValue::as_pointer() const — 0x7103735f90 (28 bytes)
+// [derived: Ghidra prototype. Type 4 = pointer.]
+void* as_pointer_7103735f90(lib::L2CValue* this_) {
+    if (this_->type == 4) {
+        return this_->ptr_val;
+    }
+    return nullptr;
+}
+
+// lib::L2CValue::as_table() const — 0x7103735fb0 (28 bytes)
+// [derived: Ghidra prototype. Type 5 = table (returns L2CTable* as untyped void*).]
+void* as_table_7103735fb0(lib::L2CValue* this_) {
+    if (this_->type == 5) {
+        return this_->ptr_val;
+    }
+    return nullptr;
+}
+
+// lib::L2CValue::as_inner_function() const — 0x7103735fd0 (28 bytes)
+// [derived: Ghidra prototype. Type 6 = L2CInnerFunctionBase*.]
+void* as_inner_function_7103735fd0(lib::L2CValue* this_) {
+    if (this_->type == 6) {
+        return this_->ptr_val;
+    }
+    return nullptr;
+}
+
+// ============================================================
+// lib::utility::Variadic::Variadic() — default ctor — 0x71037ae490 (8 bytes)
+// [derived: Ghidra prototype. Stores xzr to [this] — single 64-bit zero init.]
+// Variadic is the va_list-like helper used by L2CValue::push_variadic and
+// pop_variadic; layout is { void* table_ptr; ... } with +0x00 as the only
+// field the ctor touches.
+// ============================================================
+void Variadic_ctor_71037ae490(u64* this_) {
+    *this_ = 0;
+}
+
+
 } // namespace app::lua_bind
