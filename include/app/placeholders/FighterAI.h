@@ -138,11 +138,13 @@ struct FighterAIState {
 
 // ---------------------------------------------------------------------------
 // AIAnalyst — tracks status history for opponent analysis
-// Accessed via: **(ctx + 0x170) (double-deref)
+// Accessed via: **(ctx + 0x170) (double-deref), or via
+//               FighterAIManager->analyst_entries[clamp(entry_id, 0x10)]
 // Size: >= 0x20 bytes
 // ---------------------------------------------------------------------------
 struct AIAnalyst {
-    u8 unk_0x00[0x10];
+    u8 unk_0x00[0xc];
+    u32 status;                // +0x0c [derived: app::analyst::target_status reads this]
     u32 status_prev;           // +0x10 [derived: app::analyst::status_prev reads this]
     u32 status_count;          // +0x14 [derived: app::analyst::status_count reads this]
     u8 unk_0x18[0x4];
@@ -168,7 +170,10 @@ struct AIDeadZone {
 // Size: >= 0x158 bytes
 // ---------------------------------------------------------------------------
 struct FighterAIManager {
-    u8 unk_0x00[0xc0];
+    u8 unk_0x00[0x98];
+    AIAnalyst** analyst_entries;  // +0x98 [derived: target_status/status_count/status_prev/chanced_frame
+                                  //         index as analyst_entries[clamp(entry_id, 0x10)] and read fields]
+    u8 unk_0xa0[0x20];
     void* dangerzone_array;    // +0xc0 [derived: width, check_line_segment read through this]
     AIDeadZone* cam_bounds;    // +0xc8 [derived: dead_top/bottom/left/right read through this]
     u8 unk_0xd0[0x80];

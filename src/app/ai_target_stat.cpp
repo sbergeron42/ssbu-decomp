@@ -120,6 +120,145 @@ bool check_target_stat_rebirth_366bc0(u64 L) {
     return get_target_stat(L)->status_kind == 0x1f;
 }
 
+// 0x7100366800 (92B) — check target invincibility (long form)
+// [derived: app::ai::check_target_stat_invincible_l in .dynsym]
+// Mirror of check_stat_invincible_l but operating on the resolved target stat.
+// Order matters: final_flags bit 5 gate, flags_0x5e bit 4 early-true, invinc_counter > 0,
+// then status_kind ∈ {0x11, 0x12, 0xb}.
+bool check_target_stat_invincible_l_366800(u64 L) {
+    AITargetStat* stat = get_target_stat(L);
+    if (((stat->final_flags >> 5) & 1) == 0) {
+        return false;
+    }
+    if ((stat->flags_0x5e >> 4) & 1) {
+        return true;
+    }
+    if (stat->invinc_counter > 0) {
+        return true;
+    }
+    s32 k = stat->status_kind;
+    return (u32)(k - 0x11) < 2 || k == 0xb;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// target_* — AI target property accessors (non-stat, typed)
+// ════════════════════════════════════════════════════════════════════
+
+// 0x71003611c0 (24B) — AI's current target battle object id
+// [derived: app::ai::target_id in .dynsym; reads *(stat->+0x10) + 8]
+s32 target_id_3611c0(u64 L) {
+    AITargetStat* stat = get_target_stat(L);
+    return *reinterpret_cast<s32*>(reinterpret_cast<u8*>(stat->battle_object_id_holder) + 8);
+}
+
+// 0x71003665f0 (24B) — target's fighter_kind (FighterKind enum)
+// [derived: app::ai::target_fighter_kind in .dynsym]
+s32 target_fighter_kind_3665f0(u64 L) {
+    return get_target_stat(L)->fighter_kind;
+}
+
+// 0x7100366620 (24B) — target's copy_fighter_kind (mimic/echo kind)
+// [derived: app::ai::target_copy_fighter_kind in .dynsym]
+s32 target_copy_fighter_kind_366620(u64 L) {
+    return get_target_stat(L)->copy_fighter_kind;
+}
+
+// 0x7100366f00 (148B) — target's remaining jump budget, gated by state
+// [derived: app::ai::target_jump_rest_available in .dynsym]
+// Gates:
+//   status_kind == 0x10 (fall_sp) → 0
+//   flags_0x59 bit 5 set → 0
+//   fighter_kind == 0x22 AND flags_0x68 bit 2 clear → 0
+//   fighter_kind == 0x29 AND flags_0x68 bit 0 set → 0
+//   otherwise → jump_rest (u16)
+// NOTE: expected asm checks 0x22 first then 0x29. Written inverted so Clang 8's
+// block layout inlines the 0x29 path and makes 0x22 the out-of-line target.
+u16 target_jump_rest_available_366f00(u64 L) {
+    AITargetStat* stat = get_target_stat(L);
+    if (stat->status_kind == 0x10) {
+        return 0;
+    }
+    if ((stat->flags_0x59 >> 5) & 1) {
+        return 0;
+    }
+    s32 kind = stat->fighter_kind;
+    if (kind == 0x29) {
+        if (stat->flags_0x68 & 1) {
+            return 0;
+        }
+    } else if (kind == 0x22 && ((stat->flags_0x68 >> 2) & 1) == 0) {
+        return 0;
+    }
+    return stat->jump_rest;
+}
+
+// NOTE: is_target_on_same_floor_3672b0 and check_target_over_ground_367b00
+// already exist in src/app/ai_helpers_a.cpp (pool-a territory). Do not redefine here.
+
+// ════════════════════════════════════════════════════════════════════
+// analyst::target_* — target status history (direct manager table lookup)
+// These bypass aiGetTargetById_7100314030 and read from
+// manager->analyst_entries[clamp(entry_id, 0x10)].
+// Leaf functions, no frame — note the guard pattern: sign bit, self-check, clamp.
+// IMPORTANT:
+//  1. No null check on the entry pointer — the table is assumed dense.
+//  2. Manager-chain load must appear in C BEFORE the clamp so that x9
+//     (holding the entries pointer) is live across the csel, forcing the
+//     0x10 constant into w10 rather than reusing w9.
+// ════════════════════════════════════════════════════════════════════
+
+// 0x7100376a20 (80B, leaf) — target's current tracked status
+// [derived: app::analyst::target_status in .dynsym]
+u32 target_status_376a20(u64 L) {
+    FighterAI* ctx = get_ai_context(L);
+    s32 entry_id = ctx->target_entry_id;
+    if (entry_id < 0) return 0;
+    if ((u32)entry_id == ctx->parent_entry_id) return 0;
+    FighterAIManager* mgr = *reinterpret_cast<FighterAIManager**>(DAT_71052b5fd8);
+    AIAnalyst** entries = mgr->analyst_entries;
+    u32 idx = (u32)entry_id < 0x10 ? (u32)entry_id : 0x10u;
+    return entries[idx]->status;
+}
+
+// 0x7100376a70 (80B, leaf) — target's previous status before current
+// [derived: app::analyst::target_status_prev in .dynsym]
+u32 target_status_prev_376a70(u64 L) {
+    FighterAI* ctx = get_ai_context(L);
+    s32 entry_id = ctx->target_entry_id;
+    if (entry_id < 0) return 0;
+    if ((u32)entry_id == ctx->parent_entry_id) return 0;
+    FighterAIManager* mgr = *reinterpret_cast<FighterAIManager**>(DAT_71052b5fd8);
+    AIAnalyst** entries = mgr->analyst_entries;
+    u32 idx = (u32)entry_id < 0x10 ? (u32)entry_id : 0x10u;
+    return entries[idx]->status_prev;
+}
+
+// 0x7100376ae0 (80B, leaf) — frames spent in current status
+// [derived: app::analyst::target_status_count in .dynsym]
+u32 target_status_count_376ae0(u64 L) {
+    FighterAI* ctx = get_ai_context(L);
+    s32 entry_id = ctx->target_entry_id;
+    if (entry_id < 0) return 0;
+    if ((u32)entry_id == ctx->parent_entry_id) return 0;
+    FighterAIManager* mgr = *reinterpret_cast<FighterAIManager**>(DAT_71052b5fd8);
+    AIAnalyst** entries = mgr->analyst_entries;
+    u32 idx = (u32)entry_id < 0x10 ? (u32)entry_id : 0x10u;
+    return entries[idx]->status_count;
+}
+
+// 0x7100376bb0 (80B, leaf) — frame when target's current status became chanced
+// [derived: app::analyst::target_chanced_frame in .dynsym]
+u32 target_chanced_frame_376bb0(u64 L) {
+    FighterAI* ctx = get_ai_context(L);
+    s32 entry_id = ctx->target_entry_id;
+    if (entry_id < 0) return 0;
+    if ((u32)entry_id == ctx->parent_entry_id) return 0;
+    FighterAIManager* mgr = *reinterpret_cast<FighterAIManager**>(DAT_71052b5fd8);
+    AIAnalyst** entries = mgr->analyst_entries;
+    u32 idx = (u32)entry_id < 0x10 ? (u32)entry_id : 0x10u;
+    return entries[idx]->chanced_frame;
+}
+
 // ════════════════════════════════════════════════════════════════════
 // attack_data_* — attack bounding rect queries
 // All lookup attack data via FUN_710033c510(ctx->attack_handle, hash40)
