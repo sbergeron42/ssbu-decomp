@@ -2,21 +2,27 @@
 
 ## Model: Opus
 
-## Task: ROLLBACK CRITICAL PATH — heap/arena map (allocator init + arena boundaries)
+## Task: ROLLBACK CRITICAL PATH — heap/arena map
 
 ## Priority: HIGH — needed to make savestating feasible
 
 ## Context
-Rollback savestate cost is dominated by how much guest memory must be snapshotted per frame. Slippi only snapshots ~few MB of Melee's 24MB because the mutable regions are known. For Smash, we currently have to assume "everything," which is too slow. **A memory map turns savestating from "probably infeasible" into "probably fine."**
+Rollback savestate cost is dominated by how much guest memory must be snapshotted per frame. A memory map of mutable per-match arenas turns savestating from "probably infeasible" into "probably fine."
+
+## IMPORTANT: Pre-cached decomps
+**Two huge functions have already been decompiled to disk** (Ghidra MCP times out):
+- `data/ghidra_cache/main_loop_7103747270.txt` (3947 lines)
+- `data/ghidra_cache/FUN_7101344cf0.txt` (5891 lines — likely per-frame fighter update)
+
+**Read these files with `Read` instead of calling Ghidra MCP for those addresses.**
 
 ## What To Find
 
-### Per-system arena boundaries
 For each major gameplay system, find:
-- The allocator init function
+- Allocator init function
 - Base address of its arena
 - Size of its arena
-- Whether it's persistent (CSS, stage data) or per-match (mutable, needs savestating)
+- Persistent (CSS, stage data) vs per-match (mutable, needs savestating)
 
 Required systems:
 1. **FighterManager** — fighter slot data, fighter info
@@ -28,45 +34,34 @@ Required systems:
 7. **Sound system** — sound state
 8. **Lua/ACMD** — Lua state (likely big — fighters have per-instance Lua VMs)
 
-### Allocator init xref
-- Find the top-level memory init that creates these arenas
-- Look for `nn::os::SetMemoryHeapSize` or similar Switch SDK calls
-- Look for `je_mallocx`, `je_aligned_alloc` xrefs near the manager singletons
+## Approach
+1. We already know the singletons:
+   - `app::FighterManager` (find via .dynsym)
+   - `BattleObjectManager` (DAT_71052b7ef8 area)
+   - `ItemManager` (`include/app/ItemManager.h` exists)
+   - `app::StageManager` (DAT_71052b7f00 area, DAT_71053299d8)
+2. Find each constructor in Ghidra → reveals inline allocations and `je_aligned_alloc` sizes
+3. Trace allocator calls back to startup
+4. Nintendo SDK heap setup is usually visible early in `nnMain` or equivalent
+5. The cached `main_loop_7103747270.txt` shows the per-frame access patterns — useful for confirming which arenas are touched per tick
 
 ## Output
 
-Create `docs/rollback/memory_map.md` with:
+Create `docs/rollback/memory_map.md`:
 
 ```
 | System              | Arena base       | Size      | Type       | Init function     | Notes |
 |---------------------|------------------|-----------|------------|-------------------|-------|
 | FighterManager      | 0xXXXXXXXX       | NNN MB    | per-match  | initFn @ 0xXXXX   | ...   |
-| BattleObjectManager | 0xXXXXXXXX       | NNN MB    | per-match  | initFn @ 0xXXXX   | ...   |
 | ...                 | ...              | ...       | ...        | ...               | ...   |
 ```
 
 Plus a section listing **persistent** vs **per-match** regions clearly. Per-match regions are what savestating needs to capture.
 
-## Approach
-1. We already know the singletons:
-   - `app::FighterManager` instance (find via .dynsym)
-   - `BattleObjectManager` (DAT_71052b7ef8 area)
-   - `ItemManager` (created by pool-c earlier in `include/app/ItemManager.h`)
-   - `app::StageManager` (DAT_71052b7f00 area, also DAT_71053299d8)
-2. For each singleton, find its **constructor** in Ghidra. The constructor reveals:
-   - Inline allocations of inner pools
-   - Calls to `je_aligned_alloc` or game-specific allocators with sizes
-3. Trace the allocator calls back to their actual init in main startup
-4. The Nintendo SDK heap setup is usually visible early in `nnMain` or equivalent
-
-## Output Files
-- `docs/rollback/memory_map.md` (primary deliverable)
-- Optionally: extend `include/app/` headers with the singleton type definitions if you discover new layout info
-
 ## Quality Rules
 - Documentation is the primary deliverable
-- NO `FUN_` names, NO Ghidra vars in any committed code
-- Cast density under 10%
+- Cached Ghidra files are reference material, NOT to commit as src/
+- NO `FUN_` names, NO Ghidra vars, NO raw casts in committed code
 
 ## Build
 ```bash
