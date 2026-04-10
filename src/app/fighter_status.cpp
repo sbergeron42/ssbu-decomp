@@ -3414,3 +3414,29 @@ u32 is_input_available_for_entry_7100376730(void* L) {
         ctrl->_vt[0x288 / 8])(ctrl);
     return (~disabled) & 1;
 }
+
+// ────────────────────────────────────────────────────────────
+// AI rule/param functions — decision-making helpers
+// ────────────────────────────────────────────────────────────
+
+// Helper: get FighterAIManager singleton
+// [derived: DAT_71052b5fd8 = lib::Singleton<FighterAIManager>::instance_]
+static inline FighterAIManager* get_ai_manager() {
+    return static_cast<FighterAIManager*>(*static_cast<void**>(DAT_71052b5fd8));
+}
+
+// ── 0x710036b580 -- ai_rule::is_1on1 (64B) ─────────────────
+// Returns true if this is a 1v1 match for the AI's fighter.
+// Checks FighterAIManager→player_count == 2, then whether this fighter's
+// player slot is alive.
+// [derived: FighterAIManager→player_count==2, then player_alive[player_index]==1]
+bool ai_rule_is_1on1_710036b580(void* L) {
+    auto* ai = get_ai_context(reinterpret_cast<u64>(L));
+    auto* mgr = get_ai_manager();
+    if (mgr->player_count != 2) return false;
+    s32 player_idx = ai->state->player_index;
+    return mgr->player_alive[player_idx] == 1;
+}
+
+// target_chanced_frame (0x7100376bb0) and escape_air_slide_move_distance (0x710036ba20)
+// deferred: need typed FighterAIManager analyst array struct to meet cast density limit
