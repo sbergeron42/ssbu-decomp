@@ -17,6 +17,13 @@ extern "C" void StageBase_dtor_71025d7310(void*);
 // fun_hard_c_010.cpp; we refer to it under a named alias here.
 extern "C" void stage_vt71051624a8_cleanup_710303be40(void*) asm("FUN_710303be40");
 extern "C" u64 DAT_71051624a8 __attribute__((visibility("hidden"))); // stage subclass vtable
+extern "C" u64 DAT_7105162e58 __attribute__((visibility("hidden"))); // stage sub-obj vtable (vt_e58)
+extern "C" u64 DAT_7105163290 __attribute__((visibility("hidden"))); // stage sub-obj vtable (vt_290)
+
+// Cleanup helpers for the two small D0 destructors below. Both are tail-called
+// with the owned inner pointer's +0x28 field or the raw pointer.
+extern "C" void stage_vt7105162e58_inner_cleanup_710303cf20(void*) asm("FUN_710303cf20");
+extern "C" void stage_vt7105163290_inner_cleanup_7103047c00(void*) asm("FUN_7103047c00");
 
 // Node layout for the BST helper: { Node* left; Node* right; ...payload }
 // Only the first 16 bytes (left + right) are touched; payload is opaque.
@@ -73,6 +80,61 @@ extern "C" void free_stage_list_710301bcb0(StageListOwner* owner)
 // D0 variant inlines the same cleanup, tail-calls ~StageBase, then deletes self.
 // Field layout is documented in include/app/placeholders/StageVt71051624a8.h.
 // [derived: disasm at 0x7103036770; paired with D1 at 0x7103036720 in fun_hard_c_010.cpp]
+// 0x7103088730 (56 bytes) — second BST recursive free helper, identical to
+// free_stage_tree_71030080c0 but at a different address. Used by a different
+// stage sub-object tree. Keeping both as distinct symbols because they are
+// distinct addresses in the shipping binary.
+// [derived: disasm at 0x7103088730 — cbz x0; save x19; recurse left; recurse right; tail-call delete]
+extern "C" void free_stage_tree_7103088730(StageTreeNode* node)
+{
+    if (node == nullptr) return;
+    free_stage_tree_7103088730(node->left);
+    free_stage_tree_7103088730(node->right);
+    jeFree_710392e590(node);
+}
+
+// Node layout for the small-object D0 destructors below.
+// Both classes have the same 2-field shape: { vtable@+0x00, owned@+0x08 }.
+// [derived: disasm at 0x710303ceb0 and 0x7103047b20 — ldr x20,[x0, #0x8]; stp x8,xzr,[x0]]
+struct StageSubObjVt {
+    void* vtable;     // +0x00
+    void* owned_inner;  // +0x08 [derived: cleaned via class-specific inner_cleanup then jeFree]
+};
+
+// 0x710303ceb0 (68 bytes) — D0 destructor for stage sub-object with vtable DAT_7105162e58.
+// Not a StageBase descendant — just a 2-field polymorphic owner.
+// NOTE: the inner cleanup helper is called with inner->+0x28 (not inner itself).
+// [derived: disasm at 0x710303ceb0 — ldr x0,[x20, #0x28]; bl cleanup; bl delete]
+extern "C" void stage_vt7105162e58_D0_dtor_710303ceb0(StageSubObjVt* self)
+{
+    void* inner = self->owned_inner;
+    self->vtable = &DAT_7105162e58;
+    self->owned_inner = nullptr;
+    if (inner != nullptr) {
+        // The cleanup helper expects the payload at inner+0x28, not inner itself
+        stage_vt7105162e58_inner_cleanup_710303cf20(*reinterpret_cast<void**>(
+            reinterpret_cast<u8*>(inner) + 0x28));
+        jeFree_710392e590(inner);
+    }
+    jeFree_710392e590(self);
+}
+
+// 0x7103047b20 (68 bytes) — D0 destructor for stage sub-object with vtable DAT_7105163290.
+// Same shape as stage_vt7105162e58_D0_dtor_710303ceb0 but different class. Here the
+// inner cleanup helper takes the inner pointer directly (no +0x28 dereference).
+// [derived: disasm at 0x7103047b20 — mov x0,x20; bl cleanup; bl delete]
+extern "C" void stage_vt7105163290_D0_dtor_7103047b20(StageSubObjVt* self)
+{
+    void* inner = self->owned_inner;
+    self->vtable = &DAT_7105163290;
+    self->owned_inner = nullptr;
+    if (inner != nullptr) {
+        stage_vt7105163290_inner_cleanup_7103047c00(inner);
+        jeFree_710392e590(inner);
+    }
+    jeFree_710392e590(self);
+}
+
 extern "C" void stage_D0_dtor_7103036770(StageVt71051624a8* self)
 {
     void* sub = self->owned_sub_0x738;
