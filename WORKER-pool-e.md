@@ -2,36 +2,34 @@
 
 ## Model: Opus
 
-## Task: Phase 5 — Decomp remaining module functions
+## Task: Delete or rewrite Ghidra paste files (fun_med_final_*, fun_batch_d_001, fun_batch_c_016)
 
-## Priority: DECOMP matchable functions in owned files
+## Priority: QUALITY CLEANUP — remove paste, keep only typed code
 
 ## Context
-Phase 4 (naked asm audit) is COMPLETE — 113 naked functions removed across 32 files.
-Phase 5 adds new decomp for functions in pool-e territory files.
-
-## Completed Work
-- **Phase 4**: Removed all `__attribute__((naked))` from pool-e territory (G-Z files, fun_hard_*, modules/)
-- **Batch 2**: 11 functions (ItemKineticModuleImpl: 5 angle/throw/speed, Item: 2 param lookups, ItemDamageModuleImpl: 1 smash check, throw wrappers: 3)
-- **Batch 3**: 4 functions (ItemKineticModuleImpl: 2 more, ItemCameraModuleImpl: 2)
-- **Batch 4**: 2 functions (ItemParamAccessor: get_self_param_float/int)
-- **Total new decomp**: 17 functions
-
-## Remaining Targets (known unmatchable — skip these)
-All remaining small functions (<=40B) in pool-e territory are either:
-1. **NEON ext+mov divergence**: KineticEnergyRotNormal set_*, KineticEnergyNormal set_speed_3d, WeaponSnakeMissileKineticEnergyNormal set_direction, ItemKineticModuleImpl set_motion_trans_rate/rate_2nd/it_base_rot/clear_speed
-2. **x8 register (not ABI param)**: All store_l2c_table_impl functions, GimmickEventPresenter dispatch
-3. **Already compiled** (CSV stale): SlowModule rate_impl2, WorkModule enable_transition_term_group_impl_2
-
-## Potential Next Targets (larger, need investigation)
-- FighterMotionModuleImpl: 5 funcs 88-144B (kirby_copy patterns, damage_stop_interpolation)
-- ItemCameraModuleImpl: 3 funcs 64-104B (get/set camera_subject_pos, set_camera_subject_range)
-- ItemInkPaintModuleImpl: apply_link_ink_paint_impl 128B
-- ItemKineticModuleImpl: it_ai_dir_factor (48B, float clamp), set_rot_along_speed_x (complex)
-- stWaterAreaInfo/Rhombus2/lib::Rect store_l2c_table 196B variants
+These files are Ghidra paste with high default variable counts and zero structural value. Same treatment as Phase 2: delete functions that are pure paste, rewrite ones that can be typed.
 
 ## File Territory
-Same as Phase 4: all non-jemalloc files G-Z, fun_hard_*, fun_medium_*, fun_nro_*, modules/
+- `src/app/fun_med_final_c_002.cpp` (546 Ghidra vars, 123 offsets)
+- `src/app/fun_med_final_c_001.cpp` (308 Ghidra vars, 129 offsets)
+- `src/app/fun_batch_c_016.cpp` (283 Ghidra vars, 81 offsets)
+- `src/app/fun_batch_d_001.cpp` (313 Ghidra vars, 39 offsets)
+- `src/app/res_medium_helpers.cpp` (292 Ghidra vars, 110 offsets)
+- `src/app/fun_med_final_b_012.cpp` (196 Ghidra vars, 150 offsets)
+
+## What To Do
+For each file:
+1. Check `data/functions.csv` — are ANY functions in this file verified (quality=M)?
+2. If zero verified: **delete the entire file** (same as Phase 2 paste deletion)
+3. If some verified: keep those functions, delete the rest, rewrite kept functions with struct access
+4. For functions worth keeping: identify the struct types, create placeholders, rewrite with typed access
+5. NO Ghidra variable names in any kept code
+
+## Self-Check
+```bash
+python tools/review_diff.py pool-e
+python tools/progress.py  # verify no regression in matched count
+```
 
 ## Build
 ```bash
