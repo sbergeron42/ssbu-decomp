@@ -6,6 +6,7 @@ typedef float v4sf __attribute__((vector_size(16)));
 
 extern "C" void FUN_71016192b0(void*, void*, void*, bool, u32);
 extern "C" void FUN_7101616b30(void*, void*);
+extern "C" void FUN_7101617100(void*, void*, bool);
 extern "C" f32 DAT_71044716e0 HIDDEN;   // [derived: deg-to-rad constant, used by set_motion_trans_angle]
 extern "C" f32 DAT_7104471fbc HIDDEN;   // [derived: rad-to-deg numerator]
 extern "C" f32 DAT_7104470d10 HIDDEN;   // [derived: rad-to-deg denominator]
@@ -108,6 +109,17 @@ f32 ItemKineticModuleImpl__get_motion_trans_angle_impl(BattleObjectModuleAccesso
 // 71020ccd20 -- convert degrees to radians, store to +0xab0
 void ItemKineticModuleImpl__set_motion_trans_angle_2nd_impl(BattleObjectModuleAccessor* a, f32 angle) {
     *reinterpret_cast<f32*>(reinterpret_cast<u8*>(a->item_kinetic_module) + 0xab0) = angle * DAT_71044716e0;
+}
+
+// 71020ccd40 -- load radians from +0xab0, convert to degrees
+f32 ItemKineticModuleImpl__get_motion_trans_angle_2nd_impl(BattleObjectModuleAccessor* a) {
+    f32 rad = *reinterpret_cast<f32*>(reinterpret_cast<u8*>(a->item_kinetic_module) + 0xab0);
+    return (rad * DAT_7104471fbc) / DAT_7104470d10;
+}
+
+// 71020ccda0 -- load module, mask bool, tail-call get_sum_speed_simple
+void ItemKineticModuleImpl__get_sum_speed_simple_impl(BattleObjectModuleAccessor* a, void* out, bool flag) {
+    FUN_7101617100(a->item_kinetic_module, out, flag);
 }
 
 } // namespace app::lua_bind
