@@ -54,6 +54,32 @@ To contribute: identify the real class name, update the header, and remove the e
   - Community names from param mod databases, all verified against Ghidra offsets
 - **Best guess**: Physics/kinetic common params sub-struct (confidence: high)
 
+## ItemKineticImpl
+- **Header**: `include/app/placeholders/ItemKineticImpl.h`
+- **Size**: at least 0xABC bytes (largest mapped offset +0xAB8 + 4)
+- **Known fields**:
+  - +0x3D0: `u8 param_gemini_vec[0x10]` [derived: set_param_gemini_impl zero-z/w SIMD write]
+  - +0x9D8: `u32 kinetic_flags` [derived: get/set/on/off_kinetic_flag_impl]
+  - +0x9E8: `u32 slope_type` [derived: set_slope_type_impl (<= 7 bounds check)]
+  - +0xA04: `u32 it_ai_type` [derived: it_ai_type_impl]
+  - +0xA10..+0xA2F: 4 x u64 (two Vec3 structs written together by it_ai_type_impl)
+  - +0xA34: `f32 it_ai_distance_factor` [derived: range-checked to [0,1]]
+  - +0xA50: `u8 it_ai_dir_rot_mode` [derived: `val & 1` bool store]
+  - +0xA70: `f32 interpolate_rate` [derived: set_interpolate_rate_impl]
+  - +0xA80: `u8 motion_trans_rate[0x10]` [derived: get_motion_trans_rate_impl returns &this+0xa80]
+  - +0xA90: `f32 motion_trans_angle_rad` [derived: set_motion_trans_angle writes angle*deg2rad]
+  - +0xAA0: `u8 motion_trans_rate_2nd[0x10]` [derived: get_motion_trans_rate_2nd_impl]
+  - +0xAB0: `f32 motion_trans_angle_2nd_rad`
+  - +0xAB4: `f32 param_gemini_p1`
+  - +0xAB8: `f32 param_gemini_p2`
+- **Used by**: `src/app/modules/ItemKineticModuleImpl.cpp` (17 dispatchers)
+- **Research leads**:
+  - .dynsym: all 17 `app::lua_bind::ItemKineticModuleImpl__*_impl` symbols
+  - Concrete subclass of `KineticModule` (accessed via accessor+0x68 for item objects)
+  - The 0x000..0x3CF region is the inherited KineticModule base + energy slots — needs separate research
+  - Total object size unknown; only 0x3D0..0xABC mapped so far
+- **Best guess**: `ItemKineticImpl` or `ItemKineticModuleImpl` (confidence: high — community name)
+
 <!-- Template for new entries:
 
 ## UnkType_XXXXXXXX
