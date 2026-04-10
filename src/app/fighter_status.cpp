@@ -905,23 +905,23 @@ bool line_segment_check_only_wall_7100366540(void* L, const float4* rel) {
         scene, base, &end, 0x18, nullptr, nullptr, 0) != nullptr;
 }
 
-// Returns a command-input category based on stat_module motion_kind and
-// ctx motion hash. 1 = basic QCF/QCB range, 2 = forward-smash analog,
-// 1 = explicit QCF via hash 0x6038/0x6046, 0 = none.
-// [derived: stat_module+0x28 motion_kind, stat_module+0x1f4 command bits,
-//  ctx+0x198 u16 motion hash]
+// Returns a command-input category based on the fighter's identity and
+// current action_id. Fighters 0x3c, 0x3d (dedicated command characters)
+// return 1; fighter 0x55 returns 2. For Kirby with copied fighter 0x3c/0x3d,
+// checks action_id == 0x6038 or 0x6046 → 1.
+// [derived: state->fighter_kind at +0x28, state->copy_fighter_kind at +0x1f4,
+//  ctx->action_id at +0x198]
 // 0x7100361dd0 -- app::ai::check_use_command_type (104B)
 u32 check_use_command_type_7100361dd0(void* L) {
-    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
-    u8* mod = *reinterpret_cast<u8**>(ctx + 0x168);
-    s32 motion = *reinterpret_cast<s32*>(mod + 0x28);
-    if (static_cast<u32>(motion - 0x3c) < 2) return 1;
-    if (motion == 0x55) return 2;
-    s32 cmd = *reinterpret_cast<s32*>(mod + 0x1f4) & ~1;
-    if (cmd != 0x3c) return 0;
-    u16 hash = *reinterpret_cast<u16*>(ctx + 0x198);
-    if (hash == 0x6038) return 1;
-    if (hash == 0x6046) return 1;
+    FighterAI* ai = get_ai_context(reinterpret_cast<u64>(L));
+    u32 fighter = ai->state->fighter_kind;
+    if ((fighter - 0x3cu) < 2) return 1;
+    if (fighter == 0x55) return 2;
+    u32 copy = ai->state->copy_fighter_kind & ~1u;
+    if (copy != 0x3c) return 0;
+    u16 action = ai->action_id;
+    if (action == 0x6038) return 1;
+    if (action == 0x6046) return 1;
     return 0;
 }
 
@@ -2518,63 +2518,55 @@ f32 personality_probability_71003760e0(void* L, s32 idx) {
     return *reinterpret_cast<f32*>(ctx + 0x98c + static_cast<s64>(idx) * 4);
 }
 
-// [derived: stat_module+0x80 is Vector4 position. Saves self x into d8
-//  (callee-saved) across aiGetTargetById call, returns |self.x - target.x|]
+// [derived: state->pos_x (+0x80). Saves self_x into d8 (callee-saved) across
+//  aiGetTargetById call. Returns |self.x - target.x|. Target is another
+//  FighterAIState which has pos_x at +0x80]
 // 0x7100367230 -- app::ai::distance_x_to_target (60B)
 f32 distance_x_to_target_7100367230(void* L) {
-    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
-    u8* mod = *reinterpret_cast<u8**>(ctx + 0x168);
-    f32 self_x = *reinterpret_cast<f32*>(mod + 0x80);
-    u8* target = reinterpret_cast<u8*>(aiGetTargetById_7100314030(
-        DAT_71052b5fd8, reinterpret_cast<void*>(ctx + 0xc50)));
-    f32 target_x = *reinterpret_cast<f32*>(target + 0x80);
-    return __builtin_fabsf(self_x - target_x);
+    FighterAI* ai = get_ai_context(reinterpret_cast<u64>(L));
+    f32 self_x = ai->state->pos_x;
+    auto* target = reinterpret_cast<FighterAIState*>(aiGetTargetById_7100314030(
+        DAT_71052b5fd8, &ai->target_entry_id));
+    return __builtin_fabsf(self_x - target->pos_x);
 }
 
-// [derived: same as distance_x_to_target but reads +0x84 (y component)]
+// [derived: same as distance_x_to_target but reads pos_y (+0x84)]
 // 0x7100367270 -- app::ai::distance_y_to_target (60B)
 f32 distance_y_to_target_7100367270(void* L) {
-    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
-    u8* mod = *reinterpret_cast<u8**>(ctx + 0x168);
-    f32 self_y = *reinterpret_cast<f32*>(mod + 0x84);
-    u8* target = reinterpret_cast<u8*>(aiGetTargetById_7100314030(
-        DAT_71052b5fd8, reinterpret_cast<void*>(ctx + 0xc50)));
-    f32 target_y = *reinterpret_cast<f32*>(target + 0x84);
-    return __builtin_fabsf(self_y - target_y);
+    FighterAI* ai = get_ai_context(reinterpret_cast<u64>(L));
+    f32 self_y = ai->state->pos_y;
+    auto* target = reinterpret_cast<FighterAIState*>(aiGetTargetById_7100314030(
+        DAT_71052b5fd8, &ai->target_entry_id));
+    return __builtin_fabsf(self_y - target->pos_y);
 }
 
-// [derived: stat_module+0x54 bit0 = air flag, floor+0x5e bit1 = over-ground
-//  flag, stat_module+0x74 & ~1 == 6 is another pass condition.
+// [derived: state->stat_flags bit0=air, floor_data->flags_0x5e bit1=over-ground
+//  override, state->uniq_stat & ~1 == 6 is another pass condition.
 //  First 11/16 insns match — Clang merges the last two return paths into
 //  a branchless BIC where the original has two branches. Semantically
 //  equivalent; tail scheduling differs.]
 // 0x7100367a90 -- app::ai::check_over_ground (72B)
 bool check_over_ground_7100367a90(void* L) {
-    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
-    u8* mod = *reinterpret_cast<u8**>(ctx + 0x168);
-    u32 flags = *reinterpret_cast<u32*>(mod + 0x54);
+    FighterAI* ai = get_ai_context(reinterpret_cast<u64>(L));
+    FighterAIState* state = ai->state;
+    u32 flags = state->stat_flags;
     if ((flags & 1) == 0) {
-        u8* floor = *reinterpret_cast<u8**>(mod + 0xd0);
-        if ((floor[0x5e] & 2) == 0) {
+        if ((state->floor_data->flags_0x5e & 2) == 0) {
             return true;
         }
     }
-    s32 kind = *reinterpret_cast<s32*>(mod + 0x74);
-    if ((kind & ~1) == 6) return true;
+    if ((state->uniq_stat & ~1u) == 6) return true;
     return (flags & 2) == 0;
 }
 
-// [derived: compares floor_data pointer (at stat_module+0xd0) between self
-//  and target — both must reference the same ground collision line]
+// [derived: compares floor_data pointer between self and target — both
+//  must reference the same ground collision line (state->floor_data)]
 // 0x71003672b0 -- app::ai::is_target_on_same_floor (64B)
 bool is_target_on_same_floor_71003672b0(void* L) {
-    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
-    u8* target = reinterpret_cast<u8*>(aiGetTargetById_7100314030(
-        DAT_71052b5fd8, reinterpret_cast<void*>(ctx + 0xc50)));
-    u8* mod = *reinterpret_cast<u8**>(ctx + 0x168);
-    void* self_floor = *reinterpret_cast<void**>(mod + 0xd0);
-    void* target_floor = *reinterpret_cast<void**>(target + 0xd0);
-    return self_floor == target_floor;
+    FighterAI* ai = get_ai_context(reinterpret_cast<u64>(L));
+    auto* target = reinterpret_cast<FighterAIState*>(aiGetTargetById_7100314030(
+        DAT_71052b5fd8, &ai->target_entry_id));
+    return ai->state->floor_data == target->floor_data;
 }
 
 // target_range_middle (0x710036bb10) and target_range_long (0x710036bb80)
