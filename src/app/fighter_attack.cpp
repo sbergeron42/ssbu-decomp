@@ -21,6 +21,18 @@ extern "C" u64 aiGetTargetById_7100314030(void*, void*);
 // [derived: DAT_71052b5fd8 in Ghidra, passed as first arg to aiGetTargetById_7100314030]
 extern "C" void* DAT_71052b5fd8 HIDDEN;
 
+// Attack frame lookup: finds attack frame data struct from ctx+0x988 pointer
+// [derived: called by attack_start_frame / attack_end_frame with ctx+0x988]
+extern "C" u64 lookupAttackFrame_710033c360(u64);
+
+// Attack data lookup: finds attack data struct for a given attack index
+// [derived: called by attack_data_x0/x1/y0/y1 with *(ctx+0x988)]
+extern "C" u64 lookupAttackData_710033c510(s32);
+
+// Earliest hit frame lookup: finds hit frame data from AI state
+// [derived: called by most_earliest_hit_frame with AI_STATE]
+extern "C" u64 lookupEarliestHit_71003596f0(u64);
+
 // ---- AI target property accessors ------------------------------------------
 // Family of 10 functions, each 40 bytes, all follow the same pattern:
 //   1. Look up target info via aiGetTargetById_7100314030(DAT_71052b5fd8, *(L-8) + 0xc50)
@@ -977,6 +989,74 @@ extern "C" bool is_status_kind_attack(s32 status) {
 // [inferred: returns true if status_kind is an attack or extended attack (481..496)]
 extern "C" bool is_status_kind_attack_7101227750(s32 status) {
     return (u32)(status - 0x1e1) < 16;
+}
+
+// ---- Attack frame/data accessors (non-leaf, lookup + field read) ------------
+// These call lookup functions and read fields from the returned struct.
+// attack_start_frame / attack_end_frame pass a pointer (ctx+0x988) to lookupAttackFrame.
+// attack_data_* functions pass a value *(ctx+0x988) to lookupAttackData.
+
+// 0x7100369ad0 (36 bytes) — app::ai::attack_start_frame
+extern "C" s32 attack_start_frame(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 data = lookupAttackFrame_710033c360(ctx + 0x988);
+    if (data == 0) return 0;
+    return *(s32*)(data + 0x8);
+}
+// 0x7100369b70 (36 bytes) — app::ai::attack_end_frame
+extern "C" s32 attack_end_frame(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 data = lookupAttackFrame_710033c360(ctx + 0x988);
+    if (data == 0) return 0;
+    return *(s32*)(data + 0xc);
+}
+
+// ---- Attack data accessors (non-leaf, lookup + field read) ------------------
+// These call lookupAttackData_710033c510 with an attack index from ctx+0x988,
+// then read a float field from the returned struct.
+// Attack data struct layout (partial):
+//   +0x08 [inferred: start_frame, s32 — from attack_start_frame]
+//   +0x0c [inferred: end_frame, s32 — from attack_end_frame]
+//   +0x18 [inferred: hitbox x0, f32]
+//   +0x1c [inferred: hitbox x1, f32]
+//   +0x20 [inferred: hitbox y0, f32]
+//   +0x24 [inferred: hitbox y1, f32]
+
+// 0x7100369c10 (48 bytes) — app::ai::attack_data_x0
+extern "C" f32 attack_data_x0(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 data = lookupAttackData_710033c510(*(s32*)(ctx + 0x988));
+    if (data == 0) return 0.0f;
+    return *(f32*)(data + 0x18);
+}
+// 0x7100369c40 (48 bytes) — app::ai::attack_data_x1
+extern "C" f32 attack_data_x1(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 data = lookupAttackData_710033c510(*(s32*)(ctx + 0x988));
+    if (data == 0) return 0.0f;
+    return *(f32*)(data + 0x1c);
+}
+// 0x7100369c70 (48 bytes) — app::ai::attack_data_y0
+extern "C" f32 attack_data_y0(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 data = lookupAttackData_710033c510(*(s32*)(ctx + 0x988));
+    if (data == 0) return 0.0f;
+    return *(f32*)(data + 0x20);
+}
+// 0x7100369ca0 (48 bytes) — app::ai::attack_data_y1
+extern "C" f32 attack_data_y1(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 data = lookupAttackData_710033c510(*(s32*)(ctx + 0x988));
+    if (data == 0) return 0.0f;
+    return *(f32*)(data + 0x24);
+}
+// 0x710036b060 (48 bytes) — app::ai::most_earliest_hit_frame
+// [inferred: finds the earliest hit frame from AI state, returns -1 if not found]
+extern "C" s32 most_earliest_hit_frame(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 data = lookupEarliestHit_71003596f0(*(u64*)(ctx + 0x168));
+    if (data == 0) return -1;
+    return *(s32*)(data + 0x10);
 }
 
 // ---- Item param accessors (leaf, singleton + indexed array load) ------------
