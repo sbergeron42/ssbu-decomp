@@ -527,3 +527,71 @@ Status kind ranges:
   is_status_kind_attack wider: [0x1E1, 0x1F0] (16 statuses)
 
 All 11 byte-match verified.
+
+=== SESSION 2026-04-10 NEW RESULTS (ai_target_stat.cpp extensions) ===
+
+== 0x7100366800 check_target_stat_invincible_l (92B) ==
+app::ai::check_target_stat_invincible_l(lua_State*) bool
+Mirror of check_stat_invincible_l_3613f0 but resolves target via
+aiGetTargetById_7100314030(FighterAIManager, ctx+0xc50).
+Gates: final_flags bit 5 → false; flags_0x5e bit 4 → true;
+  invinc_counter > 0 → true; (status-0x11<2 || status==0xb).
+Known NX orr operand-order diff (same as self version).
+
+== 0x71003611c0 target_id (24B) ==
+app::ai::target_id(lua_State*) s32
+Reads *(stat->+0x10) + 8 (battle_object_id_holder deref).
+
+== 0x71003665f0 target_fighter_kind (24B) ==
+app::ai::target_fighter_kind(lua_State*) s32
+Reads stat->fighter_kind (+0x28).
+
+== 0x7100366620 target_copy_fighter_kind (24B) ==
+app::ai::target_copy_fighter_kind(lua_State*) s32
+Reads stat->copy_fighter_kind (+0x1f4). 500 decimal.
+
+== 0x7100366f00 target_jump_rest_available (148B) ==
+app::ai::target_jump_rest_available(lua_State*) u16
+Gates: status_kind == 0x10 → 0; flags_0x59 bit 5 → 0;
+  fighter_kind == 0x22 & (flags_0x68 bit 2 clear) → 0;
+  fighter_kind == 0x29 & (flags_0x68 bit 0 set) → 0;
+  else return jump_rest (+0xcc u16).
+Must write 0x29 check first so Clang 8 block layout matches
+NX ordering (expected: cmp 0x22 first, 0x22 path out-of-line).
+
+== 0x7100376a20 target_status (80B, LEAF) ==
+app::analyst::target_status(lua_State*) u32
+Bypasses aiGetTargetById — reads directly from
+  manager->analyst_entries[clamp(entry_id, 0x10)]->status (+0xc).
+Gates: entry_id < 0 → 0; entry_id == parent_entry_id → 0.
+Manager load MUST be before the clamp in C so x9 is live across
+the csel — forces the 0x10 constant into w10 (not w9).
+Same pattern for status_prev (+0x10), status_count (+0x14),
+chanced_frame (+0x1c).
+
+== 0x7100376a70 target_status_prev (80B, LEAF) — reads +0x10 ==
+== 0x7100376ae0 target_status_count (80B, LEAF) — reads +0x14 ==
+== 0x7100376bb0 target_chanced_frame (80B, LEAF) — reads +0x1c ==
+
+Struct extensions (include/app/placeholders/AITargetStat.h):
+  +0x10 battle_object_id_holder (void*)
+  +0x20 fighter_ptr (void*)
+  +0x28 fighter_kind (s32)
+  +0x54 flags_0x54 (u8) — over_ground reads as u32
+  +0x55 final_flags (u8) [existed]
+  +0x59 flags_0x59 (u8)
+  +0x5e flags_0x5e (u8)
+  +0x68 flags_0x68 (u8)
+  +0x74 status_kind (s32) [existed]
+  +0xcc jump_rest (u16)
+  +0xd0 floor_data (AITargetFloorData*)
+  +0x11c invinc_counter (s32)
+  +0x1f4 copy_fighter_kind (s32)
+  +0x264 hit_collision_rect[4]
+
+FighterAIManager +0x98 analyst_entries (AIAnalyst**).
+AIAnalyst +0xc status (u32).
+
+9 functions, all match within expected 2-3 relocation diffs.
+invincible_l has 1 extra diff (orr w0,w9,w8 vs NX w0,w8,w9).
+

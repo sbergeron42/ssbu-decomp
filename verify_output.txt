@@ -1,0 +1,35 @@
+Building...
+Traceback (most recent call last):
+  File "C:\Users\seanb\Dev\SSBU Decomp-pool-b\tools\verify_local.py", line 336, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\seanb\Dev\SSBU Decomp-pool-b\tools\verify_local.py", line 216, in main
+    if not build_incremental():
+           ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\seanb\Dev\SSBU Decomp-pool-b\tools\verify_local.py", line 103, in build_incremental
+    subprocess.run(["python", str(fix_movz)] + objs, capture_output=True)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Users\seanb\anaconda3\Lib\subprocess.py", line 554, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Users\seanb\anaconda3\Lib\subprocess.py", line 1039, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                        pass_fds, cwd, env,
+                        ^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+                        gid, gids, uid, umask,
+                        ^^^^^^^^^^^^^^^^^^^^^^
+                        start_new_session, process_group)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Users\seanb\anaconda3\Lib\subprocess.py", line 1554, in _execute_child
+    hp, ht, pid, tid = _winapi.CreateProcess(executable, args,
+                       ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+                             # no special security
+                             ^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+                             cwd,
+                             ^^^^
+                             startupinfo)
+                             ^^^^^^^^^^^^
+FileNotFoundError: [WinError 206] The filename or extension is too long

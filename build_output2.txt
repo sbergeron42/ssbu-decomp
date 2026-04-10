@@ -1,0 +1,19 @@
+Source files: 676
+  fighter_core.cpp
+  ERROR: fighter_core.cpp
+C:\Users\seanb\Dev\SSBU Decomp-pool-b\src\app\fighter_core.cpp:1103:16: error: use of undeclared identifier 'link_bomb_params'
+        return link_bomb_params()->is_explode_when_hit_fighter;
+               ^
+1 error generated.
+
+
+Compiled: 0, Skipped: 675, Errors: 1
+BUILD FAILED with 1 error(s).
+
+Post-processing...
+  fix_plt_stubs...
+  fix_movz_to_orr...
+  fix_prologue_sched...
+  gen_epilogue_list + fix_epilogue...
+
+Build complete.
