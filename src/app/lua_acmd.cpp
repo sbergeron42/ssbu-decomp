@@ -2,6 +2,7 @@
 #include "app/BattleObjectModuleAccessor.h"
 #include "lib/L2CValue.h"
 #include "lib/L2CAgent.h"
+#include "lib/LuaStateAccessor.h"
 
 using app::BattleObjectModuleAccessor;
 
@@ -196,55 +197,55 @@ null_terminate:
 // Copies all module pointers from BattleObjectModuleAccessor (src+0x38..+0x198)
 // into a LuaStateAccessor struct (dst+0x18..+0x180)
 // ============================================================
-void SetLuaStateAccessor(u8* dst, BattleObjectModuleAccessor* src) {
+void SetLuaStateAccessor(lib::LuaStateAccessor* dst, BattleObjectModuleAccessor* src) {
     // Main sequential block: src+0x38..+0x100 → dst+0x18..+0xe8
-    *reinterpret_cast<void**>(dst + 0x18) = src->posture_module;
-    *reinterpret_cast<void**>(dst + 0x28) = src->status_module;
-    *reinterpret_cast<void**>(dst + 0x30) = src->fighter_control_module;
-    *reinterpret_cast<void**>(dst + 0x38) = src->work_module;
-    *reinterpret_cast<void**>(dst + 0x40) = src->ground_module;
-    *reinterpret_cast<void**>(dst + 0x48) = src->camera_module;
-    *reinterpret_cast<void**>(dst + 0x50) = src->item_kinetic_module;
-    *reinterpret_cast<void**>(dst + 0x58) = src->color_blend_module;
-    *reinterpret_cast<void**>(dst + 0x60) = src->model_module;
-    *reinterpret_cast<void**>(dst + 0x68) = src->physics_module;
-    *reinterpret_cast<void**>(dst + 0x70) = src->motion_module;
-    *reinterpret_cast<void**>(dst + 0x78) = src->stop_module;
-    *reinterpret_cast<void**>(dst + 0x80) = src->article_module;
-    *reinterpret_cast<void**>(dst + 0x88) = src->attack_module;
-    *reinterpret_cast<void**>(dst + 0x90) = src->damage_module;
-    *reinterpret_cast<void**>(dst + 0x98) = src->hit_module;
-    *reinterpret_cast<void**>(dst + 0xa0) = src->combo_module;
-    *reinterpret_cast<void**>(dst + 0xa8) = src->fighter_area_module;
-    *reinterpret_cast<void**>(dst + 0xb0) = src->item_module;
-    *reinterpret_cast<void**>(dst + 0xb8) = src->link_module;
-    *reinterpret_cast<void**>(dst + 0xc0) = src->team_module;
-    *reinterpret_cast<void**>(dst + 0xc8) = src->search_module;
-    *reinterpret_cast<void**>(dst + 0xd0) = src->pad_0xE8;
-    *reinterpret_cast<void**>(dst + 0xd8) = src->turn_module;
-    *reinterpret_cast<void**>(dst + 0xe0) = src->reflect_module;
-    *reinterpret_cast<void**>(dst + 0xe8) = src->shield_module;
+    dst->posture_module = src->posture_module;
+    dst->status_module = src->status_module;
+    dst->fighter_control_module = src->fighter_control_module;
+    dst->work_module = src->work_module;
+    dst->ground_module = src->ground_module;
+    dst->camera_module = src->camera_module;
+    dst->item_kinetic_module = src->item_kinetic_module;
+    dst->color_blend_module = src->color_blend_module;
+    dst->model_module = src->model_module;
+    dst->physics_module = src->physics_module;
+    dst->motion_module = src->motion_module;
+    dst->stop_module = src->stop_module;
+    dst->article_module = src->article_module;
+    dst->attack_module = src->attack_module;
+    dst->damage_module = src->damage_module;
+    dst->hit_module = src->hit_module;
+    dst->combo_module = src->combo_module;
+    dst->fighter_area_module = src->fighter_area_module;
+    dst->item_module = src->item_module;
+    dst->link_module = src->link_module;
+    dst->team_module = src->team_module;
+    dst->search_module = src->search_module;
+    dst->pad_0xD0 = src->pad_0xE8;
+    dst->turn_module = src->turn_module;
+    dst->reflect_module = src->reflect_module;
+    dst->shield_module = src->shield_module;
     // Second block: src+0x118..+0x198 → dst+0x100..+0x180
-    *reinterpret_cast<void**>(dst + 0x100) = src->jostle_module;
-    *reinterpret_cast<void**>(dst + 0x108) = src->catch_module;
-    *reinterpret_cast<void**>(dst + 0x110) = src->cancel_module;
-    *reinterpret_cast<void**>(dst + 0x118) = src->pad_0x130;
-    *reinterpret_cast<void**>(dst + 0x120) = src->capture_module;
-    *reinterpret_cast<void**>(dst + 0x128) = src->effect_module;
-    *reinterpret_cast<void**>(dst + 0x130) = src->sound_module;
-    *reinterpret_cast<void**>(dst + 0x138) = src->visibility_module;
-    *reinterpret_cast<void**>(dst + 0x140) = src->grab_module;
-    *reinterpret_cast<void**>(dst + 0x148) = src->pad_0x160;
-    *reinterpret_cast<void**>(dst + 0x150) = src->shake_module;
-    *reinterpret_cast<void**>(dst + 0x158) = src->slow_module;
-    *reinterpret_cast<void**>(dst + 0x160) = src->pad_0x178;
-    *reinterpret_cast<void**>(dst + 0x168) = src->shadow_module;
-    *reinterpret_cast<void**>(dst + 0x170) = src->motion_animcmd_module;
-    *reinterpret_cast<void**>(dst + 0x178) = src->pad_0x190;
-    *reinterpret_cast<void**>(dst + 0x180) = src->ink_paint_module;
+    dst->jostle_module = src->jostle_module;
+    dst->catch_module = src->catch_module;
+    dst->cancel_module = src->cancel_module;
+    dst->pad_0x118 = src->pad_0x130;
+    dst->capture_module = src->capture_module;
+    dst->effect_module = src->effect_module;
+    dst->sound_module = src->sound_module;
+    dst->visibility_module = src->visibility_module;
+    dst->grab_module = src->grab_module;
+    dst->pad_0x148 = src->pad_0x160;
+    dst->shake_module = src->shake_module;
+    dst->slow_module = src->slow_module;
+    dst->pad_0x160 = src->pad_0x178;
+    dst->shadow_module = src->shadow_module;
+    dst->motion_animcmd_module = src->motion_animcmd_module;
+    dst->pad_0x178 = src->pad_0x190;
+    dst->ink_paint_module = src->ink_paint_module;
     // Out-of-order tail: absorber and reflector
-    *reinterpret_cast<void**>(dst + 0xf0) = src->absorber_module;
-    *reinterpret_cast<void**>(dst + 0xf8) = src->reflector_module;
+    dst->absorber_module = src->absorber_module;
+    dst->reflector_module = src->reflector_module;
 }
 
 // ============================================================
