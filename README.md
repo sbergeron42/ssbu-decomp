@@ -13,30 +13,33 @@ Targeting the final version: **patch 13.0.4**.
 | Category | Count | % of total |
 |----------|------:|------------|
 | **Total functions** | 39,635 | |
-| Verified byte-identical | 10,214 | 25.78% |
-| Compiled (non-matching) | 3,597 | 9.07% |
-| **Total decompiled** | **13,811** | **34.85%** |
-| Undecompiled | 25,824 | 65.15% |
+| Verified byte-identical (real C++) | 10,025 | 25.29% |
+| Verified byte-identical (naked asm) | 366 | 0.92% |
+| Compiled (non-matching) | 3,765 | 9.50% |
+| **Total decompiled** | **14,156** | **35.72%** |
+| Undecompiled | 25,479 | 64.28% |
 
 ### By bytes (.text)
 
 | Category | Size | % of .text |
 |----------|-----:|------------|
 | **.text total** | **27.0 MB** | |
-| Compiled | 1.85 MB | 6.83% |
-| Byte-matched | 0.48 MB | 1.77% |
+| Compiled | 1.89 MB | 7.00% |
+| Byte-matched | 0.48 MB | 1.78% |
 
 ```
-By functions:  13,811 / 39,635  (34.85% compiled, 25.78% verified)
-By bytes:       1.85M / 27.0M   ( 6.83% compiled,  1.77% verified)
+By functions:  14,156 / 39,635  (35.72% compiled, 26.22% verified)
+By bytes:       1.89M / 27.0M   ( 7.00% compiled,  1.78% verified)
 ```
 
 > Progress skews toward small functions: avg matched function is 46 bytes vs
-> avg undecompiled 967 bytes. Byte-weighted progress is the more accurate
+> avg undecompiled 986 bytes. Byte-weighted progress is the more accurate
 > measure of source recovery. Both metrics are shown for transparency.
 >
-> Naked asm functions (569) are binary-identical but not real source recovery
-> -- they are tracked separately from C++ decomp.
+> Naked asm functions (366) are binary-identical but not real source recovery
+> — they are tracked separately from C++ decomp. Naked asm is banned for new
+> code; remaining instances are legacy that will be removed as functions are
+> properly decomped.
 
 ### Counting methodology
 
@@ -60,9 +63,10 @@ This project's naming comes from sources with different confidence levels:
 |--------|------:|----------|
 | Binary .dynsym exports | 4,888 | **Ground truth** — mangled C++ symbols in the ELF |
 | Vtable method names | ~800 | Derived from .dynsym names via decompilation + byte-match |
-| Module accessor offsets | 41 | Structural — verified by byte-matching |
+| Module accessor offsets | 41 | Structural — verified by byte-matching, typed in `BattleObjectModuleAccessor.h` |
 | Community Ghidra labels | ~10,191 | Human-assigned during RE, ported from 13.0.1 — no formal provenance |
-| Struct field names | ~260 | Inferred from function behavior — offsets verified, names are best guesses |
+| Struct field names | ~500+ | Across 52 headers — inferred from function behavior, offsets verified |
+| Placeholder structs | ~50 types | In `include/app/placeholders/` — layout known, names pending research |
 
 Struct headers use derivation comments to show how each field name was determined.
 Fields tagged `[derived: ...]` trace back to binary-proven function names.
@@ -95,10 +99,10 @@ Byte-matched progress reflects the subset of the binary where upstream Clang pro
 
 ## Building
 
-Requires [LLVM/Clang 8.0.0](https://releases.llvm.org/8.0.0/) installed to `C:\llvm-8.0.0\` (or update path in `build.bat`).
+Requires [LLVM/Clang 8.0.0](https://releases.llvm.org/8.0.0/) installed to `C:\llvm-8.0.0\`.
 
-```bat
-build.bat
+```bash
+python tools/build.py
 ```
 
 Or manually:
@@ -133,20 +137,26 @@ tools/common/nx-decomp-tools/viking/target/release/check.exe FunctionName
 ## Project Structure
 
 ```
-src/           Decompiled C++ source
-include/       Headers (game structs, SDK types)
-data/          Function database (functions.csv), original ELF
-tools/         Build, diff, and verification scripts
-tools/common/  nx-decomp-tools submodule (viking, asm-differ)
-config/        Symbol maps, matching targets
+src/                         Decompiled C++ source
+include/app/                 Game struct headers (typed modules, managers)
+include/app/modules/         Module vtable method wrappers (400+ typed methods)
+include/app/placeholders/    Placeholder structs (layout known, names pending)
+include/resource/            Resource service types (ARCropolis-derived)
+data/functions.csv           Function database (39,635 entries)
+data/undefined_types.md      Research queue for placeholder struct naming
+tools/                       Build, diff, verification, and quality scripts
+tools/common/                nx-decomp-tools submodule (viking, asm-differ)
+config/                      Symbol maps, matching targets
 ```
 
 ## Tools
 
+- `tools/build.py` — Build all source files (replaces deprecated `build.bat`)
 - `tools/verify_all.py` — Byte-compare all compiled functions against original binary
+- `tools/verify_local.py` — Worker-safe local verification (no CSV writes)
+- `tools/review_diff.py` — Automated code quality reviewer for worker diffs
+- `tools/progress.py` — Progress summary (function count + byte-weighted)
 - `tools/gen_from_elf.py` — Auto-generate vtable dispatch functions from original ELF
-- `tools/fix_params.py` — Fix parameter counts using original binary analysis
-- `tools/migrate_csv.py` — Convert functions.csv between formats
 - `tools/diff_function.py` — Compare compiled assembly against target
 
 ## References
@@ -181,7 +191,30 @@ This project uses [Claude Code](https://claude.ai/code) as an accelerator within
 
 ### Multi-agent workflow
 
-The project uses parallel Claude Code sessions ("pools") working on isolated git worktrees. An orchestrator merges verified work to master. Each pool has exclusive file territory to prevent conflicts. Worker rules (in CLAUDE.md) enforce quality gates: no naked asm as a first approach, no Ghidra paste copy, 3-attempt limit per function, mandatory provenance tags.
+The project uses parallel Claude Code sessions ("pools") working on isolated git worktrees. An orchestrator merges verified work to master. Each pool has exclusive file territory to prevent conflicts.
+
+### Code quality gates
+
+All worker diffs are reviewed by `tools/review_diff.py` before merge. The reviewer auto-rejects:
+
+- `__attribute__((naked))` — banned outright
+- Ghidra default variable names (`uVar1`, `plVar2`) — indicates unprocessed paste
+- Raw vtable dispatch (`VT(m)[slot]`) — use typed wrappers from `include/app/modules/`
+- 3+ raw hex offsets on one pointer without a struct — define the type first
+- `reinterpret_cast` density above 10% — create placeholder structs instead
+
+Workers that fail review get reassigned to fix violations before their code merges.
+
+## Contributing — Type Research
+
+The biggest bottleneck is **naming placeholder structs**. The `include/app/placeholders/` directory contains structs where the field layout is known from binary analysis but the real class name isn't confirmed. `data/undefined_types.md` lists each one with research leads.
+
+If you know SSBU internals (from modding, RE, or Skyline development), you can help by:
+1. Identifying the real class name for a placeholder struct
+2. Confirming or correcting field names using Ghidra / IDA analysis
+3. Cross-referencing with ARCropolis, Skyline, or ultimate-research projects
+
+A struct with correct field access and a wrong name is still useful. A struct with a correct name and wrong layout isn't. Layout accuracy is prioritized over naming.
 
 ## License
 
