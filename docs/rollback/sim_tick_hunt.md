@@ -1,0 +1,219 @@
+# Sim-tick hunt — cross-pool consolidated log
+
+**Purpose.** Three parallel investigations (pool A, B, C) are converging on the
+single question "where does SSBU advance one fighter-simulation tick?". This
+file is the shared scratchpad where each pool writes verdicts so the other two
+can avoid redoing the same elimination.
+
+Pool B owns this file's initial draft; pools A and C may append their own
+sections.
+
+Background and methodology for pool B's angle of attack lives in
+`docs/rollback/main_loop.md`. The TL;DR of that document is:
+
+- `main_loop` at `0x7103747270` **is** `pead::MainThread`'s body (confirmed
+  via `"pead::MainThread"` string xref through `FUN_710013c570`).
+- There is therefore **no separate sim worker thread** — the sim tick must
+  live inside `main_loop`'s call chain, however deeply nested.
+- The function's direct-child classification is almost entirely
+  presentation / housekeeping / input / resource-streaming. The four
+  phase-5/6/7 sub-calls listed below were the last children still labelled
+  "unknown" on the first pass. The orchestrator asked pool B to clear them
+  so the "sim tick is in one of these four" hypothesis could be confirmed
+  or eliminated.
+
+---
+
+## Pool B — phase-5/6/7 child decomps
+
+All four candidates decompiled via Ghidra MCP. Full raw evidence is in
+`data/ghidra_cache/pool-b.txt`. Verdicts below.
+
+### `FUN_7103593c40` — 792 B, phase 5
+
+- **Iterates fighters:** NO
+- **Touches BattleObject vtable:** NO
+- **Per-match state mutation:** NO (mutates its own subsystem state only)
+- **Verdict:** **DEAD END** — 4-slot ring-buffer advance helper.
+
+**Evidence.**
+
+- Two 4-slot ring-buffer index cycles: `(idx+1)&3` at `param_1+0x502..+0x510`
+  and again at `param_1+0x69fc6..+0x69fd4`. These are producer-advance
+  pointers into fixed-4 slot arrays — classic double/triple/quad-buffered
+  subsystem output.
+- Two `std::mutex`-guarded `shared_ptr` refcount releases at
+  `param_1+0x3f0..0x408` and `param_1+0x418..0x430`, each gated on a
+  dirty-flag byte at `+0x3e0` / `+0x3e1`.
+- Sets a large state byte `param_1+0x4dcab8 = 1` and writes the magic
+  sentinel `0x700000003` to `param_1+0x4dcda4`.
+- Calls 4 helpers on the mutex object at `param_1+0x68` and references
+  `PTR_LAB_710522ed48`.
+- No loop walks a fighter container; no vtable slot in the
+  `BattleObjectModuleAccessor` `+0x38..+0x188` range is touched.
+
+**Classification.** Looks like a batch-dispatch or audio / animation /
+effect buffer rotate helper for a subsystem whose root object starts at
+`param_1`. The sheer size of the root (offsets up to `+0x4dcda4` = ~5 MB)
+rules out a fighter struct; this is a global subsystem-pool struct.
+
+### `FUN_71035c13d0` — 1,048 B, phase 6 (after scene state machine)
+
+- **Iterates fighters:** NO (iterates graphics listeners instead)
+- **Touches BattleObject vtable:** NO
+- **Per-match state mutation:** NO (mutates graphics listener state only)
+- **Verdict:** **DEAD END** — graphics event dispatcher (observer pattern).
+
+**Evidence.**
+
+- Gated on dirty flags at `[param_1+0x160]` / `[param_1+0x161]`; if set,
+  acquires an `nu::GraphicsModule` buffer and copies a 4-`u32` rect from
+  `[param_1+0x140..+0x15c]` into `buffer[+0x80..+0x9c]`. This looks like a
+  **viewport / scissor rect update**.
+- Core shape is a nested observer-pattern dispatcher:
+
+  ```c
+  for (event in queue_A at [param_1+0x60..+0x68], stride 0x40) {
+      for (listener in list at [param_1+0x08..+0x10], stride 0x10) {
+          shared_ptr::lock(listener_weak);
+          (*listener->vt[+0x38])(event.data[0..3], listener, &ev);
+      }
+  }
+  for (event in queue_B at [param_1+0x78..+0x80], stride 0x30) {
+      for (listener in same list) {
+          shared_ptr::lock(listener_weak);
+          (*listener->vt[+0x40])(event.f0, event.f1, listener, event.f2);
+      }
+  }
+  ```
+
+- Optional one-time flush gated on `[param_1+0x130]` calls `FUN_71035bda90`
+  per subscriber.
+- Resets both queues at end: `[+0x68] = [+0x60]`, `[+0x80] = [+0x78]`.
+
+**Classification.** The nested "for event, for listener" iteration is
+structurally identical to what a sim advance would look like — which is
+what made it a candidate — but the vtable slots `+0x38` / `+0x40` belong
+to **graphics listeners**, and the `nu::GraphicsModule::Instance()` call
+plus viewport/scissor rect copy at entry pin it firmly as a graphics
+event dispatcher (window resize / surface change / display-mode change).
+The stride-0x40 and stride-0x30 event descriptors are not fighter-state
+struct sizes.
+
+### `FUN_71036186d0` — 1,188 B, phase 7
+
+- **Iterates fighters:** NO
+- **Touches BattleObject vtable:** NO
+- **Per-match state mutation:** NO (writes camera matrices only)
+- **Verdict:** **DEAD END** — camera projection-matrix build.
+
+**Evidence.**
+
+- Reads resolution `[plVar9[1]+0x1c0]` / `[plVar9[1]+0x1c4]` (width × height
+  as floats). Computes inverse scale `(1/scale_x, 1/scale_y)` and an offset
+  bias, storing to camera output slots `plVar3[0x81a..0x81e]` and a sub-
+  object at `*plVar3 + 0x230..+0x254`.
+- Copies 4 × 16-byte NEON matrices from `lVar4+0x40`, `+0x50`, `+0x60`,
+  `+0x70` into `pfVar6+0x98..+0xa6` with NEON_ext rotations — these are the
+  **view / projection / view-projection / inverse-view-projection** matrix
+  slots.
+- Calls `nn::pl::IsVrMode()` to pick `0.5` vs `1.0` as a scale factor,
+  writing to `pfVar6[0xd1]` — VR-mode half-width scaling.
+- NEON `sqrt` + reciprocal-`sqrt` chain with `fcmeq` zero-guard computing
+  a normalized ray/look-direction vector.
+- Calls `FUN_710365c8d0` twice (likely shader-constant push),
+  `FUN_7103619950`, `FUN_71035727d0`, `FUN_7103569a80`.
+- Uses `DAT_7105336ce8` (render singleton) at `+0x490`, `+0xd8`, `+0xe0`
+  for the camera-state pointer.
+
+**Classification.** Pure presentation math — camera projection-matrix
+recomputation including VR-mode scaling and a ray-direction normalize. It
+pairs with the previously-classified `FUN_710361d040` (2,168 B, camera
+view-matrix update) as the **phase-7 camera recompute duo**. No fighter
+state touched.
+
+### `FUN_7103619080` — 432 B, phase 7 (Event A neighborhood)
+
+- **Iterates fighters:** NO (iterates render-command targets)
+- **Touches BattleObject vtable:** NO
+- **Per-match state mutation:** NO
+- **Verdict:** **DEAD END** — render-command enqueue loop.
+
+**Evidence.**
+
+```c
+for (item in [param_1+0x500..+0x508], stride 8) {
+    if ((*item)[+0xf1] != 0) {               // per-item dirty flag
+        cmd = alloc([param_1+0x518+0x50], 0x80, 0x10);
+        cmd[0]   = &PTR_FUN_7105266f80;      // command vtable
+        cmd[1]   = 0x60;                     // command type/flag
+        // clone two sub-buffers from root ([param_1+0x518]+0x30 / +0x60)
+        // via vtable[+0x10] into cmd[+0x10] and cmd[+0x60]
+        cmd[0xe] = 0;
+        cmd[0]   = &PTR_LAB_7105230f18;      // finalize vtable swap
+        (*((*item)->vt[+0x18]))(item, cmd);  // dispatch command to item
+    }
+}
+```
+
+**Classification.** Classic render-command-enqueue producer. The 0x80-byte
+command size plus two cloned sub-buffers matches a bind-resource command
+shape (e.g. `BindTexture` / `SetConstantBuffer`). Lives in the phase-7
+Event-A neighborhood, which is where `main_loop` signals the render-buffer
+consumer, so this belongs squarely to the graphics pipeline.
+
+### Final verdict (pool B)
+
+**ALL FOUR DEAD** — none of the four phase-5/6/7 candidates constitutes
+the per-fighter sim tick. Zero of them iterate `FighterManager`, walk a
+`BattleObject*` container, or call into the `+0x38..+0x188` vtable slots
+on a `BattleObjectModuleAccessor`.
+
+Combined with prior clearings inside `main_loop.md` sections 6c / 6d / 6e
+(`FUN_7101344cf0`, `FUN_71035763c0` ×12, `FUN_71036f2c00`, `FUN_71036f2d40`,
+`FUN_7103619410`, `FUN_71036185d0`, `FUN_7103721a40`, `FUN_710386fc30` =
+`nu::GraphicsModule::BeginFrame`), **every direct child of `main_loop`
+that has been investigated is presentation / housekeeping / input /
+resource-streaming.**
+
+### Handoff notes — where pool B thinks the sim tick actually lives
+
+Since `main_loop` **is** `pead::MainThread` (no separate sim worker
+thread), the sim tick *must* be reachable from it. Three remaining leads,
+in descending priority:
+
+1. **`pead::Delegate` queue, processed somewhere inside `main_loop`.** The
+   `FighterManager` singleton bottom-up xref sweep (docs/rollback/main_loop.md
+   §6e, also cache entry "FighterManager singleton bottom-up xref sweep")
+   found **zero** per-frame entity-iteration dispatchers among the first 60
+   READ xrefs of `DAT_71052b84f8`. Every reader is a Lua-bound fighter-
+   field query. If the sim step is installed as a `pead::Delegate2<...>`
+   function pointer, static xref-to-body analysis will never find it — the
+   delegate body is reached only via an indirect call through the delegate
+   object's function-pointer field. Next pass should:
+   - Find `pead::Thread::runDelegates()` / `pead::DelegateBase::operator()`
+     in the binary (string table has `pead::DelegateBase` already).
+   - Look for a call to the delegate-dispatch method from inside
+     `main_loop`'s call chain at a call site not yet investigated.
+   - xref the install sites (`pead::Delegate2` constructor) and see what
+     function-pointer constants are passed to them.
+2. **`FUN_7103632850` scene state machine, branch `DAT_710593a530 == 3`.**
+   The 4,268-byte scene state machine was skimmed in the first pass as
+   "scene / UI panel state transition with 3-state 0/1/2 switch". The
+   **match-active state** is `DAT_710593a530 == 3`, which was not
+   investigated. If any branch of this function runs per-fighter logic
+   while in match state, this is where it hides.
+3. **Auditing the 12 distinct `TrackDesc*` arguments to `FUN_71035763c0`.**
+   The 12-call pattern is the most-repeated unique site in `main_loop`.
+   `FUN_71035763c0` itself is a keyframe-track sampler (cleared in
+   main_loop.md §6c), but the 12 callers pass **different** `TrackDesc*`
+   args. If one of those tracks is a fighter-transform track, the caller
+   that sets up those 12 descriptors is doing per-fighter work.
+
+**Recommendation for pools A and C:** deprioritize anything reachable
+only through the four DEAD functions above. Converge effort on leads 1–3.
+
+---
+
+<!-- Pool A and Pool C: append your sections below. Please preserve the
+     heading style so this doc stays greppable. -->
