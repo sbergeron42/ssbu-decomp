@@ -1,22 +1,25 @@
 #include "types.h"
+#include "app/BattleObject.h"
 
 // Forward declarations
 struct BattleObjectManager;
 
 namespace app::lua_bind {
 
-// 7101fca0b0 -- 19 instructions (calls, branches, tbz, cset)
-extern "C" void* FUN_71003ac560(u32);
+// FUN_71003ac560 — lookup BattleObject by ID, returns nullptr if not found
+// [derived: called by is_active_find_battle_object_impl and 15+ other functions]
+extern "C" app::BattleObject* FUN_71003ac560(u32);
+
+// 0x7101fca0b0 (76B) — check if a battle object is active by ID
+// [derived: Ghidra — looks up object, checks vtable[0] (isInvalid), then category > 3]
 bool BattleObjectManager__is_active_find_battle_object_impl(BattleObjectManager* mgr, u32 id) {
 #ifdef MATCHING_HACK_NX_CLANG
-    // Force prologue scheduling: mov w0,w1 must come after stp/add x29
     asm("" : "+r"(id));
 #endif
-    auto* obj = reinterpret_cast<u8*>(FUN_71003ac560(id));
+    auto* obj = FUN_71003ac560(id);
     if (!obj) return false;
-    auto fn = reinterpret_cast<bool(*)(void*)>(*reinterpret_cast<void***>(obj)[0]);
-    if (fn(obj)) return false;
-    return obj[0x3a] > 3;
+    if (obj->virtualFunc_0()) return false;
+    return obj->category > 3;
 }
 
 } // namespace app::lua_bind

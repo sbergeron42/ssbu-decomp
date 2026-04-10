@@ -14,7 +14,14 @@ struct BattleObjectModuleAccessor;
 // [derived: +0x3a written as u8=4 (active) or u8=3 (inactive)]
 // [derived: +0x3c written as u8=0xFF (no team)]
 struct BattleObject {
-    u8 pad_0x00[0x08];
+    void** _vt;                             // +0x00 vtable
+
+    // vtable[0]: returns true if object is invalid/disabled
+    // [derived: is_active_find_battle_object_impl calls vt[0], inverts result]
+    inline bool virtualFunc_0() {
+        return reinterpret_cast<bool(*)(BattleObject*)>(_vt[0])(this);
+    }
+
     u32 object_id;                          // +0x08 [derived: FUN_71003a7740 reads +0x08 for BOM register]
     u8 pad_0x0C[0x04];
     u32 battle_object_id;                   // +0x10 [derived: FUN_71003a7740 reads +0x10 for module init param]
