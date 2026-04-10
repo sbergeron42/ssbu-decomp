@@ -267,6 +267,55 @@ The slot index range is `0..9` = 10 slots. SSBU supports up to 8 players + 2 spe
 
 ---
 
+## 6b. FUN_7101344cf0 is NOT the per-frame fighter update (hypothesis rejected)
+
+A follow-up pass investigated the 31 KB function `FUN_7101344cf0` on the suspicion that it might be a 65 KB per-frame fighter update called from `main_loop` (or from one of its children). **The hypothesis is rejected with very high confidence. That function is the static-init constructor for the RNG / subsystem manager singleton rooted at `DAT_71052c25b0`.**
+
+### Evidence summary
+
+- **Not called from `main_loop`.** `grep` on the cached `main_loop` decomp at `asm/ghidra_FUN_7103747270.c` finds zero references to `0x7101344cf0` or `FUN_7101344cf0`.
+- **Only 3 callers, all via vtables / constructor chains.**
+  - `FUN_71014b2a40` (itself only referenced from data slot `0x7105069c78` — a vtable entry)
+  - `FUN_7101523b60` (itself only referenced from data slot `0x710506cce8`)
+  - A static-init thunk at `0x710151a5d0`
+  - Three additional `DATA` references at `0x7105060680`, `0x710506b0f8`, `0x710506c5b8` (vtable slots)
+- **Static-init guard at entry.** `0x7101344d34: ldarb w8,[x28]; tbz w8,#0x0,0x710134b9d4` with `x28 = DAT_71053134d8` — the classic C++ one-shot guard byte.
+- **CAS spinlock singleton-create pattern** at `0x7101345220` (`ldaxrb`/`stxrb`/`b.ne` loop), exactly the idiom flagged in CLAUDE.md under "Singleton creation pattern".
+- **Publishes freshly-allocated singleton to `DAT_71052c25b0`** at `0x7101344e1c`: `str x20,[x8, #0x5b0]` where `x8 = 0x71052c2000`. This target address is the **RNG state root** already documented in project memory — the xorshift128 channel array lives here.
+- **485 direct calls + 163 vtable dispatches, no entity walk.**
+  - Top call target `0x710392dce0` × **232** — a 16-byte node allocator wrapper (jemalloc). Every single allocation is exactly 16 bytes → intrusive list nodes for chain registration, never variable-size data.
+  - 25 sites of `__cxa_throw`-equivalent at `0x71000001c0`, all with the same fixed args (`x0=RODATA 0x7101763de0`, `x1=exception slab 0x71052c4180`, `x2=typeinfo 0x7104f16000`) — init-failure bailouts.
+  - All 163 `blr` indirect calls are `ldr xN,[xM]; ... blr` pairs, consistent with sub-object constructor dispatch, **not** an entity loop (no `for (e : list) e->vt[update]()` skeleton observed).
+  - Zero `dt`/time-delta arithmetic, zero fighter-container iterator pattern.
+- **Constructs ~5+ inline sub-objects at stride 0x68** in the `0x71013474xx` region, each following the same `str x21; str w28; stur x26=−0x100000000; strh #0x1000; stp xzr,xzr; bl ctor; ldarb sub-guard` template. That is a fixed array of channel/slot structs — structurally compatible with the 9-channel RNG layout already known to live at this singleton.
+
+### Caller `FUN_71014b2a40` corroborates
+
+Decompiled via Ghidra MCP. The caller unconditionally invokes `FUN_7101344cf0()` at entry and then:
+
+1. Allocates a `0x50` object with vtable `PTR_FUN_7105069db0` and stores it to `DAT_71052c26c0` (a sibling singleton).
+2. Allocates a `0x20` shared-ptr stub (`PTR_LAB_7105069df0`) + a `0x330` heavy object, then chain-registers into `plVar17[1..2]`.
+3. Repeats the pattern with a `0x210` heavy object registered at `plVar17[3..4]`, embedding function-pointer constants `DAT_71014b5580`/`5a60`/`68e0`/`6c30`/`7170`.
+4. Creates three more sub-objects via `(*vtable[0x10])(root)` dispatch, each wrapped in a `0x30` sub-holder, using libc++ `__shared_weak_count` refcount (`ExclusiveMonitorPass`/`ExclusiveMonitorsStatus`).
+
+This is a **root-singleton constructor**, not a per-frame update. It only exists in the vtable world (exception-init thunks), runs once per process lifetime, and never reaches the simulation loop.
+
+### Implication for the rollback hunt
+
+The WORKER assignment update suggested the 65 KB `FUN_7101344cf0` might sit between `main_loop` and the real sim tick. That turned out to be wrong — the function is 31 KB (not 65 KB), and it's a constructor, not a dispatcher. **The search for the sim tick advance has to move elsewhere.** Good candidates, in priority order, remain the ones identified in the original pass:
+
+1. The **`SignalEvent`/`WaitEvent` pair** at `0x71039c06f0` / `0x71039c06c0` in `main_loop`'s frame-timing phase (§1). A separate sim worker thread signalled by `main_loop` is still the best hypothesis.
+2. The **rate-limited subsystem** at `FUN_71036f2c00` / `FUN_71036f2d40` (`60 / N` divisor branch in §2 phase 8).
+3. **`FUN_71035763c0` called 12×** — the single most-repeated direct child.
+4. The **consumers of `DAT_71052c25b0`** themselves (RNG clients at `final_rand_create_item`, `get_bgm_kind`, `check_item_provide`, `special_lw_decide_command`, …). If any of those is invoked per-frame from a gameplay thread, its caller is the sim dispatcher.
+
+### Artifacts saved for this pass
+
+- `data/ghidra_cache/pool-b.txt` — session 2026-04-10 section with full evidence, top-10 call targets, consumer sample, and verdict.
+- Tool-result cache (not committed): `mcp-ghidra-disassemble_function-1775850785498.txt` (31 137 lines of raw disasm).
+
+---
+
 ## 7. Open questions for the next pass
 
 | Question | How to answer |

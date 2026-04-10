@@ -642,3 +642,66 @@ Open questions for next-pass:
 4. Identify DAT_710593aa90 singleton type
 5. Resolve the 4 string keys in FUN_7103550080 at 7103749624/70/54/dc (FUN_71039c1400 ?)
 
+== pool-b Ghidra cache (session 2026-04-10) ==
+
+== FUN_7101344cf0 @ 0x7101344cf0..0x710134c68f (0x799f / ~31KB) ==
+
+NOT the per-frame fighter update. Hypothesis rejected.
+
+Evidence (via 31137-line disassembly + caller decomp):
+- Callers: only FUN_71014b2a40 + FUN_7101523b60 (both themselves referenced only via vtables)
+  and one static-init thunk at 0x710151a5d0. Never called from main_loop.
+- Entry guards with `ldarb w8,[x28]; tbz w8,#0x0,...` at 0x7101344d34 — C++ one-shot
+  static-init guard byte at DAT_71053134d8.
+- Publishes freshly-allocated singleton root to DAT_71052c25b0 at 0x7101344e1c
+  (`str x20,[x8, #0x5b0]` where x8=0x71052c2000) — this IS the RNG state singleton
+  already documented in MEMORY.md (xorshift128 channels).
+- CAS spinlock singleton-create pattern at 0x7101345220 (ldaxrb/stxrb/b.ne loop).
+- 485 direct calls, 163 vtable dispatches (all ldr-blr), no container-iteration pattern.
+- Top call target: 0x710392dce0 × 232 times (16-byte node alloc wrapper, jemalloc).
+- All 232 allocs are exactly 16 bytes → intrusive list nodes for chain registration.
+- 25 sites of __cxa_throw equivalents at 0x71000001c0, all with fixed args
+  (x0=RODATA 0x7101763de0, x1=exception slab 0x71052c4180, x2=typeinfo 0x7104f16000)
+  → these are init-failure bail-out paths, not per-frame.
+- Constructs ~5+ inline sub-objects at stride 0x68 in 0x71013474xx region.
+- Zero evidence of entity-walk, per-fighter vtable dispatch, or dt arithmetic.
+
+Verdict: FUN_7101344cf0 is the CONSTRUCTOR / static-init body for the RNG/subsystem
+manager singleton rooted at DAT_71052c25b0. It runs ONCE at boot, not per frame.
+Not a rollback capture/restore target. The next-pass hunt for the real sim dispatcher
+should instead trace CONSUMERS of DAT_71052c25b0 (e.g. final_rand_create_item,
+get_bgm_kind, check_item_provide, special_lw_decide_command) and find which of
+them is called per-frame from a gameplay thread.
+
+== Caller FUN_71014b2a40 @ 0x71014b2a40..0x71014b37c3 ==
+- Calls FUN_7101344cf0() unconditionally first.
+- Then alloc 0x50 object + sets PTR_FUN_7105069db0 vtable → stores to DAT_71052c26c0.
+- Then alloc 0x20 stub + PTR_LAB_7105069df0 + alloc 0x330 heavy object → registers into
+  chain at plVar17[1..2] (freshly-constructed root list node).
+- Then alloc 0x20 + PTR_LAB_7105069e28 + alloc 0x210 heavy object → register at [3..4].
+- Then alloc 0x20 + PTR_LAB_7105069e60 + alloc 0x50 three-field helper + three sub-objects
+  via (*vtable[0x10])(root), each wrapped in a 0x30 sub-holder.
+- The 0x210 heavy object embeds constants DAT_71014b5580/5a60/68e0/6c30/7170 (function
+  pointers to local init helpers).
+- Uses CAS (`ExclusiveMonitorPass`/`ExclusiveMonitorsStatus`) + YieldThread shared-ptr
+  refcount pattern.
+- Verdict: ALSO a constructor, not a per-frame entry. Only xref is a data ref from
+  vtable slot 0x7105069c78 — invoked from class vtable dispatch during static init.
+
+== DAT_71052c25b0 consumer sample (30 xref scan) ==
+Readers of the RNG singleton pointer include:
+  get_bgm_kind, check_item_provide, final_rand_create_item, final_ready_exec,
+  final_ready_exit, final_end_exec, special_lw_decide_command, get_ray_target_pos,
+  get_cmd_id_from_req_id_with_predict, FUN_71002eb840, FUN_71015aba90, FUN_71015db0b0,
+  FUN_71015bae00, FUN_71015ba3b0, FUN_710082f150, FUN_71033c9950 (3× — distinct sites),
+  FUN_710154ad20 (2×), FUN_71005d8c20 (2×), FUN_7101548d50, FUN_71002d8ef0 (3×),
+  FUN_71008b8000, FUN_7100af8360, FUN_71015490a0.
+(Note: FUN_71015490a0 is in the 0x71015xxxxx text range and is NOT related to
+main_loop's phase-5 callee FUN_7103549170 at 0x71035xxxxx — different functions.)
+None of the sampled consumers are obviously per-frame from main_loop. They are the
+RNG clients at gameplay-logic sites (item spawn, BGM pick, final-smash state, etc.)
+and will be invoked by whichever function is the real sim dispatcher.
+Next-pass: search for a caller of these consumers that sits one step below the
+separate sim worker thread (if any) — the SignalEvent/WaitEvent pair at 0x71039c06f0
+/0x71039c06c0 in main_loop is still the most likely sim/present synchronization.
+
