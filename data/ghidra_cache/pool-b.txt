@@ -595,3 +595,50 @@ AIAnalyst +0xc status (u32).
 9 functions, all match within expected 2-3 relocation diffs.
 invincible_l has 1 extra diff (orr w0,w9,w8 vs NX w0,w8,w9).
 
+
+=== POOL-B ROLLBACK RESEARCH: main_loop @ 0x7103747270 (2026-04-10) ===
+
+Task: Identify rollback sim-tick advance call in main_loop.
+
+KEY FINDING: main_loop is the PRESENTATION-SIDE frame loop, not the fighter sim dispatcher.
+No direct child iterates FighterManager or dispatches BattleObjectModuleAccessor +0x38..0x188 vtables.
+Sim-tick advance lives elsewhere (likely separate worker thread via SignalEvent/WaitEvent pair).
+
+Sub-calls investigated:
+- FUN_7103569c70 @ 0x7103569c70 (1320B): resets ~200 float slots to 0xC2C80000 sentinel (debug stat slots)
+- FUN_7103724a80 @ 0x7103724a80 (1236B, called 4x): ASYNC RESOURCE LOADER state machine — FNV-1a hash,
+  RB-tree lookup by filename, je_aligned_alloc grow. NOT fighter update despite name "Update".
+- FUN_71037cbb80 @ 0x71037cbb80 (312B, called 2x): nn::oe::TryPopNotificationMessage handler —
+  on notif 0x1E (mode change) swaps target framebuffer between 720p/1080p. Pure presentation.
+- FUN_710375ea70 @ 0x710375ea70 (2572B, "deal_with_inputs?"): walks input consumer vector,
+  increments *DAT_710593aa90[+0x398] (singleton counter), dispatches input via vtable
+  +0x1c8/+0xf8/+0x288/+0x178/+0x250/+0x238. This IS sim-related (input dispatch).
+- FUN_7103632850 @ 0x7103632850 (4268B): SCENE STATE MACHINE — 3-state (0/1/2) transition setting
+  UI panel is_active/is_valid flags across 4 panel slots at param_1+0x178/0x198/0x1b8/0x1d8.
+- FUN_710361d040 @ 0x710361d040 (2168B, via agent): CAMERA VIEW/PROJECTION MATRIX UPDATE —
+  pure NEON math iterating camera list at param_1+0x490 (stride 0x330), dirty-flag rebuild via
+  FUN_7103554b90. 332 float ops, NO fighter iteration. Sub-calls: FUN_71003d7950 (16KB vec math).
+- FUN_710356d7a0 @ 0x710356d7a0 (10880B, via agent): PARTICLE/EFFECT SYSTEM dt ADVANCE —
+  dt accumulator at [x0+0x14]→[x0+0x268], CreateEmitterSetId/KillEmitterSet lifecycle,
+  332 float ops, no 4-fighter loop. NOT the sim tick.
+- FUN_710355b540 @ 0x710355b540 (16424B, via agent): RESOURCE STREAMING PUMP —
+  41× je_aligned_alloc, 24× free_default, 3× load_file_by_hash40, ClearResource,
+  UnregisterTextureViewFromDescriptorPool, refcount hash-map eviction ("Deleted" string).
+  NOT the sim tick.
+- FUN_71037857f0 @ 0x71037857f0 (656B, called 10x with slot idx 0..9): INPUT HISTORY RECORDING
+  per slot. Writes sampled input to per-slot ring at param_1 + slot*0x18 + 0x18. This IS the
+  input history buffer rollback needs to capture and rewrite during resim.
+
+Frame counters observed in main_loop:
+- [x20] atomic add at 7103747bd0: ELAPSED TICKS ACCUMULATOR (delta-weighted, not +1). Not safe.
+- [x25+0x188] at 710374b278: sub-tick counter for rate-limited subsystem (60/N gate via x25+0x17c)
+- *DAT_710593aa90[+0x398] inside FUN_710375ea70: +1 per call, 2× per main_loop iter.
+  Candidate: if DAT_710593aa90 is GameMain/InputManager singleton, this is "frames processed".
+
+Open questions for next-pass:
+1. Sim worker thread: trace nn::os::CreateThread / SignalEvent 0x71039c06f0 / WaitEvent 0x71039c06c0
+2. Decompile FUN_71036f2c00/FUN_71036f2d40 (rate-limited at 60/N)
+3. Decompile FUN_71035763c0 (called 12× — most-called unique site, per-entity candidate)
+4. Identify DAT_710593aa90 singleton type
+5. Resolve the 4 string keys in FUN_7103550080 at 7103749624/70/54/dc (FUN_71039c1400 ?)
+
