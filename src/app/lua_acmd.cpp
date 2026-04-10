@@ -1930,4 +1930,16 @@ void* as_inner_function_7103735fd0(lib::L2CValue* this_) {
     return nullptr;
 }
 
+// ============================================================
+// lib::utility::Variadic::Variadic() — default ctor — 0x71037ae490 (8 bytes)
+// [derived: Ghidra prototype. Stores xzr to [this] — single 64-bit zero init.]
+// Variadic is the va_list-like helper used by L2CValue::push_variadic and
+// pop_variadic; layout is { void* table_ptr; ... } with +0x00 as the only
+// field the ctor touches.
+// ============================================================
+void Variadic_ctor_71037ae490(u64* this_) {
+    *this_ = 0;
+}
+
+
 } // namespace app::lua_bind
