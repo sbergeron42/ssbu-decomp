@@ -19,6 +19,9 @@ struct FighterEntry {
     u8    entry_type;                        // +0x5920 [inferred: read by FighterManager entry iteration, 6=active]
     u8    pad_0x5921[0x14];
     u8    is_unloaded;                       // +0x5935 [derived: is_loaded_fighter (0x7101653310) checks != 1]
+    u8    pad_0x5936[0x16A];
+    s32   partner_type;                      // +0x5AA0 [derived: set_final_impl (0x7102141380) checks != 0x50000000 to detect partner entry]
+    u32   partner_entry_id;                  // +0x5AA4 [derived: set_final_impl (0x7102141380) reads partner index when partner_type != 0x50000000]
 };
 
 } // namespace app

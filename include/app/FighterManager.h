@@ -16,9 +16,12 @@ struct FighterManagerData {
     u32   no_discretion_final_beat_count;    // +0xAC [derived: get_no_discretion_final_beat_count_impl (.dynsym) reads +0xAC as u32]
     u8    pad_0xB0[0x10];
     u8    melee_mode;                        // +0xC0 [derived: is_melee_mode_homerun_impl (.dynsym) compares +0xC0 == 9]
-    u8    pad_0xC1[0x0B];
+    u8    pad_0xC1[0x02];
+    u8    hp_mode_global;                    // +0xC3 [derived: is_hp_mode (0x7100693df0) checks +0xC3 != 0 as global HP mode flag]
+    u8    pad_0xC4[0x08];
     u8    discretion_final_enabled;          // +0xCC [derived: is_discretion_final_enabled_impl (.dynsym) reads +0xCC as u8]
-    u8    pad_0xCD[0x05];
+    u8    handi_enabled;                     // +0xCD [derived: get_handi (0x71006937e0) checks +0xCD != 0 to enable handicap lookup]
+    u8    pad_0xCE[0x04];
     u8    ready_go;                          // +0xD2 [derived: is_ready_go_impl (.dynsym) reads +0xD2 as u8]
     u8    pad_0xD3[0x03];
     u8    cursor_whole;                      // +0xD6 [derived: set_cursor_whole_impl (.dynsym) writes +0xD6 as bool]

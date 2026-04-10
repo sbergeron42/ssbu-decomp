@@ -10,6 +10,34 @@ extern "C" [[noreturn]] void abortWrapper_71039c20a0();
 extern "C" __attribute__((visibility("hidden"))) u8 DAT_7104464700[];
 extern "C" __attribute__((visibility("hidden"))) u64* DAT_71053299d8;
 
+// Guard + init globals for team param static init
+// [derived: get_top_rank_player_num_impl disassembly at 0x71021410f0 — adrp+add 0x71053134d8]
+extern "C" __attribute__((visibility("hidden"))) s64 DAT_71053134d8;
+extern "C" s32 __cxa_guard_acquire(s64*);
+extern "C" void __cxa_guard_release(s64*);
+extern "C" void init_team_param_data_71017641a0();  // global_param_init_sets_team_flag
+extern "C" void register_atexit_dtor_71000001c0(void*, void*, void*);  // atexit registration
+extern "C" __attribute__((visibility("hidden"))) u8 team_param_dtor_7101763de0;  // destructor symbol
+extern "C" __attribute__((visibility("hidden"))) u8 DAT_71052c4180;  // team param data base
+extern "C" __attribute__((visibility("hidden"))) u8 PTR_LOOP_7104f16000;
+// [derived: get_top_rank_player_num_impl reads +0x5f6 from 0x71052cb000 = 0x71052cb5f6]
+extern "C" __attribute__((visibility("hidden"))) u8 DAT_71052cb5f6;
+// [derived: get_top_rank_player_impl reads array at 0x71052cb5fc]
+extern "C" __attribute__((visibility("hidden"))) u32 DAT_71052cb5fc[];
+// [derived: is_homerun_versus_impl reads mode byte and flags]
+extern "C" __attribute__((visibility("hidden"))) u8 DAT_71052c41b0;
+extern "C" __attribute__((visibility("hidden"))) u8 DAT_71052c4258;
+extern "C" __attribute__((visibility("hidden"))) u8 DAT_71052c4259;
+
+// [derived: is_available_discretion_final_impl — ItemManager singleton + helper]
+extern "C" __attribute__((visibility("hidden"))) void* DAT_71052c2b88;  // lib::Singleton<app::ItemManager>::instance_
+extern "C" bool is_item_disabling_final_71015bc590(u64, s32);  // item_check helper
+extern "C" __attribute__((visibility("hidden"))) u8* DAT_71052c34a0;
+
+// [derived: set_final_impl — set_final_internal_710065acd0 + FighterParamAccessor2 singleton]
+extern "C" bool set_final_internal_710065acd0(void*, s32, u32, s32);
+extern "C" __attribute__((visibility("hidden"))) void* DAT_71052c2288;  // lib::Singleton<app::FighterParamAccessor2>::instance_
+
 namespace app::lua_bind {
 
 // 7102140d60 -- entry_count (3 instructions)
@@ -300,6 +328,131 @@ void FighterManager__start_movie_on_rendering_2d_impl(FighterManager* mgr) {
 extern "C" void FUN_710067f970(void*);
 void FighterManager__get_jack_final_cut_in_impl(FighterManager* mgr) {
     FUN_710067f970(mgr->data);
+}
+
+// ── 0x71021410f0 -- get_top_rank_player_num (104B) ───────────
+// Returns number of players tied for top rank. Uses static-init guard pattern.
+// [derived: adrp+add 0x71053134d8 = guard; data at ldrb 0x71052cb5f6]
+u8 FighterManager__get_top_rank_player_num_impl(FighterManager*) {
+    if ((DAT_71053134d8 & 1) == 0) {
+        s32 acquired = __cxa_guard_acquire(&DAT_71053134d8);
+        if (acquired != 0) {
+            init_team_param_data_71017641a0();
+            register_atexit_dtor_71000001c0(&team_param_dtor_7101763de0, &DAT_71052c4180, &PTR_LOOP_7104f16000);
+            __cxa_guard_release(&DAT_71053134d8);
+        }
+    }
+    return DAT_71052cb5f6;
+}
+
+// ── 0x7102141160 -- get_top_rank_player (136B) ──────────────
+// Returns entry_id of the Nth top-rank player. Same guard as above.
+// [derived: data at ldr 0x71052c4180 + param*4 + 0x747c = 0x71052cb5fc[param]]
+u32 FighterManager__get_top_rank_player_impl(FighterManager*, s32 index) {
+    if ((DAT_71053134d8 & 1) == 0) {
+        s32 acquired = __cxa_guard_acquire(&DAT_71053134d8);
+        if (acquired != 0) {
+            init_team_param_data_71017641a0();
+            register_atexit_dtor_71000001c0(&team_param_dtor_7101763de0, &DAT_71052c4180, &PTR_LOOP_7104f16000);
+            __cxa_guard_release(&DAT_71053134d8);
+        }
+    }
+    return DAT_71052cb5fc[index];
+}
+
+// ── 0x7102141010 -- is_homerun_versus (224B) ────────────────
+// Checks if this is a homerun versus match (mode 9, no team flags set).
+// [derived: mode byte at DAT_71052c41b0 cmp #9; flags at DAT_71052c4258, DAT_71052c4259]
+bool FighterManager__is_homerun_versus_impl(FighterManager*) {
+    if ((DAT_71053134d8 & 1) == 0) {
+        s32 acquired = __cxa_guard_acquire(&DAT_71053134d8);
+        if (acquired != 0) {
+            init_team_param_data_71017641a0();
+            register_atexit_dtor_71000001c0(&team_param_dtor_7101763de0, &DAT_71052c4180, &PTR_LOOP_7104f16000);
+            __cxa_guard_release(&DAT_71053134d8);
+        }
+    }
+    if (DAT_71052c41b0 == 9) {
+        return DAT_71052c4259 == 0 && DAT_71052c4258 == 0;
+    }
+    return false;
+}
+
+// ── 0x71021412f0 -- is_available_discretion_final (112B) ────
+// Checks if final smash is available: discretion enabled, no active item interference,
+// global flag set, and final count not yet reached.
+// [derived: data+0xCC = discretion_final_enabled, data+0xAC = no_discretion_final_beat_count]
+bool FighterManager__is_available_discretion_final_impl(FighterManager* mgr) {
+    auto* d = mgr->data;
+    if (d->discretion_final_enabled == 0) return false;
+
+    // Check if an item disqualifies final smash
+    u64 item_mgr_data = *reinterpret_cast<u64*>(
+        *reinterpret_cast<u64*>(reinterpret_cast<u8*>(DAT_71052c2b88) + 0xa0));
+    if (is_item_disabling_final_71015bc590(item_mgr_data, -1)) return false;
+
+    // Check global battle flag
+    if ((DAT_71052c34a0[0xd] & 1) == 0) return false;
+
+    return static_cast<s32>(d->no_discretion_final_beat_count) < 1;
+}
+
+// ── 0x7102141380 -- set_final (192B) ────────────────────────
+// Attempts to activate final smash for a fighter. Returns 1 on success, 0 on failure.
+// [derived: entry lookup from entries[entry_id], set_final_internal_710065acd0 = set_final_internal,
+//  on success with kind==1: writes from FighterParamAccessor2 singleton +0x50 -> +0x324 to data+0xAC]
+s64 FighterManager__set_final_impl(FighterManager* mgr, u32 entry_id, s32 final_kind, u32 param4) {
+    if (entry_id >= 8) abort();
+    auto* d = mgr->data;
+    auto* entry = static_cast<FighterEntry*>(d->entries[entry_id]);
+    if (!entry) return 0;
+
+    // If entry has a partner (e.g. Ice Climbers), follow indirection to leader
+    // [derived: set_final_impl (0x7102141380) checks partner_type != 0x50000000]
+    if (entry->partner_type != 0x50000000) {
+        u32 partner_idx = entry->partner_entry_id;
+        if (partner_idx >= 8) abort();
+        entry = static_cast<FighterEntry*>(d->entries[partner_idx]);
+        if (!entry) return 0;
+    }
+
+    bool ok = set_final_internal_710065acd0(entry, final_kind, param4, 0);
+    if (!ok) return 0;
+
+    if (final_kind == 1) {
+        // Copy final beat count threshold from FighterParamAccessor2
+        // [derived: singleton+0x50 -> +0x324 = final beat count limit]
+        auto* param_accessor = reinterpret_cast<u8*>(DAT_71052c2288);
+        u32 val = *reinterpret_cast<u32*>(*reinterpret_cast<u8**>(param_accessor + 0x50) + 0x324);
+        d->no_discretion_final_beat_count = val;
+    }
+    return 1;
+}
+
+// ── 0x71021417d0 -- set_position_lock (188B) ────────────────
+// Locks/unlocks position for all fighters under an entry.
+// [derived: loops slots[0..slot_count-1], checks vtable[0x518/8=163] for alive,
+//  calls vtable[0x438/8=135] with bool param]
+void FighterManager__set_position_lock_impl(FighterManager* mgr, u32 entry_id, bool lock) {
+    if (entry_id >= 8) return;
+    auto* d = mgr->data;
+    auto* entry = reinterpret_cast<FighterEntry*>(d->entries[entry_id]);
+    if (!entry) return;
+    if (entry->entry_type != 6) return;
+    u64 count = entry->slot_count;
+    if (count == 0) return;
+
+    for (u64 i = 0; i < count; i++) {
+        auto* fighter = reinterpret_cast<u8*>(entry->slots[i]);
+        if (!fighter) continue;
+        // Check if fighter is alive via vtable[163] (offset 0x518)
+        auto* vtbl = *reinterpret_cast<void***>(fighter);
+        auto is_alive = reinterpret_cast<bool(*)(void*)>(vtbl[0x518 / 8]);
+        if (!is_alive(fighter)) continue;
+        // Set position lock via vtable[135] (offset 0x438)
+        auto set_lock = reinterpret_cast<void(*)(void*, bool)>(vtbl[0x438 / 8]);
+        set_lock(fighter, lock);
+    }
 }
 
 } // namespace app::lua_bind

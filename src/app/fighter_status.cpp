@@ -1,6 +1,8 @@
 #include "types.h"
 #include "app/BossManager.h"
 #include "app/BattleObjectModuleAccessor.h"
+#include "app/FighterManager.h"
+#include "app/FighterInformation.h"
 #include "app/modules/StatusModule.h"
 #include "app/modules/WorkModule.h"
 #include "app/modules/MotionModule.h"
@@ -26,6 +28,7 @@ extern "C" void FUN_710067de90(void*, u64, s32, s32, u32);
 extern "C" void FUN_710068e1c0(void*);  // get_item_lift_motion_rate_mul helper
 extern "C" u64 FUN_71006798f0(void*, u32);  // owner_rank lookup on FighterManager
 extern "C" [[noreturn]] void abort();
+extern "C" [[noreturn]] void abortWrapper_71039c20a0();
 extern "C" void FUN_7100695b10(void*);  // FighterUtil::flash_eye_info
 extern "C" void FUN_7100695070();       // curry face disable helper
 
@@ -3241,4 +3244,57 @@ u64 FUN_710221e7c0(void* L) {
     stack[2] = 1;  // type tag
     *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) += 0x10;
     return 1;
+}
+
+// ────────────────────────────────────────────────────────────
+// Fighter utility functions — status-related helpers
+// ────────────────────────────────────────────────────────────
+
+// ── 0x71006937e0 -- FighterUtil::get_handi (72B) ────────────
+// Returns handicap value for a fighter entry. Returns 0.0 if handi mode is disabled.
+// [derived: loads FighterManager singleton → checks +0xCD (handi_enabled),
+//  then entries[entry_id] → FighterInformationData (+0xF8) → handi (+0x370)]
+f32 get_handi_71006937e0(u32 entry_id) {
+    if (entry_id >= 8) { abortWrapper_71039c20a0(); }
+    auto* mgr_data = reinterpret_cast<app::FighterManagerData*>(
+        *reinterpret_cast<void**>(DAT_71052b84f8));
+    if (!mgr_data->handi_enabled) return 0.0f;
+    auto* entry = reinterpret_cast<u8*>(mgr_data->entries[entry_id]);
+    auto* fi_data = *reinterpret_cast<app::FighterInformationData**>(entry + 0xf8);
+    return static_cast<f32>(fi_data->handi);
+}
+
+// ── 0x7100693da0 -- FighterUtil::yoshi_egg_time_mul (76B) ───
+// Returns the Yoshi egg time multiplier for the fighter owning this accessor.
+// [derived: work_module→get_int(0x10000000) to get entry_id,
+//  then entries[entry_id] → FighterInformationData (+0xF8) → +0x380 (yoshi_egg_time_mul)]
+f32 yoshi_egg_time_mul_7100693da0(app::BattleObjectModuleAccessor* acc) {
+    u32 entry_id = acc->work_module->get_int(0x10000000);
+    if (entry_id >= 8) { abortWrapper_71039c20a0(); }
+    auto* mgr_data = reinterpret_cast<app::FighterManagerData*>(
+        *reinterpret_cast<void**>(DAT_71052b84f8));
+    auto* entry = reinterpret_cast<u8*>(mgr_data->entries[entry_id]);
+    auto* fi_data = *reinterpret_cast<app::FighterInformationData**>(entry + 0xf8);
+    return fi_data->yoshi_egg_time_mul;
+}
+
+// ── 0x7100693df0 -- FighterUtil::is_hp_mode (96B) ───────────
+// Returns whether HP mode is enabled for the fighter.
+// [derived: work_module→get_int(0x10000000) = entry_id,
+//  mgr_data+0xC3 is global hp_mode flag,
+//  then entries[entry_id]+0xF8→+0x90 is per-fighter hp flag]
+// Note: FighterManagerData+0xC3 is currently unmapped — raw access required for this byte.
+u8 is_hp_mode_7100693df0(app::BattleObjectModuleAccessor* acc) {
+    u32 entry_id = acc->work_module->get_int(0x10000000);
+    auto* mgr_data = reinterpret_cast<app::FighterManagerData*>(
+        *reinterpret_cast<void**>(DAT_71052b84f8));
+    // Check global HP mode flag
+    // [derived: is_hp_mode disasm checks ldrb [x8, #0xC3] != 0]
+    if (mgr_data->hp_mode_global != 0) return 1;
+    if (entry_id >= 8) { abortWrapper_71039c20a0(); }
+    auto* entry = reinterpret_cast<u8*>(mgr_data->entries[entry_id]);
+    // entry+0xF8 = FighterInformationData->data, +0x90 = per-fighter hp flag
+    // [derived: is_hp_mode disasm loads ldrb [x8, #0x90] from FighterInformationData]
+    auto* fi_data = *reinterpret_cast<app::FighterInformationData**>(entry + 0xf8);
+    return fi_data->hp_mode_fighter;
 }

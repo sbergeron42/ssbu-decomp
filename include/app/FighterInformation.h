@@ -23,7 +23,9 @@ struct FighterInformationData {
     u8    dead_up_force_crush;               // +0x6E [derived: sv_information::is_dead_up_force_crush reads +0x6E as u8]
     u8    pad_0x6F[0x0D];
     u32   star_fall_prob;                    // +0x7C [derived: sv_fighter_util::get_dead_up_star_fall_prob reads +0x7C as u32]
-    u8    pad_0x80[0x12];
+    u8    pad_0x80[0x10];
+    u8    hp_mode_fighter;                   // +0x90 [derived: is_hp_mode (0x7100693df0) reads +0x90 as u8 per-fighter HP flag]
+    u8    pad_0x91;
     bool  operation_cpu;                     // +0x92 [derived: is_operation_cpu_impl (.dynsym) reads +0x92 as bool]
     bool  no_change_hp;                      // +0x93 [derived: get_no_change_hp_impl (.dynsym) reads +0x93 as bool]
     u8    pad_0x94[0x38];
@@ -39,7 +41,8 @@ struct FighterInformationData {
     u8    pad_0x1B0[0x1BC];
     f32   gravity;                           // +0x36C [derived: gravity_impl (.dynsym) reads +0x36C as f32]
     u32   handi;                              // +0x370 [derived: sv_information::owner_handi reads +0x370 as u32]
-    u8    pad_0x374[0x10];
+    u8    pad_0x374[0x0C];
+    f32   yoshi_egg_time_mul;                // +0x380 [derived: yoshi_egg_time_mul (0x7100693da0) reads +0x380 via ldr s0 = float]
     u32   sleep_time_mul;                    // +0x384 [derived: sv_information::sleep_time_mul reads +0x384 as u32]
     u8    pad_0x388[0x04];
     bool  on_rebirth;                        // +0x38C [derived: is_on_rebirth_impl (.dynsym) reads +0x38C as bool]

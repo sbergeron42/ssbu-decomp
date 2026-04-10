@@ -581,3 +581,32 @@ FUN_710358fb24: all call std::__throw_out_of_range with x8/x9 param
 
 === 4-byte nop functions (unmatchable without naked asm) ===
 22 functions at 0x7100407e0c..0x710044793c: all single nop instruction
+
+=== Pool-A Session — FighterManager missing functions ===
+
+=== get_top_rank_player_num_impl @ 0x71021410f0 (104B) ===
+Guard: 0x71053134d8
+Data: ldrb w0,[0x71052cb5f6]
+Init: bl 0x71017641a0
+Atexit: bl 0x71000001c0(0x7101763de0, 0x71052c4180, 0x7104f16000)
+
+=== get_top_rank_player_impl @ 0x7102141160 (136B) ===
+Same guard. Data: ldr w0,[0x71052cb5fc + param2*4]
+
+=== is_homerun_versus_impl @ 0x7102141010 (224B) ===
+Same guard. Mode: DAT_71052c41b0==9, then DAT_71052c4259==0 && DAT_71052c4258==0
+
+=== is_available_discretion_final_impl @ 0x71021412f0 (112B) ===
+data+0xCC!=0, ItemManager check, global flag, data+0xAC < 1
+
+=== set_final_impl @ 0x7102141380 (192B) ===
+Entry lookup, FUN_710065acd0, FighterParamAccessor2 +0x50->+0x324
+
+=== get_fighter_pos_impl @ 0x7102141210 (200B) ===
+Entry lookup, PostureModule->pos()
+
+=== set_position_lock_impl @ 0x71021417d0 (188B) ===
+Loop over entries, vtable 0x518 + 0x438
+
+=== set_dead_up_camera_hit_cursor_status_impl @ 0x7102141670 (320B) ===
+Complex camera ref-count control
