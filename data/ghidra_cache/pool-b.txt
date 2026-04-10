@@ -903,6 +903,27 @@ Remaining targets to decompile (next pass):
      have — "for each entity, call update via vtable" — but here the
      vtable slots +0x38/+0x40 belong to graphics listeners, and the
      nu::GraphicsModule::Instance() call at entry nails it.)
+  c) FUN_71036186d0 (1188B, phase-7) DONE — camera projection matrix build.
+     - Reads resolution [plVar9[1]+0x1c0/+0x1c4] (w×h floats).
+     - Computes inverse scale (1/scale_x, 1/scale_y) and offset-bias,
+       storing to multiple camera output slots at plVar3[0x81a..0x81e]
+       and embedded sub-object at *plVar3 offsets 0x230..0x254.
+     - Copies 4 NEON matrices (4x 16 bytes at lVar4+0x40/+0x50/+0x60/+0x70)
+       into pfVar6+0x98..+0xa6 with NEON_ext rotations — that's
+       view/projection/view-proj/inverse-view-proj matrix slots.
+     - Calls nn::pl::IsVrMode() to pick 0.5 vs 1.0 as a scale factor,
+       writing to pfVar6[0xd1] — VR mode half-width scaling.
+     - Does a NEON vec-sqrt + reciprocal-sqrt chain to compute a
+       normalized direction vector with fcmeq zero-guard — classic
+       ray/look-direction normalize.
+     - Calls FUN_710365c8d0 twice (probably shader constant push),
+       FUN_7103619950, FUN_71035727d0, FUN_7103569a80.
+     - Uses DAT_7105336ce8 (render singleton) at +0x490/+0xd8/+0xe0 and
+       +0x490/+0xd8/+0xe0 for the camera state pointer.
+     Graphics / camera projection matrix recomputation including VR-mode
+     scaling and a ray-direction normalize. NOT sim. This is the matrix-
+     build for presentation; pairs with the earlier FUN_710361d040 finding
+     (camera view-matrix update, 2168B, phase 7).
   b) FUN_71035c13d0   (1048B, phase 6)  ← unknown
   c) FUN_71036186d0   (1188B, phase 7)  ← unknown
   d) FUN_7103619080   (432B,  phase 7)  ← unknown (Event A neighborhood)
