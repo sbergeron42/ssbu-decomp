@@ -330,5 +330,214 @@ next pass.
 
 ---
 
+---
+
+## Pool B — BREAKTHROUGH: two indirect dispatchers inside main_loop
+
+Follow-up search after the "nnMain calls main_loop exactly once" framing
+update. Grepping the cached main_loop decomp for `DAT_710593a530` turned
+up a hit **inside `main_loop` itself** at line 543:
+
+```c
+if (DAT_710593a530 == 3) { ... }
+```
+
+This is exactly the "match-active branch" the first-pass handoff was
+pointing at — but it lives in `main_loop` directly, **not** in the
+`FUN_7103632850` scene state machine (which has only 3 states 0/1/2 and
+no state-3 branch — a previously-decompiled dead end). Pool B was
+looking in the wrong function for the entire lead-2 investigation.
+
+Reading the surrounding code (asm/ghidra_FUN_7103747270.c lines
+540..630) reveals **two indirect dispatchers** that have not been
+classified by any prior pool, at least one of which has the exact shape
+of the sim tick:
+
+### Dispatcher A — match-active vtable walk
+
+Location: `main_loop` lines 543..572, gated on `DAT_710593a530 == 3`.
+
+```c
+if (DAT_710593a530 == 3) {
+    switch (iVar31) { ... }          // small UI dirty-flag toggle
+    lVar48 = *(long *)(**(long **)(&DAT_000024e8 + *DAT_710593a6a0)
+                       + 0x2da8);
+    std::recursive_mutex::lock();
+    for (lVar67 = *(long *)(lVar48 + 0x38);
+         lVar48 + 0x30 != lVar67;
+         lVar67 = *(long *)(lVar67 + 8))
+    {
+        uVar35 = (**(code **)(**(long **)(lVar67 + 0x10) + 0x28))();
+        if ((uVar35 & 1) != 0) { bVar45 = 1; goto LAB_7103747d0c; }
+    }
+    bVar45 = 0;
+LAB_7103747d0c:
+    std::recursive_mutex::unlock();
+    bVar45 = bVar45 | iVar31 != 2;
+}
+```
+
+- Root singleton: `DAT_710593a6a0`, indirected twice through `+0x24e8`
+  (PIC-fixup constant in the Ghidra output).
+- Sub-object field: `[root]+0x2da8` — a circular-list head with pair
+  pointers at `+0x30` (tail/sentinel) and `+0x38` (first node). List
+  traversal goes via `node[1]` (field `+0x08` = next).
+- Each node dereferences to an object at `[node+0x10]`; its vtable is
+  read and slot `+0x28` is called.
+- Early-out on the first element whose slot `+0x28` returns non-zero
+  (`uVar35 & 1`). That is either "I am the one", "I handled this", or
+  "abort further walk".
+
+**Smoking-gun characteristics for sim:**
+
+- Gated on a global state equal to `3` (match active / in-game), which
+  *is* how SSBU distinguishes title/CSS/match states.
+- Iterates a list of entities, calling a vtable method on each.
+- Protected by `recursive_mutex`, consistent with a cross-thread-
+  safe game-state mutator.
+
+**Caveats / not-yet-proven:**
+
+- The vtable slot is `+0x28`, not any of the standard
+  `BattleObjectModuleAccessor` offsets `+0x38..+0x188`. It could be a
+  `SceneTask::exec()`-style root dispatch that THEN walks the fighter
+  list, rather than being the fighter list itself.
+- The early-out on first truthy return makes this look more like a
+  "find first active match" query, not a "per-fighter update" loop —
+  a sim dispatcher would want to run the method on EVERY entity, not
+  stop at the first one.
+- But the list-head split (sentinel at `+0x30`, first node at `+0x38`)
+  is the classic STL `std::list` layout, so the walk itself is
+  per-element and normal.
+
+Pool B assessment: **probably not the per-fighter dispatch**, but
+**likely the scene-root "is match running" / "tick the scene" entry**
+that calls into the fighter dispatcher at the next level down. Worth
+decompiling the vtable slot `+0x28` target for whatever object type
+lives at `[**DAT_710593a6a0 + 0x24e8] + 0x2da8 + 0x38 + 0x10`.
+
+### Dispatcher B — frame-scheduled delegate queue (high-confidence sim-tick candidate)
+
+Location: `main_loop` lines 610..628, immediately after Dispatcher A.
+
+```c
+iVar31 = 0;
+if (DAT_710522ebe0 != 0) {
+    iVar31 = (DAT_7105332050 + 1) / DAT_710522ebe0;
+}
+DAT_7105332050 = (DAT_7105332050 + 1) - iVar31 * DAT_710522ebe0;
+                                          // DAT_7105332050 cycles 0..N-1 per frame
+if (0 < (int)DAT_7105331f4c) {
+    lVar67 = (long)(int)DAT_7105331f4c;
+    do {
+        lVar48 = *(long *)((long)&DAT_7105331f4c + (lVar67 + -1) * 8 + 4);
+        lVar65 = (long)DAT_7105332050;
+        puVar66 = (undefined8 *)(lVar48 + lVar65 * 0x18 + 0x10);
+        for (puVar68 = (undefined8 *)*puVar66;
+             puVar68 != (undefined8 *)0x0;
+             puVar68 = (undefined8 *)puVar68[2])
+        {
+            (*(code *)puVar68[1])(*puVar68);    // <-- delegate invoke
+        }
+        // splice the list into a cleanup chain and reset head
+        plVar49 = (long *)(lVar48 + lVar65 * 0x18);
+        *puVar66 = 0;
+        lVar48 = *plVar49;
+        plVar49[1] = lVar48;
+        *(long *)(lVar48 + 8) = lVar48 + 0x18;
+        lVar67 += -1;
+    } while (0 < lVar67);
+}
+```
+
+**Structure.**
+
+- `DAT_7105331f4c` = number of priority buckets (the outer `do ...
+  while` iterates from `N-1` down to `0`).
+- `DAT_710522ebe0` = frame cycle length (modulo N). Most likely `60` if
+  SSBU wants 1-to-60 Hz fractional task scheduling, but could be any
+  fixed integer.
+- `DAT_7105332050` = current position in the cycle, advanced by 1 per
+  frame and wrapped modulo `DAT_710522ebe0`. The post-increment cycling
+  is line 609: `DAT_7105332050 = (DAT_7105332050 + 1) - iVar31 *
+  DAT_710522ebe0`.
+- Each priority-bucket "table" at `&DAT_7105331f4c + (bucket-1)*8 + 4`
+  (a misaligned-looking field that is really `bucket_base[bucket-1]`)
+  contains `DAT_710522ebe0` linked-list heads, stride `0x18`.
+- Each slot's linked list is walked:
+  ```
+  node[0] = this / context         // first arg to the delegate
+  node[1] = function pointer        // invoked as (*fn)(this)
+  node[2] = next pointer
+  ```
+- After invocation, the list head is cleared and the nodes are spliced
+  onto a cleanup chain (`plVar49[0]`/`plVar49[1]`) — the tasks are
+  one-shots that get torn off and freed elsewhere.
+
+**This is a per-frame delegate queue, scheduled by frame-slot.** A task
+that fires every frame registers on the bucket's every slot (or on a
+special "always" bucket); a task at 30 Hz registers on every other
+slot; a task at 20 Hz registers on every third slot; etc. The
+fixed-point `DAT_710522ebe0` modulo is exactly the mechanism that lets
+the game schedule "X times per Y frames" tasks with sub-frame
+precision.
+
+**Why this is the prime sim-tick candidate:**
+
+1. The function-pointer call `(*(code*)puVar68[1])(*puVar68)` is an
+   indirect dispatch that static xref-to analysis on
+   `FighterManager::update` or any named sim function would miss
+   entirely — which explains why the first-60-xref sweep in
+   `docs/rollback/main_loop.md` §6e found zero dispatchers.
+2. It lives in `main_loop` directly, immediately after the
+   match-active branch (Dispatcher A) and immediately before the
+   phase-7 camera / phase-8 rate-limited code blocks. The position
+   in the frame is exactly where sim would run: after scene state
+   has been latched and before rendering commits camera/projection
+   state.
+3. The one-shot cleanup chain means tasks are re-installed every
+   frame by whatever subsystem owns them — which is exactly the
+   pattern you'd get if the sim advance is installed by a
+   "RunMatchTick()" caller as `{fighterMgrPtr, &FighterMgr::advanceAll,
+   next}`.
+4. The `DAT_71052xxxx` address range is the known match/runtime
+   singleton-data region (see the memory-map doc), so
+   `DAT_7105331f4c` and `DAT_7105332050` sit right in the game-state
+   block.
+
+**What's needed to confirm.**
+
+- Xref sweep on `DAT_7105331f4c` to find every WRITER to the linked
+  lists. Each writer is either (a) a registration site (installing a
+  delegate) or (b) unrelated bookkeeping.
+- Xref sweep on `DAT_7105332050` to find anything else that reads or
+  resets the frame-slot counter — that might point at a top-level
+  reset call.
+- Find the registration wrapper function: it will look like a small
+  helper taking `(priority, slot_mask, this, fn)` and splicing a new
+  node into `DAT_7105331f4c[priority][slot].head`.
+- Trace one real registration back to its caller — the caller is the
+  subsystem being dispatched, and one of them should be the sim step.
+
+### Updated verdict and handoff
+
+`main_loop` directly dispatches two indirect-invoke points: one vtable
+walk gated on match-active, and one frame-scheduled delegate queue.
+**Neither was on the 84-unique-BL-targets list because both are
+function-pointer dispatches through loaded pointers, not direct `BL`
+instructions.** This invalidates the "all direct children of main_loop
+have been classified" assumption and reopens the sim-tick hunt with
+two strong, novel leads.
+
+Pool B's single remaining hypothesis (pead::Delegate queue) is now
+concretely located: **it is Dispatcher B, inside `main_loop` at lines
+610..628**, using the `DAT_7105331f4c` / `DAT_5105332050` /
+`DAT_710522ebe0` globals as its bucket/slot/cycle state. Whether the
+dispatched function pointers include the fighter sim advance is the
+single remaining question, and it is answerable by xref-sweeping
+registrations.
+
+---
+
 <!-- Pool A and Pool C: append your sections below. Please preserve the
      heading style so this doc stays greppable. -->
