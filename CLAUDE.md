@@ -82,7 +82,7 @@ The orchestrator will REJECT diffs that fail the reviewer. Do not submit code th
    - **BAD:** `param_1[0xe7]` or `*(u64*)(sub + 0x790)`
    - **Exception:** trivial 1-2 field leaf functions (e.g., singleton getters) may use raw access.
 3. **NO `__attribute__((naked))`.** Naked asm is BANNED outright. If a function can't match after 3 attempts, SKIP IT — do not inflate progress with pasted assembly. The reviewer auto-rejects any `naked` attribute.
-4. **NO Ghidra variable names.** `uVar1`, `plVar2`, `iVar3` etc. in new code are auto-rejected. If you're writing these, you're pasting Ghidra output instead of understanding the code.
+4. **NO Ghidra default names.** `uVar1`, `plVar2`, `iVar3` variable names and `FUN_71XXXXXXXX` function names in new code are auto-rejected. If you're calling a function, name it based on what it does (e.g., `tryFindBattleObjectById_71003ac560`). Keep the address suffix for linker disambiguation. Run `python tools/name_audit.py` to see the most-referenced unnamed functions.
 5. **Minimize `reinterpret_cast` — it's a debt metric.** Every `reinterpret_cast` means a type hasn't been recovered yet. Diffs above 10% cast density are REJECTED. The fix is NOT to avoid the function — it's to define a placeholder struct:
    - Create `include/app/placeholders/UnkType_XXXXXXXX.h` (named after the first function address that uses it)
    - Use `unk_0xNN` for unknown fields, typed fields for known offsets

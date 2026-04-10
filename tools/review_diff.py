@@ -117,6 +117,9 @@ RE_RAW_VTABLE = re.compile(
 # New struct/class definition in include/
 RE_STRUCT_DEF = re.compile(r'^\s*(?:struct|class)\s+\w+\s*(?:\{|:)')
 
+# FUN_ unnamed Ghidra function references (called, not declared/defined)
+RE_FUN_CALL = re.compile(r'\bFUN_[0-9a-fA-F]{8,}\s*\(')
+
 # Module method wrapper usage (e.g., mod->some_method(...))
 RE_METHOD_CALL = re.compile(r'\w+_module\s*->\s*\w+\s*\(')
 
@@ -203,6 +206,18 @@ def analyze_file(filepath: str, lines: list) -> FileReport:
                 suggestion="Use typed wrapper from include/app/modules/. "
                            "If no wrapper exists for this slot, add one to the header."
             ))
+
+        # ── REJECT: FUN_ unnamed function calls in src/ ──
+        fun_matches = RE_FUN_CALL.findall(text)
+        if fun_matches and "include/" not in filepath:
+            for fm in fun_matches:
+                report.violations.append(Violation(
+                    file=filepath, line=line_no, rule="NO_FUN_NAMES",
+                    severity="REJECT", snippet=stripped[:120],
+                    suggestion="Name this function based on what it does. "
+                               "FUN_ names are Ghidra defaults — if you're calling it, "
+                               "you know its purpose."
+                ))
 
         # ── Count positive signals ──
         if RE_STRUCT_DEF.search(text) and "include/" in filepath:
