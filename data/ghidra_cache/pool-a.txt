@@ -735,3 +735,53 @@ The xref on sv_math::rand ITSELF returns only 2 entries (Lua binding + dynsym).
 === FUN_7100138620 (xorshift128 raw advance) ===
 Takes uint* (4 u32 state, NO counter). Body = identical Marsaglia (11,8,19) walk,
 returns new w. Used by callers that don't need channel dispatch.
+
+=== FUN_710143ab00 (std::vector<Xorshift128>::resize, ~400 bytes) ===
+// libc++ std::vector<app::Xorshift128, std::allocator<Xorshift128>>::resize(n)
+// Stride 0x14, capacity overflow constant 0xccccccccccccccc (= floor(2^64/20)).
+// Calls je_aligned_alloc(0x10, n*0x14) on growth; OOM retries via
+// DAT_7105331f00 (memory pressure handler, vtable +0x30).
+// Default-constructs new channels with Marsaglia 2003 xorshift128 paper seed:
+//     x = 0x075bcd15 (123456789)
+//     y = 0x159a55e5 (362436069)
+//     z = 0x1f123bb5 (521288629)
+//     w = 0x05491333 (88675123)
+//     call_count = 0
+// These are the same values in every subsequent init of a fresh channel until
+// the match-seed code at 0x710134551c overwrites them with the MT19937-LCG-derived
+// state. So between constructor and seed-init, all 9 channels hold the Marsaglia
+// default; this is NEVER observable to gameplay because seed-init runs in the
+// same boot routine (FUN_7101344cf0) before any rand caller can fire.
+//
+// The vec header passed in (param_1) is layed out as libc++ std::vector:
+//   +0x00 __begin_        (Xorshift128*)
+//   +0x08 __end_          (Xorshift128*)
+//   +0x10 __end_cap_      (Xorshift128*)  — the compressed-pair pointer half
+//   +0x18 __alloc         (8 bytes of allocator EBO / slack; repurposed by
+//                          FUN_7101344cf0 to hold a placeholder 0x87654321 at
+//                          construction and the u32 match seed after seed-init)
+//
+// Cross-ref: called once from FUN_7101344cf0 @ 0x7101344e28 with n=9 to fill
+// the RandomizerChannelVec backing the gameplay sync RNG.
+
+=== sv_math::rand (full decomp) ===
+// See Ghidra decompilation of 0x7102275320 earlier in this cache.
+// Key: three-load access pattern
+//     ldr x8, [0x71052c25b0]   ; Randomizer*
+//     ldr x8, [x8]             ; RandomizerChannelVec*
+//     ldr x8, [x8]             ; RandomizerChannels* (actual data)
+// Ghidra's `*(long*)*DAT_71052c25b0` expands to three loads, not two — the
+// DAT_ symbol already implies one load.
+
+=== FUN_71002f2a00 — AI input generator (channel +0x50 = ai_random) ===
+// Dispatches on param_1->unk_0x28 (fighter state kind?), 40+ case arms.
+// Every rand call uses the AI channel (offsets +0x50..+0x5c).
+// Every roll is compared against `(float)frames_remaining / 60.0f` where
+// frames_remaining = *(int*)(*param_1 + 0xc0c) and 60.0f lives at
+// DAT_7104471e0c — i.e. "roll once per second on average".
+// On success, calls FUN_71002f46a0(param_1, cmd) with cmd in 0x6030..0x6080
+// range — likely PadCommand / AI button-press enum values.
+// This is the function referenced in rng.md §4 as reading the singleton
+// 20+ times per call; every one of those reads is AI command generation
+// and is gameplay-sync-critical (CPU behaviour must be deterministic for
+// replay / rollback).

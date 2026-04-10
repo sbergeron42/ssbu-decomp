@@ -36,22 +36,28 @@ struct RandomizerChannels {
 };
 static_assert(sizeof(RandomizerChannels) == 0xb4, "RandomizerChannels must be 180 bytes");
 
-// 32-byte vector-like header that owns the 180-byte channel array as a separate
-// heap allocation. The first two fields form a `[begin, end)` span walked by the
-// seed-init loop. The +0x18 slot is initialised to the debug marker 0x87654321
-// during construction and is later overwritten by the u32 match seed
-// (0x7101344e0c writes the marker; 0x71013454c8 writes the real seed).
-// [derived: FUN_7101344cf0 @ 0x7101344dac-0x7101344e28 — allocates 32 bytes via
-//  aligned_alloc(16, 32), zeroes [0..0x10), writes magic at +0x18, then calls
-//  FUN_710143ab00(vec, 9) which populates begin/end with a fresh 180-byte buffer.
-//  Seed loop at 0x71013454d4 loads (begin,end) via `ldp x8,x9,[x9]`.]
+// libc++ `std::vector<Xorshift128>` header. Owns the 180-byte channel array as
+// a separately-allocated backing buffer. The standard libc++ layout is:
+//     +0x00 __begin_    (T*)
+//     +0x08 __end_      (T*)
+//     +0x10 __end_cap_  (T*)   — the pointer half of the __compressed_pair
+//     +0x18 __alloc     (8 B)  — the allocator half; empty allocator EBO gives 8 B slack
+// The constructor (FUN_7101344cf0) zero-inits the first 24 bytes, then repurposes
+// the 4-byte slack at +0x18 to hold the match seed — 0x87654321 as a placeholder
+// during construction, overwritten with the real u32 seed by 0x71013454c8. The
+// `resize(9)` call at 0x7101344e28 (std_vector_Xorshift128_resize_710143ab00)
+// allocates the 180-byte buffer via je_aligned_alloc and populates __begin_/__end_.
+// [derived: FUN_7101344cf0 @ 0x7101344dac-0x7101344e28 allocates 32 bytes via
+//  aligned_alloc(16,32); std_vector_Xorshift128_resize identified by its stride
+//  constants (0x14) and the Marsaglia 2003 xorshift128 default state values
+//  0x075bcd15/0x159a55e5/0x1f123bb5/0x05491333 used for default-construction.]
 struct RandomizerChannelVec {
-    RandomizerChannels* channels;  // +0x00  begin pointer — points at the 180-byte array
-    Xorshift128*        end;       // +0x08  begin + 9 (one past the last channel)
-    u64                 unk_0x10;  // +0x10  zero after construction; purpose unknown
-    u32                 match_seed;// +0x18  [derived: 0x71013454c8 `str w19,[x8,#0x18]`
-                                   //         writes the u32 seed pulled from match params]
-    u32                 pad_0x1c;  // +0x1c  padding
+    RandomizerChannels* channels;    // +0x00  libc++ __begin_
+    Xorshift128*        end;         // +0x08  libc++ __end_     (= begin + 9)
+    Xorshift128*        end_cap;     // +0x10  libc++ __end_cap_ (= end here)
+    u32                 match_seed;  // +0x18  [derived: 0x71013454c8 writes w19 here;
+                                     //         placeholder 0x87654321 at construction]
+    u32                 pad_0x1c;    // +0x1c  allocator EBO slack
 };
 static_assert(sizeof(RandomizerChannelVec) == 0x20, "RandomizerChannelVec must be 32 bytes");
 

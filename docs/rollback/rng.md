@@ -127,37 +127,50 @@ are inspected — a grep through the Lua script dump for the literal hash values
 `0x77a08c3fc`) will reveal them. This is a follow-up task; for rollback it does not
 matter which channel is which, only that all 180 bytes are captured together.
 
-### The owning `RandomizerChannelVec` (32 bytes)
+### The owning `RandomizerChannelVec` (std::vector<Xorshift128>)
 
-The 180-byte channel array does **not** sit inside the singleton. It is a separate
-heap allocation pointed at by a 32-byte "vector header" object, which itself is
-pointed at by the 8-byte `Randomizer` singleton. The constructor (FUN_7101344cf0
-at 0x7101344d50..0x7101344e28) allocates all three objects in sequence:
-
-```
-aligned_alloc(16, 8)   → Randomizer*             (the singleton value itself)
-aligned_alloc(16, 32)  → RandomizerChannelVec*   (vector header)
-FUN_710143ab00(vec, 9) → inside that call: allocates 9 * 20 = 180 bytes and
-                         writes begin/end into the vec header
-```
-
-The vec header layout is:
+The 180-byte channel array does **not** sit inside the singleton. It is the
+backing storage of a **libc++ `std::vector<app::Xorshift128>`** whose 32-byte
+header is the middle link in the indirection chain. The constructor
+(`FUN_7101344cf0` at `0x7101344d50..0x7101344e28`) allocates everything in
+sequence:
 
 ```
-+0x00  RandomizerChannels* begin       // points at the 180-byte array
-+0x08  Xorshift128*        end         // begin + 9
-+0x10  u64                 unk (0)
-+0x18  u32                 seed        // 0x87654321 placeholder at construction;
-                                       //   overwritten with the real u32 match seed
-                                       //   at 0x71013454c8 (`str w19, [x8, #0x18]`).
-+0x1c  u32                 pad
+je_aligned_alloc(16, 8)     → Randomizer*             (the singleton value itself)
+je_aligned_alloc(16, 32)    → RandomizerChannelVec*   (the vector header)
+vec.resize(9)               → inside std_vector_Xorshift128_resize_710143ab00:
+                              je_aligned_alloc(16, 180) for the T* buffer and
+                              writes __begin_/__end_/__end_cap_ into the header
 ```
 
-The `0x87654321` value written at construction is a debug placeholder, not a
-persistent sentinel — once the match-start seed-init code runs, that slot holds
-the u32 seed that was used to derive all 9 channels. Capturing the 180-byte
-channel buffer under rollback does **not** need to include this slot; it is
-written once per match and stays constant for the entire match.
+The vec header layout is the standard libc++ one:
+
+```
++0x00  Xorshift128* __begin_         // points at the 180-byte channel buffer
++0x08  Xorshift128* __end_           // __begin_ + 9
++0x10  Xorshift128* __end_cap_       // = __end_ here (size == capacity)
++0x18  <allocator>   __alloc_ (8 B)  // empty allocator EBO slack; reused as a
+                                     //   u32 slot: 0x87654321 placeholder at
+                                     //   construction, overwritten with the
+                                     //   u32 match seed by 0x71013454c8.
+```
+
+Two confirmations that this really is `std::vector`:
+
+1. `std_vector_Xorshift128_resize_710143ab00` uses the libc++ capacity-overflow
+   constant `0xccccccccccccccc` (= floor(2^64 / sizeof(Xorshift128))) and calls
+   `std::__1::__vector_base_common<true>::__throw_length_error` on overflow.
+2. New elements are default-constructed with `(0x075bcd15, 0x159a55e5, 0x1f123bb5,
+   0x05491333, 0)` — the canonical Marsaglia 2003 xorshift128 initial state
+   (123456789 / 362436069 / 521288629 / 88675123). These are overwritten the
+   moment the seed-init loop at `0x710134551c` runs, but they are what the
+   default constructor leaves behind before seeding.
+
+The `0x87654321` value written at construction is a placeholder, not a
+persistent sentinel — once the match-start seed-init code runs, the slot at
++0x18 holds the u32 seed that was used to derive all 9 channels. Capturing
+the 180-byte channel buffer under rollback does **not** need to include this
+slot; it is written once per match and stays constant for the entire match.
 
 ### Global accessor — three loads from `0x71052c25b0`
 
@@ -338,7 +351,7 @@ list. A pragmatic categorization of the ones we sampled:
 | `0x71022817a4` | `get_dead_up_camera_hit_first_rand_rot_z` | camera shake — gameplay-visible, **must** be sync |
 | `0x7102281190` | `get_dead_up_camera_hit_first_rand_offset_x` | camera shake — **must** be sync |
 | `0x7101008340..0x7101087df0` | several stage-hazard fns | stage event rolls |
-| `0x71002ec1a0`, `0x71002eed6c`, `0x71002ef000`, `0x71002f0[0-f]xx`, `0x71002f2a00`, `0x71002f[4-7]xxx` | big cluster in `71002e.–71002f.` — one function (`FUN_71002f2a00`) reads the singleton **20+ times** meaning it advances multiple channels per call | believed to be the main BGM / match flow module (next to `get_bgm_kind`), will need per-function triage to confirm |
+| `0x71002ec1a0` .. `0x71002f5900` | AI input generator cluster (~8 large functions) including `FUN_71002f2a00`, `FUN_71002ef000`, `FUN_71002f09b0`, `FUN_71002f04f0`, `FUN_71002f49e0`, `FUN_71002f5900`, `FUN_71002eeb20`, `FUN_71002ec1a0`. `FUN_71002f2a00` alone reads the singleton 20+ times per call through 40+ switch cases dispatching on a fighter-state-kind field. Every roll uses the `ai_random` channel (+0x50) and compares against `frames_remaining / 60.0` (DAT_7104471e0c == 60.0f). On success the function calls `FUN_71002f46a0(param_1, cmd)` with `cmd` in the `0x6030..0x6080` range — AI pad-command enum values. | **sync-critical**: this is the CPU opponent decision layer. Every AI button press must be deterministic for replay / rollback, so every one of these singleton reads belongs under the rollback snapshot. |
 
 (The list above is representative, not exhaustive. The full Ghidra xref dump lives in
 `data/ghidra_cache/pool-a.txt`; there are on the order of 200 distinct reader sites
@@ -400,9 +413,9 @@ affecting gameplay outcomes.
 - Name the remaining 7 channels by grepping Lua scripts for the literal hash constants.
 - Nail down the parent object at `x21 + 0xf8` that holds the sync seed; this is
   interesting for "force a known seed" dev modes.
-- Identify `FUN_710143ab00` — the helper that resizes the channel vec to 9 entries
-  and allocates the 180-byte buffer during construction. Likely a `phx::Vector::resize`
-  or similar template instantiation; worth a rename once confirmed.
+- ~~Identify `FUN_710143ab00`~~ — done. It is libc++
+  `std::vector<app::Xorshift128>::resize`, renamed to
+  `std_vector_Xorshift128_resize_710143ab00` in Ghidra.
 - Sweep the ~200 singleton-reader xrefs and build a full gameplay-vs-cosmetic
   classification table. Useful for desync auditing after rollback ships but not
   required for the capture/restore path.
