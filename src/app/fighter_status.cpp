@@ -1,6 +1,17 @@
 #include "types.h"
 #include "app/BossManager.h"
+#include "app/BattleObjectModuleAccessor.h"
 #include "app/modules/StatusModule.h"
+#include "app/modules/WorkModule.h"
+#include "app/modules/MotionModule.h"
+#include "app/modules/PostureModule.h"
+#include "app/modules/GroundModule.h"
+#include "app/modules/CameraModule.h"
+#include "app/modules/ColorBlendModule.h"
+#include "app/modules/SoundModule.h"
+#include "app/modules/HitModule.h"
+#include "app/modules/KineticModule.h"
+#include "app/modules/AttackModule.h"
 
 // Fighter status and scripting utility functions — pool-c
 // Range: 0x7102275xxx -- 0x7102284xxx
@@ -871,8 +882,8 @@ extern "C" void FUN_71006e27f0(void*, u64, s32, s32);
 // ldr x0,[x0,#0x88]; mov w3,#1; mov w2,wzr; b FUN_71006e27f0
 // [derived: accessor+0x88 = MotionModule, tail-calls change_motion variant with (mod, param, 0, 1)]
 void change_motion_impl_71020aa100(void* acc, u64 param) {
-    void* mod = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x88);
-    FUN_71006e27f0(mod, param, 0, 1);
+    auto* a = reinterpret_cast<app::BattleObjectModuleAccessor*>(acc);
+    FUN_71006e27f0(a->motion_module, param, 0, 1);
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -1263,10 +1274,9 @@ float4 get_right_pos_7102284a90(void* line) {
 
 static inline u32 get_entry_id_from_lua(void* L) {
     void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
-    void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0);
-    void* wm = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x50);
-    void** vt = *reinterpret_cast<void***>(wm);
-    return reinterpret_cast<u32(*)(void*, u32)>(vt[0x98 / 8])(wm, 0x10000000);
+    auto* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(
+        *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0));
+    return static_cast<u32>(acc->work_module->get_int(0x10000000));
 }
 
 // Helper: get FighterInformation sub-struct from entry_id
@@ -1393,10 +1403,9 @@ f32 get_default_fighter_param_air_brake_x_7102282370(void* L) {
 // [derived: PostureModule->vt[0x18](posture) — flips facing direction]
 void REVERSE_LR_71022a9a00(void* L) {
     void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
-    void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0);
-    void* posture = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x38);
-    void** vt = *reinterpret_cast<void***>(posture);
-    reinterpret_cast<void(*)(void*)>(vt[0xc0 / 8])(posture);
+    auto* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(
+        *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0));
+    acc->posture_module->reverse_lr();
     // pop lua stack
     u64 base = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20));
     u64 top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
@@ -1412,10 +1421,9 @@ void REVERSE_LR_71022a9a00(void* L) {
 // [derived: PostureModule->vt[0x20](posture) — updates rotation]
 void UPDATE_ROT_71022a9ae0(void* L) {
     void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
-    void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0);
-    void* posture = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x38);
-    void** vt = *reinterpret_cast<void***>(posture);
-    reinterpret_cast<void(*)(void*)>(vt[0x100 / 8])(posture);
+    auto* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(
+        *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0));
+    acc->posture_module->update_rot_y_lr();
     u64 base = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20));
     u64 top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
     while (top < base + 0x10) {
@@ -1430,8 +1438,9 @@ void UPDATE_ROT_71022a9ae0(void* L) {
 // [derived: PostureModule->vt[0x2f](posture, 0) — stick-based LR]
 void STICK_LR_71022a9a70(void* L) {
     void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
-    void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0);
-    void* posture = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x38);
+    auto* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(
+        *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0));
+    auto* posture = acc->posture_module;
     void** vt = *reinterpret_cast<void***>(posture);
     reinterpret_cast<void(*)(void*, s32)>(vt[0x178 / 8])(posture, 0);
     u64 base = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20));
@@ -1448,10 +1457,9 @@ void STICK_LR_71022a9a70(void* L) {
 // [derived: CollisionModule(+0xb0)->vt[0x11](collision, 0) — resets all hitboxes]
 void HIT_RESET_ALL_71022aa4e0(void* L) {
     void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
-    void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0);
-    void* collision = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0xb0);
-    void** vt = *reinterpret_cast<void***>(collision);
-    reinterpret_cast<void(*)(void*, s32)>(vt[0x88 / 8])(collision, 0);
+    auto* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(
+        *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0));
+    acc->hit_module->reset_status_all(0);
     u64 base = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20));
     u64 top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
     while (top < base + 0x10) {
@@ -1466,10 +1474,9 @@ void HIT_RESET_ALL_71022aa4e0(void* L) {
 // [derived: CameraModule(+0x60)->vt[0x1f](camera, 0) — zoom out camera]
 void CAM_ZOOM_OUT_71022ac050(void* L) {
     void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
-    void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0);
-    void* camera = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x60);
-    void** vt = *reinterpret_cast<void***>(camera);
-    reinterpret_cast<void(*)(void*, s32)>(vt[0xf8 / 8])(camera, 0);
+    auto* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(
+        *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0));
+    acc->camera_module->zoom_out(0);
     u64 base = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20));
     u64 top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
     while (top < base + 0x10) {
@@ -1484,8 +1491,9 @@ void CAM_ZOOM_OUT_71022ac050(void* L) {
 // [derived: ColorBlendModule(+0x70) → get flag via vt[0x2e], set via vt[0xc]]
 void COL_NORMAL_71022a2870(void* L) {
     void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
-    void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0);
-    void* cb = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x70);
+    auto* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(
+        *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0));
+    auto* cb = acc->color_blend_module;
     void** vt = *reinterpret_cast<void***>(cb);
     u32 flag = reinterpret_cast<u32(*)(void*)>(vt[0x170 / 8])(cb);
     reinterpret_cast<void(*)(void*, u32)>(vt[0x60 / 8])(cb, flag & 1);
@@ -1503,8 +1511,9 @@ void COL_NORMAL_71022a2870(void* L) {
 // [derived: ColorBlendModule(+0x70) → get flag via vt[0x2e], set burn via vt[0x14]]
 void BURN_COLOR_NORMAL_71022a28f0(void* L) {
     void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
-    void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0);
-    void* cb = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x70);
+    auto* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(
+        *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0));
+    auto* cb = acc->color_blend_module;
     void** vt = *reinterpret_cast<void***>(cb);
     u32 flag = reinterpret_cast<u32(*)(void*)>(vt[0x170 / 8])(cb);
     reinterpret_cast<void(*)(void*, u32)>(vt[0xa0 / 8])(cb, flag & 1);
@@ -1522,13 +1531,11 @@ void BURN_COLOR_NORMAL_71022a28f0(void* L) {
 // [derived: StatusModule(+0x40)->vt[0x2f](status,2,0); GroundModule(+0x58)->vt[0x2a](ground,5)]
 void SET_AIR_71022a9b50(void* L) {
     void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
-    void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0);
-    void* status = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x40);
-    void** svt = *reinterpret_cast<void***>(status);
-    reinterpret_cast<void(*)(void*, s32, s32)>(svt[0x178 / 8])(status, 2, 0);
-    void* ground = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x58);
-    void** gvt = *reinterpret_cast<void***>(ground);
-    reinterpret_cast<void(*)(void*, s32)>(gvt[0x150 / 8])(ground, 5);
+    auto* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(
+        *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0));
+    auto* sm = acc->status_module;
+    sm->vtbl->SetSituationKind(sm, 2, false);
+    acc->ground_module->set_correct(5);
     u64 base = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20));
     u64 top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
     while (top < base + 0x10) {
@@ -1559,7 +1566,8 @@ void START_INFO_FLASH_EYE_71022b0f80(void* L) {
 // [derived: pop lua stack, then SoundModule(+0x148)->vt[0x52](sound)]
 void GET_VOICE_REGION_71022b4e10(void* L) {
     void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
-    void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0);
+    auto* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(
+        *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0));
     u64 base = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20));
     u64 top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
     while (top < base + 0x10) {
@@ -1568,7 +1576,7 @@ void GET_VOICE_REGION_71022b4e10(void* L) {
         top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
     }
     *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = base + 0x10;
-    void* sound = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x148);
+    auto* sound = acc->sound_module;
     void** vt = *reinterpret_cast<void***>(sound);
     reinterpret_cast<void(*)(void*)>(vt[0x290 / 8])(sound);
 }
@@ -1577,7 +1585,8 @@ void GET_VOICE_REGION_71022b4e10(void* L) {
 // [derived: pop lua stack, then SoundModule(+0x148)->vt[0x53](sound)]
 void GET_VOICE_REGION_NEW_71022b4e70(void* L) {
     void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
-    void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0);
+    auto* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(
+        *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0));
     u64 base = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20));
     u64 top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
     while (top < base + 0x10) {
@@ -1586,7 +1595,7 @@ void GET_VOICE_REGION_NEW_71022b4e70(void* L) {
         top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
     }
     *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = base + 0x10;
-    void* sound = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x148);
+    auto* sound = acc->sound_module;
     void** vt = *reinterpret_cast<void***>(sound);
     reinterpret_cast<void(*)(void*)>(vt[0x298 / 8])(sound);
 }
@@ -1595,7 +1604,8 @@ void GET_VOICE_REGION_NEW_71022b4e70(void* L) {
 // [derived: pop lua stack, then SoundModule(+0x148)->vt[0x54](sound)]
 void GET_VOICE_VARIATION_71022b4ed0(void* L) {
     void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
-    void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0);
+    auto* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(
+        *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0));
     u64 base = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20));
     u64 top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
     while (top < base + 0x10) {
@@ -1604,7 +1614,7 @@ void GET_VOICE_VARIATION_71022b4ed0(void* L) {
         top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
     }
     *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = base + 0x10;
-    void* sound = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x148);
+    auto* sound = acc->sound_module;
     void** vt = *reinterpret_cast<void***>(sound);
     reinterpret_cast<void(*)(void*)>(vt[0x2a0 / 8])(sound);
 }
@@ -1613,8 +1623,9 @@ void GET_VOICE_VARIATION_71022b4ed0(void* L) {
 // [derived: sets StatusModule(+0x40)+0x11a = 1, calls helper, pop stack]
 void FT_DISABLE_CURRY_FACE_71022b3490(void* L) {
     void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
-    void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0);
-    void* status = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x40);
+    auto* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(
+        *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0));
+    auto* status = acc->status_module;
     *reinterpret_cast<u8*>(reinterpret_cast<u8*>(status) + 0x11a) = 1;
     FUN_7100695070();
     u64 base = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20));
@@ -1829,7 +1840,8 @@ extern "C" u64 FUN_71038f4000(void*, s32, s32);
 //  (get_status_kind), returns true if current status == arg]
 u32 IS_FIGHTER_STATUS_KIND_71022ad5a0(void* L) {
     void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
-    void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0);
+    auto* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(
+        *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0));
     u64 top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
     u64 base = *reinterpret_cast<u64*>(
         *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20)) + 0x10;
@@ -1851,8 +1863,7 @@ u32 IS_FIGHTER_STATUS_KIND_71022ad5a0(void* L) {
     }
     *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = base;
     // get current status kind via StatusModule vtable
-    auto* status_mod = reinterpret_cast<app::StatusModule*>(
-        *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x40));
+    auto* status_mod = acc->status_module;
     s32 current = status_mod->vtbl->StatusKind(status_mod);
     return current == kind;
 }
@@ -1862,7 +1873,8 @@ u32 IS_FIGHTER_STATUS_KIND_71022ad5a0(void* L) {
 //  same stack cleanup pattern; exported under different symbol]
 u32 IS_STATUS_KIND_71022ad670(void* L) {
     void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
-    void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0);
+    auto* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(
+        *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x1a0));
     u64 top = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10);
     u64 base = *reinterpret_cast<u64*>(
         *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x20)) + 0x10;
@@ -1884,8 +1896,7 @@ u32 IS_STATUS_KIND_71022ad670(void* L) {
     }
     *reinterpret_cast<u64*>(reinterpret_cast<u8*>(L) + 0x10) = base;
     // get current status kind via StatusModule vtable
-    auto* status_mod = reinterpret_cast<app::StatusModule*>(
-        *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x40));
+    auto* status_mod = acc->status_module;
     s32 current = status_mod->vtbl->StatusKind(status_mod);
     return current == kind;
 }
@@ -2768,10 +2779,9 @@ void air_lasso_count_7100361aa0(void* L) {
     void* ctx = *reinterpret_cast<void**>(reinterpret_cast<u8*>(L) - 8);
     void* ai = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ctx) + 0x168);
     void* fighter = *reinterpret_cast<void**>(reinterpret_cast<u8*>(ai) + 0x10);
-    void* acc = *reinterpret_cast<void**>(reinterpret_cast<u8*>(fighter) + 0x20);
-    void* work = *reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x50);
-    void** vt = *reinterpret_cast<void***>(work);
-    reinterpret_cast<void(*)(void*, u64)>(vt[0x13])(work, 0x10000049ULL);
+    auto* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(
+        *reinterpret_cast<void**>(reinterpret_cast<u8*>(fighter) + 0x20));
+    acc->work_module->get_int(0x10000049);
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -2808,8 +2818,9 @@ float4 get_hash_71003a4820() {
 // via WorkModule vtable[0x14] (offset 0xa0 = set_int).
 void set_bomb_countdown_71015c12a0(void* L, s32 param_2) {
     u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
-    u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
-    void* work = *reinterpret_cast<void**>(acc + 0x50);
+    auto* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(
+        *reinterpret_cast<void**>(ctx + 0x1a0));
+    void* work = acc->work_module;
     void** vt = *reinterpret_cast<void***>(work);
     // WorkModule::set_int — vtable[0x14] at +0xa0
     // [derived: vtable slot confirmed by cross-ref with WorkModule__set_int_impl (.dynsym)]
@@ -2830,8 +2841,9 @@ void set_bomb_countdown_71015c12a0(void* L, s32 param_2) {
 // WorkModule vtable[0x0B] (offset 0x58 = get_float).
 float4 pos_2d_71015c6c10(void* L) {
     u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
-    u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
-    void* work = *reinterpret_cast<void**>(acc + 0x50);
+    auto* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(
+        *reinterpret_cast<void**>(ctx + 0x1a0));
+    void* work = acc->work_module;
     void** vt = *reinterpret_cast<void***>(work);
     // WorkModule::get_float — vtable[0x0B] at +0x58
     f32 x = reinterpret_cast<f32(*)(void*, s32)>(vt[0x0B])(work, 0xb);
@@ -2957,13 +2969,12 @@ void set_force_flashing_71015c29f0(void* L, bool enable) {
 // Note: param reordering — situation_kind and kinetic_type are swapped in the call.
 void init_status_data_71015c4ad0(void* L, s32 kinetic_type, s32 situation, s32 ground_correct, bool enable) {
     u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
-    u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
-    void* status_mod = *reinterpret_cast<void**>(acc + 0x40);
-    void** vt = *reinterpret_cast<void***>(status_mod);
-    // StatusModule::init_status_data — vtable[0x39] at +0x1c8
+    auto* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(
+        *reinterpret_cast<void**>(ctx + 0x1a0));
+    auto* sm = acc->status_module;
+    // StatusModule::InitSettings — vtable[0x39] at +0x1c8
     // [derived: confirmed by parameter count (10) and StatusModule offset (+0x40)]
-    reinterpret_cast<void(*)(void*, s32, s32, s32, s32, bool, s32, s32, s32, s32)>(vt[0x39])(
-        status_mod, situation, kinetic_type, ground_correct, 0, enable, 0, 0, 0, 0);
+    sm->vtbl->InitSettings(sm, situation, kinetic_type, ground_correct, 0, enable, 0, 0, 0, 0);
 }
 
 // ── 0x71015c1d80 -- app::item::set_scale_speed_mul (80B) ────────
@@ -3049,19 +3060,21 @@ extern "C" void set_effect_sync_visibility_default_71015c1fc0(void* L, bool val)
 //  work_module->on_flag(0x20000017)]
 void init_explosion_no_damage_71015c55c0(void* L) {
     u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
-    u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
+    auto* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(
+        *reinterpret_cast<void**>(ctx + 0x1a0));
 
-    void* work_mod = *reinterpret_cast<void**>(acc + 0x50);
+    void* work_mod = acc->work_module;
     void** wvt = *reinterpret_cast<void***>(work_mod);
     u8* ipa = *reinterpret_cast<u8**>(DAT_71052c31e0);
     u32 param_val = *reinterpret_cast<u32*>(ipa + 0x72ffc);
     reinterpret_cast<void(*)(void*, u32, u32)>(wvt[0xa0/8])(work_mod, param_val, 0x10000010u);
 
     ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
-    acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
-    void* attack_mod = *reinterpret_cast<void**>(acc + 0xb0);
-    void** avt = *reinterpret_cast<void***>(attack_mod);
-    reinterpret_cast<void(*)(void*, s32, s32)>(avt[0xd0/8])(attack_mod, 2, 0);
+    acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(
+        *reinterpret_cast<void**>(ctx + 0x1a0));
+    auto* hit_mod = acc->hit_module;
+    void** avt = *reinterpret_cast<void***>(hit_mod);
+    reinterpret_cast<void(*)(void*, s32, s32)>(avt[0xd0/8])(hit_mod, 2, 0);
 
     wvt = *reinterpret_cast<void***>(work_mod);
     reinterpret_cast<void(*)(void*, u32)>(wvt[0x110/8])(work_mod, 0x20000017u);
@@ -3099,15 +3112,11 @@ void disable_area_71015c1570(void* L, s32 param_2) {
 //  self x from posture_module->get_pos(), returns absolute difference]
 f32 distance_x_71015c6ea0(void* L) {
     u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
-    u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
-    void* work_mod = *reinterpret_cast<void**>(acc + 0x50);
-    void* posture_mod = *reinterpret_cast<void**>(acc + 0x38);
+    auto* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(
+        *reinterpret_cast<void**>(ctx + 0x1a0));
 
-    void** wvt = *reinterpret_cast<void***>(work_mod);
-    f32 target_x = reinterpret_cast<f32(*)(void*, s32)>(wvt[0x58/8])(work_mod, 0xb);
-
-    void** pvt = *reinterpret_cast<void***>(posture_mod);
-    f32* pos = reinterpret_cast<f32*>(reinterpret_cast<u64(*)(void*)>(pvt[0x60/8])(posture_mod));
+    f32 target_x = acc->work_module->get_float(0xb);
+    f32* pos = acc->posture_module->pos();
 
     return __builtin_fabsf(target_x - pos[0]);
 }
@@ -3117,15 +3126,11 @@ f32 distance_x_71015c6ea0(void* L) {
 //  work_module(0xc) for target y and pos[1] for self y]
 f32 distance_y_71015c6f00(void* L) {
     u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
-    u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
-    void* work_mod = *reinterpret_cast<void**>(acc + 0x50);
-    void* posture_mod = *reinterpret_cast<void**>(acc + 0x38);
+    auto* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(
+        *reinterpret_cast<void**>(ctx + 0x1a0));
 
-    void** wvt = *reinterpret_cast<void***>(work_mod);
-    f32 target_y = reinterpret_cast<f32(*)(void*, s32)>(wvt[0x58/8])(work_mod, 0xc);
-
-    void** pvt = *reinterpret_cast<void***>(posture_mod);
-    f32* pos = reinterpret_cast<f32*>(reinterpret_cast<u64(*)(void*)>(pvt[0x60/8])(posture_mod));
+    f32 target_y = acc->work_module->get_float(0xc);
+    f32* pos = acc->posture_module->pos();
 
     return __builtin_fabsf(target_y - pos[1]);
 }
@@ -3179,16 +3184,15 @@ f32 get_item_swing_motion_rate_7102282110(void* L, s32 fighter_param_idx, s32 sw
 //  with params 0xc, 0xd → strb wzr at result+0x30. Returns 0]
 u64 FUN_71022087b0(void* L) {
     u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
-    u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
-    u8* kinetic = *reinterpret_cast<u8**>(acc + 0x68);
-    void** kvt = *reinterpret_cast<void***>(kinetic);
+    auto* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(
+        *reinterpret_cast<void**>(ctx + 0x1a0));
+    auto* kinetic = acc->item_kinetic_module;
 
-    // vtable[12] = get_energy_controller(index)
-    u8* e1 = reinterpret_cast<u8*>(reinterpret_cast<u64(*)(u8*, s32)>(kvt[0x60/8])(kinetic, 0xc));
-    u8* e2 = reinterpret_cast<u8*>(reinterpret_cast<u64(*)(u8*, s32)>(kvt[0x60/8])(kinetic, 0xd));
+    auto* e1 = kinetic->get_energy(0xc);
+    auto* e2 = kinetic->get_energy(0xd);
 
-    *(e1 + 0x30) = 0;  // disable flag
-    *(e2 + 0x30) = 0;
+    e1->enabled = 0;  // disable flag
+    e2->enabled = 0;
     return 0;
 }
 
@@ -3197,15 +3201,15 @@ u64 FUN_71022087b0(void* L) {
 // [derived: Ghidra FUN_7102208890 — identical to 71022087b0 but stores 1]
 u64 FUN_7102208890(void* L) {
     u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
-    u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
-    u8* kinetic = *reinterpret_cast<u8**>(acc + 0x68);
-    void** kvt = *reinterpret_cast<void***>(kinetic);
+    auto* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(
+        *reinterpret_cast<void**>(ctx + 0x1a0));
+    auto* kinetic = acc->item_kinetic_module;
 
-    u8* e1 = reinterpret_cast<u8*>(reinterpret_cast<u64(*)(u8*, s32)>(kvt[0x60/8])(kinetic, 0xc));
-    u8* e2 = reinterpret_cast<u8*>(reinterpret_cast<u64(*)(u8*, s32)>(kvt[0x60/8])(kinetic, 0xd));
+    auto* e1 = kinetic->get_energy(0xc);
+    auto* e2 = kinetic->get_energy(0xd);
 
-    *(e1 + 0x30) = 1;  // enable flag
-    *(e2 + 0x30) = 1;
+    e1->enabled = 1;  // enable flag
+    e2->enabled = 1;
     return 0;
 }
 
@@ -3215,18 +3219,15 @@ u64 FUN_7102208890(void* L) {
 //  → then result→vtable[0x48/8=9]() clear call on each. Returns 0]
 u64 FUN_71022086b0(void* L) {
     u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
-    u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
-    u8* kinetic = *reinterpret_cast<u8**>(acc + 0x68);
-    void** kvt = *reinterpret_cast<void***>(kinetic);
+    auto* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(
+        *reinterpret_cast<void**>(ctx + 0x1a0));
+    auto* kinetic = acc->item_kinetic_module;
 
-    u8* e1 = reinterpret_cast<u8*>(reinterpret_cast<u64(*)(u8*, s32)>(kvt[0x60/8])(kinetic, 0xc));
-    u8* e2 = reinterpret_cast<u8*>(reinterpret_cast<u64(*)(u8*, s32)>(kvt[0x60/8])(kinetic, 0xd));
+    auto* e1 = kinetic->get_energy(0xc);
+    auto* e2 = kinetic->get_energy(0xd);
 
-    // vtable[9] = clear() on energy controller
-    void** vt1 = *reinterpret_cast<void***>(e1);
-    reinterpret_cast<void(*)(u8*)>(vt1[0x48/8])(e1);
-    void** vt2 = *reinterpret_cast<void***>(e2);
-    reinterpret_cast<void(*)(u8*)>(vt2[0x48/8])(e2);
+    e1->clear_speed();
+    e2->clear_speed();
     return 0;
 }
 
@@ -3236,14 +3237,14 @@ u64 FUN_71022086b0(void* L) {
 //  → ldrb result+0x30 → store (uint)byte to lua stack, advance stack ptr. Returns 1]
 u64 FUN_710221e7c0(void* L) {
     u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
-    u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
-    u8* kinetic = *reinterpret_cast<u8**>(acc + 0x68);
-    void** kvt = *reinterpret_cast<void***>(kinetic);
+    auto* acc = reinterpret_cast<app::BattleObjectModuleAccessor*>(
+        *reinterpret_cast<void**>(ctx + 0x1a0));
+    auto* kinetic = acc->item_kinetic_module;
 
-    u8* energy = reinterpret_cast<u8*>(reinterpret_cast<u64(*)(u8*, s32)>(kvt[0x60/8])(kinetic, 1));
+    auto* energy = kinetic->get_energy(1);
 
     // Read enable flag at +0x30
-    u32 flag = *(u8*)(energy + 0x30);
+    u32 flag = energy->enabled;
 
     // Push to lua stack: [param+0x10] points to stack slot
     u32* stack = *reinterpret_cast<u32**>(reinterpret_cast<u8*>(L) + 0x10);
