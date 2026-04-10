@@ -953,6 +953,41 @@ SESSION SUMMARY:
     the 12 TrackDesc* args to FUN_71035763c0, and FighterManager vtable
     xrefs bottom-up.
 
+== FighterManager singleton bottom-up xref sweep ==
+
+Singleton instance pointer: DAT_71052b84f8
+  Reached via adrp 0x71052b8000 + ldr [+0x4f8] in
+  is_loaded_metamon_fighter at 0x710167acf0 (confirmed by disasm).
+
+Accessor template: lib::Singleton<app::FighterManager>::instance_
+  (demangled from symbol at 0x71041c429d).
+
+First 60 READ xrefs sampled. Every single reader is a fighter-state
+query or game-logic helper — NONE is a per-frame dispatcher that would
+iterate FighterManager and call per-fighter update methods:
+  - Lua-bound impls: is_loaded_metamon_fighter, is_hp, is_one_on_one,
+    healdamo, set_clatter, ensure_entry_exists, css_confirm_dispatch
+  - Special-move handlers: special_lw_active_command, final_scene01_exit
+  - Unnamed consumer helpers in 0x710062xxxx, 0x71006exxxx, 0x71027cxxxx,
+    0x7102bcxxxx, 0x7102cbxxxx, 0x7102d0xxxx, 0x7102d9xxxx, 0x71034cxxxx,
+    0x710336xxxx, 0x71015bxxxx, 0x710298xxxx, 0x71004exxxx, 0x71034axxxx,
+    0x710085xxxx, 0x7100cexxxx, 0x7100a4xxxx, 0x7100a6xxxx, 0x710178xxxx
+These readers look up the singleton to QUERY a specific fighter field
+(hp, entry_id, pos, mode flags) — not to iterate all fighters for
+per-frame update. The per-frame dispatcher, if it exists, is likely:
+  a) Driven by pead::DelegateThread's delegate queue (invisible to static
+     xref analysis — delegates are installed via function-pointer fields)
+  b) Accessing the fighter array via a direct pointer cached in another
+     singleton rather than re-reading the Singleton<FighterManager>
+     instance pointer each frame.
+
+This strongly implies rollback resimulation will need to plug into
+the pead::Delegate mechanism rather than a direct function call: the
+actual sim step is likely a delegate invoked from pead::Thread::update()
+inside main_loop's call chain at a point not yet identified.
+
+
+
   b) FUN_71035c13d0   (1048B, phase 6)  ← unknown
   c) FUN_71036186d0   (1188B, phase 7)  ← unknown
   d) FUN_7103619080   (432B,  phase 7)  ← unknown (Event A neighborhood)

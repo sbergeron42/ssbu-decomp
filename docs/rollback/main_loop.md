@@ -435,6 +435,21 @@ Before closing this pass, the remaining `WaitEvent(0x71039c06c0)` callers outsid
 3. Decompile `FUN_710386fc30` (the `dt` producer called just before Event A) to falsify whether it touches sim.
 4. Trace call chains from `game_main_entry` / `NintendoMain` (the process entry point) — they fork threads early, and one of them is the sim thread.
 
+### `FighterManager` singleton xref sweep — no direct sim dispatcher
+
+The singleton instance pointer is at `DAT_71052b84f8` (reached via `adrp 0x71052b8000 ; ldr [+0x4f8]` — confirmed by disassembling `is_loaded_metamon_fighter` at `0x710167acf0`). The symbol `lib::Singleton<app::FighterManager>::instance_` demangles from the string at `0x71041c429d`.
+
+A first-60-xref sweep of READs on the singleton instance pointer finds **only Lua-bound query impls and game-logic helpers** — `is_hp`, `is_one_on_one`, `healdamo`, `set_clatter`, `ensure_entry_exists`, `css_confirm_dispatch`, `special_lw_active_command`, `final_scene01_exit`, `is_loaded_metamon_fighter`, plus ~50 unnamed helpers spread across the `71006xxxx` / `7100exxxx` / `71027xxxx` / `7102bxxxx..dxxxx` / `71034xxxx` / `71015xxxx` / `71029xxxx` / `71004xxxx` / `71008xxxx` / `71017xxxx` / `7100axxxx` / `7100cxxxx` ranges. **Not a single one of them is a per-frame entity-iteration dispatcher.**
+
+Every reader uses the singleton to **look up a single fighter field** (hp, entry_id, pos, mode flags) on demand, not to walk the fighter array. Which means the per-frame sim dispatcher — if it exists as compiled code — is either:
+
+1. Driven by **`pead::DelegateThread`**'s delegate queue. Delegates are installed via function-pointer fields in objects, so static xref analysis to the function body doesn't find them; only xrefs to the install-site (a `pead::Delegate` constructor call) reveal the binding. This is the most likely explanation given that `pead::MainThread` runs `main_loop`, `pead::DelegateThread` is in the string table, and the `nn::pia::common::BackgroundScheduler` specifically delegates work to `pead::Thread` via `pead::Delegate2<BackgroundScheduler, void(pead::Thread*, long)>`.
+2. Accessing the fighter array via a **direct pointer cached in another singleton** (e.g. `app::Scene::getFighterArray()` stored in a scene object) rather than re-reading `Singleton<FighterManager>::instance_` each frame.
+
+### Implication for rollback resim
+
+Rollback resimulation almost certainly needs to **plug into the `pead::Delegate` mechanism** rather than call a sim advance function directly: install a delegate on `pead::MainThread` (or an adjacent `pead::DelegateThread`) that re-runs the sim step N times before the normal presentation frame resumes. The practical next step is to find `pead::Delegate::operator()` or `pead::Thread::runDelegates()` in the binary and trace what delegates are posted to it from inside `main_loop`'s call chain.
+
 ---
 
 ## 6e. Thread framework: `pead::` + `nn::pia` confirmed; `main_loop` = `pead::MainThread`
