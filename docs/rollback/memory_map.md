@@ -230,6 +230,20 @@ Total new per-match allocation from this wrapper: ~**1,520 bytes** on top of wha
 Rollback verdict: **YES to snapshot**, cost ~1.5 KB. Shallow structure — entries
 are task/callback registration slots, not bulk gameplay state.
 
+### 8a.2. Extra match-state singletons (`DAT_71052c2800`, `DAT_71052c2860`, `DAT_71052c2858`)
+
+**NEW (2026-04-10).** Found in `FUN_7101523b60`, a second match-setup wrapper that also calls `FUN_7101344cf0()` first. Three more lazy-allocated singletons:
+
+| Address | Size chain | Purpose (inferred from defaults) | Rollback |
+|---|---|---|---|
+| `*DAT_71052c2800` | 0x10 wrapper → 0x270 root + sub-allocs (0x40, 0x2e0, 0x80, 0xc8). Total **~1,752 B** | Main match-state root. `+0x100` chains to a 0x2e0-byte sub (Hash40 `0x26e5f4cf48`, many `1.0f` defaults — scoring / timer?). `+0x118` chains to a 0x80 B object with 4 empty linked-list heads (task queues). `+0x258` chains to a 0xc8 B task table with `&PTR_LAB_710506cd48`. | YES, per-match |
+| `*DAT_71052c2860` | 0x10 wrapper → 0x48 payload. **~88 B** | Small score/stats struct (`+0x20` = `1.0f` default, rest zero-init) | YES, per-match |
+| `*DAT_71052c2858` | 0x08 wrapper → 0x10 payload. **~24 B** | Minimal state slot (u64 ptr + u32 = 0xFFFFFFFF sentinel) | YES, per-match |
+
+Combined cost for this wrapper: **~1,880 B** on top of `FUN_71014b2a40`'s 1,520 B. Together, ~**3.4 KB of shallow "match runtime" state** that a rollback walker must traverse and snapshot before it gets to the 2 MB BattleObject-pool bulk. Trivial cost; mostly useful as a list of root addresses the walker needs.
+
+
+
 ### 8b. BattleObjectWorld (`*DAT_71052b7558`) — physics-world overrides
 **NEW (2026-04-10, Q6 resolved.)** Despite the name suggesting "per-BattleObject" state, this is a singleton holding **per-match global physics overrides** that stage scripts can mutate. Recovered from `app::stage::get_gravity_position @ 0x71015ce700` disassembly and the `BattleObjectWorld__*_impl` .dynsym family.
 
