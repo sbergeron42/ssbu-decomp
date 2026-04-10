@@ -2543,6 +2543,27 @@ f32 distance_y_to_target_7100367270(void* L) {
     return __builtin_fabsf(self_y - target_y);
 }
 
+// [derived: stat_module+0x54 bit0 = air flag, floor+0x5e bit1 = over-ground
+//  flag, stat_module+0x74 & ~1 == 6 is another pass condition.
+//  First 11/16 insns match — Clang merges the last two return paths into
+//  a branchless BIC where the original has two branches. Semantically
+//  equivalent; tail scheduling differs.]
+// 0x7100367a90 -- app::ai::check_over_ground (72B)
+bool check_over_ground_7100367a90(void* L) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u8* mod = *reinterpret_cast<u8**>(ctx + 0x168);
+    u32 flags = *reinterpret_cast<u32*>(mod + 0x54);
+    if ((flags & 1) == 0) {
+        u8* floor = *reinterpret_cast<u8**>(mod + 0xd0);
+        if ((floor[0x5e] & 2) == 0) {
+            return true;
+        }
+    }
+    s32 kind = *reinterpret_cast<s32*>(mod + 0x74);
+    if ((kind & ~1) == 6) return true;
+    return (flags & 2) == 0;
+}
+
 // [derived: compares floor_data pointer (at stat_module+0xd0) between self
 //  and target — both must reference the same ground collision line]
 // 0x71003672b0 -- app::ai::is_target_on_same_floor (64B)
