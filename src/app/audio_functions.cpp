@@ -1,7 +1,8 @@
 #include "types.h"
 #include "app/BossManager.h"
+#include "app/BattleObjectModuleAccessor.h"
 
-// Audio/BGM/SE functions -- pool-c assignment
+// Audio/BGM/SE functions -- pool-c and pool-j assignments
 
 extern "C" __attribute__((visibility("hidden"))) void* DAT_7105328f38;  // bgm system ptr
 extern "C" __attribute__((visibility("hidden"))) float DAT_7104471e0c;  // volume divisor
@@ -14,6 +15,12 @@ extern "C" void FUN_71023ee610(void*, u32, u32);
 extern "C" void FUN_7102608770(void*);
 extern "C" void FUN_71004e9e30(void*, u32);
 extern "C" void FUN_71015c1770(void*, u32, u64, u32, void*, u64, u32);
+
+// FighterUtil voice helpers. Pass the SoundModule* to the heavy voice-hash
+// builder / dispatch at 71006eadc0 / 71006eafb0 (both 480+ bytes; U-quality).
+// [derived: 2-instruction tail call with ldr x0, [x0, #0x148]; b target]
+extern "C" void FUN_71006eadc0(void* sound_module);
+extern "C" void FUN_71006eafb0(void* sound_module);
 
 namespace app::kozukatasight {
 
@@ -106,3 +113,25 @@ void request_cut_in_from_param_with_target_no_bgm_volume_change(
 // NOTE: send_event_on_boss_keyoff_bgm (71015c85e0, 64B) was previously naked asm (BANNED).
 // The function has conditional frame setup (cbz before stp) that doesn't match in C++.
 // Decomped in fun_batch_d5_047.cpp as FUN_71015c85e0 instead.
+
+namespace app::FighterUtil {
+
+// 710069a630 (8B) -- play_sleep_voice
+// Tail-calls the voice-hash dispatcher with the accessor's SoundModule pointer.
+// The heavy dispatcher (71006eadc0) loads the fighter kind, formats a
+// "VC_<KIND>_FURASLEEP" crc32 hash, and dispatches it via SoundModule::play_status_se.
+// [derived: 2-instruction body ldr x0, [x0, #0x148]; b 71006eadc0 --
+//           accessor->sound_module is the sole argument, tail-called]
+void play_sleep_voice(BattleObjectModuleAccessor* acc) {
+    FUN_71006eadc0(acc->sound_module);
+}
+
+// 710069a640 (8B) -- play_wake_up_voice
+// Mirror of play_sleep_voice but dispatches to the wake-up voice builder at 71006eafb0
+// (crc32 of "VC_<KIND>_FURA_WAKEUP" per Ghidra format-string evidence in that helper).
+// [derived: 2-instruction body ldr x0, [x0, #0x148]; b 71006eafb0]
+void play_wake_up_voice(BattleObjectModuleAccessor* acc) {
+    FUN_71006eafb0(acc->sound_module);
+}
+
+} // namespace app::FighterUtil
