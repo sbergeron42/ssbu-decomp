@@ -2868,18 +2868,16 @@ void change_status_lost_71015cb330(void* param_1) {
 
     // StatusModule at item_data + 0xD8
     // [derived: confirmed by StatusModule dispatch in change_status_lost, Ghidra lVar3+0xd8]
-    void* status_mod = *reinterpret_cast<void**>(item_data + 0xd8);
-    void** vt = *reinterpret_cast<void***>(status_mod);
+    auto* status_mod = reinterpret_cast<app::StatusModule*>(
+        *reinterpret_cast<void**>(item_data + 0xd8));
 
-    // get_status_kind — vtable[0x22] at +0x110
-    s32 status = reinterpret_cast<s32(*)(void*)>(vt[0x22])(status_mod);
+    s32 status = status_mod->vtbl->StatusKind(status_mod);
     if (status == 6) return;
 
-    // change_status — vtable[0x09] at +0x48
-    // [derived: binary uses tail call (br x3) here]
-    status_mod = *reinterpret_cast<void**>(item_data + 0xd8);
-    vt = *reinterpret_cast<void***>(status_mod);
-    reinterpret_cast<void(*)(void*, u32, s32)>(vt[0x09])(status_mod, 6, 0);
+    // reload for matching (binary reloads pointer before tail call)
+    status_mod = reinterpret_cast<app::StatusModule*>(
+        *reinterpret_cast<void**>(item_data + 0xd8));
+    status_mod->vtbl->ChangeStatusRequest(status_mod, 6, false);
 }
 
 // ── 0x71015c1600 -- app::item::add_damage (132B) ────────────────
