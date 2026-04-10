@@ -5,8 +5,13 @@ namespace app {
 
 // PhysicsModule — accessed at BattleObjectModuleAccessor+0x80
 // Handles rope/swing physics, 2nd-order simulation (chain/hair), IK, and collision.
-// Vtable layout recovered from lua_bind dispatcher analysis (offsets 0x60–0x3d8).
-// All method names derived from .dynsym lua_bind::PhysicsModule__*_impl dispatcher analysis.
+//
+// All 60+ method names below are [derived: app::lua_bind::PhysicsModule__<name>_impl
+// dispatchers at 0x71020cd5e0..0x71020cfca0 range]. Each dispatcher loads
+// physics_module from accessor+0x80 and tail-calls the vtable slot shown in the
+// right-column comment. Slot offsets confirmed by disassembling the matching
+// `ldr x8,[x8, #<offset>]; br x8` sequences in each `__impl` symbol.
+// Argument types are inferred from lua_bind parameter lists in the dispatchers.
 struct PhysicsModule {
     void** _vt;
 
