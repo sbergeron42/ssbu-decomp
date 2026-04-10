@@ -1,8 +1,9 @@
 #include "types.h"
+#include "app/placeholders/FighterAI.h"
 
-// pool-a round 6: AI module helper functions
+// pool-c Phase 3: AI helper functions rewritten with typed struct access
 // Domains: app::ai, app::ai_camera, app::ai_param, app::ai_stage, app::analyst, app::ai_system
-// All functions operate on the FighterAI context structure accessed via lua_State.
+// All functions operate on FighterAI context accessed via lua_State.
 
 #define HIDDEN __attribute__((visibility("hidden")))
 
@@ -10,6 +11,7 @@
 
 // lib::Singleton<app::FighterAIManager>::instance_ (AI manager root)
 // [derived: DAT_71052b5fd8 in Ghidra, adrp 0x71052b5000 + 0xfd8]
+// Singleton pattern: global stores ptr → deref once to get FighterAIManager*
 extern "C" void* DAT_71052b5fd8 HIDDEN;
 
 // AI param accessor singleton
@@ -24,15 +26,6 @@ extern "C" u64 DAT_71053299d8 HIDDEN;
 // [derived: used by reset_stick, adrp+ldr loads pointer, then ldr q0 through it]
 extern "C" void* PTR_ConstantZero_71052a7a80 HIDDEN;
 
-// ---- Helper macros ----
-
-// Common pointer chains for AI context access:
-//   L → *(L - 8) = FighterAI context base
-//   ctx + 0x168 = AI state object (target tracking, floor data, etc.)
-//   ctx + 0x170 = analyst object pointer (status history)
-#define AI_CTX(L)   (*(u64*)(L - 8))
-#define AI_STATE(L)  (*(u64*)(*(u64*)(L - 8) + 0x168))
-
 // ---- app::ai — fighter AI queries ----
 
 // ---------------------------------------------------------------------------
@@ -41,7 +34,8 @@ extern "C" void* PTR_ConstantZero_71052a7a80 HIDDEN;
 // Reads s32 at AI_STATE + 0x274, converts to float (scvtf)
 // ---------------------------------------------------------------------------
 float predict_landing_frame_3694f0(u64 L) {
-    return (float)*(s32*)(AI_STATE(L) + 0x274);
+    FighterAI* ctx = get_ai_context(L);
+    return (float)ctx->state->predict_landing_frame;
 }
 
 // ---------------------------------------------------------------------------
@@ -50,10 +44,9 @@ float predict_landing_frame_3694f0(u64 L) {
 // Reads floor collision rect: fabsf(right - left) from ground data +0xd0
 // ---------------------------------------------------------------------------
 float floor_width_367910(u64 L) {
-    u64 floor = *(u64*)(AI_STATE(L) + 0xd0);
-    float right = *(float*)(floor + 0x30);
-    float left = *(float*)(floor + 0x20);
-    return __builtin_fabsf(right - left);
+    FighterAI* ctx = get_ai_context(L);
+    AIFloorCollisionData* floor = ctx->state->floor_data;
+    return __builtin_fabsf(floor->right_edge - floor->left_edge);
 }
 
 // ---------------------------------------------------------------------------
@@ -62,48 +55,45 @@ float floor_width_367910(u64 L) {
 // Average of floor left and right edges
 // ---------------------------------------------------------------------------
 float floor_center_367930(u64 L) {
-    u64 floor = *(u64*)(AI_STATE(L) + 0xd0);
-    return (*(float*)(floor + 0x30) + *(float*)(floor + 0x20)) * 0.5f;
+    FighterAI* ctx = get_ai_context(L);
+    AIFloorCollisionData* floor = ctx->state->floor_data;
+    return (floor->right_edge + floor->left_edge) * 0.5f;
 }
 
 // ---- app::ai_camera — blast zone boundaries ----
-// All read from the camera boundary struct at *DAT_71052b5fd8 + 0xc8
+// All read from the camera boundary struct at FighterAIManager + 0xc8
 // [derived: app::ai_camera::dead_* in Ghidra, float return via ldr s0]
 
 // ---------------------------------------------------------------------------
 // 0x710036b180 — dead_top (24B)
 // ---------------------------------------------------------------------------
 float dead_top_36b180() {
-    u64 mgr = *(u64*)DAT_71052b5fd8;
-    u64 cam = *(u64*)(mgr + 0xc8);
-    return *(float*)(cam + 0x10);
+    FighterAIManager* mgr = reinterpret_cast<FighterAIManager*>(*(u64*)DAT_71052b5fd8);
+    return mgr->cam_bounds->dead_top;
 }
 
 // ---------------------------------------------------------------------------
 // 0x710036b1a0 — dead_bottom (24B)
 // ---------------------------------------------------------------------------
 float dead_bottom_36b1a0() {
-    u64 mgr = *(u64*)DAT_71052b5fd8;
-    u64 cam = *(u64*)(mgr + 0xc8);
-    return *(float*)(cam + 0x14);
+    FighterAIManager* mgr = reinterpret_cast<FighterAIManager*>(*(u64*)DAT_71052b5fd8);
+    return mgr->cam_bounds->dead_bottom;
 }
 
 // ---------------------------------------------------------------------------
 // 0x710036b1c0 — dead_left (24B)
 // ---------------------------------------------------------------------------
 float dead_left_36b1c0() {
-    u64 mgr = *(u64*)DAT_71052b5fd8;
-    u64 cam = *(u64*)(mgr + 0xc8);
-    return *(float*)(cam + 0x8);
+    FighterAIManager* mgr = reinterpret_cast<FighterAIManager*>(*(u64*)DAT_71052b5fd8);
+    return mgr->cam_bounds->dead_left;
 }
 
 // ---------------------------------------------------------------------------
 // 0x710036b1e0 — dead_right (24B)
 // ---------------------------------------------------------------------------
 float dead_right_36b1e0() {
-    u64 mgr = *(u64*)DAT_71052b5fd8;
-    u64 cam = *(u64*)(mgr + 0xc8);
-    return *(float*)(cam + 0xc);
+    FighterAIManager* mgr = reinterpret_cast<FighterAIManager*>(*(u64*)DAT_71052b5fd8);
+    return mgr->cam_bounds->dead_right;
 }
 
 // ---- app::ai_stage — stage state queries ----
@@ -114,8 +104,8 @@ float dead_right_36b1e0() {
 // Returns current stage ID from AI manager
 // ---------------------------------------------------------------------------
 u32 current_id_36b200() {
-    u64 mgr = *(u64*)DAT_71052b5fd8;
-    return *(u32*)(mgr + 0x150);
+    FighterAIManager* mgr = reinterpret_cast<FighterAIManager*>(*(u64*)DAT_71052b5fd8);
+    return mgr->current_stage_id;
 }
 
 // ---------------------------------------------------------------------------
@@ -129,8 +119,8 @@ bool is_in_transition_36b470(u64 L) {
 }
 
 // ---- app::ai_param — indexed param table reads ----
-// All follow the pattern: read fighter_kind index from AI_STATE + 0x240,
-// then index into a per-fighter param array at ctx + base_offset.
+// All follow the pattern: read fighter_kind index from state + 0x240,
+// then index into a per-fighter param array on the FighterAI context.
 // [derived: app::ai_param::* in Ghidra, float return via ldr s0]
 
 // ---------------------------------------------------------------------------
@@ -139,10 +129,8 @@ bool is_in_transition_36b470(u64 L) {
 // (ctx_param - 3.0) * ai_state_scale
 // ---------------------------------------------------------------------------
 float air_high_36b8b0(u64 L) {
-    u64 ctx = AI_CTX(L);
-    float base = *(float*)(ctx + 0xb04);
-    float scale = *(float*)(AI_STATE(L) + 0x200);
-    return (base + -3.0f) * scale;
+    FighterAI* ctx = get_ai_context(L);
+    return (ctx->air_high_base + -3.0f) * ctx->state->air_high_scale;
 }
 
 // ---------------------------------------------------------------------------
@@ -150,10 +138,8 @@ float air_high_36b8b0(u64 L) {
 // [derived: app::ai_param::air_length in Ghidra]
 // ---------------------------------------------------------------------------
 float air_length_36b8d0(u64 L) {
-    u64 ctx = AI_CTX(L);
-    float base = *(float*)(ctx + 0xb08);
-    float scale = *(float*)(AI_STATE(L) + 0x1fc);
-    return (base + -3.0f) * scale;
+    FighterAI* ctx = get_ai_context(L);
+    return (ctx->air_length_base + -3.0f) * ctx->state->air_length_scale;
 }
 
 // ---------------------------------------------------------------------------
@@ -162,63 +148,63 @@ float air_length_36b8d0(u64 L) {
 // Per-fighter indexed float: ctx + fighter_kind * 4 + 0xad0
 // ---------------------------------------------------------------------------
 float sp_u_high_36b8f0(u64 L) {
-    u64 ctx = AI_CTX(L);
-    s32 idx = *(s32*)(AI_STATE(L) + 0x240);
-    return *(float*)(ctx + (s64)idx * 4 + 0xad0);
+    FighterAI* ctx = get_ai_context(L);
+    s32 idx = ctx->state->fighter_kind_index;
+    return ctx->sp_u_high[idx];
 }
 
 // ---------------------------------------------------------------------------
 // 0x710036b910 — sp_u_length (24B)
 // ---------------------------------------------------------------------------
 float sp_u_length_36b910(u64 L) {
-    u64 ctx = AI_CTX(L);
-    s32 idx = *(s32*)(AI_STATE(L) + 0x240);
-    return *(float*)(ctx + (s64)idx * 4 + 0xae0);
+    FighterAI* ctx = get_ai_context(L);
+    s32 idx = ctx->state->fighter_kind_index;
+    return ctx->sp_u_length[idx];
 }
 
 // ---------------------------------------------------------------------------
 // 0x710036b930 — return_sp_u_cliff_x (24B)
 // ---------------------------------------------------------------------------
 float return_sp_u_cliff_x_36b930(u64 L) {
-    u64 ctx = AI_CTX(L);
-    s32 idx = *(s32*)(AI_STATE(L) + 0x240);
-    return *(float*)(ctx + (s64)idx * 4 + 0xb34);
+    FighterAI* ctx = get_ai_context(L);
+    s32 idx = ctx->state->fighter_kind_index;
+    return ctx->return_sp_u_cliff_x[idx];
 }
 
 // ---------------------------------------------------------------------------
 // 0x710036b950 — return_sp_u_cliff_y (24B)
 // ---------------------------------------------------------------------------
 float return_sp_u_cliff_y_36b950(u64 L) {
-    u64 ctx = AI_CTX(L);
-    s32 idx = *(s32*)(AI_STATE(L) + 0x240);
-    return *(float*)(ctx + (s64)idx * 4 + 0xb44);
+    FighterAI* ctx = get_ai_context(L);
+    s32 idx = ctx->state->fighter_kind_index;
+    return ctx->return_sp_u_cliff_y[idx];
 }
 
 // ---------------------------------------------------------------------------
 // 0x710036b970 — return_goal_x (24B)
 // ---------------------------------------------------------------------------
 float return_goal_x_36b970(u64 L) {
-    u64 ctx = AI_CTX(L);
-    s32 idx = *(s32*)(AI_STATE(L) + 0x240);
-    return *(float*)(ctx + (s64)idx * 4 + 0xb54);
+    FighterAI* ctx = get_ai_context(L);
+    s32 idx = ctx->state->fighter_kind_index;
+    return ctx->return_goal_x[idx];
 }
 
 // ---------------------------------------------------------------------------
 // 0x710036b990 — return_goal_x_strict (24B)
 // ---------------------------------------------------------------------------
 float return_goal_x_strict_36b990(u64 L) {
-    u64 ctx = AI_CTX(L);
-    s32 idx = *(s32*)(AI_STATE(L) + 0x240);
-    return *(float*)(ctx + (s64)idx * 4 + 0xb64);
+    FighterAI* ctx = get_ai_context(L);
+    s32 idx = ctx->state->fighter_kind_index;
+    return ctx->return_goal_x_strict[idx];
 }
 
 // ---------------------------------------------------------------------------
 // 0x710036b9b0 — return_goal_pad_x_strict (24B)
 // ---------------------------------------------------------------------------
 float return_goal_pad_x_strict_36b9b0(u64 L) {
-    u64 ctx = AI_CTX(L);
-    s32 idx = *(s32*)(AI_STATE(L) + 0x240);
-    return *(float*)(ctx + (s64)idx * 4 + 0xb74);
+    FighterAI* ctx = get_ai_context(L);
+    s32 idx = ctx->state->fighter_kind_index;
+    return ctx->return_goal_pad_x_strict[idx];
 }
 
 // ---- app::ai_param — global AI param singleton reads ----
@@ -260,34 +246,34 @@ float challenger_guard_rate_36c1a0(u64 L) {
 }
 
 // ---- app::analyst — status history queries ----
-// Read from the analyst object at *(ctx + 0x170), double-deref.
+// Read from the analyst object at *(ctx->analyst_ptr), double-deref.
 // [derived: app::analyst::* in Ghidra, u32 return via ldr w0]
 
 // ---------------------------------------------------------------------------
 // 0x7100376a00 — status_prev (20B)
 // ---------------------------------------------------------------------------
 u32 status_prev_376a00(u64 L) {
-    u64 ctx = AI_CTX(L);
-    u64 analyst = *(u64*)(*(u64*)(ctx + 0x170));
-    return *(u32*)(analyst + 0x10);
+    FighterAI* ctx = get_ai_context(L);
+    AIAnalyst* analyst = reinterpret_cast<AIAnalyst*>(*ctx->analyst_ptr);
+    return analyst->status_prev;
 }
 
 // ---------------------------------------------------------------------------
 // 0x7100376ac0 — status_count (20B)
 // ---------------------------------------------------------------------------
 u32 status_count_376ac0(u64 L) {
-    u64 ctx = AI_CTX(L);
-    u64 analyst = *(u64*)(*(u64*)(ctx + 0x170));
-    return *(u32*)(analyst + 0x14);
+    FighterAI* ctx = get_ai_context(L);
+    AIAnalyst* analyst = reinterpret_cast<AIAnalyst*>(*ctx->analyst_ptr);
+    return analyst->status_count;
 }
 
 // ---------------------------------------------------------------------------
 // 0x7100376b90 — chanced_frame (20B)
 // ---------------------------------------------------------------------------
 u32 chanced_frame_376b90(u64 L) {
-    u64 ctx = AI_CTX(L);
-    u64 analyst = *(u64*)(*(u64*)(ctx + 0x170));
-    return *(u32*)(analyst + 0x1c);
+    FighterAI* ctx = get_ai_context(L);
+    AIAnalyst* analyst = reinterpret_cast<AIAnalyst*>(*ctx->analyst_ptr);
+    return analyst->chanced_frame;
 }
 
 // ---- app::ai_system — input/mode control ----
@@ -297,12 +283,12 @@ u32 chanced_frame_376b90(u64 L) {
 // [derived: app::ai_system::reset_stick in Ghidra]
 // Copies 16-byte zero vector (ConstantZero) to ctx + 0xc30
 // Asm: ldr q0,[ConstantZero]; str q0,[ctx+0xc30]
-// Uses 128-bit vector copy (stick data is 2 × Vector2f)
+// Uses 128-bit vector copy (stick data is 2 x Vector2f)
 // ---------------------------------------------------------------------------
 typedef float v4sf __attribute__((vector_size(16)));
 void reset_stick_3762f0(u64 L) {
-    u64 ctx = AI_CTX(L);
-    *reinterpret_cast<v4sf*>(ctx + 0xc30) =
+    FighterAI* ctx = get_ai_context(L);
+    *reinterpret_cast<v4sf*>(ctx->stick_data) =
         *reinterpret_cast<const v4sf*>((u64)PTR_ConstantZero_71052a7a80);
 }
 
@@ -312,12 +298,12 @@ void reset_stick_3762f0(u64 L) {
 // Saves current action_id to prev, then clears current
 // ---------------------------------------------------------------------------
 void set_action_id_none_376330(u64 L) {
-    u64 ctx = AI_CTX(L);
-    u16 current = *(u16*)(ctx + 0x198);
+    FighterAI* ctx = get_ai_context(L);
+    u16 current = ctx->action_id;
     if (current != 0) {
-        *(u16*)(ctx + 0x19a) = current;
+        ctx->action_id_prev = current;
     }
-    *(u16*)(ctx + 0x198) = 0;
+    ctx->action_id = 0;
 }
 
 // ---- app::ai_system — button/mode control (32B functions) ----
@@ -332,18 +318,18 @@ extern "C" u32 DAT_7104538fec[] HIDDEN;
 // ORs button bitmask into AI button state at ctx + 0xc40
 // ---------------------------------------------------------------------------
 void add_button_376310(u64 L, s32 kind) {
-    u64 ctx = AI_CTX(L);
-    *(u32*)(ctx + 0xc40) |= DAT_7104538fec[kind];
+    FighterAI* ctx = get_ai_context(L);
+    ctx->button_state |= DAT_7104538fec[kind];
 }
 
 // ---------------------------------------------------------------------------
 // 0x7100376360 — change_mode_action (32B)
 // [derived: app::ai_system::change_mode_action in Ghidra]
-// Double-deref: *(*(ctx)) → mode struct; sets byte +0x39 if +0x38 != 0
+// Double-deref: *(*(ctx)) -> mode struct; sets byte +0x39 if +0x38 != 0
 // ---------------------------------------------------------------------------
 void change_mode_action_376360(u64 L) {
-    u64 ctx = AI_CTX(L);
-    u64 mode = *(u64*)(*(u64*)ctx);
+    FighterAI* ctx = get_ai_context(L);
+    u64 mode = *(u64*)ctx->mode_ptr;
     if (*(u8*)(mode + 0x38) != 0) {
         *(u8*)(mode + 0x39) = 1;
     }
@@ -357,5 +343,245 @@ void change_mode_action_376360(u64 L) {
 extern void FUN_71002d8ef0(u64, u32, u32, u32);
 __attribute__((disable_tail_calls))
 void change_mode_3763a0(u64 L, u32 mode) {
-    FUN_71002d8ef0(AI_CTX(L), mode, 0xFFFFFFFF, 0);
+    FUN_71002d8ef0(reinterpret_cast<u64>(get_ai_context(L)), mode, 0xFFFFFFFF, 0);
+}
+
+// ---- External functions for AI subsystems ----
+
+// Action system dispatchers (ctx + 0x180 = action sub-object base)
+extern void FUN_71002edd30(u64, u16, u32*);
+extern void FUN_71002eeb20(float, float, u64, u32);
+extern void FUN_71002f43c0(u64);
+extern void FUN_71002f4590(u64);
+extern void FUN_71002f46a0(u64, u32);
+extern void FUN_71002f5770(u64, u32);
+
+// AI state check
+extern void FUN_7100359e30(u64);
+
+// Target lookup: returns pointer to target's AI state snapshot
+// [derived: used by all target_* functions, first param is manager global]
+extern u64 FUN_7100314030(void*, u64);
+
+// Threshold constants
+// [derived: distance threshold for lr_to_target, adrp+ldr pattern]
+extern "C" float DAT_71044724d4 HIDDEN;
+// [derived: param for check_over_ground_distance_current_lr]
+extern "C" float DAT_7104471e0c HIDDEN;
+
+// ---- app::ai — new function decomps (Phase 3, struct-typed) ----
+
+// ---------------------------------------------------------------------------
+// 0x71003680e0 — goal_pos (12B)
+// [derived: app::ai::goal_pos in Ghidra]
+// Returns 16-byte Vector4f goal position from ctx + 0x270
+// ---------------------------------------------------------------------------
+typedef float v4sf_ret __attribute__((vector_size(16)));
+v4sf_ret goal_pos_3680e0(u64 L) {
+    FighterAI* ctx = get_ai_context(L);
+    return *reinterpret_cast<v4sf_ret*>(ctx->goal_pos);
+}
+
+// ---------------------------------------------------------------------------
+// 0x71003680f0 — check_away_floor (12B)
+// [derived: app::ai::check_away_floor in Ghidra]
+// Dispatches to floor-check subroutine on the AI state
+// ---------------------------------------------------------------------------
+void check_away_floor_3680f0(u64 L) {
+    FighterAI* ctx = get_ai_context(L);
+    FUN_7100359e30(reinterpret_cast<u64>(ctx->state));
+}
+
+// ---------------------------------------------------------------------------
+// 0x7100368170 — set_auto_stop (12B)
+// [derived: app::ai::set_auto_stop in Ghidra]
+// Writes s32 to ctx + 0x2bc (700 decimal)
+// ---------------------------------------------------------------------------
+void set_auto_stop_368170(u64 L, s32 val) {
+    FighterAI* ctx = get_ai_context(L);
+    ctx->auto_stop = val;
+}
+
+// ---------------------------------------------------------------------------
+// 0x7100368180 — update_count (12B)
+// [derived: app::ai::update_count in Ghidra]
+// Returns u32 frame counter from ctx + 0x2fc
+// ---------------------------------------------------------------------------
+u32 update_count_368180(u64 L) {
+    FighterAI* ctx = get_ai_context(L);
+    return ctx->update_count;
+}
+
+// ---------------------------------------------------------------------------
+// 0x71003681c0 — reset_return_count (12B)
+// [derived: app::ai::reset_return_count in Ghidra]
+// Zeroes u16 at ctx + 0xc7c
+// ---------------------------------------------------------------------------
+void reset_return_count_3681c0(u64 L) {
+    FighterAI* ctx = get_ai_context(L);
+    ctx->return_count = 0;
+}
+
+// ---------------------------------------------------------------------------
+// 0x71003681d0 — set_no_return_frame (16B)
+// [derived: app::ai::set_no_return_frame in Ghidra]
+// Stores negated s16 to ctx + 0xc7c
+// ---------------------------------------------------------------------------
+void set_no_return_frame_3681d0(u64 L, s32 frames) {
+    FighterAI* ctx = get_ai_context(L);
+    ctx->return_count = -(s16)frames;
+}
+
+// ---------------------------------------------------------------------------
+// 0x7100368cf0 — enable_command (12B)
+// [derived: app::ai::enable_command in Ghidra]
+// Delegates to action sub-object command enable
+// ---------------------------------------------------------------------------
+void enable_command_368cf0(u64 L, u32 cmd_id) {
+    FUN_71002f5770(reinterpret_cast<u64>(get_ai_context(L)) + 0x180, cmd_id);
+}
+
+// ---------------------------------------------------------------------------
+// 0x7100368d00 — disable_command (12B)
+// [derived: app::ai::disable_command in Ghidra]
+// ---------------------------------------------------------------------------
+void disable_command_368d00(u64 L, u32 cmd_id) {
+    FUN_71002f46a0(reinterpret_cast<u64>(get_ai_context(L)) + 0x180, cmd_id);
+}
+
+// ---------------------------------------------------------------------------
+// 0x7100368d10 — disable_command_ground_all (12B)
+// [derived: app::ai::disable_command_ground_all in Ghidra]
+// ---------------------------------------------------------------------------
+void disable_command_ground_all_368d10(u64 L) {
+    FUN_71002f43c0(reinterpret_cast<u64>(get_ai_context(L)) + 0x180);
+}
+
+// ---------------------------------------------------------------------------
+// 0x7100368d20 — disable_command_air_all (12B)
+// [derived: app::ai::disable_command_air_all in Ghidra]
+// ---------------------------------------------------------------------------
+void disable_command_air_all_368d20(u64 L) {
+    FUN_71002f4590(reinterpret_cast<u64>(get_ai_context(L)) + 0x180);
+}
+
+// ---------------------------------------------------------------------------
+// 0x7100367e90 — floor_moves (20B)
+// [derived: app::ai::floor_moves in Ghidra]
+// Returns 16-byte floor movement vector from floor_data + 0x10
+// ---------------------------------------------------------------------------
+v4sf_ret floor_moves_367e90(u64 L) {
+    FighterAI* ctx = get_ai_context(L);
+    return *reinterpret_cast<v4sf_ret*>(ctx->state->floor_data->movement);
+}
+
+// ---------------------------------------------------------------------------
+// 0x7100368140 — change_action (48B)
+// [derived: app::ai::change_action in Ghidra]
+// Non-leaf: builds stack arg {0xFFFFFFFF}, calls action dispatcher
+// ---------------------------------------------------------------------------
+__attribute__((disable_tail_calls))
+void change_action_368140(u64 L, u16 action_id) {
+    u32 arg = 0xFFFFFFFF;
+    FUN_71002edd30(reinterpret_cast<u64>(get_ai_context(L)) + 0x180, action_id, &arg);
+}
+
+// ---------------------------------------------------------------------------
+// 0x7100368190 — is_update_count_odd (48B)
+// [derived: app::ai::is_update_count_odd in Ghidra]
+// Despite the name, checks if update_count is divisible by 3
+// ---------------------------------------------------------------------------
+bool is_update_count_odd_368190(u64 L) {
+    FighterAI* ctx = get_ai_context(L);
+    s32 count = ctx->update_count;
+    return count == (count / 3) * 3;
+}
+
+// ---------------------------------------------------------------------------
+// 0x7100367960 — floor_lr (56B)
+// [derived: app::ai::floor_lr in Ghidra]
+// Returns 1.0f if fighter is left of floor center, -1.0f if right
+// ---------------------------------------------------------------------------
+u32 floor_lr_367960(u64 L) {
+    FighterAI* ctx = get_ai_context(L);
+    FighterAIState* state = ctx->state;
+    AIFloorCollisionData* floor = state->floor_data;
+    u32 result = 0x3f800000;  // 1.0f
+    if ((floor->left_edge + floor->right_edge) * 0.5f <= state->pos_x) {
+        result = 0xbf800000;  // -1.0f
+    }
+    return result;
+}
+
+// ---------------------------------------------------------------------------
+// 0x7100367230 — distance_x_to_target (60B)
+// [derived: app::ai::distance_x_to_target in Ghidra]
+// Absolute X distance between self and target
+// ---------------------------------------------------------------------------
+float distance_x_to_target_367230(u64 L) {
+    FighterAI* ctx = get_ai_context(L);
+    float self_x = ctx->state->pos_x;
+    u64 target = FUN_7100314030(DAT_71052b5fd8, reinterpret_cast<u64>(ctx) + 0xc50);
+    return __builtin_fabsf(self_x - *(float*)(target + 0x80));
+}
+
+// ---------------------------------------------------------------------------
+// 0x7100367270 — distance_y_to_target (60B)
+// [derived: app::ai::distance_y_to_target in Ghidra]
+// Absolute Y distance between self and target
+// ---------------------------------------------------------------------------
+float distance_y_to_target_367270(u64 L) {
+    FighterAI* ctx = get_ai_context(L);
+    float self_y = ctx->state->pos_y;
+    u64 target = FUN_7100314030(DAT_71052b5fd8, reinterpret_cast<u64>(ctx) + 0xc50);
+    return __builtin_fabsf(self_y - *(float*)(target + 0x84));
+}
+
+// ---------------------------------------------------------------------------
+// 0x71003672b0 — is_target_on_same_floor (64B)
+// [derived: app::ai::is_target_on_same_floor in Ghidra]
+// Compares floor collision data pointers between self and target
+// ---------------------------------------------------------------------------
+bool is_target_on_same_floor_3672b0(u64 L) {
+    FighterAI* ctx = get_ai_context(L);
+    u64 target = FUN_7100314030(DAT_71052b5fd8, reinterpret_cast<u64>(ctx) + 0xc50);
+    return reinterpret_cast<u64>(ctx->state->floor_data) == *(u64*)(target + 0xd0);
+}
+
+// ---------------------------------------------------------------------------
+// 0x7100367080 — target_hit_collision_rect (64B)
+// [derived: app::ai::target_hit_collision_rect in Ghidra]
+// Returns 16-byte hit rect from target state + 0x264
+// ---------------------------------------------------------------------------
+v4sf_ret target_hit_collision_rect_367080(u64 L) {
+    FighterAI* ctx = get_ai_context(L);
+    u64 target = FUN_7100314030(DAT_71052b5fd8, reinterpret_cast<u64>(ctx) + 0xc50);
+    return *reinterpret_cast<v4sf_ret*>(target + 0x264);
+}
+
+// ---------------------------------------------------------------------------
+// 0x7100367a90 — check_over_ground (72B)
+// [derived: app::ai::check_over_ground in Ghidra]
+// Multi-condition ground check using state flags and floor data
+// ---------------------------------------------------------------------------
+bool check_over_ground_367a90(u64 L) {
+    FighterAI* ctx = get_ai_context(L);
+    FighterAIState* state = ctx->state;
+    if ((state->stat_flags & 1) == 0 &&
+        ((*(u8*)((u64)state->floor_data + 0x5e) >> 1) & 1) == 0) {
+        return true;
+    }
+    if ((state->uniq_stat & 0xFFFFFFFE) == 6) {
+        return true;
+    }
+    return (state->stat_flags & 2) == 0;
+}
+
+// ---------------------------------------------------------------------------
+// 0x7100367ae0 — check_over_ground_distance_current_lr (24B)
+// [derived: app::ai::check_over_ground_distance_current_lr in Ghidra]
+// Delegates to ground distance check with threshold
+// ---------------------------------------------------------------------------
+void check_over_ground_distance_current_lr_367ae0(u64 L, float dist) {
+    FUN_71002eeb20(dist, DAT_7104471e0c, reinterpret_cast<u64>(get_ai_context(L)) + 0x180, 1);
 }
