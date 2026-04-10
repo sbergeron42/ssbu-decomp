@@ -644,6 +644,70 @@ Open questions for next-pass:
 
 == pool-b Ghidra cache (session 2026-04-10) ==
 
+== FUN_71035763c0 @ 0x71035763c0 (animation keyframe sampler, called 12x in main_loop) ==
+Signature (derived): int sample_track(vec4, vec4, vec4, TrackDesc*, float* out12, int frame)
+- Reads quantized animation track from track[+0x68] (data ptr)
+- Format flags at track[+2]: bit1=u16, bit2=<other>, bit3=f32 raw
+- Per-frame stride track[+0x50], dequant bias track[+0x54], scale (track[+0x58]*track[+0x78])
+- NEON_ucvtf(x,4) unpacks 12 lanes of u8/u16 per sample and applies scale+bias
+- Writes 12 floats (6 u64 slots) to param_5
+Category: PRESENTATION (animation sampling). NOT sim tick. 12 calls = 12 tracks/frame.
+
+== FUN_71036f2c00 @ 0x71036f2c00 (state-machine transition to state 6) ==
+- Triple recursive_mutex-guarded state machine with 9+ states at [param_1 + 8]
+- If state != 6 and state in {4,8} (bitmask 0x150):
+    Invalidate child at [+0x68]: inner +0x100=1, inner-inner +0x20/+0x28 = -1
+    Invalidate child at [+0x58]: inner +0xA0=1, inner-inner +0x20/+0x28 = -1
+    state=6, SignalEvent([+0x18])
+Category: HOUSEKEEPING / audio or stream-source teardown. NOT sim tick.
+
+== FUN_71036f2d40 @ 0x71036f2d40 (state-machine transition to state 4) ==
+- Same object as FUN_71036f2c00, sibling transition
+- If state != 4 and state in {3,6,8,9} (bitmask 0x348):
+    Call 4-helper chain on [+0x210]: FUN_71036f3710/3820/3930/3820
+    Reset child [+0x58] inner +0xA0=0 / +0x94=1
+    Clear child [+0x68] inner +0xE8/+0xF0=-1, +0xF8=0, +0x100=0
+    state=4, SignalEvent([+0x18])
+Category: HOUSEKEEPING. The 60/N rate-limit in main_loop phase-8 is a decoration task.
+
+== Signal/Wait handshake in main_loop (corrected, previously under-documented) ==
+Lines 518-540 of asm/ghidra_FUN_7103747270.c show:
+  1. FUN_710386fc30(&local_270, **(lVar57+8), &local_23f0) computes frame dt into local_23f0
+  2. SignalEvent(**DAT_71053386d0[+8])  ← Event A (kick vsync/pacing worker)
+  3. cVar10 = byte at ...+0x321, mirror to +0x322
+  4. if cVar10==0: condition_variable::notify_all() else FUN_710359ebd0()
+  5. Atomic CAS loop: DAT_710593a440 += (int)(float)local_23f0 + 1
+  6. WaitEvent(*DAT_710593a528)  ← Event B (block on sim/pacing completion)
+  7. Scene-kind state machine (DAT_710593a530 == 3 branch)
+
+Key singleton addresses:
+- DAT_71053386d0 (Event A container)
+  Writers: FUN_71036128a0 (init, 0x710361574c)
+  Readers: FUN_7103619410, FUN_71036185d0, FUN_710365efd0, FUN_71036128a0, main_loop
+  → Event A readers live in the vsync/frame-pacing neighborhood (0x71036xxxxx)
+- DAT_710593a528 (Event B pointer)
+  Readers: game_ldn_initialize (0x7103741bb0, 0x7103741c38), main_loop (0x7103747be4)
+  NO direct SignalEvent caller → signaled through an indirect pointer field in another object
+  → finding who signals this IS the pointer at "who wakes main_loop back up"
+- DAT_710593a440 (presentation frame counter, atomic)
+  Incremented by delta+1 per main_loop iteration. Delta-weighted, NOT fixed-step.
+  Best current candidate for a rollback index anchor (at the presentation layer).
+- DAT_710593a530 (scene-kind state byte; case 3 = in-match)
+
+WaitEvent(0x71039c06c0) callers (only 4):
+  main_loop @ 0x7103747bf0
+  FUN_7103987890 @ 0x710398b358  ← SDK-gr? quick smoke-test candidate
+  FUN_710013bb20 @ 0x710013bb24  ← tiny, probably util
+  FUN_7103721a40 @ 0x7103721b4c  ← candidate
+
+Next-pass targets (priority order):
+a) Find indirect signaler of DAT_710593a528 (scan for str of the stored pointer)
+b) Decompile FUN_71036128a0 + FUN_7103619410 (Event A readers, vsync neighborhood)
+c) Smoke-test FUN_7103987890 (SDK-gr WaitEvent caller)
+d) Walk xrefs of FUN_710386fc30 (the dt producer called just before SignalEvent)
+
+
+
 == FUN_7101344cf0 @ 0x7101344cf0..0x710134c68f (0x799f / ~31KB) ==
 
 NOT the per-frame fighter update. Hypothesis rejected.

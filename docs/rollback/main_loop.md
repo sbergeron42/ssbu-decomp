@@ -316,6 +316,83 @@ The WORKER assignment update suggested the 65 KB `FUN_7101344cf0` might sit betw
 
 ---
 
+## 6c. Follow-up decomps of the three open-question candidates
+
+All three of the highest-priority sim-tick candidates flagged in the previous pass were decompiled. **None of them is the sim tick.**
+
+### `FUN_71035763c0` — animation keyframe track sampler (called 12×)
+
+Signature (derived): `int sample_track(vec4 p1, vec4 p2, vec4 p3, TrackDesc* track, float* out12, int frame)`.
+
+- Reads a quantized animation track: format flags at `track[+2]` select u8 / u16 / f32 encoding; data pointer at `track[+0x68]`; per-frame stride at `track[+0x50]`; dequant bias/scale at `track[+0x54]`/`track[+0x58]`/`track[+0x78]`.
+- Uses `NEON_ucvtf(..., 4)` (unsigned int → float with 4-bit fixed-point scale) to unpack u8/u16 packed keyframes into 12 floats, applies `*scale + bias`, writes to `out12` (6 × u64 = 12 × f32).
+- Called 12× from `main_loop` with a stride of 12 output floats — i.e. the caller samples 12 different tracks for something like a 12-channel animated panel or camera rig.
+- **Category: presentation** (animation sampling). Zero game-state mutation. Not the sim tick.
+
+### `FUN_71036f2c00` — audio/stream state-machine transition (to state 6)
+
+```c
+if (state != 6 && state in {4, 8}) {   // bitmask 0x150
+    if (child_0x68) clear its +0x100 / inner +0x20,+0x28 to -1;
+    if (child_0x58) clear its +0xA0 / inner +0x20,+0x28 to -1;
+    state = 6;
+    SignalEvent(event_0x18);
+}
+```
+
+- Nine-state state machine guarded by three levels of `recursive_mutex`.
+- Transitions to terminal state `6` from states `{4, 8}`, invalidates two child objects (indexed by "track-id" style `-1` fields), and signals an `nn::os::EventType` for waiters.
+- **Category: housekeeping.** Looks like an audio / DASH-style streaming-source teardown when the source becomes idle. Not the sim tick.
+
+### `FUN_71036f2d40` — audio/stream state-machine transition (to state 4)
+
+```c
+if (state != 4 && state in {3, 6, 8, 9}) {   // bitmask 0x348
+    if (obj+0x210) FUN_71036f3710/3820/3930/3820(**obj_0x210);
+    if (obj+0x58)  reset its +0xA0=0, +0x94=1;
+    if (obj+0x68)  clear its +0xE8,+0xF0 to -1, +0xF8=0, +0x100=0;
+    state = 4;
+    SignalEvent(event_0x18);
+}
+```
+
+- Companion transition to the sibling at `FUN_71036f2c00` — same object, different target state and different child-reset pattern. Calls a 4-helper chain (`3710/3820/3930/3820` — open/close/reset/close?) on a deeper child at `+0x210`.
+- **Category: housekeeping.** The `60/N` gate in `main_loop` phase 8 is a decoration / teardown task for this subsystem, not a sim-frame gate.
+
+### Net effect on the sim-tick hunt
+
+All three candidates are presentation/housekeeping. Combined with the `FUN_7101344cf0` result, **zero sub-function of `main_loop` that has been investigated mutates game-sim state in a per-frame-relevant way.** The sim dispatcher is definitely not a direct or near-direct child of `main_loop`.
+
+---
+
+## 6d. Signal / Wait handshake in `main_loop`
+
+Re-reading the cached decomp with signal-event tracing in mind reveals **two** handshakes per iteration, not one:
+
+```c
+// At ~7103747b80..bf0, between phase-3 (singleton fetch) and phase-4 (subsystem updates):
+local_23f0 = 0.0f;
+FUN_710386fc30(&local_270, **(lVar57 + 8), &local_23f0);     // computes dt → local_23f0
+if (DAT_71053386d0[1][0]) SignalEvent(DAT_71053386d0[1][0]); // KICK event A
+if (state_byte == 0) notify_all();                           // wake condvar waiters
+else                 FUN_710359ebd0();                       // or call alt-dispatch
+// atomic: DAT_710593a440 += (int)local_23f0 + 1;  ← elapsed-ticks + 1-per-iter counter
+if (*DAT_710593a528)   WaitEvent(*DAT_710593a528);           // BLOCK on event B
+```
+
+- **Event A** at `DAT_71053386d0 + 8` is written during init by `FUN_71036128a0` and read by `FUN_7103619410`, `FUN_71036185d0`, `FUN_710365efd0`, `FUN_71036128a0`, `main_loop`. The readers look like vsync / frame-pacing helpers in the `7103619xxx` / `71036185xx` range.
+- **Event B** at `DAT_710593a528` is referenced only from `game_ldn_initialize` (setup) and `main_loop` (wait). No function was found that calls `SignalEvent(DAT_710593a528)` directly, which means it is signaled through an indirect path (likely a pointer field stored in another object). **This is the thing that, if found, would reveal the sim-worker signaling back to `main_loop`.**
+- **`DAT_710593a440`** is the real presentation frame counter — delta-weighted (`+= (int)dt + 1` per iteration), confirmed to be the same atomic as the `x20` register used by the `ldaxr/stlxr` CAS loop at `7103747bd0`. This is what the presentation layer considers its "frame counter", so even though it is not fixed-step, it **is** the best candidate we have for a rollback index at the presentation layer.
+
+### Refined next-pass priorities
+
+1. **Find the indirect signaler of `DAT_710593a528`**. Scan all functions for a `str ... , [x, #N]` where `N` happens to match the offset at which `DAT_710593a528` is populated (from `game_ldn_initialize` + `FUN_71036128a0`), then cross-reference with `SignalEvent` call sites in the same function. That is the sim/present round-trip.
+2. **Decompile `FUN_71036128a0` and `FUN_7103619410`** — both read `DAT_71053386d0` and are in the `7103619xxx`/`71036128xx` vsync-pacing neighborhood; one of them is the thread body that signals Event B.
+3. **Rule out CPU/GPU worker threads on `nn::gr`**. `FUN_7103987890` is another `WaitEvent(0x71039c06c0)` caller and lives in the `710398xxxx` (SDK-gr?) range — worth a quick smoke-test decomp.
+4. **Walk xrefs to `FUN_710386fc30`** — this is the function called *just before* the SignalEvent, producing the per-frame dt. If it ever touches `FighterManager`, this is our sim tick.
+
+---
+
 ## 7. Open questions for the next pass
 
 | Question | How to answer |
