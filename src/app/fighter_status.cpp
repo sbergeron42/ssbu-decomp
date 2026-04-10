@@ -2577,6 +2577,10 @@ bool is_target_on_same_floor_71003672b0(void* L) {
     return self_floor == target_floor;
 }
 
+// target_range_middle (0x710036bb10) and target_range_long (0x710036bb80)
+// deferred: target_id clamp logic compiles to different ccmp pattern than
+// the original binary. 33% match after 3 attempts — skipping per worker rules.
+
 // [derived: zeroes 23 u64 slots from ctx+0x5e8 to ctx+0x698. Original emits
 //  individual str xzr stores in decreasing address order — unrolled loop
 //  over the range in reverse to match.]
