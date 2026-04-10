@@ -253,6 +253,56 @@ Calls FUN_71004e9e30(inner, battle_object_id). Simple null-check + dispatch.
 +0x14e: u8 no_dead_flag     [derived: is_boss_no_dead checks != 0]
 +0x164: s32 stop_count      [derived: is_boss_stop checks > 0]
 
+# Session: 2026-04-09 (boss function batch 2)
+
+== FighterInformation__summon_boss_id_impl (71020c9f40) — ALREADY DECOMPED ==
+Trivial leaf: fi->data->summon_boss_id (+0x9A0). Already in FighterInformation.cpp.
+
+== GroundModule__set_ignore_boss_impl (7102029aa0) — ALREADY DECOMPED ==
+Vtable dispatch: ground_module->set_ignore_boss(p1). Already in GroundModule.cpp.
+
+== ItemParamAccessor__boss_common_param_int_impl (7102144d00) — ALREADY DECOMPED ==
+Param lookup: if *(param_1 + idx*8 + 0xef8) != 0: return *(param_1 + idx*0x20 + subidx*4 + 0x7da48).
+
+== calc_boss_hp_mul_sum (71015c9da0) — WorkModule dispatch ==
+Calls get_float(0x20), get_float(0x27), get_int(0x10000038), get_int(0x10000037),
+then tail-calls FUN_710160f280(v1, v2, item_kind, v3, v4).
+SKIPPED for now — float/int register interleaving in tail-call makes matching tricky.
+
+== send_event_on_boss_defeat (71015c8510) — entity list iteration ==
+DECOMPED in BossManager.cpp as boss_private::send_event_on_boss_defeat.
+Gets target_id from lua context chain, iterates entity list, calls vtable[0x50] on match.
+
+== main_energy_from_param_no_boss (71015c8140) — ALREADY DECOMPED ==
+Already in camera_functions.cpp and ItemHelpers.cpp.
+
+== All sub1_energy variants — ALREADY DECOMPED ==
+Already in camera_functions.cpp and ItemHelpers.cpp.
+
+== is_enable_capture_bossgalaga (7101658cc0) — ALREADY DECOMPED ==
+Already in fun_typed_b_002.cpp.
+
+== is_standard_boss_series (71022845b0) — NOT BossManager ==
+Uses FighterManager + global param, not BossManager struct. Leave for other pools.
+
+# Session: 2026-04-09 (xref-driven batch)
+
+== BossManager xrefs (44 total to 0x71052b7ef8) ==
+Key undone xrefs:
+- FUN_7102208b10 (212B) — lua callback, pops Hash40 from stack, dispatches BossManager finish
+- FUN_7102208bf0 (208B) — lua callback, identical to send_event_on_boss_defeat (different TU)
+- FUN_7101798450 (~1600B) — VERY LARGE, uses BossManager briefly for boss_kind_id check
+  NEW FIELDS: inner+0x128 (u64 boss_kind_id, checks 0x19a/0x169), inner+0x138 (s32, checks == -1)
+- narration_higher_consumer (~500B) — complex, audio+fighter iteration, calls FUN_71004eae10(inner)
+- NarrationController_match_init (~300B) — complex, audio init, calls FUN_71004eaa30(inner)
+- FUN_710240edd0 (LARGE, 7+ xrefs) — probably stage manager or game flow controller
+
+== FUN_7102208b10 DECOMPED — lua C callback: start_boss_finish variant ==
+Pops Hash40 via FUN_71038f4000, gets battle object, dispatches FUN_71004eb4b0(inner, id, kind, hash).
+
+== FUN_7102208bf0 DECOMPED — lua C callback: send_event_on_boss_defeat ==
+Identical entity list iteration to 71015c8510 but returns u64 (lua return count = 0).
+
 == FUN_710114c140 — vtable dispatch + tail-call (80B, -O2) ==
 Chain: param_2+0x20 → +0x98 → vtable[0x37](obj, 0x12, 0). Tail-calls FUN_7100dbaf50.
 RELOCATION-ONLY MATCH: 94% (16/17 words).
