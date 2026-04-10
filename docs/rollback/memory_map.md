@@ -31,7 +31,7 @@ These are the entry points a rollback walker traverses. Every address is the `.d
 |---|---|---|---|---|
 | `lib::Singleton<app::FighterManager>::instance_` | `0x71052b84f8` | `FighterManager__*_impl` .dynsym all deref `mgr+0` | `FighterManagerData` ≥ 0xB88 B | See `include/app/FighterManager.h`. Reaches up to 8 `FighterEntry*` at `+0x20..+0x60` plus `finalbg_ptr`, `movie_ptr` sub-objects. |
 | `lib::Singleton<app::StageManager>::instance_` | `0x71053299d8` | `StageManager__*_impl`, `src/app/StageManager.cpp:9` | `StageManagerData` ≥ 0x180 B | 3 stage-mode `entries[]` at `+0x110`, embedded `stage_info_vt` sub-object at `+0x128`. |
-| `lib::Singleton<app::ItemManager>::instance_` | `0x71052c2b90` range (see below) | `ItemManager__*_impl`, `include/app/ItemManager.h` | Manages `ItemEntry**` active/pending lists at `+0x10..+0x30` | **The address `0x71052c2b88` previously documented in `src/app/FighterManager.cpp` as the ItemManager singleton is WRONG** — it is the `.begin` pointer of a `std::vector<u32>{0xe3}` inside the static item-kind classification table built by `FUN_7100417d10`. See "Correction" below. |
+| `lib::Singleton<app::ItemManager>::instance_` | **`0x71052c3070`** | `find_active_item_from_id @ 0x71015ca930` disassembly: `adrp x8, 0x71052c3000; ldr x9, [x8, #0x70]` | Manages `ItemEntry**` active/pending lists at `+0x10..+0x30` | Already used correctly in `src/app/fighter_status.cpp`, `fun_batch_e3_001.cpp`, `ItemHelpers.cpp`, `gameplay_functions.cpp`. **Latent bug**: `src/app/FighterManager.cpp:33,391` declares and reads `DAT_71052c2b88` as the ItemManager singleton — this is wrong; that address is the `.begin` pointer of a `std::vector<u32>{0xe3}` inside the item-kind lookup table. The wrong dereference reads bytes past the end of a 4-byte allocation. Should be fixed to `DAT_71052c3070` in a future FighterManager-territory pass. |
 | `lib::Singleton<lib::EffectManager>::instance_` | `0x7105333920` | `src/app/fighter_effects.cpp:133` | unknown | Particle pool manager. |
 | BattleObjectManager pool-header array | `DAT_71052b7548` (**not** `DAT_71052b7ef8` as in `WORKER-pool-c.md`) | `get_battle_object_from_id @ 0x71003ac560` | Array of 5 `PoolHeader*` (one per category) | The task file listed `DAT_71052b7ef8`; xrefs confirm that address is the BossManager singleton, not BattleObjectManager. Correction below. |
 | Game global / RNG + (unknown) | `DAT_71052c25b0` | Dereferenced by `app::sv_math::rand` @ `0x7102275400` and every module's get-random impl | struct body ≥ 0xC0 B | Holds ≥ 9 independent XorShift128 streams (per-namespace RNG). **Rollback-critical**. See "RNG" below. |
@@ -57,7 +57,7 @@ The `WORKER-pool-c.md` task brief lists `0x71052b7ef8` as the BattleObjectManage
 extern "C" __attribute__((visibility("hidden"))) void* DAT_71052c2b88;  // lib::Singleton<app::ItemManager>::instance_
 ```
 
-This comment is wrong. Decompilation of `FUN_7100417d10` (the static initializer for item-kind classification tables) shows:
+and line 391 reads from `DAT_71052c2b88 + 0xa0`. **Both are wrong.** Decompilation of `FUN_7100417d10` (the static initializer for item-kind classification tables) shows:
 
 ```c
 puVar5 = (u32 *)je_aligned_alloc(0x10, 4);
@@ -69,7 +69,19 @@ DAT_71052c2b88 = puVar5;   // .begin of a std::vector<u32> holding one kind id
 FUN_71000001c0(&LAB_710068df00, &DAT_71052c2b88, &PTR_LOOP_7104f16000);
 ```
 
-→ `0x71052c2b88` is the `.begin` field of `vector<u32>{0xe3}`, one of 65 static lookup tables built in `FUN_7100417d10`. Whoever first added that comment likely saw ItemManager code reading a DAT in that range and guessed. The actual ItemManager singleton needs to be re-identified — see "Open Questions" below.
+→ `0x71052c2b88` is the `.begin` field of `vector<u32>{0xe3}`, one of 65 static lookup tables built in `FUN_7100417d10`.
+
+Disassembly of the binary confirms the real singleton is elsewhere. `app::item_manager::find_active_item_from_id @ 0x71015ca930` begins:
+
+```
+71015ca93c: adrp x8, 0x71052c3000
+71015ca940: ldr  x9, [x8, #0x70]     ; x9 = *0x71052c3070 = ItemManager*
+71015ca944: ldp  x8, x9, [x9, #0x28] ; active_begin/active_end
+```
+
+→ **real `lib::Singleton<app::ItemManager>::instance_` is at `DAT_71052c3070`.** Four other source files (`fighter_status.cpp`, `fun_batch_e3_001.cpp`, `ItemHelpers.cpp`, `gameplay_functions.cpp`) already use the correct address. Only `src/app/FighterManager.cpp` has the stale wrong value.
+
+The mismatch almost certainly originated because Ghidra's symbol labeling applied `lib::Singleton<app::ItemManager>::instance_` to both the real singleton and the lookup-table vector's .begin pointer (the two addresses are in the same ~0x500-byte region). Anyone who saw the symbol in the decompile and read the address from Ghidra's .data view could have picked the wrong one.
 
 ## BattleObject Pool Sizes (the largest per-match region)
 
@@ -165,7 +177,7 @@ Things I confirmed are built once at startup or match-load and then never writte
 
 ## Open Questions
 
-1. **Where is the actual `app::ItemManager` singleton slot?** The `DAT_71052c2b88` claim in `src/app/FighterManager.cpp:33` is wrong. A correct address is needed. Likely approach: grep for `ItemManager__*_impl` xrefs to see what DAT their `this` is loaded from.
+1. ~~**Where is the actual `app::ItemManager` singleton slot?**~~ **Resolved**: `DAT_71052c3070`, see the correction above. Latent bug in `src/app/FighterManager.cpp:33,391` should be fixed by the next pool assigned FighterManager territory.
 2. **Exact BattleObject pool instance counts**: `+0x18` count fields of the 5 PoolHeaders are set somewhere in `FUN_7101344cf0` (BattleObjectManager init, 31 KB). Extracting them gives us exact worst-case pool sizes.
 3. **EffectManager layout**: no decomp yet. Particle pool count and per-particle size are unknowns.
 4. **Lua VM size per fighter**: need to trace `FighterEntry → lua_state` allocation. Candidate starting point: `lua_state - 8 → +0x1A0` reverse lookup (`camera_functions.cpp:266`).
