@@ -195,6 +195,64 @@ Logic: FUN_7103950a80, 7103950ae0, 7103950e50, 7103951170, 7103951e00,
 NON-MATCHING: binary has 2 extra `b .+4` NOP-branches per wrapper (8 bytes)
 that optnone doesn't reproduce. Frame sizes also differ for logic functions.
 
+# Session: 2026-04-09 (BossManager struct mapping)
+
+== Boss function survey (from search_functions_by_name "Boss") ==
+28 functions found. Key ones decompiled below.
+
+== create_boss (71015c8d80) — not a BossManager struct consumer ==
+Creates a boss item via ItemManager. Uses BossManager fields indirectly (reads from inner).
+Not useful for struct mapping — operates on ItemParamAccessor and ItemManager.
+
+== calc_boss_hp_mul_sum (71015c9da0) — WorkModule dispatch ==
+Dispatches through BattleObjectModuleAccessor+0x50 (WorkModule). No BossManager fields.
+
+== is_boss_battle (71015cfeb0) — global parameter check ==
+Reads DAT_71052c4268 after guard init. No BossManager fields — uses global param.
+
+== send_event_on_boss_dead (71015c8620) — LARGE, maps BossManagerInner fields ==
+BossManagerInner fields confirmed:
+- +0x110: entity_list_begin (std::vector<shared_ptr<BossEntity>>, 0x10 stride)
+- +0x118: entity_list_end
+- +0x144: u32 (passed as param to boss finish callback vtable[0x28])
+- +0x148: u32 (passed as param to boss finish callback vtable[0x60])
+Entity entries use shared_ptr pattern: [0]=managed ptr, [8]=control block.
+Handles hash 0x18e specially (creates new boss entity, assigns to list).
+Handles hash 0x175 specially (searches ItemManager active list for 0x17b).
+Falls through to team param recording for other hashes.
+
+== send_event_on_boss_finish (71015c84b0) — simple dispatcher ==
+Checks singleton != 0, calls FUN_71004eb4b0(inner, obj.id, obj.kind, hash40).
+
+== send_event_on_boss_defeat (71015c8510) — list iteration ==
+Same entity_list pattern as BossManager.cpp's notify_on_boss_defeat_impl.
+Resolves entity via shared_ptr, checks hash via vtable[0x30], calls vtable[0x50].
+
+== send_event_on_start_boss_entry (71015c8450) — ItemManager iteration ==
+No BossManager fields — iterates ItemManager+0x28..+0x30 list.
+
+== start_boss_finish (7102284520) — simple dispatcher ==
+Same as send_event_on_boss_finish, different TU.
+
+== is_boss_no_dead (71015c8c20) — leaf accessor ==
+Returns *(u8*)(inner + 0x14e) != 0. Confirms no_dead_flag.
+
+== is_standard_boss_series (71022845b0) — FighterManager + global param ==
+No BossManager fields.
+
+== send_event_on_boss_keyoff_bgm (71015c85e0) — dispatcher ==
+Calls FUN_71004e9e30(inner, battle_object_id). Simple null-check + dispatch.
+
+== BossManagerInner struct layout (cumulative) ==
++0x000: unk padding
++0x100: s32 state          [derived: is_stoppable_se_impl checks == 4]
++0x110: void** entity_list_begin  [derived: send_event_on_boss_dead/defeat iterate]
++0x118: void** entity_list_end    [derived: send_event_on_boss_dead/defeat iterate]
++0x144: u32 finish_param_1  [derived: send_event_on_boss_dead passes to vtable[0x28]]
++0x148: u32 finish_param_2  [derived: send_event_on_boss_dead passes to vtable[0x60]]
++0x14e: u8 no_dead_flag     [derived: is_boss_no_dead checks != 0]
++0x164: s32 stop_count      [derived: is_boss_stop checks > 0]
+
 == FUN_710114c140 — vtable dispatch + tail-call (80B, -O2) ==
 Chain: param_2+0x20 → +0x98 → vtable[0x37](obj, 0x12, 0). Tail-calls FUN_7100dbaf50.
 RELOCATION-ONLY MATCH: 94% (16/17 words).

@@ -1,4 +1,5 @@
 #include "types.h"
+#include "app/BossManager.h"
 #include "app/modules/StatusModule.h"
 
 // Fighter status and scripting utility functions — pool-c
@@ -838,16 +839,14 @@ void set_no_return_frame_71003681d0(void* L, s32 val) {
 // ════════════════════════════════════════════════════════════════════
 
 // BossManager singleton (adrp 0x71052b7000 + 0xef8)
-extern "C" __attribute__((visibility("hidden"))) void* DAT_71052b7ef8;
+extern "C" __attribute__((visibility("hidden"))) app::BossManager* DAT_71052b7ef8;
 
 // ── 0x7102284580 -- app::sv_item::is_boss_stop (40B) ──────────────
-// [derived: BossManager singleton → inner ptr at +8 → s32 at +0x164 > 0]
+// [derived: BossManager singleton → inner→stop_count > 0]
 bool is_boss_stop_7102284580() {
-    void* boss = DAT_71052b7ef8;
-    if (!boss) return false;
-    void* inner = *reinterpret_cast<void**>(reinterpret_cast<u8*>(boss) + 8);
-    s32 val = *reinterpret_cast<s32*>(reinterpret_cast<u8*>(inner) + 0x164);
-    return val > 0;
+    app::BossManager* bm = DAT_71052b7ef8;
+    if (!bm) return false;
+    return bm->inner->stop_count > 0;
 }
 
 // ════════════════════════════════════════════════════════════════════

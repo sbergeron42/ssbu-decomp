@@ -1,4 +1,5 @@
 #include "types.h"
+#include "app/BossManager.h"
 
 // Audio/BGM/SE functions -- pool-c assignment
 
@@ -6,7 +7,7 @@ extern "C" __attribute__((visibility("hidden"))) void* DAT_7105328f38;  // bgm s
 extern "C" __attribute__((visibility("hidden"))) float DAT_7104471e0c;  // volume divisor
 extern "C" __attribute__((visibility("hidden"))) float DAT_7104471598;  // volume multiplier
 extern "C" __attribute__((visibility("hidden"))) void* DAT_71052bb3b0;  // StageManager/ParamAccessor2 singleton
-extern "C" __attribute__((visibility("hidden"))) void* DAT_71052b7ef8;  // BossManager singleton
+extern "C" __attribute__((visibility("hidden"))) app::BossManager* DAT_71052b7ef8;  // BossManager singleton
 extern "C" __attribute__((visibility("hidden"))) void* DAT_71053299d8;  // StageManager indirect ptr
 
 extern "C" void FUN_71023ee610(void*, u32, u32);
@@ -102,31 +103,6 @@ void request_cut_in_from_param_with_target_no_bgm_volume_change(
 
 } // namespace app::item
 
-namespace app::boss_private {
-
-// 71015c85e0 (64B) -- notify boss bgm keyoff if BossManager singleton is live
-// Conditional non-leaf: frame set up only in non-null path; upstream would tail-call, NX doesn't.
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
-void send_event_on_boss_keyoff_bgm(void*) {
-    asm(
-        "adrp x8, DAT_71052b7ef8\n"
-        "ldr x8, [x8, :lo12:DAT_71052b7ef8]\n"
-        "cbz x8, 0f\n"
-        "stp x29, x30, [sp, #-0x10]!\n"
-        "mov x29, sp\n"
-        "ldur x9, [x0, #-0x8]\n"
-        "ldr x0, [x8, #0x8]\n"
-        "ldr x9, [x9, #0x1a0]\n"
-        "ldr x9, [x9, #0x190]\n"
-        "ldr x9, [x9, #0x220]\n"
-        "ldr w1, [x9, #0xc]\n"
-        "bl FUN_71004e9e30\n"
-        "ldp x29, x30, [sp], #0x10\n"
-        "0:\n"
-        "ret\n"
-    );
-}
-#endif
-
-} // namespace app::boss_private
+// NOTE: send_event_on_boss_keyoff_bgm (71015c85e0, 64B) was previously naked asm (BANNED).
+// The function has conditional frame setup (cbz before stp) that doesn't match in C++.
+// Decomped in fun_batch_d5_047.cpp as FUN_71015c85e0 instead.

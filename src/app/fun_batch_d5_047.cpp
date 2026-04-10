@@ -1,4 +1,5 @@
 #include "types.h"
+#include "app/BossManager.h"
 
 // MEDIUM-tier FUN_* functions — batch d5-047
 // Pool-d worker: ai, item, target, random, math misc (0x71003611c0-0x71015cf5a0)
@@ -204,11 +205,15 @@ void FUN_71015c6cb0(void *boma) {
 }
 
 // 0x71015c85e0 — boss_private::send_event_on_boss_keyoff_bgm (64B)
-extern s64 lib_Singleton_BossManager_instance_;
-extern void FUN_71004e9e30(u64, u32);
+// [derived: Ghidra — checks singleton, calls FUN_71004e9e30(inner, battle_object_id)]
+extern "C" app::BossManager* lib_Singleton_BossManager_instance_
+    asm("_ZN3lib9SingletonIN3app11BossManagerEE9instance_E")
+    __attribute__((visibility("hidden")));
+extern void FUN_71004e9e30(void*, u32);
 void FUN_71015c85e0(void *boma) {
-    if (lib_Singleton_BossManager_instance_ != 0) {
-        FUN_71004e9e30(*(u64*)(lib_Singleton_BossManager_instance_ + 8),
+    app::BossManager* bm = lib_Singleton_BossManager_instance_;
+    if (bm != nullptr) {
+        FUN_71004e9e30(bm->inner,
                        *(u32*)(ITEM_PTR(boma) + 0xc));
     }
 }

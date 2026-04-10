@@ -1,6 +1,7 @@
 #include "types.h"
 #include "app/FighterManager.h"
 #include "app/FighterEntry.h"
+#include "app/BossManager.h"
 
 // Fighter core utility functions — pool-b
 // Contains param lookups, fighter kind mappings, and core fighter helpers
@@ -1284,25 +1285,23 @@ LINKBOMB_PARAM_LINK_ONLY(LINK_LINKBOMB_LINKBOMB_BOUND_SPEED_X_MUL_710165ef20, 0x
 
 // BossManager singleton
 // [derived: Ghidra 0x71052b7ef8 — lib::Singleton<app::BossManager>::instance_]
-extern "C" __attribute__((visibility("hidden"))) void* DAT_71052b7ef8_bm;
+extern "C" __attribute__((visibility("hidden"))) app::BossManager* DAT_71052b7ef8_bm;
 asm(".set DAT_71052b7ef8_bm, _ZN3lib9SingletonIN3app11BossManagerEE9instance_E");
 
-// 0x71015c8bf0 (40B) — is_boss_stop: returns true if BossManager→inner→+0x164 > 0
+// 0x71015c8bf0 (40B) — is_boss_stop: returns true if BossManager→inner→stop_count > 0
 // [derived: Ghidra — BossManager singleton (+8=inner, +0x164=stop count). cmp+cset gt.]
 extern "C" bool is_boss_stop_71015c8bf0() {
-    u8* bm = reinterpret_cast<u8*>(DAT_71052b7ef8_bm);
+    app::BossManager* bm = DAT_71052b7ef8_bm;
     if (bm == nullptr) return false;
-    u8* inner = *reinterpret_cast<u8**>(bm + 8);
-    return *reinterpret_cast<s32*>(inner + 0x164) > 0;
+    return bm->inner->stop_count > 0;
 }
 
-// 0x71015c8c20 (40B) — is_boss_no_dead: returns true if BossManager→inner→+0x14e != 0
+// 0x71015c8c20 (40B) — is_boss_no_dead: returns true if BossManager→inner→no_dead_flag != 0
 // [derived: Ghidra — BossManager singleton, reads byte at inner+0x14e (no_dead flag)]
 extern "C" bool is_boss_no_dead_71015c8c20() {
-    u8* bm = reinterpret_cast<u8*>(DAT_71052b7ef8_bm);
+    app::BossManager* bm = DAT_71052b7ef8_bm;
     if (bm == nullptr) return false;
-    u8* inner = *reinterpret_cast<u8**>(bm + 8);
-    return *reinterpret_cast<u8*>(inner + 0x14e) != 0;
+    return bm->inner->no_dead_flag != 0;
 }
 
 // BattleObjectWorld singleton
@@ -1459,10 +1458,9 @@ extern "C" u8 is_ready_go_71015ce620() {
 // 0x7102284580 (40B) — app::sv_item::is_boss_stop (same logic as 71015c8bf0, different TU)
 // [derived: Ghidra — identical BossManager singleton check]
 extern "C" bool is_boss_stop_7102284580() {
-    u8* bm = reinterpret_cast<u8*>(DAT_71052b7ef8_bm);
+    app::BossManager* bm = DAT_71052b7ef8_bm;
     if (bm == nullptr) return false;
-    u8* inner = *reinterpret_cast<u8**>(bm + 8);
-    return *reinterpret_cast<s32*>(inner + 0x164) > 0;
+    return bm->inner->stop_count > 0;
 }
 
 #undef BOW_INSTANCE

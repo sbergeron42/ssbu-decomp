@@ -1,5 +1,6 @@
 #include "types.h"
 #include "app/BattleObjectModuleAccessor.h"
+#include "app/BossManager.h"
 #include "app/modules/WorkModule.h"
 #include "app/FighterInformation.h"
 
@@ -14,20 +15,20 @@
 extern "C" void FUN_710067de90(void*, u64, s32, s32, u32);
 extern "C" u64 FUN_71006798f0(void*, u32);
 extern "C" void FUN_71003ab390(u8*, u32);
-extern "C" void FUN_71004eb4b0(u64, u32, u32, u64);
+extern "C" void FUN_71004eb4b0(void*, u32, u32, u64);
 extern "C" u32 FUN_710067a3a0(void*, s32);
 
 // Singletons — hidden visibility for ADRP+LDR codegen
 namespace lib {
     extern "C" void* Singleton_app_FighterManager_instance_
         asm("_ZN3lib9SingletonIN3app14FighterManagerEE9instance_E") HIDDEN;
-    extern "C" void* Singleton_app_BossManager_instance_
+    extern "C" app::BossManager* Singleton_app_BossManager_instance_
         asm("_ZN3lib9SingletonIN3app11BossManagerEE9instance_E") HIDDEN;
 }
 // *instance_ dereferences the FM pointer to get FighterManagerData* (at +0x0)
 #define FM_DATA (*reinterpret_cast<u8**>(lib::Singleton_app_FighterManager_instance_))
 #define FM_RAW  (lib::Singleton_app_FighterManager_instance_)
-#define BM_INST (reinterpret_cast<u8*>(lib::Singleton_app_BossManager_instance_))
+#define BM_INST (lib::Singleton_app_BossManager_instance_)
 
 // ════════════════════════════════════════════════════════════════════
 // sv_information — FighterInformation field readers
@@ -180,11 +181,10 @@ void FUN_7102284520(u8* L, u32 param_2, u64 param_3) {
     u8 stack_buf[16];
     u8* ctx = *reinterpret_cast<u8**>(L - 8);
     FUN_71003ab390(stack_buf, *reinterpret_cast<u32*>(ctx + 400));
-    u8* bm = BM_INST;
+    app::BossManager* bm = BM_INST;
     if (bm != nullptr) {
-        u64 boss_data = *reinterpret_cast<u64*>(bm + 8);
         long local_28 = *reinterpret_cast<long*>(stack_buf + 8);
-        FUN_71004eb4b0(boss_data,
+        FUN_71004eb4b0(bm->inner,
                        *reinterpret_cast<u32*>(local_28 + 8),
                        param_2, param_3);
     }
