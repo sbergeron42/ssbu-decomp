@@ -640,8 +640,8 @@ void* operator_index_7103735d80(lib::L2CValue* this_, int index) {
 
 extern "C" void FUN_710372ea10(void*, void*);
 
-void sort_710372e9f0(void* this_, void* p1) {
-    u8* ls = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(p1) + 8);
+void sort_710372e9f0(void* this_, lib::L2CValue* p1) {
+    u8* ls = reinterpret_cast<u8*>(p1->ptr_val);
     u8* base = *reinterpret_cast<u8**>(ls + 8);
     void* count = *reinterpret_cast<void**>(ls + 0x10);
     FUN_710372ea10(base + 0x10, count);
@@ -1197,8 +1197,8 @@ void* operator_index_hash_7103735db0(lib::L2CValue* this_, u64 hash) {
 
 extern "C" void FUN_71037301f0(void*, void*, void*);
 
-void sort_71037301b0(void* this_, void* p1, void* p2) {
-    u8* table = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(p1) + 8);
+void sort_71037301b0(void* this_, lib::L2CValue* p1, void* p2) {
+    u8* table = reinterpret_cast<u8*>(p1->ptr_val);
     void* base = *reinterpret_cast<void**>(table + 8);
     void* count = *reinterpret_cast<void**>(table + 0x10);
     void* stack_args[2] = {p2, this_};
