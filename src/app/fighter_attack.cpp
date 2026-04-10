@@ -21,6 +21,18 @@ extern "C" u64 aiGetTargetById_7100314030(void*, void*);
 // [derived: DAT_71052b5fd8 in Ghidra, passed as first arg to aiGetTargetById_7100314030]
 extern "C" void* DAT_71052b5fd8 HIDDEN;
 
+// Attack frame lookup: finds attack frame data struct from ctx+0x988 pointer
+// [derived: called by attack_start_frame / attack_end_frame with ctx+0x988]
+extern "C" u64 lookupAttackFrame_710033c360(u64);
+
+// Attack data lookup: finds attack data struct for a given attack index
+// [derived: called by attack_data_x0/x1/y0/y1 with *(ctx+0x988)]
+extern "C" u64 lookupAttackData_710033c510(s32);
+
+// Earliest hit frame lookup: finds hit frame data from AI state
+// [derived: called by most_earliest_hit_frame with AI_STATE]
+extern "C" u64 lookupEarliestHit_71003596f0(u64);
+
 // ---- AI target property accessors ------------------------------------------
 // Family of 10 functions, each 40 bytes, all follow the same pattern:
 //   1. Look up target info via aiGetTargetById_7100314030(DAT_71052b5fd8, *(L-8) + 0xc50)
@@ -108,6 +120,40 @@ extern "C" f32 target_motion_frame(u64 L) {
     u64 ctx = *(u64*)(L - 8);
     u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     return *(f32*)(info + 0x48);
+}
+
+// ---- Target attack property accessors (40B each) ---------------------------
+// Same pattern as target_height/pos_x/etc: aiGetTargetById + field read
+//
+// Target info struct additions (from attack functions):
+//   +0x120 [inferred: current_attack_start_frame, s32]
+//   +0x128 [inferred: current_attack_combo_end_frame, s32]
+//   +0x12c [inferred: current_attack_cancel_frame, s32]
+//   +0xe0  [inferred: damage, f32]
+
+// 0x7100366650 (40 bytes) — app::ai::target_current_attack_start_frame
+extern "C" s32 target_current_attack_start_frame(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    return *(s32*)(info + 0x120);
+}
+// 0x7100366680 (40 bytes) — app::ai::target_current_attack_combo_end_frame
+extern "C" s32 target_current_attack_combo_end_frame(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    return *(s32*)(info + 0x128);
+}
+// 0x71003666b0 (40 bytes) — app::ai::target_current_attack_cancel_frame
+extern "C" s32 target_current_attack_cancel_frame(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    return *(s32*)(info + 0x12c);
+}
+// 0x7100366f90 (40 bytes) — app::ai::target_damage
+extern "C" f32 target_damage(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    return *(f32*)(info + 0xe0);
 }
 
 // has_air_catch at 0x7100375f20: SKIPPED — leaf scheduling differs (NX compiler
@@ -200,12 +246,26 @@ extern "C" u8 check_stat_attention(u64 L) { return (*(u8*)(AI_STATE(L) + 0x54) >
 extern "C" u8 check_stat_final_act(u64 L) { return (*(u8*)(AI_STATE(L) + 0x55) >> 1) & 1; }
 // 0x71003613d0 — check_stat_invincible (byte load at +0x55, bit 5)
 extern "C" u8 check_stat_invincible(u64 L) { return (*(u8*)(AI_STATE(L) + 0x55) >> 5) & 1; }
+// 0x7100361450 — check_stat_damage_elec (byte load at +0x56, bit 1)
+// [inferred: electric damage state flag]
+extern "C" u8 check_stat_damage_elec(u64 L) { return (*(u8*)(AI_STATE(L) + 0x56) >> 1) & 1; }
 // 0x7100361470 — check_stat_sp_dir (byte load at +0x56, bit 4)
 extern "C" u8 check_stat_sp_dir(u64 L) { return (*(u8*)(AI_STATE(L) + 0x56) >> 4) & 1; }
 // 0x7100361490 — check_stat_unguarded_hind (byte load at +0x56, bit 5)
 extern "C" u8 check_stat_unguarded_hind(u64 L) { return (*(u8*)(AI_STATE(L) + 0x56) >> 5) & 1; }
 // 0x71003614b0 — check_stat_unguarded (byte load at +0x56, bit 6)
 extern "C" u8 check_stat_unguarded(u64 L) { return (*(u8*)(AI_STATE(L) + 0x56) >> 6) & 1; }
+// 0x7100361590 — check_stat_damage (s32 status_kind comparison)
+// [inferred: returns true if status_kind at +0x74 == 5 (STATUS_KIND_DAMAGE)]
+extern "C" bool check_stat_damage(u64 L) {
+    return *(s32*)(AI_STATE(L) + 0x74) == 5;
+}
+// 0x71003615d0 — check_stat_attack_hold (s32 status_kind range check)
+// [inferred: returns true if status_kind in {23, 24} (attack hold states)]
+extern "C" bool check_stat_attack_hold(u64 L) {
+    u32 v = (u32)(*(s32*)(AI_STATE(L) + 0x74) - 23);
+    return v < 2;
+}
 // 0x71003617a0 — check_stat_touch_u (byte load at +0x58, bit 2)
 extern "C" u8 check_stat_touch_u(u64 L) { return (*(u8*)(AI_STATE(L) + 0x58) >> 2) & 1; }
 // 0x71003617c0 — check_stat_touch_l (word load at +0x58, bit 0)
@@ -220,6 +280,9 @@ extern "C" u8 check_stat_dive(u64 L) { return (*(u8*)(AI_STATE(L) + 0x58) >> 5) 
 extern "C" u8 check_stat_unable_cliff_xlu(u64 L) { return (*(u8*)(AI_STATE(L) + 0x59) >> 1) & 1; }
 // 0x7100361860 — check_stat_unable_escape_air (byte load at +0x59, bit 2)
 extern "C" u8 check_stat_unable_escape_air(u64 L) { return (*(u8*)(AI_STATE(L) + 0x59) >> 2) & 1; }
+// 0x7100361880 — check_stat_unable_attack (byte load at +0x59, bit 3)
+// [inferred: flag indicating fighter cannot attack]
+extern "C" u8 check_stat_unable_attack(u64 L) { return (*(u8*)(AI_STATE(L) + 0x59) >> 3) & 1; }
 // 0x71003618a0 — check_stat_unable_special (byte load at +0x59, bit 4)
 extern "C" u8 check_stat_unable_special(u64 L) { return (*(u8*)(AI_STATE(L) + 0x59) >> 4) & 1; }
 // 0x71003618c0 — check_stat_unable_jump (byte load at +0x59, bit 5)
@@ -331,6 +394,9 @@ extern "C" bool check_stat_floor_pass(u64 L) {
     }
     return false;
 }
+// 0x7100361640 — check_stat_floor_damage (48B): SKIPPED
+// NX compiler generates separate return blocks (12 insn / 48B),
+// upstream Clang 8 merges them (11 insn / 44B)
 // 0x7100361670 — check_stat_ground_free (88B, can act on ground)
 // [derived: true if fighter is free to act while grounded]
 // +0x54 bit 30 [inferred: action_lock, blocks all free checks]
@@ -453,6 +519,16 @@ extern "C" u8 check_passable(u64 L) {
 extern "C" f32 shield_rate(u64 L) {
     u64 ai = AI_STATE(L);
     return *(f32*)(ai + 0xe8) / *(f32*)(ai + 0xec);
+}
+// 0x71003612c0 — current_attack_cancel_frame (16B, s32 field read)
+// [inferred: current attack's cancel frame from AI state +0x12c]
+extern "C" s32 current_attack_cancel_frame(u64 L) {
+    return *(s32*)(AI_STATE(L) + 0x12c);
+}
+// 0x71003612e0 — attack_phase (16B, s32 field read)
+// [inferred: current attack phase from AI state +0x130]
+extern "C" s32 attack_phase(u64 L) {
+    return *(s32*)(AI_STATE(L) + 0x130);
 }
 // 0x7100361ce0 — is_sp_u_available (16B, tail-call)
 // [derived: checks if up-special is available, passes AI state + mode 0]
@@ -648,6 +724,13 @@ extern "C" u8 check_target_stat_invincible(u64 L) {
     u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     return (*(u8*)(info + 0x55) >> 5) & 1;
 }
+// 0x7100366880 — check_target_stat_attack_catch (44B, byte load at +0x55, bit 6)
+// [inferred: target is in attack-catch state (grab attempt)]
+extern "C" u8 check_target_stat_attack_catch(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    return (*(u8*)(info + 0x55) >> 6) & 1;
+}
 // 0x71003668b0 — check_target_stat_reflect (44B, byte load at +0x56, bit 2)
 extern "C" u8 check_target_stat_reflect(u64 L) {
     u64 ctx = *(u64*)(L - 8);
@@ -744,6 +827,34 @@ extern "C" bool check_target_stat_rebirth(u64 L) {
     u64 ctx = *(u64*)(L - 8);
     u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
     return *(s32*)(info + 0x74) == 0x1f;
+}
+// 0x7100366b30 — check_target_stat_damage (48B, status_kind == 5)
+// [inferred: target is in damage state]
+extern "C" bool check_target_stat_damage(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    return *(s32*)(info + 0x74) == 5;
+}
+// 0x7100366bf0 — check_target_stat_attack (52B, status_kind in {21, 22})
+// [inferred: target is in attack state (0x15 = 21, 0x16 = 22)]
+extern "C" bool check_target_stat_attack(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    return (u32)(*(s32*)(info + 0x74) - 21) < 2;
+}
+// 0x7100366c30 — check_target_stat_attack_hold (52B, status_kind in {23, 24})
+// [inferred: target is in attack hold state (0x17 = 23, 0x18 = 24)]
+extern "C" bool check_target_stat_attack_hold(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    return (u32)(*(s32*)(info + 0x74) - 23) < 2;
+}
+// 0x7100366ca0 — check_target_stat_unable_attack (44B, byte at +0x59, bit 3)
+// [inferred: target cannot attack]
+extern "C" u8 check_target_stat_unable_attack(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 info = aiGetTargetById_7100314030(DAT_71052b5fd8, (void*)(ctx + 0xc50));
+    return (*(u8*)(info + 0x59) >> 3) & 1;
 }
 // 0x7100366c70 — check_target_stat_squat (44B, byte at +0x58, bit 6)
 extern "C" u8 check_target_stat_squat(u64 L) {
@@ -845,6 +956,107 @@ extern "C" u32 is_1on1() {
 extern "C" u8 is_hp() {
     u8* mgr = *(u8**)DAT_71052b84f8;
     return *(u8*)(mgr + 0xc3);
+}
+
+// ---- AI context direct-read accessors (read from *(L-8) directly) ----------
+// These read from the AI control struct at *(L-8) without going through +0x168
+
+// 0x710036b9d0 (12 bytes) — app::ai::catch_attack_cancel_frame
+// [inferred: reads u8 flag/frame from ctx+0xBAA]
+extern "C" u8 catch_attack_cancel_frame(u64 L) {
+    return *(u8*)(*(u64*)(L - 8) + 0xbaa);
+}
+// 0x710036ba80 (12 bytes) — app::ai::num_of_attack_123
+// [inferred: number of 1/2/3 attack sequences, s32 at ctx+0xB14]
+extern "C" s32 num_of_attack_123(u64 L) {
+    return *(s32*)(*(u64*)(L - 8) + 0xb14);
+}
+// 0x710036ba90 (12 bytes) — app::ai::has_attack_100
+// [inferred: boolean flag for 100-hit combo attack, u8 at ctx+0xB18]
+extern "C" u8 has_attack_100(u64 L) {
+    return *(u8*)(*(u64*)(L - 8) + 0xb18);
+}
+
+// ---- Status kind classification helpers ------------------------------------
+// Pure comparison functions — no pointer chains, just check status_kind range
+
+// 0x7100f0a970 (16 bytes) — is_status_kind_attack
+// [inferred: returns true if status_kind is an attack (481..490, 0x1E1..0x1EA)]
+extern "C" bool is_status_kind_attack(s32 status) {
+    return (u32)(status - 0x1e1) < 10;
+}
+// 0x7101227750 (16 bytes) — is_status_kind_attack (wider range)
+// [inferred: returns true if status_kind is an attack or extended attack (481..496)]
+extern "C" bool is_status_kind_attack_7101227750(s32 status) {
+    return (u32)(status - 0x1e1) < 16;
+}
+
+// ---- Attack frame/data accessors (non-leaf, lookup + field read) ------------
+// These call lookup functions and read fields from the returned struct.
+// attack_start_frame / attack_end_frame pass a pointer (ctx+0x988) to lookupAttackFrame.
+// attack_data_* functions pass a value *(ctx+0x988) to lookupAttackData.
+
+// 0x7100369ad0 (36 bytes) — app::ai::attack_start_frame
+extern "C" s32 attack_start_frame(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 data = lookupAttackFrame_710033c360(ctx + 0x988);
+    if (data == 0) return 0;
+    return *(s32*)(data + 0x8);
+}
+// 0x7100369b70 (36 bytes) — app::ai::attack_end_frame
+extern "C" s32 attack_end_frame(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 data = lookupAttackFrame_710033c360(ctx + 0x988);
+    if (data == 0) return 0;
+    return *(s32*)(data + 0xc);
+}
+
+// ---- Attack data accessors (non-leaf, lookup + field read) ------------------
+// These call lookupAttackData_710033c510 with an attack index from ctx+0x988,
+// then read a float field from the returned struct.
+// Attack data struct layout (partial):
+//   +0x08 [inferred: start_frame, s32 — from attack_start_frame]
+//   +0x0c [inferred: end_frame, s32 — from attack_end_frame]
+//   +0x18 [inferred: hitbox x0, f32]
+//   +0x1c [inferred: hitbox x1, f32]
+//   +0x20 [inferred: hitbox y0, f32]
+//   +0x24 [inferred: hitbox y1, f32]
+
+// 0x7100369c10 (48 bytes) — app::ai::attack_data_x0
+extern "C" f32 attack_data_x0(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 data = lookupAttackData_710033c510(*(s32*)(ctx + 0x988));
+    if (data == 0) return 0.0f;
+    return *(f32*)(data + 0x18);
+}
+// 0x7100369c40 (48 bytes) — app::ai::attack_data_x1
+extern "C" f32 attack_data_x1(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 data = lookupAttackData_710033c510(*(s32*)(ctx + 0x988));
+    if (data == 0) return 0.0f;
+    return *(f32*)(data + 0x1c);
+}
+// 0x7100369c70 (48 bytes) — app::ai::attack_data_y0
+extern "C" f32 attack_data_y0(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 data = lookupAttackData_710033c510(*(s32*)(ctx + 0x988));
+    if (data == 0) return 0.0f;
+    return *(f32*)(data + 0x20);
+}
+// 0x7100369ca0 (48 bytes) — app::ai::attack_data_y1
+extern "C" f32 attack_data_y1(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 data = lookupAttackData_710033c510(*(s32*)(ctx + 0x988));
+    if (data == 0) return 0.0f;
+    return *(f32*)(data + 0x24);
+}
+// 0x710036b060 (48 bytes) — app::ai::most_earliest_hit_frame
+// [inferred: finds the earliest hit frame from AI state, returns -1 if not found]
+extern "C" s32 most_earliest_hit_frame(u64 L) {
+    u64 ctx = *(u64*)(L - 8);
+    u64 data = lookupEarliestHit_71003596f0(*(u64*)(ctx + 0x168));
+    if (data == 0) return -1;
+    return *(s32*)(data + 0x10);
 }
 
 // ---- Item param accessors (leaf, singleton + indexed array load) ------------

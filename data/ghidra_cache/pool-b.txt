@@ -488,3 +488,42 @@ FUN_710165c570 (DOLL_HIT_DATA_OFFSET_1, 40 bytes) — FPA2 +0xc08 → +0x1d8, re
 FUN_710165c5a0 (DOLL_HIT_DATA_OFFSET_2, 48 bytes) — same chain + 0xc offset
 FUN_71015cfca0 (powf, 4 bytes) — tail-call to ::powf
 FUN_71015cfae0 (rotate_z, 12 bytes) — tail-call to FUN_710160e050
+
+=== BATCH: DamageModule lua_bind dispatchers (35 functions) ===
+All 35 DamageModule lua_bind dispatchers rewritten with typed vtable wrappers.
+Fixed parameter type bugs: damage_impl, reaction_impl, power_max_impl had extra u64 params;
+add_damage_impl had u64 instead of f32.
+4 functions needed asm() + dummy u64 for register allocation (binary uses x2 for passthrough).
+100% byte-match verified.
+
+Vtable slots recovered:
+  0x50 sleep, 0x60 init_damage, 0xA0 set_force_damage, 0xC0 add_damage,
+  0xC8 damage, 0xD0 reaction, 0xD8 power_max, 0xE0 check_no_reaction,
+  0xE8 set_no_reaction_mode_status, 0xF8 reset_no_reaction_mode_status,
+  0x120 set_no_reaction_damage_power, 0x128 set_no_reaction_no_effect,
+  0x130 is_no_reaction_mode_perfect, 0x188 damage_log, 0x1B0 set_attacker_info,
+  0x1D8 is_capture_cut, 0x1E8 set_ignore_capture_cut_no,
+  0x210-0x238 set_damage/reaction muls, 0x240 set_weak_param,
+  0x248/0x250 damage_lock, 0x258 is_damage_lock, 0x268 heal,
+  0x288 overwrite_log_reaction_frame, 0x290/0x298 damage_info_log,
+  0x2A0 set_force_damage_from_last_damage, 0x2A8 is_paralyze,
+  0x2D0/0x2D8 critical_hit
+
+=== BATCH: AI attack/damage accessors (11 functions) ===
+AI state fields:
+  +0x56 bit 1: damage_elec flag
+  +0x59 bit 3: unable_attack flag  
+  +0x74: status_kind s32 (damage==5, attack_hold==23||24)
+  +0x12c: current_attack_cancel_frame s32
+  +0x130: attack_phase s32
+
+Direct ctx reads:
+  ctx+0xBAA: catch_attack_cancel_frame u8
+  ctx+0xB14: num_of_attack_123 s32
+  ctx+0xB18: has_attack_100 u8
+
+Status kind ranges:
+  is_status_kind_attack: [0x1E1, 0x1EA] (10 statuses)
+  is_status_kind_attack wider: [0x1E1, 0x1F0] (16 statuses)
+
+All 11 byte-match verified.
