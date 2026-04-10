@@ -24,6 +24,7 @@ extern "C" u64 DAT_7105163910 __attribute__((visibility("hidden"))); // stage su
 extern "C" u64 DAT_7105163720 __attribute__((visibility("hidden"))); // stage sub-obj vtable (vt_720)
 extern "C" u64 DAT_7105163788 __attribute__((visibility("hidden"))); // stage sub-obj vtable (vt_788)
 extern "C" u64 DAT_7105162ed0 __attribute__((visibility("hidden"))); // stage sub-obj vtable (vt_ed0)
+extern "C" u64 DAT_7105163a10 __attribute__((visibility("hidden"))); // stage sub-obj vtable (vt_a10)
 extern "C" void stage_vt7105162ed0_payload_release_7102413d40(void*, s32) asm("FUN_7102413d40");
 
 // Cleanup helpers for the two small D0 destructors below. Both are tail-called
@@ -296,6 +297,44 @@ extern "C" void stage_vt7105162ed0_D1_dtor_710303e0a0(StageSubObjVt* self)
         jeFree_710392e590(sub);
     }
     jeFree_710392e590(inner);
+}
+
+// Inner object for stage_vt7105163a10: handle provider at +0x20, id at +0x28,
+// nested poly at +0x18 — all in a single flat struct. Unlike vt7105162ed0 the
+// handle-release happens unconditionally (no null guard on the provider).
+struct StageInner_HandlePlusNested {
+    u8 head[24];                    // padding before nested pointer
+    NestedPoly* nested;             // at byte offset 24 [derived: destroy via vt[1]]
+    HandleProviderSlot** provider;  // at byte offset 32 [derived: 2-level payload walk]
+    s32 id;                         // at byte offset 40 [derived: passed to release helper]
+};
+
+// 0x71030554a0 (104 bytes) — D0 destructor for stage sub-object with vtable
+// DAT_7105163a10. Unlike stage_vt7105162ed0_D1 this one does the handle
+// release first (unconditionally, provider is assumed non-null) and then
+// clears the nested polymorphic via vt[1] — exactly mirroring the compiler's
+// scheduling. Then delete inner, then delete self (D0 vs ed0's D1).
+// [derived: disasm at 0x71030554a0]
+extern "C" void stage_vt7105163a10_D0_dtor_71030554a0(StageSubObjVt* self)
+{
+    auto* inner = static_cast<StageInner_HandlePlusNested*>(self->owned_inner);
+    self->vtable = &DAT_7105163a10;
+    self->owned_inner = nullptr;
+    if (inner != nullptr) {
+        HandleProviderSlot* level1 = *inner->provider;
+        s32 id = inner->id;
+#ifdef MATCHING_HACK_NX_CLANG
+        asm("" ::: "memory");
+#endif
+        void* payload = *reinterpret_cast<void**>(
+            reinterpret_cast<u8*>(level1) + 8);
+        stage_vt7105162ed0_payload_release_7102413d40(payload, id);
+        NestedPoly* nested = inner->nested;
+        inner->nested = nullptr;
+        if (nested != nullptr) nested->destroy();
+        jeFree_710392e590(inner);
+    }
+    jeFree_710392e590(self);
 }
 
 // 0x7103052790 (100 bytes) — sibling of stage_D0_dtor_71030525a0 with the same
