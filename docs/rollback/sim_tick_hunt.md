@@ -197,21 +197,78 @@ in descending priority:
      `main_loop`'s call chain at a call site not yet investigated.
    - xref the install sites (`pead::Delegate2` constructor) and see what
      function-pointer constants are passed to them.
-2. **`FUN_7103632850` scene state machine, branch `DAT_710593a530 == 3`.**
-   The 4,268-byte scene state machine was skimmed in the first pass as
-   "scene / UI panel state transition with 3-state 0/1/2 switch". The
-   **match-active state** is `DAT_710593a530 == 3`, which was not
-   investigated. If any branch of this function runs per-fighter logic
-   while in match state, this is where it hides.
-3. **Auditing the 12 distinct `TrackDesc*` arguments to `FUN_71035763c0`.**
-   The 12-call pattern is the most-repeated unique site in `main_loop`.
-   `FUN_71035763c0` itself is a keyframe-track sampler (cleared in
-   main_loop.md §6c), but the 12 callers pass **different** `TrackDesc*`
-   args. If one of those tracks is a fighter-transform track, the caller
-   that sets up those 12 descriptors is doing per-fighter work.
+2. ~~**`FUN_7103632850` scene state machine, branch `DAT_710593a530 == 3`.**~~
+   ~~The 4,268-byte scene state machine was skimmed in the first pass as~~
+   ~~"scene / UI panel state transition with 3-state 0/1/2 switch". The~~
+   ~~**match-active state** is `DAT_710593a530 == 3`, which was not~~
+   ~~investigated.~~
+   **Cleared — FALSIFIED.** Full MCP decomp shows the function has **only
+   three states** (0, 1, 2). There is no state-3 branch; when the current
+   or target state is anything other than 0/1/2, the function falls
+   through and returns immediately. The 4,268 bytes are all UI-panel
+   state transition: (a) dirty-flag vectors at `param_1+{0x178,0x198,
+   0x1b8,0x1d8}` of stride-`0x40` panel subscribers whose `+0x14` byte is
+   toggled on state enter/exit, (b) 5 object dirty bytes at
+   `param_1+{0x78,0x98,0xb8,0xd8,0xf8}+0xf0`, (c) on enter state 2, a
+   linked-list walk over `[param_1+0x18]+0x128` that builds a `0x1a`-byte
+   fixed string containing `"VSM_SRV_IPLUG"` (literal at
+   `s_VSM_SRV_IPLUG_71043fedc5`) and calls the layout-message lookup
+   `FUN_7103856280` + push `FUN_710386c530`, and (d) a subscriber-notify
+   pass over `param_1+{0x260..0x268}` that calls `FUN_71035fb010` on 4
+   indexed channels (on enter state 2) or 1 channel (on enter state 1).
+   Zero fighter iteration, zero `BattleObjectModuleAccessor` vtable
+   touches. The "VSM_SRV_IPLUG" key identifies this unambiguously as a
+   scene UI state machine (View State Machine / Service Registry IPLUG
+   subscriber). **DEAD END.** Full audit in
+   `data/ghidra_cache/pool-b.txt` under
+   "FUN_7103632850 full branch audit".
+3. ~~**Auditing the 12 distinct `TrackDesc*` arguments to `FUN_71035763c0`.**~~
+   **Cleared — FALSIFIED.** Direct read of the cached main_loop
+   decomp at `asm/ghidra_FUN_7103747270.c` lines 2520–2920 shows the
+   "12 calls" are actually **four animation-blend evaluations**, not
+   12 distinct track descriptors. Each evaluation emits a "triplet" of
+   callsites (`len==1` / `len>1 cur-frame` / `len>1 next-frame`), at
+   most 2 of which fire per evaluation — giving the 12 grep-matched
+   sites. The channel struct is `{u32 keyframe_count @ +0x08, data[] @
+   +0x28, f32 weight @ +0x38, i32 cur_index @ +0x44, f32 lerp_fraction
+   @ +0x48}`. Triplets 3 and 4 write their blended output into the
+   render singleton `DAT_7105336ce8` at `**(+8)+0x390..+0x3b8` — the
+   **same render singleton** used by `FUN_71036186d0` (camera
+   projection) and `FUN_710361d040` (camera view-matrix update).
+   Triplets 1 and 2 post-scale their output by `0.32573497` and
+   `0.28209478` — the classic `1/(2√π)` spherical-harmonic band
+   constants — and hand the result to the render module via
+   `vtable[+0x128]`/`vtable[+0x130]`. This is animation-blended
+   scene-lighting / shader-constant evaluation (probably SH ambient
+   lighting driven by a scene animation clip). No fighter data, no
+   entity iteration. **DEAD END.** Full audit in
+   `data/ghidra_cache/pool-b.txt` under
+   "12x FUN_71035763c0 in main_loop".
 
 **Recommendation for pools A and C:** deprioritize anything reachable
-only through the four DEAD functions above. Converge effort on leads 1–3.
+only through the four DEAD functions above. Leads 2 and 3 have now also
+been cleared (see strikethroughs above), leaving **lead 1 (pead::Delegate
+queue)** as the single remaining hypothesis on pool B's angle.
+
+### Pool B — next-pass single remaining lead
+
+All static xref analysis has been exhausted against the `main_loop`
+direct children, the `FighterManager` singleton readers (first 60 READ
+xrefs were all single-field queries), and the two promising indirect
+leads (the scene state machine and the 12 animation-blend callsites).
+The remaining hypothesis is that the per-fighter sim step is installed
+as a **`pead::Delegate` function pointer** which is invoked somewhere
+inside `main_loop`'s direct-call graph at a call site already classified
+as "neutral" or "unknown" — most likely via `pead::Thread::runDelegates`
+or similar.
+
+Next concrete step (not yet done): find the `pead::Delegate::operator()`
+/ `pead::Thread::runDelegates()` implementation in the binary (string
+table already has `pead::DelegateBase`, and `FUN_710013c570` is the
+only xref to the `"pead::MainThread"` literal, so the `pead::` vtable
+layout is likely reachable from there). Then xref the install sites
+(`pead::Delegate2<...>` constructors) to find every delegate posted to
+`pead::MainThread` and classify each by its function-pointer constant.
 
 ---
 

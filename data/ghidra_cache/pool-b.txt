@@ -1064,3 +1064,142 @@ Next-pass: search for a caller of these consumers that sits one step below the
 separate sim worker thread (if any) — the SignalEvent/WaitEvent pair at 0x71039c06f0
 /0x71039c06c0 in main_loop is still the most likely sim/present synchronization.
 
+
+
+== FUN_7103632850 (4268B, scene state machine) — full branch audit ==
+
+Decompiled via MCP. The pool-B handoff hypothesis "the DAT_710593a530 == 3
+match-active branch is the sim dispatcher hiding inside the scene state
+machine" is FALSIFIED. The function has ONLY THREE states (0, 1, 2).
+State 3 is not handled at all — when the current state (*piVar13 =
+param_1+0x08) or target state (*(int*)(*(int**)(param_1+0x2f0))) is 3, the
+function falls through both exit and entry blocks and returns immediately.
+
+Shape of the function:
+  0. lock a mutex
+  1. Load current state = *(int*)(param_1+0x08) and target state
+     = **(int**)(param_1+0x2f0) [sibling object +0x00]
+  2. If current == target, unlock and return (no transition)
+  3. Exit current state block:
+       case state == 2:
+         - clear dirty-flag vectors at param_1+{0x178,0x198,0x1b8,0x1d8}
+           (each is a vector<entry_0x40> with dirty bytes at entry+0x14)
+         - clear 5 object dirty bytes at param_1+{0x78,0x98,0xb8,0xd8,0xf8}+0xf0
+       case state == 1:
+         - clear dirty-flag vector at param_1+0x50
+         - clear entry pointed to by param_1+0x68 (object+0xf0) plus a
+           sub-object at +0x40/+0x50 (+0x248/+0x288 via DAT_00001290
+           pointer arithmetic, which is a PIC fixup artifact)
+       case state == 0:
+         - nop (the "not yet entered" state)
+  4. Enter target state block:
+       case target == 2:
+         - set the 4 dirty-flag vectors and 5 object dirty bytes to 1
+         - walk [param_1+0x18]+0x128 linked list and for each node:
+           * Build a 0x1a-byte fixed string containing "VSM_SRV_IPLUG"
+             (literal at s_VSM_SRV_IPLUG_71043fedc5)
+           * FUN_7103856280(stack, node[5], &fixed_string) — layout message
+             lookup
+           * If found, build a std::string payload from param_1+{0x210..0x220}
+             and call FUN_710386c530(...) — layout message push
+         - Subscriber notify pass: walks param_1+{0x260..0x268} subscriber
+           vector and for each entry calls FUN_71035fb010(observer,
+           param_1+0x170, 0), (...+0x1b0, 2), (...+0x1d0, 3), (...+400, 1)
+           (4 channels — subscriber gets notified on all 4)
+       case target == 1:
+         - set dirty-flag vector at param_1+0x50
+         - set object at param_1+0x68 and its sub-objects to active
+         - subscriber notify on channel 0 only (param_1+0x48)
+       case target == 0:
+         - clear everything (exit-all state)
+
+  5. Post-transition cleanup pass at *piVar13 == 2: walks subscriber vector
+     again and for each entry calls FUN_7103633d50 with param+0x40+0x68 +
+     the subscriber index (the state-3-exit hypothesis would have landed
+     here, but this is AFTER the state transition and is gated on "I am
+     now state 2", not "state 3 entered")
+  6. unlock
+  7. final tail: if new state == 1, update a sibling counter at
+     [param_1+0x68]+0xc / +0x1c from iVar5 (prior step value) and call
+     FUN_710363c960
+
+Zero FighterManager iteration. Zero BattleObjectModuleAccessor vtable slots
+touched. The "entries" in the 4 dirty-flag vectors are stride-0x40 panel
+subscribers, not stride-0x200+ BattleObject structs. The "VSM_SRV_IPLUG"
+string literal is a layout-system key (Vsm = View State Machine / Service
+Registry kind of thing), which nails the function firmly as a scene UI
+state machine.
+
+VERDICT: DEAD END. The scene state machine is purely UI; there is no
+hidden state-3 sim branch. DAT_710593a530 is not directly touched by this
+function — whatever reads/writes it lives elsewhere.
+
+Lead 2 from sim_tick_hunt.md pool-B handoff is cleared. Remaining leads:
+  1. pead::Delegate queue hypothesis (still the top candidate)
+  3. 12 distinct TrackDesc* args to FUN_71035763c0
+
+
+== 12x FUN_71035763c0 in main_loop — 4-triplet animation blend ==
+
+Decompiled in place in asm/ghidra_FUN_7103747270.c at lines 2520..2920.
+The 12 callsites are FOUR independent animation-blend evaluations (each
+emits 3 callsites: "len==1 single call", "len>1 current-frame call",
+"len>1 next-frame call" — one triplet, at most 2 calls fire per
+evaluation). The grep-matched 12 callsites = 4 triplets × 3.
+
+Each triplet's shape:
+  for iter over plVar_N[4..5] (vector of channel descriptors):
+    find first channel where *(char*)*plVar70 == 0 (non-disabled)
+    if (channel.keyframe_count == 1)    FUN_71035763c0(*data, &local_270, index)
+    else {
+        cur = channel.cur_index (+0x44)
+        FUN_71035763c0(channel.data[cur],   &local_270, index)
+        if (cur < count-1) {
+            weight = 1.0 - channel.lerp (+0x48)
+            scale local_270 by weight
+            FUN_71035763c0(channel.data[cur+1], &local_23f0, index)
+            local_270 = local_270 + channel.lerp * local_23f0
+        }
+    }
+    multiply local_270 by channel weight (*(float*)(plVar49 + 7) = +0x38)
+
+So the "channel" struct layout is:
+  +0x08 keyframe_count
+  +0x28 data[]  (pointer-to-trackdesc array)
+  +0x38 weight (f32)
+  +0x44 cur_index (int)
+  +0x48 lerp_fraction (f32)
+
+Output destinations:
+  Triplets 3 and 4 (lines 2787..2920) write the blended result into
+  the render singleton DAT_7105336ce8:
+    lVar67 = **(long **)(DAT_7105336ce8 + 8)
+    *(long*)(lVar67 + 0x390..+0x3b8) = NEON store (3 × 16B = 48 bytes)
+  Triplets 1 and 2 (lines 2561..2720) write to stack locals
+  local_270..local_250, which are then scaled by SH-like constants
+  0.32573497 and 0.28209478 (confirmed as 1/(2*sqrt(pi))-family
+  spherical-harmonic band coefficients, matching an SH lighting /
+  scene ambient probe reconstruction), and passed through vtable
+  calls at (**(lVar65+0x10))+0x128, +0x130 on the render module.
+
+The default-value fallback path at line 2765 loads constants from
+_DAT_7105333b10..b30 directly into the same lVar67+0x390..+0x3b8
+slots when no active channel is found — "use defaults if no animation
+is driving this subsystem right now".
+
+The first argument to FUN_71035763c0 is always the per-keyframe data
+blob pointer (track data bytes); the second is the output scratch
+(&local_270 or &local_23f0); the third is either a frame/chunk index
+(uVar33 from vtable call *(lVar65+0x10)+0x118, or constant 0x14 = 20
+for triplets 3 and 4). No "12 TrackDesc*" distinct descriptors exist —
+there are 4 CHANNELS whose active keyframe data pointer is passed.
+
+VERDICT: DEAD END. The 12 calls are not per-entity dispatch; they are
+4 independent animation-blend evaluations for scene/render state. All
+four outputs land in the render singleton or are post-scaled by SH
+lighting constants. No fighter iteration anywhere. Render-singleton
+DAT_7105336ce8 is the same singleton used by FUN_71036186d0 (camera
+projection) and FUN_710361d040 (camera view-matrix update), confirming
+these all belong to the same graphics subsystem.
+
+Lead 3 from sim_tick_hunt.md pool-B handoff is cleared.
