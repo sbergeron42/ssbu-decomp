@@ -1,4 +1,5 @@
 #include "types.h"
+#include "app/BossManager.h"
 #include "app/ItemManager.h"
 #include "app/BattleObjectWorld.h"
 #include "app/GroundCollisionLine.h"
@@ -2648,7 +2649,7 @@ extern "C" void send_event_on_start_boss_entry(u32 battle_object_id) {
 // FUN_71004eb4b0 [inferred: BossManager::on_boss_finish dispatch]
 // [derived: Ghidra disasm at 0x71015c84b0]
 extern "C" void FUN_71003ab390(void*, u32);
-extern "C" void* DAT_71052b7ef8 HIDDEN;  // lib::Singleton<app::BossManager>::instance_
+extern "C" app::BossManager* DAT_71052b7ef8 HIDDEN;  // lib::Singleton<app::BossManager>::instance_
 extern "C" void FUN_71004eb4b0(void*, u32, u32, u64);
 
 namespace app { namespace boss_private {
@@ -2656,15 +2657,15 @@ extern "C" void send_event_on_boss_finish(u8* lua_state, u64 hash40) {
     u8 buf[16];
     u8* accessor = *(u8**)(lua_state - 8);
     FUN_71003ab390(buf, *(u32*)(accessor + 0x190));
-    u8* boss_mgr = (u8*)DAT_71052b7ef8;
-    if (boss_mgr != 0) {
+    app::BossManager* bm = DAT_71052b7ef8;
+    if (bm != nullptr) {
         u8* obj = *(u8**)(buf + 8);
         u32 w1 = *(u32*)(obj + 8);
         u32 w2 = *(u32*)(obj + 0xc);
 #ifdef MATCHING_HACK_NX_CLANG
         asm("");
 #endif
-        FUN_71004eb4b0(*(void**)(boss_mgr + 8), w1, w2, hash40);
+        FUN_71004eb4b0(bm->inner, w1, w2, hash40);
     }
 }
 }} // namespace app::boss_private

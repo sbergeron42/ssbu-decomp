@@ -195,6 +195,114 @@ Logic: FUN_7103950a80, 7103950ae0, 7103950e50, 7103951170, 7103951e00,
 NON-MATCHING: binary has 2 extra `b .+4` NOP-branches per wrapper (8 bytes)
 that optnone doesn't reproduce. Frame sizes also differ for logic functions.
 
+# Session: 2026-04-09 (BossManager struct mapping)
+
+== Boss function survey (from search_functions_by_name "Boss") ==
+28 functions found. Key ones decompiled below.
+
+== create_boss (71015c8d80) — not a BossManager struct consumer ==
+Creates a boss item via ItemManager. Uses BossManager fields indirectly (reads from inner).
+Not useful for struct mapping — operates on ItemParamAccessor and ItemManager.
+
+== calc_boss_hp_mul_sum (71015c9da0) — WorkModule dispatch ==
+Dispatches through BattleObjectModuleAccessor+0x50 (WorkModule). No BossManager fields.
+
+== is_boss_battle (71015cfeb0) — global parameter check ==
+Reads DAT_71052c4268 after guard init. No BossManager fields — uses global param.
+
+== send_event_on_boss_dead (71015c8620) — LARGE, maps BossManagerInner fields ==
+BossManagerInner fields confirmed:
+- +0x110: entity_list_begin (std::vector<shared_ptr<BossEntity>>, 0x10 stride)
+- +0x118: entity_list_end
+- +0x144: u32 (passed as param to boss finish callback vtable[0x28])
+- +0x148: u32 (passed as param to boss finish callback vtable[0x60])
+Entity entries use shared_ptr pattern: [0]=managed ptr, [8]=control block.
+Handles hash 0x18e specially (creates new boss entity, assigns to list).
+Handles hash 0x175 specially (searches ItemManager active list for 0x17b).
+Falls through to team param recording for other hashes.
+
+== send_event_on_boss_finish (71015c84b0) — simple dispatcher ==
+Checks singleton != 0, calls FUN_71004eb4b0(inner, obj.id, obj.kind, hash40).
+
+== send_event_on_boss_defeat (71015c8510) — list iteration ==
+Same entity_list pattern as BossManager.cpp's notify_on_boss_defeat_impl.
+Resolves entity via shared_ptr, checks hash via vtable[0x30], calls vtable[0x50].
+
+== send_event_on_start_boss_entry (71015c8450) — ItemManager iteration ==
+No BossManager fields — iterates ItemManager+0x28..+0x30 list.
+
+== start_boss_finish (7102284520) — simple dispatcher ==
+Same as send_event_on_boss_finish, different TU.
+
+== is_boss_no_dead (71015c8c20) — leaf accessor ==
+Returns *(u8*)(inner + 0x14e) != 0. Confirms no_dead_flag.
+
+== is_standard_boss_series (71022845b0) — FighterManager + global param ==
+No BossManager fields.
+
+== send_event_on_boss_keyoff_bgm (71015c85e0) — dispatcher ==
+Calls FUN_71004e9e30(inner, battle_object_id). Simple null-check + dispatch.
+
+== BossManagerInner struct layout (cumulative) ==
++0x000: unk padding
++0x100: s32 state          [derived: is_stoppable_se_impl checks == 4]
++0x110: void** entity_list_begin  [derived: send_event_on_boss_dead/defeat iterate]
++0x118: void** entity_list_end    [derived: send_event_on_boss_dead/defeat iterate]
++0x144: u32 finish_param_1  [derived: send_event_on_boss_dead passes to vtable[0x28]]
++0x148: u32 finish_param_2  [derived: send_event_on_boss_dead passes to vtable[0x60]]
++0x14e: u8 no_dead_flag     [derived: is_boss_no_dead checks != 0]
++0x164: s32 stop_count      [derived: is_boss_stop checks > 0]
+
+# Session: 2026-04-09 (boss function batch 2)
+
+== FighterInformation__summon_boss_id_impl (71020c9f40) — ALREADY DECOMPED ==
+Trivial leaf: fi->data->summon_boss_id (+0x9A0). Already in FighterInformation.cpp.
+
+== GroundModule__set_ignore_boss_impl (7102029aa0) — ALREADY DECOMPED ==
+Vtable dispatch: ground_module->set_ignore_boss(p1). Already in GroundModule.cpp.
+
+== ItemParamAccessor__boss_common_param_int_impl (7102144d00) — ALREADY DECOMPED ==
+Param lookup: if *(param_1 + idx*8 + 0xef8) != 0: return *(param_1 + idx*0x20 + subidx*4 + 0x7da48).
+
+== calc_boss_hp_mul_sum (71015c9da0) — WorkModule dispatch ==
+Calls get_float(0x20), get_float(0x27), get_int(0x10000038), get_int(0x10000037),
+then tail-calls FUN_710160f280(v1, v2, item_kind, v3, v4).
+SKIPPED for now — float/int register interleaving in tail-call makes matching tricky.
+
+== send_event_on_boss_defeat (71015c8510) — entity list iteration ==
+DECOMPED in BossManager.cpp as boss_private::send_event_on_boss_defeat.
+Gets target_id from lua context chain, iterates entity list, calls vtable[0x50] on match.
+
+== main_energy_from_param_no_boss (71015c8140) — ALREADY DECOMPED ==
+Already in camera_functions.cpp and ItemHelpers.cpp.
+
+== All sub1_energy variants — ALREADY DECOMPED ==
+Already in camera_functions.cpp and ItemHelpers.cpp.
+
+== is_enable_capture_bossgalaga (7101658cc0) — ALREADY DECOMPED ==
+Already in fun_typed_b_002.cpp.
+
+== is_standard_boss_series (71022845b0) — NOT BossManager ==
+Uses FighterManager + global param, not BossManager struct. Leave for other pools.
+
+# Session: 2026-04-09 (xref-driven batch)
+
+== BossManager xrefs (44 total to 0x71052b7ef8) ==
+Key undone xrefs:
+- FUN_7102208b10 (212B) — lua callback, pops Hash40 from stack, dispatches BossManager finish
+- FUN_7102208bf0 (208B) — lua callback, identical to send_event_on_boss_defeat (different TU)
+- FUN_7101798450 (~1600B) — VERY LARGE, uses BossManager briefly for boss_kind_id check
+  NEW FIELDS: inner+0x128 (u64 boss_kind_id, checks 0x19a/0x169), inner+0x138 (s32, checks == -1)
+- narration_higher_consumer (~500B) — complex, audio+fighter iteration, calls FUN_71004eae10(inner)
+- NarrationController_match_init (~300B) — complex, audio init, calls FUN_71004eaa30(inner)
+- FUN_710240edd0 (LARGE, 7+ xrefs) — probably stage manager or game flow controller
+
+== FUN_7102208b10 DECOMPED — lua C callback: start_boss_finish variant ==
+Pops Hash40 via FUN_71038f4000, gets battle object, dispatches FUN_71004eb4b0(inner, id, kind, hash).
+
+== FUN_7102208bf0 DECOMPED — lua C callback: send_event_on_boss_defeat ==
+Identical entity list iteration to 71015c8510 but returns u64 (lua return count = 0).
+
 == FUN_710114c140 — vtable dispatch + tail-call (80B, -O2) ==
 Chain: param_2+0x20 → +0x98 → vtable[0x37](obj, 0x12, 0). Tail-calls FUN_7100dbaf50.
 RELOCATION-ONLY MATCH: 94% (16/17 words).
@@ -245,3 +353,91 @@ Conditional (80-96B):
   710395ede0 — ee90+58840+*eeb0=1+*eba0(→eb70)=0+*eb20=1+ee40
   710395f3c0 — if !f440: f460→f480; else 0
   7103952a90 — if !0de0: 0e00→3330; else 58840(p2)→p2
+
+# Session: 2026-04-10 — app::ai check_target_stat_* + attack_data_* batch
+
+== check_target_stat_final (0x7100366770, 48B) ==
+Pattern: stat = FUN_7100314030(DAT_71052b5fd8, *(L-8)+0xc50)
+Returns: (*(u8*)(stat+0x55) & 3) != 0
+
+== check_target_stat_down (0x71003669a0, 48B) ==
+Returns: *(s32*)(stat+0x74) == 4
+
+== check_target_stat_fall_sp (0x71003669d0, 48B) ==
+Returns: *(s32*)(stat+0x74) == 0x10
+
+== check_target_stat_piyo_l (0x7100366a40, 48B) ==
+Returns: *(s32*)(stat+0x74) == 0xb
+
+== check_target_stat_dragoon (0x7100366a70, 48B) ==
+Returns: *(s32*)(stat+0x74) == 0x11
+
+== check_target_stat_cliff (0x7100366aa0, 48B) ==
+Returns: *(s32*)(stat+0x74) == 6
+
+== check_target_stat_cliff_act (0x7100366ad0, 48B) ==
+Returns: *(s32*)(stat+0x74) == 7
+
+== check_target_stat_catch (0x7100366b00, 48B) ==
+Returns: *(s32*)(stat+0x74) == 0xc
+
+== check_target_stat_damage (0x7100366b30, 48B) ==
+Returns: *(s32*)(stat+0x74) == 5
+
+== check_target_stat_guard (0x7100366b60, 48B) ==
+Returns: *(s32*)(stat+0x74) == 0x1a
+
+== check_target_stat_escape (0x7100366b90, 48B) ==
+Returns: *(s32*)(stat+0x74) == 0x1e
+
+== check_target_stat_rebirth (0x7100366bc0, 48B) ==
+Returns: *(s32*)(stat+0x74) == 0x1f
+
+== attack_data_x0 (0x7100369c10, 48B) ==
+Pattern: result = FUN_710033c510(*(u32*)(*(L-8)+0x988), hash40)
+Returns: result ? *(u32*)(result+0x18) : 0
+
+== attack_data_x1 (0x7100369c40, 48B) ==
+Returns: result ? *(u32*)(result+0x1c) : 0
+
+== attack_data_y0 (0x7100369c70, 48B) ==
+Returns: result ? *(u32*)(result+0x20) : 0
+
+== attack_data_y1 (0x7100369ca0, 48B) ==
+Returns: result ? *(u32*)(result+0x24) : 0
+
+== check_stat_floor_damage (0x7100361640, 48B) ==
+Chains: *(*(L-8)+0x168)+0xd8 != 2 && (*(u8*)(*(*(*(L-8)+0x168)+0xd0)+0x5e) & 1) != 0
+
+== change_action (0x7100368140, 48B) ==
+Pattern: FUN_71002edd30(*(L-8)+0x180, param_2, {0xFFFFFFFF})
+
+== is_update_count_odd (0x7100368190, 48B) ==
+Pattern: v = *(s32*)(*(L-8)+0x2fc); return v == (v/3)*3
+
+== get_cmd_id_from_req_id (0x71003681e0, 48B) ==
+Pattern: FUN_71002f04f0(*(L-8)+0x180, param_2, ...3 stack vars)
+
+== check_stat_floor_pass (0x71003615f0, 80B) ==
+state+0xd8 == 0 && (*(u8*)(state->floor_data+0x5c) >> 5 & 1) != 0 → 1
+OR state->accessor_chain→+0x3a > 3 → vtable dispatch chain → complex, SKIPPED
+
+== check_stat_ground_free (0x7100361670, 88B) ==
+state = ctx->state; if bit 30 of state->stat_flags → 0
+uniq_stat==1 → 1; (~*(u32*)(state+0x64) & 0x99)==0 → 1; (stat_flags&1)==0 && unk_0x58<0 → 1
+else → 0
+
+== check_stat_air_free (0x7100361740, 88B) ==
+Same bit-30 check. uniq_stat==2 → 1; (~*(u32*)(state+0x64) & 0xE00)==0 → 1;
+(stat_flags&1)!=0 && unk_0x58<0 → 1; else → 0
+
+== check_chr_stat (0x7100361a60, 56B) ==
+(param_3==-1 || state->fighter_kind==param_3) && (*(u32*)(state+0x68) & param_2)!=0 → 1
+
+== is_valid_target (0x71003611f0, 84B) ==
+stat = FUN_7100314030(mgr, ctx+0xc50)
+ctx->target_entry_id < 0 || target_entry_id == parent_entry_id → false
+else → (stat->final_flags & 8) == 0
+
+== most_earliest_hit_frame (0x710036b060, 48B) ==
+result = FUN_71003596f0(ctx->state); return result ? *(u32*)(result+0x10) : 0xFFFFFFFF

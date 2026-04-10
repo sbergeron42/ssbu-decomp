@@ -17,34 +17,42 @@ To contribute: identify the real class name, update the header, and remove the e
 
 ## Active placeholders
 
-## StageBase
-- **Header**: `include/app/placeholders/StageBase.h`
-- **Size**: 0x728 bytes (verified via static_assert)
+## BossEntity / BossEntitySlot
+- **Header**: `include/app/placeholders/BossEntity.h`
+- **Size**: BossEntity unknown (only vtable pointer mapped); BossEntitySlot = 0x10 bytes
 - **Known fields**:
-  - +0x000: `void** vtable` [derived: set in ctor/dtor, PTR_LAB_71050c44c8]
-  - +0x0D0: `void* stage_ref` [derived: set to self in ctor, unregistered from StageManager in dtor]
-  - +0x0D8: `u32 flags` [derived: bitmask, bit 4 checked / bit 2 set in FUN_71025d7970]
-  - +0x180: `u64 buffer_begin` [derived: freed in dtor]
-  - +0x1A0: `void* shared_ref` [derived: shared_ptr, atomic release in dtor]
-  - +0x1A8: `void* vec_ptrs_begin` [derived: vector of ptrs, dtor iterates + frees]
-  - +0x1C0: `void* vec_shared_begin` [derived: vector of shared_ptrs]
-  - +0x300-0x358: 12 owned subsystem pointers [derived: dtor releases each via unique_ptr/free]
-  - +0x350: `void* vec_container` [derived: iterated in FUN_71025d7970 and FUN_71025d8750]
-  - +0x3D0: `void** event_listener_vt` [derived: embedded StageEventListener, PTR_FUN_71050c5ac0]
-  - +0x4E0: `u32 stage_object_id` [derived: scene handle, checked/cleared in FUN_71025d7970]
-  - +0x5E8: `u8 stage_active_flag` [derived: cleared in FUN_71025d7970]
-  - +0x600: `u32 stage_params[0x2C]` [derived: u32 float param array, initialized in ctor]
-  - +0x6B8: `void** sub_listener_vt` [derived: PTR_LAB_71050c5aa0, targets +0x3D0]
-  - +0x6F4: `u32 init_color_param` [derived: init 0x876500]
-  - +0x704: `u32 invalid_marker` [derived: init 0xFFFFFFFF, sentinel]
-- **Used by**: `src/app/camera_functions.cpp` (4 stage destructors), `src/app/StageWufuIsland.cpp` (ctor), `src/app/StageManager.cpp` (stage queries)
+  - BossEntity+0x00: `BossEntityVtable* _vt` (vtable)
+  - Vtable slot 2 (0x10): `bool is_expired(BossEntity*)` [derived: resolve_entity checks !vtable[2](entity)]
+  - Vtable slot 6 (0x30): `s32 get_hash(BossEntity*)` [derived: boss iteration checks against target hash]
+  - Vtable slot 10 (0x50): `void on_defeat(BossEntity*)` [derived: boss iteration calls on hash match]
+  - BossEntitySlot+0x00: `BossEntity* entity` (managed pointer)
+  - BossEntitySlot+0x08: `void* control_block` (shared_ptr control block)
+- **Used by**: `src/app/BossManager.cpp` (3 entity iteration loops)
 - **Research leads**:
-  - Constructor: FUN_71025d2dc0 (14,820 bytes, 2-param: this + init data)
-  - Destructor: FUN_71025d7310 (1,560 bytes)
-  - Vtable at PTR_LAB_71050c44c8 — scan entries for virtual function addresses
-  - Intermediate class exists: vtable PTR_LAB_71050c4d70 adds +0x740/+0x750/+0x768 (dtor FUN_71025e55a0)
-  - 13.0.1 Ghidra names this `StageBase` at 0x71025d2120 (ghidra_1301_named.csv)
-- **Best guess**: `app::StageBase` or `app::stage::StageBase` (confidence: high — 13.0.1 ELF confirms name)
+  - Default singleton at 0x7104f73b70 (adrp 0x7104f73000 + 0xb70)
+  - Vtable should be identifiable from the singleton's first 8 bytes in the binary
+  - Entity list stored as std::vector in BossManagerInner at +0x110..+0x118
+- **Best guess**: `BossEntity` or `BossItemBase` — likely inherits from a common item/entity base (confidence: medium)
+
+## FighterParamAccessor2PhysicsParams
+- **Header**: `include/app/placeholders/FighterParamAccessor2.h`
+- **Size**: ~0x2B0 bytes (estimated from largest offset +0x2AC + 4)
+- **Known fields**:
+  - +0x230: `u32 init_bound_frame` [derived: FUN_71016593a0]
+  - +0x234: `f32 special_lw_gravity` [derived: FUN_71016593c0]
+  - +0x240: `f32 length_gravity` [derived: FUN_7101659400]
+  - +0x244: `f32 length_speed_y_max` [derived: FUN_7101659420]
+  - +0x260..+0x268: length angle x/y/z velocity (f32 each)
+  - +0x26C..+0x270: side gravity, side_speed_y_max (f32 each)
+  - +0x28C..+0x294: side angle x/y/z velocity (f32 each)
+  - +0x2A4: `u32 flashing_frame_before_life_over` [derived: FUN_7101659560]
+  - +0x2A8..+0x2AC: rebound speed x/y add (f32 each)
+- **Used by**: `src/app/fighter_core.cpp` (15+ param getter functions)
+- **Research leads**:
+  - .dynsym: `_ZN3lib9SingletonIN3app22FighterParamAccessor2EE9instance_E`
+  - Accessed via FighterParamAccessor2+0x12D0 pointer dereference
+  - Community names from param mod databases, all verified against Ghidra offsets
+- **Best guess**: Physics/kinetic common params sub-struct (confidence: high)
 
 <!-- Template for new entries:
 
