@@ -261,6 +261,24 @@ slot documented above.
    `DAT_71052b7548` iterators — the sim driver probably walks that pool and
    dispatches `obj->vt[update]()`.
 
+### Gotcha — `data/functions.csv` sizes are unreliable in this region
+
+`FUN_71006164a0` is listed in the CSV as 39,760 bytes, which looked like a
+very strong "this is the fat update function" signal — but disassembly shows
+the function actually ends at `0x7100616570` with a standard epilogue + `ret`,
+and a preceding tail-call `br x2` via `[param_1 + 0xf700]->vt[0x58]`. True
+size ≈ 208 bytes. Ghidra's analyzer merged this function with several
+subsequent functions at the `br x2` indirect branch, inflating the size.
+**Do not trust function sizes in `0x71006114xx..0x710062cxxx` without
+cross-checking with disassembly** — the whole cluster is affected.
+
+This also means the *actual* fat update function (if it is in this vtable
+at all) has to be found by decompiling individual slots and looking at the
+true instruction count, not the CSV size. Good candidates to try next:
+`FUN_71006140c0`, `FUN_7100614180`, `FUN_7100614270`, `FUN_7100614360`,
+`FUN_7100614470`, `FUN_71006145b0` (the cluster between the obvious
+query helpers and the known exit handler).
+
 ### Verdict
 PROGRESS — the FighterManager-vtable angle is disproven outright, but the pivot
 through `FighterEntry +0xf0` found a concrete **FighterStatus vtable** at
