@@ -104,6 +104,21 @@ struct StageElementOutS32At20 {
     s32 value;         // [derived: written when element kind matches]
 };
 
+// 0x7103051d10 (88 bytes) — stage element visitor that accumulates bitmask
+// flags for elements whose kind() == 0x71 (113). When the element's value
+// is less than 64, OR a 1-bit into out->mask at that position. Used by
+// stage passes that collect which 0..63 slots of kind 0x71 are present.
+// [derived: disasm at 0x7103051d10 — blr vt[0x10]; cmp #0x71; ldrsw x8,[x20,#0xc]; cmp #7; b.hi; mov w9,#1; lsl x8,x9,x8; orr]
+extern "C" void stage_accumulate_bitmask_kind0x71_7103051d10(u64* out_mask,
+                                                                    StagePolyElement* elem)
+{
+    if (elem->kind() != 0x71) return;
+    // Sign-extend read: original uses ldrsw so it can shift by a 64-bit index.
+    s64 idx = elem->value;
+    if (static_cast<u64>(idx) >= 8u) return;
+    *out_mask |= (1ULL << idx);
+}
+
 // 0x71030d1ae0 (64 bytes) — stage element visitor that copies the u32 payload
 // of an element whose kind() == 3 into an output holder at out+0x20. Used by
 // stage serialization / scan passes that collect only elements of a specific
