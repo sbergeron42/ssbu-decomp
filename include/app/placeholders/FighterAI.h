@@ -113,7 +113,9 @@ struct FighterAIState {
     f32 shield_max;            // +0xec [derived: shield_rate computes e8/ec]
     u32 dangerzone_index;      // +0xf0 [derived: check_line_segment reads this]
     s32 player_index;          // +0xf4 [derived: is_1on1 indexes mgr array by this]
-    u8 unk_0xf8[0x34];
+    u8 unk_0xf8[0x10];
+    u32 have_item_kind;        // +0x108 [derived: app::ai_weapon::have_item_kind reads this]
+    u8 unk_0x10c[0x20];
     u32 current_attack_cancel_frame;  // +0x12c [derived: 300 decimal, app::ai::current_attack_cancel_frame]
     u32 attack_phase;          // +0x130 [derived: app::ai::attack_phase reads this]
     u8 unk_0x134[0xC0];
@@ -121,7 +123,9 @@ struct FighterAIState {
     u8 unk_0x1f8[0x4];
     f32 air_length_scale;      // +0x1fc [derived: air_length multiplies by this]
     f32 air_high_scale;        // +0x200 [derived: air_high multiplies by this]
-    u8 unk_0x204[0x2C];
+    u8 unk_0x204[0x24];
+    f32 fall_speed_y_max;        // +0x228 [derived: app::ai_param::fall_speed_y_max reads this]
+    f32 dive_speed_y_max;        // +0x22c [derived: app::ai_param::dive_speed_y_max reads this]
     f32 escape_air_slide_scale;  // +0x230 [derived: escape_air_slide_move_distance multiplies by this]
     u32 escape_air_cancel_frame; // +0x234 [derived: app::ai_param::escape_air_cancel_frame]
     u8 unk_0x238[0x8];

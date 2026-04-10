@@ -1145,9 +1145,7 @@ namespace app::ai_param {
 // [derived: *(obj-8)->0x168 is AI param ptr, +0x228 is fall_speed_y_max field]
 f32 fall_speed_y_max(u8* L) {
     FighterAI* ai = *reinterpret_cast<FighterAI**>(L - 8);
-    FighterAIState* st = ai->state;
-    // +0x228 on FighterAIState — fall_speed_y_max param
-    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(st) + 0x228);
+    return ai->state->fall_speed_y_max;
 }
 
 // 0x710036ba10 (16 bytes)
@@ -1155,8 +1153,7 @@ f32 fall_speed_y_max(u8* L) {
 // [derived: same base as fall_speed_y_max, offset +0x22c]
 f32 dive_speed_y_max(u8* L) {
     FighterAI* ai = *reinterpret_cast<FighterAI**>(L - 8);
-    FighterAIState* st = ai->state;
-    return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(st) + 0x22c);
+    return ai->state->dive_speed_y_max;
 }
 
 // 0x710036b9d0 (12 bytes)
@@ -1192,8 +1189,7 @@ namespace app::ai_weapon {
 // [derived: *(*(obj+0x168)+0x108) — AI param at +0x168, weapon item kind at +0x108]
 u32 have_item_kind(u8* L) {
     FighterAI* ai = *reinterpret_cast<FighterAI**>(L - 8);
-    FighterAIState* st = ai->state;
-    return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(st) + 0x108);
+    return ai->state->have_item_kind;
 }
 
 // 0x710036b0b0 (20 bytes)
