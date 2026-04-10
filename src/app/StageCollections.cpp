@@ -19,6 +19,8 @@ extern "C" void stage_vt71051624a8_cleanup_710303be40(void*) asm("FUN_710303be40
 extern "C" u64 DAT_71051624a8 __attribute__((visibility("hidden"))); // stage subclass vtable
 extern "C" u64 DAT_7105162e58 __attribute__((visibility("hidden"))); // stage sub-obj vtable (vt_e58)
 extern "C" u64 DAT_7105163290 __attribute__((visibility("hidden"))); // stage sub-obj vtable (vt_290)
+extern "C" u64 DAT_71051635b8 __attribute__((visibility("hidden"))); // stage sub-obj vtable (vt_5b8)
+extern "C" u64 DAT_7105163910 __attribute__((visibility("hidden"))); // stage sub-obj vtable (vt_910)
 
 // Cleanup helpers for the two small D0 destructors below. Both are tail-called
 // with the owned inner pointer's +0x28 field or the raw pointer.
@@ -130,6 +132,67 @@ extern "C" void stage_vt7105163290_D0_dtor_7103047b20(StageSubObjVt* self)
     self->owned_inner = nullptr;
     if (inner != nullptr) {
         stage_vt7105163290_inner_cleanup_7103047c00(inner);
+        jeFree_710392e590(inner);
+    }
+    jeFree_710392e590(self);
+}
+
+// Polymorphic destroyable with virtual destructor at vt[1]. The inner object
+// of the stage sub-object classes below owns one such nested polymorphic.
+// vt[1] is the standard Itanium ABI slot for ~Class().
+struct NestedPoly {
+    void** _vtable;   // +0x00 [derived: loaded, vt[1] called as destroy-in-place]
+
+    void destroy() {
+        // vt[1] is the Itanium ABI complete-object destructor slot.
+        auto fn = reinterpret_cast<void(*)(NestedPoly*)>(_vtable[1]);
+        fn(this);
+    }
+};
+
+// Inner object for stage_vt71051635b8: nested poly slot at byte offset 32.
+struct StageInner_NestedAt20 {
+    u8 head[32];            // padding before the nested pointer
+    NestedPoly* nested;     // [derived: cleared + destroy() in D0 dtor]
+};
+
+// Inner object for stage_vt7105163910: nested poly slot at byte offset 8.
+struct StageInner_NestedAt08 {
+    u8 head[8];             // padding before the nested pointer
+    NestedPoly* nested;     // [derived: cleared + destroy() in D0 dtor]
+};
+
+// 0x710304de30 (84 bytes) — D0 destructor for stage sub-object with vtable
+// DAT_71051635b8. Pattern: clear inner->nested@+0x20 via nested's vt[1],
+// then delete inner, then delete self.
+// [derived: disasm at 0x710304de30]
+extern "C" void stage_vt71051635b8_D0_dtor_710304de30(StageSubObjVt* self)
+{
+    auto* inner = static_cast<StageInner_NestedAt20*>(self->owned_inner);
+    self->vtable = &DAT_71051635b8;
+    self->owned_inner = nullptr;
+    if (inner != nullptr) {
+        NestedPoly* nested = inner->nested;
+        inner->nested = nullptr;
+        if (nested != nullptr) nested->destroy();
+        jeFree_710392e590(inner);
+    }
+    jeFree_710392e590(self);
+}
+
+// 0x7103054870 (84 bytes) — D0 destructor for stage sub-object with vtable
+// DAT_7105163910. Same shape as stage_vt71051635b8_D0_dtor_710304de30 but the
+// nested slot is at inner+0x8 instead of inner+0x20.
+// [derived: disasm at 0x7103054870]
+extern "C" void stage_vt7105163910_D0_dtor_7103054870(StageSubObjVt* self)
+{
+    auto* inner = static_cast<StageInner_NestedAt08*>(self->owned_inner);
+    self->vtable = &DAT_7105163910;
+    self->owned_inner = nullptr;
+    if (inner != nullptr) {
+        NestedPoly* nested = inner->nested;
+        inner->nested = nullptr;
+        if (nested != nullptr) nested->destroy();
         jeFree_710392e590(inner);
     }
     jeFree_710392e590(self);
