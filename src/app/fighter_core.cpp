@@ -987,21 +987,19 @@ extern "C" float FUN_710165c020() { return *reinterpret_cast<float*>(&daisy_daik
 // [derived: community names]
 // ============================================================================
 
-#define SPAWN_PARAM_U32(name, addr, off) \
-extern "C" u32 FUN_##addr() { \
-    u64 s1 = *reinterpret_cast<u64*>(FPA2_INSTANCE + 0xf88); \
-    u64 s2 = *reinterpret_cast<u64*>(s1 + 0x1c8); \
-    return *reinterpret_cast<u32*>(s2 + off); \
+// Spawn params — uses SpawnParams struct (FPA2+0xf88→+0x1c8)
+static inline SpawnParams* spawn_params() {
+    u8* fpa2 = FPA2_INSTANCE;
+    u8* char_params = *reinterpret_cast<u8**>(fpa2 + 0xf88);
+    return *reinterpret_cast<SpawnParams**>(char_params + 0x1c8);
 }
 
-SPAWN_PARAM_U32(spawn_frame, 710165e800, 0x1c)
-SPAWN_PARAM_U32(spawn_frame_add, 710165e820, 0x20)
-SPAWN_PARAM_U32(spawn_frame_max, 710165e840, 0x24)
-SPAWN_PARAM_U32(spawn_frame_get_krool_only, 710165e860, 0x2c)
-SPAWN_PARAM_U32(delete_frame, 710165e880, 0x34)
-SPAWN_PARAM_U32(delete_flash_frame, 710165e8a0, 0x38)
-
-#undef SPAWN_PARAM_U32
+extern "C" u32 FUN_710165e800() { return spawn_params()->spawn_frame; }
+extern "C" u32 FUN_710165e820() { return spawn_params()->spawn_frame_add; }
+extern "C" u32 FUN_710165e840() { return spawn_params()->spawn_frame_max; }
+extern "C" u32 FUN_710165e860() { return spawn_params()->spawn_frame_get_krool_only; }
+extern "C" u32 FUN_710165e880() { return spawn_params()->delete_frame; }
+extern "C" u32 FUN_710165e8a0() { return spawn_params()->delete_flash_frame; }
 
 // ============================================================================
 // LOG param family (batch) — all 24 bytes
@@ -1085,6 +1083,9 @@ extern "C" u64 FUN_710167acf0(s32 entry_id) {
     return 1;
 }
 
+// Forward declaration — defined in LINKBOMB section below
+static inline LinkBombParams* link_bomb_params();
+
 // ============================================================================
 // LINK_LINKBOMB_LINKBOMB_IS_EXPLODE_WHEN_HIT_FIGHTER
 // Address: 0x710165ef50 | Size: 76 bytes
@@ -1096,19 +1097,19 @@ extern "C" u64 FUN_710167acf0(s32 entry_id) {
 // ============================================================================
 
 extern "C" u32 FUN_710165ef50(s32 fighter_kind) {
-    // Target: adrp for FPA2 page hoisted before cmp, ldr deferred per branch.
     // Each branch accesses FPA2 independently to let compiler hoist common ADRP.
     u8* fpa2;
     if (fighter_kind == 0x78) {
-        fpa2 = FPA2_INSTANCE;
-        u64 p = *reinterpret_cast<u64*>(fpa2 + 0xe0);
-        return *reinterpret_cast<u32*>(*reinterpret_cast<u64*>(p + 0x1a8) + 0x44);
+        // Link: FPA2→+0xe0→+0x1a8→+0x44 (is_explode_when_hit_fighter)
+        return link_bomb_params()->is_explode_when_hit_fighter;
     }
     fpa2 = FPA2_INSTANCE;
     if (fighter_kind == 0x7b) {
+        // Young Link: FPA2→+0xa80→+0x248→+0x14
         u64 p = *reinterpret_cast<u64*>(fpa2 + 0xa80);
         return *reinterpret_cast<u32*>(*reinterpret_cast<u64*>(p + 0x248) + 0x14);
     }
+    // Toon Link: FPA2→+0x578→+0x218→+0x14
     u64 p = *reinterpret_cast<u64*>(fpa2 + 0x578);
     return *reinterpret_cast<u32*>(*reinterpret_cast<u64*>(p + 0x218) + 0x14);
 }
@@ -1163,42 +1164,33 @@ extern "C" float4 FUN_71015ce830() {
 // [derived: Ghidra — all use FPA2 singleton, Link-only (0x78). Community-named params.]
 // ════════════════════════════════════════════════════════════════════
 
-// Helper macro for the repeated pattern
-#define LINKBOMB_PARAM_LINK_ONLY(funcname, offset) \
-extern "C" f32 funcname(s32 fighter_kind) { \
-    if (fighter_kind != 0x78) return 0.0f; \
-    u8* fpa2 = FPA2_INSTANCE; \
-    u64 p = *reinterpret_cast<u64*>(fpa2 + 0xe0); \
-    u64 q = *reinterpret_cast<u64*>(p + 0x1a8); \
-    return *reinterpret_cast<f32*>(q + offset); \
+// LINKBOMB typed param accessors — uses LinkBombParams (FPA2→+0xe0→+0x1a8)
+static inline LinkBombParams* link_bomb_params() {
+    u8* fpa2 = FPA2_INSTANCE;
+    u8* char_params = *reinterpret_cast<u8**>(fpa2 + 0xe0);
+    return *reinterpret_cast<LinkBombParams**>(char_params + 0x1a8);
 }
 
-// 0x710165ee00 (40B) — blast wait frame count (as float)
-LINKBOMB_PARAM_LINK_ONLY(LINK_LINKBOMB_LINKBOMB_BLAST_WAIT_FRAME_710165ee00, 0x10)
-// 0x710165ed10 (40B) — minimum damage
-LINKBOMB_PARAM_LINK_ONLY(LINK_LINKBOMB_LINKBOMB_MIN_DAMAGE_710165ed10, 0x18)
-// 0x710165ed40 (40B) — maximum damage
-LINKBOMB_PARAM_LINK_ONLY(LINK_LINKBOMB_LINKBOMB_MAX_DAMAGE_710165ed40, 0x1c)
-// 0x710165ed70 (40B) — minimum damage speed
-LINKBOMB_PARAM_LINK_ONLY(LINK_LINKBOMB_LINKBOMB_MIN_DAMAGE_SPEED_710165ed70, 0x20)
-// 0x710165eda0 (40B) — maximum damage speed
-LINKBOMB_PARAM_LINK_ONLY(LINK_LINKBOMB_LINKBOMB_MAX_DAMAGE_SPEED_710165eda0, 0x24)
-// 0x710165edd0 (40B) — landing speed
-LINKBOMB_PARAM_LINK_ONLY(LINK_LINKBOMB_LINKBOMB_LANDING_SPEED_710165edd0, 0x28)
-// 0x710165ee30 (40B) — bound degree
-LINKBOMB_PARAM_LINK_ONLY(LINK_LINKBOMB_LINKBOMB_BOUND_DEGREE_710165ee30, 0x2c)
-// 0x710165ee60 (40B) — min bound speed X
-LINKBOMB_PARAM_LINK_ONLY(LINK_LINKBOMB_LINKBOMB_MIN_BOUND_SPEED_X_710165ee60, 0x30)
-// 0x710165ee90 (40B) — max bound speed X
-LINKBOMB_PARAM_LINK_ONLY(LINK_LINKBOMB_LINKBOMB_MAX_BOUND_SPEED_X_710165ee90, 0x34)
-// 0x710165eec0 (40B) — min bound speed Y
-LINKBOMB_PARAM_LINK_ONLY(LINK_LINKBOMB_LINKBOMB_MIN_BOUND_SPEED_Y_710165eec0, 0x38)
-// 0x710165eef0 (40B) — max bound speed Y
-LINKBOMB_PARAM_LINK_ONLY(LINK_LINKBOMB_LINKBOMB_MAX_BOUND_SPEED_Y_710165eef0, 0x3c)
-// 0x710165ef20 (40B) — bound speed X multiplier
-LINKBOMB_PARAM_LINK_ONLY(LINK_LINKBOMB_LINKBOMB_BOUND_SPEED_X_MUL_710165ef20, 0x40)
+#define LB_F32(funcname, field) \
+extern "C" f32 funcname(s32 fighter_kind) { \
+    if (fighter_kind != 0x78) return 0.0f; \
+    return *reinterpret_cast<f32*>(&link_bomb_params()->field); \
+}
 
-#undef LINKBOMB_PARAM_LINK_ONLY
+LB_F32(LINK_LINKBOMB_LINKBOMB_BLAST_WAIT_FRAME_710165ee00, blast_wait_frame)
+LB_F32(LINK_LINKBOMB_LINKBOMB_MIN_DAMAGE_710165ed10, min_damage)
+LB_F32(LINK_LINKBOMB_LINKBOMB_MAX_DAMAGE_710165ed40, max_damage)
+LB_F32(LINK_LINKBOMB_LINKBOMB_MIN_DAMAGE_SPEED_710165ed70, min_damage_speed)
+LB_F32(LINK_LINKBOMB_LINKBOMB_MAX_DAMAGE_SPEED_710165eda0, max_damage_speed)
+LB_F32(LINK_LINKBOMB_LINKBOMB_LANDING_SPEED_710165edd0, landing_speed)
+LB_F32(LINK_LINKBOMB_LINKBOMB_BOUND_DEGREE_710165ee30, bound_degree)
+LB_F32(LINK_LINKBOMB_LINKBOMB_MIN_BOUND_SPEED_X_710165ee60, min_bound_speed_x)
+LB_F32(LINK_LINKBOMB_LINKBOMB_MAX_BOUND_SPEED_X_710165ee90, max_bound_speed_x)
+LB_F32(LINK_LINKBOMB_LINKBOMB_MIN_BOUND_SPEED_Y_710165eec0, min_bound_speed_y)
+LB_F32(LINK_LINKBOMB_LINKBOMB_MAX_BOUND_SPEED_Y_710165eef0, max_bound_speed_y)
+LB_F32(LINK_LINKBOMB_LINKBOMB_BOUND_SPEED_X_MUL_710165ef20, bound_speed_x_mul)
+
+#undef LB_F32
 
 // ════════════════════════════════════════════════════════════════════
 // Boss singleton leaf functions
@@ -1246,37 +1238,40 @@ extern "C" bool is_normal_gravity_71015ce6d0() {
 // [derived: Ghidra — FPA2 singleton, community-named params]
 // ════════════════════════════════════════════════════════════════════
 
-#define HOLYWATER_PARAM(funcname, final_offset) \
-extern "C" f32 funcname(s32 fighter_kind) { \
-    u8* fpa2 = FPA2_INSTANCE; \
-    s64 off = (fighter_kind == 0x44) ? 0xf50 : 0xf18; \
-    u64 p = *reinterpret_cast<u64*>(fpa2 + off); \
-    u64 q = *reinterpret_cast<u64*>(p + 0x240); \
-    return *reinterpret_cast<f32*>(q + final_offset); \
+// HOLYWATER typed param accessors — uses HolywaterParams (FPA2→csel(Simon/Richter)→+0x240)
+static inline HolywaterParams* core_holywater_params(s32 fighter_kind) {
+    u8* fpa2 = FPA2_INSTANCE;
+    s64 off = (fighter_kind == 0x44) ? 0xf50 : 0xf18;
+    u8* char_params = *reinterpret_cast<u8**>(fpa2 + off);
+    return *reinterpret_cast<HolywaterParams**>(char_params + 0x240);
 }
 
-// Offsets from Ghidra decompilation — all use the same FPA2→[csel]→+0x240 chain
-HOLYWATER_PARAM(HOLYWATER_TRANSLATE_OFFSET_X_7101671010, 0x00)   // 0x7101671010 — translate X (double deref = offset 0)
-HOLYWATER_PARAM(HOLYWATER_TRANSLATE_OFFSET_Y_7101671040, 0x04)   // 0x7101671040 — translate Y
-HOLYWATER_PARAM(HOLYWATER_ROT_SPEED_7101670da0, 0x08)            // 0x7101670da0 — rotation speed
-HOLYWATER_PARAM(HOLYWATER_REFLECT_GRAVITY_ACCEL_7101670dd0, 0x18)// 0x7101670dd0 — reflect shield gravity accel
-HOLYWATER_PARAM(HOLYWATER_REFLECT_GRAVITY_MAX_7101670e00, 0x1c)  // 0x7101670e00 — reflect shield gravity max
-HOLYWATER_PARAM(HOLYWATER_REFLECT_ROT_SPEED_7101670e30, 0x20)    // 0x7101670e30 — reflect shield rotation speed
-HOLYWATER_PARAM(HOLYWATER_HP_7101670e60, 0x24)                   // 0x7101670e60 — hit points
-HOLYWATER_PARAM(HOLYWATER_HIT_DEC_HP_7101670e90, 0x28)           // 0x7101670e90 — HP decrease on hit
-HOLYWATER_PARAM(HOLYWATER_HIT_HOP_SPEED_Y_7101671070, 0x2c)      // 0x7101671070 — hit hop speed Y
-HOLYWATER_PARAM(HOLYWATER_HIT_SPEED_X_MUL_71016710a0, 0x30)      // 0x71016710a0 — hit speed X multiplier
-HOLYWATER_PARAM(HOLYWATER_HIT_HOP_FALL_ACCEL_71016710d0, 0x34)   // 0x71016710d0 — hit hop after fall accel
-HOLYWATER_PARAM(HOLYWATER_HIT_HOP_SPEED_Y_MAX_7101671100, 0x38)  // 0x7101671100 — hit hop speed Y max
-HOLYWATER_PARAM(HOLYWATER_LIFE_FRAME_7101670ec0, 0x3c)           // 0x7101670ec0 — life frame
-HOLYWATER_PARAM(HOLYWATER_FIRE_PILLAR_LIFE_7101670ef0, 0x40)     // 0x7101670ef0 — fire pillar life frame
-HOLYWATER_PARAM(HOLYWATER_FIRE_PILLAR_SPEED_Y_7101670f20, 0x44)  // 0x7101670f20 — fire pillar speed Y
-HOLYWATER_PARAM(HOLYWATER_FIRE_PILLAR_GRAVITY_7101670f50, 0x48)  // 0x7101670f50 — fire pillar gravity
-HOLYWATER_PARAM(HOLYWATER_FIRE_PILLAR_GRAVITY_MAX_7101670f80, 0x4c) // 0x7101670f80
-HOLYWATER_PARAM(HOLYWATER_FIRE_PILLAR_SCALE_MIN_7101670fb0, 0x50)// 0x7101670fb0
-HOLYWATER_PARAM(HOLYWATER_THROW_ANGLE_SIDE_7101670fe0, 0x54)     // 0x7101670fe0
+#define HW_F32(funcname, field) \
+extern "C" f32 funcname(s32 fighter_kind) { \
+    return *reinterpret_cast<f32*>(&core_holywater_params(fighter_kind)->field); \
+}
 
-#undef HOLYWATER_PARAM
+HW_F32(HOLYWATER_TRANSLATE_OFFSET_X_7101671010, translate_offset_x)
+HW_F32(HOLYWATER_TRANSLATE_OFFSET_Y_7101671040, translate_offset_y)
+HW_F32(HOLYWATER_ROT_SPEED_7101670da0, rot_speed)
+HW_F32(HOLYWATER_REFLECT_GRAVITY_ACCEL_7101670dd0, reflect_shield_gravity_accel)
+HW_F32(HOLYWATER_REFLECT_GRAVITY_MAX_7101670e00, reflect_shield_gravity_accel_max)
+HW_F32(HOLYWATER_REFLECT_ROT_SPEED_7101670e30, reflect_shield_rot_speed)
+HW_F32(HOLYWATER_HP_7101670e60, hp)
+HW_F32(HOLYWATER_HIT_DEC_HP_7101670e90, hit_dec_hp)
+HW_F32(HOLYWATER_HIT_HOP_SPEED_Y_7101671070, hit_hop_speed_y)
+HW_F32(HOLYWATER_HIT_SPEED_X_MUL_71016710a0, hit_speed_x_mul)
+HW_F32(HOLYWATER_HIT_HOP_FALL_ACCEL_71016710d0, hit_hop_fall_accel)
+HW_F32(HOLYWATER_HIT_HOP_SPEED_Y_MAX_7101671100, hit_hop_speed_y_max)
+HW_F32(HOLYWATER_LIFE_FRAME_7101670ec0, life_frame)
+HW_F32(HOLYWATER_FIRE_PILLAR_LIFE_7101670ef0, fire_pillar_life)
+HW_F32(HOLYWATER_FIRE_PILLAR_SPEED_Y_7101670f20, fire_pillar_speed_y)
+HW_F32(HOLYWATER_FIRE_PILLAR_GRAVITY_7101670f50, fire_pillar_gravity)
+HW_F32(HOLYWATER_FIRE_PILLAR_GRAVITY_MAX_7101670f80, fire_pillar_gravity_max)
+HW_F32(HOLYWATER_FIRE_PILLAR_SCALE_MIN_7101670fb0, fire_pillar_scale_min)
+HW_F32(HOLYWATER_THROW_ANGLE_SIDE_7101670fe0, throw_angle_side)
+
+#undef HW_F32
 
 // ════════════════════════════════════════════════════════════════════
 // Item/boss leaf functions — misc 40-byte targets

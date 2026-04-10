@@ -126,10 +126,26 @@ struct ExplosionBombParams {
 // [derived: 3 getter functions at 0x7101670dd0-0x7101670e30]
 // ---------------------------------------------------------------------------
 struct HolywaterParams {
-    u8  unk_0x00[0x18];
+    u32 translate_offset_x;               // +0x00 [derived: HOLYWATER_TRANSLATE_OFFSET_X at 0x7101671010]
+    u32 translate_offset_y;               // +0x04 [derived: HOLYWATER_TRANSLATE_OFFSET_Y at 0x7101671040]
+    u32 rot_speed;                        // +0x08 [derived: HOLYWATER_ROT_SPEED at 0x7101670da0]
+    u8  unk_0x0c[0xC];
     u32 reflect_shield_gravity_accel;     // +0x18 [derived: at 0x7101670dd0]
     u32 reflect_shield_gravity_accel_max; // +0x1c [derived: at 0x7101670e00]
     u32 reflect_shield_rot_speed;         // +0x20 [derived: at 0x7101670e30]
+    u32 hp;                               // +0x24 [derived: HOLYWATER_HP at 0x7101670e60]
+    u32 hit_dec_hp;                       // +0x28 [derived: HOLYWATER_HIT_DEC_HP at 0x7101670e90]
+    u32 hit_hop_speed_y;                  // +0x2c [derived: HOLYWATER_HIT_HOP_SPEED_Y at 0x7101671070]
+    u32 hit_speed_x_mul;                  // +0x30 [derived: HOLYWATER_HIT_SPEED_X_MUL at 0x71016710a0]
+    u32 hit_hop_fall_accel;               // +0x34 [derived: HOLYWATER_HIT_HOP_FALL_ACCEL at 0x71016710d0]
+    u32 hit_hop_speed_y_max;              // +0x38 [derived: HOLYWATER_HIT_HOP_SPEED_Y_MAX at 0x7101671100]
+    u32 life_frame;                       // +0x3c [derived: HOLYWATER_LIFE_FRAME at 0x7101670ec0]
+    u32 fire_pillar_life;                 // +0x40 [derived: HOLYWATER_FIRE_PILLAR_LIFE at 0x7101670ef0]
+    u32 fire_pillar_speed_y;              // +0x44 [derived: HOLYWATER_FIRE_PILLAR_SPEED_Y at 0x7101670f20]
+    u32 fire_pillar_gravity;              // +0x48 [derived: HOLYWATER_FIRE_PILLAR_GRAVITY at 0x7101670f50]
+    u32 fire_pillar_gravity_max;          // +0x4c [derived: at 0x7101670f80]
+    u32 fire_pillar_scale_min;            // +0x50 [derived: at 0x7101670fb0]
+    u32 throw_angle_side;                 // +0x54 [derived: HOLYWATER_THROW_ANGLE_SIDE at 0x7101670fe0]
 };
 
 // ---------------------------------------------------------------------------
@@ -137,6 +153,51 @@ struct HolywaterParams {
 // Accessed via: FPA2+0xe0 → +0x120
 // [derived: 2 getter functions at 0x710165eb30-0x710165eb50]
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// LinkBombParams — Link bomb item sub-params
+// Accessed via: FPA2+0xe0 → +0x1a8
+// [derived: 13 getter functions at 0x710165ed10-0x710165ef20]
+// ---------------------------------------------------------------------------
+struct LinkBombParams {
+    u8  unk_0x00[0x10];
+    u32 blast_wait_frame;          // +0x10 [derived: LINKBOMB_BLAST_WAIT_FRAME at 0x710165ee00]
+    u8  unk_0x14[0x4];
+    u32 min_damage;                // +0x18 [derived: LINKBOMB_MIN_DAMAGE at 0x710165ed10]
+    u32 max_damage;                // +0x1c [derived: LINKBOMB_MAX_DAMAGE at 0x710165ed40]
+    u32 min_damage_speed;          // +0x20 [derived: at 0x710165ed70]
+    u32 max_damage_speed;          // +0x24 [derived: at 0x710165eda0]
+    u32 landing_speed;             // +0x28 [derived: at 0x710165edd0]
+    u32 bound_degree;              // +0x2c [derived: at 0x710165ee30]
+    u32 min_bound_speed_x;         // +0x30 [derived: at 0x710165ee60]
+    u32 max_bound_speed_x;         // +0x34 [derived: at 0x710165ee90]
+    u32 min_bound_speed_y;         // +0x38 [derived: at 0x710165eec0]
+    u32 max_bound_speed_y;         // +0x3c [derived: at 0x710165eef0]
+    u32 bound_speed_x_mul;         // +0x40 [derived: at 0x710165ef20]
+    u32 is_explode_when_hit_fighter; // +0x44 [derived: at 0x710165ef50]
+};
+
+// ---------------------------------------------------------------------------
+// LinkArrowParams — Link arrow item sub-params
+// Accessed via: FPA2+0xe0 → +0x120
+// [derived: 2 getter functions at 0x710165eb30-0x710165eb50]
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// SpawnParams — K. Rool crown/item spawn sub-params
+// Accessed via: FPA2+0xf88 → +0x1c8
+// [derived: 6 getter functions at 0x710165e800-0x710165e8a0]
+// ---------------------------------------------------------------------------
+struct SpawnParams {
+    u8  unk_0x00[0x1c];
+    u32 spawn_frame;               // +0x1c [derived: spawn_frame at 0x710165e800]
+    u32 spawn_frame_add;           // +0x20 [derived: at 0x710165e820]
+    u32 spawn_frame_max;           // +0x24 [derived: at 0x710165e840]
+    u8  unk_0x28[0x4];
+    u32 spawn_frame_get_krool_only;// +0x2c [derived: at 0x710165e860]
+    u8  unk_0x30[0x4];
+    u32 delete_frame;              // +0x34 [derived: at 0x710165e880]
+    u32 delete_flash_frame;        // +0x38 [derived: at 0x710165e8a0]
+};
+
 struct LinkArrowParams {
     u8  unk_0x00[0x2c];
     u32 item_life;                 // +0x2c [derived: LINKARROW_ITEM_LIFE at 0x710165eb30]
