@@ -423,3 +423,20 @@ Releases shared_ptr at +0xF0, vector at +0xC8/+0xD0, flag at +0x400.
 == 0x71025eefe0 — ~StageDynamicObject (248B) ==
 vtable PTR_FUN_71050c5878. NOT a StageBase subclass — different type.
 Releases 3 owned containers at +0x130/+0x128/+0x120.
+
+=== SESSION 2026-04-09 BATCH 8 (WreckingCrew + Pilotwings dtors) ===
+
+== 0x7102fe2330 — ~StageWreckingCrew (300B) ==
+vtable PTR_LAB_710515d6e0. Direct StageBase child.
+Frees 9 owned sub-objects at +0xAF0 down to +0xAB0 (each with custom cleanup fn),
++0x970 owned container with inner +0x18 buffer,
+embedded sub cleanup at +0x738 via FUN_7102fe2250.
+Tail-calls StageBase dtor.
+
+== 0x7102de49b0 — ~StagePilotwings (304B) ==
+vtable PTR_LAB_710513be98. Direct StageBase child.
+FUN_7102de8120(+0x7A8) embedded sub cleanup,
++0x790 shared_ptr container (2 shared_ptrs inside),
++0x768/+0x770 and +0x750/+0x758 vector-style frees,
++0x738/+0x740 vector of 0x60-byte elements (each has dtor at vt[0]).
+Tail-calls StageBase dtor.

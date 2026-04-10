@@ -18,6 +18,8 @@
 //     +-- StageDuckHunt (vtable PTR_LAB_71050e6d60, adds +0x740..+0x870)
 //     +-- StageLuigiMansion (vtable PTR_LAB_710510dcf0, adds +0x7C0..+0x858)
 //     +-- StagePictochat2 (vtable PTR_LAB_7105135670, adds +0x740..+0xC70)
+//     +-- StageWreckingCrew (vtable PTR_LAB_710515d6e0, adds +0x738..+0xAF0)
+//     +-- StagePilotwings (vtable PTR_LAB_710513be98, adds +0x738..+0x7A8)
 //
 // [derived: field map from constructor FUN_71025d2dc0, destructor FUN_71025d7310,
 //  and virtual functions FUN_71025d7970/FUN_71025d8750]

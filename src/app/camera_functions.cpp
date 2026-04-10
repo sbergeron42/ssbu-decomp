@@ -1600,6 +1600,148 @@ extern "C" void FUN_7102ada090(StageBase* param_1)
     FUN_71025d7310(param_1);
 }
 
+// ---- ~StageWreckingCrew (0x7102fe2330, 300 bytes) ----
+// Directly inherits from StageBase.
+// Frees 9 owned sub-objects (each with custom cleanup functions),
+// plus 1 owned container. Calls embedded sub cleanup at +0x738.
+// [derived: Ghidra decompilation at 0x7102fe2330]
+
+// PTR_LAB_710515d6e0 [derived: StageWreckingCrew vtable]
+extern "C" u8 PTR_LAB_710515d6e0 HIDDEN;
+extern "C" void FUN_7102fed000(u64);
+extern "C" void FUN_7102ff2e20(u64);
+extern "C" void FUN_7102ff2520(u64);
+extern "C" void FUN_7102feb430(u64);
+extern "C" void FUN_7102ff02b0(u64);
+extern "C" void FUN_7102ff2b40(u64);
+extern "C" void FUN_7102ff1420(u64);
+extern "C" void FUN_7102fe2250(u64*);
+
+extern "C" void FUN_7102fe2330(StageBase* param_1)
+{
+    u64* p = reinterpret_cast<u64*>(param_1);
+    param_1->vtable = reinterpret_cast<void**>(&PTR_LAB_710515d6e0);
+
+    // Free 9 owned sub-objects from +0xAF0 down to +0xAB0
+    // [derived: each has custom cleanup function before free]
+    u64 v; // reused for each field
+
+    v = p[0x15e]; // +0xAF0
+    if (v != 0) { FUN_7102fed000(v); FUN_710392e590((void*)v); }
+    v = p[0x15d]; // +0xAE8
+    if (v != 0) { FUN_710392e590((void*)v); }
+    v = p[0x15c]; // +0xAE0
+    if (v != 0) { FUN_7102ff2e20(v); FUN_710392e590((void*)v); }
+    v = p[0x15b]; // +0xAD8
+    if (v != 0) { FUN_7102ff2520(v); FUN_710392e590((void*)v); }
+    v = p[0x15a]; // +0xAD0
+    if (v != 0) { FUN_7102feb430(v); FUN_710392e590((void*)v); }
+    v = p[0x159]; // +0xAC8
+    if (v != 0) { FUN_7102ff02b0(v); FUN_710392e590((void*)v); }
+
+    v = p[0x158]; // +0xAC0 [derived: container with inner buffer at +0x10]
+    if (v != 0) {
+        u64 inner = *(u64*)(v + 0x10);
+        *(u64*)(v + 0x18) = inner;
+        if (inner != 0) {
+            *(u64*)(v + 0x18) = inner;
+            FUN_710392e590((void*)inner);
+        }
+        FUN_710392e590((void*)v);
+    }
+
+    v = p[0x157]; // +0xAB8
+    if (v != 0) { FUN_7102ff2b40(v); FUN_710392e590((void*)v); }
+    v = p[0x156]; // +0xAB0
+    if (v != 0) { FUN_7102ff1420(v); FUN_710392e590((void*)v); }
+
+    // +0x970 [derived: owned container with inner +0x18 buffer]
+    v = p[0x12e];
+    if (v != 0) {
+        u64 inner = *(u64*)(v + 0x18);
+        if (inner != 0) {
+            *(u64*)(v + 0x20) = inner;
+            FUN_710392e590((void*)inner);
+        }
+        FUN_710392e590((void*)v);
+    }
+
+    FUN_7102fe2250(p + 0xe7);  // +0x738 [derived: embedded sub-object cleanup]
+    FUN_71025d7310(param_1);
+}
+
+// ---- ~StagePilotwings (0x7102de49b0, 304 bytes) ----
+// Directly inherits from StageBase.
+// Embedded sub cleanup at +0x7A8, shared_ptr pair at +0x790,
+// 2 vector-style frees, vector of 0x60-byte elements at +0x738.
+// [derived: Ghidra decompilation at 0x7102de49b0]
+
+// PTR_LAB_710513be98 [derived: StagePilotwings vtable]
+extern "C" u8 PTR_LAB_710513be98 HIDDEN;
+extern "C" void FUN_7102de8120(u64*);
+
+extern "C" void FUN_7102de49b0(StageBase* param_1)
+{
+    u64* p = reinterpret_cast<u64*>(param_1);
+    param_1->vtable = reinterpret_cast<void**>(&PTR_LAB_710513be98);
+
+    // Embedded sub-object cleanup at +0x7A8
+    FUN_7102de8120(p + 0xf5);
+
+    // Release shared_ptr container at +0x790 (has 2 shared_ptrs inside)
+    u64* sp = (u64*)p[0xf2]; // +0x790
+    p[0xf2] = 0;
+    if (sp != nullptr) {
+        u64 inner1_ctrl = sp[1];
+        sp[0] = 0;
+        sp[1] = 0;
+        if (inner1_ctrl != 0) {
+            RELEASE_SHARED_PTR(sp, -8);  // control block at sp-8
+        }
+        // Second shared_ptr in pair
+        long* sp2 = (long*)sp[1];
+        if (sp2 != nullptr) {
+            RELEASE_SHARED_PTR(&sp2, -8);
+        }
+        FUN_710392e590(sp);
+    }
+
+    // Vector-style free at +0x768/+0x770
+    if (p[0xed] != 0) {
+        p[0xee] = p[0xed];
+        FUN_710392e590((void*)p[0xed]);
+    }
+
+    // Vector-style free at +0x750/+0x758
+    if (p[0xea] != 0) {
+        p[0xeb] = p[0xea];
+        FUN_710392e590((void*)p[0xea]);
+    }
+
+    // Destroy vector at +0x738/+0x740 (elements are 0x60 bytes, dtor called on each)
+    u64* vec_begin = (u64*)p[0xe7]; // +0x738
+    if (vec_begin != nullptr) {
+        u64* vec_end = (u64*)p[0xe8]; // +0x740
+        if (vec_end == vec_begin) {
+            p[0xe8] = (u64)vec_begin;
+            vec_end = vec_begin;
+        } else {
+            u64* iter = vec_end;
+            do {
+                iter = iter - 0xc; // stride 0x60 bytes (0xc u64s)
+                reinterpret_cast<void(*)(u64*)>((*(void***)(iter))[0])(iter);
+            } while (vec_begin != iter);
+            vec_end = (u64*)p[0xe7];
+            p[0xe8] = (u64)vec_begin;
+        }
+        if (vec_end != nullptr) {
+            FUN_710392e590(vec_end);
+        }
+    }
+
+    FUN_71025d7310(param_1);
+}
+
 // ---- Additional leaf functions (batch 2) ----
 
 // 0x710135dd10 (60 bytes) — coordinate_axes_replay_camera
