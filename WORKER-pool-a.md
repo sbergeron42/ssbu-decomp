@@ -2,32 +2,46 @@
 
 ## Model: Opus
 
-## Task: Clean up fighter_status.cpp — replace raw casts/offsets with typed module access
+## Task: Rename top 10 most-referenced FUN_ symbols across the codebase
 
-## Priority: QUALITY CLEANUP
+## Priority: READABILITY CLEANUP
 
 ## Context
-`fighter_status.cpp` is the single dirtiest file: 1,461 reinterpret_casts, 908 raw offsets, 3,254 lines. The typed module headers exist (`WorkModule.h`, `StatusModule.h`, `MotionModule.h`, `ControlModule.h`, `GroundModule.h`, etc.) and the accessor is typed. Most casts are loading a module from the accessor then doing raw vtable dispatch — exactly the pattern the headers replace.
+`tools/name_audit.py` identified 9,335 unique unnamed `FUN_` symbols. The top 10 account for 1,597 references. The orchestrator has already identified them from Ghidra. Your job is mechanical: rename each one across every `src/` file.
 
-## File Territory
-- `src/app/fighter_status.cpp` (CLEANUP — do not add new functions, only clean existing code)
-- `include/app/modules/*.h` (extend if needed — add missing vtable slot wrappers)
-- `include/app/placeholders/` (create placeholder structs for non-module types)
+## Renames (do these EXACTLY)
 
-## What To Do
-1. Add `#include` for all module headers this file uses
-2. Replace `reinterpret_cast<Type*>(acc->work_module)` → just use `acc->work_module` (already typed)
-3. Replace `VT(mod)[slot]` dispatch → `mod->method_name(...)` using the headers
-4. For vtable slots that don't have wrappers yet, add them to the module header
-5. For non-module pointer types (FighterManager, FighterInformation, etc.), use existing structs or create placeholders
-6. Run `python tools/review_diff.py pool-a` — cast density must stay under 10%
+| Old name | New name | Refs | What it is |
+|----------|----------|------|-----------|
+| `FUN_710392e590` | `jeFree_710392e590` | 753 | jemalloc free |
+| `FUN_7103733d50` | `treeMapFindOrInsert_7103733d50` | 199 | libc++ red-black tree find-or-insert |
+| `FUN_71038f4000` | `l2cParamResolve_71038f4000` | 134 | L2CValue parameter resolver |
+| `FUN_7100314030` | `aiGetTargetById_7100314030` | 115 | AI target lookup by ID |
+| `FUN_7100138620` | `xorshift128_7100138620` | 101 | Xorshift128 PRNG |
+| `FUN_71039c20a0` | `abortWrapper_71039c20a0` | 87 | abort() thunk |
+| `FUN_71025d7310` | `StageBase_dtor_71025d7310` | 59 | StageBase::~StageBase destructor |
+| `FUN_71001b4910` | `stdFunctionCleanup_71001b4910` | 53 | std::function deleter |
+| `FUN_710356bb30` | `abort_710356bb30` | 49 | abort() — never returns |
+| `FUN_71037aeec0` | `noop_71037aeec0` | 47 | Empty function (just returns) |
 
-## Do NOT
-- Delete functions
-- Add new functions
-- Rename functions
-- Change function signatures
-- This is purely internal cleanup of existing code
+## How To Do It
+For each rename, do a global find-and-replace across ALL `src/` and `include/` files:
+```bash
+grep -rl 'FUN_710392e590' src/ include/ | xargs sed -i 's/FUN_710392e590/jeFree_710392e590/g'
+```
+Repeat for each of the 10 renames.
+
+Then build to verify nothing broke:
+```bash
+python tools/build.py 2>&1 | tee build_output.txt
+```
+
+## Important
+- Do NOT change function logic — only rename the symbol references
+- Do NOT touch files outside `src/` and `include/` (no CSV changes, no tool changes)
+- The address suffix stays — it's the permanent ID for linker disambiguation
+- If a file has an `extern "C"` declaration of the old name, rename that too
+- Commit after all 10 renames are done, not one commit per rename
 
 ## Build
 ```bash
