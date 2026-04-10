@@ -281,8 +281,14 @@ def print_report(reports: list, strict: bool = False) -> int:
     if total_new_lines > 0 and total_reinterpret > 0:
         rc_density = total_reinterpret / total_new_lines * 100
         if rc_density > 10:
-            print(f"\n  WARNING: reinterpret_cast density is {rc_density:.0f}% — this suggests")
-            print(f"  missing type definitions. Consider defining structs to reduce casts.")
+            reject_count += 1  # counts toward REJECT verdict
+            print(f"\n  REJECT: reinterpret_cast density is {rc_density:.0f}% (limit: 10%)")
+            print(f"  This means missing type definitions. Create placeholder structs in")
+            print(f"  include/app/placeholders/ and log them in data/undefined_types.md.")
+            print(f"  A struct with unk_0xNN fields is better than raw casts.")
+        elif rc_density > 5:
+            print(f"\n  NOTE: reinterpret_cast density is {rc_density:.0f}% — consider")
+            print(f"  defining placeholder structs to bring this down.")
     print()
 
     # ── Quality score ──
