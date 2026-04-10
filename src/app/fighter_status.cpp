@@ -2518,6 +2518,60 @@ f32 personality_probability_71003760e0(void* L, s32 idx) {
     return *reinterpret_cast<f32*>(ctx + 0x98c + static_cast<s64>(idx) * 4);
 }
 
+// [derived: stat_module+0x80 is Vector4 position. Saves self x into d8
+//  (callee-saved) across aiGetTargetById call, returns |self.x - target.x|]
+// 0x7100367230 -- app::ai::distance_x_to_target (60B)
+f32 distance_x_to_target_7100367230(void* L) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u8* mod = *reinterpret_cast<u8**>(ctx + 0x168);
+    f32 self_x = *reinterpret_cast<f32*>(mod + 0x80);
+    u8* target = reinterpret_cast<u8*>(aiGetTargetById_7100314030(
+        DAT_71052b5fd8, reinterpret_cast<void*>(ctx + 0xc50)));
+    f32 target_x = *reinterpret_cast<f32*>(target + 0x80);
+    return __builtin_fabsf(self_x - target_x);
+}
+
+// [derived: same as distance_x_to_target but reads +0x84 (y component)]
+// 0x7100367270 -- app::ai::distance_y_to_target (60B)
+f32 distance_y_to_target_7100367270(void* L) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u8* mod = *reinterpret_cast<u8**>(ctx + 0x168);
+    f32 self_y = *reinterpret_cast<f32*>(mod + 0x84);
+    u8* target = reinterpret_cast<u8*>(aiGetTargetById_7100314030(
+        DAT_71052b5fd8, reinterpret_cast<void*>(ctx + 0xc50)));
+    f32 target_y = *reinterpret_cast<f32*>(target + 0x84);
+    return __builtin_fabsf(self_y - target_y);
+}
+
+// [derived: compares floor_data pointer (at stat_module+0xd0) between self
+//  and target — both must reference the same ground collision line]
+// 0x71003672b0 -- app::ai::is_target_on_same_floor (64B)
+bool is_target_on_same_floor_71003672b0(void* L) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u8* target = reinterpret_cast<u8*>(aiGetTargetById_7100314030(
+        DAT_71052b5fd8, reinterpret_cast<void*>(ctx + 0xc50)));
+    u8* mod = *reinterpret_cast<u8**>(ctx + 0x168);
+    void* self_floor = *reinterpret_cast<void**>(mod + 0xd0);
+    void* target_floor = *reinterpret_cast<void**>(target + 0xd0);
+    return self_floor == target_floor;
+}
+
+// [derived: tail-call to aiGetTargetById, read 4 f32 values individually
+//  (rect bounds: xmin, xmax, ymin, ymax). Target+0x264 is not 16-byte
+//  aligned so Clang emits ldr s0 + ld1 inserts rather than ldr q0]
+// 0x7100367080 -- app::ai::target_hit_collision_rect (64B)
+float4 target_hit_collision_rect_7100367080(void* L) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u8* target = reinterpret_cast<u8*>(aiGetTargetById_7100314030(
+        DAT_71052b5fd8, reinterpret_cast<void*>(ctx + 0xc50)));
+    float4 r;
+    r[0] = *reinterpret_cast<f32*>(target + 0x264);
+    r[1] = *reinterpret_cast<f32*>(target + 0x268);
+    r[2] = *reinterpret_cast<f32*>(target + 0x26c);
+    r[3] = *reinterpret_cast<f32*>(target + 0x270);
+    return r;
+}
+
 // [derived: computes DAT_71044791c - personality_probability value.
 //  DAT_71044791c is a global f32 constant (probably 1.0f or similar)]
 // 0x7100376110 -- app::ai::personality_probability_inverse (60B)
