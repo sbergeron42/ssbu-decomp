@@ -1478,6 +1478,128 @@ extern "C" void FUN_7102f33f20(StageBase* param_1)
     FUN_71025d7310(param_1);
 }
 
+// ---- ~StageDuckHunt (0x7102826d30, 212 bytes) ----
+// Directly inherits from StageBase (no intermediate class).
+// Frees 4 vector pairs at +0x740, +0x788, +0x810, +0x828,
+// owned sub-object at +0x850, complex sub-object at +0x858,
+// and 3 simple ptrs at +0x860, +0x868, +0x870.
+// Tail-calls StageBase dtor.
+// [derived: Ghidra decompilation at 0x7102826d30]
+
+// PTR_LAB_71050e6d60 [derived: StageDuckHunt vtable]
+extern "C" u8 PTR_LAB_71050e6d60 HIDDEN;
+
+extern "C" void FUN_7102826d30(StageBase* param_1)
+{
+    u64* p = reinterpret_cast<u64*>(param_1);
+    param_1->vtable = reinterpret_cast<void**>(&PTR_LAB_71050e6d60);
+
+    // Free simple ptrs at +0x870, +0x868, +0x860
+    u64 v870 = p[0x10e]; // +0x870
+    if (v870 != 0) FUN_710392e590((void*)v870);
+    u64 v868 = p[0x10d]; // +0x868
+    if (v868 != 0) FUN_710392e590((void*)v868);
+    u64 v860 = p[0x10c]; // +0x860
+    if (v860 != 0) FUN_710392e590((void*)v860);
+
+    // Complex sub-object at +0x858 (has inner allocs at +0x70, +0x58, +0x40)
+    u64 sub = p[0x10b]; // +0x858
+    if (sub != 0) {
+        u64 inner70 = *(u64*)(sub + 0x70);
+        if (inner70 != 0) FUN_710392e590((void*)inner70);
+        u64 inner58 = *(u64*)(sub + 0x58);
+        if (inner58 != 0) FUN_710392e590((void*)inner58);
+        u64 inner40 = *(u64*)(sub + 0x40);
+        if (inner40 != 0) FUN_710392e590((void*)inner40);
+        FUN_710392e590((void*)sub);
+    }
+
+    // Owned object at +0x850 (clears +0x20/+0x28 before free)
+    u64 v850 = p[0x10a]; // +0x850
+    if (v850 != 0) {
+        *(u64*)(v850 + 0x20) = 0;
+        *(u64*)(v850 + 0x28) = 0;
+        FUN_710392e590((void*)v850);
+    }
+
+    // 4 vector-style begin/end frees
+    if (p[0x105] != 0) { // +0x828/+0x830
+        p[0x106] = p[0x105];
+        FUN_710392e590((void*)p[0x105]);
+    }
+    if (p[0x102] != 0) { // +0x810/+0x818
+        p[0x103] = p[0x102];
+        FUN_710392e590((void*)p[0x102]);
+    }
+    if (p[0xf1] != 0) { // +0x788/+0x790
+        p[0xf2] = p[0xf1];
+        FUN_710392e590((void*)p[0xf1]);
+    }
+    if (p[0xe8] != 0) { // +0x740/+0x748
+        p[0xe9] = p[0xe8];
+        FUN_710392e590((void*)p[0xe8]);
+    }
+
+    FUN_71025d7310(param_1);
+}
+
+// ---- ~StageLuigiMansion (0x7102ada090, 288 bytes) ----
+// Directly inherits from StageBase.
+// Releases 2 shared_ptrs, 2 owned containers, zeros 4 fields, tail-calls StageBase dtor.
+// [derived: Ghidra decompilation at 0x7102ada090]
+
+// PTR_LAB_710510dcf0 [derived: StageLuigiMansion vtable]
+extern "C" u8 PTR_LAB_710510dcf0 HIDDEN;
+
+extern "C" void FUN_7102ada090(StageBase* param_1)
+{
+    u64* p = reinterpret_cast<u64*>(param_1);
+    param_1->vtable = reinterpret_cast<void**>(&PTR_LAB_710510dcf0);
+
+    // Release shared_ptr at +0x858 [derived: StageLuigiMansion field]
+    RELEASE_SHARED_PTR(p, 0x858);
+
+    // Release shared_ptr at +0x830 [derived: StageLuigiMansion field]
+    p[0x109] = 0;  // +0x848
+    p[0x108] = 0;  // +0x840
+    RELEASE_SHARED_PTR(p, 0x830);
+
+    // Release owned container at +0x820 [derived: StageLuigiMansion field]
+    long* c820 = (long*)p[0x104];
+    p[0x104] = 0;
+    if (c820 != nullptr) {
+        u64 inner = *c820;
+        *c820 = 0;
+        if (inner != 0) FUN_710392e590((void*)inner);
+        FUN_710392e590(c820);
+    }
+
+    // Release owned container at +0x818 (has inner ptr at +0x68) [derived: StageLuigiMansion field]
+    long* c818 = (long*)p[0x103];
+    p[0x103] = 0;
+    if (c818 != nullptr) {
+        u64 inner = *c818;
+        *c818 = 0;
+        if (inner != 0) {
+            long* sub68 = *(long**)(inner + 0x68);
+            *(u64*)(inner + 0x68) = 0;
+            if (sub68 != nullptr) {
+                reinterpret_cast<void(*)(long*)>((*(void***)(sub68))[1])(sub68);
+            }
+            FUN_710392e590((void*)inner);
+        }
+        FUN_710392e590(c818);
+    }
+
+    // Zero-clear derived fields at +0x7D8, +0x7D0, +0x7C8, +0x7C0
+    p[0xfb] = 0;
+    p[0xfa] = 0;
+    p[0xf9] = 0;
+    p[0xf8] = 0;
+
+    FUN_71025d7310(param_1);
+}
+
 // ---- Additional leaf functions (batch 2) ----
 
 // 0x710135dd10 (60 bytes) — coordinate_axes_replay_camera

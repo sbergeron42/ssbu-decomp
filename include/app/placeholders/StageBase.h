@@ -9,12 +9,15 @@
 //
 // Inheritance hierarchy (known):
 //   StageBase (0x728 bytes)
-//     +-- UnkStageIntermediate (vtable PTR_LAB_71050c4d70, adds +0x740/+0x750/+0x768)
+//     +-- StageBattleBase (vtable PTR_LAB_71050c4d70, adds +0x740/+0x750/+0x768)
 //     |     +-- StageEnd (vtable PTR_LAB_71050e7a18, adds +0x778/+0x908-0x918)
 //     +-- StageNintendogs (vtable PTR_LAB_710512e5e0, adds +0x738 sub-object)
 //     +-- StageFlatZoneX (vtable PTR_LAB_71050f2f78, adds +0x830/+0x850/+0xC78)
 //     +-- StageStreetPass (vtable PTR_LAB_71051520f8, adds +0x898/+0x908/+0x950)
 //     +-- StageWufuIsland (vtable PTR_LAB_710515f3b0, adds +0x734..+0xF5C)
+//     +-- StageDuckHunt (vtable PTR_LAB_71050e6d60, adds +0x740..+0x870)
+//     +-- StageLuigiMansion (vtable PTR_LAB_710510dcf0, adds +0x7C0..+0x858)
+//     +-- StagePictochat2 (vtable PTR_LAB_7105135670, adds +0x740..+0xC70)
 //
 // [derived: field map from constructor FUN_71025d2dc0, destructor FUN_71025d7310,
 //  and virtual functions FUN_71025d7970/FUN_71025d8750]

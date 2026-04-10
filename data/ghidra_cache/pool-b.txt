@@ -391,3 +391,35 @@ Jump table: PTR_LAB_7104f68c80[param_2], bounds check < 7. Outside pool-b territ
 
 == 0x71022b5150 — app::sv_animcmd::is_excute (48B) ==
 Reads byte at animcmd_state+0x8, pushes to lua stack with type tag 1.
+
+=== SESSION 2026-04-09 BATCH 7 (more stage destructors) ===
+
+== 0x7102826d30 — ~StageDuckHunt (212B) ==
+vtable PTR_LAB_71050e6d60. Direct StageBase child.
+Frees: +0x870/+0x868/+0x860 simple ptrs, +0x858 complex sub (inner +0x70/+0x58/+0x40),
++0x850 owned obj (clears +0x20/+0x28), +0x828/+0x830 +0x810/+0x818 +0x788/+0x790 +0x740/+0x748
+vector-style begin/end frees. Tail-calls StageBase dtor.
+
+== 0x7102ada090 — ~StageLuigiMansion (288B) ==
+vtable PTR_LAB_710510dcf0. Direct StageBase child.
+Releases: +0x858 shared_ptr, +0x830 shared_ptr (+0x848/+0x840 zeroed first),
++0x820 owned container, +0x818 owned with inner +0x68 unique_ptr,
++0x7D8/+0x7D0/+0x7C8/+0x7C0 zeroed. Tail-calls StageBase dtor.
+
+== 0x7102d5bbf0 — ~StagePictochat2 (280B) ==
+vtable PTR_LAB_7105135670. Direct StageBase child.
+Releases: +0xC70 owned container, +0xC50/+0xC58 vector of unique_ptrs,
++0xC30/+0xC38 vector-style, +0xC20 unique_ptr, +0xC18 owned (+0x28 inner),
++0xC10 unique_ptr. Calls FUN_7102d5a8f0(+0x740). Tail-calls StageBase dtor.
+
+== 0x7102ef5a70 — ~ResultStage (200B) ==
+NOT a destructor — state machine update function. Misnamed in functions.csv.
+Reads state at +0xb4, dispatches through table at +0x68. SKIP.
+
+== 0x710261f5b0 — ~StageCameraController (216B) ==
+vtable PTR_FUN_71050c5b38. NOT a StageBase subclass — different type entirely.
+Releases shared_ptr at +0xF0, vector at +0xC8/+0xD0, flag at +0x400.
+
+== 0x71025eefe0 — ~StageDynamicObject (248B) ==
+vtable PTR_FUN_71050c5878. NOT a StageBase subclass — different type.
+Releases 3 owned containers at +0x130/+0x128/+0x120.
