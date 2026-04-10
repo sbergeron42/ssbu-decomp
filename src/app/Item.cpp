@@ -5,9 +5,14 @@
 // Direct field reads: ldr wN,[x0,#off]; ret
 // add-return-pointer: add x0,x0,#off; ret
 
+// lib::Singleton<app::ItemParamAccessor>::instance_
+extern "C" void* DAT_71052c31e0 __attribute__((visibility("hidden")));
+
 struct Item {
     void** vtable;                   // +0x0
-    u8  pad_0x08[0x90];
+    u32 unk_0x08;                    // +0x08
+    s32 item_kind_index;             // +0x0c [derived: common_param_float_impl (.dynsym) reads s32 from +0xc as param table index]
+    u8  pad_0x10[0x88];
     u8  module_accessor_base[0x40];  // +0x98 (returned as void*)
     void* status_module;             // +0xD8
     u8  pad_0xE0[0x88];
@@ -135,6 +140,20 @@ bool Item__is_had_impl(Item* item, u32 allow_had) {
 // 71020f4720 -- b FUN_71015b0590 (pure tail call)
 void Item__fall_impl(Item* item) {
     FUN_71015b0590(item);
+}
+
+// 71020f45a0 -- index into ItemParamAccessor float table
+f32 Item__common_param_float_impl(Item* item, u32 param_id) {
+    u8* params = *(u8**)DAT_71052c31e0;
+    s64 kind = item->item_kind_index;
+    return *reinterpret_cast<f32*>(params + kind * 0x284 + (u64)param_id * 4 + 0x3908);
+}
+
+// 71020f45d0 -- index into ItemParamAccessor int table
+u32 Item__common_param_int_impl(Item* item, u32 param_id) {
+    u8* params = *(u8**)DAT_71052c31e0;
+    s64 kind = item->item_kind_index;
+    return *reinterpret_cast<u32*>(params + kind * 0xac + (u64)param_id * 4 + 0x477c8);
 }
 
 // --- LinkEventCaptureItem store_l2c_table (256B) ---

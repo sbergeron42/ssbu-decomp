@@ -2,6 +2,14 @@
 
 typedef float v4sf __attribute__((vector_size(16)));
 
+#define HIDDEN __attribute__((visibility("hidden")))
+
+extern "C" void FUN_71016192b0(void*, void*, void*, bool, u32);
+extern "C" void FUN_7101616b30(void*, void*);
+extern "C" f32 DAT_71044716e0 HIDDEN;   // [derived: deg-to-rad constant, used by set_motion_trans_angle]
+extern "C" f32 DAT_7104471fbc HIDDEN;   // [derived: rad-to-deg numerator]
+extern "C" f32 DAT_7104470d10 HIDDEN;   // [derived: rad-to-deg denominator]
+
 namespace app::lua_bind {
 
 // 71020cc8d0 -- 5 instructions (branch: bounds check)
@@ -74,6 +82,32 @@ void ItemKineticModuleImpl__set_param_gemini_impl(BattleObjectModuleAccessor* a,
     v[2] = 0;
     v[3] = 0;
     *reinterpret_cast<v4sf*>(m + 0x3d0) = v;
+}
+
+// 71020cc8c0 -- load module, mask bool, tail-call set_throw_param
+void ItemKineticModuleImpl__set_throw_param_impl(BattleObjectModuleAccessor* a, void* v1, void* v2, bool b, u32 p) {
+    FUN_71016192b0(a->item_kinetic_module, v1, v2, b, p);
+}
+
+// 71020ccb30 -- load module, tail-call add_speed_damage
+void ItemKineticModuleImpl__add_speed_damage_impl(BattleObjectModuleAccessor* a, void* v) {
+    FUN_7101616b30(a->item_kinetic_module, v);
+}
+
+// 71020ccca0 -- convert degrees to radians, store to +0xa90
+void ItemKineticModuleImpl__set_motion_trans_angle_impl(BattleObjectModuleAccessor* a, f32 angle) {
+    *reinterpret_cast<f32*>(reinterpret_cast<u8*>(a->item_kinetic_module) + 0xa90) = angle * DAT_71044716e0;
+}
+
+// 71020cccc0 -- load radians from +0xa90, convert to degrees
+f32 ItemKineticModuleImpl__get_motion_trans_angle_impl(BattleObjectModuleAccessor* a) {
+    f32 rad = *reinterpret_cast<f32*>(reinterpret_cast<u8*>(a->item_kinetic_module) + 0xa90);
+    return (rad * DAT_7104471fbc) / DAT_7104470d10;
+}
+
+// 71020ccd20 -- convert degrees to radians, store to +0xab0
+void ItemKineticModuleImpl__set_motion_trans_angle_2nd_impl(BattleObjectModuleAccessor* a, f32 angle) {
+    *reinterpret_cast<f32*>(reinterpret_cast<u8*>(a->item_kinetic_module) + 0xab0) = angle * DAT_71044716e0;
 }
 
 } // namespace app::lua_bind

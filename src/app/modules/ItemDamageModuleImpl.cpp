@@ -2,6 +2,10 @@
 
 #define DMG(acc) (acc->damage_module)
 #define VT(mod) (*reinterpret_cast<void***>(mod))
+#define HIDDEN __attribute__((visibility("hidden")))
+
+// lib::Singleton<app::ItemParamAccessor>::instance_
+extern "C" void* DAT_71052c31e0 HIDDEN;
 
 namespace app::lua_bind {
 
@@ -39,6 +43,14 @@ u32 ItemDamageModuleImpl__damage_log_value_int_impl(BattleObjectModuleAccessor* 
         return *reinterpret_cast<u32*>(reinterpret_cast<u8*>(log) + 0x80);
     }
     return 0;
+}
+
+// 71020d1af0 -- check if damage values are within smash thresholds
+// Loads threshold from ItemParamAccessor singleton at offset 0x73068
+bool ItemDamageModuleImpl__is_smash_damage_impl(BattleObjectModuleAccessor* a, f32 damage, f32 knockback) {
+    u8* params = *reinterpret_cast<u8**>(DAT_71052c31e0);
+    f32 threshold = *reinterpret_cast<f32*>(params + 0x73068);
+    return (damage <= 0.0f) & (threshold <= knockback);
 }
 
 } // namespace app::lua_bind
