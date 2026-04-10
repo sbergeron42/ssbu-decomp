@@ -1,11 +1,11 @@
 #include "types.h"
 #include "app/BattleObject.h"
+#include "app/BattleObjectModuleAccessor.h"
 #include "app/BossManager.h"
 
 // BossManager — operates on BossManager* directly
 // Singleton at lib::Singleton<app::BossManager>::instance_ (0x71052b7ef8)
-// Entity list entries are 0x10-stride shared_ptr<BossEntity>:
-//   [+0x0] = managed pointer, [+0x8] = control block pointer
+// Entity list is std::vector<shared_ptr<BossEntity>> with 0x10-stride BossEntitySlot entries.
 // Default entity singleton loaded via adrp 0x7104f73000 + 0xb70
 
 extern "C" void FUN_71004e9e30(void*, s32);
@@ -13,15 +13,15 @@ extern "C" bool FUN_71004e5780(void*);
 extern "C" void FUN_71039c20c0(void*);  // std::__1::__shared_weak_count::__release_weak
 
 // Default entity singleton at 0x7104f73b70 (adrp 0x7104f73000 + #0xb70)
-extern "C" u8 DAT_7104f73b70 __attribute__((visibility("hidden")));
+extern "C" app::BossEntity DAT_7104f73b70 __attribute__((visibility("hidden")));
 
 namespace app::lua_bind {
 
 // Helper: resolve entity from shared_ptr slot, falling back to default singleton
-static inline void* resolve_entity(void** slot) {
-    void* handle = *slot;
-    if (handle && !reinterpret_cast<bool(*)(void*)>((*reinterpret_cast<void***>(handle))[0x10/8])(handle)) {
-        return *slot;
+static inline app::BossEntity* resolve_entity(app::BossEntitySlot* slot) {
+    app::BossEntity* entity = slot->entity;
+    if (entity && !entity->_vt->is_expired(entity)) {
+        return slot->entity;
     }
     return &DAT_7104f73b70;
 }
@@ -31,16 +31,16 @@ static inline void* resolve_entity(void** slot) {
 void BossManager__notify_on_boss_defeat_impl(app::BossManager* bm, s32 id) {
     if (id != 0x4d) return;
     app::BossManagerInner* inner = bm->inner;
-    void** begin = inner->entity_list_begin;
-    void** end   = inner->entity_list_end;
-    for (void** it = begin; it != end; it = reinterpret_cast<void**>(reinterpret_cast<u8*>(it) + 0x10)) {
-        void* entity = resolve_entity(it);
-        // Check hash == 0x18e via vtable[0x30/8]
-        u32 hash = reinterpret_cast<u32(*)(void*)>((*reinterpret_cast<void***>(entity))[0x30/8])(entity);
+    app::BossEntitySlot* begin = inner->entity_list_begin;
+    app::BossEntitySlot* end   = inner->entity_list_end;
+    for (app::BossEntitySlot* it = begin; it != end; it++) {
+        app::BossEntity* entity = resolve_entity(it);
+        // Check hash == 0x18e via vtable[6]
+        s32 hash = entity->_vt->get_hash(entity);
         if (hash != 0x18e) continue;
         // Resolve again for action dispatch
-        void* entity2 = resolve_entity(it);
-        reinterpret_cast<void(*)(void*)>((*reinterpret_cast<void***>(entity2))[0x50/8])(entity2);
+        app::BossEntity* entity2 = resolve_entity(it);
+        entity2->_vt->on_defeat(entity2);
     }
 }
 
@@ -71,10 +71,10 @@ asm(".set DAT_71052b7ef8_bm2, _ZN3lib9SingletonIN3app11BossManagerEE9instance_E"
 namespace app::boss_private {
 
 // Helper: resolve entity from shared_ptr slot (same pattern as lua_bind version)
-static inline void* resolve_entity(void** slot) {
-    void* handle = *slot;
-    if (handle && !reinterpret_cast<bool(*)(void*)>((*reinterpret_cast<void***>(handle))[0x10/8])(handle)) {
-        return *slot;
+static inline app::BossEntity* resolve_entity(app::BossEntitySlot* slot) {
+    app::BossEntity* entity = slot->entity;
+    if (entity && !entity->_vt->is_expired(entity)) {
+        return slot->entity;
     }
     return &DAT_7104f73b70;
 }
@@ -86,22 +86,21 @@ void send_event_on_boss_defeat(u8* lua_state) {
     app::BossManager* bm = DAT_71052b7ef8_bm2;
     if (bm == nullptr) return;
     app::BossManagerInner* inner = bm->inner;
-    void** begin = inner->entity_list_begin;
-    void** end   = inner->entity_list_end;
+    app::BossEntitySlot* begin = inner->entity_list_begin;
+    app::BossEntitySlot* end   = inner->entity_list_end;
     if (begin == end) return;
     // Get battle_object_id from lua context chain:
-    // battle_object→module_accessor→+400→+0x220→+0xc
+    // battle_object→module_accessor→pad_0x190→+0x220→+0xc
     app::BattleObject* ctx = *reinterpret_cast<app::BattleObject**>(lua_state - 8);
-    u8* acc = reinterpret_cast<u8*>(ctx->module_accessor);
-    u8* p1  = *reinterpret_cast<u8**>(acc + 400);
+    u8* p1  = static_cast<u8*>(ctx->module_accessor->pad_0x190);
     u8* p2  = *reinterpret_cast<u8**>(p1 + 0x220);
     s32 target_id = *reinterpret_cast<s32*>(p2 + 0xc);
-    for (void** it = begin; it != end; it = reinterpret_cast<void**>(reinterpret_cast<u8*>(it) + 0x10)) {
-        void* entity = resolve_entity(it);
-        s32 hash = reinterpret_cast<s32(*)(void*)>((*reinterpret_cast<void***>(entity))[0x30/8])(entity);
+    for (app::BossEntitySlot* it = begin; it != end; it++) {
+        app::BossEntity* entity = resolve_entity(it);
+        s32 hash = entity->_vt->get_hash(entity);
         if (hash != target_id) continue;
-        void* entity2 = resolve_entity(it);
-        reinterpret_cast<void(*)(void*)>((*reinterpret_cast<void***>(entity2))[0x50/8])(entity2);
+        app::BossEntity* entity2 = resolve_entity(it);
+        entity2->_vt->on_defeat(entity2);
     }
 }
 
@@ -127,23 +126,19 @@ extern "C" u64 FUN_7102208bf0(u8* L) {
     app::BossManager* bm = DAT_71052b7ef8_bm2;
     if (bm != nullptr) {
         app::BossManagerInner* inner = bm->inner;
-        void** begin = inner->entity_list_begin;
-        void** end   = inner->entity_list_end;
+        app::BossEntitySlot* begin = inner->entity_list_begin;
+        app::BossEntitySlot* end   = inner->entity_list_end;
         if (begin != end) {
             app::BattleObject* ctx = *reinterpret_cast<app::BattleObject**>(L - 8);
-            u8* acc = reinterpret_cast<u8*>(ctx->module_accessor);
-            u8* p1  = *reinterpret_cast<u8**>(acc + 400);
+            u8* p1  = static_cast<u8*>(ctx->module_accessor->pad_0x190);
             u8* p2  = *reinterpret_cast<u8**>(p1 + 0x220);
             s32 target_id = *reinterpret_cast<s32*>(p2 + 0xc);
-            for (void** it = begin; it != end;
-                 it = reinterpret_cast<void**>(reinterpret_cast<u8*>(it) + 0x10)) {
-                void* entity = app::boss_private::resolve_entity(it);
-                s32 hash = reinterpret_cast<s32(*)(void*)>(
-                    (*reinterpret_cast<void***>(entity))[0x30/8])(entity);
+            for (app::BossEntitySlot* it = begin; it != end; it++) {
+                app::BossEntity* entity = app::boss_private::resolve_entity(it);
+                s32 hash = entity->_vt->get_hash(entity);
                 if (hash != target_id) continue;
-                void* entity2 = app::boss_private::resolve_entity(it);
-                reinterpret_cast<void(*)(void*)>(
-                    (*reinterpret_cast<void***>(entity2))[0x50/8])(entity2);
+                app::BossEntity* entity2 = app::boss_private::resolve_entity(it);
+                entity2->_vt->on_defeat(entity2);
             }
         }
     }
@@ -173,7 +168,7 @@ extern "C" u64 FUN_7102208b10(u8* L) {
     // Get battle object and dispatch to BossManager
     u8 buf[16];
     app::BattleObject* ctx = *reinterpret_cast<app::BattleObject**>(L - 8);
-    FUN_71003ab390(buf, *reinterpret_cast<u32*>(reinterpret_cast<u8*>(ctx) + 400));
+    FUN_71003ab390(buf, ctx->unk_0x190);
     app::BossManager* bm = DAT_71052b7ef8_bm2;
     if (bm != nullptr) {
         u8* obj = *reinterpret_cast<u8**>(buf + 8);

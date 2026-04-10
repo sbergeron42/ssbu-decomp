@@ -1,6 +1,7 @@
 #pragma once
 
 #include "types.h"
+#include "app/placeholders/BossEntity.h"
 
 namespace app {
 
@@ -12,8 +13,8 @@ struct BossManagerInner {
     u8  unk_0x00[0x100];
     s32 state;              // +0x100 [derived: is_stoppable_se_impl checks == 4]
     u8  unk_0x104[0xC];
-    void** entity_list_begin; // +0x110 [derived: boss entity vector data, 0x10-stride shared_ptr entries]
-    void** entity_list_end;   // +0x118 [derived: boss entity vector end]
+    BossEntitySlot* entity_list_begin; // +0x110 [derived: boss entity vector data, 0x10-stride shared_ptr entries]
+    BossEntitySlot* entity_list_end;   // +0x118 [derived: boss entity vector end]
     u8  unk_0x120[0x8];
     u64 boss_kind_id;       // +0x128 [derived: FUN_7101798450 reads as u64, compares low word to 0x19a/0x169]
     u8  unk_0x130[0x8];

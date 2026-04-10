@@ -17,6 +17,23 @@ To contribute: identify the real class name, update the header, and remove the e
 
 ## Active placeholders
 
+## BossEntity / BossEntitySlot
+- **Header**: `include/app/placeholders/BossEntity.h`
+- **Size**: BossEntity unknown (only vtable pointer mapped); BossEntitySlot = 0x10 bytes
+- **Known fields**:
+  - BossEntity+0x00: `BossEntityVtable* _vt` (vtable)
+  - Vtable slot 2 (0x10): `bool is_expired(BossEntity*)` [derived: resolve_entity checks !vtable[2](entity)]
+  - Vtable slot 6 (0x30): `s32 get_hash(BossEntity*)` [derived: boss iteration checks against target hash]
+  - Vtable slot 10 (0x50): `void on_defeat(BossEntity*)` [derived: boss iteration calls on hash match]
+  - BossEntitySlot+0x00: `BossEntity* entity` (managed pointer)
+  - BossEntitySlot+0x08: `void* control_block` (shared_ptr control block)
+- **Used by**: `src/app/BossManager.cpp` (3 entity iteration loops)
+- **Research leads**:
+  - Default singleton at 0x7104f73b70 (adrp 0x7104f73000 + 0xb70)
+  - Vtable should be identifiable from the singleton's first 8 bytes in the binary
+  - Entity list stored as std::vector in BossManagerInner at +0x110..+0x118
+- **Best guess**: `BossEntity` or `BossItemBase` — likely inherits from a common item/entity base (confidence: medium)
+
 ## FighterParamAccessor2PhysicsParams
 - **Header**: `include/app/placeholders/FighterParamAccessor2.h`
 - **Size**: ~0x2B0 bytes (estimated from largest offset +0x2AC + 4)
