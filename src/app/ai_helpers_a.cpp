@@ -585,3 +585,158 @@ bool check_over_ground_367a90(u64 L) {
 void check_over_ground_distance_current_lr_367ae0(u64 L, float dist) {
     FUN_71002eeb20(dist, DAT_7104471e0c, reinterpret_cast<u64>(get_ai_context(L)) + 0x180, 1);
 }
+
+// ---- Batch 2: additional AI function decomps ----
+
+// External functions for batch 2
+extern u64 FUN_71002f04f0(u64, u32, u32*, u32*, u32*);
+
+// ---------------------------------------------------------------------------
+// 0x71003670c0 — lr_to_target (104B)
+// [derived: app::ai::lr_to_target in Ghidra]
+// Returns facing direction toward target as 1.0f/-1.0f raw bits,
+// or current LR if within threshold distance
+// ---------------------------------------------------------------------------
+u32 lr_to_target_3670c0(u64 L) {
+    FighterAI* ctx = get_ai_context(L);
+    FighterAIState* state = ctx->state;
+    u64 target = FUN_7100314030(DAT_71052b5fd8, reinterpret_cast<u64>(ctx) + 0xc50);
+    float self_x = state->pos_x;
+    if (DAT_71044724d4 <= __builtin_fabsf(*(float*)(target + 0x80) - self_x)) {
+        u32 result = 0xbf800000;  // -1.0f
+        if (0.0f <= *(float*)(target + 0x80) - self_x) {
+            result = 0x3f800000;  // 1.0f
+        }
+        return result;
+    }
+    return *(u32*)&state->lr;
+}
+
+// ---------------------------------------------------------------------------
+// 0x7100367b00 — check_target_over_ground (104B)
+// [derived: app::ai::check_target_over_ground in Ghidra]
+// Same logic as check_over_ground but on target's state
+// ---------------------------------------------------------------------------
+bool check_target_over_ground_367b00(u64 L) {
+    FighterAI* ctx = get_ai_context(L);
+    FighterAIState* target = reinterpret_cast<FighterAIState*>(
+        FUN_7100314030(DAT_71052b5fd8, reinterpret_cast<u64>(ctx) + 0xc50));
+    if ((target->stat_flags & 1) == 0 &&
+        ((target->floor_data->flags_0x5e >> 1) & 1) == 0) {
+        return true;
+    }
+    if ((target->uniq_stat & 0xFFFFFFFE) == 6) {
+        return true;
+    }
+    return (target->stat_flags & 2) == 0;
+}
+
+// ---------------------------------------------------------------------------
+// 0x7100367b70 — check_over_goal (80B)
+// [derived: app::ai::check_over_goal in Ghidra]
+// Checks if fighter has reached a navigation goal point
+// Uses ctx+0x188 sub-object (different from state at +0x168)
+// ---------------------------------------------------------------------------
+bool check_over_goal_367b70(u64 L) {
+    FighterAI* ctx = get_ai_context(L);
+    AIGoalState* goal = reinterpret_cast<AIGoalState*>(*(u64*)ctx->sub_0x188);
+    AIGoalFloorData* gfloor = goal->floor;
+    AIGoalNavNode* node = gfloor->nav_node;
+    if (node != nullptr &&
+        ctx->goal_check_a == node->nav_id &&
+        ctx->goal_check_b == gfloor->floor_id &&
+        goal->goal_state == 1) {
+        return true;
+    }
+    return false;
+}
+
+// ---------------------------------------------------------------------------
+// 0x71003681e0 — get_cmd_id_from_req_id (48B)
+// [derived: app::ai::get_cmd_id_from_req_id in Ghidra]
+// Non-leaf: allocates 3 stack locals, calls FUN_71002f04f0
+// ---------------------------------------------------------------------------
+__attribute__((disable_tail_calls))
+void get_cmd_id_from_req_id_3681e0(u64 L, u32 req_id) {
+    u32 a, b, c;
+    FUN_71002f04f0(reinterpret_cast<u64>(get_ai_context(L)) + 0x180, req_id, &a, &b, &c);
+}
+
+// ---------------------------------------------------------------------------
+// 0x7100361c70 — jump_rest_available (104B)
+// [derived: app::ai::jump_rest_available in Ghidra]
+// Returns remaining jump count, with special cases for certain fighter kinds
+// ---------------------------------------------------------------------------
+u16 jump_rest_available_361c70(u64 L) {
+    FighterAI* ctx = get_ai_context(L);
+    FighterAIState* state = ctx->state;
+    if (state->uniq_stat == 0x10) {
+        return 0;
+    }
+    if ((state->flags_0x59 >> 5 & 1) == 0) {
+        if (state->fighter_kind == 0x22) {
+            if ((state->flags_0x68 >> 2 & 1) == 0) {
+                return 0;
+            }
+        } else if (state->fighter_kind == 0x29 && (state->flags_0x68 & 1) != 0) {
+            return 0;
+        }
+        return state->jump_rest;
+    }
+    return 0;
+}
+
+// ---------------------------------------------------------------------------
+// 0x7100367460 — parent_pos_y (68B)
+// [derived: app::ai::parent_pos_y in Ghidra]
+// Looks up parent fighter's Y position
+// ---------------------------------------------------------------------------
+__attribute__((disable_tail_calls))
+u32 parent_pos_y_367460(u64 L) {
+    FighterAI* ctx = get_ai_context(L);
+    u32 local[2];
+    local[0] = ctx->parent_entry_id & 7;
+    if (ctx->parent_entry_id > 0xf) {
+        local[0] = 0xFFFFFFFF;
+    }
+    u64 parent = FUN_7100314030(DAT_71052b5fd8, reinterpret_cast<u64>(local));
+    return *(u32*)(parent + 0x84);
+}
+
+// ---------------------------------------------------------------------------
+// 0x71003674b0 — parent_speed_y (68B)
+// [derived: app::ai::parent_speed_y in Ghidra]
+// Looks up parent fighter's Y speed
+// ---------------------------------------------------------------------------
+__attribute__((disable_tail_calls))
+u32 parent_speed_y_3674b0(u64 L) {
+    FighterAI* ctx = get_ai_context(L);
+    u32 local[2];
+    local[0] = ctx->parent_entry_id & 7;
+    if (ctx->parent_entry_id > 0xf) {
+        local[0] = 0xFFFFFFFF;
+    }
+    u64 parent = FUN_7100314030(DAT_71052b5fd8, reinterpret_cast<u64>(local));
+    return *(u32*)(parent + 0xa4);
+}
+
+// ---------------------------------------------------------------------------
+// 0x7100367400 — check_parent_same_floor (84B)
+// [derived: app::ai::check_parent_same_floor in Ghidra]
+// Checks if self and parent are on the same floor collision data
+// ---------------------------------------------------------------------------
+__attribute__((disable_tail_calls))
+bool check_parent_same_floor_367400(u64 L) {
+    FighterAI* ctx = get_ai_context(L);
+    u32 local[2];
+    local[0] = ctx->parent_entry_id & 7;
+    if (ctx->parent_entry_id > 0xf) {
+        local[0] = 0xFFFFFFFF;
+    }
+    u64 parent = FUN_7100314030(DAT_71052b5fd8, reinterpret_cast<u64>(local));
+    return reinterpret_cast<u64>(ctx->state->floor_data) == *(u64*)(parent + 0xd0);
+}
+
+// ---------------------------------------------------------------------------
+// 0x71003672b0 already done above as is_target_on_same_floor
+// ---------------------------------------------------------------------------

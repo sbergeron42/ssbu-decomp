@@ -20,6 +20,41 @@ struct AIAnalyst;
 struct AIFloorCollisionData;
 struct AIDeadZone;
 struct FighterAIManager;
+struct AIGoalNavNode;
+struct AIGoalFloorData;
+struct AIGoalState;
+
+// ---------------------------------------------------------------------------
+// AIGoalNavNode — navigation node in goal path
+// Accessed via: AIGoalFloorData->nav_node (+0x60)
+// Size: >= 0x2C bytes
+// ---------------------------------------------------------------------------
+struct AIGoalNavNode {
+    u8 unk_0x00[0x28];
+    s32 nav_id;                // +0x28 [derived: check_over_goal compares with goal_check_a]
+};
+
+// ---------------------------------------------------------------------------
+// AIGoalFloorData — floor data associated with navigation goal
+// Accessed via: AIGoalState->floor (+0xd0)
+// Size: >= 0x6C bytes
+// ---------------------------------------------------------------------------
+struct AIGoalFloorData {
+    u8 unk_0x00[0x60];
+    AIGoalNavNode* nav_node;   // +0x60 [derived: check_over_goal loads and null-checks this]
+    s32 floor_id;              // +0x68 [derived: check_over_goal compares with goal_check_b]
+};
+
+// ---------------------------------------------------------------------------
+// AIGoalState — goal navigation state (at FighterAI+0x188)
+// Accessed via: FighterAI->sub_0x188, then deref
+// Size: >= 0xDC bytes
+// ---------------------------------------------------------------------------
+struct AIGoalState {
+    u8 unk_0x00[0xd0];
+    AIGoalFloorData* floor;    // +0xd0 [derived: check_over_goal loads through this]
+    s32 goal_state;            // +0xd8 [derived: check_over_goal checks == 1]
+};
 
 // ---------------------------------------------------------------------------
 // AIFloorCollisionData — ground collision rect the AI uses for floor queries
@@ -56,14 +91,20 @@ struct FighterAIState {
     u32 motion_cancel_frame;   // +0x4c [derived: app::ai::motion_cancel_frame reads this]
     u8 unk_0x50[0x4];
     u32 stat_flags;            // +0x54 [derived: check_stat_air reads bit 0; check_over_ground reads bits 0,1]
-    u8 unk_0x58[0x1C];
+    u8 unk_0x58;
+    u8 flags_0x59;             // +0x59 [derived: jump_rest_available reads bit 5]
+    u8 unk_0x5a[0xE];
+    u8 flags_0x68;             // +0x68 [derived: jump_rest_available reads bits 0,2]
+    u8 unk_0x69[0xB];
     u32 uniq_stat;             // +0x74 [derived: app::ai::uniq_stat; check_over_ground checks 6/7]
     u8 unk_0x78[0x8];
     f32 pos_x;                 // +0x80 [derived: floor_lr, lr_to_target, distance_to_target (lo 32)]
     f32 pos_y;                 // +0x84 [derived: distance_to_target reads (hi 32) as pos_y]
     u8 unk_0x88[0x3C];
     f32 lr;                    // +0xc4 [derived: app::ai::lr reads this; lr_to_target fallback]
-    u8 unk_0xc8[0x8];
+    u8 unk_0xc8[0x4];
+    u16 jump_rest;             // +0xcc [derived: jump_rest_available returns this]
+    u8 unk_0xce[0x2];
     AIFloorCollisionData* floor_data;  // +0xd0 [derived: floor_width, floor_center deref this]
     u8 unk_0xd8[0x8];
     u32 damage;                // +0xe0 [derived: app::ai::damage reads this]
@@ -137,7 +178,9 @@ struct FighterAIManager {
 // ---------------------------------------------------------------------------
 struct FighterAI {
     void* mode_ptr;            // +0x00 [derived: change_mode_action double-derefs *(*(ctx))]
-    u8 unk_0x08[0x160];
+    u8 unk_0x08[0x158];
+    u32 parent_entry_id;       // +0x160 [derived: parent_pos_y reads this, masks &7 for entry index]
+    u8 unk_0x164[0x4];
     FighterAIState* state;     // +0x168 [derived: all AI_STATE macro accesses go through this]
     void** analyst_ptr;        // +0x170 [derived: status_prev does *(*(ctx+0x170))+0x10]
     u8 unk_0x178[0x8];
