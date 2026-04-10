@@ -947,8 +947,8 @@ extern "C" float4 get_smashball_rect(void) {
 // [derived: disasm shows ldr from DAT_71052b7f00+0xec8, fsub, fcmp]
 namespace app::androssshot {
 extern "C" bool is_valid_pos_z(float param_1, float param_2) {
-    u8* cam = *(u8**)DAT_71052b7f00;
-    return param_1 < *(float*)(cam + 0xec8) - param_2;
+    auto* ctrl = (app::CameraController*)(*(u8**)DAT_71052b7f00);
+    return param_1 < ctrl->camera_pos_z - param_2;
 }
 } // namespace app::androssshot
 

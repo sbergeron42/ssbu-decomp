@@ -42,7 +42,9 @@ struct CameraController {
 
     // -- Camera view parameters (0xEB0+) --
     float camera_center_pos[4];        // +0xEB0 [inferred: camera center position (x,y,z,w), vector-loaded in get_camera_range]
-    u8 unk_0xEC0[0x78];                // +0xEC0
+    u8 unk_0xEC0[0x8];                 // +0xEC0
+    float camera_pos_z;                // +0xEC8 [derived: is_valid_pos_z reads from +0xEC8]
+    u8 unk_0xECC[0x6C];                // +0xECC
 
     float camera_half_height_scale;    // +0xF38 [inferred: half-height scale factor in get_camera_range]
     u8 unk_0xF3C[0x1C];                // +0xF3C
