@@ -924,6 +924,35 @@ Remaining targets to decompile (next pass):
      scaling and a ray-direction normalize. NOT sim. This is the matrix-
      build for presentation; pairs with the earlier FUN_710361d040 finding
      (camera view-matrix update, 2168B, phase 7).
+  d) FUN_7103619080 (432B, phase-7) DONE — render command enqueue loop.
+     for item in [param_1+0x500..+0x508] (stride 0x8):
+         if ((*item)[+0xf1] != 0):    // per-item dirty flag
+             cmd = alloc(plVar1 = [param_1+0x518+0x50], size=0x80, align=0x10)
+             cmd[0] = &PTR_FUN_7105266f80   // command vtable
+             cmd[1] = 0x60                  // command type/flag
+             // clone two sub-buffers from root ([param_1+0x518]+0x30/+0x60)
+             // via vtable[+0x10] into cmd[+0x10] and cmd[+0x60]
+             cmd[0xe] = 0
+             cmd[0] = &PTR_LAB_7105230f18   // finalize vtable swap
+             (*((*item)->vt[+0x18]))(item, cmd)   // dispatch command to item
+     Classic render-command enqueue producer. Size 0x80 + the two cloned
+     sub-buffers look like a bind-resource command (e.g. BindTexture /
+     SetConstantBuffer). NOT sim.
+
+SESSION SUMMARY:
+  - 9 sub-calls of main_loop investigated this session (none is sim)
+  - All four WaitEvent(0x71039c06c0) callers cleared
+  - Event A identity resolved (render cmd buffer)
+  - Event B identity narrowed (likely LDN gate)
+  - main_loop confirmed as pead::MainThread body (there is no separate
+    sim worker thread)
+  - nu::GraphicsModule::BeginFrame identified as FUN_710386fc30; the
+    "dt" value it outputs is actually the GPU retired-frames delta
+  - FUN_7101344cf0 hypothesis rejected — it's the RNG singleton ctor
+  - Next-pass remaining: FUN_7103632850 DAT_710593a530==3 branch,
+    the 12 TrackDesc* args to FUN_71035763c0, and FighterManager vtable
+    xrefs bottom-up.
+
   b) FUN_71035c13d0   (1048B, phase 6)  ← unknown
   c) FUN_71036186d0   (1188B, phase 7)  ← unknown
   d) FUN_7103619080   (432B,  phase 7)  ← unknown (Event A neighborhood)
