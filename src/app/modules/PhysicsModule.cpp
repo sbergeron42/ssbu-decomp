@@ -1,6 +1,8 @@
 #include "app/BattleObjectModuleAccessor.h"
 #include "app/modules/PhysicsModule.h"
-#define PM(a) static_cast<PhysicsModule*>((a)->physics_module)
+// a->physics_module is already typed as PhysicsModule*; PM() macro is kept
+// purely for source brevity across 60+ single-line dispatchers.
+#define PM(a) ((a)->physics_module)
 namespace app::lua_bind {
 // -- Named dispatchers with asm symbol overrides --
 u32 PhysicsModule__get_2nd_node_num_impl(BattleObjectModuleAccessor* a) asm("_ZN3app8lua_bind36PhysicsModule__get_2nd_node_num_implEPNS_26BattleObjectModuleAccessorEy");
