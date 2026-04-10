@@ -723,3 +723,109 @@ Grand total per-match allocation from this wrapper: ~1,880 B.
     DAT_71052c2800, DAT_71052c2860, DAT_71052c2858
     Per-match mutable, shallow state, total <2 KB. MUST snapshot.
 
+
+
+=== SIM TICK HUNT — pead::Delegate framework (Item 3) ===
+
+--- 0x710013c570 FUN_710013c570 — pead::ThreadMgr::adoptCurrentThread ---
+Wraps the running nn::oe initial thread into a pead::Thread object.
+Does NOT call nn::os::CreateThread. Therefore pead::Thread::run()
+(FUN_710013b5e0) is NEVER invoked for MainThread.
+Key offsets in pead::Thread object (0xf0 bytes):
+  +0x00  vtable ptr (MainThread: PTR_DAT_71052a4d40 → 7104f4e0e8)
+  +0x20  typeinfo / RTTI ptr (PTR_DAT_71052a3be0 + 0x10)
+  +0x28  name string ("pead::MainThread")
+  +0x30  message queue (FUN_710013bba0 init; cap = 0x20 = 32 slots)
+  +0xb8  blocking mode (int at +0x17*8 = plVar6[0x17])
+  +0xc0  quit sentinel (plVar6[0x18])
+  +0xd0  nn::os::ThreadType* wrapped
+Sets *(ThreadMgr + 0x80) = MainThread*. ThreadMgr singleton at
+PTR_DAT_71052a3c08.
+
+--- 0x710013b5e0 FUN_710013b5e0 — pead::Thread::run() (generic loop) ---
+void run(pead::Thread *self) {
+    u64 msg = msgq_receive(self->msgq, self->blocking_mode);
+    while (msg != self->quit_sentinel) {
+        (*self->vtable[16])(self, msg);   // slot 16 = onMessage
+        msg = msgq_receive(...);
+    }
+}
+vtable slot 16 (byte offset 0x80) = virtual onMessage(Delegate*).
+pead::DelegateThread overrides this to dispatch delegates. MainThread
+does not (main_loop is not structured as a drain loop).
+
+--- 0x710013be00 FUN_710013be00 — pead::Thread::__init_and_start ---
+Constructs a pead::Thread object and calls:
+  nn::os::CreateThread(nn_thread, PTR_FUN_71052a4d28, self, stack, size, prio)
+where PTR_FUN_71052a4d28 = 0x710013c030 (the trampoline). This path is
+used for every pead thread EXCEPT MainThread.
+
+--- 0x710013c030 FUN_710013c030 — pead::Thread::__trampoline ---
+nn::os::CreateThread entry. Sets TLS (self in slot from ThreadMgr+0x88),
+sets core# TLS, marks self->state = 1, calls FUN_710013b5e0(self), marks
+self->state = 3.
+
+--- 0x710013bcb0 FUN_710013bcb0 — pead::MessageQueueWrapper::receive ---
+ulong receive(MessageQueueType *q, int blocking_mode) {
+    if (blocking_mode != 0) {
+        ulong msg;
+        bool ok = nn::os::TryReceiveMessageQueue(&msg, q);
+        return ok ? msg : 0;
+    }
+    ulong msg;
+    nn::os::ReceiveMessageQueue(&msg, q);
+    return msg;
+}
+XREFS: only FUN_710013b5e0 (2x) and 0x710013b6a8 (no named fn).
+NOT reachable from main_loop.
+
+--- 0x710013bc98 FUN_710013bc98 — pead::MessageQueueWrapper::send ---
+Thin wrapper around nn::os::SendMessageQueue. All external callers of
+the *raw* nn::os::SendMessageQueue import (7x containing functions) are
+in 0x71036eXXXX / 0x71036fXXXX — pia/movie subsystems, none in main_loop
+call chain.
+
+--- 0x710013bba0 FUN_710013bba0 — pead::MessageQueueWrapper::initialize ---
+Allocates capacity * 8 bytes, zeros it, calls nn::os::InitializeMessageQueue.
+MainThread initialized with capacity 0x20 (32 messages).
+
+--- 0x710013c200 FUN_710013c200 — pead::Thread::start (vtable slot 6) ---
+if (state != 0) return 0;
+nn::os::StartThread(self->nn_thread);
+self->+0xc8 = (int)self->nn_thread;
+if (state != 0) return 1;
+state = 1;
+return 1;
+Vtable slot 6 (byte offset 0x30) in pead::Thread vtable.
+
+--- pead::MainThread vtable walk (PTR_DAT_71052a4d40 → 0x7104f4e0e8) ---
+offset-to-top at 0x7104f4e0e8 (== 0)
+RTTI ptr at 0x7104f4e0f0
+slot  0 (+0x00): 0x710013c6c0  (undecompiled)
+slot  1 (+0x08): 0x710013c6e0  (undecompiled)
+slot  2 (+0x10): 0x710013c720  (undecompiled)
+slot  3 (+0x18): 0x710013b660  (undecompiled)
+slot  4 (+0x20): 0x710013b690  (undecompiled)
+slot  5 (+0x28): 0x710013b5a0  (undecompiled)
+slot  6 (+0x30): 0x710013c200  FUN_710013c200 = start()
+slot  7 (+0x38): 0x710013c730  (undecompiled)
+slot  8 (+0x40): 0x710013c740  (undecompiled)
+slot  9 (+0x48): 0x710013c750  (undecompiled)
+slot 10 (+0x50): 0x710013b700  (undecompiled)
+slot 16 (+0x80): 0x710013c770  (undecompiled) — virtual onMessage, dead for MainThread
+
+--- pead::Delegate instantiations in RTTI string table ---
+0x7104492830  pead::IDelegate1<const pead::PrintConfig::PrintEventArg&>
+0x71044931a0  pead::Delegate2<nn::pia::common::BackgroundScheduler, pead::Thread*, long>
+0x71044931f0  pead::DelegateBase<same>
+0x7104493260  pead::IDelegate2<pead::Thread*, long>
+0x71044981a0  pead::Delegate2<nn::pia::transport::TransportThreadStream, pead::Thread*, long>
+All four concrete delegates target auxiliary (nn::pia) threads, not MainThread.
+
+=== VERDICT ===
+SIM TICK IS NOT A DELEGATE.
+  - MainThread msgq is 32 slots, never drained from main_loop chain.
+  - No nn::os::*ReceiveMessageQueue call reachable from main_loop.
+  - All known pead::Delegate2 instantiations target pia network threads.
+Rollback resim must call sim tick directly in a loop — it cannot be
+posted as a delegate (nothing would pop it).

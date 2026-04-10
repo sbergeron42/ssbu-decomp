@@ -2,66 +2,70 @@
 
 ## Model: Opus
 
-## Task: ROLLBACK CRITICAL PATH — heap/arena map
+## Task: ROLLBACK SIM TICK HUNT — pead::Delegate framework mapping (Item 3)
 
-## Priority: HIGH — needed to make savestating feasible
+## Priority: HIGHEST — sim tick hunt, blocks rollback resimulation
 
 ## Context
-Rollback savestate cost is dominated by how much guest memory must be snapshotted per frame. A memory map of mutable per-match arenas turns savestating from "probably infeasible" into "probably fine."
+You wrote `docs/rollback/memory_map.md` in the previous pass. Pool B's `main_loop.md` § 6e flagged that **rollback resim probably needs to plug into `pead::Delegate` rather than call a sim advance function directly**. This task maps the pead delegate dispatch framework so we can either:
+1. Find the sim tick posted as a delegate (would explain why it doesn't appear as a direct BL in main_loop), OR
+2. Identify the delegate runner so rollback can intercept at that level
 
-## IMPORTANT: Pre-cached decomps
-**Two huge functions have already been decompiled to disk** (Ghidra MCP times out):
-- `data/ghidra_cache/main_loop_7103747270.txt` (3947 lines)
-- `data/ghidra_cache/FUN_7101344cf0.txt` (5891 lines — likely per-frame fighter update)
-
-**Read these files with `Read` instead of calling Ghidra MCP for those addresses.**
+Pools A and B are doing the same hunt via different angles in parallel — whoever finds it first ends the hunt.
 
 ## What To Find
 
-For each major gameplay system, find:
-- Allocator init function
-- Base address of its arena
-- Size of its arena
-- Persistent (CSS, stage data) vs per-match (mutable, needs savestating)
+### 1. The pead::Delegate dispatch entry point
+- Search Ghidra for `pead::Delegate`, `pead::Thread`, `runDelegates`, `processDelegates`
+- Use `mcp__ghidra__search_functions_by_name pead`
+- Look for `pead::Delegate::operator()` or equivalent (a function that calls a stored function pointer)
+- Look for `pead::Thread::runDelegates()` or equivalent (a loop that drains a queue of delegates)
 
-Required systems:
-1. **FighterManager** — fighter slot data, fighter info
-2. **BattleObjectManager** — battle object pool, module accessors
-3. **ItemManager** — item entry pool
-4. **StageManager** — stage state, dynamic stage data
-5. **Physics / kinetic** — physics world, collision data
-6. **Effect system** — particle pool
-7. **Sound system** — sound state
-8. **Lua/ACMD** — Lua state (likely big — fighters have per-instance Lua VMs)
+### 2. Posting sites — who calls `pead::MainThread::postDelegate(...)` (or equivalent)?
+- Find the `pead::MainThread` singleton
+- Find every callsite that posts a delegate to it
+- **Critical: enumerate every posting site reachable from inside `main_loop`'s call chain**
+- Cross-reference with `data/ghidra_cache/main_loop_7103747270.txt`
 
-## Approach
-1. We already know the singletons:
-   - `app::FighterManager` (find via .dynsym)
-   - `BattleObjectManager` (DAT_71052b7ef8 area)
-   - `ItemManager` (`include/app/ItemManager.h` exists)
-   - `app::StageManager` (DAT_71052b7f00 area, DAT_71053299d8)
-2. Find each constructor in Ghidra → reveals inline allocations and `je_aligned_alloc` sizes
-3. Trace allocator calls back to startup
-4. Nintendo SDK heap setup is usually visible early in `nnMain` or equivalent
-5. The cached `main_loop_7103747270.txt` shows the per-frame access patterns — useful for confirming which arenas are touched per tick
+### 3. Determine if the sim tick is posted as a delegate
+- If yes, document:
+  - The function being posted (this IS the sim tick entry point)
+  - Where it's posted from (which child of main_loop)
+  - When it's posted (every frame? once at start?)
+- If no, document the delegates that ARE posted (rollback may still need to intercept here)
 
 ## Output
 
-Create `docs/rollback/memory_map.md`:
+Append to `docs/rollback/sim_tick_hunt.md` (create if not exists). Pools A and B are also writing here:
 
-```
-| System              | Arena base       | Size      | Type       | Init function     | Notes |
-|---------------------|------------------|-----------|------------|-------------------|-------|
-| FighterManager      | 0xXXXXXXXX       | NNN MB    | per-match  | initFn @ 0xXXXX   | ...   |
-| ...                 | ...              | ...       | ...        | ...               | ...   |
+```markdown
+## Pool C — pead::Delegate framework approach
+
+### Delegate dispatch
+- pead::Delegate::operator(): 0xXXXXX
+- pead::Thread::runDelegates equivalent: 0xXXXXX
+- MainThread singleton: DAT_71XXXXXXXX
+
+### Delegates posted from main_loop's call chain
+| Posted from (caller in main_loop chain) | Delegate target | Frequency | Purpose |
+|---|---|---|---|
+| FUN_XXXX | FUN_XXXX | per-frame | ... |
+
+### Verdict
+[FOUND SIM TICK as delegate / SIM TICK NOT A DELEGATE / DEAD END]
 ```
 
-Plus a section listing **persistent** vs **per-match** regions clearly. Per-match regions are what savestating needs to capture.
+If one of the posted delegates iterates fighters, that's the sim tick. Document the call chain.
+
+## Reference Material
+- `docs/rollback/main_loop.md` (pool B's previous work — read this first)
+- `docs/rollback/memory_map.md` (your own previous work)
+- `data/ghidra_cache/main_loop_7103747270.txt` (use `Read` tool, do NOT call MCP on this address)
 
 ## Quality Rules
 - Documentation is the primary deliverable
-- Cached Ghidra files are reference material, NOT to commit as src/
-- NO `FUN_` names, NO Ghidra vars, NO raw casts in committed code
+- NO `FUN_` names in committed src/
+- Cast density under 10%
 
 ## Build
 ```bash

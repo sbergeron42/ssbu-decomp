@@ -968,3 +968,173 @@ handler that fully reveals the Fighter's cached module-pointer layout. That
 layout is strong evidence for pool-B/C's "sim driver iterates BattleObjects,
 not the FighterManager entry array" prediction. Continuing toward the caller
 of the status-exec slot next session.
+
+---
+
+## Pool C — `pead::Delegate` framework approach
+
+### TL;DR — Verdict
+
+**SIM TICK IS NOT A DELEGATE.** The `pead::Delegate` dispatch mechanism exists
+in the binary and is used for auxiliary (network) threads, but it is not the
+mechanism by which `main_loop` advances the sim. `pead::MainThread`'s message
+queue is constructed and sized at 32 slots but **never drained** from inside
+`main_loop`'s call chain. The sim tick must therefore be an ordinary `BL`
+somewhere in the synchronous `main_loop` call tree.
+
+**Implication for rollback:** do not try to post a "resim step" delegate to
+`pead::MainThread` — nothing would ever pop it. Rollback resim must call the
+sim tick function directly in a tight loop. The `pead::Delegate` framework
+only matters for intercepting Pia network IO, which is an orthogonal concern
+(packet capture/replay, not sim re-execution).
+
+### Evidence: the pead::Thread message-queue dispatch loop
+
+| Symbol | Address | Role |
+|---|---|---|
+| `pead::Thread::run()` | `FUN_710013b5e0` | generic pop-and-dispatch loop |
+| `pead::Thread::__trampoline` | `FUN_710013c030` | nn::os::CreateThread entry; calls `run()` |
+| `pead::Thread::__init_and_start` | `FUN_710013be00` | ctor that calls `nn::os::CreateThread(..., PTR_FUN_71052a4d28, ...)` |
+| `ThreadMgr::adoptCurrentThread` → `pead::MainThread` | `FUN_710013c570` | wraps already-running initial thread (no `CreateThread`) |
+| `pead::MessageQueueWrapper::receive(blocking)` | `FUN_710013bcb0` | `nn::os::(Try)ReceiveMessageQueue` wrapper |
+| `pead::MessageQueueWrapper::send` | `FUN_710013bc98` | `nn::os::SendMessageQueue` wrapper |
+| `pead::MessageQueueWrapper::initialize(cap)` | `FUN_710013bba0` | allocates backing `u64[cap]` and calls `nn::os::InitializeMessageQueue` |
+| `pead::Thread` base vtable | `PTR_DAT_71052a4d20` → `0x7104f4dfc8` | |
+| `pead::DelegateThread` vtable | `PTR_DAT_71052a4d00` → `0x7104f4ded8` | |
+| `pead::MainThread` vtable | `PTR_DAT_71052a4d40` → `0x7104f4e0e8` | |
+| `ThreadMgr` singleton instance ptr | `PTR_DAT_71052a3c08` | stores `MainThread*` at `[mgr + 0x80]` |
+
+`pead::Thread::run()` decompiles to a textbook message-queue drain loop:
+
+```c
+// FUN_710013b5e0 — pead::Thread::run()
+void pead_Thread_run(pead::Thread *self) {
+    u64 msg = msgq_receive(&self->msgq, self->blocking_mode);  // +0x30, +0xb8
+    while (msg != self->quit_sentinel) {                        // +0xc0
+        (*self->vtable[16])(self, msg);                         // slot 16 = onMessage
+        msg = msgq_receive(&self->msgq, self->blocking_mode);
+    }
+}
+```
+
+Slot 16 (byte offset `0x80` past the vtable pointer) is the virtual
+`onMessage(delegate*)` override. `pead::DelegateThread` installs a version of
+this slot that treats `msg` as a `pead::Delegate*` and invokes its operator().
+That is the "runDelegates" equivalent the hunt was looking for — it is fused
+into `run()` rather than existing as a standalone function.
+
+### Evidence: pead::MainThread does not run the loop
+
+`FUN_710013c570` (the only xref to the `"pead::MainThread"` string) is
+`ThreadMgr::adoptCurrentThread`. Key fact: **it never calls
+`nn::os::CreateThread`**. It wraps the already-running `nn::oe` initial
+thread via `nn::os::GetCurrentThread` and stores the wrapped `pead::Thread`
+object at `[ThreadMgr + 0x80]`.
+
+Because `CreateThread` is never called for `MainThread`, the trampoline
+`FUN_710013c030` (which is what would call `FUN_710013b5e0`) never runs for
+it. The initial thread continues to execute whatever `nn::oe` scheduled as
+its entry, which is `main_loop` at `0x7103747270`. The `pead::Thread::run()`
+loop is therefore **bypassed** for `MainThread` — the message queue is alive
+but no code pops from it unless `main_loop` or one of its children explicitly
+calls the receive wrapper.
+
+The MainThread's message queue is initialized at 32 slots:
+
+```c
+// excerpt from FUN_710013c570 (adoptCurrentThread)
+plVar6[5] = "pead::MainThread";
+FUN_710013bb80(plVar6 + 6);          // msgq zero-init
+FUN_710013bba0(plVar6 + 6, 0x20, …); // 32-slot capacity
+```
+
+### Evidence: nothing drains the MainThread queue from main_loop
+
+Full xref sweep of every `nn::os::*ReceiveMessageQueue` variant:
+
+| NX SDK import | Address | Callers |
+|---|---|---|
+| `nn::os::TryReceiveMessageQueue` | `0x71039c0750` | `FUN_710013bcb0` only |
+| `nn::os::ReceiveMessageQueue` | `0x71039c0760` | `FUN_710013bcb0` only |
+| `nn::os::TimedReceiveMessageQueue` | `0x71039c6ed0` | **zero callers** |
+
+And the pead wrapper `FUN_710013bcb0` itself has only three call sites — all
+inside `FUN_710013b5e0` (the run loop) or an adjacent helper at `0x710013b6a8`.
+**Nothing in `main_loop` or any of its children calls any message-queue
+receive primitive.** The MainThread queue is a dead letterbox.
+
+If the sim tick were posted as a delegate to `pead::MainThread`, nothing would
+ever dispatch it and the game would deadlock on the first posted delegate.
+Since the game runs, no sim-tick delegates are being posted to MainThread.
+
+### Who DOES use the pead::Delegate queue?
+
+The string table documents exactly four concrete `pead::Delegate2` / `IDelegate2`
+instantiations in the binary:
+
+| RTTI string | Address | Purpose |
+|---|---|---|
+| `pead::IDelegate1<const pead::PrintConfig::PrintEventArg&>` | `0x7104492830` | logging/print hook |
+| `pead::Delegate2<nn::pia::common::BackgroundScheduler, pead::Thread*, long>` | `0x71044931a0` | posts work to pia background scheduler thread |
+| `pead::IDelegate2<pead::Thread*, long>` | `0x7104493260` | base interface for the above |
+| `pead::Delegate2<nn::pia::transport::TransportThreadStream, pead::Thread*, long>` | `0x71044981a0` | posts work to pia Send/Receive thread streams |
+
+All of these are **nn::pia network threads** — not sim. They follow the
+canonical path: caller calls `FUN_710013bc98` (SendMessageQueue wrapper) to
+enqueue a `Delegate*` on the target thread's queue; the target thread's
+`run()` (`FUN_710013b5e0`) pops it; `vtable[16]` dispatches. None of these
+threads is `MainThread`, and none is involved in per-frame sim advance.
+
+All seven unique callers of `nn::os::SendMessageQueue` were also checked;
+they live in the `0x71036eXXXX` / `0x71036fXXXX` range (nn::pia / movie
+subsystems) — none route a sim-tick payload.
+
+### Delegates posted from main_loop's call chain
+
+**None.** No call to the send wrapper `FUN_710013bc98` or raw
+`nn::os::SendMessageQueue` is reachable from `main_loop` (`FUN_7103747270`)'s
+transitive call graph. This was checked by enumerating every xref to the
+send wrapper and the raw SDK imports and confirming none of the containing
+functions appear in the `main_loop_bl_named.txt` cache.
+
+| Posted from (caller in main_loop chain) | Delegate target | Frequency | Purpose |
+|---|---|---|---|
+| — | — | — | — |
+
+(Empty — no delegates are posted from inside `main_loop`'s call chain.)
+
+### What this rules out, and what it means for the next pass
+
+Ruled out:
+- Sim tick is **not** a posted `pead::Delegate`.
+- Sim tick is **not** drained via any `nn::os::*ReceiveMessageQueue` call.
+- `pead::MainThread` does **not** use its message queue; the 32-slot buffer
+  at `[MainThread + 0x30]` is inert.
+
+What must therefore be true:
+- The sim tick is an ordinary synchronous `BL` somewhere inside the static
+  call tree rooted at `main_loop` (`FUN_7103747270`).
+- It lives on one of the phase children not yet fully decompiled — per
+  `main_loop.md` § 6e next-pass priorities, the remaining suspects are
+  `FUN_71035c13d0` (phase 6), `FUN_71036186d0` (phase 7), `FUN_7103619080`
+  (phase 7), `FUN_7103593c40` (phase 5), and the 4,268-byte scene state
+  machine `FUN_7103632850`.
+
+Rollback implication (revised from `main_loop.md` § 6d):
+- The earlier hypothesis that "rollback resim plugs into `pead::Delegate`"
+  is **incorrect**. There is no delegate pump on MainThread to plug into.
+- Rollback resim should call the sim tick function directly in a tight
+  `for (i = 0; i < resim_frames; i++)` loop, with rollback-state restore
+  before the loop and snapshot at the end.
+- The `pead::Delegate` framework is still relevant to rollback, but only
+  for intercepting `nn::pia` network IO on the Pia Send/Receive/Background
+  threads (packet capture/replay, input ring buffer) — a separate concern
+  from re-executing game logic.
+
+### Artifacts this pass added
+
+- Appended Ghidra decompiles to `data/ghidra_cache/pool-c.txt`:
+  `FUN_710013c570` (adoptCurrentThread), `FUN_710013b5e0` (Thread::run),
+  `FUN_710013be00` (Thread::__init_and_start), `FUN_710013c030` (trampoline),
+  `FUN_710013bcb0` (msgq receive), `FUN_710013bc98` (msgq send),
+  `FUN_710013bba0` (msgq init), `FUN_710013c200` (Thread::start).
