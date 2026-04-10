@@ -2992,3 +2992,87 @@ extern "C" void rotate_z(float* param_1, float angle) {
     FUN_710160e050(*(u64*)param_1, angle);
 }
 }} // namespace app::math2
+
+// ---- LOG param accessors ----
+
+// 0x710165f2c0 (40 bytes) — app::log::LOG_HIT_DATA_OFFSET_1
+// Reads a Vector3f from FighterParamAccessor2 param chain.
+// [derived: Ghidra decompilation at 0x710165f2c0]
+namespace app { namespace log {
+extern "C" float4 LOG_HIT_DATA_OFFSET_1(void) {
+    u8* fpa = (u8*)DAT_71052bb3b0;
+    float4 result;
+    float* src = *(float**)(*(u8**)(fpa + 0xc08) + 0x1a8);
+    result[0] = src[0];
+    result[1] = src[1];
+    result[2] = src[2];
+    result[3] = 0.0f;
+    return result;
+}
+}} // namespace app::log
+
+// 0x710165f2f0 (48 bytes) — app::log::LOG_HIT_DATA_OFFSET_2
+// Reads a Vector3f from FighterParamAccessor2 param chain at +0xc offset.
+// [derived: Ghidra decompilation at 0x710165f2f0]
+namespace app { namespace log {
+extern "C" float4 LOG_HIT_DATA_OFFSET_2(void) {
+    u8* fpa = (u8*)DAT_71052bb3b0;
+    u8* base = *(u8**)(*(u8**)(fpa + 0xc08) + 0x1a8);
+    float* src = (float*)(base + 0xc);
+    float4 result;
+    result[0] = src[0];
+    result[1] = src[1];
+    result[2] = src[2];
+    result[3] = 0.0f;
+    return result;
+}
+}} // namespace app::log
+
+// ---- MECHAKOOPA param accessors ----
+
+// 0x7101661440 (40 bytes) — app::mechakoopa::MECHAKOOPA_HIT_DATA_OFFSET_1
+// Reads a Vector3f from FighterParamAccessor2 param chain.
+// [derived: Ghidra decompilation at 0x7101661440]
+namespace app { namespace mechakoopa {
+extern "C" float4 MECHAKOOPA_HIT_DATA_OFFSET_1(void) {
+    u8* fpa = (u8*)DAT_71052bb3b0;
+    float4 result;
+    float* src = *(float**)(*(u8**)(fpa + 0xd20) + 0x1b0);
+    result[0] = src[0];
+    result[1] = src[1];
+    result[2] = src[2];
+    result[3] = 0.0f;
+    return result;
+}
+}} // namespace app::mechakoopa
+
+// 0x7101661470 (48 bytes) — app::mechakoopa::MECHAKOOPA_HIT_DATA_OFFSET_2
+// Reads a Vector3f from FighterParamAccessor2 param chain at +0xc offset.
+// [derived: Ghidra decompilation at 0x7101661470]
+namespace app { namespace mechakoopa {
+extern "C" float4 MECHAKOOPA_HIT_DATA_OFFSET_2(void) {
+    u8* fpa = (u8*)DAT_71052bb3b0;
+    u8* base = *(u8**)(*(u8**)(fpa + 0xd20) + 0x1b0);
+    float* src = (float*)(base + 0xc);
+    float4 result;
+    result[0] = src[0];
+    result[1] = src[1];
+    result[2] = src[2];
+    result[3] = 0.0f;
+    return result;
+}
+}} // namespace app::mechakoopa
+
+// ---- Rocketbelt ----
+
+// 0x710166fc80 (40 bytes) — app::rocketbelt::is_enable_rocketbelt_eject
+// Checks if the rocketbelt eject is enabled based on object category and status flag.
+// [derived: Ghidra decompilation at 0x710166fc80, param_1 is BattleObjectModuleAccessor*]
+namespace app { namespace rocketbelt {
+extern "C" bool is_enable_rocketbelt_eject(u8* param_1) {
+    if (*(u32*)(param_1 + 8) >> 28 == 0) {
+        return *(u8*)(*(u8**)(param_1 + 0x40) + 0x129) != 0;
+    }
+    return true;
+}
+}} // namespace app::rocketbelt
