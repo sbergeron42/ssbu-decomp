@@ -440,3 +440,51 @@ FUN_7102de8120(+0x7A8) embedded sub cleanup,
 +0x768/+0x770 and +0x750/+0x758 vector-style frees,
 +0x738/+0x740 vector of 0x60-byte elements (each has dtor at vt[0]).
 Tail-calls StageBase dtor.
+
+=== FUN_7100155670 (complex, ~700 bytes actual, skip) ===
+Huge function with loop iterating FUN_7100154f50, vtable dispatch, memcpy. NOT 12 bytes.
+
+=== FUN_71001c0740 (complex, networking, skip) ===
+nn::socket calls, InetNtohl/InetNtohs, vtable dispatch chain. NOT 16 bytes.
+
+=== FUN_71001ffca0 (complex, alloc + vtable, skip) ===
+FUN_71001af850 alloc, vtable dispatch +0x88, container init. NOT 12 bytes.
+
+=== FUN_71004a29b0 (complex, fighter movement, skip) ===
+Float math, vtable chains on module accessor, jumptable warning. NOT 12 bytes.
+
+=== FUN_71015d5770 (complex, event listener registration, skip) ===
+je_aligned_alloc, OOM retry pattern, linked list insertion. NOT 16 bytes.
+
+=== FUN_7102a39f30 (complex, linked list management, skip) ===
+FighterManager linked list insert/remove, ref counting. NOT 12 bytes.
+
+=== FUN_7102f77000 (complex, deque operations, skip) ===
+Deque-like container with bucket addressing, 3x repeated pattern. NOT 12 bytes.
+
+=== FUN_71032e57d0 (complex, deque push + mutex, skip) ===
+std::mutex lock/unlock, deque push_back with bucket expansion. NOT 16 bytes.
+
+=== FUN_7103347690 (complex, timer/tick init, skip) ===
+nn::os::GetSystemTick, ConvertToTimeSpan, field zeroing, magic constants. NOT 12 bytes.
+
+=== FUN_71036eec80 (complex, string copy + FNV hash, skip) ===
+Manual string copy loop, FNV-1a hash (0x811c9dc5 seed), field init. NOT 12 bytes.
+
+=== FUN_7103984970 (complex, player init, skip) ===
+Multi-module init, linked list walks, singleton pattern. NOT 12 bytes.
+
+=== FUN_7100018910 (192 bytes, param dispatch) ===
+Checks callback at param_1[0x10b]+0x58, falls through to bitmask checks on
+*(uint*)(vtable + 0x224), reads param_1[0x10e] and +0x874. Returns u64 with
+flags. Complex bitmask logic.
+
+=== BATCH: Small leaf functions decomped ===
+
+FUN_7101653310 (is_loaded_fighter, 68 bytes) — FM indexed lookup, checks +0x5935 != 1
+FUN_7101653500 (is_activate_fighter, 72 bytes) — FM indexed lookup, checks +0x5920 == 6
+FUN_7101653550 (deactivate_fighter, 68 bytes) — FM indexed, calls FUN_7100653490 if status 6
+FUN_710165c570 (DOLL_HIT_DATA_OFFSET_1, 40 bytes) — FPA2 +0xc08 → +0x1d8, read Vec3f
+FUN_710165c5a0 (DOLL_HIT_DATA_OFFSET_2, 48 bytes) — same chain + 0xc offset
+FUN_71015cfca0 (powf, 4 bytes) — tail-call to ::powf
+FUN_71015cfae0 (rotate_z, 12 bytes) — tail-call to FUN_710160e050

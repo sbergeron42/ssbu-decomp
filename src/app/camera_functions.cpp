@@ -2887,3 +2887,108 @@ extern "C" float4 get_right_pos(GroundCollisionLine* param_1) {
 }
 
 }} // namespace app::sv_ground_collision_line
+
+// ---- FighterManager indexed lookup functions ----
+
+// FUN_7100653490 [derived: fighter deactivation handler]
+extern "C" void FUN_7100653490(u64, int);
+
+// 0x7101653310 (68 bytes) — app::kiiladarzmanager::is_loaded_fighter
+// Checks if fighter at index is loaded (non-null, status byte != 1).
+// [derived: Ghidra decompilation at 0x7101653310]
+namespace app { namespace kiiladarzmanager {
+extern "C" u64 is_loaded_fighter(int param_1) {
+    long* fm = (long*)FM_INSTANCE;
+    if (fm != nullptr && (u32)param_1 < 8) {
+        u8* entry = *(u8**)((u8*)*fm + (long)param_1 * 8 + 0x20);
+        if (entry != nullptr && *(u8*)(entry + 0x5935) != 1) {
+            return 1;
+        }
+    }
+    return 0;
+}
+}} // namespace app::kiiladarzmanager
+
+// 0x7101653500 (72 bytes) — app::kiiladarzmanager::is_activate_fighter
+// Checks if fighter at index has status byte == 6. Aborts on invalid index.
+// [derived: Ghidra decompilation at 0x7101653500]
+namespace app { namespace kiiladarzmanager {
+extern "C" bool is_activate_fighter(int param_1) {
+    if ((u32)param_1 > 7) abort();
+    u8* entry = *(u8**)((u8*)*(long*)FM_INSTANCE + (long)param_1 * 8 + 0x20);
+    if (entry != nullptr) {
+        return *(u8*)(entry + 0x5920) == 6;
+    }
+    return false;
+}
+}} // namespace app::kiiladarzmanager
+
+// 0x7101653550 (68 bytes) — app::kiiladarzmanager::deactivate_fighter
+// Deactivates fighter at index if status byte == 6. Aborts on invalid index.
+// [derived: Ghidra decompilation at 0x7101653550]
+namespace app { namespace kiiladarzmanager {
+extern "C" void deactivate_fighter(int param_1) {
+    if ((u32)param_1 > 7) abort();
+    u8* entry = *(u8**)((u8*)*(long*)FM_INSTANCE + (long)param_1 * 8 + 0x20);
+    if (*(u8*)(entry + 0x5920) == 6) {
+        FUN_7100653490((u64)entry, 1);
+    }
+}
+}} // namespace app::kiiladarzmanager
+
+// ---- DOLL param accessors ----
+
+// 0x710165c570 (40 bytes) — app::doll::DOLL_HIT_DATA_OFFSET_1
+// Reads a Vector3f from FighterParamAccessor2 param chain.
+// [derived: Ghidra decompilation at 0x710165c570]
+namespace app { namespace doll {
+extern "C" float4 DOLL_HIT_DATA_OFFSET_1(void) {
+    u8* fpa = (u8*)DAT_71052bb3b0;
+    float4 result;
+    float* src = *(float**)(*(u8**)(fpa + 0xc08) + 0x1d8);
+    result[0] = src[0];
+    result[1] = src[1];
+    result[2] = src[2];
+    result[3] = 0.0f;
+    return result;
+}
+}} // namespace app::doll
+
+// 0x710165c5a0 (48 bytes) — app::doll::DOLL_HIT_DATA_OFFSET_2
+// Reads a Vector3f from FighterParamAccessor2 param chain at +0xc offset.
+// [derived: Ghidra decompilation at 0x710165c5a0]
+namespace app { namespace doll {
+extern "C" float4 DOLL_HIT_DATA_OFFSET_2(void) {
+    u8* fpa = (u8*)DAT_71052bb3b0;
+    u8* base = *(u8**)(*(u8**)(fpa + 0xc08) + 0x1d8);
+    float* src = (float*)(base + 0xc);
+    float4 result;
+    result[0] = src[0];
+    result[1] = src[1];
+    result[2] = src[2];
+    result[3] = 0.0f;
+    return result;
+}
+}} // namespace app::doll
+
+// ---- Math utility tail-calls ----
+
+// 0x71015cfca0 (4 bytes) — app::math2::powf
+// Tail-call to C library powf via PLT.
+// [derived: disasm shows single 'b powf' instruction]
+extern "C" float powf(float, float);
+namespace app { namespace math2 {
+extern "C" float powf_71015cfca0(float a, float b) {
+    return ::powf(a, b);
+}
+}} // namespace app::math2
+
+// 0x71015cfae0 (12 bytes) — app::math2::rotate_z
+// Tail-call wrapper to FUN_710160e050 with Vector3f + angle.
+// [derived: Ghidra decompilation at 0x71015cfae0]
+extern "C" void FUN_710160e050(u64, float);
+namespace app { namespace math2 {
+extern "C" void rotate_z(float* param_1, float angle) {
+    FUN_710160e050(*(u64*)param_1, angle);
+}
+}} // namespace app::math2
