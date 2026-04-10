@@ -100,7 +100,7 @@ extern "C" void FUN_7103540450(FilesystemInfo* fs, u32 filepath_index) {
 
     if (filepath_index == 0xffffff) return;
 
-    PathInformation* pi = (PathInformation*)fs->path_info;
+    PathInformation* pi = fs->path_info;
     LoadedArc* arc = pi->arc;
     u64 hash40;
     if (filepath_index < arc->fs_header->file_info_path_count) {
@@ -456,7 +456,7 @@ FileInfoToFileData* FUN_7103541860(LoadedArc* arc, FileInfo* fi, int version) {
         // [derived: DAT_7105331f20->path_info->arc->fs_header->version & 0xffffff]
         // [derived: Ghidra shows local as uint[2] (8 bytes) at SP+0x08]
         u32 gver[2];
-        gver[0] = ((PathInformation*)DAT_7105331f20->path_info)->arc->fs_header->version
+        gver[0] = DAT_7105331f20->path_info->arc->fs_header->version
                    & 0xffffff;
         int ver_id = FUN_7103542f30(gver);
         if ((int)arc_ver == ver_id) goto LAB_default;

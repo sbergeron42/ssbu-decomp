@@ -514,3 +514,75 @@ singleton_ready:
 
     return 1;
 }
+
+// ============================================================================
+// does_file_use_extension — 0x710353d360 (288 bytes)
+// Checks if the file at filepath_index has the given extension.
+// Computes a Hash40 (CRC32 + length) of the extension string and compares
+// it against the stored extension hash in the LoadedArc file_paths table.
+// [derived: ARCropolis uses Hash40 for all extension comparisons]
+// [derived: CRC32 table at 0x7104753084 — standard CRC32 lookup table]
+// [derived: file_paths accessed via FilesystemInfo->path_info->arc->file_paths]
+// ============================================================================
+
+// CRC32 lookup table (1024 bytes, 256 entries)
+// [derived: standard CRC32 polynomial table, referenced from does_file_use_extension]
+__attribute__((visibility("hidden"))) extern u32 CRC32_TABLE_7104753084[];
+
+// strncpy PLT stub
+extern "C" char* strncpy(char*, const char*, u64);
+
+bool does_file_use_extension(u32 filepath_index, char* ext) {
+    if (filepath_index == 0xffffff) {
+        return false;
+    }
+    if (ext == nullptr) {
+        return false;
+    }
+    if (*ext == '\0') {
+        return false;
+    }
+
+    FilesystemInfo* fs = DAT_7105331f20;
+
+    // Skip leading dot if present
+    if (*ext == '.') {
+        ext++;
+    }
+
+    // Copy extension to stack buffer
+    char buf[256];
+    strncpy(buf, ext, 0xff);
+
+    // Compute Hash40 of the lowercase extension
+    u64 hash40;
+    if (buf[0] == '\0') {
+        hash40 = 0;
+    } else {
+        u32 crc = 0xffffffff;
+        u64 len = 0;
+        char* p = buf;
+        u8 c = (u8)*p;
+        do {
+            if ((u32)(c - 0x41) < 0x1a) {
+                c = c + 0x20;  // to lowercase
+            }
+            crc = CRC32_TABLE_7104753084[(crc ^ c) & 0xff] ^ (crc >> 8);
+            p++;
+            len += 0x100000000ULL;
+            c = (u8)*p;
+        } while (c != 0);
+        crc = ~crc;
+        hash40 = len | (u64)crc;
+    }
+
+    // Look up extension hash from LoadedArc
+    LoadedArc* arc = fs->path_info->arc;
+    FileSystemHeader* header = arc->fs_header;
+    if (header->file_info_path_count <= filepath_index) {
+        return false;
+    }
+    FilePath* fp = &arc->file_paths[filepath_index];
+    u64 stored_hash = fp->ext.raw & 0xffffffffffULL;
+    return stored_hash == hash40;
+}

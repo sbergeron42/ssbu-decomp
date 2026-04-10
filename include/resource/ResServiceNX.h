@@ -15,6 +15,7 @@ namespace resource {
 struct FilesystemInfo;
 struct FileNX;
 struct LoadedArc;
+struct PathInformation;
 
 // File inflate result
 // [derived: ARCropolis InflateFile]
@@ -79,7 +80,7 @@ struct FilesystemInfo {
     u8 unk3;                                    // +0x68
     u8 unk4[7];                                 // +0x69
     LoadedDataWrapper* loaded_data;              // +0x70 [derived: Ghidra 13.0.1 loaded_tables->loaded_data]
-    void* path_info;                            // +0x78 — PathInformation*
+    PathInformation* path_info;                  // +0x78 [derived: does_file_use_extension accesses arc via path_info->arc]
     u32 version;                                // +0x80
 };
 
@@ -116,7 +117,7 @@ struct LoadedFsSearch {
 // [inferred: Ghidra 13.0.1 decompilation, allocated at 0x18 bytes in init — not in ARCropolis]
 struct LoadedDataWrapper {
     LoadedArc* arc;                  // +0x00 [derived: Ghidra 13.0.1 loaded_data->arc access chain]
-    void* search;                    // +0x08 [inferred: LoadedFsSearch*]
+    LoadedFsSearch* search;          // +0x08 [derived: search section pointer, used in filepath lookups]
     void* unk;                       // +0x10 [unknown]
 };
 

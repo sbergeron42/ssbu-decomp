@@ -92,9 +92,9 @@ void* operator new(unsigned long size) {
 }
 
 // ============================================================================
-// operator new(unsigned long, std::nothrow_t const&) — 0x710353bd00 (112 bytes)
+// operator new(unsigned long, std::nothrow_t const&) — 0x710353bca0 (120 bytes)
 // Nothrow variant — identical logic, second param unused.
-// [derived: Ghidra symbol "operator new(unsigned long, std::nothrow_t const&)"]
+// [derived: CSV entry operator.new_710353bca0; identical codegen to operator new]
 // ============================================================================
 void* operator new(unsigned long size, const std::nothrow_t&) noexcept {
     if (size == 0) size = 1;
@@ -115,9 +115,9 @@ void* operator new(unsigned long size, const std::nothrow_t&) noexcept {
 }
 
 // ============================================================================
-// operator new[](unsigned long) — 0x710353bd70 (112 bytes)
+// operator new[](unsigned long) — 0x710353bd20 (120 bytes)
 // Array variant — identical logic.
-// [derived: Ghidra symbol "operator new[](unsigned long)"]
+// [derived: CSV entry operator.new[]; identical codegen to operator new]
 // ============================================================================
 void* operator new[](unsigned long size) {
     if (size == 0) size = 1;
@@ -138,9 +138,9 @@ void* operator new[](unsigned long size) {
 }
 
 // ============================================================================
-// operator new[](unsigned long, std::nothrow_t const&) — 0x710353bde0 (112 bytes)
+// operator new[](unsigned long, std::nothrow_t const&) — 0x710353bda0 (120 bytes)
 // Array nothrow variant — identical logic.
-// [derived: Ghidra symbol "operator new[](unsigned long, std::nothrow_t const&)"]
+// [derived: CSV entry operator.new[]_710353bda0; identical codegen to operator new]
 // ============================================================================
 void* operator new[](unsigned long size, const std::nothrow_t&) noexcept {
     if (size == 0) size = 1;
@@ -451,7 +451,7 @@ void FUN_710353d480(u32* param_1, u64 param_2) {
 
     {
         FilesystemInfo* fs = DAT_7105331f20;
-        PathInformation* pi = (PathInformation*)fs->path_info;
+        PathInformation* pi = fs->path_info;
         LoadedArc* arc = pi->arc;
         FileInfoBucket* buckets = arc->file_info_buckets;
         HashToIndex* hash_to_path = arc->file_hash_to_path_index;
@@ -527,7 +527,7 @@ u64 FUN_710353e4e0(u32 param_1) {
 
     {
         FilesystemInfo* fs = DAT_7105331f20;
-        PathInformation* pi = (PathInformation*)fs->path_info;
+        PathInformation* pi = fs->path_info;
         long search = (long)pi->search;
         long body = *(long*)(search + 0x08);
 
@@ -610,8 +610,7 @@ void FUN_710353e030(u32* param_1, u32 param_2) {
 
         lock_71039c1490(mutex);
 
-        PathInformation* pi = (PathInformation*)fs->path_info;
-        LoadedArc* arc = pi->arc;
+        LoadedArc* arc = fs->path_info->arc;
         // DirInfo is 0x34 bytes in binary (no alignment padding)
         DirInfo* dir = (DirInfo*)((char*)arc->dir_infos + (u64)param_2 * 0x34);
         u64 parent_raw = dir->parent;  // +0x10
@@ -627,8 +626,7 @@ void FUN_710353e030(u32* param_1, u32 param_2) {
 
     {
         FilesystemInfo* fs2 = DAT_7105331f20;
-        PathInformation* pi2 = (PathInformation*)fs2->path_info;
-        LoadedArc* arc2 = pi2->arc;
+        LoadedArc* arc2 = fs2->path_info->arc;
 
         HashToIndex* dir_hash = arc2->dir_hash_to_info_index;
         u32 dir_count = arc2->fs_header->folder_count;
@@ -669,4 +667,19 @@ void FUN_710353e030(u32* param_1, u32 param_2) {
 
 LAB_e030_fail:
     *param_1 = 0xffffff;
+}
+
+// ============================================================================
+// status_710353cfb0 — get status from resource context
+// Dereferences param_1[0] and returns the u32 at offset +0xb0.
+// Returns 0 if the inner pointer is null.
+// [derived: single deref + offset read pattern, status/state getter]
+// Address: 0x710353cfb0 (24 bytes)
+// ============================================================================
+u32 status_710353cfb0(void** param_1) {
+    void* inner = *param_1;
+    if (inner != nullptr) {
+        return *(u32*)((u8*)inner + 0xb0);
+    }
+    return 0;
 }

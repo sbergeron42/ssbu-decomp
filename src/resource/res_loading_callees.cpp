@@ -81,7 +81,7 @@ s32 FUN_7103542500(s32* version) {
     if (DAT_7105331f20 == nullptr) {
         return (s32)0xFFFF;
     }
-    PathInformation* path_info = (PathInformation*)DAT_7105331f20->path_info;
+    PathInformation* path_info = DAT_7105331f20->path_info;
     s32 local[2];
     local[0] = (s32)(path_info->arc->fs_header->version & 0xFFFFFF);
     if (local[0] == (s32)0xFFFF) {

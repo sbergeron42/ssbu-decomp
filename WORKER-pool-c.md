@@ -2,29 +2,34 @@
 
 ## Model: Opus
 
-## Task: Clean up sv_animcmd_effect.cpp + camera_functions.cpp — typed module access
+## Task: Resource service — file loading pipeline and ARC archive operations
 
-## Priority: QUALITY CLEANUP
+## Priority: NEW DECOMP (ARCropolis community value)
 
 ## Context
-`sv_animcmd_effect.cpp` (195 casts, 288 offsets, 4,748 lines) had partial EffectModule cleanup in Phase 1 but still has 195 casts. `camera_functions.cpp` (73 casts, 514 offsets, 3,079 lines) has stage/camera offset access that needs CameraController and other placeholder structs.
+The resource loading pipeline is what ARCropolis hooks into for mod loading. Existing typed headers in `include/resource/` cover `ResServiceNX`, `LoadedArc`, `PathResolver`, `PipelineTypes`, `TaskInfra`, and container types. Phase 2 already rewrote `res_pipeline_medium.cpp` and `res_remaining_medium.cpp` with typed access.
+
+## Approach
+1. Use `mcp__ghidra__search_functions_by_name` to find resource-related functions (search for "ResService", "LoadedArc", "FileSystem")
+2. Focus on the loading pipeline: file open, read, decompress, callback
+3. Extend `include/resource/` headers as you discover new fields
+4. Cross-reference with ARCropolis source for community-validated field names
 
 ## File Territory
-- `src/app/sv_animcmd_effect.cpp` (CLEANUP)
-- `src/app/camera_functions.cpp` (CLEANUP)
-- `include/app/modules/EffectModule.h` (extend if needed)
-- `include/app/placeholders/` (create placeholders)
+- `src/resource/res_loading_pipeline.cpp` (extend)
+- `src/resource/res_load_helpers.cpp` (extend)
+- `src/resource/res_pipeline_large.cpp` (extend)
+- `src/resource/res_*.cpp` (any resource file)
+- `include/resource/` (extend headers)
+- `include/app/placeholders/` (new types as needed)
 
-## What To Do
-- sv_animcmd_effect: remaining EffectModule raw dispatch → typed wrappers, L2CValue access → typed
-- camera_functions: raw stage/camera offsets → CameraController/StageBase struct access
-- Cast density under 10%, zero REJECT violations
-
-## Do NOT
-- Delete, add, or rename functions — internal cleanup only
+## Quality Rules
+- Use ARCropolis names where available, tag `[derived: ARCropolis]`
+- NO `FUN_` names, NO Ghidra vars, NO raw vtable dispatch, NO naked asm
+- Cast density under 10%
+- Run `python tools/review_diff.py pool-c` before committing
 
 ## Build
 ```bash
 python tools/build.py 2>&1 | tee build_output.txt
-python tools/review_diff.py pool-c
 ```
