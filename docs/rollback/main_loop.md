@@ -411,6 +411,30 @@ If Event B is the LDN gate, then `main_loop`'s per-iteration `SignalEvent(A) →
 3. **Look for the sim loop on a DIFFERENT thread.** `nn::os::CreateThread` xrefs are the canonical entry point; a sim worker will have its own `WaitEvent` at top and `SignalEvent` at bottom, and will call into `FighterManager` / `BattleObjectWorldManager`. The two remaining `WaitEvent(0x71039c06c0)` callers worth smoke-testing are `FUN_7103987890` (SDK-gr neighborhood — probably GPU submission worker, not sim) and `FUN_7103721a40` (unclassified — promising).
 4. **Walk xrefs to `FUN_710386fc30`** — this is the `dt`-producer called just before Event A. If it touches `FighterManager`, it becomes the bridge. First-pass evidence (function address in the `71038xxxxx` range) suggests it is an animation / UI time-update helper, but worth a 30-second decomp to falsify.
 
+### All four `WaitEvent(0x71039c06c0)` callers accounted for
+
+Before closing this pass, the remaining `WaitEvent(0x71039c06c0)` callers outside `main_loop` were swept so the search-space is fully exhausted:
+
+| Caller | Size | Purpose |
+| --- | --- | --- |
+| `main_loop` @ `0x7103747270` | ~24 KB | Presentation frame loop (this document) |
+| `FUN_7103987890` @ `0x7103987890` | ~15 KB | SDK-gr neighborhood. Times out via MCP decomp. Very likely a GPU command-submission worker in the `nn::gr` stack — not simulation. |
+| `FUN_710013bb20` @ `0x710013bb20` | ~8 B | Tiny utility thunk |
+| `FUN_7103721a40` @ `0x7103721a40` | 700 B | **Named-command RPC dispatch worker.** `while (thread_running) { lock; if (queue_empty) WaitEvent else pop + FNV-1a-hash the name (seed 0x811c9dc5, mul 0x89) + look up handler by numeric index in a 0x30-stride vector + vtable dispatch at +0x30 + write result back. }` — a classic debug-console / mod-hook / IPC dispatcher, not a game tick. |
+
+**None of the four is a simulation tick.** Whatever advances fighter state uses a **different synchronization primitive** — either a different `EventType*`, a `condition_variable`, a direct function call from another top-level thread entry point, or a polled spin. The `main_loop`-centric search space is fully exhausted.
+
+### Final takeaway for rollback research
+
+`main_loop` at `0x7103747270` is definitively the **presentation / housekeeping frame loop**. Its signal/wait handshakes are **render-buffer-kick (Event A)** and **LDN-network-tick wait (Event B, hypothesized)**. None of its direct or near-direct children investigated — `FUN_7101344cf0`, `FUN_71035763c0` (×12), `FUN_71036f2c00`, `FUN_71036f2d40`, `FUN_7103619410`, `FUN_71036185d0`, `FUN_7103721a40` — mutate fighter simulation state.
+
+**The sim tick lives outside `main_loop`'s reachable call graph and must be found via a different entry point:**
+
+1. Top-level xrefs to `nn::os::CreateThread` — look for thread bodies that iterate `FighterManager` or `BattleObjectWorldManager`.
+2. Direct xrefs to `FighterManager` vtable slots from a top-level function that is NOT reached from `main_loop`.
+3. Decompile `FUN_710386fc30` (the `dt` producer called just before Event A) to falsify whether it touches sim.
+4. Trace call chains from `game_main_entry` / `NintendoMain` (the process entry point) — they fork threads early, and one of them is the sim thread.
+
 ---
 
 ## 7. Open questions for the next pass

@@ -749,6 +749,69 @@ handshake — it is render-kick + network-sync. The simulation advance is
 NOT what main_loop is waiting on, and is almost certainly on a different
 thread with its own SignalEvent/WaitEvent pair unrelated to both events.
 
+== FUN_7103721a40 @ 0x7103721a40 (remaining WaitEvent(0x71039c06c0) caller, 700B) ==
+Work-queue consumer worker thread. Structure:
+  if (static_init_guard DAT_710593a210) {
+      init DAT_710593a0b0 = 0xF (default index),
+      DAT_710593a0bc..a200 (name buffer, transform fields, return slot)
+  }
+  while ([lVar11 + 1] & 1):                     // thread_running flag
+      lock mutex
+      if ([lVar11 + 0x18] == 0):                 // queue empty
+          unlock; WaitEvent(**[lVar11 + 0x28]); continue
+      else:
+          pop head work item from [lVar11 + 0x10]
+          copy work.index (+0x10) → DAT_710593a0b0
+          if work.name_ptr != &DAT_710593a0b0:
+              copy null-terminated name 4-bytes-at-a-time into DAT_710593a0bc
+              compute FNV-1a hash of the name with 0x811c9dc5 seed / x0x89 mul,
+                store (len,hash) → _DAT_710593a0b4
+          copy work.payload_0x120..0x168 → DAT_710593a1c0..a208
+          unlock
+          count = (work_vec_end - work_vec_begin) / 0x30
+          if DAT_710593a0b0 < count:
+              handler = ((long**)(work_vec_begin + idx*0x30 + 0x20))
+              result = (**handler[+0x30])(handler, &DAT_710593a0b0)
+          store result → *DAT_710593a200, [lVar11 + 4]
+          lock; unlink and free popped item; decrement count; unlock
+
+Category: named-command / RPC dispatch worker. The FNV-1a with seed
+0x811c9dc5 and multiplier 0x89 is the classic string-keyed dispatch
+pattern (same as main_loop's FUN_7103550080 — unordered_map<string>).
+The work item carries a 256-byte name, 0x50 bytes of transform payload,
+and a result pointer. Handlers are looked up by numeric index into a
+0x30-stride vector and dispatched via vtable [+0x30].
+
+This is NOT a sim loop. Most likely: developer console command
+dispatcher, debug RPC, or a mod/plugin hook. Not per-frame; blocks
+on an empty queue.
+
+== All 4 WaitEvent(0x71039c06c0) callers accounted for ==
+  main_loop @ 0x7103747bf0              → presentation frame loop
+  FUN_7103987890 @ 0x710398b358 (~15KB) → SDK-gr neighborhood, GPU worker
+                                          (skip: times out via MCP decomp)
+  FUN_710013bb20 @ 0x710013bb24         → tiny utility thunk
+  FUN_7103721a40 @ 0x7103721b4c         → named-command RPC dispatch worker
+
+NONE of the four is a simulation tick. The sim advance uses a DIFFERENT
+EventType* (not 0x71039c06c0) or a different synchronization primitive
+(condvar, direct function call, or blocking-polled spin). The main_loop-
+adjacent search space is fully exhausted.
+
+FINAL TAKEAWAY for rollback research:
+The main_loop at 0x7103747270 is definitively the presentation/housekeeping
+frame loop. Its signal/wait handshakes are render-buffer-kick + LDN-tick
+wait. None of its direct or near-direct children (FUN_7101344cf0,
+FUN_71035763c0 x12, FUN_71036f2c00, FUN_71036f2d40, FUN_7103619410,
+FUN_71036185d0, FUN_7103721a40) mutate fighter simulation state.
+
+The sim tick must be found via a different entry point:
+  - Top-level xrefs to nn::os::CreateThread (look for thread bodies that
+    iterate FighterManager)
+  - Direct xrefs to FighterManager vtable slots from a top-level function
+  - The actual animation/dt producer at FUN_710386fc30 if it touches sim
+  - Direct call chains from game_main_entry / NintendoMain
+
 
 
 
