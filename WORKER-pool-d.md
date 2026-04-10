@@ -4,6 +4,14 @@
 
 ## Task: Phase 3 — Define BossManager struct + rewrite boss-related functions
 
+## Status: MOSTLY COMPLETE (2026-04-09)
+- BossManager.h created with BossManagerInner (8 fields mapped)
+- 8 src/ files rewritten to use typed struct access (~30 casts eliminated)
+- FighterParamAccessor2 placeholder struct created (15 fields)
+- 4 new boss functions decomped (send_event_on_boss_defeat, FUN_7102208bf0, FUN_7102208b10)
+- 2 naked asm functions removed (banned), 2 complex functions skipped (NX prologue mismatch)
+- Next: more xref-driven decomps, extend BossManagerInner fields
+
 ## Priority: TYPE RECOVERY (struct definition + consumer rewrite)
 
 ## Context

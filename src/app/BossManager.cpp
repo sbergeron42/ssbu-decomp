@@ -110,3 +110,76 @@ void send_event_on_boss_defeat(u8* lua_state) {
 // Decomped in ItemHelpers.cpp or fun_batch_d5_047.cpp (different TU).
 
 } // namespace app::boss_private
+
+// ════════════════════════════════════════════════════════════════════
+// lua C callbacks — different TU (0x71022xxxxx range)
+// These return u64 (number of lua return values, always 0).
+// ════════════════════════════════════════════════════════════════════
+
+extern "C" void FUN_71003ab390(void*, u32);
+extern "C" void FUN_71004eb4b0(void*, u32, u32, u64);
+extern "C" u64 FUN_71038f4000(u8*, s32, s32);
+
+// 0x7102208bf0 (208B) — lua C callback: send_event_on_boss_defeat (different TU from 71015c8510)
+// [derived: Ghidra — identical entity list iteration pattern, returns 0]
+extern "C" u64 FUN_7102208bf0(u8* L) {
+    app::BossManager* bm = DAT_71052b7ef8_bm2;
+    if (bm != nullptr) {
+        app::BossManagerInner* inner = bm->inner;
+        void** begin = inner->entity_list_begin;
+        void** end   = inner->entity_list_end;
+        if (begin != end) {
+            u8* ctx = *reinterpret_cast<u8**>(L - 8);
+            u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
+            u8* p1  = *reinterpret_cast<u8**>(acc + 400);
+            u8* p2  = *reinterpret_cast<u8**>(p1 + 0x220);
+            s32 target_id = *reinterpret_cast<s32*>(p2 + 0xc);
+            for (void** it = begin; it != end;
+                 it = reinterpret_cast<void**>(reinterpret_cast<u8*>(it) + 0x10)) {
+                void* entity = app::boss_private::resolve_entity(it);
+                s32 hash = reinterpret_cast<s32(*)(void*)>(
+                    (*reinterpret_cast<void***>(entity))[0x30/8])(entity);
+                if (hash != target_id) continue;
+                void* entity2 = app::boss_private::resolve_entity(it);
+                reinterpret_cast<void(*)(void*)>(
+                    (*reinterpret_cast<void***>(entity2))[0x50/8])(entity2);
+            }
+        }
+    }
+    return 0;
+}
+
+// 0x7102208b10 (212B) — lua C callback: start_boss_finish variant
+// [derived: Ghidra — pops Hash40 from lua stack, gets battle object, dispatches to BossManager]
+extern "C" u64 FUN_7102208b10(u8* L) {
+    // Lua stack manipulation (pop return value)
+    u64 stack_top = *reinterpret_cast<u64*>(L + 0x10);
+    u64 base = *reinterpret_cast<u64*>(*reinterpret_cast<u64*>(L + 0x20)) + 0x10;
+    u64 diff = stack_top - base;
+    u64 hash40 = FUN_71038f4000(L, 1, 0);
+    if (((diff >> 0x23) & 1) == 0) {
+        *reinterpret_cast<u64*>(L + 0x10) = stack_top + (((s64)(diff * (u64)-0x10000000)) >> 0x1c);
+    } else {
+        u64 target = base + (((s64)(diff * 0x10000000 ^ 0xffffffff00000000)) >> 0x1c);
+        u64 cur = *reinterpret_cast<u64*>(L + 0x10);
+        while (cur < target) {
+            *reinterpret_cast<u64*>(L + 0x10) = cur + 0x10;
+            *reinterpret_cast<u32*>(cur + 8) = 0;
+            cur = *reinterpret_cast<u64*>(L + 0x10);
+        }
+        *reinterpret_cast<u64*>(L + 0x10) = target;
+    }
+    // Get battle object and dispatch to BossManager
+    u8 buf[16];
+    u8* ctx = *reinterpret_cast<u8**>(L - 8);
+    FUN_71003ab390(buf, *reinterpret_cast<u32*>(ctx + 400));
+    app::BossManager* bm = DAT_71052b7ef8_bm2;
+    if (bm != nullptr) {
+        u8* obj = *reinterpret_cast<u8**>(buf + 8);
+        FUN_71004eb4b0(bm->inner,
+                       *reinterpret_cast<u32*>(obj + 8),
+                       *reinterpret_cast<u32*>(obj + 0xc),
+                       hash40);
+    }
+    return 0;
+}

@@ -14,7 +14,11 @@ struct BossManagerInner {
     u8  unk_0x104[0xC];
     void** entity_list_begin; // +0x110 [derived: boss entity vector data, 0x10-stride shared_ptr entries]
     void** entity_list_end;   // +0x118 [derived: boss entity vector end]
-    u8  unk_0x120[0x24];
+    u8  unk_0x120[0x8];
+    u64 boss_kind_id;       // +0x128 [derived: FUN_7101798450 reads as u64, compares low word to 0x19a/0x169]
+    u8  unk_0x130[0x8];
+    s32 boss_target_id;     // +0x138 [derived: FUN_7101798450 checks == -1 (0xFFFFFFFF = no target)]
+    u8  unk_0x13C[0x8];
     u32 finish_param_1;     // +0x144 [derived: send_event_on_boss_dead passes to vtable[0x28] callback]
     u32 finish_param_2;     // +0x148 [derived: send_event_on_boss_dead passes to vtable[0x60] callback]
     u8  unk_0x14C[0x2];
