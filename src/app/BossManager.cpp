@@ -1,4 +1,5 @@
 #include "types.h"
+#include "app/BattleObject.h"
 #include "app/BossManager.h"
 
 // BossManager — operates on BossManager* directly
@@ -89,9 +90,9 @@ void send_event_on_boss_defeat(u8* lua_state) {
     void** end   = inner->entity_list_end;
     if (begin == end) return;
     // Get battle_object_id from lua context chain:
-    // *(*(*(*(*(L-8) + 0x1a0) + 400) + 0x220) + 0xc)
-    u8* ctx = *reinterpret_cast<u8**>(lua_state - 8);
-    u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
+    // battle_object→module_accessor→+400→+0x220→+0xc
+    app::BattleObject* ctx = *reinterpret_cast<app::BattleObject**>(lua_state - 8);
+    u8* acc = reinterpret_cast<u8*>(ctx->module_accessor);
     u8* p1  = *reinterpret_cast<u8**>(acc + 400);
     u8* p2  = *reinterpret_cast<u8**>(p1 + 0x220);
     s32 target_id = *reinterpret_cast<s32*>(p2 + 0xc);
@@ -129,8 +130,8 @@ extern "C" u64 FUN_7102208bf0(u8* L) {
         void** begin = inner->entity_list_begin;
         void** end   = inner->entity_list_end;
         if (begin != end) {
-            u8* ctx = *reinterpret_cast<u8**>(L - 8);
-            u8* acc = *reinterpret_cast<u8**>(ctx + 0x1a0);
+            app::BattleObject* ctx = *reinterpret_cast<app::BattleObject**>(L - 8);
+            u8* acc = reinterpret_cast<u8*>(ctx->module_accessor);
             u8* p1  = *reinterpret_cast<u8**>(acc + 400);
             u8* p2  = *reinterpret_cast<u8**>(p1 + 0x220);
             s32 target_id = *reinterpret_cast<s32*>(p2 + 0xc);
@@ -171,8 +172,8 @@ extern "C" u64 FUN_7102208b10(u8* L) {
     }
     // Get battle object and dispatch to BossManager
     u8 buf[16];
-    u8* ctx = *reinterpret_cast<u8**>(L - 8);
-    FUN_71003ab390(buf, *reinterpret_cast<u32*>(ctx + 400));
+    app::BattleObject* ctx = *reinterpret_cast<app::BattleObject**>(L - 8);
+    FUN_71003ab390(buf, *reinterpret_cast<u32*>(reinterpret_cast<u8*>(ctx) + 400));
     app::BossManager* bm = DAT_71052b7ef8_bm2;
     if (bm != nullptr) {
         u8* obj = *reinterpret_cast<u8**>(buf + 8);

@@ -24,6 +24,8 @@ struct BattleObject {
     u8 category;                            // +0x3a [derived: FUN_71003a7740 writes 4 (active), FUN_71003a7850 writes 3]
     u8 pad_0x3B;
     u8 team;                                // +0x3c [derived: FUN_71003a7740/a7850 writes 0xFF (none)]
+    u8 pad_0x3D[0x163];
+    BattleObjectModuleAccessor* module_accessor; // +0x1a0 [derived: 261 occurrences across 31 src/ files via *(ctx+0x1a0)]
 };
 
 // AttackListContainer — internal container for attack entry arrays
