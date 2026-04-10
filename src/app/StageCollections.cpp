@@ -1,4 +1,5 @@
 #include "types.h"
+#include "app/placeholders/StageVt71051624a8.h"
 
 // Stage collection cleanup helpers
 //
@@ -11,6 +12,11 @@
 // stage classes in the 0x71030xxxx range.
 
 extern "C" void jeFree_710392e590(void*);
+extern "C" void StageBase_dtor_71025d7310(void*);
+// Sub-object cleanup helper at 0x710303be40. Defined (as FUN_710303be40) in
+// fun_hard_c_010.cpp; we refer to it under a named alias here.
+extern "C" void stage_vt71051624a8_cleanup_710303be40(void*) asm("FUN_710303be40");
+extern "C" u64 DAT_71051624a8 __attribute__((visibility("hidden"))); // stage subclass vtable
 
 // Node layout for the BST helper: { Node* left; Node* right; ...payload }
 // Only the first 16 bytes (left + right) are touched; payload is opaque.
@@ -60,4 +66,22 @@ extern "C" void free_stage_list_710301bcb0(StageListOwner* owner)
     owner->head = nullptr;
     if (head == nullptr) return;
     jeFree_710392e590(head);
+}
+
+// 0x7103036770 (80 bytes) — D0 destructor for stage class with vtable DAT_71051624a8
+// The corresponding D1 destructor (FUN_7103036720) lives in fun_hard_c_010.cpp; this
+// D0 variant inlines the same cleanup, tail-calls ~StageBase, then deletes self.
+// Field layout is documented in include/app/placeholders/StageVt71051624a8.h.
+// [derived: disasm at 0x7103036770; paired with D1 at 0x7103036720 in fun_hard_c_010.cpp]
+extern "C" void stage_D0_dtor_7103036770(StageVt71051624a8* self)
+{
+    void* sub = self->owned_sub_0x738;
+    self->vtable = &DAT_71051624a8;
+    self->owned_sub_0x738 = nullptr;
+    if (sub != nullptr) {
+        stage_vt71051624a8_cleanup_710303be40(sub);
+        jeFree_710392e590(sub);
+    }
+    StageBase_dtor_71025d7310(self);
+    jeFree_710392e590(self);
 }
