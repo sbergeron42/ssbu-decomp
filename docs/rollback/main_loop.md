@@ -384,12 +384,32 @@ if (*DAT_710593a528)   WaitEvent(*DAT_710593a528);           // BLOCK on event B
 - **Event B** at `DAT_710593a528` is referenced only from `game_ldn_initialize` (setup) and `main_loop` (wait). No function was found that calls `SignalEvent(DAT_710593a528)` directly, which means it is signaled through an indirect path (likely a pointer field stored in another object). **This is the thing that, if found, would reveal the sim-worker signaling back to `main_loop`.**
 - **`DAT_710593a440`** is the real presentation frame counter — delta-weighted (`+= (int)dt + 1` per iteration), confirmed to be the same atomic as the `x20` register used by the `ldaxr/stlxr` CAS loop at `7103747bd0`. This is what the presentation layer considers its "frame counter", so even though it is not fixed-step, it **is** the best candidate we have for a rollback index at the presentation layer.
 
+### Event A is the render command buffer notify (confirmed)
+
+Decompiled two of the Event A readers:
+
+**`FUN_7103619410`** (208 B, simple) — clears a flag at `[DAT_71053386d0 + 0x55]`, obtains a command slot via `(*cmd_alloc[+0x18])(*cmd_queue)` where `cmd_queue = DAT_71053386d0 + 0x38`, writes a **4×4 identity matrix** into the returned slot (16 floats with `1.0f` on the diagonal), obtains a second slot and writes the `+0x55` flag as a `u32` into it, then `SignalEvent(**DAT_71053386d0[+8])`. This is a **"push identity transform + opacity byte" render command**.
+
+**`FUN_71036185d0`** (252 B) — sets `[DAT_71053386d0 + 0x54] = 1`, signals Event A, releases a resource at `[DAT_71053386d0 + 0x10]` via vtable `+0x18` / `+0x8`, then walks a list of `0xA0`-stride structs at `param_1 + 0x528 .. 0x530` and writes sprite-batch fields (`+0x50`/`+0x54` floats, `+0x60/+0x68/+0x70/+0x78/+0x80/+0x88` transform/UV copies, a final `u8` flag at `+0x90 → +0xE0`) into the underlying render nodes at `[item+0x08]` and `[item+0x28]`. This is a **sprite-batch flush**.
+
+**Verdict for Event A: `DAT_71053386d0` is the render command buffer singleton.** `[+0x08]` holds the `EventType*` that wakes the consumer (GPU submission thread or render worker). `[+0x38]` is the command allocator. `[+0x10]` is a current-resource slot. `[+0x54]`/`[+0x55]` are flag bytes. **Event A is pure presentation** — `main_loop` signals it after computing `dt` to kick the render consumer on the freshly updated command buffer.
+
+### Event B is the LDN (network) readiness gate (most likely)
+
+`DAT_710593a528` is referenced from only two call-sites:
+- `game_ldn_initialize` at `7103741bb0` (read of the pointer slot) and `7103741c38` (an offset load that happens to alias the same page — may be coincidental, but the symbol context is LDN).
+- `main_loop` at `7103747be4` (the `WaitEvent` read).
+
+**No direct `SignalEvent(DAT_710593a528)` caller exists anywhere in the binary.** The event is signaled through an indirect pointer — most plausibly a callback or field stored into an LDN session object during `game_ldn_initialize`. Given that `LDN` is Nintendo's local-wireless stack, this event is almost certainly the **"LDN subsystem has finished its per-frame work (peer discovery tick / packet drain / session poll)"** handshake.
+
+If Event B is the LDN gate, then `main_loop`'s per-iteration `SignalEvent(A) → update atomic counter → WaitEvent(B)` is **not** a sim/present handshake at all — it is **render-push + network-tick gating**, with the actual simulation advance living somewhere unrelated to either event.
+
 ### Refined next-pass priorities
 
-1. **Find the indirect signaler of `DAT_710593a528`**. Scan all functions for a `str ... , [x, #N]` where `N` happens to match the offset at which `DAT_710593a528` is populated (from `game_ldn_initialize` + `FUN_71036128a0`), then cross-reference with `SignalEvent` call sites in the same function. That is the sim/present round-trip.
-2. **Decompile `FUN_71036128a0` and `FUN_7103619410`** — both read `DAT_71053386d0` and are in the `7103619xxx`/`71036128xx` vsync-pacing neighborhood; one of them is the thread body that signals Event B.
-3. **Rule out CPU/GPU worker threads on `nn::gr`**. `FUN_7103987890` is another `WaitEvent(0x71039c06c0)` caller and lives in the `710398xxxx` (SDK-gr?) range — worth a quick smoke-test decomp.
-4. **Walk xrefs to `FUN_710386fc30`** — this is the function called *just before* the SignalEvent, producing the per-frame dt. If it ever touches `FighterManager`, this is our sim tick.
+1. **Decompile `FUN_71036128a0`** (0x5BAB bytes, the render queue initializer — writes `DAT_71053386d0`) to confirm the render-buffer identity. This is the last direct falsification test for Event A; if it turns out to allocate sim resources instead, the whole Event A theory has to be revisited. **Currently times out via MCP — needs the same cached-file workaround as `main_loop`.**
+2. **Confirm Event B = LDN.** Scan `game_ldn_initialize` (and any `nn::ldn::*` xref) for stores that install an event handle into an LDN session object; search the codebase for `SignalEvent` calls inside nn::ldn callback bodies.
+3. **Look for the sim loop on a DIFFERENT thread.** `nn::os::CreateThread` xrefs are the canonical entry point; a sim worker will have its own `WaitEvent` at top and `SignalEvent` at bottom, and will call into `FighterManager` / `BattleObjectWorldManager`. The two remaining `WaitEvent(0x71039c06c0)` callers worth smoke-testing are `FUN_7103987890` (SDK-gr neighborhood — probably GPU submission worker, not sim) and `FUN_7103721a40` (unclassified — promising).
+4. **Walk xrefs to `FUN_710386fc30`** — this is the `dt`-producer called just before Event A. If it touches `FighterManager`, it becomes the bridge. First-pass evidence (function address in the `71038xxxxx` range) suggests it is an animation / UI time-update helper, but worth a 30-second decomp to falsify.
 
 ---
 

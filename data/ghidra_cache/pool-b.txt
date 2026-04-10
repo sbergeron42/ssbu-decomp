@@ -706,6 +706,51 @@ b) Decompile FUN_71036128a0 + FUN_7103619410 (Event A readers, vsync neighborhoo
 c) Smoke-test FUN_7103987890 (SDK-gr WaitEvent caller)
 d) Walk xrefs of FUN_710386fc30 (the dt producer called just before SignalEvent)
 
+== Event A readers decomped (both are render command producers) ==
+
+FUN_7103619410 @ 0x7103619410 (208B):
+  - clear flag [DAT_71053386d0 + 0x55] = 0
+  - obtain cmd slot via (*cmd_alloc[+0x18])(*cmd_queue) where cmd_queue=DAT_71053386d0+0x38
+  - write 4x4 identity matrix (16 floats, 1.0f on diagonal) into the slot
+  - obtain second slot, write +0x55 flag as u32 into it
+  - SignalEvent(**DAT_71053386d0[+8])
+  → Pushes "identity transform + opacity byte" render command
+
+FUN_71036185d0 @ 0x71036185d0 (252B):
+  - set [DAT_71053386d0 + 0x54] = 1
+  - SignalEvent(**DAT_71053386d0[+8])
+  - release resource at [DAT_71053386d0 + 0x10] (vtable +0x18/+0x8)
+  - walk list of 0xA0-stride structs at param_1+0x528..0x530:
+      for each item, copy position (+0x50/+0x54 f32) and transform
+      (+0x60/+0x68/+0x70/+0x78/+0x80/+0x88) into render nodes
+      at [item+0x08] and [item+0x28]
+  → Sprite batch flush
+
+Verdict: DAT_71053386d0 = render command buffer singleton.
+  [+0x08] = EventType* (wakes render consumer)
+  [+0x10] = current resource slot
+  [+0x38] = command allocator (vtable obj)
+  [+0x54], [+0x55] = flag bytes
+Event A is PURE PRESENTATION. main_loop signals it after producing dt to
+kick the render consumer on the freshly built command buffer.
+
+== Event B most likely = LDN readiness gate ==
+DAT_710593a528 has NO direct SignalEvent caller anywhere in the binary.
+Only 3 xrefs total:
+  - game_ldn_initialize @ 0x7103741bb0 (read)
+  - game_ldn_initialize @ 0x7103741c38 (read, may alias page coincidentally)
+  - main_loop @ 0x7103747be4 (WaitEvent read)
+The symbol context (LDN = Local Data Network, Nintendo's local wireless)
+strongly suggests this is the per-frame "LDN tick complete" notify, signaled
+indirectly via a callback stored into an LDN session object during init.
+
+If this is correct, main_loop's Signal/Wait pair is NOT a sim/present
+handshake — it is render-kick + network-sync. The simulation advance is
+NOT what main_loop is waiting on, and is almost certainly on a different
+thread with its own SignalEvent/WaitEvent pair unrelated to both events.
+
+
+
 
 
 == FUN_7101344cf0 @ 0x7101344cf0..0x710134c68f (0x799f / ~31KB) ==
