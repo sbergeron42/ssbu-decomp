@@ -111,7 +111,9 @@ struct FighterAIState {
     u32 hp;                    // +0xe4 [derived: app::ai::hp reads this]
     f32 shield_hp;             // +0xe8 [derived: shield_rate computes e8/ec]
     f32 shield_max;            // +0xec [derived: shield_rate computes e8/ec]
-    u8 unk_0xf0[0x3C];
+    u32 dangerzone_index;      // +0xf0 [derived: check_line_segment reads this]
+    s32 player_index;          // +0xf4 [derived: is_1on1 indexes mgr array by this]
+    u8 unk_0xf8[0x34];
     u32 current_attack_cancel_frame;  // +0x12c [derived: 300 decimal, app::ai::current_attack_cancel_frame]
     u32 attack_phase;          // +0x130 [derived: app::ai::attack_phase reads this]
     u8 unk_0x134[0xC0];
@@ -162,10 +164,15 @@ struct AIDeadZone {
 // Size: >= 0x158 bytes
 // ---------------------------------------------------------------------------
 struct FighterAIManager {
-    u8 unk_0x00[0xc8];
+    u8 unk_0x00[0xc0];
+    void* dangerzone_array;    // +0xc0 [derived: width, check_line_segment read through this]
     AIDeadZone* cam_bounds;    // +0xc8 [derived: dead_top/bottom/left/right read through this]
     u8 unk_0xd0[0x80];
     u32 current_stage_id;      // +0x150 [derived: app::ai_stage::current_id reads this]
+    u8 unk_0x154[0x18];
+    s32 player_count;          // +0x16c [derived: is_1on1 checks == 2]
+    u8 unk_0x170[0x20];
+    s32 player_alive[8];       // +0x190 (400 decimal) [derived: is_1on1 indexes by player_index]
 };
 
 // ---------------------------------------------------------------------------
@@ -230,7 +237,8 @@ struct FighterAI {
     u8 unk_0xc44[0xC];
 
     // ---- Target tracking ----
-    u8 target_ref[0x2C];      // +0xc50 [derived: passed to FUN_7100314030 for target lookup]
+    s32 target_entry_id;       // +0xc50 [derived: predict_target_landing_frame checks >=0 and != parent_entry_id]
+    u8 target_ref_rest[0x28];  // +0xc54 [derived: remaining target reference data]
 
     // ---- Return logic ----
     s16 return_count;          // +0xc7c [derived: reset_return_count zeroes; set_no_return_frame negates]

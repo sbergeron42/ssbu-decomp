@@ -892,3 +892,63 @@ v4sf_ret get_safe_fall_current_36ad70(u64 L) {
                    local, 0);
     return *reinterpret_cast<v4sf_ret*>(local);
 }
+
+// ---- Batch 4: dangerzone/target/rule functions ----
+
+extern void FUN_71002f9ca0(u64, u64, u64, u32);
+
+// ---------------------------------------------------------------------------
+// 0x7100369510 — predict_target_landing_frame (76B)
+// [derived: app::ai::predict_target_landing_frame in Ghidra]
+// Returns target's predicted landing frame, or 0 if target is self/parent
+// ---------------------------------------------------------------------------
+float predict_target_landing_frame_369510(u64 L) {
+    FighterAI* ctx = get_ai_context(L);
+    u64 target = FUN_7100314030(DAT_71052b5fd8, reinterpret_cast<u64>(ctx) + 0xc50);
+    float result = 0.0f;
+    if (ctx->target_entry_id >= 0 &&
+        ctx->target_entry_id != (s32)ctx->parent_entry_id) {
+        result = (float)*(s32*)(target + 0x274);
+    }
+    return result;
+}
+
+// ---------------------------------------------------------------------------
+// 0x710036b540 — width (52B)
+// [derived: app::ai_dangerzone::width in Ghidra]
+// Returns width of dangerzone entry: right - left
+// ---------------------------------------------------------------------------
+float width_36b540(s32 index) {
+    if ((u32)index < 0x38) {
+        FighterAIManager* mgr = reinterpret_cast<FighterAIManager*>(*(u64*)DAT_71052b5fd8);
+        u64 entry = reinterpret_cast<u64>(mgr->dangerzone_array) + (s64)index * 0x14;
+        return *(float*)(entry + 8) - *(float*)(entry + 4);
+    }
+    return 0.0f;
+}
+
+// ---------------------------------------------------------------------------
+// 0x710036b4b0 — check_line_segment (32B)
+// [derived: app::ai_dangerzone::check_line_segment in Ghidra]
+// Delegates to dangerzone line segment check
+// ---------------------------------------------------------------------------
+void check_line_segment_36b4b0(u64 L, u64 start, u64 end) {
+    FighterAI* ctx = get_ai_context(L);
+    FighterAIManager* mgr = reinterpret_cast<FighterAIManager*>(*(u64*)DAT_71052b5fd8);
+    FUN_71002f9ca0(reinterpret_cast<u64>(mgr->dangerzone_array),
+                   start, end, ctx->state->dangerzone_index);
+}
+
+// ---------------------------------------------------------------------------
+// 0x710036b580 — is_1on1 (64B)
+// [derived: app::ai_rule::is_1on1 in Ghidra]
+// Returns true if 2-player match and the other player is alive
+// ---------------------------------------------------------------------------
+bool is_1on1_36b580(u64 L) {
+    FighterAIManager* mgr = reinterpret_cast<FighterAIManager*>(*(u64*)DAT_71052b5fd8);
+    if (mgr->player_count == 2) {
+        FighterAI* ctx = get_ai_context(L);
+        return mgr->player_alive[ctx->state->player_index] == 1;
+    }
+    return false;
+}
