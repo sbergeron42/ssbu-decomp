@@ -83,7 +83,7 @@ The orchestrator will REJECT diffs that fail the reviewer. Do not submit code th
    - **Exception:** trivial 1-2 field leaf functions (e.g., singleton getters) may use raw access.
 3. **NO `__attribute__((naked))`.** Naked asm is BANNED outright. If a function can't match after 3 attempts, SKIP IT — do not inflate progress with pasted assembly. The reviewer auto-rejects any `naked` attribute.
 4. **NO Ghidra variable names.** `uVar1`, `plVar2`, `iVar3` etc. in new code are auto-rejected. If you're writing these, you're pasting Ghidra output instead of understanding the code.
-5. **NO nested `reinterpret_cast` chains.** 3+ nested casts (e.g., `ITEM_DATA` macro with 4 casts) are auto-rejected. Define a struct for the pointer chain instead.
+5. **NO `reinterpret_cast` in source files.** Every `reinterpret_cast` is a missing type — if you need one, define the struct in `include/` so you can use typed access instead. Only headers (`include/`) may use `reinterpret_cast` (for vtable wrapper internals). The reviewer auto-rejects any `reinterpret_cast` in `src/`.
 6. **Use struct field access, not raw offsets.** Write `acc->camera_module` not `*reinterpret_cast<void**>(reinterpret_cast<u8*>(acc) + 0x60)`. If the struct header exists, use it.
 7. **Decompile module-by-module, not random addresses.** Understand the module's struct layout first, then decomp its functions. Each function you decomp should reveal new field information for the struct.
 8. **Document derivation chains for every struct field name.** Every named field must include HOW the name was derived, traceable back to binary evidence:

@@ -183,9 +183,17 @@ def analyze_file(filepath: str, lines: list) -> FileReport:
                            "nesting 3+ reinterpret_casts."
             ))
 
-        # ── Count reinterpret_casts ──
+        # ── REJECT: reinterpret_cast in src/ files ──
         rc_count = len(RE_REINTERPRET.findall(text))
         report.reinterpret_casts += rc_count
+        if rc_count > 0 and "include/" not in filepath:
+            report.violations.append(Violation(
+                file=filepath, line=line_no, rule="NO_REINTERPRET_CAST",
+                severity="REJECT", snippet=stripped[:120],
+                suggestion="reinterpret_cast means a missing type. Define or extend "
+                           "a struct in include/ so you can use typed field access. "
+                           "Only headers may use reinterpret_cast (for vtable wrapper internals)."
+            ))
 
         # ── Count raw offsets ──
         offset_matches = RE_RAW_OFFSET.findall(text)
