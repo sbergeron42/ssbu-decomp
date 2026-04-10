@@ -1,4 +1,11 @@
 #include "types.h"
+#include "app/BattleObjectModuleAccessor.h"
+#include "app/modules/WorkModule.h"
+#include "app/modules/GroundModule.h"
+#include "app/modules/DamageModule.h"
+
+using app::BattleObjectModuleAccessor;
+
 #define VT(m) (*reinterpret_cast<void***>(m))
 
 // ── External functions ────────────────────────────────────────────────────────
@@ -376,23 +383,21 @@ void final_module_hit_success_7101197690() {
 // then clear entry in DAT_71052c0fd0 if result <= 7.
 
 // 7100ba3380
-void purin_clear_copy_attack_data(void* p) {
+void purin_clear_copy_attack_data(BattleObjectModuleAccessor* acc) {
 #ifdef MATCHING_HACK_NX_CLANG
     asm("");
 #endif
-    void* work = *reinterpret_cast<void**>((u8*)p + 0x50);
-    s32 idx = reinterpret_cast<s32(*)(void*, s32)>(VT(work)[0x98/8])(work, 0x10000000);
+    s32 idx = acc->work_module->get_int(0x10000000);
     if (idx <= 7)
         DAT_71052c0fd0[(s64)idx * 0x110 + 0x100] = 0;
 }
 
 // 7100fe0760
-void special_n_clear_copy_attack_data(void* p) {
+void special_n_clear_copy_attack_data(BattleObjectModuleAccessor* acc) {
 #ifdef MATCHING_HACK_NX_CLANG
     asm("");
 #endif
-    void* work = *reinterpret_cast<void**>((u8*)p + 0x50);
-    s32 idx = reinterpret_cast<s32(*)(void*, s32)>(VT(work)[0x98/8])(work, 0x10000000);
+    s32 idx = acc->work_module->get_int(0x10000000);
     if (idx <= 7)
         DAT_71052c0fd0[(s64)idx * 0x110 + 0x100] = 0;
 }
@@ -407,9 +412,8 @@ bool IsPlayersCountedAsParticipants(void* p) {
 }
 
 // 710069bf60
-void set_pickelblock_mode_ignoreandattack(void* p) {
-    void* obj = *reinterpret_cast<void**>((u8*)p + 0x58);
-    reinterpret_cast<void(*)(void*, s32)>(VT(obj)[0x808/8])(obj, 2);
+void set_pickelblock_mode_ignoreandattack(BattleObjectModuleAccessor* acc) {
+    acc->ground_module->_vf257(2);
 }
 
 // ── status_kind range checks ──────────────────────────────────────────────────
@@ -497,12 +501,12 @@ s32 get_fighter_entry_count() {
 
 // ── Damage attacker ID ────────────────────────────────────────────────────────
 
-// 7101651a20 -- [p+0xa8] obj → vtable[0x198/8]() → [result+0xc] or 0x50000000
-s32 get_damage_attacker_id(void* p) {
+// 7101651a20 -- damage_module → vtable[0x198/8]() → [result+0xc] or 0x50000000
+s32 get_damage_attacker_id(BattleObjectModuleAccessor* acc) {
 #ifdef MATCHING_HACK_NX_CLANG
     asm("");
 #endif
-    void* obj = *reinterpret_cast<void**>((u8*)p + 0xa8);
+    auto* obj = acc->damage_module;
     void* r = reinterpret_cast<void*(*)(void*)>(VT(obj)[0x198/8])(obj);
     if (!r) return 0x50000000;
     return *reinterpret_cast<s32*>((u8*)r + 0xc);

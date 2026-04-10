@@ -1,6 +1,8 @@
 #include "types.h"
 #include "app/BattleObjectModuleAccessor.h"
 #include "lib/L2CValue.h"
+#include "lib/L2CAgent.h"
+#include "lib/LuaStateAccessor.h"
 
 using app::BattleObjectModuleAccessor;
 
@@ -37,85 +39,85 @@ namespace app::lua_bind {
 
 // lib::L2CValue::L2CValue() — default constructor, type = 0 (void/nil)
 // 0x7103733fd0 (8 bytes)
-void L2CValue(u32* this_) {
-    *this_ = 0;
+void L2CValue(lib::L2CValue* this_) {
+    this_->type = 0;
 }
 
 // lib::L2CValue::L2CValue(long) — integer constructor
 // 0x7103734120 (16 bytes)
-void L2CValue_7103734120(u32* this_, s64 val) {
-    *this_ = 2;
-    *reinterpret_cast<s64*>(reinterpret_cast<u8*>(this_) + 8) = val;
+void L2CValue_7103734120(lib::L2CValue* this_, s64 val) {
+    this_->type = 2;
+    this_->int_val = val;
 }
 
 // lib::L2CValue::L2CValue(unsigned long) — integer constructor (same bytes as signed)
 // 0x7103734130 (16 bytes)
-void L2CValue_7103734130(u32* this_, u64 val) {
-    *this_ = 2;
-    *reinterpret_cast<u64*>(reinterpret_cast<u8*>(this_) + 8) = val;
+void L2CValue_7103734130(lib::L2CValue* this_, u64 val) {
+    this_->type = 2;
+    this_->uint_val = val;
 }
 
 // lib::L2CValue::L2CValue(float) — float constructor
 // 0x7103734140 (16 bytes)
-void L2CValue_7103734140(u32* this_, f32 val) {
-    *this_ = 3;
-    *reinterpret_cast<f32*>(reinterpret_cast<u8*>(this_) + 8) = val;
+void L2CValue_7103734140(lib::L2CValue* this_, f32 val) {
+    this_->type = 3;
+    this_->float_val = val;
 }
 
 // lib::L2CValue::L2CValue(void*) — pointer constructor
 // 0x7103734150 (16 bytes)
-void L2CValue_7103734150(u32* this_, void* val) {
-    *this_ = 4;
-    *reinterpret_cast<void**>(reinterpret_cast<u8*>(this_) + 8) = val;
+void L2CValue_7103734150(lib::L2CValue* this_, void* val) {
+    this_->type = 4;
+    this_->ptr_val = val;
 }
 
 // lib::L2CValue::L2CValue(bool) — bool constructor
 // 0x71037340c0 (20 bytes)
-void L2CValue_71037340c0(u32* this_, u32 val) {
-    *this_ = 1;
-    *reinterpret_cast<u32*>(reinterpret_cast<u8*>(this_) + 8) = val & 1;
+void L2CValue_71037340c0(lib::L2CValue* this_, u32 val) {
+    this_->type = 1;
+    this_->bool_val = val & 1;
 }
 
 // lib::L2CValue::L2CValue(int) — signed int constructor
 // 0x71037340e0 (20 bytes)
 // [derived: Ghidra type signature L2CValue(int), sign-extends w1 to x8]
-void L2CValue_71037340e0(u32* this_, s32 val) {
-    *this_ = 2;
-    *reinterpret_cast<s64*>(reinterpret_cast<u8*>(this_) + 8) = (s64)val;
+void L2CValue_71037340e0(lib::L2CValue* this_, s32 val) {
+    this_->type = 2;
+    this_->int_val = (s64)val;
 }
 
 // lib::L2CValue::L2CValue(unsigned int) — unsigned int constructor
 // 0x7103734100 (20 bytes)
 // [derived: Ghidra type signature L2CValue(uint), zero-extends w1 to x8]
-void L2CValue_7103734100(u32* this_, u32 val) {
-    *this_ = 2;
-    *reinterpret_cast<u64*>(reinterpret_cast<u8*>(this_) + 8) = (u64)val;
+void L2CValue_7103734100(lib::L2CValue* this_, u32 val) {
+    this_->type = 2;
+    this_->uint_val = (u64)val;
 }
 
 // lib::L2CValue::L2CValue(L2CTable*) — table constructor, increments refcount
 // 0x7103734160 (28 bytes)
 // [derived: type=5, refcount at table+0x0]
-void L2CValue_7103734160(u32* this_, u8* table) {
-    *this_ = 5;
-    *reinterpret_cast<u8**>(reinterpret_cast<u8*>(this_) + 8) = table;
+void L2CValue_7103734160(lib::L2CValue* this_, u8* table) {
+    this_->type = 5;
+    this_->ptr_val = table;
     *reinterpret_cast<s32*>(table) += 1;
 }
 
 // lib::L2CValue::L2CValue(L2CInnerFunctionBase*) — inner function constructor, increments refcount
 // 0x7103734180 (28 bytes)
 // [derived: type=6, refcount at func+0x8]
-void L2CValue_7103734180(u32* this_, u8* func) {
-    *this_ = 6;
-    *reinterpret_cast<u8**>(reinterpret_cast<u8*>(this_) + 8) = func;
+void L2CValue_7103734180(lib::L2CValue* this_, u8* func) {
+    this_->type = 6;
+    this_->ptr_val = func;
     *reinterpret_cast<s32*>(func + 8) += 1;
 }
 
 // lib::L2CValue::L2CValue(Hash40) — hash constructor
 // 0x71037341a0 (16 bytes)
 // [derived: type=7, stores raw hash value]
-void L2CValue_71037341a0(u32* this_, u64 hash) {
-    *this_ = 7;
-    *reinterpret_cast<u64*>(reinterpret_cast<u8*>(this_) + 8) = hash & 0xFFFFFFFFFFULL;
+void L2CValue_71037341a0(lib::L2CValue* this_, u64 hash) {
+    this_->type = 7;
+    this_->raw = hash & 0xFFFFFFFFFFULL;
 }
 
 // String functions (bare metal — no <string.h>)
@@ -129,8 +131,8 @@ extern "C" int memcmp(const void*, const void*, unsigned long);
 //  then strlen + short/long string construction (libc++ basic_string layout)]
 // SSO layout: short (<0x17): byte[0] = len<<1, data at +1
 //             long: [0]=cap|1, [8]=len, [16]=heap_ptr
-void L2CValue_71037341c0(u32* this_, const char* str) {
-    *this_ = 8;
+void L2CValue_71037341c0(lib::L2CValue* this_, const char* str) {
+    this_->type = 8;
     u64* sso = reinterpret_cast<u64*>(je_aligned_alloc(0x10, 0x18));
     if (sso == nullptr) {
         if (DAT_7105331f00 != nullptr) {
@@ -185,7 +187,7 @@ init_string:
     memcpy(dest, str, len);
 null_terminate:
     reinterpret_cast<u8*>(dest)[len] = 0;
-    *reinterpret_cast<u64**>(reinterpret_cast<u8*>(this_) + 8) = sso;
+    this_->ptr_val = sso;
 }
 
 // ============================================================
@@ -195,55 +197,55 @@ null_terminate:
 // Copies all module pointers from BattleObjectModuleAccessor (src+0x38..+0x198)
 // into a LuaStateAccessor struct (dst+0x18..+0x180)
 // ============================================================
-void SetLuaStateAccessor(u8* dst, BattleObjectModuleAccessor* src) {
+void SetLuaStateAccessor(lib::LuaStateAccessor* dst, BattleObjectModuleAccessor* src) {
     // Main sequential block: src+0x38..+0x100 → dst+0x18..+0xe8
-    *reinterpret_cast<void**>(dst + 0x18) = src->posture_module;
-    *reinterpret_cast<void**>(dst + 0x28) = src->status_module;
-    *reinterpret_cast<void**>(dst + 0x30) = src->fighter_control_module;
-    *reinterpret_cast<void**>(dst + 0x38) = src->work_module;
-    *reinterpret_cast<void**>(dst + 0x40) = src->ground_module;
-    *reinterpret_cast<void**>(dst + 0x48) = src->camera_module;
-    *reinterpret_cast<void**>(dst + 0x50) = src->item_kinetic_module;
-    *reinterpret_cast<void**>(dst + 0x58) = src->color_blend_module;
-    *reinterpret_cast<void**>(dst + 0x60) = src->model_module;
-    *reinterpret_cast<void**>(dst + 0x68) = src->physics_module;
-    *reinterpret_cast<void**>(dst + 0x70) = src->motion_module;
-    *reinterpret_cast<void**>(dst + 0x78) = src->stop_module;
-    *reinterpret_cast<void**>(dst + 0x80) = src->article_module;
-    *reinterpret_cast<void**>(dst + 0x88) = src->attack_module;
-    *reinterpret_cast<void**>(dst + 0x90) = src->damage_module;
-    *reinterpret_cast<void**>(dst + 0x98) = src->hit_module;
-    *reinterpret_cast<void**>(dst + 0xa0) = src->combo_module;
-    *reinterpret_cast<void**>(dst + 0xa8) = src->fighter_area_module;
-    *reinterpret_cast<void**>(dst + 0xb0) = src->item_module;
-    *reinterpret_cast<void**>(dst + 0xb8) = src->link_module;
-    *reinterpret_cast<void**>(dst + 0xc0) = src->team_module;
-    *reinterpret_cast<void**>(dst + 0xc8) = src->search_module;
-    *reinterpret_cast<void**>(dst + 0xd0) = src->pad_0xE8;
-    *reinterpret_cast<void**>(dst + 0xd8) = src->turn_module;
-    *reinterpret_cast<void**>(dst + 0xe0) = src->reflect_module;
-    *reinterpret_cast<void**>(dst + 0xe8) = src->shield_module;
+    dst->posture_module = src->posture_module;
+    dst->status_module = src->status_module;
+    dst->fighter_control_module = src->fighter_control_module;
+    dst->work_module = src->work_module;
+    dst->ground_module = src->ground_module;
+    dst->camera_module = src->camera_module;
+    dst->item_kinetic_module = src->item_kinetic_module;
+    dst->color_blend_module = src->color_blend_module;
+    dst->model_module = src->model_module;
+    dst->physics_module = src->physics_module;
+    dst->motion_module = src->motion_module;
+    dst->stop_module = src->stop_module;
+    dst->article_module = src->article_module;
+    dst->attack_module = src->attack_module;
+    dst->damage_module = src->damage_module;
+    dst->hit_module = src->hit_module;
+    dst->combo_module = src->combo_module;
+    dst->fighter_area_module = src->fighter_area_module;
+    dst->item_module = src->item_module;
+    dst->link_module = src->link_module;
+    dst->team_module = src->team_module;
+    dst->search_module = src->search_module;
+    dst->pad_0xD0 = src->pad_0xE8;
+    dst->turn_module = src->turn_module;
+    dst->reflect_module = src->reflect_module;
+    dst->shield_module = src->shield_module;
     // Second block: src+0x118..+0x198 → dst+0x100..+0x180
-    *reinterpret_cast<void**>(dst + 0x100) = src->jostle_module;
-    *reinterpret_cast<void**>(dst + 0x108) = src->catch_module;
-    *reinterpret_cast<void**>(dst + 0x110) = src->cancel_module;
-    *reinterpret_cast<void**>(dst + 0x118) = src->pad_0x130;
-    *reinterpret_cast<void**>(dst + 0x120) = src->capture_module;
-    *reinterpret_cast<void**>(dst + 0x128) = src->effect_module;
-    *reinterpret_cast<void**>(dst + 0x130) = src->sound_module;
-    *reinterpret_cast<void**>(dst + 0x138) = src->visibility_module;
-    *reinterpret_cast<void**>(dst + 0x140) = src->grab_module;
-    *reinterpret_cast<void**>(dst + 0x148) = src->pad_0x160;
-    *reinterpret_cast<void**>(dst + 0x150) = src->shake_module;
-    *reinterpret_cast<void**>(dst + 0x158) = src->slow_module;
-    *reinterpret_cast<void**>(dst + 0x160) = src->pad_0x178;
-    *reinterpret_cast<void**>(dst + 0x168) = src->shadow_module;
-    *reinterpret_cast<void**>(dst + 0x170) = src->motion_animcmd_module;
-    *reinterpret_cast<void**>(dst + 0x178) = src->pad_0x190;
-    *reinterpret_cast<void**>(dst + 0x180) = src->ink_paint_module;
+    dst->jostle_module = src->jostle_module;
+    dst->catch_module = src->catch_module;
+    dst->cancel_module = src->cancel_module;
+    dst->pad_0x118 = src->pad_0x130;
+    dst->capture_module = src->capture_module;
+    dst->effect_module = src->effect_module;
+    dst->sound_module = src->sound_module;
+    dst->visibility_module = src->visibility_module;
+    dst->grab_module = src->grab_module;
+    dst->pad_0x148 = src->pad_0x160;
+    dst->shake_module = src->shake_module;
+    dst->slow_module = src->slow_module;
+    dst->pad_0x160 = src->pad_0x178;
+    dst->shadow_module = src->shadow_module;
+    dst->motion_animcmd_module = src->motion_animcmd_module;
+    dst->pad_0x178 = src->pad_0x190;
+    dst->ink_paint_module = src->ink_paint_module;
     // Out-of-order tail: absorber and reflector
-    *reinterpret_cast<void**>(dst + 0xf0) = src->absorber_module;
-    *reinterpret_cast<void**>(dst + 0xf8) = src->reflector_module;
+    dst->absorber_module = src->absorber_module;
+    dst->reflector_module = src->reflector_module;
 }
 
 // ============================================================
@@ -253,8 +255,8 @@ void SetLuaStateAccessor(u8* dst, BattleObjectModuleAccessor* src) {
 // Iterates L2CValue-sized (0x10) slots, clearing type tags to 0 (nil)
 // lua_state layout: +0x10 = stack top, +0x20 = ptr to call info
 // ============================================================
-void clear_lua_stack(u8* this_) {
-    u8* ls = *reinterpret_cast<u8**>(this_ + 8);
+void clear_lua_stack(lib::L2CAgent* this_) {
+    u8* ls = reinterpret_cast<u8*>(this_->lua_state);
     u8* base = *reinterpret_cast<u8**>(*reinterpret_cast<u8**>(ls + 0x20));
     u8* top = *reinterpret_cast<u8**>(ls + 0x10);
     u8* target = base + 0x10;
@@ -311,14 +313,14 @@ void FUN_710376a190(u8** node) {
 extern "C" __attribute__((visibility("hidden"))) void* DAT_710523be40;
 
 // lib::L2CAgent::L2CAgent(lua_State*)
-void L2CAgent_710372da00(u8* this_, void* ls) {
-    *reinterpret_cast<void**>(this_) = &DAT_710523be40;
-    *reinterpret_cast<void**>(this_ + 8) = ls;
-    *reinterpret_cast<u64*>(this_ + 0x10) = 0;
-    *reinterpret_cast<u64*>(this_ + 0x18) = 0;
-    *reinterpret_cast<u64*>(this_ + 0x20) = 0;
-    *reinterpret_cast<u64*>(this_ + 0x28) = 0;
-    *reinterpret_cast<u32*>(this_ + 0x30) = 0x3f800000u;  // 1.0f as raw bits
+void L2CAgent_710372da00(lib::L2CAgent* this_, void* ls) {
+    this_->_vt = reinterpret_cast<void**>(&DAT_710523be40);
+    this_->lua_state = ls;
+    this_->alloc_ptr = nullptr;
+    this_->unk_0x18 = 0;
+    this_->linked_list_head = nullptr;
+    this_->unk_0x28 = 0;
+    this_->rate_raw = 0x3f800000u;  // 1.0f as raw bits
 }
 
 // ============================================================
@@ -326,25 +328,25 @@ void L2CAgent_710372da00(u8* this_, void* ls) {
 // ============================================================
 
 // 0x7103734b80 (56 bytes) — as_integer: type 7/2 → raw, type 3 → fcvtzs
-s64 as_integer_7103734b80(u32* this_) {
-    u32 type = *this_;
+s64 as_integer_7103734b80(lib::L2CValue* this_) {
+    u32 type = this_->type;
     if (type == 7 || type == 2) {
-        return *reinterpret_cast<s64*>(reinterpret_cast<u8*>(this_) + 8);
+        return this_->int_val;
     }
     if (type == 3) {
-        return (s64)*reinterpret_cast<f32*>(reinterpret_cast<u8*>(this_) + 8);
+        return (s64)this_->float_val;
     }
     return 0;
 }
 
 // 0x7103734f10 (56 bytes) — as_number: type 7/2 → scvtf, type 3 → raw float
-f32 as_number_7103734f10(u32* this_) {
-    u32 type = *this_;
+f32 as_number_7103734f10(lib::L2CValue* this_) {
+    u32 type = this_->type;
     if (type == 7 || type == 2) {
-        return (f32)*reinterpret_cast<s64*>(reinterpret_cast<u8*>(this_) + 8);
+        return (f32)this_->int_val;
     }
     if (type == 3) {
-        return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(this_) + 8);
+        return this_->float_val;
     }
     return 0.0f;
 }
@@ -353,9 +355,9 @@ f32 as_number_7103734f10(u32* this_) {
 // SSO string: byte[0] & 1 ? heap (ptr at +0x10) : inline (data at +0x1)
 extern "C" __attribute__((visibility("hidden"))) char DAT_7104866c2e;  // empty string ""
 
-const char* as_string_7103735ff0(u32* this_) {
-    if (*this_ != 8) return &DAT_7104866c2e;
-    u8* str = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(this_) + 8);
+const char* as_string_7103735ff0(lib::L2CValue* this_) {
+    if (this_->type != 8) return &DAT_7104866c2e;
+    u8* str = reinterpret_cast<u8*>(this_->ptr_val);
     if (str[0] & 1) {
         return *reinterpret_cast<const char**>(str + 0x10);
     }
@@ -372,14 +374,14 @@ const char* as_string_7103735ff0(u32* this_) {
 
 void FUN_7103733900(u8*);  // L2CTable cleanup, defined below
 
-void dtor_L2CValue_7103733f20(u32* this_) {
-    u32 type = *this_;
+void dtor_L2CValue_7103733f20(lib::L2CValue* this_) {
+    u32 type = this_->type;
     u8* ptr;
     if (type == 8) goto handle_8;
     if (type == 6) goto handle_6;
     if (type != 5) return;
     // type 5: table — decrement refcount at +0, cleanup + free if zero
-    ptr = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(this_) + 8);
+    ptr = reinterpret_cast<u8*>(this_->ptr_val);
     {
         s32 rc = --*reinterpret_cast<s32*>(ptr);
         if (!ptr || rc > 0) return;
@@ -390,7 +392,7 @@ void dtor_L2CValue_7103733f20(u32* this_) {
     return;
 handle_8:
     // type 8: inner string — free heap buffer if SSO, then free struct
-    ptr = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(this_) + 8);
+    ptr = reinterpret_cast<u8*>(this_->ptr_val);
     if (!ptr) return;
     if ((ptr[0] & 1) != 0) {
         void* heap = *reinterpret_cast<void**>(ptr + 0x10);
@@ -400,7 +402,7 @@ handle_8:
     return;
 handle_6:
     // type 6: inner function — decrement refcount at +8, free if zero
-    ptr = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(this_) + 8);
+    ptr = reinterpret_cast<u8*>(this_->ptr_val);
     {
         s32 rc = --*reinterpret_cast<s32*>(ptr + 8);
         if (!ptr || rc > 0) return;
@@ -415,30 +417,27 @@ handle_6:
 // Cross-type int/float: convert int to float then compare
 // ============================================================
 
-u8 operator_lt_7103734bc0(u32* this_, u32* other) {
-    u32 t1 = *this_;
-    u32 t2 = *other;
+u8 operator_lt_7103734bc0(lib::L2CValue* this_, lib::L2CValue* other) {
+    u32 t1 = this_->type;
+    u32 t2 = other->type;
     if (t1 == t2) {
         if (t1 == 3) {
-            f32 a = *reinterpret_cast<f32*>(reinterpret_cast<u8*>(this_) + 8);
-            f32 b = *reinterpret_cast<f32*>(reinterpret_cast<u8*>(other) + 8);
-            return a < b;
+            return this_->float_val < other->float_val;
         }
         if (t1 == 2) {
-            return *reinterpret_cast<s64*>(reinterpret_cast<u8*>(this_) + 8) <
-                   *reinterpret_cast<s64*>(reinterpret_cast<u8*>(other) + 8);
+            return this_->int_val < other->int_val;
         }
         return 0;
     }
     if (t1 == 2 && t2 == 3) {
-        f32 a = (f32)*reinterpret_cast<s64*>(reinterpret_cast<u8*>(this_) + 8);
-        f32 b = *reinterpret_cast<f32*>(reinterpret_cast<u8*>(other) + 8);
+        f32 a = (f32)this_->int_val;
+        f32 b = other->float_val;
         return b > a;
     }
     u8 result = 0;
     if (t1 == 3 && t2 == 2) {
-        f32 a = *reinterpret_cast<f32*>(reinterpret_cast<u8*>(this_) + 8);
-        f32 b = (f32)*reinterpret_cast<s64*>(reinterpret_cast<u8*>(other) + 8);
+        f32 a = this_->float_val;
+        f32 b = (f32)other->int_val;
         result = a < b;
     }
     return result;
@@ -450,30 +449,27 @@ u8 operator_lt_7103734bc0(u32* this_, u32* other) {
 // Same pattern as operator< with le/ge/ls condition codes
 // ============================================================
 
-u8 operator_le_7103734c70(u32* this_, u32* other) {
-    u32 t1 = *this_;
-    u32 t2 = *other;
+u8 operator_le_7103734c70(lib::L2CValue* this_, lib::L2CValue* other) {
+    u32 t1 = this_->type;
+    u32 t2 = other->type;
     if (t1 == t2) {
         if (t1 == 3) {
-            f32 a = *reinterpret_cast<f32*>(reinterpret_cast<u8*>(this_) + 8);
-            f32 b = *reinterpret_cast<f32*>(reinterpret_cast<u8*>(other) + 8);
-            return a <= b;
+            return this_->float_val <= other->float_val;
         }
         if (t1 == 2) {
-            return *reinterpret_cast<s64*>(reinterpret_cast<u8*>(this_) + 8) <=
-                   *reinterpret_cast<s64*>(reinterpret_cast<u8*>(other) + 8);
+            return this_->int_val <= other->int_val;
         }
         return 0;
     }
     if (t1 == 2 && t2 == 3) {
-        f32 a = (f32)*reinterpret_cast<s64*>(reinterpret_cast<u8*>(this_) + 8);
-        f32 b = *reinterpret_cast<f32*>(reinterpret_cast<u8*>(other) + 8);
+        f32 a = (f32)this_->int_val;
+        f32 b = other->float_val;
         return b >= a;
     }
     u8 result = 0;
     if (t1 == 3 && t2 == 2) {
-        f32 a = *reinterpret_cast<f32*>(reinterpret_cast<u8*>(this_) + 8);
-        f32 b = (f32)*reinterpret_cast<s64*>(reinterpret_cast<u8*>(other) + 8);
+        f32 a = this_->float_val;
+        f32 b = (f32)other->int_val;
         result = a <= b;
     }
     return result;
@@ -578,7 +574,7 @@ u8 operator_eq_7103734520(lib::L2CValue* this_, lib::L2CValue* other) {
         } else {
             result = 1;
         }
-        dtor_L2CValue_7103733f20(reinterpret_cast<u32*>(&temp));
+        dtor_L2CValue_7103733f20(&temp);
         break;
     }
     case 8: {
@@ -629,9 +625,9 @@ u8 operator_eq_7103734520(lib::L2CValue* this_, lib::L2CValue* other) {
 extern "C" void* FUN_71037339f0(void*, int);
 extern "C" __attribute__((visibility("hidden"))) u8 DAT_710593a3a8;
 
-void* operator_index_7103735d80(u32* this_, int index) {
-    if (*this_ != 5) return &DAT_710593a3a8;
-    void* table = *reinterpret_cast<void**>(reinterpret_cast<u8*>(this_) + 8);
+void* operator_index_7103735d80(lib::L2CValue* this_, int index) {
+    if (this_->type != 5) return &DAT_710593a3a8;
+    void* table = this_->ptr_val;
     void* result = FUN_71037339f0(table, index);
     asm volatile("");
     return result;
@@ -644,8 +640,8 @@ void* operator_index_7103735d80(u32* this_, int index) {
 
 extern "C" void FUN_710372ea10(void*, void*);
 
-void sort_710372e9f0(void* this_, void* p1) {
-    u8* ls = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(p1) + 8);
+void sort_710372e9f0(void* this_, lib::L2CValue* p1) {
+    u8* ls = reinterpret_cast<u8*>(p1->ptr_val);
     u8* base = *reinterpret_cast<u8**>(ls + 8);
     void* count = *reinterpret_cast<void**>(ls + 0x10);
     FUN_710372ea10(base + 0x10, count);
@@ -1187,10 +1183,10 @@ lib::L2CValue operator_rsh_7103735d00(lib::L2CValue* this_, lib::L2CValue* other
 
 extern "C" void* FUN_7103733d50(void*, u64*);
 
-void* operator_index_hash_7103735db0(u32* this_, u64 hash) {
+void* operator_index_hash_7103735db0(lib::L2CValue* this_, u64 hash) {
     u64 local_hash = hash;
-    if (*this_ != 5) return &DAT_710593a3a8;
-    void* table = *reinterpret_cast<void**>(reinterpret_cast<u8*>(this_) + 8);
+    if (this_->type != 5) return &DAT_710593a3a8;
+    void* table = this_->ptr_val;
     return FUN_7103733d50(table, &local_hash);
 }
 
@@ -1201,8 +1197,8 @@ void* operator_index_hash_7103735db0(u32* this_, u64 hash) {
 
 extern "C" void FUN_71037301f0(void*, void*, void*);
 
-void sort_71037301b0(void* this_, void* p1, void* p2) {
-    u8* table = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(p1) + 8);
+void sort_71037301b0(void* this_, lib::L2CValue* p1, void* p2) {
+    u8* table = reinterpret_cast<u8*>(p1->ptr_val);
     void* base = *reinterpret_cast<void**>(table + 8);
     void* count = *reinterpret_cast<void**>(table + 0x10);
     void* stack_args[2] = {p2, this_};
@@ -1230,16 +1226,16 @@ void unlock_710372c210(u8* this_) {
 
 // 0x710372da20 (88 bytes) — ~L2CAgent [D1 in-charge destructor]
 // Reset vtable, free linked list at +0x20, free alloc at +0x10
-void dtor_L2CAgent_710372da20(u8* this_) {
-    *reinterpret_cast<void**>(this_) = &DAT_710523be40;
-    u8* node = *reinterpret_cast<u8**>(this_ + 0x20);
+void dtor_L2CAgent_710372da20(lib::L2CAgent* this_) {
+    this_->_vt = reinterpret_cast<void**>(&DAT_710523be40);
+    u8* node = this_->linked_list_head;
     while (node) {
         u8* next = *reinterpret_cast<u8**>(node);
         FUN_710392e590(node);
         node = next;
     }
-    void* p = *reinterpret_cast<void**>(this_ + 0x10);
-    *reinterpret_cast<u64*>(this_ + 0x10) = 0;
+    void* p = this_->alloc_ptr;
+    this_->alloc_ptr = nullptr;
     if (p) {
         FUN_710392e590(p);
     }
@@ -1247,16 +1243,16 @@ void dtor_L2CAgent_710372da20(u8* this_) {
 
 // 0x710372da80 (84 bytes) — ~L2CAgent [D0 deleting destructor]
 // Same as D1 but also frees this
-void dtor_D0_L2CAgent_710372da80(u8* this_) {
-    *reinterpret_cast<void**>(this_) = &DAT_710523be40;
-    u8* node = *reinterpret_cast<u8**>(this_ + 0x20);
+void dtor_D0_L2CAgent_710372da80(lib::L2CAgent* this_) {
+    this_->_vt = reinterpret_cast<void**>(&DAT_710523be40);
+    u8* node = this_->linked_list_head;
     while (node) {
         u8* next = *reinterpret_cast<u8**>(node);
         FUN_710392e590(node);
         node = next;
     }
-    void* p = *reinterpret_cast<void**>(this_ + 0x10);
-    *reinterpret_cast<u64*>(this_ + 0x10) = 0;
+    void* p = this_->alloc_ptr;
+    this_->alloc_ptr = nullptr;
     if (p) {
         FUN_710392e590(p);
     }
@@ -1308,18 +1304,18 @@ void ShowError_wrapper_7103754e50(u32 error_code) {
 // type 3 (float): val != 0.0f
 // default (ptr/table/func/string): true
 // ============================================================
-u8 as_bool_7103735f30(u32* this_) {
+u8 as_bool_7103735f30(lib::L2CValue* this_) {
     u8 result = 0;
-    switch (*this_) {
+    switch (this_->type) {
     case 0:
         break;
     case 1:
-        return (u8)(*reinterpret_cast<s32*>(reinterpret_cast<u8*>(this_) + 8) > 0);
+        return (u8)((s32)this_->bool_val > 0);
     case 2:
     case 7:
-        return *reinterpret_cast<s64*>(reinterpret_cast<u8*>(this_) + 8) != 0;
+        return this_->int_val != 0;
     case 3:
-        return *reinterpret_cast<f32*>(reinterpret_cast<u8*>(this_) + 8) != 0.0f;
+        return this_->float_val != 0.0f;
     default:
         result = 1;
         break;
@@ -1528,7 +1524,7 @@ void FUN_71037339b0(u8** node) {
     if (!node) return;
     FUN_71037339b0(reinterpret_cast<u8**>(node[0]));
     FUN_71037339b0(reinterpret_cast<u8**>(node[1]));
-    dtor_L2CValue_7103733f20(reinterpret_cast<u32*>(node + 5));
+    dtor_L2CValue_7103733f20(reinterpret_cast<lib::L2CValue*>(node + 5));
     FUN_710392e590(node);
 }
 
@@ -1562,7 +1558,7 @@ void FUN_7103733900(u8* this_) {
         } else {
             do {
                 end -= 0x10;
-                dtor_L2CValue_7103733f20(reinterpret_cast<u32*>(end));
+                dtor_L2CValue_7103733f20(reinterpret_cast<lib::L2CValue*>(end));
             } while (begin != end);
             end = *reinterpret_cast<u8**>(this_ + 0x08);
             *reinterpret_cast<u8**>(this_ + 0x10) = begin;
@@ -1584,11 +1580,11 @@ void FUN_7103733900(u8* this_) {
 extern "C" void _ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEC1ERKS5_(void* dst, void* src);
 
 void FUN_7103733fe0(lib::L2CValue* this_, const lib::L2CValue* src) {
-    s32 type = *reinterpret_cast<const s32*>(src);
-    *reinterpret_cast<s32*>(this_) = type;
+    s32 type = src->type;
+    this_->type = type;
     u8* ptr;
     if (type != 8) {
-        ptr = *reinterpret_cast<u8* const*>(reinterpret_cast<const u8*>(src) + 8);
+        ptr = reinterpret_cast<u8*>(src->ptr_val);
         goto store_and_refcount;
     }
     // type 8: allocate new string struct
@@ -1609,10 +1605,10 @@ void FUN_7103733fe0(lib::L2CValue* this_, const lib::L2CValue* src) {
     }
 do_string_copy:
     _ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEC1ERKS5_(
-        ptr, *reinterpret_cast<void* const*>(reinterpret_cast<const u8*>(src) + 8));
-    type = *reinterpret_cast<s32*>(this_);
+        ptr, src->ptr_val);
+    type = this_->type;
 store_and_refcount:
-    *reinterpret_cast<u8**>(reinterpret_cast<u8*>(this_) + 8) = ptr;
+    this_->ptr_val = ptr;
     if (type == 6) {
         ptr += 8;
     } else if (type != 5) {
@@ -1629,14 +1625,14 @@ store_and_refcount:
 // Phase 2: copy from source (type 8 allocates new string, others raw copy + refcount)
 // ============================================================
 
-void* operator_assign_7103734330(u32* this_, const u32* src) {
-    u32 type = *this_;
+void* operator_assign_7103734330(lib::L2CValue* this_, const lib::L2CValue* src) {
+    u32 type = this_->type;
     u8* ptr;
     if (type == 8) goto handle_8;
     if (type == 6) goto handle_6;
     if (type != 5) goto phase2;
     // type 5: table — decrement refcount at +0, cleanup + free if zero
-    ptr = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(this_) + 8);
+    ptr = reinterpret_cast<u8*>(this_->ptr_val);
     {
         s32 old = *reinterpret_cast<s32*>(ptr);
         s32 rc = old - 1;
@@ -1647,7 +1643,7 @@ void* operator_assign_7103734330(u32* this_, const u32* src) {
     goto free_old;
 handle_8:
     // type 8: free SSO heap buffer if large, then free string struct
-    ptr = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(this_) + 8);
+    ptr = reinterpret_cast<u8*>(this_->ptr_val);
     if (!ptr) goto phase2;
     if ((ptr[0] & 1) != 0) {
         void* heap = *reinterpret_cast<void**>(ptr + 0x10);
@@ -1656,7 +1652,7 @@ handle_8:
     goto free_old;
 handle_6:
     // type 6: inner function — decrement refcount at +8, free if zero
-    ptr = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(this_) + 8);
+    ptr = reinterpret_cast<u8*>(this_->ptr_val);
     {
         s32 old = *reinterpret_cast<s32*>(ptr + 8);
         s32 rc = old - 1;
@@ -1667,11 +1663,11 @@ free_old:
     FUN_710392e590(ptr);
 phase2:
     // Phase 2: Copy from source (inlined copy ctor)
-    type = *reinterpret_cast<const u32*>(src);
-    *this_ = type;
+    type = src->type;
+    this_->type = type;
     u8* new_ptr;
     if (type != 8) {
-        new_ptr = *reinterpret_cast<u8* const*>(reinterpret_cast<const u8*>(src) + 8);
+        new_ptr = reinterpret_cast<u8*>(src->ptr_val);
         goto store_and_refcount;
     }
     // type 8: allocate new string struct + copy
@@ -1692,10 +1688,10 @@ phase2:
     }
 do_string_copy:
     _ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEC1ERKS5_(
-        new_ptr, *reinterpret_cast<void* const*>(reinterpret_cast<const u8*>(src) + 8));
-    type = *this_;
+        new_ptr, src->ptr_val);
+    type = this_->type;
 store_and_refcount:
-    *reinterpret_cast<u8**>(reinterpret_cast<u8*>(this_) + 8) = new_ptr;
+    this_->ptr_val = new_ptr;
     if (type == 6) {
         new_ptr += 8;
     } else if (type != 5) {
@@ -1711,11 +1707,11 @@ store_and_refcount:
 // [derived: Ghidra shows SSO string check + table vector reverse scan]
 // ============================================================
 
-u64 length_7103735ea0(u32* this_) {
-    u32 type = *this_;
+u64 length_7103735ea0(lib::L2CValue* this_) {
+    u32 type = this_->type;
     if (__builtin_expect(type == 8, 0)) {
         // String length: SSO check
-        u8* str = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(this_) + 8);
+        u8* str = reinterpret_cast<u8*>(this_->ptr_val);
         u8 b = str[0];
         if ((b & 1) == 0) {
             return (u64)(b >> 1);
@@ -1724,7 +1720,7 @@ u64 length_7103735ea0(u32* this_) {
     }
     if (type != 5) return 0;
     // Table length: reverse-scan for last non-nil element
-    u8* table = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(this_) + 8);
+    u8* table = reinterpret_cast<u8*>(this_->ptr_val);
     long base;
     long end_ptr;
     // ldp loads base and end together
@@ -1749,24 +1745,24 @@ u64 length_7103735ea0(u32* this_) {
 // [derived: Ghidra shows int/float → FUN_71037339f0, hash → FUN_7103733d50]
 // ============================================================
 
-void* operator_index_lv_7103735df0(u32* this_, u32* key) {
-    if (*this_ != 5) return &DAT_710593a3a8;
-    s32 key_type = *reinterpret_cast<s32*>(key);
+void* operator_index_lv_7103735df0(lib::L2CValue* this_, lib::L2CValue* key) {
+    if (this_->type != 5) return &DAT_710593a3a8;
+    s32 key_type = key->type;
     if ((u32)(key_type - 2) < 2) {
         long index;
         if (key_type == 3) {
-            index = (long)*reinterpret_cast<f32*>(reinterpret_cast<u8*>(key) + 8);
+            index = (long)key->float_val;
         } else if (key_type == 2) {
-            index = *reinterpret_cast<long*>(reinterpret_cast<u8*>(key) + 8);
+            index = key->int_val;
         } else {
             index = 0;
         }
-        void* table = *reinterpret_cast<void**>(reinterpret_cast<u8*>(this_) + 8);
+        void* table = this_->ptr_val;
         return FUN_71037339f0(table, (int)index);
     }
     if (key_type == 7) {
-        u64 hash = *reinterpret_cast<u64*>(reinterpret_cast<u8*>(key) + 8);
-        void* table = *reinterpret_cast<void**>(reinterpret_cast<u8*>(this_) + 8);
+        u64 hash = key->raw;
+        void* table = this_->ptr_val;
         return FUN_7103733d50(table, &hash);
     }
     return &DAT_710593a3a8;
@@ -1779,14 +1775,14 @@ void* operator_index_lv_7103735df0(u32* this_, u32* key) {
 //  with refcount management on old/new metatable]
 // ============================================================
 
-void setmetatable_710372e950(lib::L2CValue* ret, u8* this_, u32* table_val, u32* meta_val) {
+void setmetatable_710372e950(lib::L2CValue* ret, u8* this_, lib::L2CValue* table_val, lib::L2CValue* meta_val) {
     // Store agent pointer in meta_val's inner ptr+0x38
-    u8* meta_inner = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(meta_val) + 8);
+    u8* meta_inner = reinterpret_cast<u8*>(meta_val->ptr_val);
     *reinterpret_cast<u8**>(meta_inner + 0x38) = this_;
     // Only assign if both are table type (5)
-    if (*table_val == 5 && *meta_val == 5) {
-        u8* tbl = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(table_val) + 8);
-        s32* new_meta = *reinterpret_cast<s32**>(reinterpret_cast<u8*>(meta_val) + 8);
+    if (table_val->type == 5 && meta_val->type == 5) {
+        u8* tbl = reinterpret_cast<u8*>(table_val->ptr_val);
+        s32* new_meta = reinterpret_cast<s32*>(meta_val->ptr_val);
         // Release old metatable at tbl+0x40
         s32* old_meta = *reinterpret_cast<s32**>(tbl + 0x40);
         if (old_meta != nullptr) {
@@ -1806,7 +1802,7 @@ void setmetatable_710372e950(lib::L2CValue* ret, u8* this_, u32* table_val, u32*
         *reinterpret_cast<s32**>(tbl + 0x40) = new_meta;
     }
     // Copy-construct return value from table_val
-    FUN_7103733fe0(ret, reinterpret_cast<const lib::L2CValue*>(table_val));
+    FUN_7103733fe0(ret, table_val);
 }
 
 // ============================================================

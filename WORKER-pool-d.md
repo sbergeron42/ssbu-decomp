@@ -2,56 +2,31 @@
 
 ## Model: Opus
 
-## Task: Continue AI function decomp (app::ai namespace)
+## Task: Clean up gameplay_functions.cpp + engine_functions.cpp + lua_acmd.cpp
 
-## Priority: DECOMP NEW FUNCTIONS
+## Priority: QUALITY CLEANUP
 
 ## Context
-Phase 3 cast density REJECT is FIXED (3.8% → under 10%).
-22 AI functions decomped in ai_target_stat.cpp.
-Reviewer passes: 100/100 quality, 4.0% cast density.
-
-## Completed This Session
-- Fixed BossManager cast density: BossEntity vtable struct, BossEntitySlot, typed iteration
-- Decomped 22 app::ai functions in ai_target_stat.cpp:
-  - 12 check_target_stat_* (relocation-only match)
-  - 4 attack_data_* (relocation-only match)
-  - is_update_count_odd (100% byte match)
-  - is_valid_target (relocation-only match)
-  - check_stat_ground_free, check_stat_air_free (86% near-match)
-  - check_chr_stat (93%), check_stat_floor_damage (92%)
-- 2 skipped: change_action, get_cmd_id (scheduling mismatch)
+Three high-cast files: `gameplay_functions.cpp` (222 casts, 192 offsets), `engine_functions.cpp` (260 casts, 77 offsets), `lua_acmd.cpp` (298 casts, 140 offsets). These are game logic dispatchers with heavy vtable access that should use typed module wrappers.
 
 ## File Territory
-- src/app/BossManager.cpp
-- src/app/ai_target_stat.cpp (NEW)
-- src/app/audio_functions.cpp
-- src/app/camera_functions.cpp
-- src/app/fighter_attack.cpp
-- src/app/fighter_core.cpp
-- src/app/fighter_status.cpp
-- src/app/fun_batch_b_026.cpp
-- src/app/fun_batch_d5_047.cpp
-- include/app/BattleObject.h
-- include/app/BossManager.h
-- include/app/placeholders/BossEntity.h (NEW)
-- include/app/placeholders/AITargetStat.h (NEW)
-- include/app/placeholders/FighterParamAccessor2.h
-- data/undefined_types.md
-- data/ghidra_cache/pool-d.txt
+- `src/app/gameplay_functions.cpp` (CLEANUP)
+- `src/app/engine_functions.cpp` (CLEANUP)
+- `src/app/lua_acmd.cpp` (CLEANUP)
+- `include/app/modules/*.h` (extend if needed)
+- `include/app/placeholders/` (create placeholders)
 
-## Next Targets
-- More app::ai check_stat_* functions (check_stat_floor_pass, check_stat_ground_free2, etc.)
-- app::ai_weapon::most_earliest_hit_frame
-- More named 48-96B functions in AI cluster (0x710036xxxx range)
-- Extend FighterAIState with newly discovered fields (+0x64 as u32, +0xd8 as s32)
+## What To Do
+- Replace raw module vtable dispatch with typed wrappers
+- Replace raw offset access with struct field access
+- Create placeholder structs for unknown pointer types
+- Cast density under 10%, zero REJECT violations
+
+## Do NOT
+- Delete, add, or rename functions — internal cleanup only
 
 ## Build
 ```bash
 python tools/build.py 2>&1 | tee build_output.txt
-```
-
-## Verify
-```bash
-python tools/compare_bytes.py FUNC_NAME ADDRESS
+python tools/review_diff.py pool-d
 ```
