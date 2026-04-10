@@ -50,7 +50,7 @@ namespace lib {
 // External functions
 extern "C" void FUN_71025d2dc0(u64*);            // StageBase constructor
 extern "C" u8   FUN_7103167000(u64, u64*, u64*);  // Event listener register
-extern "C" void FUN_71030080c0(u64);              // StageWufuIsland helper (clear list)
+extern "C" void free_stage_tree_71030080c0(void*);  // BST recursive free (defined in StageCollections.cpp)
 
 // WufuIsland singleton
 extern "C" u64* DAT_710532de20 HIDDEN;
@@ -366,7 +366,7 @@ extern "C" void FUN_7103007a30(u64* p)
     DAT_710532de20 = p;
 
     // Clear internal list
-    FUN_71030080c0(p[0x181]);
+    free_stage_tree_71030080c0((void*)p[0x181]);
     p[0x182] = 0;
     p[0x180] = (u64)(p + 0x181);
     p[0x181] = 0;
