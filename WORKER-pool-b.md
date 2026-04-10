@@ -2,42 +2,35 @@
 
 ## Model: Opus
 
-## Task: Clean up fighter_motion.cpp + fighter_core.cpp — typed module access
+## Task: Fighter logic — attack processing and damage calculations
 
-## Priority: QUALITY CLEANUP
+## Priority: NEW DECOMP (community high-value)
 
-## Status: IN PROGRESS — Cast density within limits
+## Context
+Attack and damage processing — hitbox creation, knockback calculation, shield interactions. The .dynsym has `AttackModule__*_impl` and `DamageModule__*_impl` names. `include/app/modules/AttackModule.h` has 176 typed wrappers. `include/app/AttackData.h` and `include/app/DamageInfo.h` have partial struct definitions.
 
-### Progress
-- `fighter_motion.cpp`: 246 → 122 casts (50% reduction, 6.4% density)
-- `fighter_core.cpp`: 134 → 105 casts (22% reduction, 7.6% density)
-- Both under 10% cast density threshold
-
-### Created/Extended
-- `include/types.h` — Added `Vector2f` struct
-- `include/app/placeholders/WeaponParams.h` — 9 param structs (Mechakoopa, PeachDaikon, Doll, DollShape, ExplosionBomb, Holywater, LinkArrow, LinkBomb, Spawn)
-- `include/app/modules/KineticModule.h` — Added gravity energy subclass fields (+0x34/+0x38/+0x3c)
-- `include/app/placeholders/FighterAI.h` — Added fighter_kind_for_cmd at +0x988
-- `include/app/placeholders/FighterParamAccessor2.h` — Added 3 physics param fields
-
-### Remaining casts (irreducible)
-- L-8 context extraction (FighterAI/BattleObject from lua_State)
-- FPA2 singleton dereference chains
-- Vtable dispatch casts
-- AI attack info table raw access (target struct untyped)
-- Boss energy subclass fields at +0x88/+0x8c/+0x90/+0xa0/+0xa4
+## Approach
+1. Use `mcp__ghidra__search_functions_by_name` to find `attack` and `damage` functions
+2. Start with the AttackModule and DamageModule dispatcher functions
+3. Extend `AttackData.h` and `DamageInfo.h` as you discover new fields
+4. Use typed module access throughout
 
 ## File Territory
-- `src/app/fighter_motion.cpp` (CLEANUP)
-- `src/app/fighter_core.cpp` (CLEANUP)
-- `include/app/modules/*.h` (extend if needed)
-- `include/app/placeholders/` (create placeholders for non-module types)
+- `src/app/fighter_attack.cpp` (extend)
+- `src/app/fighter_damage.cpp` (create if needed)
+- `include/app/AttackData.h` (extend)
+- `include/app/DamageInfo.h` (extend)
+- `include/app/modules/AttackModule.h` (extend with new slot wrappers)
+- `include/app/modules/DamageModule.h` (create — currently just a forward decl)
+- `include/app/placeholders/` (new types as needed)
 
-## Do NOT
-- Delete, add, or rename functions — internal cleanup only
+## Quality Rules
+- NO `FUN_` names, NO Ghidra vars, NO raw vtable dispatch, NO naked asm
+- Cast density under 10%
+- Create placeholder structs, log in `data/undefined_types.md`
+- Run `python tools/review_diff.py pool-b` before committing
 
 ## Build
 ```bash
 python tools/build.py 2>&1 | tee build_output.txt
-python tools/review_diff.py pool-b
 ```
