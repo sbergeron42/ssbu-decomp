@@ -2475,6 +2475,65 @@ void reset_stick_71003762f0(void* L) {
     *reinterpret_cast<u64*>(reinterpret_cast<u8*>(ctx) + 0xc30) = z0;
 }
 
+// [derived: ldr q0 from ctx+0xc30, vec add from arg, str q0 back]
+// 0x7100376240 -- app::ai_system::add_stick_abs (24B)
+void add_stick_abs_7100376240(void* L, const float4* v) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    auto* slot = reinterpret_cast<float4*>(ctx + 0xc30);
+    *slot = *slot + *v;
+}
+
+// [derived: multiplies v.x by stat_module->lr (+0xc4), preserves v.y,
+//  zeroes high lanes, adds to ctx+0xc30 stick accumulator]
+// 0x7100376210 -- app::ai_system::add_stick (48B)
+void add_stick_7100376210(void* L, const float4* v) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    u8* mod = *reinterpret_cast<u8**>(ctx + 0x168);
+    float4 in = *v;
+    f32 lr = *reinterpret_cast<f32*>(mod + 0xc4);
+    float4 scaled = {lr * in[0], in[1], 0.0f, 0.0f};
+    auto* slot = reinterpret_cast<float4*>(ctx + 0xc30);
+    *slot = *slot + scaled;
+}
+
+// AI personality table (+0xc24 = enabled flag, +0x988 = table base)
+extern "C" f32 personalityTableLookup_710033fec0(void* table);
+
+// [derived: checks ctx+0xc24 (enabled), tail-calls FUN_710033fec0 with ctx+0x988,
+//  or returns 0.0f if disabled]
+// 0x7100376010 -- app::ai::personality_up_rate (40B)
+f32 personality_up_rate_7100376010(void* L) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    if (ctx[0xc24] == 0) return 0.0f;
+    return personalityTableLookup_710033fec0(ctx + 0x988);
+}
+
+// [derived: ctx+0xc24 enabled, ctx+0x98c is f32 array indexed by arg*4,
+//  clamped to 0x47 max — return 1.0f if arg > 0x47]
+// 0x71003760e0 -- app::ai::personality_probability (48B)
+f32 personality_probability_71003760e0(void* L, s32 idx) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    if (ctx[0xc24] == 0) return 0.0f;
+    if (static_cast<u32>(idx) > 0x47) return 1.0f;
+    return *reinterpret_cast<f32*>(ctx + 0x98c + static_cast<s64>(idx) * 4);
+}
+
+// [derived: computes DAT_71044791c - personality_probability value.
+//  DAT_71044791c is a global f32 constant (probably 1.0f or similar)]
+// 0x7100376110 -- app::ai::personality_probability_inverse (60B)
+extern "C" __attribute__((visibility("hidden"))) f32 DAT_710447291c;
+f32 personality_probability_inverse_7100376110(void* L, s32 idx) {
+    u8* ctx = *reinterpret_cast<u8**>(reinterpret_cast<u8*>(L) - 8);
+    if (ctx[0xc24] == 0) return 0.0f;
+    f32 val;
+    if (static_cast<u32>(idx) > 0x47) {
+        val = 1.0f;
+    } else {
+        val = *reinterpret_cast<f32*>(ctx + 0x98c + static_cast<s64>(idx) * 4);
+    }
+    return DAT_710447291c - val;
+}
+
 // ── 0x710036b810 -- app::ai_param::width (24B) ─────────────────
 // [derived: multiplies ctx+0xb2c (base_width) by ai_data+0xc0 (scale factor)]
 f32 width_710036b810(void* L) {
