@@ -1138,3 +1138,148 @@ Rollback implication (revised from `main_loop.md` § 6d):
   `FUN_710013be00` (Thread::__init_and_start), `FUN_710013c030` (trampoline),
   `FUN_710013bcb0` (msgq receive), `FUN_710013bc98` (msgq send),
   `FUN_710013bba0` (msgq init), `FUN_710013c200` (Thread::start).
+
+---
+
+## Pool A — FUN_71014f10c0 classification (2026-04-10)
+
+### Identity verdict
+
+**NOT a serializer. This is `app::GameState::finalizeMatch` — the
+end-of-match teardown path.** The "40 reads of `DAT_710593a6a0`" lead
+was a **false positive**: every one of those reads is the scene root's
+fighter-roster `std::vector` being walked to **release** each entry's
+`shared_ptr` chain as the match ends. The pattern is
+`lock → null ptr slot → __release_weak → unlock`, repeated across the
+10 (or 6) fighter slots depending on the match-exit kind.
+
+Evidence that kills every "encoder" hypothesis:
+- **Zero** `nn::os::SendMessageQueue`, `nn::ldn::*`, or `nnsocket::*` calls
+  → not an LDN sync encoder.
+- **Zero** `nn::diag::*`, `nn::dbg::*`, `printf`-family, or string literals
+  → not a debug dumper.
+- **Zero** `memcpy`/`memmove` writing into any `param_N` buffer; the
+  sole parameter `param_1` is the `GameState*` being torn down, not a
+  destination buffer → not a state encoder of any kind.
+- **No counterpart decoder** because nothing was ever encoded.
+
+Positive evidence for "match-end teardown":
+- Calls `nn::oe::SetFocusHandlingMode` (applet focus) early.
+- Zeroes ~15 shared_ptr / handle fields on `param_1` directly after.
+- Iterates the 8 fighter-info pointers on `FighterManager + 0xE8..0x120`,
+  constructs an `nn::mii::CharInfoAccessor` stack-local from each entry's
+  CharInfo blob, checks `IsValid()`, then nulls the entry's shared_ptr.
+  This is "release each fighter's Mii face data as the match ends."
+- Memset-clears a 0x148-byte pad state block to the neutral-stick
+  sentinel `0x5000000050000000`.
+- Destroys a 0x480-byte effect-handle table at `*DAT_71052b8450`.
+- Walks `DAT_71052b8440` calling `FUN_710064b2c0` on 96 slots at stride
+  0x2c — handle-reset pattern.
+- Destroys `std::__1::mutex`s on a 0x5e × 0x18 table at `DAT_71052bb3a8`.
+- Match-exit-kind switch on `(param_1 + 0x60) & 0xfe`:
+  - `== 4`: release shared_ptrs at strides 0x60, 0xC8, 0x130, 0x198,
+    0x200, 0x268, 0x2D0, 0x338, 0x3A0, 0x408 (10 slots × 0x68 stride).
+  - `== 10`: release 6 entries at indices 0x1b..0x20 (offsets 0xAE8,
+    0xB50, 0xBB8, 0xC20, 0xC88, 0xCF0) — the biggest block. These are
+    the ~30 reads that dominated the `DAT_710593a6a0` xref count.
+  - `== 7 | 8`: release only the first 3 entries.
+- Tail calls `FUN_71004f0710` to reset `BattleObjectWorld` time-scale
+  and drops `lib::EffectManager` caches.
+
+### FighterRosterEntry layout (the useful gift)
+
+`DAT_710593a6a0` is `SceneRoot**`. The scene root has a
+`std::vector<FighterRosterEntry>` at `scene_root + 0x24d0` (begin) /
+`+ 0x24d8` (end). Ghidra emits the length calc as a multiply by the
+magic `0x4ec4ec4ec4ec4ec5`, which is the reciprocal for `/ 0x68`, so
+**each entry is 0x68 (104) bytes**. The vector can hold **at least 32
+entries** (the Classic-mode branch bounds-checks to index 0x20).
+
+| Offset into entry | Width | Meaning |
+|---|---|---|
+| +0x00 | 0x58 bytes | `nn::mii::CharInfo` blob (Mii face data) |
+| +0x58 | 8 | `shared_ptr<T>::ptr` |
+| +0x60 | 8 | `shared_ptr<T>::ctrl` |
+| +0x68 | — | **next entry starts here** (stride = 0x68) |
+
+And at the larger per-entry offsets seen in the exit-kind switch
+(these are **not** inside one entry — they're indexes into the vector
+at entry `n*0x68 + 0x58` / `+0x60`), giving the released-slot schedule
+per match type above.
+
+### Reads of DAT_710593a6a0 — corrected tally
+
+Every "read" is actually `*DAT_710593a6a0` followed by `+0x24d0` or
+`+0x24d8` to get the vector's begin/end pair, then index arithmetic
+into that vector. The singleton itself has only two fields ever
+touched by this function:
+
+| Chain | Type | Purpose |
+|---|---|---|
+| `*DAT_710593a6a0` | `SceneRoot*` | outer ptr-to-ptr deref |
+| `→ +0x24d0` | `FighterRosterEntry*` | `std::vector::begin` |
+| `→ +0x24d8` | `FighterRosterEntry*` | `std::vector::end` |
+
+Not 40 distinct field reads. Just the same two vector endpoints
+reloaded before every per-entry release.
+
+### Notable function calls
+
+- `nn::mii::CharInfoAccessor::CharInfoAccessor` + `::IsValid`
+- `nn::oe::SetFocusHandlingMode`
+- `std::__1::mutex::{lock, unlock, ~mutex}`,
+  `std::__1::recursive_mutex::{lock, unlock}`
+- `std::__1::__shared_weak_count::__release_weak`
+- `std::__1::__vector_base_common<true>::__throw_out_of_range`
+- `ExclusiveMonitorPass` / `ExclusiveMonitorsStatus` (LL/SC refcount CAS)
+- `je_aligned_alloc` (jemalloc — small allocs for observer list nodes)
+- `memmove` (stage-observer vector compaction after removal)
+- `__cxa_guard_acquire` / `__cxa_guard_release` (team-param static init)
+- `abort()` (input-state walk guard at index 0x12)
+- Many internal `FUN_` helpers: `FUN_7102606a00`, `FUN_710260b9b0`,
+  `FUN_710260d050`, `FUN_7102608770`, `FUN_71037759f0`, `FUN_710371da60`,
+  `FUN_710064b2c0`, `FUN_7100709a80` (FighterParamAccessor2 teardown),
+  `FUN_7103563720` / `FUN_7103563a80` (EffectManager handle release),
+  `FUN_71004f0710` (BattleObjectWorld frame reset).
+
+### String constants referenced
+
+**None.** No literal strings anywhere in the body. The `&LAB_*` /
+`&PTR_*` addresses that appear in arg lists are vtable / code-pointer
+constants (a stage-observer vtable, a loop-type descriptor, a
+param-set key) — not strings.
+
+### Implications for rollback walker
+
+**Dead end for "ready-made save-state encoder", useful free gift for
+the struct schema.**
+
+The bombshell scenario ("Smash ships a built-in state encoder we can
+wrap") is **ruled out by this function**. It is not an encoder.
+Rollback save-state must still be hand-written.
+
+However, the walk does hand rollback the exact slot layout of the
+master fighter roster on the scene root: a `std::vector<FighterRosterEntry>`
+at `scene_root + 0x24d0`, 0x68-byte stride, ≥32 capacity, with Mii
+CharInfo at +0x00 and shared_ptr chains at +0x58 onward. These
+lifetime-managed handles must appear in any correct snapshot walker.
+
+The **real** 40-read serializer — if one exists at all — is a
+different function. The `DAT_710593a6a0` xref count on this one was
+inflated by the `shared_ptr`-release pattern reloading the vector
+base/end on every iteration. Future xref-driven heuristics should
+discount functions that also pattern-match `__release_weak` loops.
+
+### Recommended rename
+
+`FUN_71014f10c0` → `app::GameState::finalizeMatch_71014f10c0` (or
+similar) in Ghidra. Pool-a will handle this in the next MCP round if
+the server is responsive.
+
+### Artifacts this pass added
+
+- Ghidra decompile cached at
+  `data/ghidra_cache/pool-a_FUN_71014f10c0.md` (2120 lines of C
+  pseudocode).
+- No `src/` changes — documentation-only pass per
+  `WORKER-pool-a.md`'s primary deliverable.
