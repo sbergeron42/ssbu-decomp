@@ -6,6 +6,14 @@
 #include "app/BattleObjectModuleAccessor.h"
 #include "app/CameraController.h"
 #include "app/placeholders/StageBase.h"
+#include "app/placeholders/StageEnd.h"
+#include "app/placeholders/StageFlatZoneX.h"
+#include "app/placeholders/StageStreetPass.h"
+#include "app/placeholders/StageDuckHunt.h"
+#include "app/placeholders/StageLuigiMansion.h"
+#include "app/placeholders/StageWreckingCrew.h"
+#include "app/placeholders/StagePilotwings.h"
+#include "app/placeholders/StagePictochat2.h"
 
 // ---- ~CameraQuake destructor ----
 // 0x7100515190 (3,192 bytes)
@@ -274,30 +282,29 @@ extern "C" void FUN_71025e55a0(StageBase*);
 // Forward-declare cleanup function for StageBattleBase +0x768
 extern "C" void FUN_71025f5c90(u64);
 
-extern "C" void FUN_71028350b0(StageBase* param_1) {
-    u64* p = reinterpret_cast<u64*>(param_1);
-    param_1->vtable = reinterpret_cast<void**>(&PTR_LAB_71050e7a18);
+extern "C" void FUN_71028350b0(StageEnd* self) {
+    self->vtable = reinterpret_cast<void**>(&PTR_LAB_71050e7a18);
 
-    // +0x918 [derived: StageEnd owned ptr]
-    u64 p3 = p[0x123];
-    p[0x123] = 0;
-    if (p3 != 0) FUN_710392e590((void*)p3);
+    // Release owned ptr at +0x918 [derived: StageEnd field]
+    void* p3 = self->owned_0x918;
+    self->owned_0x918 = nullptr;
+    if (p3 != nullptr) FUN_710392e590(p3);
 
-    // +0x910 [derived: StageEnd owned ptr]
-    u64 p2 = p[0x122];
-    p[0x122] = 0;
-    if (p2 != 0) FUN_710392e590((void*)p2);
+    // Release owned ptr at +0x910 [derived: StageEnd field]
+    void* p2 = self->owned_0x910;
+    self->owned_0x910 = nullptr;
+    if (p2 != nullptr) FUN_710392e590(p2);
 
-    // +0x908 [derived: StageEnd owned object, cleanup via FUN_7102837e00]
-    u64 p1 = p[0x121];
-    p[0x121] = 0;
-    if (p1 != 0) {
-        FUN_7102837e00((void*)p1);
-        FUN_710392e590((void*)p1);
+    // Release owned object at +0x908 [derived: cleanup via FUN_7102837e00]
+    void* p1 = self->owned_0x908;
+    self->owned_0x908 = nullptr;
+    if (p1 != nullptr) {
+        FUN_7102837e00(p1);
+        FUN_710392e590(p1);
     }
 
-    FUN_7102834b90(p + 0xef);  // +0x778 [derived: StageEnd embedded sub-object]
-    FUN_71025e55a0(param_1);   // [derived: ~StageBattleBase (intermediate dtor)]
+    FUN_7102834b90(self->embedded_sub_0x778);  // Embedded sub-object cleanup
+    FUN_71025e55a0(self);                       // ~StageBattleBase
 }
 
 // ---- Camera user operation functions ----
@@ -1372,53 +1379,51 @@ extern "C" void FUN_7102ccf720(StageBase* param_1)
 // PTR_LAB_71050f2f78 [derived: StageFlatZoneX vtable]
 extern "C" u8 PTR_LAB_71050f2f78 HIDDEN;
 
-extern "C" void FUN_71029240a0(StageBase* param_1)
+extern "C" void FUN_71029240a0(StageFlatZoneX* self)
 {
-    u64* p = reinterpret_cast<u64*>(param_1);
-    param_1->vtable = reinterpret_cast<void**>(&PTR_LAB_71050f2f78);
+    self->vtable = reinterpret_cast<void**>(&PTR_LAB_71050f2f78);
 
-    // Release unique_ptr at +0xc78 [derived: StageFlatZoneX field]
-    u64 uptr = p[0xc78 / 8];
-    p[0xc78 / 8] = 0;
-    if (uptr != 0) {
-        reinterpret_cast<void(*)(u64)>((*(void***)(u64*)uptr)[1])(uptr);
+    // Release unique_ptr at +0xC78 [derived: StageFlatZoneX field]
+    void* uptr = self->unique_ptr_0xC78;
+    self->unique_ptr_0xC78 = nullptr;
+    if (uptr != nullptr) {
+        reinterpret_cast<void(*)(void*)>((*(void***)(uptr))[1])(uptr);
     }
 
     // Destroy vector at +0x850..+0x858 (elements are 0x18 bytes each)
-    // [derived: Ghidra shows plVar1/plVar2 reuse pattern, plVar1 used as final free arg]
-    u64* plVar2 = (u64*)p[0x850 / 8];
-    if (plVar2 != nullptr) {
-        u64* plVar1 = (u64*)p[0x858 / 8];
-        if (plVar1 == plVar2) {
-            p[0x858 / 8] = (u64)plVar2;
-            plVar1 = plVar2;
+    u64* vec_data = (u64*)self->vec_begin_0x850;
+    if (vec_data != nullptr) {
+        u64* vec_end = (u64*)self->vec_end_0x858;
+        if (vec_end == vec_data) {
+            self->vec_end_0x858 = (void*)vec_data;
+            vec_end = vec_data;
         } else {
-            u64* iter = plVar1;
+            u64* iter = vec_end;
             do {
-                u64* plVar3 = iter - 3;
-                u64 elem = *plVar3;
+                u64* prev = iter - 3;
+                u64 elem = *prev;
                 if (elem != 0) {
                     iter[-2] = elem;
                     FUN_710392e590((void*)elem);
                 }
-                iter = plVar3;
-            } while (plVar2 != iter);
-            plVar1 = (u64*)p[0x850 / 8];
-            p[0x858 / 8] = (u64)plVar2;
+                iter = prev;
+            } while (vec_data != iter);
+            vec_end = (u64*)self->vec_begin_0x850;
+            self->vec_end_0x858 = (void*)vec_data;
         }
-        if (plVar1 != nullptr) {
-            FUN_710392e590(plVar1);
+        if (vec_end != nullptr) {
+            FUN_710392e590(vec_end);
         }
     }
 
     // Free allocation at +0x830 [derived: StageFlatZoneX field]
-    u64 alloc = p[0x830 / 8];
-    if (alloc != 0) {
-        p[0x838 / 8] = alloc;
-        FUN_710392e590((void*)alloc);
+    void* alloc = self->alloc_0x830;
+    if (alloc != nullptr) {
+        self->end_0x838 = alloc;
+        FUN_710392e590(alloc);
     }
 
-    FUN_71025d7310(param_1);
+    FUN_71025d7310(self);
 }
 
 // ---- ~StageStreetPass (0x7102f33f20, 192 bytes) ----
@@ -1429,59 +1434,58 @@ extern "C" void FUN_71029240a0(StageBase* param_1)
 // PTR_LAB_71051520f8 [derived: StageStreetPass vtable]
 extern "C" u8 PTR_LAB_71051520f8 HIDDEN;
 
-extern "C" void FUN_7102f33f20(StageBase* param_1)
+extern "C" void FUN_7102f33f20(StageStreetPass* self)
 {
-    u64* p = reinterpret_cast<u64*>(param_1);
-    param_1->vtable = reinterpret_cast<void**>(&PTR_LAB_71051520f8);
+    self->vtable = reinterpret_cast<void**>(&PTR_LAB_71051520f8);
 
     // Release unique_ptr at +0x950 [derived: StageStreetPass field]
-    u64 uptr = p[0x950 / 8];
-    if (uptr != 0) {
-        reinterpret_cast<void(*)(u64)>((*(void***)(u64*)uptr)[1])(uptr);
-        p[0x950 / 8] = 0;
+    void* uptr = self->unique_ptr_0x950;
+    if (uptr != nullptr) {
+        reinterpret_cast<void(*)(void*)>((*(void***)(uptr))[1])(uptr);
+        self->unique_ptr_0x950 = nullptr;
     }
 
-    // Destroy vector at +0x908..+0x910 (elements 0x18 bytes) [derived: StageStreetPass field]
-    u64* plVar2 = (u64*)p[0x908 / 8];
-    if (plVar2 != nullptr) {
-        u64* plVar1 = (u64*)p[0x910 / 8];
-        if (plVar1 == plVar2) {
-            p[0x910 / 8] = (u64)plVar2;
-            plVar1 = plVar2;
+    // Destroy vector at +0x908..+0x910 (elements 0x18 bytes)
+    u64* vec_data = (u64*)self->vec_begin_0x908;
+    if (vec_data != nullptr) {
+        u64* vec_end = (u64*)self->vec_end_0x910;
+        if (vec_end == vec_data) {
+            self->vec_end_0x910 = (void*)vec_data;
+            vec_end = vec_data;
         } else {
-            u64* iter = plVar1;
+            u64* iter = vec_end;
             do {
-                u64* plVar3 = iter - 3;
-                u64 elem = *plVar3;
+                u64* prev = iter - 3;
+                u64 elem = *prev;
                 if (elem != 0) {
                     iter[-2] = elem;
                     FUN_710392e590((void*)elem);
                 }
-                iter = plVar3;
-            } while (plVar2 != iter);
-            plVar1 = (u64*)p[0x908 / 8];
-            p[0x910 / 8] = (u64)plVar2;
+                iter = prev;
+            } while (vec_data != iter);
+            vec_end = (u64*)self->vec_begin_0x908;
+            self->vec_end_0x910 = (void*)vec_data;
         }
-        if (plVar1 != nullptr) {
-            FUN_710392e590(plVar1);
+        if (vec_end != nullptr) {
+            FUN_710392e590(vec_end);
         }
     }
 
     // Free allocation at +0x8b8 [derived: StageStreetPass field]
-    u64 alloc1 = p[0x8b8 / 8];
-    if (alloc1 != 0) {
-        p[0x8c0 / 8] = alloc1;
-        FUN_710392e590((void*)alloc1);
+    void* alloc1 = self->alloc_0x8b8;
+    if (alloc1 != nullptr) {
+        self->end_0x8c0 = alloc1;
+        FUN_710392e590(alloc1);
     }
 
     // Free allocation at +0x898 [derived: StageStreetPass field]
-    u64 alloc2 = p[0x898 / 8];
-    if (alloc2 != 0) {
-        p[0x8a0 / 8] = alloc2;
-        FUN_710392e590((void*)alloc2);
+    void* alloc2 = self->alloc_0x898;
+    if (alloc2 != nullptr) {
+        self->end_0x8a0 = alloc2;
+        FUN_710392e590(alloc2);
     }
 
-    FUN_71025d7310(param_1);
+    FUN_71025d7310(self);
 }
 
 // ---- ~StageDuckHunt (0x7102826d30, 212 bytes) ----
@@ -1495,58 +1499,51 @@ extern "C" void FUN_7102f33f20(StageBase* param_1)
 // PTR_LAB_71050e6d60 [derived: StageDuckHunt vtable]
 extern "C" u8 PTR_LAB_71050e6d60 HIDDEN;
 
-extern "C" void FUN_7102826d30(StageBase* param_1)
+extern "C" void FUN_7102826d30(StageDuckHunt* self)
 {
-    u64* p = reinterpret_cast<u64*>(param_1);
-    param_1->vtable = reinterpret_cast<void**>(&PTR_LAB_71050e6d60);
+    self->vtable = reinterpret_cast<void**>(&PTR_LAB_71050e6d60);
 
     // Free simple ptrs at +0x870, +0x868, +0x860
-    u64 v870 = p[0x10e]; // +0x870
-    if (v870 != 0) FUN_710392e590((void*)v870);
-    u64 v868 = p[0x10d]; // +0x868
-    if (v868 != 0) FUN_710392e590((void*)v868);
-    u64 v860 = p[0x10c]; // +0x860
-    if (v860 != 0) FUN_710392e590((void*)v860);
+    if (self->owned_0x870 != nullptr) FUN_710392e590(self->owned_0x870);
+    if (self->owned_0x868 != nullptr) FUN_710392e590(self->owned_0x868);
+    if (self->owned_0x860 != nullptr) FUN_710392e590(self->owned_0x860);
 
-    // Complex sub-object at +0x858 (has inner allocs at +0x70, +0x58, +0x40)
-    u64 sub = p[0x10b]; // +0x858
-    if (sub != 0) {
-        u64 inner70 = *(u64*)(sub + 0x70);
-        if (inner70 != 0) FUN_710392e590((void*)inner70);
-        u64 inner58 = *(u64*)(sub + 0x58);
-        if (inner58 != 0) FUN_710392e590((void*)inner58);
-        u64 inner40 = *(u64*)(sub + 0x40);
-        if (inner40 != 0) FUN_710392e590((void*)inner40);
-        FUN_710392e590((void*)sub);
+    // Complex sub-object at +0x858 (has inner allocs at +0x40, +0x58, +0x70)
+    DuckHuntSubObj* sub = self->complex_sub_0x858;
+    if (sub != nullptr) {
+        if (sub->inner_alloc_0x70 != nullptr) FUN_710392e590(sub->inner_alloc_0x70);
+        if (sub->inner_alloc_0x58 != nullptr) FUN_710392e590(sub->inner_alloc_0x58);
+        if (sub->inner_alloc_0x40 != nullptr) FUN_710392e590(sub->inner_alloc_0x40);
+        FUN_710392e590(sub);
     }
 
-    // Owned object at +0x850 (clears +0x20/+0x28 before free)
-    u64 v850 = p[0x10a]; // +0x850
-    if (v850 != 0) {
-        *(u64*)(v850 + 0x20) = 0;
-        *(u64*)(v850 + 0x28) = 0;
-        FUN_710392e590((void*)v850);
+    // Owned object at +0x850 (clears fields before free)
+    DuckHuntOwnedObj* obj = self->owned_obj_0x850;
+    if (obj != nullptr) {
+        obj->field_0x20 = 0;
+        obj->field_0x28 = 0;
+        FUN_710392e590(obj);
     }
 
     // 4 vector-style begin/end frees
-    if (p[0x105] != 0) { // +0x828/+0x830
-        p[0x106] = p[0x105];
-        FUN_710392e590((void*)p[0x105]);
+    if (self->vec3_begin != nullptr) {
+        self->vec3_end = self->vec3_begin;
+        FUN_710392e590(self->vec3_begin);
     }
-    if (p[0x102] != 0) { // +0x810/+0x818
-        p[0x103] = p[0x102];
-        FUN_710392e590((void*)p[0x102]);
+    if (self->vec2_begin != nullptr) {
+        self->vec2_end = self->vec2_begin;
+        FUN_710392e590(self->vec2_begin);
     }
-    if (p[0xf1] != 0) { // +0x788/+0x790
-        p[0xf2] = p[0xf1];
-        FUN_710392e590((void*)p[0xf1]);
+    if (self->vec1_begin != nullptr) {
+        self->vec1_end = self->vec1_begin;
+        FUN_710392e590(self->vec1_begin);
     }
-    if (p[0xe8] != 0) { // +0x740/+0x748
-        p[0xe9] = p[0xe8];
-        FUN_710392e590((void*)p[0xe8]);
+    if (self->vec0_begin != nullptr) {
+        self->vec0_end = self->vec0_begin;
+        FUN_710392e590(self->vec0_begin);
     }
 
-    FUN_71025d7310(param_1);
+    FUN_71025d7310(self);
 }
 
 // ---- ~StageLuigiMansion (0x7102ada090, 288 bytes) ----
@@ -1557,22 +1554,21 @@ extern "C" void FUN_7102826d30(StageBase* param_1)
 // PTR_LAB_710510dcf0 [derived: StageLuigiMansion vtable]
 extern "C" u8 PTR_LAB_710510dcf0 HIDDEN;
 
-extern "C" void FUN_7102ada090(StageBase* param_1)
+extern "C" void FUN_7102ada090(StageLuigiMansion* self)
 {
-    u64* p = reinterpret_cast<u64*>(param_1);
-    param_1->vtable = reinterpret_cast<void**>(&PTR_LAB_710510dcf0);
+    self->vtable = reinterpret_cast<void**>(&PTR_LAB_710510dcf0);
 
     // Release shared_ptr at +0x858 [derived: StageLuigiMansion field]
-    RELEASE_SHARED_PTR(p, 0x858);
+    RELEASE_SHARED_PTR(self, 0x858);
 
     // Release shared_ptr at +0x830 [derived: StageLuigiMansion field]
-    p[0x109] = 0;  // +0x848
-    p[0x108] = 0;  // +0x840
-    RELEASE_SHARED_PTR(p, 0x830);
+    self->data_0x848 = 0;
+    self->data_0x840 = 0;
+    RELEASE_SHARED_PTR(self, 0x830);
 
     // Release owned container at +0x820 [derived: StageLuigiMansion field]
-    long* c820 = (long*)p[0x104];
-    p[0x104] = 0;
+    long* c820 = (long*)self->container_0x820;
+    self->container_0x820 = nullptr;
     if (c820 != nullptr) {
         u64 inner = *c820;
         *c820 = 0;
@@ -1580,9 +1576,9 @@ extern "C" void FUN_7102ada090(StageBase* param_1)
         FUN_710392e590(c820);
     }
 
-    // Release owned container at +0x818 (has inner ptr at +0x68) [derived: StageLuigiMansion field]
-    long* c818 = (long*)p[0x103];
-    p[0x103] = 0;
+    // Release owned container at +0x818 (has inner ptr at +0x68)
+    long* c818 = (long*)self->container_0x818;
+    self->container_0x818 = nullptr;
     if (c818 != nullptr) {
         u64 inner = *c818;
         *c818 = 0;
@@ -1598,12 +1594,12 @@ extern "C" void FUN_7102ada090(StageBase* param_1)
     }
 
     // Zero-clear derived fields at +0x7D8, +0x7D0, +0x7C8, +0x7C0
-    p[0xfb] = 0;
-    p[0xfa] = 0;
-    p[0xf9] = 0;
-    p[0xf8] = 0;
+    self->data_0x7D8 = nullptr;
+    self->data_0x7D0 = nullptr;
+    self->data_0x7C8 = nullptr;
+    self->data_0x7C0 = nullptr;
 
-    FUN_71025d7310(param_1);
+    FUN_71025d7310(self);
 }
 
 // ---- ~StageWreckingCrew (0x7102fe2330, 300 bytes) ----
@@ -1614,66 +1610,65 @@ extern "C" void FUN_7102ada090(StageBase* param_1)
 
 // PTR_LAB_710515d6e0 [derived: StageWreckingCrew vtable]
 extern "C" u8 PTR_LAB_710515d6e0 HIDDEN;
-extern "C" void FUN_7102fed000(u64);
-extern "C" void FUN_7102ff2e20(u64);
-extern "C" void FUN_7102ff2520(u64);
-extern "C" void FUN_7102feb430(u64);
-extern "C" void FUN_7102ff02b0(u64);
-extern "C" void FUN_7102ff2b40(u64);
-extern "C" void FUN_7102ff1420(u64);
+extern "C" void FUN_7102fed000(void*);
+extern "C" void FUN_7102ff2e20(void*);
+extern "C" void FUN_7102ff2520(void*);
+extern "C" void FUN_7102feb430(void*);
+extern "C" void FUN_7102ff02b0(void*);
+extern "C" void FUN_7102ff2b40(void*);
+extern "C" void FUN_7102ff1420(void*);
 extern "C" void FUN_7102fe2250(u64*);
 
-extern "C" void FUN_7102fe2330(StageBase* param_1)
+extern "C" void FUN_7102fe2330(StageWreckingCrew* self)
 {
-    u64* p = reinterpret_cast<u64*>(param_1);
-    param_1->vtable = reinterpret_cast<void**>(&PTR_LAB_710515d6e0);
+    self->vtable = reinterpret_cast<void**>(&PTR_LAB_710515d6e0);
 
     // Free 9 owned sub-objects from +0xAF0 down to +0xAB0
-    // [derived: each has custom cleanup function before free]
-    u64 v; // reused for each field
+    void* v;
 
-    v = p[0x15e]; // +0xAF0
-    if (v != 0) { FUN_7102fed000(v); FUN_710392e590((void*)v); }
-    v = p[0x15d]; // +0xAE8
-    if (v != 0) { FUN_710392e590((void*)v); }
-    v = p[0x15c]; // +0xAE0
-    if (v != 0) { FUN_7102ff2e20(v); FUN_710392e590((void*)v); }
-    v = p[0x15b]; // +0xAD8
-    if (v != 0) { FUN_7102ff2520(v); FUN_710392e590((void*)v); }
-    v = p[0x15a]; // +0xAD0
-    if (v != 0) { FUN_7102feb430(v); FUN_710392e590((void*)v); }
-    v = p[0x159]; // +0xAC8
-    if (v != 0) { FUN_7102ff02b0(v); FUN_710392e590((void*)v); }
+    v = self->owned_0xAF0;
+    if (v != nullptr) { FUN_7102fed000(v); FUN_710392e590(v); }
+    v = self->owned_0xAE8;
+    if (v != nullptr) { FUN_710392e590(v); }
+    v = self->owned_0xAE0;
+    if (v != nullptr) { FUN_7102ff2e20(v); FUN_710392e590(v); }
+    v = self->owned_0xAD8;
+    if (v != nullptr) { FUN_7102ff2520(v); FUN_710392e590(v); }
+    v = self->owned_0xAD0;
+    if (v != nullptr) { FUN_7102feb430(v); FUN_710392e590(v); }
+    v = self->owned_0xAC8;
+    if (v != nullptr) { FUN_7102ff02b0(v); FUN_710392e590(v); }
 
-    v = p[0x158]; // +0xAC0 [derived: container with inner buffer at +0x10]
-    if (v != 0) {
-        u64 inner = *(u64*)(v + 0x10);
-        *(u64*)(v + 0x18) = inner;
-        if (inner != 0) {
-            *(u64*)(v + 0x18) = inner;
-            FUN_710392e590((void*)inner);
+    // Container at +0xAC0 with inner buffer at +0x10
+    ContainerWithBuf10* cont_ac0 = self->container_0xAC0;
+    if (cont_ac0 != nullptr) {
+        void* inner = cont_ac0->buffer_begin;
+        cont_ac0->buffer_end = inner;
+        if (inner != nullptr) {
+            cont_ac0->buffer_end = inner;
+            FUN_710392e590(inner);
         }
-        FUN_710392e590((void*)v);
+        FUN_710392e590(cont_ac0);
     }
 
-    v = p[0x157]; // +0xAB8
-    if (v != 0) { FUN_7102ff2b40(v); FUN_710392e590((void*)v); }
-    v = p[0x156]; // +0xAB0
-    if (v != 0) { FUN_7102ff1420(v); FUN_710392e590((void*)v); }
+    v = self->owned_0xAB8;
+    if (v != nullptr) { FUN_7102ff2b40(v); FUN_710392e590(v); }
+    v = self->owned_0xAB0;
+    if (v != nullptr) { FUN_7102ff1420(v); FUN_710392e590(v); }
 
-    // +0x970 [derived: owned container with inner +0x18 buffer]
-    v = p[0x12e];
-    if (v != 0) {
-        u64 inner = *(u64*)(v + 0x18);
-        if (inner != 0) {
-            *(u64*)(v + 0x20) = inner;
-            FUN_710392e590((void*)inner);
+    // Owned container at +0x970 with inner buffer at +0x18
+    ContainerWithBuf18* cont_970 = self->container_0x970;
+    if (cont_970 != nullptr) {
+        void* inner = cont_970->buffer_begin;
+        if (inner != nullptr) {
+            cont_970->buffer_end = inner;
+            FUN_710392e590(inner);
         }
-        FUN_710392e590((void*)v);
+        FUN_710392e590(cont_970);
     }
 
-    FUN_7102fe2250(p + 0xe7);  // +0x738 [derived: embedded sub-object cleanup]
-    FUN_71025d7310(param_1);
+    FUN_7102fe2250(&self->embedded_sub_0x738);  // Embedded sub-object cleanup
+    FUN_71025d7310(self);
 }
 
 // ---- ~StagePilotwings (0x7102de49b0, 304 bytes) ----
@@ -1686,25 +1681,23 @@ extern "C" void FUN_7102fe2330(StageBase* param_1)
 extern "C" u8 PTR_LAB_710513be98 HIDDEN;
 extern "C" void FUN_7102de8120(u64*);
 
-extern "C" void FUN_7102de49b0(StageBase* param_1)
+extern "C" void FUN_7102de49b0(StagePilotwings* self)
 {
-    u64* p = reinterpret_cast<u64*>(param_1);
-    param_1->vtable = reinterpret_cast<void**>(&PTR_LAB_710513be98);
+    self->vtable = reinterpret_cast<void**>(&PTR_LAB_710513be98);
 
     // Embedded sub-object cleanup at +0x7A8
-    FUN_7102de8120(p + 0xf5);
+    FUN_7102de8120(&self->embedded_sub_0x7A8);
 
     // Release shared_ptr container at +0x790 (has 2 shared_ptrs inside)
-    u64* sp = (u64*)p[0xf2]; // +0x790
-    p[0xf2] = 0;
+    u64* sp = (u64*)self->shared_container_0x790;
+    self->shared_container_0x790 = nullptr;
     if (sp != nullptr) {
         u64 inner1_ctrl = sp[1];
         sp[0] = 0;
         sp[1] = 0;
         if (inner1_ctrl != 0) {
-            RELEASE_SHARED_PTR(sp, -8);  // control block at sp-8
+            RELEASE_SHARED_PTR(sp, -8);
         }
-        // Second shared_ptr in pair
         long* sp2 = (long*)sp[1];
         if (sp2 != nullptr) {
             RELEASE_SHARED_PTR(&sp2, -8);
@@ -1713,39 +1706,39 @@ extern "C" void FUN_7102de49b0(StageBase* param_1)
     }
 
     // Vector-style free at +0x768/+0x770
-    if (p[0xed] != 0) {
-        p[0xee] = p[0xed];
-        FUN_710392e590((void*)p[0xed]);
+    if (self->alloc_0x768 != nullptr) {
+        self->end_0x770 = self->alloc_0x768;
+        FUN_710392e590(self->alloc_0x768);
     }
 
     // Vector-style free at +0x750/+0x758
-    if (p[0xea] != 0) {
-        p[0xeb] = p[0xea];
-        FUN_710392e590((void*)p[0xea]);
+    if (self->alloc_0x750 != nullptr) {
+        self->end_0x758 = self->alloc_0x750;
+        FUN_710392e590(self->alloc_0x750);
     }
 
     // Destroy vector at +0x738/+0x740 (elements are 0x60 bytes, dtor called on each)
-    u64* vec_begin = (u64*)p[0xe7]; // +0x738
-    if (vec_begin != nullptr) {
-        u64* vec_end = (u64*)p[0xe8]; // +0x740
-        if (vec_end == vec_begin) {
-            p[0xe8] = (u64)vec_begin;
-            vec_end = vec_begin;
+    u64* vec_data = (u64*)self->vec_begin_0x738;
+    if (vec_data != nullptr) {
+        u64* vec_end = (u64*)self->vec_end_0x740;
+        if (vec_end == vec_data) {
+            self->vec_end_0x740 = (void*)vec_data;
+            vec_end = vec_data;
         } else {
             u64* iter = vec_end;
             do {
-                iter = iter - 0xc; // stride 0x60 bytes (0xc u64s)
+                iter = iter - 0xc; // stride 0x60 bytes
                 reinterpret_cast<void(*)(u64*)>((*(void***)(iter))[0])(iter);
-            } while (vec_begin != iter);
-            vec_end = (u64*)p[0xe7];
-            p[0xe8] = (u64)vec_begin;
+            } while (vec_data != iter);
+            vec_end = (u64*)self->vec_begin_0x738;
+            self->vec_end_0x740 = (void*)vec_data;
         }
         if (vec_end != nullptr) {
             FUN_710392e590(vec_end);
         }
     }
 
-    FUN_71025d7310(param_1);
+    FUN_71025d7310(self);
 }
 
 // ---- ~StagePictochat2 (0x7102d5bbf0, 280 bytes) ----
@@ -1760,14 +1753,13 @@ extern "C" u8 PTR_LAB_7105135670 HIDDEN;
 extern "C" void FUN_7102d5a8f0(u64*);
 extern "C" void FUN_71032ca770(void);
 
-extern "C" void FUN_7102d5bbf0(StageBase* param_1)
+extern "C" void FUN_7102d5bbf0(StagePictochat2* self)
 {
-    u64* p = reinterpret_cast<u64*>(param_1);
-    param_1->vtable = reinterpret_cast<void**>(&PTR_LAB_7105135670);
+    self->vtable = reinterpret_cast<void**>(&PTR_LAB_7105135670);
 
     // Release owned container at +0xC70 [derived: StagePictochat2 field]
-    long* c_c70 = (long*)p[0x18e];
-    p[0x18e] = 0;
+    long* c_c70 = (long*)self->container_0xC70;
+    self->container_0xC70 = nullptr;
     if (c_c70 != nullptr) {
         u64 inner = *c_c70;
         *c_c70 = 0;
@@ -1776,11 +1768,11 @@ extern "C" void FUN_7102d5bbf0(StageBase* param_1)
     }
 
     // Destroy vector of unique_ptrs at +0xC50/+0xC58
-    long* vec_begin = (long*)p[0x18a]; // +0xC50
-    if (vec_begin != nullptr) {
-        long* vec_end = (long*)p[0x18b]; // +0xC58
-        if (vec_end == vec_begin) {
-            p[0x18b] = (u64)vec_begin;
+    long* vec_data = (long*)self->vec_begin_0xC50;
+    if (vec_data != nullptr) {
+        long* vec_end = (long*)self->vec_end_0xC58;
+        if (vec_end == vec_data) {
+            self->vec_end_0xC58 = (void*)vec_data;
         } else {
             long* iter = vec_end;
             do {
@@ -1790,31 +1782,31 @@ extern "C" void FUN_7102d5bbf0(StageBase* param_1)
                 if (elem != nullptr) {
                     reinterpret_cast<void(*)(long*)>((*(void***)(elem))[1])(elem);
                 }
-            } while (vec_begin != iter);
-            vec_begin = (long*)p[0x18a];
-            p[0x18b] = (u64)(long*)p[0x18a];
+            } while (vec_data != iter);
+            vec_data = (long*)self->vec_begin_0xC50;
+            self->vec_end_0xC58 = (void*)vec_data;
         }
-        if (vec_begin != nullptr) {
-            FUN_710392e590(vec_begin);
+        if (vec_data != nullptr) {
+            FUN_710392e590(vec_data);
         }
     }
 
     // Vector-style free at +0xC30/+0xC38
-    if (p[0x186] != 0) {
-        p[0x187] = p[0x186];
-        FUN_710392e590((void*)p[0x186]);
+    if (self->alloc_0xC30 != nullptr) {
+        self->end_0xC38 = self->alloc_0xC30;
+        FUN_710392e590(self->alloc_0xC30);
     }
 
     // Release unique_ptr at +0xC20 [derived: StagePictochat2 field]
-    long* uptr_c20 = (long*)p[0x184];
-    p[0x184] = 0;
+    long* uptr_c20 = (long*)self->unique_ptr_0xC20;
+    self->unique_ptr_0xC20 = nullptr;
     if (uptr_c20 != nullptr) {
         reinterpret_cast<void(*)(long*)>((*(void***)(uptr_c20))[1])(uptr_c20);
     }
 
     // Release owned object at +0xC18 (has inner alloc at +0x28)
-    u64 v_c18 = p[0x183];
-    p[0x183] = 0;
+    u64 v_c18 = (u64)self->owned_0xC18;
+    self->owned_0xC18 = nullptr;
     if (v_c18 != 0) {
         u64 inner28 = *(u64*)(v_c18 + 0x28);
         *(u64*)(v_c18 + 0x28) = 0;
@@ -1825,16 +1817,16 @@ extern "C" void FUN_7102d5bbf0(StageBase* param_1)
     }
 
     // Release unique_ptr at +0xC10 [derived: StagePictochat2 field]
-    long* uptr_c10 = (long*)p[0x182];
-    p[0x182] = 0;
+    long* uptr_c10 = (long*)self->unique_ptr_0xC10;
+    self->unique_ptr_0xC10 = nullptr;
     if (uptr_c10 != nullptr) {
         reinterpret_cast<void(*)(long*)>((*(void***)(uptr_c10))[1])(uptr_c10);
     }
 
     // Embedded sub-object cleanup at +0x740
-    FUN_7102d5a8f0(p + 0xe8);
+    FUN_7102d5a8f0(&self->embedded_sub_0x740);
 
-    FUN_71025d7310(param_1);
+    FUN_71025d7310(self);
 }
 
 // ---- Additional leaf functions (batch 2) ----
