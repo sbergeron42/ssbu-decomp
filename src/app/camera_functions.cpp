@@ -266,7 +266,13 @@ extern "C" void request_quake(u64 lua_state, u32 kind) {
 extern "C" u8 PTR_LAB_71050e7a18;
 extern "C" void FUN_7102837e00(void*);
 extern "C" void FUN_7102834b90(void*);
+// FUN_71025e55a0 [derived: ~StageBattleBase — intermediate destructor between StageBase and StageEnd]
+// Sets vtable PTR_LAB_71050c4d70, releases +0x768 (with cleanup), +0x750 (vector-style),
+// +0x740 (shared_ptr with embedded ref). Tail-calls StageBase dtor.
 extern "C" void FUN_71025e55a0(StageBase*);
+
+// Forward-declare cleanup function for StageBattleBase +0x768
+extern "C" void FUN_71025f5c90(u64);
 
 extern "C" void FUN_71028350b0(StageBase* param_1) {
     u64* p = reinterpret_cast<u64*>(param_1);
@@ -1738,6 +1744,95 @@ extern "C" void FUN_7102de49b0(StageBase* param_1)
             FUN_710392e590(vec_end);
         }
     }
+
+    FUN_71025d7310(param_1);
+}
+
+// ---- ~StagePictochat2 (0x7102d5bbf0, 280 bytes) ----
+// Directly inherits from StageBase.
+// Frees owned container at +0xC70, vector of unique_ptrs at +0xC50/+0xC58,
+// vector-style at +0xC30/+0xC38, unique_ptrs at +0xC20/+0xC18/+0xC10,
+// embedded sub cleanup at +0x740.
+// [derived: Ghidra decompilation at 0x7102d5bbf0]
+
+// PTR_LAB_7105135670 [derived: StagePictochat2 vtable]
+extern "C" u8 PTR_LAB_7105135670 HIDDEN;
+extern "C" void FUN_7102d5a8f0(u64*);
+extern "C" void FUN_71032ca770(void);
+
+extern "C" void FUN_7102d5bbf0(StageBase* param_1)
+{
+    u64* p = reinterpret_cast<u64*>(param_1);
+    param_1->vtable = reinterpret_cast<void**>(&PTR_LAB_7105135670);
+
+    // Release owned container at +0xC70 [derived: StagePictochat2 field]
+    long* c_c70 = (long*)p[0x18e];
+    p[0x18e] = 0;
+    if (c_c70 != nullptr) {
+        u64 inner = *c_c70;
+        *c_c70 = 0;
+        if (inner != 0) FUN_710392e590((void*)inner);
+        FUN_710392e590(c_c70);
+    }
+
+    // Destroy vector of unique_ptrs at +0xC50/+0xC58
+    long* vec_begin = (long*)p[0x18a]; // +0xC50
+    if (vec_begin != nullptr) {
+        long* vec_end = (long*)p[0x18b]; // +0xC58
+        if (vec_end == vec_begin) {
+            p[0x18b] = (u64)vec_begin;
+        } else {
+            long* iter = vec_end;
+            do {
+                iter = iter - 1;
+                long* elem = (long*)*iter;
+                *iter = 0;
+                if (elem != nullptr) {
+                    reinterpret_cast<void(*)(long*)>((*(void***)(elem))[1])(elem);
+                }
+            } while (vec_begin != iter);
+            vec_begin = (long*)p[0x18a];
+            p[0x18b] = (u64)(long*)p[0x18a];
+        }
+        if (vec_begin != nullptr) {
+            FUN_710392e590(vec_begin);
+        }
+    }
+
+    // Vector-style free at +0xC30/+0xC38
+    if (p[0x186] != 0) {
+        p[0x187] = p[0x186];
+        FUN_710392e590((void*)p[0x186]);
+    }
+
+    // Release unique_ptr at +0xC20 [derived: StagePictochat2 field]
+    long* uptr_c20 = (long*)p[0x184];
+    p[0x184] = 0;
+    if (uptr_c20 != nullptr) {
+        reinterpret_cast<void(*)(long*)>((*(void***)(uptr_c20))[1])(uptr_c20);
+    }
+
+    // Release owned object at +0xC18 (has inner alloc at +0x28)
+    u64 v_c18 = p[0x183];
+    p[0x183] = 0;
+    if (v_c18 != 0) {
+        u64 inner28 = *(u64*)(v_c18 + 0x28);
+        *(u64*)(v_c18 + 0x28) = 0;
+        if (inner28 != 0) {
+            FUN_71032ca770();
+        }
+        FUN_710392e590((void*)v_c18);
+    }
+
+    // Release unique_ptr at +0xC10 [derived: StagePictochat2 field]
+    long* uptr_c10 = (long*)p[0x182];
+    p[0x182] = 0;
+    if (uptr_c10 != nullptr) {
+        reinterpret_cast<void(*)(long*)>((*(void***)(uptr_c10))[1])(uptr_c10);
+    }
+
+    // Embedded sub-object cleanup at +0x740
+    FUN_7102d5a8f0(p + 0xe8);
 
     FUN_71025d7310(param_1);
 }
