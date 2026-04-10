@@ -88,31 +88,6 @@ void KineticEnergyNormal__set_speed_impl(KineticEnergyNormal* ke, v4sf* src) {
     *reinterpret_cast<v4sf*>(ke->speed) = v;
 }
 
-// 71020f8340 -- SIMD 3d: ldr q0,[x1]; fmov s1,wzr; ext v2,v0,v0,#8; mov v2.S[1],v1.S[0]; mov v0.D[1],v2.D[0]; str q0,[x0,#0x10]; ret
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
-void KineticEnergyNormal__set_speed_3d_impl(KineticEnergyNormal* ke, v4sf* src) {
-    asm("ldr q0, [x1]\n"
-        "fmov s1, wzr\n"
-        "ext v2.16b, v0.16b, v0.16b, #8\n"
-        "mov v2.s[1], v1.s[0]\n"
-        "mov v0.d[1], v2.d[0]\n"
-        "str q0, [x0, #0x10]\n"
-        "ret\n");
-}
-#else
-void KineticEnergyNormal__set_speed_3d_impl(KineticEnergyNormal* ke, v4sf* src) {
-    v4sf v = *src;
-    f32 zero = 0.0f;
-    v4sf rot = __builtin_shufflevector(v, v, 2, 3, 0, 1);
-    rot[1] = zero;
-    typedef unsigned long long v2di __attribute__((vector_size(16)));
-    v2di vi = (v2di)v;
-    vi[1] = ((v2di)rot)[0];
-    *reinterpret_cast<v4sf*>(ke->speed) = (v4sf)vi;
-}
-#endif
-
 // 71020f8400 -- ldrb w0,[x0,#0x80]; ret
 u8 KineticEnergyNormal__is_consider_ground_normal_impl(KineticEnergyNormal* ke) {
     return ke->consider_ground_normal;
@@ -153,3 +128,4 @@ void WeaponKineticEnergyGravity__set_limit_speed_impl(WeaponKineticEnergyGravity
 }
 
 } // namespace app::lua_bind
+

@@ -399,41 +399,6 @@ void special_n_clear_copy_attack_data(void* p) {
 
 // ── Misc vtable-chain functions ───────────────────────────────────────────────
 
-// 7100fc0110 -- shrink-wrapped prologue (early return -1 before frame save)
-// NX Clang schedules mov x29,sp immediately after stp (before loads); use naked asm.
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
-s32 get_main_fighter_status_kind(void* /*p*/) {
-    asm(
-        "ldrb w8,[x0,#0x80]\n"
-        "cbz w8,1f\n"
-        "stp x29,x30,[sp,#-0x10]!\n"
-        "mov x29,sp\n"
-        "ldr x8,[x0,#0x78]\n"
-        "ldr x8,[x8,#0x20]\n"
-        "ldr x0,[x8,#0x40]\n"
-        "ldr x8,[x0]\n"
-        "ldr x8,[x8,#0x110]\n"
-        "blr x8\n"
-        "ldp x29,x30,[sp],#0x10\n"
-        "ret\n"
-        "1:\n"
-        "mov w0,#-1\n"
-        "ret\n"
-    );
-}
-#else
-s32 get_main_fighter_status_kind(void* p) {
-    if (!*reinterpret_cast<u8*>((u8*)p + 0x80)) return -1;
-    void* a = *reinterpret_cast<void**>((u8*)p + 0x78);
-    void* b = *reinterpret_cast<void**>((u8*)a + 0x20);
-    void* obj = *reinterpret_cast<void**>((u8*)b + 0x40);
-    s32 r = reinterpret_cast<s32(*)(void*)>(VT(obj)[0x110/8])(obj);
-    asm("");
-    return r;
-}
-#endif
-
 // 7100148d80
 bool IsPlayersCountedAsParticipants(void* p) {
     void* obj = *reinterpret_cast<void**>((u8*)p + 0x8);
@@ -448,27 +413,6 @@ void set_pickelblock_mode_ignoreandattack(void* p) {
 }
 
 // ── status_kind range checks ──────────────────────────────────────────────────
-
-// 7101227760 -- true if kind in [0x86..0x87] or [0x47..0x4b]
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
-bool is_status_kind_attack_remain_arm(s32) {
-    asm(
-        "sub w10, w0, #0x86\n"
-        "orr w8, wzr, #1\n"
-        "sub w9, w0, #0x47\n"
-        "cmp w10, #2\n"
-        "csel w10, w8, wzr, cc\n"
-        "cmp w9, #5\n"
-        "csel w0, w8, w10, cc\n"
-        "ret\n"
-    );
-}
-#else
-bool is_status_kind_attack_remain_arm(s32 kind) {
-    return (u32)(kind - 0x86) < 2 || (u32)(kind - 0x47) < 5;
-}
-#endif
 
 // ── final_module_hit_success -- vtable[1] on 0x71052c1xxx singletons ──────────
 
@@ -541,45 +485,6 @@ void set_postponed_damage_check_on_process_hit(void* p, bool flag) {
 
 // ── apply_fighter_scale ───────────────────────────────────────────────────────
 
-// 71015cb3a0 -- guard on other[+0x8]>>28==4, then call scale helper
-// NX Clang: shrink-wrapped prologue (stp+mov after guards); naked asm to match exactly.
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
-void apply_fighter_scale(void* /*p*/, void* /*other*/) {
-    asm(
-        "cbz x1,0f\n"
-        "ldr w8,[x1,#8]\n"
-        "lsr w8,w8,#0x1c\n"
-        "cmp w8,#4\n"
-        "b.ne 0f\n"
-        "stp x29,x30,[sp,#-0x10]!\n"
-        "mov x29,sp\n"
-        "ldur x8,[x0,#-8]\n"
-        "ldr x8,[x8,#0x1a0]\n"
-        "ldr x8,[x8,#0x190]\n"
-        "ldr x9,[x1,#0x190]\n"
-        "ldr x0,[x9,#0x220]\n"
-        "ldr x1,[x8,#0x220]\n"
-        "bl FUN_71015b4d40\n"
-        "ldp x29,x30,[sp],#0x10\n"
-        "0:\n"
-        "ret\n"
-    );
-}
-#else
-void apply_fighter_scale(void* p, void* other) {
-    if (!other) return;
-    if ((*reinterpret_cast<u32*>((u8*)other + 0x8) >> 28) != 4) return;
-    void* a = *reinterpret_cast<void**>((u8*)p - 8);
-    void* b = *reinterpret_cast<void**>((u8*)a + 0x1a0);
-    void* c = *reinterpret_cast<void**>((u8*)b + 0x190);
-    void* e = *reinterpret_cast<void**>((u8*)other + 0x190);
-    void* x0 = *reinterpret_cast<void**>((u8*)e + 0x220);
-    void* x1 = *reinterpret_cast<void**>((u8*)c + 0x220);
-    FUN_71015b4d40(x0, x1);
-}
-#endif
-
 // ── FighterManager readers ────────────────────────────────────────────────────
 
 // 71015ce4d0 -- FighterManager singleton → [+0xa0]
@@ -589,66 +494,6 @@ s32 get_fighter_entry_count() {
 }
 
 // ── Fighter restart position ──────────────────────────────────────────────────
-
-// 710164c130 -- takes a phx::Vector3f in v0 (16B), zeroes W component, stores at [mgr+0x20]
-// NEON sequence: fmov+ext+mov to reassemble vector with W zeroed; set flag [mgr+0x1c]=1
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
-void set_change_fighter_restart_position(float /*x*/, float /*y*/) {
-    asm(
-        "fmov s1,wzr\n"
-        "ext v2.16b,v0.16b,v0.16b,#8\n"
-        "adrp x8,DAT_71052c3070\n"
-        "mov v2.s[1],v1.s[0]\n"
-        "ldr x8,[x8,:lo12:DAT_71052c3070]\n"
-        "ldr x9,[x8]\n"
-        "mov v0.d[1],v2.d[0]\n"
-        "mov w10,#1\n"
-        "strb w10,[x9,#0x1c]\n"
-        "ldr x8,[x8]\n"
-        "str q0,[x8,#0x20]\n"
-        "ret\n"
-    );
-}
-#else
-void set_change_fighter_restart_position(float x, float y) {
-    void* mgr = *DAT_71052c3070;
-    float buf[4] = { x, y, 0.0f, 0.0f };
-    __builtin_memcpy((u8*)mgr + 0x20, buf, 16);
-    *reinterpret_cast<u8*>((u8*)mgr + 0x1c) = 1;
-}
-#endif
-
-// 710164c160 -- load zero-vector from global, do same NEON manipulation, store to [mgr+0x20]
-// Also clears flag [mgr+0x1c]. Uses DAT_71052a7a88 (ptr to 16B constant zero vector).
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
-void cancel_change_fighter_restart_position() {
-    asm(
-        "adrp x8,DAT_71052c3070\n"
-        "adrp x9,DAT_71052a7a88\n"
-        "ldr x8,[x8,:lo12:DAT_71052c3070]\n"
-        "ldr x9,[x9,:lo12:DAT_71052a7a88]\n"
-        "ldr q0,[x9]\n"
-        "fmov s1,wzr\n"
-        "ext v2.16b,v0.16b,v0.16b,#8\n"
-        "mov v2.s[1],v1.s[0]\n"
-        "ldr x9,[x8]\n"
-        "strb wzr,[x9,#0x1c]\n"
-        "ldr x8,[x8]\n"
-        "mov v0.d[1],v2.d[0]\n"
-        "str q0,[x8,#0x20]\n"
-        "ret\n"
-    );
-}
-#else
-void cancel_change_fighter_restart_position() {
-    void* mgr = *DAT_71052c3070;
-    *reinterpret_cast<u8*>((u8*)mgr + 0x1c) = 0;
-    float zero[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-    __builtin_memcpy((u8*)mgr + 0x20, zero, 16);
-}
-#endif
 
 // ── Damage attacker ID ────────────────────────────────────────────────────────
 
@@ -1054,3 +899,4 @@ u64 get_attack_lw3_motion(void* p) {
 // NOTE: Module-level _impl dispatchers (AttackModule, CameraModule, ControlModule,
 // DamageModule, FighterCutInManager, FighterStatusModuleImpl, FighterMotionModuleImpl)
 // are now in their respective src/app/modules/*.cpp files.
+

@@ -29,41 +29,6 @@ extern void FUN_7100266770(long, long, long, long);
 
 // ---- Functions ----------------------------------------------------------------
 
-// 0x71001185c0 — constructor: 2 vtable ptrs, zero field[0x14], init 4 sub-objects (96 bytes)
-// Clang 8 hoists adrp before stp x29,x30; NX Clang does fp-setup first — use naked asm
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
-void FUN_71001185c0(long*)
-{
-    asm(
-        "stp x20, x19, [sp, #-0x20]!\n"
-        "stp x29, x30, [sp, #0x10]\n"
-        "add x29, sp, #0x10\n"
-        "adrp x8, PTR_DAT_71052a4860\n"
-        "ldr x8, [x8, :lo12:PTR_DAT_71052a4860]\n"
-        "str xzr, [x0, #0xa0]\n"
-        "add x9, x8, #0x10\n"
-        "add x8, x8, #0x40\n"
-        "mov x19, x0\n"
-        "str x9, [x0]\n"
-        "str x8, [x0, #0x18]\n"
-        "add x20, x0, #0x20\n"
-        "add x0, x0, #0x80\n"
-        "bl FUN_71000b1cf0\n"
-        "add x0, x19, #0x60\n"
-        "bl FUN_71000b1cf0\n"
-        "add x0, x19, #0x40\n"
-        "bl FUN_71000b1cf0\n"
-        "mov x0, x20\n"
-        "bl FUN_71000b1cf0\n"
-        "ldp x29, x30, [sp, #0x10]\n"
-        "mov x0, x19\n"
-        "ldp x20, x19, [sp], #0x20\n"
-        "b FUN_71000bed20\n"
-    );
-}
-#endif
-
 // 0x7100184600 — destructor: vtable reset, virtual dtor on field[0xb], cleanup (96 bytes)
 void FUN_7100184600(long* param_1)
 {
@@ -132,31 +97,3 @@ void FUN_7100235d40(long* param_1)
     FUN_71001af8a0(param_1);
 }
 
-// 0x7100266620 — wrapper: dispatch two calls with offset args (72 bytes)
-// NX Clang groups all stps before any movs; Clang 8 interleaves — use naked asm
-#ifdef MATCHING_HACK_NX_CLANG
-__attribute__((naked))
-void FUN_7100266620(long, long, long, long)
-{
-    asm(
-        "stp x22, x21, [sp, #-0x30]!\n"
-        "stp x20, x19, [sp, #0x10]\n"
-        "stp x29, x30, [sp, #0x20]\n"
-        "add x29, sp, #0x20\n"
-        "mov x21, x1\n"
-        "add x1, x2, #0x48\n"
-        "mov x19, x3\n"
-        "mov x20, x2\n"
-        "mov x22, x0\n"
-        "bl FUN_7100266670\n"
-        "mov x2, x20\n"
-        "mov x3, x19\n"
-        "add x0, x22, #0x28\n"
-        "ldp x29, x30, [sp, #0x20]\n"
-        "mov x1, x21\n"
-        "ldp x20, x19, [sp, #0x10]\n"
-        "ldp x22, x21, [sp], #0x30\n"
-        "b FUN_7100266770\n"
-    );
-}
-#endif
