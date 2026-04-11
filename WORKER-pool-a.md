@@ -2,92 +2,100 @@
 
 ## Model: Opus
 
-## Task: ROLLBACK Round 6 — analyze FUN_71035a4130 (the task-list initializer)
+## Task: ROLLBACK Round 7 — analyze FUN_7101344cf0 (task_tree_add gatekeeper)
 
-## Priority: HIGHEST — directly identifies the task-list singleton type
+## Priority: HIGHEST — names the sim task class definitively
 
 ## Context
-Read `docs/rollback/sim_tick_hunt.md` first. Round 5 found:
+Read `docs/rollback/sim_tick_hunt.md` first. **Round 6 was the architectural breakthrough.** Pool C found:
 
-- The actual per-frame loop in `main_loop` runs from `0x7103747504` to `0x710374cbc0` (everything before that is one-shot boot)
-- The loop is a **task-system pump**: iterates a `vector<Task*>` at `[*DAT_7105332fe8 + 0x20..+0x28]`, dispatches `task->vt[0x28]` (or alt `vt[0x20]`) on each, loops back
-- **The sim tick is one of the registered tasks**
-- `FUN_71035a4130` is the sole writer of `DAT_7105332fe8` (and also of `DAT_7105335e10` from Round 4) — it's a top-level subsystem-cluster initializer
+- main_loop is a fiber-scheduled task pump, NOT the sim loop
+- The actual sim runs as a task on a worker thread
+- Tasks are registered via `FUN_7101344cf0` (the sole non-init writer of `DAT_7105332120`, the task tree root)
+- The per-tick method is `vt[2]` (byte offset +0x10), invoked by the generic runner `FUN_7103548240` on a worker thread behind `nn::os::SignalLightEvent`
+- **Only ~5 callers register tasks** through `FUN_7101344cf0` — one of them registers the sim tick
 
-**The orchestrator manually extracted `FUN_71035a4130` to disk** (it timed out on Ghidra MCP at 5,861 lines / 204 KB). The extracted decomp is at:
+**The rollback team identified `FUN_7101344cf0` as the gatekeeper. We already have it cached on disk** (it's the same 65 KB function we identified at the very start of this hunt and the orchestrator extracted earlier):
 
-- **`data/ghidra_cache/FUN_71035a4130.txt`** — read this with the `Read` tool, do NOT call MCP
+- **`data/ghidra_cache/FUN_7101344cf0.txt`** — 5,891 lines, full Ghidra decomp. Read with `Read` tool, do NOT call MCP.
 
 ## What To Do
 
-### 1. Read the cached decomp
-Read `data/ghidra_cache/FUN_71035a4130.txt` and find the section that:
-- Allocates a struct
-- Stores the struct pointer to `DAT_7105332fe8` (the task-list singleton)
-- Initializes its fields (especially the vector at `+0x20/+0x28`, the mutex at `+0x38`, and the per-entry byte flag array at `+0x1f8`)
+### 1. Read FUN_7101344cf0 from cache
+- Open `data/ghidra_cache/FUN_7101344cf0.txt` with `Read`
+- It's 5,891 lines — read it in chunks if needed
+- Pool C identified it as `task_tree_add` based on xrefs (sole writer of `DAT_7105332120`, called by 5 distinct sites)
+- **Confirm or refute** that classification by reading the function body
 
-### 2. Identify the task-list class
-- The store will be `STR Xn, [adrp+ldr resolving to 0x7105332fe8]`
-- Right before that store, find the constructor call
-- The constructor's first instruction stores a vtable pointer — that's the task system's vtable
-- Look up the vtable address; if it has a class name in `.dynsym` or via xref to a known string, document it
-- Likely candidates: `pead::TaskSystem`, `cross2app::TaskManager`, `app::FrameTaskList`
+### 2. Find the linked-list insertion logic
+- `DAT_7105332120` is a singly-linked list head
+- Find the insertion: `LDR Xn, [DAT_7105332120]; STR new_node, [DAT_7105332120]; STR Xn, [new_node + 0x48]`
+- Document the parameters: what's the new node? Where does its data come from?
+- Specifically: is the function `task_tree_add(Task* task)` or `task_tree_add(SomeOtherType* obj)`?
 
-### 3. Identify the task-list element type
-The frame-loop dispatches `task->vt[0x28]` on each element. We need to know what concrete type a "task" is:
-- Find the `add_task` / `register` helpers (Round 5 noted `FUN_7103559340` and `FUN_7103559220` as candidates)
-- These likely take a `Task*` argument and append to the vector
-- The argument's vtable IS the task base class
+### 3. Find the vtable enforcement (if any)
+- Does the function check the new node's vtable?
+- Does it call any method on the new node before/after insertion?
+- The vtable methods called here narrow down the abstract Task base class
 
-### 4. Document the registered tasks (if visible in this function)
-If `FUN_71035a4130` itself registers any initial tasks (constructors usually do), document each:
-- Task constructor address
-- Task class name (if recoverable)
-- vt[0x28] target — what does this task DO when ticked?
-- Is any of them sim-shaped? (touches `BattleObjectModuleAccessor`, `FighterManager`, etc.)
+### 4. Look for state-machine logic
+This function is 5,891 lines — much bigger than a simple linked-list add. It probably does much more than just registration:
+- State transitions on the task being added
+- Initialization of subsystems
+- Maybe entire fighter/match setup
+- Look for patterns that touch `BattleObjectModuleAccessor`, `FighterManager`, `BattleObjectWorld`, RNG state
+- **If FUN_7101344cf0 itself touches sim state, the caller chain is shorter than we thought**
 
-### 5. List of all `DAT_7105332fe8` writers we should care about
-Use `tools/xref_bin_scan.py` to confirm the writer set. Round 5 found only one (this function) — verify there are no others.
+### 5. Cross-reference with the 5 callers
+The 5 callers Pool C found are:
+- `FUN_71014b2a40` — primary, large init (constructs a 0x50 ModuleSet container)
+- `FUN_7101523b60` — secondary registrar (Pool B is investigating this)
+- `FUN_710151a5d0` — inline registrar (Pool C is investigating this)
+- 3 vtable slots: `0x7105060680`, `0x710506b0f8`, `0x710506c5b8`
+
+For each caller, check what type of object is being passed in. Cross-reference with the cached file you're reading.
 
 ## Stop-and-document rule
-If `mcp__ghidra__*` errors/timeouts on any OTHER address you investigate (not the cached one), apply the standard rule.
+If `mcp__ghidra__*` errors/timeouts on any address:
+1. Append to `data/ghidra_cache/manual_extraction_needed.md`
+2. **Do NOT retry.** Move on.
 
 ## Output
 
 Append to `docs/rollback/sim_tick_hunt.md`:
 
 ```markdown
-## Pool A — Round 6: FUN_71035a4130 task-list initializer
+## Pool A — Round 7: FUN_7101344cf0 task_tree_add gatekeeper
 
-### Task-list singleton type
-- Address: DAT_7105332fe8
-- Class: [name]
-- Constructor: 0xXXXXX
-- Vtable: 0xXXXXX
+### Function identity
+- Real name: [task_tree_add / something else]
+- Parameters: [list]
+- Body summary: [what it actually does in 5,891 lines]
 
-### Task-list layout
-| Offset | Field | Notes |
-|--------|-------|-------|
-| +0x00  | ?     | ...   |
-| +0x20  | begin | vector start |
-| +0x28  | end   | vector end |
-| +0x38  | mutex | per Round 5 |
-| +0x1f8 | flag array | per Round 5 |
+### Linked list insertion
+- Insertion site: line N of cached file
+- Logic: [push_front / push_back / sorted insert / other]
+- Vtable enforcement: [yes/no — what's checked]
 
-### Task base class
-- Vtable address: 0xXXXXX
-- vt[0x28]: per-frame tick method
-- vt[0x20]: alt path (purpose?)
+### Touched state
+- Touches RNG? [yes/no]
+- Touches FighterManager? [yes/no]
+- Touches BattleObjectWorld? [yes/no]
+- Touches BattleObjectModuleAccessor? [yes/no]
 
-### Initial tasks registered (if any)
-| Task class | vt[0x28] target | Sim-shaped? |
-|------------|-----------------|-------------|
-| ...        | ...             | ...         |
+### Caller objects
+| Caller | Object type | Vtable | Sim-shaped? |
+|--------|-------------|--------|-------------|
+| FUN_71014b2a40 | ... | ... | ... |
+| ...    | ...         | ...    | ...         |
 
 ### VERDICT
-[FOUND SIM TICK at FUN_XXXX (registered as task by FUN_71035a4130)]
-[OR: Task system identified, sim tick is a task registered by SOME OTHER function — next step: enumerate all add_task callers]
+[FOUND SIM TASK at vtable 0xXXXX — registered by FUN_YYYY]
+[OR: FUN_7101344cf0 is task_tree_add but the sim task is registered by a caller we haven't decomped yet — recommend Round 8 with target X]
+[OR: STATIC ANALYSIS EXHAUSTED — recommend GDB watchpoint approach]
 ```
+
+If you find the sim task, write a TL;DR at the top so the rollback team can find it instantly.
 
 ## Quality Rules
 - NO `FUN_` names in committed src/ code
