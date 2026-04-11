@@ -2,75 +2,89 @@
 
 ## Model: Opus
 
-## Task: ROLLBACK SIM TICK HUNT — decompile 4 unknown phase-6/7 children of main_loop (Item 1)
+## Task: ROLLBACK — DAT_710593a6a0 constructors (FUN_71022cd350, FUN_71022b7100)
 
-## Priority: HIGHEST — sim tick hunt, blocks rollback resimulation
+## Priority: HIGH — reveals the scene-root singleton type and what state lives there
 
 ## Context
-You wrote `docs/rollback/main_loop.md` in the previous pass. The "sim tick is in here" hypothesis now points by elimination at four unknown sub-calls of main_loop. Read your own main_loop.md first for the context.
+Your previous session found that Dispatcher A inside main_loop walks a list at `[**(DAT_710593a6a0+0x24e8)+0x2da8]` and dispatches `vtable[+0x28]` per node. See `docs/rollback/sim_tick_hunt.md` for the full breakthrough.
 
-Pools A and C are doing the same hunt via different angles in parallel — whoever finds it first ends the hunt.
+The two writers of `DAT_710593a6a0` are its **constructors**:
+- `FUN_71022cd350` at `0x71022cd600` (write site)
+- `FUN_71022b7100` at `0x71022c9fb4` (write site)
 
-## What To Decompile
+These will reveal:
+- The singleton's actual type name (likely `app::Scene`, `app::GameMain`, or `app::WorldManager`)
+- Its initial vtable
+- Sub-objects installed at `+0x24d0`, `+0x24e8`, `+0x2da8`
+- **Other state fields the snapshot walker must capture from this root** (potentially missing from the current `memory_map.md`)
 
-The four candidates (in elimination priority):
+Your previous session noted that `FUN_71022cd350` hit Ghidra MCP's size limit on the first attempt — it's >145KB of decompile output.
 
-1. **`FUN_7103593c40`** (792 B, phase 5)
-2. **`FUN_71035c13d0`** (1,048 B, after scene state machine)
-3. **`FUN_71036186d0`** (1,188 B)
-4. **`FUN_7103619080`** (432 B)
+## What To Do
 
-## What To Look For
+1. **Try `mcp__ghidra__decompile_function_by_address` on FUN_71022cd350 first**
+2. **If it times out or errors**: STOP. Apply the stop-and-document rule below. Do NOT retry.
+3. **If it succeeds**: extract the singleton type information and document the field installations
+4. **Then try FUN_71022b7100** with the same approach
 
-For each function, classify:
-- **Does it iterate fighters?** (loop over `FighterManager.entries[]`, or walk a list of `BattleObject*`)
-- **Does it touch BattleObject vtable slots?** (calls through `_vt[N]` on `BattleObject*` or `BattleObjectModuleAccessor*`)
-- **Does it advance any per-match state?** (writes to fighter info, status, motion frame, etc.)
-- **Are the arguments scene objects?** (look at the parameters — if param_1 has scene-like fields, this could be the bridge)
+## Stop-and-document rule
+If `mcp__ghidra__*` returns an error, timeout, or "request failed":
+1. Note the address and error
+2. Append to `data/ghidra_cache/manual_extraction_needed.md` (create if missing):
+   ```
+   ## 0xXXXXXXXX (FUN_XXXXXXXX)
+   - Pool: pool-b
+   - Reason: timeout / too large / unknown error
+   - Why we need it: [one-line context]
+   ```
+3. **Move on to the next task.** Do NOT retry the same address. The orchestrator will manually extract.
 
-**Any one positive answer ends the hunt.**
+## Fallback work if both constructors are uncrackable
 
-## Confirmed dead ends — DO NOT re-investigate
-From the rollback team's notes:
-- `FUN_710356d7a0` (particle dt)
-- `FUN_710355b540` (resource streaming)
-- `FUN_71035763c0` (animation sampler)
-- `FUN_71036f2c00` / `FUN_71036f2d40` (audio state machines)
-- `FUN_7101344cf0` (Randomizer singleton ctor)
-- `FUN_710386fc30` (= `nu::GraphicsModule::BeginFrame`)
+If both `FUN_71022cd350` and `FUN_71022b7100` time out, work on:
+
+**Service-call safety smoke test on `vtable[+0x28]` for one fighter node**
+
+Pool A's previous session found `FighterStatus` vtable at `0x7104f7f2e8`. The list dispatched by Dispatcher A contains heterogeneous tickable objects — fighters/items/effects. For ONE fighter-shaped node:
+
+1. Find the concrete BattleObject subclass that fighters use
+2. Find its `vtable[+0x28]` slot
+3. Decompile that slot
+4. Trace through it (1-2 levels deep) and look for any synchronous call to:
+   - `nn::os::Wait*` / `nn::os::*MessageQueue` / `nn::os::*Event`
+   - `nn::audio::*`
+   - `nn::gr::*` / `nn::gfx::*`
+   - LDN-namespaced functions
+   - Filesystem (`nn::fs::*`)
+5. **Report**: clean (no host services touched) or dirty (specific service calls found)
+
+This is the **critical-risk smoke test for the rollback resim approach**. If `vtable[+0x28]` is dirty, rollback needs a service shim layer; if clean, the design is straightforward.
 
 ## Output
 
-Append to `docs/rollback/sim_tick_hunt.md` (create if not exists). Pools A and C are also writing here:
+Append to `docs/rollback/sim_tick_hunt.md`:
 
 ```markdown
-## Pool B — phase-6/7 child decomps
+## Pool B — Scene root constructors / vtable[+0x28] safety
 
-### FUN_7103593c40 (792 B, phase 5)
-- Iterates fighters: YES/NO
-- Touches BattleObject vtable: YES/NO
-- Per-match state mutation: YES/NO
-- Verdict: [FOUND SIM TICK / DEAD END / NEEDS DEEPER LOOK]
-- Notes: ...
+### FUN_71022cd350 (DAT_710593a6a0 constructor #1)
+[verdict / extracted type info / OR uncrackable — see manual_extraction_needed.md]
 
-### FUN_71035c13d0 (1048 B)
-... etc
+### FUN_71022b7100 (DAT_710593a6a0 constructor #2)
+[verdict / OR uncrackable]
 
-### Final verdict
-[FOUND at FUN_XXXX / ALL FOUR DEAD] — handoff notes
+### vtable[+0x28] service-call safety smoke test
+- Node type tested: [fighter / item / effect]
+- vtable[+0x28] address: 0xXXXXX
+- Services touched: [list, or "clean"]
+- Verdict: [SAFE for headless resim / DIRTY — needs service shim]
 ```
 
-If one is positive, document the call chain inside it that constitutes the actual fighter iteration. Don't decompile to source files yet — research first.
-
-## Reference Material
-- `docs/rollback/main_loop.md` (your own previous work)
-- `data/ghidra_cache/main_loop_7103747270.txt` (use `Read` tool, do NOT call MCP on this address)
-- `data/ghidra_cache/FUN_7101344cf0.txt` (already classified as Randomizer ctor, dead end)
-
 ## Quality Rules
-- Documentation is the primary deliverable
-- NO `FUN_` names in committed src/ (research docs can reference them)
+- NO `FUN_` names in committed src/ code
 - Cast density under 10%
+- Documentation is the primary deliverable
 
 ## Build
 ```bash
