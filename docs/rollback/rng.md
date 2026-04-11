@@ -122,10 +122,46 @@ any case uses the default slot at offset 0.
 Total: 9 × 0x14 = **0xb4 bytes**. Struct: `app::RandomizerChannels` in
 `include/app/Randomizer.h`.
 
-Note that the unnamed channels likely have meaningful community names once Lua scripts
-are inspected — a grep through the Lua script dump for the literal hash values (e.g.
-`0x77a08c3fc`) will reveal them. This is a follow-up task; for rollback it does not
-matter which channel is which, only that all 180 bytes are captured together.
+### Unnamed-channel investigation — negative result (2026-04-11)
+
+Attempted to reverse the 6 unnamed channel hashes by:
+1. Re-deriving SSBU's Hash40 function from `res_service_funcs.cpp:set_format`
+   (`h = (h * 137) ^ byte` starting from `0x811c9dc5`, then `h40 = h | (len << 32)`)
+2. Verifying it against the two **named** channels (`app::ai_random` →
+   `0x2095191e5`, `app::random` → `0x41f1b251e`)
+3. Verifying against every common variant: FNV-1a standard, XOR-before/after, etc.
+
+**None of the hash variants produce the known channel hashes for the literal
+strings `"random"` / `"ai_random"`.** That means one of:
+
+- The rng.md labels `app::random` / `app::ai_random` are **namespace names**
+  (where the wrapper functions live), not the hash-preimage strings. The
+  Hash40 literal that identifies each channel is some OTHER string — probably
+  a specific Lua tag like `"game_random"` or `"default_stream"`.
+- The Hash40 values may not be hashes of ASCII strings at all; they could be
+  wide-char hashes, compile-time-assigned magic numbers, or encode a
+  namespace::name pair with a delimiter.
+
+**Finding the preimage strings requires either:**
+- **The compiled Lua scripts (`lua2cpp_common.nrs`, `lua2cpp_item.nrs`, etc.)**
+  which contain the literal Hash40 constants alongside the string constants
+  used by the Lua programmers. These are NOT in this repo; they live in the
+  extracted game data.
+- **A known-plaintext attack**: observe a specific in-game event (e.g. a
+  Peach turnip pull) that definitely uses one channel, and correlate which
+  slot got a state update.
+- **Dynamic analysis**: GDB breakpoint on `sv_math::rand`, triggered per
+  event, to observe which channel gets selected and which function called
+  in — would produce a mapping "slot N is used by function X" without
+  actually naming the hash.
+
+**Neither approach is on the rollback critical path.** For rollback, all 9
+streams are snapshotted together (`memcpy 0xb4` from the channel buffer),
+so knowing which channel represents which gameplay concept is purely
+debuggability.
+
+Follow-up work is deferred until either a Lua script dump lands in the
+repo or someone volunteers a dynamic-analysis session.
 
 ### The owning `RandomizerChannelVec` (std::vector<Xorshift128>)
 
