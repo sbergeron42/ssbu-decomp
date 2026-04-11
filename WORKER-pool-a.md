@@ -2,77 +2,73 @@
 
 ## Model: Opus
 
-## Task: ROLLBACK — find what writes to `mii_manager + 0x24e8` (the back-reference to the real scene root)
+## Task: ROLLBACK Round 4 — identify the MatchRunner type at *DAT_710593a510
 
-## Priority: HIGH — most valuable lead after the previous breakthrough was demolished
+## Priority: HIGH — directly identifies the rollback arm signal owner
 
 ## Context
-Read `docs/rollback/sim_tick_hunt.md` first for full context. TL;DR:
+Read `docs/rollback/sim_tick_hunt.md` first. Last round, Pool B found that `DAT_710593a510` is a singleton pointer that:
+- Is null on boot
+- Gets installed by a helper at `0x7103741a60`
+- Is read by `main_loop` immediately before a `cbz x0, skip` (skip if null) followed by a per-frame vtable dispatch via slot `+0x30` taking `(this, int* phase)`
 
-- The previous "Dispatcher A is the sim tick" finding was wrong. `DAT_710593a6a0` is the **Mii fighter face database** (`MiiFighterDatabase`), not the scene root. Pool A confirmed this last session via its destructor.
-- BUT — Dispatcher A's chain is `mii_manager + 0x24e8 → some other subsystem → +0x2da8 → list head`. The `+0x24e8` field is a **non-owning back-reference** to some other subsystem that the Mii manager needs a handle to.
-- Whatever subsystem `+0x24e8` points to has its own list at `+0x2da8`. **If that subsystem turns out to be FighterManager, BattleObjectWorld, or the actual scene root, the original sim-tick hypothesis is rescued** (modulo the `DAT_710593a530 == 3` dead-flag issue, which is pool B's problem now).
+This is the strongest match-active gate candidate. We need to identify the **type** at `*DAT_710593a510` to know what class owns the per-frame driver.
 
 ## What To Do
 
-### 1. Find the writer of `MiiFighterDatabase + 0x24e8`
-The Mii manager singleton is at `*DAT_710593a6a0`. We need to find what code stores into `(*DAT_710593a6a0) + 0x24e8`.
+### 1. Decompile the installer at `0x7103741a60`
+- The store is `STR X0, [X8, #0x510]` inside `FUN_7103741988` (or similar — find the containing function)
+- Decompile that function via `mcp__ghidra__decompile_function_by_address`
+- Find what `X0` is — is it the return of an `Instance()` singleton getter? An allocator call followed by a constructor?
+- Whatever returns `X0` IS the runner constructor
 
-**Methodology** (Pool C established this last session — Ghidra's xref index misses code in undefined regions, so use direct binary scanning):
+### 2. Identify the runner class
+- Find the constructor of the type being installed
+- The constructor's first store will be the vtable: `STR Xn, [X0, #0]` — that's the vtable address
+- Use `mcp__ghidra__get_xrefs_to <vtable_address>` to find where else this vtable is used
+- That tells you the class name (or at least the class's static methods)
 
-1. Read `data/ghidra_cache/pool-c.txt` first — Pool C's session notes describe the ADRP-propagation scanner technique
-2. Scan the ELF `.text` segment for ADRP+offset patterns that compute `*DAT_710593a6a0 + 0x24e8`
-3. The key pattern to find: a function that does `LDR Xn, [DAT_710593a6a0]; STR Xm, [Xn, #0x24e8]`
-4. The writer is almost certainly inside `FUN_71022b7100` (the Mii manager constructor — Pool B's previous session said it was 1.7 MB of disassembly and timed out Ghidra MCP — log to `manual_extraction_needed.md` if it times out again)
+### 3. Verify the per-frame method at vtable slot +0x30
+- vtable[+0x30 / 8] = vtable[6]
+- Decompile vtable slot 6 (the function pointer at `vtable + 0x30`)
+- Confirm the signature is `void method(this, int* phase)` matching what main_loop calls
+- What does this method do? **Does it iterate fighters / dispatch per-tick work?**
+- If yes, **THIS IS THE SIM TICK** — document the call chain inside it
 
-### 2. Identify the back-referenced subsystem
-Once you find the value being stored at `+0x24e8`:
-- What's its source? An ADRP-loaded global? A function return? Another singleton?
-- If it's a known singleton (FighterManager, BattleObjectWorld, etc.), document the cross-reference
-- If it's a new singleton, find ITS constructor and identify the type
-
-### 3. Sanity-check Dispatcher A
-With the back-referenced subsystem identified:
-- Does it actually have a list at `+0x2da8`?
-- What's the list element type (look at the destructor or constructor)?
-- Are list elements polymorphic (vtable + various concrete types)?
-- Does any element type look like a "fighter" or "battle object"?
+### 4. Find the clear/destroy path
+- Find any code that stores `xzr` to `[..., #0x510]` or calls `delete`/`free` on the runner
+- This is the rollback disarm signal
 
 ## Stop-and-document rule
-If `mcp__ghidra__*` returns an error/timeout/"too large":
-1. Append to `data/ghidra_cache/manual_extraction_needed.md`:
-   ```
-   ## 0xXXXXXXXX (FUN_XXXXXXXX)
-   - Pool: pool-a
-   - Reason: timeout / too large / unknown error
-   - Why we need it: [one-line context]
-   ```
+If `mcp__ghidra__*` errors/timeouts:
+1. Append to `data/ghidra_cache/manual_extraction_needed.md`
 2. **Do NOT retry.** Move on.
 
-`FUN_71022b7100` already failed once; expect it to fail again. The binary-scanner approach is your primary tool for this task — Ghidra is the fallback.
+Use `tools/xref_bin_scan.py` (Pool C committed it last round) for any binary scanning needs.
 
 ## Output
 
-Append a new section to `docs/rollback/sim_tick_hunt.md`:
+Append to `docs/rollback/sim_tick_hunt.md`:
 
 ```markdown
-## Pool A — mii_manager+0x24e8 back-reference (next-pass)
+## Pool A — Round 4: MatchRunner type identification
 
-### Writer site
-- Address: 0xXXXXXXXX (in FUN_XXXXXXXX or undefined region)
-- Stored value source: [ADRP global / function return / other]
-- Source identification: [global address / called function / constant]
+### Installer at 0x7103741a60
+- Containing function: FUN_XXXX (renamed: installCurrentMatch_XXXX)
+- Source of installed pointer: [singleton getter / new + ctor / other]
+- Type returned: [class name or vtable address]
 
-### Back-referenced subsystem
-- Type: [identified class name OR "unknown subsystem at 0xXXXX"]
-- Constructor: 0xXXXXXXXX
-- Has list at +0x2da8: YES/NO
-- List element type: [class name / size / vtable presence]
+### Runner class
+- Vtable address: 0xXXXXX
+- Class name (if .dynsym): [name]
+- Vtable slot 6 (+0x30): [decomp summary]
+- IS THIS THE SIM TICK? [YES — iterates fighters / NO — only does X / INCONCLUSIVE]
 
-### Dispatcher A revisited
-[REHABILITATED — list contains tickable game objects, sim tick lives here]
-[OR: STILL DEAD — back-reference is to a non-tick subsystem (e.g. UI, audio)]
+### Disarm path
+- Function: 0xXXXX clears DAT_710593a510 / OR no clear path found
 ```
+
+If you find the sim tick, write a TL;DR at the top of the section so the rollback team can find it instantly.
 
 ## Quality Rules
 - NO `FUN_` names in committed src/ code
