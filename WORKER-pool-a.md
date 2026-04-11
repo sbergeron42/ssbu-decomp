@@ -2,81 +2,91 @@
 
 ## Model: Opus
 
-## Task: ROLLBACK Round 5 — bottom-up RNG-driven sim tick walk
+## Task: ROLLBACK Round 6 — analyze FUN_71035a4130 (the task-list initializer)
 
-## Priority: HIGHEST — methodologically different approach after 4 rounds of dead ends
+## Priority: HIGHEST — directly identifies the task-list singleton type
 
 ## Context
-Read `docs/rollback/sim_tick_hunt.md` first. Round 4 retired all four phase-6/7 candidates AND demolished `DAT_710593a510` as a match-active gate. Top-down "find a dispatcher in main_loop" has failed 4 rounds in a row.
+Read `docs/rollback/sim_tick_hunt.md` first. Round 5 found:
 
-**New approach: bottom-up from RNG.** We KNOW (from `docs/rollback/rng.md`) that `app::sv_math::rand @ 0x7102275320` is the deterministic gameplay RNG. **The sim tick MUST contain code that calls rand** (or one of its variants `randf @ 0x71022756c0`, the namespaced wrappers `app::random::*`). If we work upward from the rand callsites and find a chain that reaches `main_loop`, the deepest function in that chain that reaches main_loop IS the sim tick (or its immediate parent).
+- The actual per-frame loop in `main_loop` runs from `0x7103747504` to `0x710374cbc0` (everything before that is one-shot boot)
+- The loop is a **task-system pump**: iterates a `vector<Task*>` at `[*DAT_7105332fe8 + 0x20..+0x28]`, dispatches `task->vt[0x28]` (or alt `vt[0x20]`) on each, loops back
+- **The sim tick is one of the registered tasks**
+- `FUN_71035a4130` is the sole writer of `DAT_7105332fe8` (and also of `DAT_7105335e10` from Round 4) — it's a top-level subsystem-cluster initializer
 
-Rand was inlined aggressively (rng.md notes "the compiler aggressively inlined this function at every C++ call site"), but the **non-inlined dispatch wrappers** still exist:
-- `FUN_710213a360` — Lua-binding wrapper for `rand`
-- `FUN_710213a9f4` — Lua-binding wrapper for `randf`
-- The 9 channel-specific accessors at `app::random::get_float`, `range_int`, etc. (see rng.md table)
+**The orchestrator manually extracted `FUN_71035a4130` to disk** (it timed out on Ghidra MCP at 5,861 lines / 204 KB). The extracted decomp is at:
+
+- **`data/ghidra_cache/FUN_71035a4130.txt`** — read this with the `Read` tool, do NOT call MCP
 
 ## What To Do
 
-### 1. Find every caller of every rand variant
-For each of these addresses, use `mcp__ghidra__get_function_xrefs`:
-- `0x7102275320` (`app::sv_math::rand`)
-- `0x71022756c0` (`app::sv_math::randf`)
-- `0x71015cf234` (`app::random::get_float`)
-- `0x71015cf294` (`app::random::range_int`)
-- `0x710213a360` (lua wrapper rand)
-- `0x710213a9f4` (lua wrapper randf)
+### 1. Read the cached decomp
+Read `data/ghidra_cache/FUN_71035a4130.txt` and find the section that:
+- Allocates a struct
+- Stores the struct pointer to `DAT_7105332fe8` (the task-list singleton)
+- Initializes its fields (especially the vector at `+0x20/+0x28`, the mutex at `+0x38`, and the per-entry byte flag array at `+0x1f8`)
 
-Plus xref the **9 channel constants** (the FNV hashes) — these are `Hash40` values like `0x41f1b251e` from rng.md. Search the binary for ADRP+ADD constants matching those hashes.
+### 2. Identify the task-list class
+- The store will be `STR Xn, [adrp+ldr resolving to 0x7105332fe8]`
+- Right before that store, find the constructor call
+- The constructor's first instruction stores a vtable pointer — that's the task system's vtable
+- Look up the vtable address; if it has a class name in `.dynsym` or via xref to a known string, document it
+- Likely candidates: `pead::TaskSystem`, `cross2app::TaskManager`, `app::FrameTaskList`
 
-### 2. Build the call graph
-For each caller, recurse up:
-- Caller → who calls caller → who calls THEIR caller → ...
-- Stop when you hit either:
-  - A function in main_loop's known direct-BL set (84 unique targets — see `data/ghidra_cache/main_loop_7103747270.txt`)
-  - A function whose name suggests it's per-frame (e.g. `update`, `tick`, `frame`, `process`, `advance`, `exec`)
-  - A function reached via an indirect dispatch from main_loop (look for it in vtable slots)
+### 3. Identify the task-list element type
+The frame-loop dispatches `task->vt[0x28]` on each element. We need to know what concrete type a "task" is:
+- Find the `add_task` / `register` helpers (Round 5 noted `FUN_7103559340` and `FUN_7103559220` as candidates)
+- These likely take a `Task*` argument and append to the vector
+- The argument's vtable IS the task base class
 
-### 3. Identify the sim tick
-The function we want is the **deepest** node in the call graph that:
-- Has a path to main_loop
-- Eventually transitively calls rand
-- Iterates fighters / battle objects (look for loops with `BattleObjectModuleAccessor*` arguments)
+### 4. Document the registered tasks (if visible in this function)
+If `FUN_71035a4130` itself registers any initial tasks (constructors usually do), document each:
+- Task constructor address
+- Task class name (if recoverable)
+- vt[0x28] target — what does this task DO when ticked?
+- Is any of them sim-shaped? (touches `BattleObjectModuleAccessor`, `FighterManager`, etc.)
 
-If multiple functions match, prioritize:
-1. Functions that take `BattleObject*` or `BattleObjectModuleAccessor*` as a parameter
-2. Functions that call other functions on the FighterStatus vtable (`0x7104f7f2e8` — Pool A's earlier find)
-3. Functions in the `0x71036xxxxx` or `0x71037xxxxx` range (where the sim driver is most likely to live)
-
-## CRITICAL — Stop and ask if this round dies
-This is round 5 of the hunt. If your bottom-up walk also produces only dead ends (e.g. all rand callers are Lua/script context, none reach main_loop directly), **STOP** and write a clear "static analysis is exhausted" verdict. We will switch to GDB watchpoints from a running emulator instead of doing round 6.
+### 5. List of all `DAT_7105332fe8` writers we should care about
+Use `tools/xref_bin_scan.py` to confirm the writer set. Round 5 found only one (this function) — verify there are no others.
 
 ## Stop-and-document rule
-If `mcp__ghidra__*` errors/timeouts:
-1. Append to `data/ghidra_cache/manual_extraction_needed.md`
-2. **Do NOT retry.** Move on.
-
-Use `tools/xref_bin_scan.py` for binary scans.
+If `mcp__ghidra__*` errors/timeouts on any OTHER address you investigate (not the cached one), apply the standard rule.
 
 ## Output
 
 Append to `docs/rollback/sim_tick_hunt.md`:
 
 ```markdown
-## Pool A — Round 5: bottom-up RNG-driven sim tick walk
+## Pool A — Round 6: FUN_71035a4130 task-list initializer
 
-### Direct rand callers (xref results)
-| Caller fn | Address | Reaches main_loop? | Iterates fighters? |
-|-----------|---------|---------------------|--------------------| 
-| FUN_XXXX  | 0xXXXX  | YES via FUN_XXXX    | YES                |
-| ...       | ...     | ...                 | ...                |
+### Task-list singleton type
+- Address: DAT_7105332fe8
+- Class: [name]
+- Constructor: 0xXXXXX
+- Vtable: 0xXXXXX
 
-### Call graph
-[ASCII tree showing rand → caller1 → caller2 → ... → main_loop]
+### Task-list layout
+| Offset | Field | Notes |
+|--------|-------|-------|
+| +0x00  | ?     | ...   |
+| +0x20  | begin | vector start |
+| +0x28  | end   | vector end |
+| +0x38  | mutex | per Round 5 |
+| +0x1f8 | flag array | per Round 5 |
 
-### Sim tick verdict
-[FOUND at FUN_XXXX (which calls rand transitively, iterates BattleObject vtable, reachable from main_loop)]
-[OR: STATIC ANALYSIS EXHAUSTED — recommend GDB watchpoint from running emulator]
+### Task base class
+- Vtable address: 0xXXXXX
+- vt[0x28]: per-frame tick method
+- vt[0x20]: alt path (purpose?)
+
+### Initial tasks registered (if any)
+| Task class | vt[0x28] target | Sim-shaped? |
+|------------|-----------------|-------------|
+| ...        | ...             | ...         |
+
+### VERDICT
+[FOUND SIM TICK at FUN_XXXX (registered as task by FUN_71035a4130)]
+[OR: Task system identified, sim tick is a task registered by SOME OTHER function — next step: enumerate all add_task callers]
 ```
 
 ## Quality Rules
