@@ -2,83 +2,82 @@
 
 ## Model: Opus
 
-## Task: ROLLBACK — find the REAL match-active flag in `0x710593a___` block
+## Task: ROLLBACK Round 4 — identify what FUN_7103619080 dispatches (caller + tags)
 
-## Priority: HIGH — `DAT_710593a530 == 3` is dead code; the real flag must exist elsewhere
+## Priority: HIGH — Pool C identified this as the strongest sim-tick fallback candidate
 
 ## Context
-Read `docs/rollback/sim_tick_hunt.md` first for full context. TL;DR:
+Read `docs/rollback/sim_tick_hunt.md` first. Last round, Pool C found that `FUN_7103619080` is a 432-byte visitor reachable from `main_loop @ 0x710374b124`. It walks a `vector<obj*>`, builds command packets per element via `vt[6]` factory + 2 copy-constructs, then dispatches each packet via `obj->vt[3]`. Per-element `flags[0xf1]` is the enabled gate. **This is the exact shape of a per-tick broadcast.**
 
-- Pool C confirmed last session that `DAT_710593a530` is **never written non-zero** by static code. The only writer is a one-shot BSS clear from `.init_array`. The `== 3` test in `main_loop` (and 2 other readers) is dead under static analysis.
-- The match-active flag MUST exist somewhere — `main_loop` must know whether to drive the sim during a match versus idle on the title screen.
-- Pool C suggested two specific candidates in the same `0x710593a___` block:
-  - **Byte cluster at `+0x540..+0x5a0`** — receives non-zero writes
-  - **Integer at `+0x534`** — receives function-return values at `0x7103741bb4` and `0x71037472d0`
+We need to identify:
+1. **What subsystem owns the vector** — by decomping the caller in main_loop and seeing what `x0` is
+2. **What command packet type** — by resolving the static type tags `DAT_7105266f80` and `DAT_7105230f18`
 
 ## What To Do
 
-### 1. Audit `0x710593axxx` block globals
-Use the binary scanner methodology Pool C documented in `docs/rollback/sim_tick_hunt.md` (search for "Methodology note for next pool" — Pool C wrote a step-by-step ADRP-propagation scanner spec).
+### 1. Decompile the caller of FUN_7103619080
+- The call site is `main_loop @ 0x710374b124`
+- Read `data/ghidra_cache/main_loop_7103747270.txt` (already cached) and find the line at offset ~0x710374b124
+- Look for the load of `x0` immediately before the BL: `LDR X0, [X21, #0xce8]` or similar
+- What does `X21 + 0xce8` resolve to? Is `X21` a singleton pointer? An ADRP-loaded global?
+- That's the subsystem object — identify its type
 
-Enumerate every global in the range `0x710593a000..0x710593b000`:
-- Find every static writer for each one
-- Filter: keep only globals with at least one **non-zero static writer** AND at least one reader inside `main_loop` or its direct child
-- This narrows the candidate match-active flag set
+### 2. Identify the type tags
+- `DAT_7105266f80` — used as `new_node->hdr` (first 8 bytes of the packet)
+- `DAT_7105230f18` — used as `new_node->type_tag` (later in the packet)
+- Use `mcp__ghidra__get_xrefs_to` on each address
+- These are likely pointers to RTTI / type info / static descriptor objects
+- If they're vtables, the type they belong to names the packet class
 
-### 2. Investigate the two specific Pool C candidates first
-- `DAT_710593a534` (integer): trace `0x7103741bb4` and `0x71037472d0` — what function returns are stored here? What's the value range? Is `3` ever in the range?
-- `DAT_710593a540..0x710593a5a0` (byte cluster): which bytes get written, with what values, by which functions? Look for a state-machine pattern (function that switches on input and stores phase markers).
+### 3. Identify the element type
+- The vector elements are pointers to objects with:
+  - A flag byte at `+0xf1`
+  - A vtable with at least slot `[3]` taking `(this, packet*)`
+- Find what class has these characteristics
+- If it has a `+0xf1 flag` and `vt[3] = onTick(packet*)`, it's a tickable game object
 
-### 3. Cross-reference with main_loop
-For each candidate match-active flag found:
-- Is it READ from `main_loop` (or its direct child)?
-- If yes, what `cmp #N; b.eq/b.ne` follows the read?
-- Does the branch lead to anything that walks fighters / dispatches per-frame work?
-
-### 4. Trace the writer
-For the most promising flag candidate, find the writer's function and identify:
-- Is it a state machine? Document state values
-- Is it called from a "match start" path? (e.g. CSS → load → match init)
-- Is it called from a "match end" path?
-
-This is the **rollback arm/disarm signal**.
+### 4. Cross-reference with Pool A's MatchRunner finding
+- Pool A is identifying `*DAT_710593a510` as the rollback arm signal
+- If `FUN_7103619080`'s subsystem object is the same as `*DAT_710593a510`, then **Pool B's match-active gate AND Pool C's sim-tick candidate are the same code path** — that's the converged answer
+- If they're different objects, the sim tick is somewhere else (likely Pool C's second strongest candidate `FUN_71035c13d0`)
 
 ## Stop-and-document rule
 If `mcp__ghidra__*` errors/timeouts:
 1. Append to `data/ghidra_cache/manual_extraction_needed.md`
 2. **Do NOT retry.** Move on.
 
+Use `tools/xref_bin_scan.py` for binary scans.
+
 ## Output
 
 Append to `docs/rollback/sim_tick_hunt.md`:
 
 ```markdown
-## Pool B — match-active flag hunt (next-pass)
+## Pool B — Round 4: FUN_7103619080 caller + tag identification
 
-### 0x710593axxx block audit
-| Address | Writer count (non-zero) | Read by main_loop? | Best guess |
-|---------|------------------------|---------------------|-----------|
-| 0x710593a530 | 0 | YES (dead branch) | dead code |
-| 0x710593a534 | N | YES/NO | ... |
-| ... | ... | ... | ... |
+### Caller in main_loop @ 0x710374b124
+- Subsystem object source: [global / x21 chain / ADRP load]
+- Subsystem type: [class name / placeholder]
+- Vector at +0x500/+0x508: holds [type] elements
 
-### Most promising candidate
-- Address: 0x710593aXXX
-- Writers: [list of functions + values]
-- Readers (main_loop chain): [...]
-- State machine values: 0=idle, 1=..., N=match active
-- Verdict: [FOUND match-active flag / WEAK CANDIDATE / NO MATCH]
+### Type tags
+- DAT_7105266f80: [identified class / RTTI / unknown]
+- DAT_7105230f18: [identified class / RTTI / unknown]
+- Command packet type: [name]
 
-### Rollback arm signal
-- Function: setMatchActive_XXXX at 0xXXXXX
-- Hook point: [address]
-- State transition: idle → ... → active
+### Element type (vt[3] receivers)
+- Class: [name]
+- vt[3] signature: void (this, packet*)
+- IS THIS A FIGHTER / BATTLE OBJECT? [YES / NO / INCONCLUSIVE]
+
+### Cross-reference with Pool A's MatchRunner
+- Same object as *DAT_710593a510? [YES — converged / NO — different paths / UNKNOWN]
 ```
 
 ## Quality Rules
 - NO `FUN_` names in committed src/ code
+- Cast density under 10%
 - Documentation is the primary deliverable
-- The binary scanner is your friend — write it inline if needed (Pool C suggested productizing it as `tools/xref_bin_scan.py` but that's pool C's job, not yours)
 
 ## Build
 ```bash

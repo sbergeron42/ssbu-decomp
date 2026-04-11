@@ -3301,3 +3301,210 @@ The loop iterates the 1-element list, the gate fails, nothing happens.
   should request orchestrator manual extraction for the body region
   `0x7103747350..0x7103747be0` (between the frame-prologue call and
   the Dispatcher A entry).
+
+---
+
+---
+
+## Pool B — Round 4: FUN_7103619080 caller + tag identification
+
+### Caller in main_loop @ 0x710374b124
+
+```
+710374b0f0: adrp x8, 0x7105336000      ; x8 = 0x7105336000
+710374b0f4: ldr  x20, [x8, #0xce8]     ; x20 = *(0x7105336ce8)  [also used for camera setup]
+710374b0fc: mov  x21, x8
+...
+710374b120: ldr  x0, [x21, #0xce8]     ; x0 = *(0x7105336ce8)
+710374b124: bl   0x7103619080          ; <- the visitor dispatch
+```
+
+- **Subsystem object source:** global singleton at **`[0x7105336ce8]`**.
+- **Writer:** `FUN_71035a4130 @ 0x71035a43a0` — called ONLY by
+  `game_ldn_initialize @ 0x7103744360`. Singleton installed at ldn-init
+  time. (FUN_71035a4130 decompile timed out in Ghidra MCP — logged to
+  `manual_extraction_needed.md`.)
+- **Named readers** of `[0x7105336ce8]`: `fighter_init`,
+  `set_visibility_of_fighter_and_item`, `set_final_stage_disp_status`,
+  `update_blink`, `renderer_get_color_rate`, `game_ldn_initialize` —
+  plus 50+ internal FUN_*. A **cross-cutting service** used by fighter
+  lifecycle, stage display, rendering, AND the ldn path — not a pure
+  render manager or pure ldn struct.
+- **Vector at `+0x500`/`+0x508`:** holds element pointers to objects
+  with a byte flag at `+0xf1` and a vtable whose slot 3 takes
+  `(this, Packet*)`. Element class unnamed — NOT confirmed as
+  `BattleObject`.
+- **Sub-object at `+0x518`:** holds the packet allocator at its own
+  `+0x50` (an `std::function`-shaped factory with `vt[6] = invoke`)
+  and a second clonable source at `+0x80`. Pool B Round 3 incorrectly
+  attributed these to `param_1` directly — they are on the inner
+  `param_1->[0x518]` sub-object.
+
+### Type tags — correction to Round 3
+
+Round 3 description (`new_node->type_tag = &DAT_7105230f18`) was
+structurally wrong. `DAT_7105230f18` is NOT a separate type tag; it is
+the **derived class vtable pointer** overwritten onto `*new_node` at
+the end of construction. The visitor follows the canonical C++
+constructor-chain:
+
+```c
+*new_node       = &PTR_FUN_7105266f80;    // 1. install BASE vtable
+new_node->size  = 0x60;                    // 2. size/tag at +0x8
+/* clone subsys->[0x50] into new_node[+0x30] via vt[3] */
+/* clone subsys->[0x80] into new_node[+0x60] via vt[3] */
+new_node->unk70 = 0;                       // u32 at +0x70
+*new_node       = &PTR_LAB_7105230f18;    // 3. OVERWRITE with DERIVED vtable
+elem->vt[3](elem, new_node);               // 4. dispatch
+```
+
+- **`DAT_7105266f80` — base class vtable.** Abstract: slot 0 is
+  destructor `FUN_7103812f50`, slot 2 is `__cxa_pure_virtual`.
+  Layout: `{vptr, u32 size, [0x20B SBO #1], ptr A @ +0x30, [0x20B SBO #2],
+  ptr B @ +0x60, u32 @ +0x68, u32 @ +0x70}`.
+- **`DAT_7105230f18` — derived class vtable** specific to the visitor packet
+  variant (size `0x60`). Only ever referenced by FUN_7103619080.
+- **Sibling derived classes on the same base** (proves a large polymorphic
+  hierarchy — 20+ factories):
+  - `FUN_71035b91b0` -> `PTR_FUN_71052313f0`, size `0x100`
+  - `FUN_7103819bb0` -> `PTR_FUN_7105267be8`, size `0x80`
+    (throws `std::bad_function_call` when the allocator is empty —
+    confirms libc++ `std::function` erasure is in play)
+  - `FUN_710363f4a0` -> `PTR_FUN_71052313b8`, size `0x4000`, stores a
+    captured `u64` + `bool` — looks like a snapshot variant
+  - `FUN_7103619080` -> `PTR_LAB_7105230f18`, size `0x60` (the visitor)
+  - plus the `FUN_710381a*..c*` factory cluster (~20 functions)
+
+**Command packet class name: UNKNOWN** — no mangled name or string tag
+recoverable. Structurally it is a polymorphic packet/command class with
+two small-buffer-optimized sub-objects of variable type, a size field,
+and a trailing `u32` at `+0x70`. Shape of a **command-stream node**
+(header + two typed payload blobs).
+
+### The 10-slot sibling path — `FUN_71037857f0`
+
+The hunt turned up a second broadcaster reachable from main_loop:
+`FUN_71037857f0` is called **10 times consecutively** in main_loop at
+`0x710374bd9c..0x710374bfe8`, once per slot index 0..9. Each call:
+
+1. Loads `x0` via `ldr x8, [x28, #0xa90]; ldr x0, [x8]` — a
+   **different** singleton than Pool B base (`x28`-based, not the
+   `0x7105336ce8` global).
+2. Passes a per-slot config record from the data at
+   `[0x710593a7c8 + i*0x40]` — in the **same 4 KB page** as Pool A
+   `0x710593a510` target.
+3. Passes a local probe struct whose vtable is `0x710522eea0`.
+4. Inside `FUN_71037857f0`, when the per-slot flag is set, it builds
+   up to five packets via the factories above (`FUN_710363f4a0`,
+   `FUN_710381ba20`, `FUN_710381bde0`, `FUN_710381bc00`,
+   `FUN_710381b8a0`, `FUN_71035b91b0`) and calls
+   `plVar6->vt[3](plVar6, packet)` on each — same slot 3 dispatch as
+   `FUN_7103619080`, but on a **single receiver** `plVar6` instead of
+   broadcast over a vector.
+5. `plVar6 = *(long **)(param_3 + 8)` — the receiver is held by the
+   local probe struct.
+
+**Ring-buffer cursors** on the receiver sub-struct (from
+`FUN_710363f4a0`): byte flag at `+0x48`, cursor at `+0x3f0` advancing
+by `0xe8` per packet, cursor at `+0x418` advancing by `8`, cursor at
+`+0x4a0` advancing by `0x10`. Three parallel rings is the classic
+layout of a **command stream** (header ring + index ring + payload
+ring) — exactly the shape a rollback/replay backing store needs.
+
+The 10-slot structure matches SSBU max player count (8 players + 2
+pad) and is a strong signal that this is a **per-slot command
+streamer**, not a pure render path.
+
+### Element type (vt[3] receivers)
+
+- **Class:** unnamed.
+- **vt[3] signature:** `void (this, Packet*)` where `Packet*` is a
+  class derived from the `DAT_7105266f80` abstract base.
+- **Per-element flag:** byte at `+0xf1` (active gate).
+- **IS THIS A FIGHTER / BATTLE OBJECT?** **INCONCLUSIVE.** Flag offset
+  `+0xf1` does not match a well-known BattleObject field, and no named
+  fighter struct has a vtable whose slot 3 matches the
+  `(this, Packet*)` signature. Could be a `CommandListener` /
+  `ReplayWriter` / `NetworkPacketSink` — any observer-interface type.
+
+### Cross-reference with Pool A MatchRunner
+
+- Pool A signal: `[0x710593a510]` — written by `game_ldn_initialize`
+  directly (field-init pattern with interleaved READs and WRITEs in
+  `0x7103741a4c..0x7103741b6c`).
+- Pool B signal: `[0x7105336ce8]` — written by `FUN_71035a4130`,
+  which is called ONLY by `game_ldn_initialize @ 0x7103744360`.
+
+**Same object as `*DAT_710593a510`?** **NO — different globals, but
+same init function.** The two signals converge on one init path
+(`game_ldn_initialize`) and the 10-slot sender in `FUN_71037857f0`
+additionally uses config records from the same 4 KB data page
+(`0x710593a000`) as Pool A target. The most likely story is:
+
+- **Pool A `[0x710593a510]`** = ldn match state / `MatchRunner`
+- **Pool B `[0x7105336ce8]`** = command-stream broadcaster driven by
+  the match-runner each tick
+
+i.e. **two cooperating subsystems constructed by the same init
+function, not the same object**. Still a convergence — both hunts
+landed on the ldn-init code path.
+
+### What the visitor actually is (best current reading)
+
+Not proven, but the shape is tight:
+
+- Per-tick broadcast over a vector of registered receivers.
+- Each tick, builds a `0x60`-byte **derived command packet** with two
+  cloned sub-objects from a shared source + installs a specific
+  derived vtable.
+- Dispatches via `elem->vt[3](elem, packet)`.
+- The same receivers, via `FUN_71037857f0`, maintain three parallel
+  ring-buffer cursors — the backing store of a **replay/command
+  stream**.
+- All installed by `game_ldn_initialize`, which is also the source of
+  Pool A match-runner signal.
+
+**Best reading:** `FUN_7103619080` is the **per-tick commit/flush
+broadcast** to a set of command-stream writers — i.e. the moment each
+frame where the match-runner tells every recorder to advance by one
+tick and here is the per-tick metadata packet. That is the exact role
+a sim-tick would have if SSBU rollback is implemented on top of the
+replay/command-stream subsystem. But the receivers could also be pure
+replay writers (non-rollback), in which case this is the
+**replay-recording tick** rather than the **simulation tick** proper.
+
+### Recommended Round 5
+
+1. **Manual-extract `game_ldn_initialize @ 0x7103744360`** (too large
+   for Ghidra MCP) — map how `[0x7105336ce8]` and `[0x710593a510]`
+   relate, and whether either is stored as a field of the other.
+2. **Dump the 0x710593a000 page structure** — the 10-slot config
+   records at `[0x710593a7c8 + i*0x40]` are tables that name the
+   probe/command type per slot. Resolving one entry (the vtable and
+   the three `u64` values loaded per slot) will tell us what each
+   slot DOES and therefore what slot means here.
+3. **Identify the receiver class** — grep for a vector-of-ptrs field
+   at offset `+0x500` of any documented class, or look for a function
+   that does `subsys->vector.push_back(receiver)` on
+   `[0x7105336ce8]`. That is the `register()` entry point for
+   whatever interface this is.
+4. **Decide rollback vs. replay-only.** If the receivers are pure
+   replay writers, `FUN_7103619080` is the replay-recording tick and
+   the real sim tick is elsewhere. If they are rollback-capable
+   snapshot recorders, this IS the sim tick. The disambiguator is
+   whether there is a rewind/restore entry point that calls the same
+   receivers in reverse.
+
+### Methodology note
+
+Round 3 got the structure of `FUN_7103619080` almost right but
+mislabeled the final `*new_node = &DAT_7105230f18` write as a
+type_tag field. It is actually the standard derived-vtable overwrite
+at the end of a C++ constructor chain. The mistake is easy to make
+from the visitor alone, but becomes obvious once you compare to
+sibling factories (`FUN_71035b91b0`, `FUN_7103819bb0`,
+`FUN_710363f4a0`) which all follow the same base/derived vtable
+install pattern. **Lesson: when a function writes a `DAT_*` as the
+first word of a freshly-allocated object, it is almost always a
+vtable install — check for sibling constructors with the same
+`DAT_*` before calling it a type tag.**
