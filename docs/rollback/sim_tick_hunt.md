@@ -2879,3 +2879,253 @@ concluding "dead end". The concrete filter is trivial — grep the
 disassembly for `blr` / `br x` — but Pool B's pass-1 did not do it,
 and the cost of that omission was three missed live leads from a pool
 of four candidates (75% false-negative rate on this set).
+
+## Pool A — Round 4: DAT_710593a510 MatchRunner identification (2026-04-10)
+
+### TL;DR — DAT_710593a510 is **NOT** the match-active signal
+
+`DAT_710593a510` is a lifetime-of-process `std::function<void(int)>` that
+holds a fixed **render-phase prologue callback** installed once during
+`nnMain`. The callback (`FUN_7103741700`) is called every frame from
+`main_loop`, but it is **always non-null** after boot, so its `cbz`
+guard in `main_loop` is a defensive no-op, not a per-match gate.
+
+The real per-frame driver that `main_loop` enters is reached via the
+prologue callback's **tail-call into main_loop's cached `this` at
+`DAT_710593a4c0`, specifically vtable slot 2 (`+0x10`)**. The sim-tick
+hunt needs to move off `DAT_710593a510` entirely and onto
+`DAT_710593a4c0` (the cached `this`) and its `vtable[+0x10]` method.
+
+**Rollback hook candidates invalidated:** Pool B's Round 3 "best
+candidate" `DAT_710593a510` is ruled out. The store at `0x7103741a60`
+is a one-shot install inside `nnMain`, not a match-begin event.
+
+### Installer at 0x7103741a60
+
+- **Containing function:** `FUN_7103741990` — labeled `game_ldn_initialize`
+  in Ghidra (xref_sdk pass), but the name is **WRONG**. The function is
+  actually `app::main_init` or equivalent: it calls `nn::oe::SetPerformanceConfiguration`
+  (twice — docked + handheld profiles), `nn::grc::DisableRecording`,
+  several other init-only PLT stubs, and has a 0x250-byte stack frame.
+  It is called exactly once, from `nnMain @ 0x71002c5964`. There are no
+  `nn::ldn::*` calls in its body. The `ldn` in the name is a name-transfer
+  artifact from a superficially-similar function in KinokoDecomp-S.
+- **Ghidra decompile of this function TIMES OUT** (>120 s, logged in
+  `data/ghidra_cache/manual_extraction_needed.md`). All analysis below
+  is from raw disassembly (extracted via `mcp__ghidra__disassemble_function`,
+  parsed with Python, plus direct ELF/Capstone reads of unanalyzed gaps).
+
+### The installed object: `std::function<void(int)>` layout
+
+At `0x7103741a04..0x7103741a64` the function constructs a 3-pointer
+object on the stack and stores it into `DAT_710593a510`:
+
+```
+sp[0x320] = &PTR_LAB_710523c100      ; vtable ptr
+sp[0x328] = 0x7103741700              ; callable function pointer
+sp[0x340] = sp+0x320                  ; self-ptr (SBO marker)
+sp[0x370] = sp+0x350                  ; self-ptr (SBO marker, output)
+bl 0x7103747220                       ; placement-copy ctor (vtable slot 3)
+ldr x0, [sp, #0x370]                  ; x0 = the constructed object
+str x0, [x8, #0x510]                  ; DAT_710593a510 = x0
+```
+
+The placement-copy helper `FUN_7103747220` (which is itself a vtable
+slot — see below) decompiles to:
+
+```c
+void __inplace_clone(src *p1, dst *p2) {
+    p2[0] = &PTR_LAB_710523c100;   // fresh vtable
+    p2[1] = p1[1];                  // copy callable
+    p2[2] = p1[2];                  // copy captured data
+}
+```
+
+### The vtable at 0x710523c100
+
+Ghidra could not find a function at `0x710523c100` because the slots
+are populated by **`R_AARCH64_RELATIVE` dynamic relocations** applied
+at load time. Extracting the 7 relocations directly from `.rela.dyn`
+(entries at file offset `0x39c8070 + …`) yields:
+
+| Slot | Offset | Runtime addr | Role |
+|---|---|---|---|
+| 0 | +0x00 | `0x7103747180` | `ret` — empty non-delete destructor |
+| 1 | +0x08 | `0x7103747190` | `if (this) b operator delete_71039…` |
+| 2 | +0x10 | `0x71037471a0` | **heap clone** — alloc 0x18/align 0x10, copy +0x8/+0x10 |
+| 3 | +0x18 | `0x7103747220` | **placement clone** — in-place copy, fresh vptr |
+| 4 | +0x20 | `0x7103747240` | `ret` — empty (move/assign stub) |
+| 5 | +0x28 | `0x7103747250` | `if (this) b operator delete_71039…` |
+| 6 | +0x30 | `0x7103747260` | **INVOKE** — `ldr x2,[x0,#8]; ldr w0,[x1]; br x2` |
+
+This is the exact slot layout of **libc++ `std::__function::__base<void(int)>`**:
+`{destroy_empty, destroy_deallocating, clone_heap, clone_inplace,
+destroy_to_empty, destroy_to_deallocating, invoke}`. The small-buffer
+representation is 3 pointers: `{vptr, callable, captured}`. The
+captured slot is unused by the invoker (slot 6 only loads `[x0,#8]`),
+so this particular specialization wraps a plain function pointer.
+
+### The per-frame callback: `FUN_7103741700`
+
+Ghidra does not have this function analyzed — it sits in the gap
+`0x71037416f4..0x7103741990` between `FUN_7103741520` (a language-code
+lookup) and `game_ldn_initialize`. Disassembly extracted directly from
+the ELF via Capstone. Body summary:
+
+```c
+void frame_prologue(int phase) {  // phase arrives in w0, 0 or 1 fast path
+    if (phase > 1) goto cleanup;
+
+    DAT_710593a4b4 = 3;             // render-phase marker
+    DAT_710593a4b8 = phase;
+
+    void *globalA = DAT_7105336ce8;         // subsystem root A (render?)
+    if (!globalA) goto cleanup;
+
+    void *globalB_sub = DAT_7105334480[5];  // at +0x28
+    // ^ this is main_loop's "owner of dispatch" handle
+
+    if (phase == 1) {
+        if (globalA->byte_0x58d) {
+            // tear down a transient frame object
+            ManagerC *mc = DAT_71053386d0;
+            mc->byte_0x54 = 1;
+            virtual_dispose(mc->field_0x08);
+            if (mc->field_0x10) {
+                mc->field_0x10->vtable[+0x18](&local);
+                mc->field_0x10->vtable[+0x08](mc->field_0x10);
+                mc->field_0x10 = nullptr;
+            }
+
+            if (globalA->byte_0x540) {
+                // commit interpolated camera/transforms:
+                // iterate [globalA+0x528, globalA+0x530) in 0xa0-byte strides
+                // copying per-element fields at
+                //   +0xa8/+0xac  (pos?)   +0xc0/+0xc4  (pos?)
+                //   +0xd0 (16B quad)      +0xb8/+0xd0 (matrix?)
+                //   +0xe0 (byte flag)
+                // looks like "publish last-frame transforms to renderer"
+                globalA->byte_0x540 = 0;
+                globalA->word_0x58d = 0;
+            }
+        }
+        sizes = {w22=0x780, w21=0x438};   // phase-1 viewport
+    } else {
+        sizes = {w22=0x500, w21=0x2d0};   // phase-0 viewport
+    }
+
+    globalB_sub[+0x30] = (w22 << 32) | w21;  // store two int sizes
+    local_key = 14;
+
+    // libc++ std::unordered_map::find_or_insert, key=14
+    auto it = FUN_71037cbcc0(&globalB_sub->map_at_0x48, &local_key);
+
+    // walk collision bucket, fire each subscriber's vtable[0][0]
+    for (auto *n = it; n != it_end; n = n->next) {
+        void *obj = n->field_0x10;
+        args_struct = {constData_0x7105240f78, key=14, w22, w21};
+        obj->vtable[0][0](obj, &args_struct);
+    }
+
+cleanup:
+    nn::os::LockMutex(&DAT_710523a5c8);
+
+    // render-phase atomic at 0x7107446040 bits 2/4/8
+    if (phase >= 2) {
+        if (phase == 2) atomic_and(~2);
+        flag = (phase >= 3 && phase < 5) ? 4 : ((phase == 2) ? 2 : 8);
+        atomic_or(flag);
+    }
+
+    nn::os::UnlockMutex(&DAT_710523a5c8);
+
+    // TAIL CALL into main_loop's cached `this`
+    void *cached_this = DAT_710593a4c0;
+    if (cached_this) {
+        void (*driver)(void*, int) = cached_this->vtable[+0x10];  // slot 2
+        driver(cached_this, phase);  // tail call
+    }
+}
+```
+
+### What DAT_710593a510 actually is
+
+It is an app-lifetime `std::function<void(int)>` holding `FUN_7103741700`
+as its payload. Semantically it is the **frame prologue hook**: it runs
+before every frame's real tick, commits render-side interpolated
+transforms, dispatches all subscribers under key=14 in a global
+`std::unordered_map` (almost certainly "begin-frame events"), twiddles a
+render-phase atomic flag, and then **tail-calls** into the real per-frame
+driver via `DAT_710593a4c0->vtable[+0x10]`.
+
+Why Pool B's scanner saw only one non-init writer at `0x7103741a60`:
+because the slot really is written exactly once in the normal flow, and
+never cleared. Pool B correctly observed the write, but the
+interpretation ("match-begin installs a runner") was wrong. The right
+reading is "`nnMain` installs a permanent render-phase hook". The other
+writes to `[x19, #0x20]` in `game_ldn_initialize` (at `0x7103741aa0`,
+`0x7103741adc`, `0x7103741b38`, `0x7103741b6c`) are all
+sentinel/self-reference stores (`str x19, [x19, #0x20]`) or zeroing
+stores (`str xzr, [x19, #0x20]`) inside the swap/error-recovery side
+paths of the same install. The normal path is the first store at
+`0x7103741a60` and the installed value persists.
+
+### Disarm path
+
+**None exists.** There is no static code anywhere in `.text` that writes
+a null or a non-matching value into `DAT_710593a510` after `nnMain`
+returns. The slot is permanently installed. This rules out
+`DAT_710593a510` as any kind of rollback arm/disarm signal and rules
+out the `cbz` in `main_loop` as a match-active gate.
+
+### Runner class
+
+- **Vtable address:** `0x710523c100` (7 slots, `R_AARCH64_RELATIVE`-populated)
+- **Class name (if .dynsym):** unnamed — this is a compiler-generated
+  `std::__function::__func<T, allocator<T>, void(int)>` specialization,
+  not a user-level class. `T` is a plain function pointer wrapper.
+- **Vtable slot 6 (+0x30):** `0x7103747260`, a 3-insn tail-call
+  trampoline that loads the stored function pointer at `[this+8]` and
+  tail-calls it with the `int` loaded from the phase argument.
+- **IS THIS THE SIM TICK?** **NO** — it's a render-phase prologue hook.
+  The real sim-tick continuation is in `DAT_710593a4c0->vtable[+0x10]`,
+  which this callback tail-calls at the end.
+
+### The real target for Round 5: DAT_710593a4c0
+
+`DAT_710593a4c0` was already in Pool B's Round 3 audit table as
+"write at main_loop+0x48, this-cache" but was not pursued because it
+appeared to be a simple store-back. With the `DAT_710593a510` lead
+dead, it is now the strongest candidate for the per-frame driver's
+`this` pointer. Specifically:
+
+- `main_loop`'s prologue does `str x21, [x8, #0x4c0]` at
+  `0x71037472b8` (Pool B). `x21` is loaded earlier in `main_loop` from
+  some parent context — that load is the chain root.
+- The render-phase prologue (`FUN_7103741700`) tail-calls
+  `DAT_710593a4c0->vtable[+0x10]` — slot 2 — with the phase arg.
+- Whatever class that vtable belongs to is the **actual frame driver**.
+
+Round 5 tasks:
+1. Dump `main_loop`'s prologue (`0x7103747270..0x71037472c0`) to find
+   where `x21` comes from — the value passed into `main_loop` by its
+   caller, cached at `DAT_710593a4c0`.
+2. Decompile `DAT_710593a4c0->vtable[+0x10]` — the class's "tick" method.
+3. Trace the call into that method to find where fighters / sim state
+   are actually advanced.
+
+### Supporting data references
+
+- `FUN_71037cbcc0` decompiles cleanly as libc++ `unordered_map::__find_or_insert_unique`
+  (uses `std::__1::__next_prime`). This proves the `FUN_7103741700`
+  key-14 dispatch is a `std::unordered_map` iteration, not a custom
+  container.
+- `FUN_7103747220` (placement-copy ctor, vtable slot 3) decompiles to
+  the trivial 3-field copy quoted above.
+- `FUN_7103741520` (adjacent to 0x7103741700) is `app::GetLanguageIndex`
+  — unrelated, ruled out as the payload source.
+- Vtable relocations at `.rela.dyn` confirmed by direct ELF parse; all
+  7 entries are `R_AARCH64_RELATIVE` (type `0x403`).
+- `FUN_7103741990` (the nnMain installer) full decompile is in
+  `data/ghidra_cache/manual_extraction_needed.md` — needs orchestrator
+  manual extraction. Round 4 analysis used disassembly only.

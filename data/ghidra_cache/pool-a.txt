@@ -935,3 +935,87 @@ NEXT SESSION PICKUP POINTS:
 3. Xref that slot's address — it's the one called per-frame by the sim driver.
 4. Cross with Pool-C's BattleObjectManager pool-header work — the driver
    probably iterates the pool at DAT_71052b7548 and calls `obj->vt[tick]()`.
+
+## 2026-04-10 Round 4 — MatchRunner type identification
+
+### game_ldn_initialize @ 0x7103741990 (misnamed — really app main init)
+- Called from nnMain @ 0x71002c5964
+- Calls: nn::oe::SetPerformanceConfiguration (x2), nn::grc::DisableRecording, others
+- Ghidra decompile TIMES OUT (logged in manual_extraction_needed.md)
+- Disasm inspection only
+
+### The installer sequence at 0x7103741a00..0x7103741a64
+Constructs args on stack:
+  sp[0x320] = &PTR_LAB_710523c100  (vtable ptr)
+  sp[0x328] = 0x7103741700         (callable function pointer)
+  sp[0x340] = sp+0x320              (self-pointer)
+  sp[0x370] = sp+0x350              (self-pointer, output holder)
+bl 0x7103747220 (FUN_7103747220) which is vtable slot 3 (copy-in-place):
+  *out = &PTR_LAB_710523c100   (vtable)
+  out[1] = src[+8]             (callable fn ptr)
+  out[2] = src[+0x10]          (captured data — unused by invoke)
+Then str x0, [x8, #0x510] at 0x7103741a60 stores result into DAT_710593a510.
+
+### The vtable at 0x710523c100 (7 slots, via R_AARCH64_RELATIVE relocs)
+  [+0x00] -> 0x7103741780 : ret (empty destructor)
+  [+0x08] -> 0x7103741790 : `if (this) b delete_71039...` (heap destructor)
+  [+0x10] -> 0x71037471a0 : allocate 0x18 / copy src+8,+0x10 (heap clone)
+  [+0x18] -> 0x7103747220 : in-place copy (placement clone)
+  [+0x20] -> 0x7103747240 : ret (empty)
+  [+0x28] -> 0x7103747250 : `if (this) b delete_71039...` (heap destructor)
+  [+0x30] -> 0x7103747260 : **INVOKE** — `ldr x2, [x0,#8]; ldr w0,[x1]; br x2`
+
+Layout matches **libc++ `std::__function::__func<Callable, Alloc, Sig>`** —
+the polymorphic function wrapper's __base virtuals: clone/clone-inplace/
+destroy/destroy_deallocate/operator()/target/target_type. The small object
+is 0x18 bytes: `{vptr, callable, captured}`.
+
+### Stored callable: FUN_7103741700 (unanalyzed in Ghidra — in 0x71037416f4..0x7103741990 gap)
+Signature: `void tick(int phase)`. Full disasm extracted.
+Body summary:
+  1. `if (phase > 1) goto cleanup`
+  2. Writes DAT_710593a4b4 = 3, DAT_710593a4b8 = phase
+  3. Loads globalA = [0x7105336ce8], bail if null
+  4. Loads globalB_sub = [0x7105334480 + 0x28]
+  5. If phase == 1:
+     a. If globalA[+0x58d] set:
+        - managerC = [0x71053386d0]; managerC[+0x54] = 1
+        - Calls virtual destroy chain on managerC[+0x8] and managerC[+0x10], nulls +0x10
+     b. If globalA[+0x540] dirty flag set:
+        - Iterate globalA[+0x528..+0x530] in 0xa0-byte strides
+        - Copies per-element fields at offsets +0xa8/+0xac/+0xc0/+0xc4/+0xd0/+0xe0/+0xb8
+        - Looks like **interpolated camera/transform commit** (matrix + pos)
+        - Clears the dirty flag and clears globalA[+0x58d..+0x58f]
+  6. Sets per-phase sizes {w21, w22}: phase1={0x438,0x780}, phase0={0x2d0,0x500}
+  7. Stores {w22, w21} into globalB_sub[+0x30]
+  8. Calls FUN_71037cbcc0(globalB_sub+0x48, &key=14):
+     **libc++ `std::unordered_map::find_or_insert`** — resolves bucket via
+     power-of-2/modulo, walks collision chain, uses `std::__next_prime` for
+     rehash. Returns iterator to key-14 entry.
+  9. Walks the bucket chain from that iterator, invoking vtable[0][0] on
+     each entry's +0x10 field: **dispatch-all-subscribers-with-key=14**
+     pattern.
+ 10. ALWAYS (including phase >= 2):
+     - nn::os::...::Enter (FUN_71039c1410) on 0x710523a5c8 (mutex)
+     - Manipulate atomic byte at 0x7107446040: bit 2/4/8 based on phase
+     - nn::os::...::Leave (FUN_71039c1420) on 0x710523a5c8
+ 11. Tail-call: `DAT_710593a4c0->vtable[+0x10](phase)` — i.e. calls vtable
+     slot 2 on main_loop's cached `this` at DAT_710593a4c0.
+
+### Interpretation
+- DAT_710593a510 is NOT a match-active signal.
+- It is an **app-lifetime `std::function<void(int)>`** installed ONCE at
+  boot inside nnMain's call to FUN_7103741990, holding a fixed
+  "frame-phase prologue" callback (FUN_7103741700).
+- The callback commits interpolated render transforms, dispatches
+  subscribers registered under key=14 in a global `std::unordered_map`,
+  twiddles a render-phase atomic, and tail-calls into the REAL
+  per-frame driver via main_loop's cached `this` (DAT_710593a4c0).
+- The per-frame vtable dispatch Pool B found in main_loop is therefore
+  a **render-phase prologue call**, not the sim tick itself. The real
+  sim tick continues inside `DAT_710593a4c0->vtable[2](phase)`.
+
+### Disarm path
+- No static writer exists that clears DAT_710593a510 to null during
+  gameplay. The slot is set once and stays set for the lifetime of
+  the process. This RULES OUT DAT_710593a510 as a rollback arm signal.
