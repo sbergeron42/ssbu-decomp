@@ -2,70 +2,89 @@
 
 ## Model: Opus
 
-## Task: ROLLBACK SIM TICK HUNT — pead::Delegate framework mapping (Item 3)
+## Task: ROLLBACK — DAT_710593a530 match-state transition function
 
-## Priority: HIGHEST — sim tick hunt, blocks rollback resimulation
+## Priority: HIGH — match-start signal for rollback arm/disarm
 
 ## Context
-You wrote `docs/rollback/memory_map.md` in the previous pass. Pool B's `main_loop.md` § 6e flagged that **rollback resim probably needs to plug into `pead::Delegate` rather than call a sim advance function directly**. This task maps the pead delegate dispatch framework so we can either:
-1. Find the sim tick posted as a delegate (would explain why it doesn't appear as a direct BL in main_loop), OR
-2. Identify the delegate runner so rollback can intercept at that level
+Pool B's breakthrough showed Dispatcher A inside main_loop is gated on `DAT_710593a530 == 3` (match active). See `docs/rollback/sim_tick_hunt.md`.
 
-Pools A and B are doing the same hunt via different angles in parallel — whoever finds it first ends the hunt.
+We need the **writer** of `DAT_710593a530` — the function that sets it to 3 when a match starts and resets it when a match ends. This:
 
-## What To Find
+1. Is the rollback arm/disarm signal — when value transitions to 3, rollback should activate
+2. Answers the original "match-start signal" nice-to-have ask in one shot (two-for-one)
+3. Verifies the flag isn't racy (atomic? sync primitive? plain store?)
 
-### 1. The pead::Delegate dispatch entry point
-- Search Ghidra for `pead::Delegate`, `pead::Thread`, `runDelegates`, `processDelegates`
-- Use `mcp__ghidra__search_functions_by_name pead`
-- Look for `pead::Delegate::operator()` or equivalent (a function that calls a stored function pointer)
-- Look for `pead::Thread::runDelegates()` or equivalent (a loop that drains a queue of delegates)
+## What To Do
 
-### 2. Posting sites — who calls `pead::MainThread::postDelegate(...)` (or equivalent)?
-- Find the `pead::MainThread` singleton
-- Find every callsite that posts a delegate to it
-- **Critical: enumerate every posting site reachable from inside `main_loop`'s call chain**
-- Cross-reference with `data/ghidra_cache/main_loop_7103747270.txt`
+### 1. Find the writer
+- Use `mcp__ghidra__get_xrefs_to 0x710593a530`
+- Filter for WRITE references (the read references include `main_loop` itself which we already know)
+- For each writer: identify the surrounding function, the value being written, and the conditions
 
-### 3. Determine if the sim tick is posted as a delegate
-- If yes, document:
-  - The function being posted (this IS the sim tick entry point)
-  - Where it's posted from (which child of main_loop)
-  - When it's posted (every frame? once at start?)
-- If no, document the delegates that ARE posted (rollback may still need to intercept here)
+### 2. Identify the match-state state machine
+- The writer is part of a state machine. Find all the states it can write (0, 1, 2, 3, ...)
+- Each value is a phase of game lifecycle (boot? title? CSS? load? match active? results?)
+- Document the state diagram
+
+### 3. Verify atomicity
+- Is the write `STR` (plain store), `STLR` (release), or `LDXR/STXR` (atomic CAS)?
+- If atomic: the flag is safe to read from another thread without synchronization
+- If plain: rollback must read it from the same thread or accept a stale read
+
+### 4. Follow up — match-start callsite
+- Where in the lifecycle does `3` get written?
+- Is it inside a "load match" function? Right after the player slots are populated?
+- Document the function chain so rollback knows the exact moment to arm
 
 ## Output
 
-Append to `docs/rollback/sim_tick_hunt.md` (create if not exists). Pools A and B are also writing here:
+Append to `docs/rollback/sim_tick_hunt.md`:
 
 ```markdown
-## Pool C — pead::Delegate framework approach
+## Pool C — DAT_710593a530 match-state transition
 
-### Delegate dispatch
-- pead::Delegate::operator(): 0xXXXXX
-- pead::Thread::runDelegates equivalent: 0xXXXXX
-- MainThread singleton: DAT_71XXXXXXXX
+### Writers
+| Function | Address | Value written | Condition |
+|----------|---------|---------------|-----------|
+| FUN_XXXX | 0xXXXX  | 3 (active) | match start |
+| FUN_XXXX | 0xXXXX  | 0 (idle) | match end |
+| ...      | ...     | ...        | ... |
 
-### Delegates posted from main_loop's call chain
-| Posted from (caller in main_loop chain) | Delegate target | Frequency | Purpose |
-|---|---|---|---|
-| FUN_XXXX | FUN_XXXX | per-frame | ... |
+### State diagram
+- 0 = ?
+- 1 = ?
+- 2 = ?
+- 3 = match active
+- ...
 
-### Verdict
-[FOUND SIM TICK as delegate / SIM TICK NOT A DELEGATE / DEAD END]
+### Atomicity
+- Store type: [STR / STLR / atomic CAS]
+- Thread-safe to read: [yes / no]
+
+### Match-start signal for rollback
+- Function chain: ... → setMatchActive(3) at 0xXXXX
+- Recommended hook point: [address] for rollback arm
 ```
 
-If one of the posted delegates iterates fighters, that's the sim tick. Document the call chain.
+Also update `docs/rollback/memory_map.md` if you discover the match-state global is part of a larger state struct that should be in the snapshot region.
 
-## Reference Material
-- `docs/rollback/main_loop.md` (pool B's previous work — read this first)
-- `docs/rollback/memory_map.md` (your own previous work)
-- `data/ghidra_cache/main_loop_7103747270.txt` (use `Read` tool, do NOT call MCP on this address)
+## Stop-and-document rule
+If `mcp__ghidra__*` returns an error, timeout, or "request failed":
+1. Note the address and error
+2. Append to `data/ghidra_cache/manual_extraction_needed.md` (create if missing):
+   ```
+   ## 0xXXXXXXXX (FUN_XXXXXXXX)
+   - Pool: pool-c
+   - Reason: timeout / too large / unknown error
+   - Why we need it: [one-line context]
+   ```
+3. **Move on.** Do NOT retry the same address.
 
 ## Quality Rules
-- Documentation is the primary deliverable
-- NO `FUN_` names in committed src/
+- NO `FUN_` names in committed src/ code
 - Cast density under 10%
+- Documentation is the primary deliverable
 
 ## Build
 ```bash
