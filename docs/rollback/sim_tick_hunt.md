@@ -3129,3 +3129,175 @@ Round 5 tasks:
 - `FUN_7103741990` (the nnMain installer) full decompile is in
   `data/ghidra_cache/manual_extraction_needed.md` — needs orchestrator
   manual extraction. Round 4 analysis used disassembly only.
+
+## Pool A — Round 4 follow-up: main_loop's `this` is a lightweight boot context (2026-04-10)
+
+While finishing Round 4, Pool A started the Round 5 work (investigate
+`DAT_710593a4c0`, the `this` cached at main_loop+0x48) and produced the
+first layer of evidence. Full Round 5 write-up deferred, but the most
+useful facts are captured here so the next pool doesn't re-derive them.
+
+### main_loop is called directly from nnMain with a stack-local object
+
+```c
+// nnMain @ 0x71002c5cec (partial, from Ghidra):
+undefined1 local_170[0xB8];   // or similar — full size not yet measured
+FUN_7103723fa0(local_170);    // construct
+local_170[0]  = 0x68;          // set small header bytes
+local_170[1]  = 0x52;
+local_170[2]  = 0x0b;
+uStack_16d    = 0x7105;        // and one 2-byte field overlapping +3
+DAT_710593a2d8 = local_170;    // publish stack object to a global (see below)
+plVar14 = FUN_7103747270(local_170);    // call main_loop(this=local_170)
+plVar20 = *plVar14;                      // deref returned pointer
+*(plVar14 + 0x131) = 0xffffffff;         // set +0x988 = -1 (post-exit cleanup)
+*(*plVar20 + 0x38) = 0;                  // clear a flag inside the child object
+// ... further teardown
+```
+
+Consequences:
+- `main_loop`'s `this` is **not** a heap-allocated frame driver — it is
+  a stack-allocated small object in `nnMain`, lifetime = game session.
+- The call is unconditional and singular. `main_loop` returns only when
+  the game session ends.
+- `nnMain` also publishes `local_170` to `DAT_710593a2d8` before the
+  call, which is a second cached handle the sim-tick search should
+  audit for readers.
+
+### The class at vtable 0x710523bd38 (the ctor that FUN_7103723fa0 builds)
+
+```c
+void FrameContext_ctor(FrameContext *this) {  // FUN_7103723fa0
+    this->vptr       = &PTR_FUN_710523bd38;   // vtable
+    this->field_0x08 = 0;                     // link.next
+    this->field_0x10 = 0;                     // link.prev
+    this->field_0x18 = 0;                     // gate flag (see below)
+    this->field_0x20 = alloc_0xb8_child();    // child A, 0xb8 bytes
+    this->field_0x28 = alloc_0x68_child();    // child B, 0x68 bytes
+    this->field_0x30 = 0;
+    this->field_0x44 = 0x811c9dc5;            // FNV-1a offset basis
+    this->field_0x48 = 0;                     // hash state, zeroed
+    // ... more zero-init fields
+    // Register `&this->field_0x08` in the global doubly-linked list at
+    // PTR_LOOP_710523bd78. The list head is an embedded sentinel; the
+    // size counter at DAT_710523bd88 is incremented.
+}
+```
+
+Key observations:
+- The class **embeds an FNV-1a hasher state** at +0x44 (seed = offset
+  basis). SSBU uses FNV-1a extensively for `hash40` identifiers, so
+  this is a `HashContext` / hash-state field rather than a general
+  scratch field.
+- The class **registers itself in a global intrusive list** at
+  `PTR_LOOP_710523bd78`. This list is almost certainly a "living
+  contexts" registry.
+- `FUN_7103723fa0` has **exactly one caller (nnMain)** and the vtable
+  at `0x710523bd38` has **exactly two xrefs** (ctor + dtor). There is
+  **only one instance of this class, ever, for the whole game
+  lifetime** — the stack instance in `nnMain`.
+
+### Vtable at 0x710523bd38 — 16 slots, extracted from .rela.dyn
+
+| Slot | Offset | Runtime addr | Role |
+|---|---|---|---|
+| 0 | +0x00 | `0x7103724110` | destructor (`FUN_7103724110`) |
+| 1 | +0x08 | `0x7103724300` | `bl dtor; b operator delete` |
+| 2 | +0x10 | `0x7103724340` | **iterate global list, call each member's `vtable[+0x10]`** |
+| 3 | +0x18 | `0x71037243b0` | `ret` (empty stub) |
+| 4 | +0x20 | `0x71037243c0` | `ret` (empty stub) |
+| 5 | +0x28 | `0x71017f4a80` | `ret` (empty stub, in `0x71017xxxxx` text block) |
+| 6 | +0x30 | `0x71037243d0` | `ret` (empty stub) |
+| 7 | +0x38 | `0x71037243e0` | `ret` (empty stub) |
+| 8 | +0x40 | `0x710523bd78` | **DATA pointer** (back-ref to list head — RTTI/typeinfo-ish?) |
+| 9 | +0x48 | `0x710523bd78` | **DATA pointer** (same) |
+| 13 | +0x68 | `0x7103725a20` | `ret` (empty stub) |
+| 14 | +0x70 | `0x7103725a30` | `bl operator delete` |
+| 15 | +0x78 | `0x7103725a40` | allocate-0x70 factory (makes a 0x70-byte child) |
+
+(Slots 10, 11, 12 have no relocs and are presumably null or inline
+data.)
+
+Of these, **only slot 2 does any per-frame work**, and only via the
+global list iteration. Slots 3/4/5/6/7/13 are all `ret` — true no-ops,
+not shim thunks. The class is effectively a skeleton with one virtual
+method that matters (the list walker) plus utility hooks (dtor,
+factory).
+
+### Slot 2's dispatch loop (the tail-call target from FUN_7103741700)
+
+```c
+void dispatch_all_enabled(FrameContext *self, int phase) {
+    ListNode *head = &PTR_LOOP_710523bd78;   // global sentinel
+    ListNode *node = head->next;
+    while (node != head) {
+        FrameContext *obj = (node != nullptr) ? container_of(node, -8) : nullptr;
+        if (obj->field_0x18 != 0) {          // gate check
+            obj->vptr[+0x10](obj, phase);    // RECURSIVE: calls slot 2 on the member
+        }
+        node = node->next;
+    }
+}
+```
+
+Two important properties:
+1. The only element in the list is `self` (since there is exactly one
+   instance). So the walk finds itself and re-dispatches.
+2. The recursive self-dispatch is **gated on `self->field_0x18 != 0`**.
+   The constructor writes `field_0x18 = 0`, and no static code has been
+   found that sets it.
+
+**Therefore, in static analysis, this per-frame dispatch is a no-op.**
+The loop iterates the 1-element list, the gate fails, nothing happens.
+
+### What this means for the sim-tick hunt
+
+1. The chain `main_loop → DAT_710593a510 (std::function) → FUN_7103741700
+   (frame prologue) → DAT_710593a4c0->vtable[+0x10] (slot 2 walker)` is
+   **NOT the sim tick**. It is a decorator chain that, under current
+   static analysis, bottoms out in a no-op gate on `field_0x18`.
+2. The **real per-frame work lives inline inside `main_loop`'s body**
+   (`0x7103747270..0x710374ee68`, 0x7bf8 bytes = 31.7 KB). The only
+   thing `main_loop` needs from its `this` pointer is a handful of
+   small flag / counter fields — not virtual dispatch. This is
+   consistent with the large stack frame (0x25c0 bytes) and the fact
+   that `main_loop` loads game state from ~50+ unrelated globals
+   directly.
+3. `DAT_710593a2d8` (the second cached handle to the stack instance,
+   published by nnMain before the main_loop call) should be audited
+   next: it may reveal which code outside `main_loop` also consumes
+   this boot-context struct.
+4. The `field_0x18` gate is still interesting as an event flag — if
+   any runtime code sets it, a GDB watchpoint on
+   `&local_170.field_0x18` across a match would reveal when. But
+   without a static writer we cannot determine its semantics from
+   disassembly alone.
+
+### Still-open questions for Round 5 (deferred)
+
+- Which function writes `field_0x18` on the `nnMain::local_170`
+  instance, if any? (Need a watchpoint or a register-indirect scan.)
+- What does `main_loop` actually do with its 31.7 KB body besides the
+  frame-prologue call and Dispatcher A? Pool B identified only two
+  indirect-dispatch sites in the whole body. Is there a third that the
+  `DAT_710593a530 == 3` and `field_0x18` gates both refer to?
+- `DAT_710593a2d8` readers — static xref scan.
+- FUN_7103723fa0 allocates two child objects: a 0xb8-byte object at
+  `+0x20` (has two self-refs — libc++ list sentinel pattern) and a
+  0x68-byte object at `+0x28` (also two self-refs). These are the
+  "living" state containers; auditing their writes across match
+  transitions is the most promising next watchpoint target.
+
+### Functions referenced in this section
+
+- `FUN_7103723fa0` (main_loop `this` ctor) — decompiled cleanly, full
+  body above.
+- `FUN_7103724110` (dtor, vtable slot 0) — not decompiled.
+- `FUN_7103724300..71037243e0` (vtable slots 1–7) — disassembled
+  directly from ELF via Capstone; written up above.
+- `FUN_7103725a20..7103725a40` (vtable slots 13–15) — same.
+- `FUN_7103747270` (main_loop itself) — prologue disassembled only.
+  Full decompile is too large for a single pool session; next pool
+  should request orchestrator manual extraction for the body region
+  `0x7103747350..0x7103747be0` (between the frame-prologue call and
+  the Dispatcher A entry).

@@ -1019,3 +1019,53 @@ Body summary:
 - No static writer exists that clears DAT_710593a510 to null during
   gameplay. The slot is set once and stays set for the lifetime of
   the process. This RULES OUT DAT_710593a510 as a rollback arm signal.
+
+## 2026-04-10 Round 4 follow-up — main_loop's `this` class
+
+### Caller chain
+nnMain @ 0x71002c5cec calls main_loop (FUN_7103747270) with local_170
+(a stack object). FUN_7103723fa0 is the ctor. Before calling main_loop,
+nnMain also publishes local_170 to DAT_710593a2d8.
+
+### FrameContext class (vtable 0x710523bd38)
+Constructor writes:
+- +0x00: vptr = 0x710523bd38
+- +0x08, +0x10: 0 (list link)
+- +0x18: 0 (GATE flag — checked by slot 2 dispatch)
+- +0x20: alloc_0xb8_child (self-ref sentinels at 0 and +8)
+- +0x28: alloc_0x68_child (self-ref sentinels at 0 and +3*8)
+- +0x44: 0x811c9dc5 (FNV-1a offset basis — hash state)
+Inserts &this[1] into global doubly-linked list at PTR_LOOP_710523bd78.
+
+### Vtable slots (extracted via .rela.dyn R_AARCH64_RELATIVE)
+ 0 +0x00: 0x7103724110 dtor
+ 1 +0x08: 0x7103724300 dtor + operator delete
+ 2 +0x10: 0x7103724340 **iterate global list, call obj->vtable[+0x10] if obj->+0x18 != 0**
+ 3 +0x18: 0x71037243b0 ret (no-op)
+ 4 +0x20: 0x71037243c0 ret
+ 5 +0x28: 0x71017f4a80 ret (in a distant text block)
+ 6 +0x30: 0x71037243d0 ret
+ 7 +0x38: 0x71037243e0 ret
+ 8 +0x40: DATA -> 0x710523bd78 (list head back-ref)
+ 9 +0x48: DATA -> 0x710523bd78 (same)
+13 +0x68: 0x7103725a20 ret
+14 +0x70: 0x7103725a30 delete
+15 +0x78: 0x7103725a40 allocate-0x70 factory (child object)
+
+### Slot 2 behavior (the tail-call target from FUN_7103741700)
+Walks the global list, calls obj->vtable[+0x10] on each obj with
+obj->+0x18 != 0. Since there is exactly one instance of this class,
+the walk finds itself and recurses — but +0x18 is 0 in the ctor and
+no static writer exists, so the gate fails and nothing happens.
+This means the render-phase tail-call chain is a static no-op.
+
+### Interpretation
+main_loop's `this` is NOT a polymorphic frame driver. It is a small
+boot-context object with a mostly-empty vtable, an embedded FNV-1a
+hasher, and two child containers (0xb8 and 0x68 bytes). The real
+sim tick must live inline inside main_loop's 0x7bf8-byte body.
+
+### Open for Round 5
+- Runtime writer of +0x18 (the gate) — needs GDB watchpoint
+- Audit DAT_710593a2d8 readers (the second cached handle)
+- main_loop body 0x7103747350..0x7103747be0 needs manual extraction
