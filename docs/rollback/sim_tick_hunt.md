@@ -4785,3 +4785,138 @@ Remaining unknowns:
 - No Ghidra renames this session (class names still unconfirmed —
   refusing to publish `pead::TaskSystem` / `app::Task` to Ghidra
   without an RTTI / string hit).
+
+---
+
+## Pool A — Round 7 (partial): `register_task_active` caller audit
+
+Round 6 pinned down the TaskSystem singleton but left the sim-tick task
+identity unresolved. The recommended Round 7 was to audit the 15
+`register_task_active` (FUN_7103559220) callers — the smaller of the two
+register helpers, reasoning that "register as active from the start"
+fits a core per-frame pump.
+
+This round audited **3 of 15** callers via MCP decomp before running out
+of budget. All three are non-sim. Results cached in
+`data/ghidra_cache/pool-a.txt`.
+
+### FUN_7103757290 — `lib::mii::MiiModelRenderer` registration (NOT sim)
+
+The first register_task_active caller in pool-a territory. Its purpose
+is **confirmed by decoded string literals** — the function inlines 9
+packed-byte strings of the form
+`"lib::mii::MiiModelRenderer (crc_b_<variant>_l)"` with variants:
+`normal_opaque`, `mirror_opaque`, `shadow_0_opaque` .. `shadow_3_opaque`,
+`outline_opaque`, `outline_translucent`, `player_id`. The strings are
+hashed via an inlined FNV-1a loop (`h = h * 0x89 ^ byte`, seed
+`0x811c9dc5`) and passed to `FUN_710363ed20` (which stores the hash +
+length in a 16 B header).
+
+This is the per-frame renderer for Mii fighter head models (Mii Brawler
+/ Swordfighter / Gunner and CSS). Its Task is a 0x90-byte object at
+vtable `PTR_FUN_710522fd40`, wrapped in a 0x20-byte shim at vtable
+`DAT_710523c3a8`, held by a shared_ptr stored at `(param_1 + 0x24f8)`.
+
+The sibling destructor `FUN_7103757140` at the adjacent address was
+already named `MiiFighterDatabase_dtor_7103757140` in pool-a's earlier
+Ghidra renames. FUN_7103757290 is the matching init.
+
+**Verdict: rendering task, not sim.** Its `vt[0x28]` runs every frame
+but does draw work on Mii head meshes.
+
+### FUN_710356c910 — Effect/particle spawn helper (NOT sim)
+
+Large function (10+ parameters, two of them quaternions) with heavy NEON
+SIMD quaternion / transform math. Iterates an "effect entries" list at
+`(param_4 + 0x38)` with 0x820 B stride, where each entry contains a
+sub-array of 0x80 B objects. Creates effect instances, fills transform /
+color / opacity fields, and calls `register_task_active` on each.
+
+The two xrefs from this function are different branches of the same
+spawn logic (slot search vs. slot allocate). Both register an effect
+Task whose `vt[0x28]` updates a render-side transform, not game state.
+
+**Verdict: visual effect / particle spawner.** Working name (docs only):
+`effect_spawn_register_710356c910`.
+
+### FUN_71025ed7f0 — SubManager activation helper (NOT sim, SMALL)
+
+The smallest of the three, and the clearest example of the "embedded
+task" pattern:
+
+```c
+void FUN_71025ed7f0(ContainerOwner* owner) {
+  if (owner->enabled_0x81) return;            // idempotent guard
+  register_task_active(&owner->embedded_task_sptr);  // shared_ptr at +0x30
+  SubManager* sub = owner->sub_0x58;
+  if (!sub->registered_0x31) {
+    sub->registered_0x31 = 1;
+    // walk sub->pair_array[sub->pair_count], 16 B per pair:
+    for (Pair* p = sub->pair_array; p != end; ++p) {
+      bool* target = *(bool**)*p;
+      // toggle target based on sub->flags_0x30/0x31/0x32
+    }
+  }
+  owner->enabled_0x81 = 1;
+}
+```
+
+This is a "group activation" helper: turn a sub-manager on, batch-toggle
+its child flags, mark the container enabled. The Task shared_ptr lives
+embedded in the owning container at offset +0x30 (not heap-allocated —
+its storage is part of the owner).
+
+**Verdict: sub-manager enable helper.** Working name:
+`subManager_enable_71025ed7f0`.
+
+### Updated heuristic (important for Round 8)
+
+| Caller | Task class | Sim-shaped? |
+|--|--|--|
+| FUN_7103757290 | `lib::mii::MiiModelRenderer` | NO (render) |
+| FUN_710356c910 | effect/particle spawner | NO (render) |
+| FUN_71025ed7f0 | sub-manager enable | NO (?) |
+
+**All 3 sampled callers are non-sim, and specifically all 3 are
+render/visual/activation subsystems.** Small sample, but the direction
+is clear enough to pivot the hunt.
+
+Working hypothesis: **`register_task_active` is overwhelmingly used for
+subsystems that "always tick" once created** — renderers, effect pumps,
+activation helpers. These don't need to gate on match state. The sim
+tick is more likely to use **`register_task_inactive`
+(FUN_7103559340)** and get enabled later via `vt[0x40](task, true)`
+when a match boots. The 49:15 caller skew is consistent with "most
+subsystems have a run-state beyond just being registered".
+
+### Recommended Round 8
+
+1. **Pivot to `register_task_inactive` (FUN_7103559340) callers.** Pull
+   its full 49-caller xref list and bucket by address range:
+   - `0x710048..0x710070` — early boot (5 callers)
+   - `0x71014..0x71015` — module-level code (likely lua_bind-adjacent)
+   - `0x71022..0x71025` — game logic territory (~10+ callers)
+   - `0x7103172..0x7103175` — early framework
+   - `0x7103534..0x7103579` — late framework / scheduler
+2. **Prioritize the `0x71014..0x71025` bucket first.** That address range
+   holds the lua_bind / fighter module code per pool-a's existing
+   Ghidra cache for `FUN_71014f10c0` and `FUN_71022cd350`. A Task
+   registered from here is structurally the most likely sim candidate.
+3. **For any caller whose task object is created adjacent to the
+   register call,** decode the vtable at slot 5 (`vt[0x28]`) and grep
+   its body for `BattleObjectModuleAccessor`, `FighterManager`,
+   `ItemManager`, or fighter-slot iteration — the one that hits is the
+   sim owner.
+4. **Consider the GDB approach earlier.** Static audit of 49 callers is
+   a lot of context spend; a `watch *DAT_7105332fe8 + 0x28` breakpoint
+   during boot + one entry into training mode would log every insertion
+   in order and identify the sim tick in one session.
+
+### Artifacts this pass
+
+- `data/ghidra_cache/pool-a.txt` — appended Round 7 section with the 3
+  caller analyses + the pivot recommendation.
+- No `src/` changes. No Ghidra renames committed this session
+  (candidates tracked in docs: `MiiFighterDatabase_init_7103757290`,
+  `effect_spawn_register_710356c910`, `subManager_enable_71025ed7f0`).
+- Documentation-only pass per `WORKER-pool-a.md`.
