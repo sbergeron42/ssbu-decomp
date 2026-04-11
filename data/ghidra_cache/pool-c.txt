@@ -1590,3 +1590,102 @@ subsystem-specific managers. The "task_tree_add" is an internal
 Vtable A's slot 2 is a 4-insn leaf (compiler-emitted trivial function) this
 rules out the base-class default slot 2 as a per-frame tick. B/C/D override
 slot 2, but they are resource-manager-scope methods, not sim ticks.
+
+== Session 2026-04-11 — Round 8: DAT_71053346d0 / DAT_710593a6d0 identity ==
+
+=== CRITICAL CORRECTION to sim_tick_FOUND.md ===
+Round 7 documented `DAT_71053346d0` as the indirect-dispatch singleton read by
+main_loop at offset +0x5398. That address is WRONG. Actual ADRP decode:
+
+  0x710374c608: d0010f68  adrp x8, 0x710593a000   ; NOT 0x7105334000
+  0x710374c60c: f9436900  ldr  x0, [x8, #0x6d0]   ; ea = 0x710593a6d0
+
+Target global is `DAT_710593a6d0` (same page as Pool A/B's Mii Database
+root `DAT_710593a6a0`, only 0x30 bytes later).
+
+main_loop has TWO reads of this same address, not one:
+- 0x710374c3f8 (first occurrence — main_loop + ~0x5188)
+- 0x710374c60c (second occurrence — main_loop + ~0x5398)
+Both use the identical sequence: ldr → cbz → ldr vt → ldr vt[+0x30] → blr.
+Both immediately precede `bl 0x7103724a80` (task_run_outer, the sim tick).
+
+=== 0x710593a6d0 is a std::function __f_ field ===
+- The struct at 0x710593a6b0 is a libc++ `std::function<void()>` (SBO layout, 48B):
+  +0x00 vptr = 0x7105182268
+  +0x08 captured state word 0 = 0x71032ca620 (free function pointer)
+  +0x10 captured state word 1 = 0 (unused)
+  +0x18..+0x1F pad/align
+  +0x20 __f_ self-ref = 0x710593a6b0 (SBO points back to `*this`)
+- `DAT_710593a6d0` is the __f_ field. main_loop reads it, loads (*__f_)->vtable,
+  calls vt[+0x30] which is the generic `__func<FreePtr,Alloc,Ret(Args...)>::operator()`.
+- Install path:
+  * BSS zero at `FUN_71004468a0 + 0x2c` (str xzr, [x1, #0x20])
+  * REAL install inside `FUN_71022b7100` at 0x71022bce90..0x71022bced8:
+      build local std::function on stack → swap into &DAT_710593a6b0
+  * Swap helper = `FUN_71003cb050` (libc++ std::function<>::swap implementation)
+- Dtor path: `FUN_71022cd350` (Pool A confirmed as global teardown)
+
+=== std::function vtable at 0x7105182268 (via .rela.dyn) ===
+  vt[+0x00] = 0x71003cb1c0   slot 0 — __clone (new copy, heap alloc)
+  vt[+0x08] = 0x71032ca690   slot 1 — destroy (SBO trivial: cbz+call)
+  vt[+0x10] = 0x71032ca6a0   slot 2 — destroy_deallocate (sub sp, stp, call)
+  vt[+0x18] = 0x71032ca720   slot 3 — __clone(dst) (6-insn inlined copy)
+  vt[+0x20] = 0x71032ca740   slot 4 — (trivial `ret`)
+  vt[+0x28] = 0x71032ca750   slot 5 — (cbz+tail-call to 0x710392e590 = free?)
+  vt[+0x30] = 0x71032ca760   slot 6 — INVOKER: `ldr x0,[x0,#8]; br x0`
+
+The invoker is textbook libc++ "free function pointer std::function" body:
+  load the FreeFnPtr from the SBO at this+0x8 and tail-jump to it.
+
+=== The bound callable — FUN_71032ca620 ===
+Pool C decomp (read from raw bytes, Ghidra mis-groups it into FUN_71032ca0a0):
+
+  void tick_broadcast_710532e7a8(void) {
+      void* owner = *(void**)(0x710532e7a8);          // singleton, installed by FUN_71022b7100
+      FUN_71039c1410(&owner->field_0x18);              // lock
+      owner = *(void**)(0x710532e7a8);                 // reload under lock
+      void** it  = *(void***)(owner + 0x00);           // begin iterator
+      void** end = *(void***)(owner + 0x08);           // end iterator
+      while (it != end) {
+          auto* obj = *it;
+          if (*(u8*)(obj + 0x70) != 1) {               // skip-flag check
+              (*(void(**)(void*))((*(void**)obj) + 0x18))(obj);  // vt[+0x18] = slot 3
+          }
+          ++it;
+      }
+      FUN_71039c1420(&owner->field_0x18);              // unlock (tail call)
+  }
+
+=== Writer of the 0x710532e7a8 singleton ===
+Same ctor (FUN_71022b7100) that installs DAT_710593a6d0 ALSO installs
+0x710532e7a8 (at 0x71022bce68). Teardown in FUN_71022cd350 at 0x71022cf41c.
+So this collection is part of the Mii/global-init subsystem.
+
+FUN_71022b7100 is too large for Ghidra MCP (1.7MB disasm per Pool B's notes).
+Manual extraction needed to name the singleton class.
+
+=== Sim-safe for resim? ===
+PROBABLY PRESENTATION. Evidence:
+1. Same ctor as the Mii fighter database (Pool B) — not on the sim path.
+2. Iterates a locked collection and calls vt[+0x18] on each entry. No RNG,
+   no counter/world-state mutation visible in the invoker body.
+3. The direct BL to the sim (task_run_outer at 0x7103724a80) runs IMMEDIATELY
+   AFTER this indirect dispatch — the two calls are siblings, not nested.
+   If the indirect dispatch were part of the sim tick, the arrangement would
+   be caller-callee, not sibling-sibling.
+4. The hardware-watchpoint stack trace in sim_tick_FOUND.md returned via
+   `lr = 0x710374c628` (the direct BL's return site), NOT the indirect
+   BLR's return site. The RNG fire came from the DIRECT call, not this one.
+
+Recommendation for Eden rollback: SKIP the indirect dispatch at
+0x710374c61c during resim. Only re-issue the direct BL to 0x7103724a80.
+Needs live confirmation (watchpoint on a Mii cache field during resim to
+verify this callback is safe to skip).
+
+=== xref_bin_scan.py quirk documented ===
+Running `python tools/xref_bin_scan.py 0x71053346d0` against the typo'd
+address returned ONE false-positive writer (in FUN_71004407f0 at 0x7100442370)
+because an unrelated init function zeroes a struct at 0x7105334638 whose
+`+0x98` field lands at 0x71053346d0. The scanner is correct — this is a
+genuine write to that address — but the address itself was never meant to
+be the target. The real target is 0x710593a6d0.

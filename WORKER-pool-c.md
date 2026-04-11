@@ -2,50 +2,80 @@
 
 ## Model: Opus
 
-## Task: ROLLBACK Round 7 — investigate FUN_710151a5d0 + the 3 vtable-slot xrefs to FUN_7101344cf0
+## Task: ROLLBACK Round 8 — identify DAT_71053346d0 (the sibling indirect dispatch root)
 
-## Priority: HIGHEST — vtable slots reveal the abstract Task base class
+## Priority: HIGH — identifies the second per-frame subsystem main_loop runs
 
 ## Context
-Read `docs/rollback/sim_tick_hunt.md` first. **Round 6 architectural breakthrough**: main_loop is a fiber-scheduled task pump, sim runs as a task on a worker thread. Tasks register through `FUN_7101344cf0` (the gatekeeper).
+Read `docs/rollback/sim_tick_FOUND.md` first. The sim tick entry at `main_loop + 0x5384` is **preceded** by an indirect dispatch at `main_loop + 0x5378`:
 
-You found in Round 6 that there are 5 callers of `FUN_7101344cf0`:
-- 2 normal function callers (Pool B is decomping these)
-- 1 inline registrar `FUN_710151a5d0`
-- **3 vtable slots: `0x7105060680`, `0x710506b0f8`, `0x710506c5b8`**
+```
+0x710374c608:  adrp x8, 0x7105334000               ; singleton page
+0x710374c60c:  ldr  x0, [x8, #0x6d0]              ; x0 = *DAT_71053346d0
+0x710374c610:  cbz  x0, 0x710374c620              ; skip if null
+0x710374c614:  ldr  x8, [x0]                      ; x8 = x0->vtable
+0x710374c618:  ldr  x8, [x8, #48]                 ; vt[+0x30] = slot 6
+0x710374c61c:  blr  x8                            ; *** indirect dispatch ***
+0x710374c620:  mov  x0, x24                      ; next call setup
+0x710374c624:  bl   0x7103724a80                  ; the direct sim BL
+```
 
-The 3 vtable slots are the most interesting — **they mean some base class has a method that calls `task_tree_add` from inside a virtual method**. That base class is a Task framework class (probably `pead::Task` or similar). Identifying it would name the abstract type the entire task system uses.
+`DAT_71053346d0` is a new singleton we haven't identified. It runs its `vt[+0x30]` per frame, immediately before the direct sim BL. It's a sibling subsystem — possibly:
+- The stage tick
+- The effect tick
+- The fighter tick itself (meaning the direct BL is something else)
+- Some other per-frame subsystem
+
+Identifying it tells the rollback team what else has to be driven during resim (besides the direct BL).
 
 ## What To Do
 
-### 1. Decompile FUN_710151a5d0 (inline registrar)
-- `mcp__ghidra__decompile_function_by_address 0x710151a5d0`
-- Document parameters and what task it registers
-- Identify the task's vtable
+### 1. Find writers of DAT_71053346d0
+Use `tools/xref_bin_scan.py` (built by Pool C in Round 3):
+```bash
+python tools/xref_bin_scan.py store-offset 0x71053346d0
+```
 
-### 2. For each of the 3 vtable slots, find the owning vtable
-- The slot addresses are `0x7105060680`, `0x710506b0f8`, `0x710506c5b8`
-- Each is a single function pointer entry inside some vtable
-- Use `tools/xref_bin_scan.py` or `mcp__ghidra__get_xrefs_to` on each address
-- Find the **start** of each vtable (look backward for an aligned `.rodata` boundary)
-- Once you have the vtable address, use `mcp__ghidra__get_xrefs_to <vtable_addr>` to find the **constructor** that uses it
-- The constructor names the class
+OR if that format doesn't work, use the ADRP-propagation scanner form:
+```bash
+python tools/xref_bin_scan.py adrp-global 0x7105334000 0x6d0
+```
 
-### 3. Identify the abstract Task base class
-- All 3 vtable slots probably belong to **the same vtable** (the abstract Task base class)
-- Or they're 3 sibling derived classes that share an interface
-- Either way, the parent class is a candidate for the task base type
-- Look for FNV-hashed string constants in the constructor that might encode the class name
+The writer(s) are the install path(s). Usually:
+- One writer in `.init_array` (BSS zeroing — ignore this)
+- One or two writers in a real constructor function (these are what we want)
 
-### 4. For each task vtable found, decompile vt[2]
-- `vtable[+0x10]` is the per-frame tick
-- Decompile vt[2] for each candidate
-- Sim-shaped patterns:
-  - Iterating fighters via `FighterManager`
-  - Touching `BattleObjectModuleAccessor` modules
-  - Reading/writing RNG (`DAT_71052c25b0` area)
-  - Calling `app::sv_math::rand` (`0x7102275320`)
-- **Stop and report immediately if you find one that hits sim state.**
+### 2. Find the constructor
+For each real writer, identify the containing function. It's likely a subsystem initializer called from boot / match start.
+
+### 3. Decompile the constructor
+`mcp__ghidra__decompile_function_by_address` on the constructor. It will:
+- Allocate the object (via `je_aligned_alloc` or similar)
+- Store the vtable pointer as the first field
+- Initialize other fields
+- Store the object pointer into `DAT_71053346d0`
+
+Document:
+- The object's class (if the vtable has a `.dynsym` name)
+- The object's size
+- The vtable address
+
+### 4. Decompile vt[+0x30]
+This is the per-frame method main_loop calls on this singleton. Slot index 6 (byte offset 0x30).
+
+Once you have the vtable address, slot 6 is at `vtable + 0x30`. Look up the `.rela.dyn` entry for that address to find the runtime target (Pool A's technique from Round 4/5).
+
+Decompile the target function. Does it:
+- Iterate fighters? → also a sim tick (parallel to the direct BL)
+- Update graphics state? → renderer
+- Run stage hazards? → stage
+- Something else?
+
+### 5. Classify
+Is this indirect dispatch sim-safe or sim-unsafe for resim?
+- If it's a pure sim advance (like the direct BL): Eden needs to call both each resim tick
+- If it's presentation (render/audio): Eden must skip it during resim
+- If it's a mix: Eden needs a partial-call shim
 
 ## Stop-and-document rule
 If `mcp__ghidra__*` errors/timeouts:
@@ -54,40 +84,31 @@ If `mcp__ghidra__*` errors/timeouts:
 
 ## Output
 
-Append to `docs/rollback/sim_tick_hunt.md`:
+Append to `docs/rollback/sim_tick_FOUND.md` (new `## DAT_71053346d0 identity` section):
 
 ```markdown
-## Pool C — Round 7: vtable slot investigation + FUN_710151a5d0
+## DAT_71053346d0 — Round 8
 
-### FUN_710151a5d0
-- Registers task: [vtable 0xXXXX]
-- Task class: [name or unknown]
+### Writer
+- Function: `FUN_XXXX` at `0x710XXXX`
+- Containing subsystem: [name]
 
-### Vtable slots pointing at FUN_7101344cf0
-| Slot address | Owning vtable | Class | Method offset within vtable |
-|--------------|---------------|-------|----------------------------|
-| 0x7105060680 | 0xXXXX | ... | +0xNN |
-| 0x710506b0f8 | 0xXXXX | ... | +0xNN |
-| 0x710506c5b8 | 0xXXXX | ... | +0xNN |
+### Object type
+- Class: [name or "unknown"]
+- Vtable: `0x710XXXX`
+- Size: `0xNNN` bytes
 
-### Abstract Task base class
-- Vtable: 0xXXXX
-- Class: [name or "abstract Task — no symbol"]
-- Method that calls task_tree_add: [purpose]
+### vt[+0x30] target
+- Function: `FUN_XXXX`
+- Decomp summary: [what it does]
 
-### vt[2] of each candidate task
-| Vtable | vt[2] target | Sim-shaped? | Notes |
-|--------|--------------|-------------|-------|
-| 0xXXXX | FUN_YYYY | YES/NO | ... |
-
-### VERDICT
-[FOUND SIM TASK at vtable 0xXXXX]
-[OR: vtables identified but none sim-shaped]
+### Sim-safe for resim?
+[SIM-SAFE — Eden calls it each resim tick / PRESENTATION — Eden skips during resim / MIXED — partial shim]
 ```
 
 ## Quality Rules
-- NO `FUN_` names in committed src/ code
 - Documentation is the primary deliverable
+- `tools/xref_bin_scan.py` is your friend for scanning globals
 
 ## Build
 ```bash
