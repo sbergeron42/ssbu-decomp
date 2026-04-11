@@ -2,58 +2,62 @@
 
 ## Model: Opus
 
-## Task: ROLLBACK Round 7 — analyze FUN_7101344cf0 (task_tree_add gatekeeper)
+## Task: ROLLBACK Round 8 — service-call safety audit of FUN_7103724a80 (the sim tick entry)
 
-## Priority: HIGHEST — names the sim task class definitively
+## Priority: HIGHEST — BLOCKER for Eden-side resim prototype
 
 ## Context
-Read `docs/rollback/sim_tick_hunt.md` first. **Round 6 was the architectural breakthrough.** Pool C found:
+Read `docs/rollback/sim_tick_FOUND.md` first. The sim tick entry is **`main_loop + 0x5384` → `bl FUN_7103724a80`**. This was captured by a GDB hardware watchpoint on the RNG state during live Switch gameplay.
 
-- main_loop is a fiber-scheduled task pump, NOT the sim loop
-- The actual sim runs as a task on a worker thread
-- Tasks are registered via `FUN_7101344cf0` (the sole non-init writer of `DAT_7105332120`, the task tree root)
-- The per-tick method is `vt[2]` (byte offset +0x10), invoked by the generic runner `FUN_7103548240` on a worker thread behind `nn::os::SignalLightEvent`
-- **Only ~5 callers register tasks** through `FUN_7101344cf0` — one of them registers the sim tick
+Eden-side rollback resim plans to call `FUN_7103724a80` headlessly N times to replay frames after a misprediction. **This is only safe if the function and its call tree do NOT synchronously invoke any host service** — otherwise, resim re-fires side effects (audio, graphics, filesystem, LDN, wait primitives) that the host has already committed.
 
-**The rollback team identified `FUN_7101344cf0` as the gatekeeper. We already have it cached on disk** (it's the same 65 KB function we identified at the very start of this hunt and the orchestrator extracted earlier):
+The rollback team is blocked on this safety question. Your answer unblocks the Eden prototype.
 
-- **`data/ghidra_cache/FUN_7101344cf0.txt`** — 5,891 lines, full Ghidra decomp. Read with `Read` tool, do NOT call MCP.
+## The cached decomp
+**`data/ghidra_cache/FUN_7103724a80.txt`** — 267 lines, full Ghidra decomp. The orchestrator manually extracted it. **Read this with the `Read` tool, do NOT call MCP on `0x7103724a80`.**
 
 ## What To Do
 
-### 1. Read FUN_7101344cf0 from cache
-- Open `data/ghidra_cache/FUN_7101344cf0.txt` with `Read`
-- It's 5,891 lines — read it in chunks if needed
-- Pool C identified it as `task_tree_add` based on xrefs (sole writer of `DAT_7105332120`, called by 5 distinct sites)
-- **Confirm or refute** that classification by reading the function body
+### 1. Read FUN_7103724a80 in full
+It's only 267 lines — read the whole thing. Understand its structure.
 
-### 2. Find the linked-list insertion logic
-- `DAT_7105332120` is a singly-linked list head
-- Find the insertion: `LDR Xn, [DAT_7105332120]; STR new_node, [DAT_7105332120]; STR Xn, [new_node + 0x48]`
-- Document the parameters: what's the new node? Where does its data come from?
-- Specifically: is the function `task_tree_add(Task* task)` or `task_tree_add(SomeOtherType* obj)`?
+### 2. Enumerate every BL call
+For each direct BL and every indirect `blr` in the function body:
+- What address / symbol is it calling?
+- Is the callee a PLT stub to a `nn::*` or `nnsocket::*` symbol?
+- Does the callee route to one of the known scheduler primitives (`FUN_7103548240`, `FUN_7103549170`, `FUN_710354c720`)?
 
-### 3. Find the vtable enforcement (if any)
-- Does the function check the new node's vtable?
-- Does it call any method on the new node before/after insertion?
-- The vtable methods called here narrow down the abstract Task base class
+### 3. One-level recursion — check the suspicious callees
+For each BL target that isn't obviously safe (allocator, mutex, libc++ container helper), decompile it via `mcp__ghidra__decompile_function_by_address` and check its own BL set.
 
-### 4. Look for state-machine logic
-This function is 5,891 lines — much bigger than a simple linked-list add. It probably does much more than just registration:
-- State transitions on the task being added
-- Initialization of subsystems
-- Maybe entire fighter/match setup
-- Look for patterns that touch `BattleObjectModuleAccessor`, `FighterManager`, `BattleObjectWorld`, RNG state
-- **If FUN_7101344cf0 itself touches sim state, the caller chain is shorter than we thought**
+Known safe patterns (you can skip these):
+- `je_aligned_alloc` / `jeFree_*` / `operator_delete_*` (jemalloc)
+- `std::__1::*` libc++ containers
+- `std::mutex::lock/unlock`, `recursive_mutex::*` (just CAS spinlocks)
+- `phx::Fiber::switch_to_fiber` (just yields — NOT a host syscall at the coop level)
+- `FUN_7103548240` / `FUN_7103549170` / `FUN_710354c720` (the scheduler plumbing Pool C already classified in Round 6)
+- `ExclusiveMonitorPass` / `ExclusiveMonitorsStatus` (bare atomics)
 
-### 5. Cross-reference with the 5 callers
-The 5 callers Pool C found are:
-- `FUN_71014b2a40` — primary, large init (constructs a 0x50 ModuleSet container)
-- `FUN_7101523b60` — secondary registrar (Pool B is investigating this)
-- `FUN_710151a5d0` — inline registrar (Pool C is investigating this)
-- 3 vtable slots: `0x7105060680`, `0x710506b0f8`, `0x710506c5b8`
+**Known UNSAFE patterns** — flag these immediately:
+- `nn::os::Wait*`, `nn::os::*MessageQueue`, `nn::os::*Event`, `nn::os::SleepThread`
+- `nn::os::SignalLightEvent` / `WaitLightEvent` — this is how the scheduler wakes worker threads! **Any BL to this is a blocking side effect during resim.**
+- `nn::audio::*` — audio state committed to hardware
+- `nn::gr::*` / `nn::gfx::*` — graphics command submission
+- `nn::fs::*` — filesystem
+- `nn::ldn::*` / `nnsocket::*` — networking
+- `nn::diag::*` / `nn::dbg::*` — logging (safe-ish but still a side effect)
 
-For each caller, check what type of object is being passed in. Cross-reference with the cached file you're reading.
+### 4. Check the recursion depth
+The captured backtrace shows `FUN_7103724a80` recurses through `FUN_7103724d94` ↔ `FUN_71022df070`. Check those too:
+- Decompile `0x7103724d94` (small — should fit in MCP)
+- Decompile `0x71022df070`
+- Walk their BL sets for unsafe symbols
+
+### 5. Write a verdict
+Clean/dirty/conditional:
+- **CLEAN**: no unsafe BL reachable. Eden can `dynarmic_call_guest(0x7103724a80, x24)` directly during resim.
+- **DIRTY**: list the specific unsafe BLs. Eden needs a service-quarantine shim that stubs those functions during resim mode.
+- **CONDITIONAL**: some branches are clean, others are dirty. List which paths are gated by what and whether the dirty paths are reachable in a normal gameplay frame.
 
 ## Stop-and-document rule
 If `mcp__ghidra__*` errors/timeouts on any address:
@@ -62,44 +66,40 @@ If `mcp__ghidra__*` errors/timeouts on any address:
 
 ## Output
 
-Append to `docs/rollback/sim_tick_hunt.md`:
+Create `docs/rollback/sim_tick_safety.md`:
 
 ```markdown
-## Pool A — Round 7: FUN_7101344cf0 task_tree_add gatekeeper
+# FUN_7103724a80 — service-call safety audit
 
-### Function identity
-- Real name: [task_tree_add / something else]
-- Parameters: [list]
-- Body summary: [what it actually does in 5,891 lines]
+## TL;DR
+[CLEAN / DIRTY / CONDITIONAL]
 
-### Linked list insertion
-- Insertion site: line N of cached file
-- Logic: [push_front / push_back / sorted insert / other]
-- Vtable enforcement: [yes/no — what's checked]
+[One-paragraph verdict — can Eden call this function headlessly during resim?]
 
-### Touched state
-- Touches RNG? [yes/no]
-- Touches FighterManager? [yes/no]
-- Touches BattleObjectWorld? [yes/no]
-- Touches BattleObjectModuleAccessor? [yes/no]
+## Direct BLs inside FUN_7103724a80
+| Address | Target | Symbol | Verdict |
+|---------|--------|--------|---------|
+| 0xXXXX  | 0xYYYY | ...    | safe/unsafe/TBD |
 
-### Caller objects
-| Caller | Object type | Vtable | Sim-shaped? |
-|--------|-------------|--------|-------------|
-| FUN_71014b2a40 | ... | ... | ... |
-| ...    | ...         | ...    | ...         |
+## Recursive walk (1-2 levels)
+| Path | Reaches service? |
+|------|------------------|
+| FUN_7103724a80 → FUN_XXXX → nn::os::... | YES — blocking |
+| ...  | ... |
 
-### VERDICT
-[FOUND SIM TASK at vtable 0xXXXX — registered by FUN_YYYY]
-[OR: FUN_7101344cf0 is task_tree_add but the sim task is registered by a caller we haven't decomped yet — recommend Round 8 with target X]
-[OR: STATIC ANALYSIS EXHAUSTED — recommend GDB watchpoint approach]
+## Unsafe branches
+[List of specific call sites with exact addresses and what service they hit]
+
+## Service-quarantine shim requirements
+[List of functions Eden must stub during resim mode, OR "no shim needed"]
+
+## Confidence
+[HIGH — all paths traced / MEDIUM — some timeouts / LOW — analysis incomplete]
 ```
 
-If you find the sim task, write a TL;DR at the top so the rollback team can find it instantly.
-
 ## Quality Rules
-- NO `FUN_` names in committed src/ code
 - Documentation is the primary deliverable
+- If you DO decomp anything to src/, standard rules apply (no FUN_ names, no Ghidra vars, no raw vtable dispatch, cast density under 10%)
 
 ## Build
 ```bash
