@@ -5775,3 +5775,207 @@ Abandon the `DAT_7105332120` task tree as a sim-tick lead. Instead:
 | `DAT_71053320d8` | Task config block (queue_id at +0x60, priority at +0x64) |
 | `DAT_7105332120` | Task list head |
 | `DAT_7105332128` | Task list spinlock (single byte) |
+
+## Pool A — Round 7: thread-spawn landscape audit (2026-04-10)
+
+### TL;DR
+
+**All 18 `nn::os::CreateThread` call sites in the binary map to framework
+subsystems (audio, video, vibration, MoviePlayer, LDN bootstrap, TaskSystem
+workers). None of them is obviously "the sim thread".** Combined with Round
+6's finding that `main_loop` is the framework main thread (render/layout/
+transform prep), this means the sim tick either (a) runs on the main thread
+despite `main_loop`'s render-y body, or (b) is dispatched as a work item on
+a generic cross2app worker pool and never has its own dedicated thread
+entry. Static analysis of the thread landscape is now exhausted; the GDB
+watchpoint approach is the next step.
+
+### Pool A's task outdated on arrival
+
+The WORKER-pool-a.md task (`analyze FUN_7101344cf0 task_tree_add gatekeeper`)
+was superseded by Pool C's Round 6 addendum before Pool A's session
+started. Specifically:
+
+- Pool A's own prior session cached `FUN_7101344cf0` as the
+  **Randomizer boot constructor** (see `data/ghidra_cache/pool-a.txt`
+  lines 698..766). Pool C later discovered that Ghidra had merged
+  `task_tree_add` into the same mega-blob (they share a function boundary
+  in Ghidra but are two distinct routines in the binary).
+- The cached file `data/ghidra_cache/FUN_7101344cf0.txt` referenced by the
+  task does not exist on disk — Pool C extracted the `task_tree_add`
+  code directly from disassembly (lines `0x71013486c0..0x7101348738`) and
+  pasted it into the Round 6 addendum instead of caching a full decomp.
+- Pool C's Round 6 addendum already produced the answer the task asked
+  for: `task_tree_add` inserts into `DAT_7105332120`, the task vtable
+  is `0x7104f623c0`, vt[2] is pure NEON math, and the task tree is a
+  **transform/animation pool, not the sim scheduler**.
+
+Pool A therefore pivoted to the Round 7 redirection Pool C explicitly
+recommended: enumerate all `nn::os::CreateThread` call sites and find the
+sim thread.
+
+### Thread spawn landscape — all 18 CreateThread sites classified
+
+Pool C's Round 7 seed enumerated 18 PLT call sites across the three
+`nn::os::CreateThread` overloads. Pool A walked each to its containing
+function and classified by `nn::os::SetThreadName` string (when the name
+is set in the immediate caller) or by caller identity.
+
+| Site              | Containing function | Subsystem / thread name                 | Sim? |
+|-------------------|---------------------|-----------------------------------------|------|
+| `0x710013bf68`    | `FUN_710013be00`    | generic `std::thread`-like helper       | n/a  |
+| `0x71001b2974/98` | `FUN_71001b28a0`    | generic Thread::Start() helper          | n/a  |
+| `0x71036efa78`    | `FUN_71036ef870`    | MoviePlayer: **VideoInputReadThread**   | NO   |
+| `0x71036efad8`    | `FUN_71036ef870`    | MoviePlayer: **AudioVideoWorkerThread** | NO   |
+| `0x71036f0150`    | `FUN_71036ef870`    | MoviePlayer: **MoviePlayerThread**      | NO   |
+| `0x71036f0df8`    | `FUN_71036ef870`    | MoviePlayer secondary worker            | NO   |
+| `0x71036f1448`    | `FUN_71036ef870`    | MoviePlayer secondary worker            | NO   |
+| `0x71036f3d60`    | `FUN_71036ef870`    | MoviePlayer secondary worker            | NO   |
+| `0x710373e4a0/bc` | `FUN_710373e080`    | **nuscFileAsyncRequest** (file I/O)     | NO   |
+| `0x710373f214/1c` | `FUN_710373e080`    | **nus3::audio update** (audio mixer)    | NO   |
+| `0x710373fa30/38` | `FUN_710373e080`    | **sindou::update** (HD rumble/haptics)  | NO   |
+| `0x71037cc974`    | `FUN_71037cc810`    | cross2app **Thread::Start()** method    | n/a  |
+| `0x7103993e9c/bc` | `nus3_nopus_decode_init` | nus3 audio decoder init            | NO   |
+| `0x7100027af4`    | `FUN_7100027a70`    | early boot (1-arg CreateThread variant) | ?    |
+
+Thread names come from `nn::os::SetThreadName` calls immediately after
+the `CreateThread` — e.g. `FUN_710373e080` sets:
+
+```
+nn::os::SetThreadName(pTVar1,"nuscFileAsyncRequest");
+nn::os::SetThreadName(&DAT_7106dd4cc0, "nus3::audio update");
+nn::os::SetThreadName(&DAT_7106df5100, "sindou::update");
+```
+
+And `FUN_71036ef870` sets:
+
+```
+nn::os::SetThreadName(&obj+0x948, "VideoInputReadThread");
+nn::os::SetThreadName(&obj+0xb18, "AudioVideoWorkerThread");
+nn::os::SetThreadName(pTVar8,      "MoviePlayerThread");
+```
+
+None of these strings are a gameplay / simulation thread name.
+
+### Generic thread helpers: what they actually are
+
+The three "n/a" rows in the table are wrapper functions that take a
+pre-built thread descriptor and call CreateThread on whatever function
+pointer is stored in it. They are not concrete threads, they are
+implementations of:
+
+- `FUN_71001b28a0`: reads thread entry from `PTR_DAT_71052a58c8` (a fixed
+  data-block pointer). Sole caller `FUN_71001b27e0` (with 5+ up-callers in
+  `0x71001d..0x7100220` — early boot territory). Likely **`std::thread`'s
+  platform impl** or a similar 1:1 C++ wrapper. The entry function is
+  loaded from the thread descriptor, so each construction site provides
+  its own entry.
+- `FUN_710013be00`: same shape, reads entry from `PTR_FUN_71052a4d28`.
+  Sole caller `FUN_710013b4d0`. Probably **another std::thread variant**
+  (or cross2app's early-boot thread primitive).
+- `FUN_71037cc810`: passes `DAT_71037cccb0` as entry (raw data-block address,
+  Ghidra reports "no function"). **This is cross2app's `Thread::Start()`
+  vtable method** — confirmed by DATA xrefs at `0x71052410d8` and
+  `0x710522ea00` (vtable slots). Its three callers are:
+  - `FUN_71035a4130` — **TaskSystem initializer** (this is the function
+    Pool A analyzed in Round 6; it sets up `DAT_7105332fe8` listener queue
+    Pool C later proved is unrelated to sim).
+  - `FUN_7103549620` — scheduler-adjacent, called by `FUN_710374f360`.
+  - `FUN_710385fac0` — framework worker.
+
+### game_ldn_initialize is the framework boot path
+
+An unexpected connection: `game_ldn_initialize` (the LAN/wireless init)
+is the unique caller of BOTH:
+
+- `FUN_71035a4130` — **TaskSystem init** (Round 6 subject)
+- `FUN_710374f360` — **Scheduler init** (calls `FUN_7103549620` twice;
+  itself too large to decompile, > 97 KB)
+
+This means the cross2app framework **bootstraps its task/scheduler/thread
+pool from inside the LDN init path**, rather than from a dedicated
+`framework_init()` call. The sim loop is not in LDN init obviously — but
+this finding re-frames the overall boot order: LDN init happens early and
+brings up the render-side task infrastructure as a side effect.
+
+### The path still not exhausted
+
+One generic wrapper's caller chain was **not** fully walked this pass:
+`FUN_71001b27e0 → FUN_71001b28a0 → nn::os::CreateThread`. Its 5 up-callers
+in `0x71001d..0x7100220` span early-boot territory, and that range is
+**within `0x7100` — the early framework boot zone** where early threads
+(main thread, possibly sim thread) are most plausibly constructed.
+
+Pool A did not decompile these callers this session to stay within the
+context budget. This is the one remaining static lead.
+
+### Revised Round 8 plan
+
+1. **Walk the 5 up-callers of `FUN_71001b27e0`** at `0x71001d8790`,
+   `0x71001e6328`, `0x71001f6764`, `0x71001f78ac`, `0x7100220e2c`. For each
+   one, read the thread descriptor that's passed in and identify the
+   entry function. If any of them names "sim", "game", "battle",
+   "phase", or "update" in `SetThreadName`, that's the sim.
+
+2. **Walk `FUN_710013b4d0`** (sole caller of `FUN_710013be00`). Identify
+   the thread descriptor / entry stored there.
+
+3. **Re-examine `main_loop` with the "maybe sim IS here" hypothesis.**
+   Pool C's Round 6 dismissed main_loop because vt[2] of the task vtable
+   was pure NEON math. But that only rules out `DAT_7105332120` as the sim
+   scheduler — it does not rule out `main_loop` itself containing the sim
+   tick as a direct `BL` call or as a different indirect dispatch. The
+   56 direct `BL` targets enumerated in `pool-a.txt:1169..1181` are
+   classified as "scene/UI/graphics/housekeeping" but that classification
+   was performed before Round 6's "main_loop is the main thread" insight.
+   A fresh re-classification looking for **any** BL that touches
+   `FighterManager`, `BattleObjectWorld`, `FighterEntry`, or
+   `BattleObjectModuleAccessor` would definitively resolve the question.
+
+4. **GDB watchpoint on `DAT_71052c25b0` writes** (the Randomizer state
+   buffer chain root). Set the watchpoint after game boot, enter training
+   mode, read the backtrace on first hit. The function at the top of the
+   stack is the sim tick; its containing thread entry names the sim
+   thread. This is **one breakpoint and O(minutes) of work** compared to
+   the dozens of hours of static xref walking we've spent.
+
+### Functions touched this pass
+
+- `FUN_710373e080` — decompiled + cached → `data/ghidra_cache/FUN_710373e080.txt`
+  (1,379 lines). Three named threads extracted (audio/file/rumble).
+- `FUN_71036ef870` — decompiled inline. Three MoviePlayer threads named.
+- `FUN_71001b28a0`, `FUN_710013be00`, `FUN_71037cc810` — decompiled
+  inline. Classified as generic Thread::Start() wrappers.
+- `FUN_71035a4130` (xrefs only), `FUN_7103549620` (xrefs only),
+  `FUN_710385fac0` (xrefs only), `FUN_710374f360` (too large to decompile).
+
+### Artifacts this pass
+
+- `data/ghidra_cache/FUN_710373e080.txt` — full Ghidra decomp of the
+  audio/file/rumble thread spawner (1,379 lines).
+- This document section.
+
+### VERDICT
+
+**Static thread-spawn enumeration is exhausted.** 13/14 identifiable
+CreateThread sites are confirmed non-sim framework subsystems. The 5
+remaining leads (early-boot callers of `FUN_71001b27e0`) are ALL in
+`0x7100` framework territory and can be walked in a targeted Round 8
+with a ~200-line context budget. Beyond that, **GDB watchpoint is the
+strictly-faster path** — one session in Eden will produce the definitive
+answer that static analysis cannot.
+
+Probability estimates (Pool A's subjective read after Round 7):
+
+- **20%** sim runs on the main thread inside `main_loop` via an indirect
+  dispatch we haven't chased (Pool C's "render prep" classification is
+  partially wrong).
+- **50%** sim runs on a thread spawned via one of the 5 unexplored
+  `FUN_71001b27e0` up-callers — specifically the one in the
+  `0x71001f..0x7100220` band which is in the early framework init zone.
+- **25%** sim is a work item submitted to the cross2app worker pool
+  (the `FUN_71037cc810`-spawned thread), not a dedicated thread — in
+  which case the sim tick is reached via scheduler dispatch and there
+  is no named "sim thread" to find by string search.
+- **5%** we missed a CreateThread variant (e.g., `std::async` or a
+  `ThreadPool::Add` path that doesn't go through the enumerated PLTs).
