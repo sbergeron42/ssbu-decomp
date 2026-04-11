@@ -1995,3 +1995,318 @@ The right tool for "who writes this global" when Ghidra's xref index is incomple
 5. Also check every `BL` where an argument register `X0..X7` holds the exact target (setter-helper pattern) and every store where the source register currently holds the target (pointer-init pattern).
 
 For the record, Pool C's scanner found 3 reads, 1 write, 0 setter-helper `BL` calls, 0 pointer-init stores, searching the full ~60 MB `.text`. Total scan time ~10 s per query. The script lived in the pool-c scratch buffer (not committed); a next pool that wants a reusable version should write it to `tools/xref_bin_scan.py`.
+
+---
+
+## Pool A — mii_manager+0x24e8 back-reference (DEAD END CONFIRMED)
+
+**TL;DR.** The back-reference at `MiiFighterDatabase + 0x24e8` points to a
+`lib::mii::MiiModel_Renderer` — a 0x2db0-byte **graphics/rendering subsystem**
+that owns shaders, VSM shadow passes and draw material slots. Its list at
++0x2da8 is a render-node list, not a list of tickable game objects.
+Combined with Pool C's finding that `DAT_710593a530 == 3` is never written
+statically, Dispatcher A is now **double-dead**: its gate flag never
+triggers *and* its list is for Mii rendering. The sim-tick hunt must look
+elsewhere. Retire Dispatcher A from the candidate board.
+
+### Methodology
+
+Pool C's ADRP-propagation scan technique was committed as
+`tools/xref_bin_scan.py` so future pools can reuse it without rewriting.
+A follow-up `tools/scan_mii_24e8.py` layered two hunting modes on top:
+
+1. **External writer** pattern: track every `ADRP 0x710593a000; LDR [.,#0x6a0] -> Rm`
+   and look for later `STR [Rm, #0x24e8]`. **Zero hits.** No function in
+   the binary loads the Mii manager singleton pointer *from the global*
+   and then writes its +0x24e8 field. The writer therefore has to be
+   a method that already has the `this` pointer in X0.
+
+2. **Method-form writer** pattern: sweep every `STR Xt, [Xn, #0x24e8]`
+   where Rt is not XZR, trace Rn backwards through the function to see
+   whether it was initialised from `MOV Rn, X0` at entry. Five raw hits,
+   reduced to the single real candidate via caller analysis.
+
+Then used `tools/find_callers.py` to count BL callers of each candidate
+function. This is the step that identified the right writer conclusively:
+only one of the candidates had a caller that lived inside the Mii manager
+constructor body (`0x71022b7100..0x71022cd31f`).
+
+### Writer site
+
+- **Writer instruction**: `0x7103757cd0: STR X20, [X19, #0x24e8]` is the
+  actual field store. X19 = Mii manager (the `this` pointer, passed in
+  X0 at function entry and copied to the callee-saved X19). X20 = the
+  newly-allocated back-referenced object (the MiiModel_Renderer holder).
+- **Containing function**: `FUN_71037577a0` — renamed candidate:
+  `FighterMiiManager::reserveAndInitMiiModels(this, 0x85 /*count*/)`.
+  The function starts at `0x71037577a0` and exits around `0x7103758390`.
+- **Caller**: exactly one `BL` site targets `0x71037577a0`, and it is at
+  `0x71022ca4d0`, sitting inside `FUN_71022b7100` (the Mii manager
+  constructor, verified range). The call is:
+
+```
+71022ca4b0  STR XZR, [X20, #0x24e8]          ; zero-init the field first
+71022ca4b4..bc STR XZR, [X20, #0x24d0..2500] ; zero-init six adjacent slots
+71022ca4c0  STR X20, [X19, #0x0]             ; save this onto enclosing struct
+71022ca4c4  STR X19, [X21, #0x6a0]           ; publish DAT_710593a6a0 singleton
+71022ca4c8  LDR X0,  [X19, #0x0]             ; X0 = the Mii manager
+71022ca4cc  MOVZ W1, #0x85
+71022ca4d0  BL  0x71037577a0                 ; reserveAndInitMiiModels(mii, 133)
+```
+
+  The `X19` here is the outer owner that holds `DAT_710593a6a0` in its
+  +0x6a0 field; the Mii manager itself is at `*(X19)`. `FUN_71037577a0`
+  is called with that loaded pointer as its only non-count argument.
+
+### What `FUN_71037577a0` actually does
+
+Ghidra's decompile of `FUN_71037577a0` cleanly resolves to three phases
+once the field-offset constants (`DAT_000024d8` etc.) are read as
+`this + 0xNN`:
+
+**Phase 1 — Mii database prime (CharInfo vector).**
+
+```c
+std::__1::mutex::lock();
+nn::mii::Database::Initialize();
+nn::mii::Database::Get(pCVar1, &err, this + 0x60, 100);     // fetch up to 100 CharInfo entries
+nn::mii::Database::BuildDefault(pCVar1, this + 0x22c0);     // 6 default Mii templates,
+nn::mii::Database::BuildDefault(pCVar1, this + 0x2318);     //   stride 0x58, contiguous
+nn::mii::Database::BuildDefault(pCVar1, this + 0x2370);     //   at this+0x22c0
+nn::mii::Database::BuildDefault(pCVar1, this + 0x23c8);
+nn::mii::Database::BuildDefault(pCVar1, this + 0x2420);
+nn::mii::Database::BuildDefault(pCVar1, this + 0x2478);
+```
+
+This pins two facts about the `FighterMiiManager` struct:
+
+- **+0x20** is an embedded `nn::mii::CharInfo` (the "own" player mii).
+- **+0x60** is an array of up to 100 `CharInfo` entries retrieved from
+  the console's Mii database (the "pool" of real user miis available
+  for CPU opponents / Mii Brawler customisation).
+- **+0x22c0..+0x24d0** is 6 × `sizeof(CharInfo) = 0x58` = 0x210 bytes
+  of default-built Mii templates.
+
+**Phase 2 — std::vector resize to 133 elements, 0x68 stride.**
+
+Fields at +0x24d0..+0x24e0 form a classic libc++ `vector`:
+
+```
+this + 0x24d0  = begin_ptr         (heap)
+this + 0x24d8  = end_ptr
+this + 0x24e0  = cap_end_ptr
+```
+
+The loop body calls `je_aligned_alloc(0x10, count*0x68)`, copies the
+existing 0x68-byte elements over, and ref-count-decrements shared_ptrs
+via the `ExclusiveMonitorPass` / `__shared_weak_count::__release_weak`
+pattern. Element stride 0x68 = size of a `std::shared_ptr<X>` plus a
+small embedded payload (likely `std::pair<CharInfo*, std::shared_ptr<MiiModel>>`
+or similar — 104 bytes).
+
+**Phase 3 — Allocate the MiiModel_Renderer back-reference.**
+
+This is where `+0x24e8` gets written. The relevant slice:
+
+```c
+/* --- allocate a holder (8 bytes: one pointer) --- */
+plVar23 = (long *)je_aligned_alloc(0x10, 8);
+if (plVar23 == NULL) { /* OOM retry via DAT_7105331f00 */ }
+
+/* --- allocate the MiiModel_Renderer itself (0x2db0 bytes) --- */
+lVar28 = je_aligned_alloc(0x10, 0x2db0);     // <--- SIZE 0x2db0 !!!
+if (lVar28 == 0) { /* OOM retry */ }
+
+FUN_710357c940(lVar28, &local_c0);           // MiiModel_Renderer::ctor(this, config)
+*plVar23 = lVar28;                           // holder->ptr = renderer
+
+/* --- allocate a 0x20-byte std::shared_ptr control block --- */
+puVar10 = (undefined8 *)je_aligned_alloc(0x10, 0x20);
+*puVar10 = &DAT_710523c3a8;                  // shared_ptr control-block vtable
+puVar10[1] = 0;                              // ref_count
+puVar10[2] = 0;                              // weak_count
+puVar10[3] = plVar23;                        // managed holder
+
+/* --- THE FIELD WRITES --- */
+*(long **)(this + 0x24e8) = plVar23;         // <--- raw pointer to holder
+                                             // (the "back-reference")
+old = *(long **)(this + 0x24f0);
+*(undefined8 **)(this + 0x24f0) = puVar10;   // <--- the shared_ptr control block
+                                             // (OWNS the holder/renderer)
+if (old != NULL) { __release_weak(old); }    // release previous incarnation
+```
+
+### Why the destructor "didn't free" +0x24e8
+
+The prior pool-pass concluded that +0x24e8 is "non-owning" because the
+Mii manager destructor does not explicitly delete it. That conclusion
+was *formally* correct but the framing was wrong: **+0x24e8 is the raw
+fast-access pointer; +0x24f0 is the shared_ptr control block that
+actually owns the renderer.** The destructor releases via the
+shared_ptr at +0x24f0, which transitively frees:
+
+- the 0x20-byte control block (`puVar10` above)
+- the 8-byte holder (`plVar23`)
+- the 0x2db0-byte `MiiModel_Renderer` (`lVar28`)
+
+So the Mii manager **does** own the renderer; it just owns it through a
+shared_ptr slot one field to the right. The raw back-pointer at +0x24e8
+is a performance shortcut to skip the control-block indirection — the
+same `shared_ptr::get()` caching pattern that libc++ users write by hand
+when they need hot-path access.
+
+### Back-referenced subsystem type — lib::mii::MiiModel_Renderer
+
+`FUN_710357c940` is confirmed as the constructor of a rendering class,
+not a simulation class, based on its string tables and resource loads.
+The full decompile (~117 KB) is cached at
+`data/ghidra_cache/FUN_710357c940.txt`. Key evidence:
+
+- **Size**: zeroes a `memset(this+8, 0, 0x5b8)` block and then
+  initialises individual fields up through `this[0x5b5]` (= byte
+  offset 0x2da8). The allocation size from the caller is exactly
+  `0x2db0` bytes, confirming the size Pool B inferred from Dispatcher A's
+  access pattern.
+- **Shader resource keys** (hashed FNV-1a and passed to material
+  loaders): `s_mo_mii_opaque_VS`, `s_mo_mii_opaque_PS`,
+  `PTR_s_MiiVS_710522fc68`, `PTR_s_MiiPS_710522fcb8`.
+- **VSM (Variance Shadow Map) framebuffers**: `s_FB_VSM_256`,
+  `s_FB_VSM_512`, `s_FB_VSM_1024`, and
+  `s_FB_FOUR_DIRECTION_SHADOW_GAUSS`.
+- **Main vtable**: `PTR_LAB_710522efe0` (stored at offset 0 and at
+  several sub-object offsets as re-initialisation markers).
+- **Zero references** to fighters, battle objects, physics, frame
+  counters, `GlobalParameter`, `FighterManager`, `BattleObjectWorld`,
+  or any `situation_kind` field.
+
+The class is therefore confidently identified as
+**`lib::mii::MiiModel_Renderer`** (or the `app::` namespace equivalent —
+the leading `lib::mii::` strings Pool B found earlier referred to
+*sibling* mii shader names, not this class; the class's own string-table
+entries use the shader symbols above). Candidate formal names:
+
+- `app::FighterMiiModelRenderer`
+- `lib::mii::MiiModelRenderer`
+- `app::MiiCharaRenderer`
+
+The exact chosen name is a documentation detail; its *function* is
+fully pinned: allocate and issue draw calls for Mii fighter models with
+shadow/outline/player-id passes and per-LOD shader variants.
+
+### The list at +0x2da8 — render resource list, NOT tickables
+
+The constructor reaches +0x2da8 late in its init sequence and performs:
+
+```c
+this[0x5b5] = 0;                              // initial null (offset 0x2da8)
+...
+lVar21 = je_aligned_alloc(0x10, 0x88);        // 0x88-byte list node
+FUN_7103587930(lVar21, &local_140);           // node init (probably
+                                              //   lib::mii::MiiRendererNode::ctor)
+this[0x5b5] = lVar21;                         // +0x2da8 = first node
+```
+
+So **+0x2da8 holds a pointer to the head of a linked list whose
+elements are 0x88 bytes each**. 0x88 bytes is far too small for a
+fighter (`BattleObjectFighter` is at least 0x20000), a battle object
+(`BattleObject` is at least 0x800), or a scene entity. It sits neatly
+in the size range of render resources (materials, draw items, shader
+binding slots), which is exactly what the rest of the constructor is
+building.
+
+Adjacent fields around +0x2da8 support this read:
+
+- `this[0x5b2]` = `0xffffffffffffffff` (= handle sentinel `~0ull` —
+  typical for "invalid resource-handle" in render engines)
+- `this[0x5b3]` = `0xffffffffffffffff` (second handle sentinel)
+- `this[0x5b4]` (single byte at +0x2da0) = `0` (status flag)
+- `this[0x5b5]` (+0x2da8) = the list head pointer
+
+That 4-field cluster {handle, handle, status, list-head} is canonical
+"resource entry + its dependent list" layout in engine code, e.g.
+`{material_handle, pipeline_handle, dirty_flag, mesh_bind_list_head}`.
+
+### Dispatcher A revisited
+
+Reassembling the chain from `FUN_7103747270` (main_loop), line 558:
+
+```c
+app::FighterMiiManager *mii    = *DAT_710593a6a0;
+void                  **holder = *(void ***)((char*)mii + 0x24e8);  // +0x24e8
+void                   *Y      = *holder;                            // the MiiModel_Renderer
+list_node_t           *first   = *(list_node_t **)((char*)Y + 0x2da8);
+```
+
+Where `Y` is a `lib::mii::MiiModel_Renderer` and `first` is the head of
+its internal render-resource list (0x88-byte nodes).
+
+The per-iteration body at `main_loop` lines 564..572 which prior passes
+hypothesised as a "sim tick" is actually traversing that render list.
+Specific counter-evidence:
+
+- The list element size is 0x88, not fighter/BO size.
+- The owner is `lib::mii::MiiModel_Renderer`, not a tick manager.
+- The constructor of the owner does **pure graphics init** (shaders,
+  VSM framebuffers, shadow passes) with no sim/physics hooks.
+- Dispatcher A's gate flag `DAT_710593a530 == 3` has **zero static
+  writers** in the entire .text (Pool C), so the branch is not
+  reachable under static analysis.
+
+**Status: STILL DEAD. Dispatcher A is neither a sim tick nor even a
+live execution path. It is a (possibly dead) render-pass walk over
+Mii draw items, guarded by a flag that no static code sets.**
+
+### Disposition for the rollback roadmap
+
+1. **Retire Dispatcher A from the sim-tick candidate board.** It is now
+   contradicted from both directions (gate unreachable + list-type
+   wrong). Future passes should not spend compute re-examining this
+   dispatcher.
+2. **The "safety smoke test" for `vtable[+0x28]` on list elements
+   proposed in the pool-b writeup is moot.** Running the test would
+   only answer "does the MiiModel_Renderer draw-list touch host
+   services", which is interesting for graphics-subsystem research
+   but has no bearing on the sim tick.
+3. **The +0x24e8/+0x24f0 ownership model is a useful precedent** for
+   the Mii manager struct layout work:
+   - `FighterMiiManager::+0x0000..+0x0020` — locks / header
+   - `+0x0020` — embedded `nn::mii::CharInfo` (self mii)
+   - `+0x0060..+0x22c0` — 100 × `CharInfo` pool from console database
+   - `+0x22c0..+0x24d0` — 6 × `CharInfo` default templates
+   - `+0x24d0..+0x24e0` — `std::vector<SharedPtrPair>` (134-element)
+   - `+0x24e8` — raw ptr to MiiModelRendererHolder
+   - `+0x24f0` — `std::shared_ptr<MiiModelRendererHolder>` control block
+   - `+0x24f8..+0x2508` — another shared_ptr slot (a sibling renderer
+     or a secondary sub-object; stored alongside +0x24f0 in the ctor)
+
+   A proper Mii manager header can now be stubbed with these field
+   names plus derivation chains pointing back at `FUN_71037577a0` and
+   `FUN_710357c940`.
+4. **Where the sim tick actually lives** remains the phase-6/phase-7
+   candidates in `main_loop.md` §6e. Pool C's and Pool A's scanners
+   (`tools/xref_bin_scan.py` and the small helpers in
+   `tools/scan_mii_24e8.py`) are now committed and reusable for hunting
+   field writers via direct binary scan when Ghidra's xref index falls
+   short.
+
+### Scanner delta (committed to tools/)
+
+- `tools/xref_bin_scan.py` — the reusable ADRP-propagation scanner that
+  Pool C verbally described but did not commit. Supports:
+  - `store-offset <offset> [size]` — all STR/STUR at an immediate offset
+  - `adrp-global <page> <off>` — ADRP/ADD/LDR/STR chain writers for a
+    specific global
+  - `window <addr>` — tiny-disassembler dump of a small window around
+    the requested address
+- `tools/scan_mii_24e8.py` — two-mode hunter built on top of
+  `xref_bin_scan.py` (external-via-singleton plus method-form-via-X0).
+- `tools/scan_mii_24e8_v2.py` — improved function-start finder and
+  per-register provenance tracer used to disambiguate the five raw
+  hits.
+- `tools/find_callers.py` — brute BL-target search, one-second run time
+  on the full .text.
+
+These four scripts together implemented the "who writes this field"
+query in ~20 seconds of scanning. They are the answer to the
+methodology note at the bottom of Pool C's section — worth keeping
+and extending.
