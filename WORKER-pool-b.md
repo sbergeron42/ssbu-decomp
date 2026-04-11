@@ -2,92 +2,91 @@
 
 ## Model: Opus
 
-## Task: ROLLBACK Round 7 — decomp the 5 callers of FUN_7101344cf0 (task_tree_add)
+## Task: ROLLBACK Round 8 — find where main_loop loads x24 before the sim BL
 
-## Priority: HIGHEST — directly identifies the registered task vtables
+## Priority: HIGH — Eden rollback needs the sim_root pointer source
 
 ## Context
-Read `docs/rollback/sim_tick_hunt.md` first. **Round 6 architectural breakthrough**: main_loop is a fiber-scheduled task pump, sim runs as a task on a worker thread. Tasks are registered through `FUN_7101344cf0`. The 5 callers are the entire task registration set. **One of them registers the sim tick.**
+Read `docs/rollback/sim_tick_FOUND.md` first. The sim tick entry is **`main_loop + 0x5384` → `bl FUN_7103724a80`** with `x0 = x24`. We have the BL target but we don't know what `x24` is or how it was set.
 
-Pool A is reading the cached `FUN_7101344cf0.txt` to understand the gatekeeper. Pool C is investigating one of the callers + the 3 vtable-slot xrefs. **Your job: decomp the other two callers, identify the task vtables they register, and look at vt[2].**
+From the captured disassembly at `main_loop + 0x5380..+0x5388`:
+```
+0x710374c620:  mov  x0, x24        ; x24 is the sim root
+0x710374c624:  bl   0x7103724a80   ; THE sim BL
+0x710374c628:  ...                 ; return site (backtrace lr)
+```
 
-## Targets
-
-### `FUN_71014b2a40` (primary caller)
-- Pool C noted this is "a large init routine that constructs a 0x50 ModuleSet container with `PTR_FUN_7105069db0` and 4 shared_ptr slots"
-- It's the **biggest** caller — most likely to be registering multiple tasks
-- Decompile and find every call to `FUN_7101344cf0` inside it
-- For each call, document the object being registered
-
-### `FUN_7101523b60` (secondary registrar)
-- Smaller than 71014b2a40
-- Decompile and find what task it registers
-- Document the object's vtable
+Eden rollback needs to cache `x24` at match start and pass it every resim call. To do that, we need:
+1. The exact earlier instruction in `main_loop` that assigns `x24`
+2. The source of the value (global / chain / function return)
+3. If it's a global: the address, so Eden can read it directly
+4. If it's a chain off another singleton: the chain, so Eden can walk it
 
 ## What To Do
 
-### 1. Decompile `FUN_71014b2a40`
-- `mcp__ghidra__decompile_function_by_address 0x71014b2a40`
-- Find every `FUN_7101344cf0` call inside it
-- For each call, look at the argument: what's being registered?
-- The argument's vtable IS a candidate sim task
+### 1. Read main_loop body from the top
+**`data/ghidra_cache/main_loop_7103747270.txt`** — already cached (3,947 lines). Read with the `Read` tool, NOT MCP.
 
-### 2. Decompile `FUN_7101523b60`
-- Same approach, smaller function
+Scan the body backwards from the sim BL at `0x374c624` looking for:
+- Any `mov x24, xN` (copy from another register)
+- Any `ldr x24, [...]` (load from memory)
+- Any `adrp x24, ...; add x24, x24, ...` (address-of-global setup)
+- Function calls whose return value goes into `x24` (via `mov x24, x0` after a `bl`)
 
-### 3. For each registered object, find its vtable's vt[2]
-- `vtable[+0x10]` is the per-frame tick (Pool C confirmed this in Round 6)
-- Decompile vt[2] for each candidate
-- Look for sim-shaped patterns:
-  - Iterating fighters via `FighterManager`
-  - Touching `BattleObjectModuleAccessor` modules
-  - Reading/writing RNG (`DAT_71052c25b0` area)
-  - Calling `app::sv_math::rand` (`0x7102275320`)
-  - Calling FighterStatus vtable methods (`0x7104f7f2e8`)
-- **The first vt[2] that hits ANY sim-state IS the sim tick.**
+The assignment could be far back — main_loop is 22 KB of body. Start by grepping the cached file for the string `x24` and filter out all reads (we want writes only).
 
-### 4. Document the sim task
-If you find it, document:
-- The registering function (`FUN_71014b2a40` or `FUN_7101523b60`)
-- The task object's vtable address
-- The class name (if `.dynsym`-confirmed)
-- The vt[2] target address (the sim function)
-- A summary of what vt[2] does (what state it touches)
+### 2. Identify the value source
+Once you find the assignment, classify it:
+- **Global singleton**: `adrp + ldr` from a DAT address → document the DAT
+- **Chain deref**: `ldr x24, [xN, #imm]` where xN is a known singleton → document the chain
+- **Function return**: `bl FUN_XXXX; mov x24, x0` → the function identifies the owner subsystem
+- **Constructor output**: stack-allocated object → this would be a red flag (means x24 is per-frame, not stable)
+
+### 3. Verify it's stable across frames
+The assumption for Eden rollback is that `x24` is cached at match start and reused every frame. If it's loaded once and never reassigned between frames, we can cache it. If it's reassigned every frame (from a chain of derefs from some singleton), Eden needs to walk the chain every resim too.
+
+Check whether the assignment happens inside main_loop's **boot/prologue region** (`0x3747270..0x3747504` — one-shot boot per Pool C Round 5) or inside the **frame loop body** (`0x3747504..0x374cbc0`).
+- If in boot: loaded once, stable, Eden caches it at match start.
+- If in frame loop: reloaded every frame, Eden must walk whatever chain main_loop walks.
+
+### 4. If x24 comes from a chain, identify the root singleton
+Trace back until you hit a DAT address. That's the cacheable handle Eden uses.
 
 ## Stop-and-document rule
-If `mcp__ghidra__*` errors/timeouts:
+If `mcp__ghidra__*` errors/timeouts on any address:
 1. Append to `data/ghidra_cache/manual_extraction_needed.md`
 2. **Do NOT retry.** Move on.
 
-`FUN_71014b2a40` is large — if it times out, log it and move to `FUN_7101523b60`.
-
 ## Output
 
-Append to `docs/rollback/sim_tick_hunt.md`:
+Append to `docs/rollback/sim_tick_FOUND.md` (create a new `## x24 source` section):
 
 ```markdown
-## Pool B — Round 7: task_tree_add caller decomps
+## x24 source — Round 8
 
-### FUN_71014b2a40 (primary registrar)
-- Registers N tasks
-- Task vtables: [list]
-- vt[2] of each:
-  - vtable 0xXXXXX vt[2] = FUN_YYYY — does Z (sim-shaped: Y/N)
-  - ...
+### Assignment site
+- Address: `0x710374XXXX` (inside main_loop boot / frame body)
+- Instruction: `[exact insn]`
 
-### FUN_7101523b60 (secondary registrar)
-- Registers N tasks
-- Task vtables: [list]
-- vt[2] of each: ...
+### Source chain
+Eden can get x24 at resim time via:
+```c
+<code snippet showing how to compute x24 from a cacheable root>
+```
 
-### VERDICT
-[FOUND SIM TASK at vtable 0xXXXX, registered by FUN_YYYY, vt[2] = FUN_ZZZZ touches A/B/C]
-[OR: All 5 callers decomped, none register a sim-shaped task — sim might be registered dynamically not statically]
+### Stability
+- [STABLE — loaded once at match start / PER-FRAME — reloaded every tick]
+- Cacheable by Eden: [YES / walk-every-frame]
+
+### Root singleton
+- Address: `DAT_710XXXXX`
+- Already known? [list which Pool round first found it, or NEW]
+- Runtime address on Switch (add to $main): [$main + offset]
 ```
 
 ## Quality Rules
-- NO `FUN_` names in committed src/ code
 - Documentation is the primary deliverable
+- Use the cached main_loop file, do NOT call MCP on `0x7103747270`
 
 ## Build
 ```bash

@@ -1917,3 +1917,87 @@ Pool B contribution to Round 7: confirmation at the disassembly level
 that the FUN_71014b2a40 / FUN_7101523b60 call sites are argless init
 stubs, not real task_tree_add calls. Further caller decomps of
 FUN_7101344cf0 will not identify the sim tick.
+
+=== POOL-B ROLLBACK RESEARCH ROUND 8: x24 SOURCE (2026-04-11) ===
+
+Task: Find where main_loop loads x24 before the sim BL at 0x710374c624
+so Eden can cache the sim-root pointer at match start.
+
+APPROACH: bypassed Ghidra MCP (too slow on 22KB main_loop) and used
+llvm-objdump from C:\llvm-8.0.0\bin against data/main.elf directly.
+Dumped main_loop's 7941-line disassembly to tmp/main_loop_disasm.txt
+and scanned for register writes.
+
+RESULT (appended to docs/rollback/sim_tick_FOUND.md as "x24 source —
+Round 8"):
+
+x24 at the sim BL = main_loop's param_1 (the function's first arg).
+
+PROLOGUE CAPTURE (boot-time, runs exactly once):
+  0x37472ac: mov  x21, x0            ; x21 = param_1
+  0x37472b4: adrp x8, #35598336
+  0x37472b8: str  x21, [x8, #1216]   ; DAT_710593A4C0 = param_1
+  0x37473c0: str  x21, [sp, #608]    ; spill to reload slot
+
+RELOAD (runs every frame):
+  0x374c3c0: ldr  x24, [sp, #608]    ; x24 = param_1
+  ...
+  0x374c620: mov  x0, x24
+  0x374c624: bl   0x7103724a80       ; sim BL (first call site)
+  ...
+  0x374c748: mov  x0, x24
+  0x374c74c: bl   0x7103724a80       ; sim BL (SECOND call site)
+
+STABILITY: STABLE — main_loop is pead::MainThread's Run body, called
+exactly once per process lifetime. The spill at 0x37473c0 is in the
+boot/prologue region (0x3747270..0x3747504), not the frame loop body.
+[sp+608] has a single store and multiple reloads up until 0x374ea98,
+which reuses the slot for a post-sim SIMD spill.
+
+CACHEABLE HANDLE: DAT_710593A4C0 (in .bss, page 0x593A000, offset 0x4C0)
+  Runtime: $main + 0x593A4C0
+  Peer globals in same page:
+    - DAT_710593A4C0  NEW: sim_root / main_loop param_1
+    - DAT_710593A6D0  first-dispatch vtable root (was MIS-labeled as
+                      DAT_71053346d0 in the Round 7 doc — corrected)
+    - DAT_710593AA90  frame counter (pool-b Round 7)
+  All three are peers in the pead::MainThread singleton block.
+
+BONUS FINDING — address correction:
+The existing sim_tick_FOUND.md referred to the first indirect dispatch
+root as DAT_71053346d0. Decoding the raw ADRP encoding at 0x374c608
+(raw: 68 0f 01 d0):
+  immhi=0x87B, immlo=2 → imm21=0x21EE → imm<<12=0x21EE000
+  PC page 0x374c000 + 0x21EE000 = 0x593A000
+  offset 0x6D0 → 0x593A6D0
+So the first-dispatch root is DAT_710593A6D0, NOT DAT_71053346D0.
+Architecturally this makes MUCH more sense — all three pead::MainThread
+singletons are peers in the same .bss page.
+
+CONTROL FLOW to sim BL (Round 8 clarification):
+main_loop has a tick-count dispatch at 0x374c118:
+  w22 = [DAT_page0x1AF4000 (~28246016)]  ; num sim ticks this frame
+  b.lt #1312 → 0x374c63c                 ; w22 < 1: skip sim (paused)
+  b.ne #220  → 0x374c1fc                 ; w22 > 1: catch-up loop
+  (fall through)                         ; w22 == 1: single sim tick
+
+On the "w22 == 1" normal path, execution skips via an unconditional
+`b #788` at 0x374c1f8 directly to the sim dispatch prep, reaches the
+first sim BL at 0x374c624 (via vt[+0x30] at 0x374c61c blr x8), then
+falls through to a second vtable barrage and the SECOND sim BL at
+0x374c74c.
+
+The "w22 > 1" catch-up branch (orphaned from fall-through, reached
+only via the b.ne) runs a loop that ticks submit_task(FUN_7103548240)
+for each catch-up tick, then `b #312` to 0x374c63c (POST-sim, skipping
+the direct BL sites). Multi-tick catch-up ticks therefore route
+through Pool C's scheduler plumbing, not through the direct BL.
+
+FOR EDEN: Two equivalent recipes. Either
+  (a) hook main_loop entry and snapshot x0 once, or
+  (b) read *(u64*)($main + 0x593A4C0) at match start.
+
+Then every resim call becomes:
+  dynarmic_call_guest(0x7103724a80, sim_root);
+
+Pool-b Round 8 complete. Round 7's open question #2 answered.

@@ -152,3 +152,198 @@ execute synchronously because the rollback fork runs without worker threads.
    watchpoint on `FighterManager.entries[]` and catching a mutation. The
    RNG write confirmed SIM runs through this path; a Fighter field write
    confirms WHICH leaf is the per-fighter stepper.
+
+---
+
+## x24 source — Round 8 (answer to open question #2)
+
+### TL;DR
+
+**`x24` at the sim BL is `main_loop`'s first argument (`param_1` / entry `x0`).**
+It is captured once in the prologue, stored to a fixed stack slot, and
+reloaded into `x24` right before each sim dispatch. It is ALSO mirrored
+to a .bss global at `DAT_710593A4C0` in the same prologue, giving Eden a
+stable handle it can read without touching main_loop's stack frame.
+
+### Assignment site (last write before the sim BL)
+
+| PC | Instruction |
+|----|-------------|
+| `0x710374c3c0` | `ldr x24, [sp, #608]` |
+| `0x710374c620` | `mov x0, x24`           (first sim BL arg setup) |
+| `0x710374c624` | `bl 0x7103724a80`        (the sim BL itself) |
+
+Between `0x374c3c0` and `0x374c624` there are **no further writes** to
+`x24` on any reachable control path. (There are earlier reloads at
+`0x374c044` and `0x374c0f4` reading the same stack slot; the entire body
+of main_loop has exactly ONE store to `[sp, #608]`, so all three reloads
+fetch the same value.) The second sim BL at `0x710374c74c` (catch-up
+path) also uses the same `x24`.
+
+### Stack slot source
+
+The slot is written exactly once, in the prologue region:
+
+```
+0x710374 72ac:  mov  x21, x0              ; x21 = param_1 (x0 on entry)
+0x710374 72b0:  blr  x8                    ; early init callback
+0x710374 72b4:  adrp x8, #35598336         ; raw bytes: 88 0f 01 f0
+0x710374 72b8:  str  x21, [x8, #1216]      ; *DAT_710593A4C0 = param_1
+0x710374 72bc:  bl   nn::oe::FinishStartupLogo@plt
+...
+0x710374 73c0:  str  x21, [sp, #608]       ; spill param_1 to the reload slot
+```
+
+Decoding the ADRP at `0x37472b4` by hand (raw: `88 0f 01 f0`):
+- `immhi = 0x87C`, `immlo = 3` → `imm21 = 0x21F3`
+- `imm21 << 12 = 0x21F3000`
+- PC page = `0x3747000`, target = `0x3747000 + 0x21F3000 = 0x593A000`
+- `str x21, [x8, #1216]` → `*(u64*)0x593A4C0 = param_1`
+- Runtime: `*(u64*)0x710593A4C0 = main_loop's param_1`
+
+This address lands in `.bss` (`.bss` = `0x52A8570..0x7446FFF`), same page
+(`0x593A000`) as the previously-identified frame counter `DAT_710593AA90`
+(pool-b Round 7). All three are peers in the **pead::MainThread singleton
+block**.
+
+### Source chain (for Eden rollback)
+
+```cpp
+// At match start (or main_loop hook), cache the sim root:
+void* sim_root = *(void**)(guest_memory + 0x593A4C0);  // host-side read of DAT_710593A4C0
+
+// Every resim frame, call the sim BL directly:
+dynarmic_call_guest(0x7103724a80, sim_root);
+```
+
+Equivalent alternate recipe (no global read, catches value right at the
+source):
+
+```cpp
+// Hook main_loop entry (0x7103747270) once at startup:
+on_main_loop_entry(uint64_t x0) { sim_root = x0; }  // runs exactly once
+```
+
+### Stability
+
+- **STABLE — loaded once at game startup, reused for every frame in the
+  session.**
+- `main_loop` is `pead::MainThread`'s `Run` body (pool-b Round 7 cross-
+  referenced `pead_framework_init` → this thread adopts the current thread
+  instead of creating a new one, so main_loop is invoked exactly once
+  across the process lifetime).
+- The spill at `0x37473c0` happens inside main_loop's **boot/prologue
+  region** (`0x3747270..0x3747504`), before any frame loop. No later
+  instruction rewrites `[sp, #608]` until `0x374ea98`, which is FAR after
+  the last sim BL (`0x374c74c`) — inside a post-sim teardown block where
+  the slot is reused for a SIMD spill.
+- `DAT_710593A4C0` is written exactly once (at `0x37472b8`, in the same
+  prologue). No other write to that address was observed in main_loop.
+  A global xref scan is still advisable before shipping, but the value
+  is functionally immutable for Eden's purposes — it's the pead thread's
+  `this` pointer and would only change if the pead framework were
+  reinitialized, which never happens during gameplay.
+- **Cacheable by Eden: YES.**
+
+### Root singleton
+
+- Address: `DAT_710593A4C0` (= `*(u64*)(main_base + 0x593A4C0)`)
+- Section: `.bss`
+- Page peers in the pead::MainThread singleton block:
+  - `DAT_710593A4C0` — **NEW (Round 8)** — sim_root / main_loop's `param_1`
+  - `DAT_710593A6D0` — first-dispatch vtable root (see correction below)
+  - `DAT_710593AA90` — frame counter (pool-b Round 7)
+- Already known? **NEW.** Round 8 first identification.
+- Runtime address on Switch: `$main + 0x593A4C0` (= `0x710593A4C0` at the
+  canonical `$main = 0x7100000000` from `reference_binary`).
+
+### Bonus finding — address correction to Round-7 doc
+
+The "Supporting singleton" section above describes the first-dispatch
+root as `DAT_71053346d0`. **This is an address-decoding error.** The
+ADRP at `0x710374c608` has raw bytes `68 0f 01 d0`:
+
+- `immhi = 0x87B`, `immlo = 2` → `imm21 = 0x21EE`
+- `imm21 << 12 = 0x21EE000`
+- PC page = `0x374c000`, target = `0x374c000 + 0x21EE000 = 0x593A000`
+- `ldr x0, [x8, #1744]` → `x0 = *(u64*)(0x593A000 + 0x6D0) = *(u64*)0x593A6D0`
+
+So the correct address is **`DAT_710593A6D0`**, NOT `DAT_710533 46D0`.
+This is the SAME page as `DAT_710593A4C0` (sim_root) and `DAT_710593AA90`
+(frame counter) — all three are peers in the pead::MainThread singleton
+block, which is architecturally much more plausible than the original
+doc's cross-page placement. The original calculation appears to have
+mistakenly added the ADRP immediate directly to a `0x5334000` page base
+instead of decoding the instruction.
+
+Recommend updating the "Supporting singleton" section in the main body
+once verified by whoever owns that doc.
+
+### How the sim BL is reached (control-flow notes)
+
+For future readers who want to understand which code path executes the
+sim:
+
+```
+main_loop body (frame loop):
+  0x374c118: ldr  w22, [x8]            ; w22 = num sim ticks this frame
+  0x374c11c: b.lt #1312 → 0x374c63c    ; if 0, skip sim entirely (paused/menu)
+  0x374c120: b.ne #220  → 0x374c1fc    ; if >1, goto catch-up loop
+  -- fall through: w22 == 1 (normal frame) --
+  0x374c124..0x374c1f4:                ; 10x vtable[+0x28] dispatch on x28[0..72]
+                                         (pre-sim prep for 10 children)
+  0x374c1f8: b    #788  → 0x374c50c    ; unconditional skip to sim path
+  -- 0x374c50c..0x374c5dc: sim dispatch prep (submit_task, exclusive monitor) --
+  -- 0x374c608..0x374c61c: vtable[+0x30] on DAT_710593A6D0 (sibling subsystem) --
+  0x374c620: mov  x0, x24              ; x24 = param_1 (main_loop's arg)
+  0x374c624: bl   0x7103724a80         ; THE sim BL (first call site)
+
+  -- fall through to 0x374c628+: frame counter increment, second vtable barrage --
+  0x374c664: b.gt #336  → 0x374c7b4    ; if frame condition, skip second sim
+  0x374c668..0x374c744: 10x vtable[+0x28] dispatch on x28[0..72]
+  0x374c748: mov  x0, x24              ; same x24 — unchanged since 0x374c3c0
+  0x374c74c: bl   0x7103724a80         ; sim BL (SECOND call site!)
+```
+
+There are thus **two sim BL sites inside main_loop**, not one. Both use
+the same `x24`. Round 7's captured backtrace fired on the FIRST
+(`0x374c628` return site). Eden should call the sim BL twice per
+frame ONLY if it's emulating the exact main_loop control flow; for
+simple resim replay, one call at `0x7103724a80` with `sim_root` is
+functionally equivalent because both calls are just running the same
+task subtree.
+
+The `w22 > 1` catch-up path at `0x374c1fc..0x374c504` is an orphaned
+loop reached from `b.ne #220` at `0x374c120`. It runs 10x vtable + a
+separate submit_task sequence `w22` times and then `b #312` to
+`0x374c63c`, bypassing the sim BL path. This is the **multi-tick
+catch-up** branch. It reloads `x24 = [sp+608]` at `0x374c3c0` every
+iteration but does not itself invoke the sim BL — the sim ticks are
+dispatched via `submit_task(FUN_7103548240, ...)` at `0x374c394` on
+each iteration, routing through the generic task runner Pool C Round 6
+identified.
+
+### Confirmation bytes (for independent verification)
+
+If you dump the first few instructions of main_loop from `data/main.elf`:
+
+```
+$ llvm-objdump -d --start-address=0x3747270 --stop-address=0x37472c0 data/main.elf
+ 3747270:  ff ... stp d15, d14, [sp, #-160]!   ; prologue stack frame
+ 37472ac:  f5 03 00 aa  mov  x21, x0            ; <-- CAPTURE param_1
+ 37472b0:  00 01 3f d6  blr  x8                  ; early vt[3] call
+ 37472b4:  88 0f 01 f0  adrp x8, #35598336       ; page(0x593A000)
+ 37472b8:  15 61 02 f9  str  x21, [x8, #1216]    ; <-- MIRROR to DAT_710593A4C0
+ 37472bc:  ed 00 0a 94  bl   FinishStartupLogo@plt
+```
+
+And the reload + sim BL:
+
+```
+$ llvm-objdump -d --start-address=0x374c3c0 --stop-address=0x374c628 data/main.elf
+ 374c3c0:  f8 33 41 f9  ldr  x24, [sp, #608]     ; <-- RELOAD into x24
+ ...
+ 374c620:  e0 03 18 aa  mov  x0, x24              ; sim arg
+ 374c624:  17 61 ff 97  bl   0x3724a80            ; <-- SIM BL
+```
+
