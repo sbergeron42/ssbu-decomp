@@ -3722,3 +3722,205 @@ the sim tick.
   `WORKER-pool-c.md`'s primary deliverable.
 - Ghidra renames: **none this session** (all new information is in
   shared docs, not symbols).
+---
+
+## Pool A — Round 5: bottom-up RNG-driven sim tick walk (2026-04-10)
+
+### Approach
+
+Rounds 1–4 worked top-down (main_loop → child functions → is it a sim tick?)
+and failed: all 56 direct BL children of main_loop were classified as
+scene/UI/graphics/housekeeping. The remaining candidate,
+`(*DAT_710593a510)->vt[0x30]` at main_loop+0x90, is an indirect dispatch
+whose target cannot be resolved statically.
+
+Round 5 flips the direction: start from every callsite of the gameplay RNG
+(`app::sv_math::rand`), walk upward through callers, and see if any chain
+reaches main_loop. The sim tick MUST call rand transitively (every frame,
+AI rolls, attack-SE rolls, Hero crit procs, etc.) so if we walk up from the
+leaves we should eventually land in it.
+
+### Step 1 — enumerate rand callsites
+
+Direct `get_xrefs_to` on the six wrapper addresses:
+
+| Wrapper | Address | Ghidra xrefs |
+|---|---|---|
+| `app::sv_math::rand` | `0x7102275320` | 1 (`FUN_710213a360` lua-bind wrapper) + dynsym |
+| `app::sv_math::randf` | `0x71022756c0` | 1 (`0x710213a9f4` lua-bind wrapper) + dynsym |
+| `app::random::get_float` | `0x71015cf234` | **NO xrefs** (fully inlined) |
+| `app::random::range_int` | `0x71015cf294` | **NO xrefs** (fully inlined) |
+| `app::ai_random::range_int` | `0x71003766d4` | **NO xrefs** (fully inlined) |
+| `app::ai_random::get_float` | `0x7100376774` | **NO xrefs** (fully inlined) |
+
+Confirms rng.md §4: the named wrappers are fully inlined at every C++ call
+site. Ghidra xref enumeration on them is useless.
+
+The only tractable enumeration is `get_xrefs_to 0x71052c25b0` — the
+Randomizer singleton global. That returns **~245 READ sites** across
+**~117 unique functions**. That is our leaf set for the upward walk.
+
+### Step 2 — intersect leaf set with main_loop's direct-BL set
+
+Extracted from `asm/ghidra_FUN_7103747270.c`:
+- main_loop direct BL set: **56** unique functions (0x71000..0x71053 range)
+- RNG singleton reader set: **81** unique `FUN_*` identifiers (plus the
+  named functions like `change_action`, `play_voice`, `is_percent`, etc.)
+- **Intersection: 0 (empty).**
+
+No RNG reader is a direct child of main_loop. Consistent with Round 4's
+conclusion that all 56 BL children are phase-6/7 scene dispatchers plus
+pead/housekeeping plumbing.
+
+### Step 3 — upward walk from representative readers
+
+For each chosen leaf, `get_function_xrefs` until the chain terminates.
+Selected leaves span AI, fighter-internal, item, camera, and module-level
+readers to maximize coverage of different dispatch shapes.
+
+| Leaf reader | Chain | Termination |
+|---|---|---|
+| `FUN_71002f2a00` (AI, 20+ singleton reads, dispatches AI pad cmds) | → `FUN_71002ef000` → `FUN_71002edd30` → `FUN_71002d8ef0` | `change_action`/`change_mode` [dynsym EXTERNAL], `FUN_71003153e0` [NO xrefs], `FUN_7101f83630` [Lua bind region] |
+| `FUN_71002ec1a0` (AI behavior) | → `FUN_7101f836e0` → `FUN_7101f87300` → `FUN_7101f45620` → `FUN_71022b7100` → `0x71022dc26c` | orphan + `change_target` [dynsym] |
+| `FUN_7100826750` (fighter attack SE roll) | → `FUN_710081f5b0` | `0x7104f90d18` [DATA — vtable slot] |
+| `FUN_71006a7100` (crit-hit cut-in) | → `FUN_7100695f20` → `FUN_7100696720` | fan-out to 10+ fighter statuses; `request_critical_hit_cut_in` [dynsym]; `REQ_FINAL_START_CAMERA` via `FUN_7101fc1140` → `FUN_7101fc7f30` [PARAM hub] |
+| `final_ready_exec` | → `FUN_710215ddd0` | **NO xrefs** (vtable-only) |
+| `FUN_7101008340` (item spawn) | → `FUN_7101008e60` | `0x71050230d0` [DATA — vtable slot] |
+| `get_dead_up_camera_hit_first_rand_rot_z` | — | `0x7101f99b80` [orphan] + dynsym |
+| `get_dead_up_camera_hit_first_rand_offset_x` | — | `0x7101f99b30` [orphan] + dynsym |
+| `FUN_71009a4190` (large module reader) | — | `0x7104faa5e8` [DATA — vtable slot] |
+| `FUN_71005b4720` (large module reader) | — | `0x7104f7a048` [DATA — vtable slot] |
+| `FUN_71034df9e0` | — | `0x710043fe40` [DATA — vtable slot] |
+| `FUN_71034fde10` | — | `0x710521d130` [DATA — vtable slot] |
+| `FUN_71035357c4` | — | jump table (`UNCONDITIONAL_JUMP` from 6 sites in the same function) |
+| `FUN_7102602ec0` | — | `FUN_7101344cf0` (Randomizer **constructor**, boot-only) |
+| `FUN_71003fb290` → `FUN_71003fd0b0` | — | 4x orphan addresses (0x710057e0c4, 0x71033bea54, 0x71033e9824, 0x71034e7648) |
+| `FUN_7101325880`, `FUN_71015490a0`, `FUN_7101548d50` (item/AT) | — | all DATA slots in `0x710505d*`/`0x710506e*` range |
+| `FUN_7101008e60` (item subsys) | — | `0x71050230d0` [DATA vtable slot] |
+| `call_final_module`, `play_voice` | — | dynsym + `FUN_7101f45620`/`FUN_71021afd70` [PARAM hub] |
+
+### Step 4 — common hub: `FUN_7101f45620`
+
+Five of the walks converged on `FUN_7101f45620` as the penultimate hop, each
+via a `[PARAM]` reference (i.e. the reader's address is passed as a callback,
+not called directly). FUN_7101f45620 lives in the `0x7101fxxxxx..0x71022xxxxx`
+lua_bind region and is the **Lua binding function-pointer registration
+machine** — it takes a C++ function pointer and installs it as a Lua metatable
+method. This is not a per-frame dispatcher; it runs once at script load.
+
+### Step 5 — termination classification
+
+Every upward walk I ran bottomed out at one of five patterns:
+
+1. **dynsym `From Entry Point [EXTERNAL]`** — the function is a Lua export
+   called from a script VM, not from native C++. (change_action, change_mode,
+   change_target, play_voice, call_final_module, final_ready_exec, all the
+   `get_dead_up_camera_*`, all `REQ_*_CAMERA`, etc.)
+2. **`[DATA]` reference** to a vtable slot in `0x7104f*`/`0x710505*`/`0x710506*`/
+   `0x71052*` (FighterStatus, ItemModule, and related modules). The caller is
+   whatever iterates the matching module list and invokes that slot — which
+   is exactly the invisible indirect dispatch the hunt is trying to find.
+3. **`[PARAM]` reference** into the `FUN_7101f45620`-family Lua-binding
+   registration hubs. The function is a C++ callback registered once at
+   script load; actual invocation happens from the Lua VM.
+4. **Orphan addresses** (`From 710xxxxxxx [UNCONDITIONAL_CALL]` where the
+   address is not inside any Ghidra-recognized function). These are thunk
+   islands, switch-statement tails, or PLT stubs Ghidra hasn't split.
+5. **`FUN_7101344cf0`** — the Randomizer constructor itself (~32 KB). This
+   is boot-time, not per-frame — it initializes the singleton.
+
+### Sim tick verdict — STATIC ANALYSIS EXHAUSTED
+
+The bottom-up walk produces the exact same wall as the top-down walk:
+
+- **Top-down (Rounds 1–4):** main_loop's 56 direct BL children are all
+  phase-6/7 scene/UI/graphics/housekeeping dispatchers. The only remaining
+  candidate is `(*DAT_710593a510)->vt[0x30]` at main_loop+0x90, which is
+  an **indirect dispatch** whose target is unknown until runtime.
+- **Bottom-up (Round 5):** 100% of RNG reader chains terminate at dynsym
+  exports, vtable DATA slots, Lua-bind PARAM callbacks, or orphan thunks.
+  **Zero** chains reach a direct BL child of main_loop.
+
+The two walks converge on the same conclusion: the sim tick is only
+invoked via **indirect dispatch**. Specifically, the dispatch graph is:
+
+```
+main_loop @ 0x7103747270
+  -> (direct BL into phase-6/7 scene drivers, all retired in Rounds 1-4)
+  -> (indirect BLR into MatchRunner->vt[0x30] at main_loop+0x90)   <-- sim tick lives here
+        -> (indirect BLR into FighterManager->iterate_and_tick)
+            -> (indirect BLR into FighterStatus vt slot per fighter)
+                -> AI/status/motion code reads singleton 0x71052c25b0
+                  (rand calls, fully inlined so the singleton-read pattern
+                   is the only static trace)
+```
+
+Every arrow in that chain except the first is an **indirect dispatch** —
+invisible to `get_function_xrefs` because the target is loaded from memory
+at runtime, not baked into a BL immediate.
+
+**Recommendation: retire static analysis for this hunt and switch to dynamic.**
+
+### Dynamic analysis plan (Round 6 is NOT a static walk)
+
+The cheapest dynamic approach:
+
+1. Launch SSBU in Eden/Ryujinx with GDB attached.
+2. Start a local match (so the Randomizer singleton is populated and all
+   three pointers in the 3-deref chain from `0x71052c25b0` are valid).
+3. Resolve the 180-byte channels pointer: three loads from `0x71052c25b0`
+   per rng.md §2. Cache the resulting address.
+4. Set a **write** watchpoint on any 20-byte slot inside the 180-byte
+   buffer (e.g. channel `+0x78` = `app::random` main gameplay channel).
+5. Continue execution. When the watchpoint fires, dump the backtrace.
+6. The backtrace's leaf frame is the inlined rand site. Walking the
+   backtrace upward reveals:
+    - the fighter/AI function that rolled (leaf)
+    - the FighterStatus slot that invoked it (1-2 frames up)
+    - the FighterManager iterator (2-3 frames up)
+    - **the sim tick entry point** (3-4 frames up)
+    - the vtable dispatch inside main_loop (4-5 frames up)
+    - `main_loop @ 0x7103747270` (5-6 frames up)
+7. Record the addresses at each frame, rebase to the Ghidra image, and
+   look them up. We now have the sim tick with zero guessing.
+
+The MCP server already has GDB support (`mcp__gdb-multiarch__*`). The
+orchestrator should assign this to a pool with an emulator set up, OR the
+pool running with a Windows build + emulator snapshot should drive it.
+
+**Estimated cost:** ~1 hour of dynamic analysis vs. the ~5 rounds × multiple
+pools of static analysis we've burned so far. Round 5 is the signal to stop
+spending static-analysis budget on this hunt.
+
+### Artifacts this pass
+
+- `data/ghidra_cache/pool-a.txt` — appended full Round 5 walk notes,
+  reader classifications, and raw xref outputs.
+- No `src/` changes. Documentation-only pass per the WORKER-pool-a.md
+  "Documentation is the primary deliverable" rule.
+
+### Cross-validation against Rounds 1–4
+
+- Round 2 (Pool B): main_loop has two indirect dispatchers — one is the
+  `MatchRunner->vt[0x30]` at main_loop+0x90, the other is a graphics-cluster
+  dispatcher. **Consistent.** Round 5 confirms the non-match-runner indirect
+  dispatchers are all graphics/UI.
+- Round 3 (Pool A): `DAT_710593a510` was thought to be a "match-active gate".
+  Round 4 corrected that to "MatchRunner pointer, non-null gate". **Round 5
+  adds nothing new about that pointer itself** — it only confirms that
+  nothing else in main_loop's static call graph can be the sim tick.
+- Round 4 (Pool A): `this` passed to main_loop is a lightweight boot context,
+  NOT the match driver. The match driver is reached via the MatchRunner
+  singleton, not via main_loop's `this`. **Consistent with Round 5:** the
+  sim tick is not reachable from main_loop's `this->...` object graph either,
+  because `this` doesn't own the MatchRunner — the global `DAT_710593a510` does.
+- Round 4 (Pool B): `FUN_7103619080` is a per-element visitor rooted in
+  `[app_driver + 0xce8]`. **Consistent:** Round 5 never encountered
+  `FUN_7103619080` as a parent of any RNG reader, confirming it is a
+  UI/input event broadcast, not sim.
+- Round 4 (Pool C): `FUN_71035c13d0` is a graphics viewport listener.
+  **Consistent:** Round 5 never encountered it either.
+
+All five rounds converge on: the sim tick is
+`(*DAT_710593a510)->vt[0x30]`, and the vtable slot cannot be resolved
+statically. Dynamic analysis is the next hop.

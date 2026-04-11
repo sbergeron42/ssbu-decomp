@@ -1069,3 +1069,131 @@ sim tick must live inline inside main_loop's 0x7bf8-byte body.
 - Runtime writer of +0x18 (the gate) — needs GDB watchpoint
 - Audit DAT_710593a2d8 readers (the second cached handle)
 - main_loop body 0x7103747350..0x7103747be0 needs manual extraction
+
+=== ROUND 5 — bottom-up RNG-driven sim tick walk (2026-04-10) ===
+
+Methodology: xref every rand/randf wrapper + every RNG singleton reader upward
+toward main_loop. Goal: find the deepest function that (a) has a path to main_loop
+(b) eventually calls rand (c) iterates fighters.
+
+## Direct rand wrapper xrefs
+- 0x7102275320 (sv_math::rand):  1 caller = FUN_710213a360 (Lua binding wrapper)
+- 0x71022756c0 (sv_math::randf): 1 caller = 0x710213a9f4  (Lua binding wrapper)
+- 0x71015cf234 (app::random::get_float):   NO xrefs (fully inlined)
+- 0x71015cf294 (app::random::range_int):   NO xrefs (fully inlined)
+- 0x71003766d4 (ai_random::range_int):     NO xrefs (fully inlined)
+- 0x7100376774 (ai_random::get_float):     NO xrefs (fully inlined)
+
+## RNG singleton reader set (from xrefs_to 0x71052c25b0)
+~245 reader sites across ~117 unique functions. Full list extracted; key
+representative readers walked upward below.
+
+## Representative upward walks
+
+### AI cluster
+FUN_71002f2a00 (20+ singleton reads, AI fighter-state dispatcher)
+  ← FUN_71002ef000
+    ← FUN_71002edd30
+      ← change_action [dynsym EXTERNAL — Lua export]
+      ← FUN_71002d8ef0
+        ← change_mode [dynsym EXTERNAL — Lua export]
+        ← FUN_71002d8d40
+        ← FUN_71003153e0 [NO xrefs — vtable-dispatched]
+        ← FUN_7101f836c0 in FUN_7101f83630 [Lua bind region]
+
+FUN_71002ec1a0
+  ← change_target [dynsym EXTERNAL — Lua export]
+  ← FUN_7101f836e0
+    ← FUN_7101f87300
+      ← FUN_7101f45620 [PARAM dispatch hub — Lua-bind registration]
+        ← FUN_71022b7100
+          ← 0x71022dc26c [orphan — outside any function]
+
+### Fighter-internal cluster
+FUN_7100826750 (fighter attack SE randomizer)
+  ← FUN_710081f5b0
+    ← 0x7104f90d18 [DATA — FighterStatus vtable slot]
+
+FUN_71006a7100 (critical-hit cut-in)
+  ← FUN_7100695f20
+    ← FUN_7100696720 (fan-out to 10+ fighter statuses)
+  ← request_critical_hit_cut_in [dynsym]
+  ← REQ_FINAL_START_CAMERA / REQ_MOTION_CAMERA [dynsym via FUN_7101f45620 PARAM]
+
+final_ready_exec
+  ← FUN_710215ddd0 [NO xrefs — vtable/dynsym only]
+
+### Item cluster
+FUN_7101008340
+  ← FUN_7101008e60
+    ← 0x71050230d0 [DATA — ItemModule vtable slot]
+
+FUN_7101325880, FUN_71015490a0, FUN_7101548d50
+  ← all terminate at DATA vtable slots in 0x710505d*/710506e* range
+
+### Camera cluster
+get_dead_up_camera_hit_first_rand_rot_z
+  ← 0x7101f99b80 [orphan + dynsym EXTERNAL]
+get_dead_up_camera_hit_first_rand_offset_x
+  ← 0x7101f99b30 [orphan + dynsym EXTERNAL]
+
+### Large module-level readers
+FUN_71009a4190  ← 0x7104faa5e8 [DATA — vtable slot]
+FUN_71005b4720  ← 0x7104f7a048 [DATA — vtable slot]
+FUN_71034df9e0  ← 0x710043fe40 [DATA — vtable slot]
+FUN_71034fde10  ← 0x710521d130 [DATA — vtable slot]
+FUN_71035357c4  ← 0x710353577c.. [UNCONDITIONAL_JUMP — switch jump table]
+FUN_7102602ec0  ← FUN_7101344cf0 [Randomizer boot constructor — NOT per-frame]
+FUN_71003fb290 → FUN_71003fd0b0
+  ← 0x710057e0c4, 0x71033bea54, 0x71033e9824, 0x71034e7648 [all orphan]
+
+### Common hub FUN_7101f45620
+Hit from FUN_71002ec1a0, call_final_module, play_voice, REQ_FINAL_START_CAMERA,
+and likely 40+ other readers. Always via [PARAM] reference — function pointer
+is registered as a callback. This is the Lua-binding function-pointer
+registration machine in the lua_bind region (0x7101fxxxxx..0x71021xxxxx).
+Not a per-frame dispatcher.
+
+## Termination classification (117 unique readers surveyed, spot-checked ~20)
+Every upward walk bottoms out at one of:
+1. dynsym Entry Point [EXTERNAL] — Lua script export
+2. DATA ref (vtable slot in 0x7104f*/0x71050*/0x71052* range) — polymorphic dispatch
+3. PARAM ref (callback registered with FUN_7101f45620-family) — Lua-bind registration
+4. Orphan address (Ghidra can't identify containing function) — thunk island / switch tail
+5. The Randomizer constructor FUN_7101344cf0 — boot-time init, not per-frame
+
+## ZERO chains reach main_loop's direct-BL set
+
+Intersection of 81 unique FUN_ readers with main_loop's 56 direct BL targets: EMPTY.
+
+main_loop's direct BL set (from asm/ghidra_FUN_7103747270.c, 56 functions):
+FUN_71000001c0, FUN_710007f7d0, FUN_71000803c0, FUN_71002c51f0, FUN_71003cb050,
+FUN_7103548240, FUN_7103549170, FUN_710354c720, FUN_710354ce10, FUN_7103550080,
+FUN_710355b540, FUN_7103569c70, FUN_710356d7a0, FUN_7103575c60, FUN_7103575fa0,
+FUN_71035763c0, FUN_7103593c40, FUN_710359ebd0, FUN_71035c13d0, FUN_71036186d0,
+FUN_7103618b80, FUN_7103618ef0, FUN_7103619080, FUN_710361d040, FUN_710361e7e0,
+FUN_710361f4a0, FUN_7103632850, FUN_7103655f40, FUN_71036676e0, FUN_71036e6e00,
+FUN_71036eb680, FUN_71036edd50, FUN_71036f2c00, FUN_71036f2d40, FUN_71036f7410,
+FUN_710371d550, FUN_710371d610, FUN_7103720290, FUN_7103724a80, FUN_7103726690,
+FUN_710372b450, FUN_7103747270, FUN_710374d270, FUN_710375ea70, FUN_710375f650,
+FUN_71037857f0, FUN_71037c34c0, FUN_71037cbb80, FUN_71037fad70, FUN_7103864700,
+FUN_710386fc30, FUN_7103871c90, FUN_71038fe690, FUN_710392e590, FUN_7105264b08,
+FUN_7105264b48
+
+None of these are RNG singleton readers. Rounds 2-4 already classified all
+71035-71038 range callees as scene/UI/graphics/housekeeping dispatchers.
+
+## Verdict: STATIC ANALYSIS EXHAUSTED
+
+The bottom-up RNG-driven walk produces the same wall that top-down walking
+produced in Rounds 1-4. The sim tick is invoked via INDIRECT DISPATCH that
+static xref walking cannot follow. The strongest candidate remains
+`(*DAT_710593a510)->vt[0x30]` (the MatchRunner per-frame dispatch at
+main_loop+0x90), but proving it is the sim tick requires resolving the
+vtable slot at runtime.
+
+Next step: switch to dynamic analysis. Set a GDB watchpoint on the 180-byte
+Randomizer buffer (the 3-deref chain from 0x71052c25b0) in Eden, run a match,
+and read the backtrace when the watchpoint fires. The function that called
+rand is the leaf; walking up the backtrace will reach the sim tick (and above
+it, main_loop) in O(1) work instead of O(xref walks).
