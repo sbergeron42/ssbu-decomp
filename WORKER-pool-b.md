@@ -2,89 +2,83 @@
 
 ## Model: Opus
 
-## Task: ROLLBACK — DAT_710593a6a0 constructors (FUN_71022cd350, FUN_71022b7100)
+## Task: ROLLBACK — find the REAL match-active flag in `0x710593a___` block
 
-## Priority: HIGH — reveals the scene-root singleton type and what state lives there
+## Priority: HIGH — `DAT_710593a530 == 3` is dead code; the real flag must exist elsewhere
 
 ## Context
-Your previous session found that Dispatcher A inside main_loop walks a list at `[**(DAT_710593a6a0+0x24e8)+0x2da8]` and dispatches `vtable[+0x28]` per node. See `docs/rollback/sim_tick_hunt.md` for the full breakthrough.
+Read `docs/rollback/sim_tick_hunt.md` first for full context. TL;DR:
 
-The two writers of `DAT_710593a6a0` are its **constructors**:
-- `FUN_71022cd350` at `0x71022cd600` (write site)
-- `FUN_71022b7100` at `0x71022c9fb4` (write site)
-
-These will reveal:
-- The singleton's actual type name (likely `app::Scene`, `app::GameMain`, or `app::WorldManager`)
-- Its initial vtable
-- Sub-objects installed at `+0x24d0`, `+0x24e8`, `+0x2da8`
-- **Other state fields the snapshot walker must capture from this root** (potentially missing from the current `memory_map.md`)
-
-Your previous session noted that `FUN_71022cd350` hit Ghidra MCP's size limit on the first attempt — it's >145KB of decompile output.
+- Pool C confirmed last session that `DAT_710593a530` is **never written non-zero** by static code. The only writer is a one-shot BSS clear from `.init_array`. The `== 3` test in `main_loop` (and 2 other readers) is dead under static analysis.
+- The match-active flag MUST exist somewhere — `main_loop` must know whether to drive the sim during a match versus idle on the title screen.
+- Pool C suggested two specific candidates in the same `0x710593a___` block:
+  - **Byte cluster at `+0x540..+0x5a0`** — receives non-zero writes
+  - **Integer at `+0x534`** — receives function-return values at `0x7103741bb4` and `0x71037472d0`
 
 ## What To Do
 
-1. **Try `mcp__ghidra__decompile_function_by_address` on FUN_71022cd350 first**
-2. **If it times out or errors**: STOP. Apply the stop-and-document rule below. Do NOT retry.
-3. **If it succeeds**: extract the singleton type information and document the field installations
-4. **Then try FUN_71022b7100** with the same approach
+### 1. Audit `0x710593axxx` block globals
+Use the binary scanner methodology Pool C documented in `docs/rollback/sim_tick_hunt.md` (search for "Methodology note for next pool" — Pool C wrote a step-by-step ADRP-propagation scanner spec).
+
+Enumerate every global in the range `0x710593a000..0x710593b000`:
+- Find every static writer for each one
+- Filter: keep only globals with at least one **non-zero static writer** AND at least one reader inside `main_loop` or its direct child
+- This narrows the candidate match-active flag set
+
+### 2. Investigate the two specific Pool C candidates first
+- `DAT_710593a534` (integer): trace `0x7103741bb4` and `0x71037472d0` — what function returns are stored here? What's the value range? Is `3` ever in the range?
+- `DAT_710593a540..0x710593a5a0` (byte cluster): which bytes get written, with what values, by which functions? Look for a state-machine pattern (function that switches on input and stores phase markers).
+
+### 3. Cross-reference with main_loop
+For each candidate match-active flag found:
+- Is it READ from `main_loop` (or its direct child)?
+- If yes, what `cmp #N; b.eq/b.ne` follows the read?
+- Does the branch lead to anything that walks fighters / dispatches per-frame work?
+
+### 4. Trace the writer
+For the most promising flag candidate, find the writer's function and identify:
+- Is it a state machine? Document state values
+- Is it called from a "match start" path? (e.g. CSS → load → match init)
+- Is it called from a "match end" path?
+
+This is the **rollback arm/disarm signal**.
 
 ## Stop-and-document rule
-If `mcp__ghidra__*` returns an error, timeout, or "request failed":
-1. Note the address and error
-2. Append to `data/ghidra_cache/manual_extraction_needed.md` (create if missing):
-   ```
-   ## 0xXXXXXXXX (FUN_XXXXXXXX)
-   - Pool: pool-b
-   - Reason: timeout / too large / unknown error
-   - Why we need it: [one-line context]
-   ```
-3. **Move on to the next task.** Do NOT retry the same address. The orchestrator will manually extract.
-
-## Fallback work if both constructors are uncrackable
-
-If both `FUN_71022cd350` and `FUN_71022b7100` time out, work on:
-
-**Service-call safety smoke test on `vtable[+0x28]` for one fighter node**
-
-Pool A's previous session found `FighterStatus` vtable at `0x7104f7f2e8`. The list dispatched by Dispatcher A contains heterogeneous tickable objects — fighters/items/effects. For ONE fighter-shaped node:
-
-1. Find the concrete BattleObject subclass that fighters use
-2. Find its `vtable[+0x28]` slot
-3. Decompile that slot
-4. Trace through it (1-2 levels deep) and look for any synchronous call to:
-   - `nn::os::Wait*` / `nn::os::*MessageQueue` / `nn::os::*Event`
-   - `nn::audio::*`
-   - `nn::gr::*` / `nn::gfx::*`
-   - LDN-namespaced functions
-   - Filesystem (`nn::fs::*`)
-5. **Report**: clean (no host services touched) or dirty (specific service calls found)
-
-This is the **critical-risk smoke test for the rollback resim approach**. If `vtable[+0x28]` is dirty, rollback needs a service shim layer; if clean, the design is straightforward.
+If `mcp__ghidra__*` errors/timeouts:
+1. Append to `data/ghidra_cache/manual_extraction_needed.md`
+2. **Do NOT retry.** Move on.
 
 ## Output
 
 Append to `docs/rollback/sim_tick_hunt.md`:
 
 ```markdown
-## Pool B — Scene root constructors / vtable[+0x28] safety
+## Pool B — match-active flag hunt (next-pass)
 
-### FUN_71022cd350 (DAT_710593a6a0 constructor #1)
-[verdict / extracted type info / OR uncrackable — see manual_extraction_needed.md]
+### 0x710593axxx block audit
+| Address | Writer count (non-zero) | Read by main_loop? | Best guess |
+|---------|------------------------|---------------------|-----------|
+| 0x710593a530 | 0 | YES (dead branch) | dead code |
+| 0x710593a534 | N | YES/NO | ... |
+| ... | ... | ... | ... |
 
-### FUN_71022b7100 (DAT_710593a6a0 constructor #2)
-[verdict / OR uncrackable]
+### Most promising candidate
+- Address: 0x710593aXXX
+- Writers: [list of functions + values]
+- Readers (main_loop chain): [...]
+- State machine values: 0=idle, 1=..., N=match active
+- Verdict: [FOUND match-active flag / WEAK CANDIDATE / NO MATCH]
 
-### vtable[+0x28] service-call safety smoke test
-- Node type tested: [fighter / item / effect]
-- vtable[+0x28] address: 0xXXXXX
-- Services touched: [list, or "clean"]
-- Verdict: [SAFE for headless resim / DIRTY — needs service shim]
+### Rollback arm signal
+- Function: setMatchActive_XXXX at 0xXXXXX
+- Hook point: [address]
+- State transition: idle → ... → active
 ```
 
 ## Quality Rules
 - NO `FUN_` names in committed src/ code
-- Cast density under 10%
 - Documentation is the primary deliverable
+- The binary scanner is your friend — write it inline if needed (Pool C suggested productizing it as `tools/xref_bin_scan.py` but that's pool C's job, not yours)
 
 ## Build
 ```bash
