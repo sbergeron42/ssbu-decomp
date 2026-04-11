@@ -1995,3 +1995,317 @@ The right tool for "who writes this global" when Ghidra's xref index is incomple
 5. Also check every `BL` where an argument register `X0..X7` holds the exact target (setter-helper pattern) and every store where the source register currently holds the target (pointer-init pattern).
 
 For the record, Pool C's scanner found 3 reads, 1 write, 0 setter-helper `BL` calls, 0 pointer-init stores, searching the full ~60 MB `.text`. Total scan time ~10 s per query. The script lived in the pool-c scratch buffer (not committed); a next pool that wants a reusable version should write it to `tools/xref_bin_scan.py`.
+
+---
+
+## Pool B — match-active flag hunt (next-pass)
+
+**Pool B built its own ADRP-propagation scanner** following Pool C's spec and
+ran it over the full `.text` segment of `main.elf` (file offset 0x888, size
+0x39c7e90). The scanner tracks `{ Rd: page_base }` through ADRP, ADD/SUB imm,
+and MOV (reg), flushes on RET/B/BR/BLR, and reports every `LDR/STR/LDUR/STUR/
+LDP/STP/LDAR/STLR` whose `Rn` holds an address in `[0x710593a000,
+0x710593b000)`. It also logs BL-with-arg-register-holding-target (setter
+helpers) and pointer-init stores. Total: **6,519 access events across 443
+distinct bytes** in the 4 KB target page.
+
+Raw scanner and per-address hit list saved to `tmp/scan_a_block.py` and
+`tmp/a_block_hits.txt` (pool-b scratch, not committed — see pool-c note).
+
+### `main_loop` extent (measured)
+
+First `RET X30` inside main_loop lands at **`0x710374ee64`**, so main_loop's
+body is `0x7103747270..0x710374ee68` (= **0x7bf8 bytes ≈ 31.7 KB**). That is
+the largest single function in the sim-tick path. This range was used below
+to filter "reads inside main_loop".
+
+### 0x710593axxx block audit — non-zero writer AND main_loop reader
+
+Filtering the 443 accessed bytes by "has at least one static non-zero writer
+**and** is read from inside main_loop's body" yields the candidate set below.
+(Non-zero = source register is not `xzr`/`wzr`; the one-shot BSS ctor at
+`0x7100446400` was kept but flagged as an init-time writer.)
+
+| Address | Size | Non-ctor writers | Static readers | Read from main_loop? | Classification |
+|---|---|---|---|---|---|
+| 0x710593a448 | 1 | 4 | 2 | YES (main_loop+0x59d0) | byte flag, small cluster |
+| 0x710593a44c | 4 | 1 | 4 | YES | state-byte cluster (see below) |
+| 0x710593a450 | 4 | 1 | 0 | WRITE-only from main_loop | clear-on-frame |
+| 0x710593a454..0x710593a470 | 4/8 | 1–2 | 1 | YES | state-byte cluster (9 fields) |
+| 0x710593a4b4 | 4 | 2 | 1 | YES (main_loop+0xab8) | int16 clamp-and-store |
+| 0x710593a4b8 | 4 | 1 | 1 | YES | int, read-only in main_loop |
+| 0x710593a4c0 | 8 | 1 | 1 | WRITE at main_loop+0x48 | `this` cache (see below) |
+| 0x710593a4c8 | 4 | 1 | 1 | YES | w0-return store |
+| 0x710593a4cc | 4 | 1 | 1 | YES | load-modify-store counter |
+| **0x710593a510** | **8** | **1** | **3** | **YES (LDR x0, cbz)** | **singleton pointer — see §"Match-active signal"** |
+| 0x710593a528 | 8 | (ctor only) | 3 | YES (deep chain root) | **scene/mode singleton pointer** |
+| 0x710593a530 | 4 | 0 | 3 | YES (the dead ==3 branch) | dead (per Pool C) |
+| 0x710593a534 | 4 | 2 | 27 | WRITE at main_loop+0x60 | **cached int frame-state (see below)** |
+| 0x710593a540..0x710593a5a0 | byte | — | 0 in main_loop | — | (byte cluster — no main_loop readers, de-prioritized) |
+| 0x710593a570 | 8 | many | 0 | — | shared_ptr slot pattern; no main_loop reader |
+| 0x710593a580 | 8 | 1 | 107 | YES (one read) | singleton pointer, "get X" service |
+| 0x710593a5f0 | 8 | 2 | 28 | NO | singleton pointer, init-only |
+| 0x710593a6a0 | 8 | 1 | 138 | YES (one read) | singleton pointer (scene root), init-only |
+| 0x710593a740..0x710593a878 | 8 | ~50 | all in main_loop | YES | **main_loop-internal ring of 0x10-byte cells** |
+| 0x710593a8d0 | 1 | 1 | 1 | YES | byte flag |
+| 0x710593aa90 | 8 | 1 | 13 | YES (13 reads in main_loop) | hot pointer (probably a per-frame object tree) |
+
+Notes on what was eliminated:
+- **0x540..0x5a0 byte cluster (Pool C's second candidate).** The scanner sees
+  only ADRP-based accesses; the entire byte cluster has **no readers from
+  inside `main_loop`'s body** and no writers that stand out as a match-begin
+  transition. De-prioritized.
+- **0x570 (13r/12w).** The access pattern is "load 8 bytes, clear the same
+  8 bytes to zero" repeated in 12 distinct subsystem destructors — a
+  `std::shared_ptr::reset()` / service-locator "unregister me" slot. Not
+  a tick signal.
+
+### Main_loop's post-prologue fast path is a state-machine dispatch on DAT_710593a534
+
+Literal disassembly (main_loop + 0x60..0x94):
+
+```
+0x71037472b0  blr x8                        ; vtable call on this->...
+0x71037472b4  adrp x8, 0x710593a000
+0x71037472b8  str x21, [x8, #0x4c0]         ; cache `this` pointer at 0x710593a4c0
+0x71037472bc  bl  0x71039c7670              ; PLT stub — "begin frame"?
+0x71037472c0  bl  0x71039c7570              ; PLT stub — returns int state
+0x71037472c4  adrp x9, 0x710593a000
+0x71037472c8  add  x9, x9, #0x510
+0x71037472cc  mov  w8, w0
+0x71037472d0  str  w0, [x9, #0x24]          ; cache state at DAT_710593a534
+0x71037472d4  ldr  x0, [x9, #0x00]          ; load DAT_710593a510 (singleton ptr)
+0x71037472d8  cbz  x0, 0x7103747304         ; if ptr==0 -> skip per-frame vtable call
+0x71037472dc  cbz  w8, 0x71037472f0         ; state==0 -> store 0 to local
+0x71037472e0  cmp  w8, #0x1                 ; state==1?
+0x71037472e4  b.ne 0x7103747304             ;   no  -> skip per-frame call
+0x71037472e8  str  w8, [sp, #0x270]         ;   yes -> store 1 to local
+0x71037472ec  b    0x7103747304             ; fall through (actually to 0x72f4)
+0x71037472f0  str  wzr, [sp, #0x270]        ; state==0 path stores 0
+0x71037472f4  ldr  x8, [x0, #0x00]          ; x0 = DAT_710593a510; vtable fetch
+0x71037472f8  ldr  x8, [x8, #0x30]          ; vtable[+0x30]
+0x71037472fc  add  x1, sp, #0x270           ; arg1 = &local_state
+0x7103747300  blr  x8                       ; ** PER-FRAME VTABLE DISPATCH **
+0x7103747304  ...                           ; path taken when ptr==0 or state≥2
+```
+
+This is the clearest per-frame entry point yet found inside `main_loop`, and
+it is **gated on DAT_710593a510 being non-null** plus `state <= 1`.
+
+### DAT_710593a534 — cached frame-state integer, NOT the match-active flag
+
+`DAT_710593a534` is:
+
+- **Written every frame** from inside main_loop's prologue (insn
+  `0x71037472d0: str w0, [x9, #0x24]`) with the return value of PLT stub
+  `0x71039c7570`. (Both 0x71039c7570 and 0x71039c7670 are standard 4-insn
+  ADRP/LDR/ADD/BR PLT trampolines — they are imported / virtual-dispatch
+  wrappers; Ghidra will know the symbol from the dynamic relocation table.)
+- **Written a second time** by the helper at `0x7103741988` (specifically at
+  `0x7103741bb4`, again from a `w0` return value). That helper is NOT called
+  from anywhere Pool B's linear BL scan could find — it is invoked via
+  indirect dispatch, consistent with a vtable thunk into main_loop's subtree.
+- **Read by 27 distinct functions scattered across the binary**, but **not
+  re-read from inside main_loop** itself. Every read is `ldr w?, [x?, #0x534]`
+  with no `cmp` / branch guarding it — the readers simply consume the value.
+
+This is the behaviour of a **cached per-frame "phase" or "scene kind"
+integer**, not a match-active flag. The value range that main_loop's own
+state machine distinguishes is exactly `{0, 1, ≥2}`:
+
+- `state == 0` → store 0 to local, take vtable dispatch at 0x72f4
+- `state == 1` → store 1 to local, take vtable dispatch at 0x72f4
+- `state >= 2` → skip the vtable dispatch (jump to 0x7303 0304 cleanup path)
+
+So "2+" is the "match not running" case, and "0 or 1" is the "frame should
+run the driver" case. 27 unrelated functions cache this value because it's
+effectively a cheap read of the game loop's current phase.
+
+### DAT_710593a510 — the match-active signal (**best candidate**)
+
+`DAT_710593a510` is an 8-byte **singleton pointer** with exactly these
+static-code accesses:
+
+```
+WRITES:
+  0x7100446760  STP XZR, XZR, [X8, #0x0]    ; BSS ctor (init to null) — Pool C
+  0x7103741a60  STR X0, [X8, #0x510]        ; helper in FUN_7103741988 area
+                                            ; stores the return of an indirect
+                                            ; call (not a PLT stub)
+
+READS:
+  0x7103741a4c  LDR X21, [X19, #0x20]       ; Rn holds 0x710593a4f0 → +0x20 = 0x510
+  0x7103741a70  LDR X8,  [X19, #0x20]       ; same function, reload
+  0x71037472d4  LDR X0,  [X9, #0x00]        ; main_loop, **right before cbz x0**
+```
+
+Interpretation:
+
+- BSS ctor (Pool C's identified `.init_array[0x8a0]` entry) zeroes this slot
+  at program load. So it is `null` on boot.
+- A helper (sitting in the ~0x7103741988 block of functions right before
+  `main_loop`) installs a non-null pointer into the slot. This helper also
+  writes `DAT_710593a534` (0x22c bytes later), which is the clinching link:
+  **one function owns the install of both the singleton pointer and the
+  frame-state integer**. That matches the semantics of a match-begin handler
+  that publishes the match runner and primes the cached phase integer.
+- `main_loop`'s fast path checks `cbz x0, skip` on exactly this pointer — if
+  the slot is null, the per-frame vtable dispatch is skipped entirely. This
+  IS the gate on whether the driver runs.
+
+**Verdict:** `DAT_710593a510` is the strongest candidate for the
+match-active / rollback-arm signal in the `0x710593a___` block. It is
+effectively a `MatchRunner *g_current_match`: non-null ⇒ driver runs this
+frame, null ⇒ main_loop skips the driver.
+
+Unknowns that Pool B could **not** confirm statically:
+
+1. **There is only ONE non-init writer of 0x510** (at `0x7103741a60`). We
+   did not find a corresponding "store xzr, [x8, #0x510]" to clear the slot
+   on match end. Either (a) the same store at 0x7103741a60 can write `null`
+   when the match ends (the source register is `x0`, which could hold
+   either a new runner or null depending on upstream control flow), or
+   (b) the clear path is reached via an indirect/register-computed address
+   that the ADRP-propagation scanner misses. This needs Ghidra decomp of
+   `FUN_7103741988` (or whatever function contains `0x7103741a60`) to
+   verify.
+2. **The type of the object at `DAT_710593a510`.** The only thing we know
+   statically is that `vtable[+0x30 / 8]` takes `(this, int *frame_state)`
+   — the second argument is a pointer to the local at `sp+0x270` holding
+   the `DAT_710593a534` value. Candidate C++ prototypes:
+   `void (*)(MatchRunner*, int *phase)` or
+   `void (*)(SceneRoot*, const int *phase)`. Ghidra should already have
+   this vtable's class — finding which class has a method at vtable slot
+   0x30 that takes `(this, int*)` would identify the type.
+
+### The dead 0x530 == 3 branch wraps a deeper dispatcher
+
+Pool C's finding that DAT_710593a530 never receives the value `3` under
+static analysis is confirmed. The disassembly at the read site
+(`0x7103747bf8`) also tells us what the "taken" branch would have done:
+
+```
+0x7103747be0  adrp x8, 0x710593a000
+0x7103747be4  ldr  x8, [x8, #0x528]   ; x8 = DAT_710593a528 (scene/mode singleton)
+0x7103747be8  ldr  x0, [x8, #0x00]    ; deref +0x0
+0x7103747bec  cbz  x0, 0x7103747bf4
+0x7103747bf0  bl   0x71039c06c0       ; PLT stub (side effect on the scene mgr)
+0x7103747bf4  adrp x8, 0x710593a000
+0x7103747bf8  ldr  w9, [x8, #0x530]   ; w9 = DAT_710593a530 (the dead flag)
+0x7103747bfc  ldr  x8, [sp, #0x268]
+0x7103747c00  ldr  x8, [x8, #0x08]
+0x7103747c04  ldr  x8, [x8, #0x11b0]
+0x7103747c08  ldr  x8, [x8, #0x28]
+0x7103747c0c  ldr  w20, [x8, #0xb0]   ; w20 = **real** state key, deep chain
+0x7103747c10  cmp  w9, #0x3
+0x7103747c14  b.ne 0x7103747c68       ; **if DAT_710593a530 != 3, SKIP the dispatcher**
+0x7103747c18  cmp  w20, #0x3
+0x7103747c1c  b.hi 0x7103747cac
+0x7103747c20  mov  w9, w20
+0x7103747c24  adrp x10, 0x7104530000  ; jump table base
+0x7103747c28  add  x10, x10, #0xf00
+0x7103747c2c  ldrsw x9, [x10, x9, lsl #2]  ; indirect dispatch on w20 in 0..3
+```
+
+This reveals that the "match-active dispatch" Pool B previously identified
+(Dispatcher A / the element walk at main_loop +0x988) is actually a
+**two-level gate**:
+
+1. **Outer gate:** `DAT_710593a530 == 3` (dead under static analysis — Pool C).
+2. **Inner dispatch:** a 4-way jump table keyed on `w20`, which is loaded
+   from the chain `[sp+0x268] → +0x8 → +0x11b0 → +0x28 → +0xb0`.
+
+The `[sp+0x268]` slot is populated earlier in main_loop — it is some `this`
+or cached pointer — and the chain walks all the way into some subsystem
+manager's inner state byte. **This inner field is the real per-frame "which
+phase of the match are we in" key**; the outer 0x530 test looks very much
+like a debug/devkit "dispatch enabled" flag that was left off in retail. On
+a live runtime trace (GDB watchpoint at `0x710593a530`), if the flag is
+never set to 3, Dispatcher A is genuinely dead code and the element walk
+can be retired from the sim-tick hypothesis set.
+
+### DAT_710593a528 — the scene/mode singleton
+
+The chain root `DAT_710593a528` has:
+
+- One writer: the BSS ctor at `0x71004467e8` stores **x8** (a non-null
+  pointer) into `[x1 + 0x38]` where `x1 = 0x710593a4f0`, giving target
+  `0x710593a528`. This is a **pointer-init** — the ctor allocates or
+  references some static object at load time and publishes it at 0x528.
+- No other static writer. So the slot value is fixed from program start.
+- Three readers, all dereferencing the pointer and walking into it:
+  `0x7103741bb0` (inside the helper that also writes 0x510/0x534) and
+  `0x7103741c38` (same helper) and `0x7103747be4` (main_loop's inner
+  dispatcher gate path).
+
+So `DAT_710593a528` is a **static service-locator slot** for what is almost
+certainly the scene manager / game-mode controller — it is populated once
+and never re-homed. The real match-state byte is a field deep inside the
+object it points to (`+0x8 +0x11b0 +0x28 +0xb0`), NOT a member of the
+`0x710593a___` BSS block at all. Pool B's next step for a "find the match-
+state byte" pass should therefore be **type recovery on the object rooted
+at DAT_710593a528**, not further byte-scanning in the `0x710593a___` range.
+
+### Most promising candidate
+
+- **Address:** `DAT_710593a510` (8-byte singleton pointer, file offset of
+  storage bytes unknown — it's BSS).
+- **Writers:** two — the one-shot BSS ctor zero (`0x7100446760`, `.init_array`
+  slot Pool C found) and `0x7103741a60` (inside a helper near main_loop,
+  writes the return value of an indirect call).
+- **Readers (main_loop chain):** `0x71037472d4 ldr x0, [x9]` → `cbz x0`
+  gate → `ldr x8, [x0]; ldr x8, [x8, #0x30]; blr x8` (per-frame vtable
+  dispatch).
+- **State machine values:** binary — `null` (no match) vs non-null (match
+  active). The paired `DAT_710593a534` integer disambiguates three
+  sub-phases (0, 1, ≥2), but it is a cached int, not the arm signal.
+- **Verdict:** **STRONG CANDIDATE** for the match-active flag / rollback arm
+  signal. Needs (a) Ghidra confirmation of the containing function at
+  `0x7103741a60` to find the DISARM (null-store) path, and (b) runtime
+  confirmation via a GDB watchpoint on `0x710593a510` across match entry
+  and exit.
+
+### Rollback arm signal (tentative)
+
+- **Function:** `FUN_7103741xxx` (container of `0x7103741a60`) — needs to
+  be identified by the next pool. It is NOT reachable via linear BL scan,
+  so it is called indirectly (likely a vtable thunk from the per-frame
+  vtable dispatch above, meaning it re-enters the arm logic as a sub-state
+  of its own dispatch).
+- **Hook point:** `STR X0, [X8, #0x510]` at `0x7103741a60`, immediately
+  after loading/comparing an incoming candidate against a stack local at
+  `[sp, #0x370]`.
+- **State transition:**
+  - **Boot:** BSS ctor writes `null` → slot is null → main_loop skips driver.
+  - **Match begin:** helper calls into a factory/getter, gets a non-null
+    pointer, stores it at `0x710593a510`.
+  - **Match end:** presumably the same store site writes `null` on the
+    teardown path (the source register `x0` is loaded from a stack local,
+    so it can be zero or non-zero depending on upstream control flow). The
+    next pass should confirm this by decompiling the containing function.
+
+### Methodology and artifacts
+
+- The scanner (Pool C's spec, Pool B's implementation) is ~280 lines of
+  Python that walks `.text` linearly, tracks `{Rd: page_base}` through
+  `ADRP / ADD / SUB / MOV-reg`, flushes on `RET/B/BR/BLR`, and decodes
+  `STR/LDR/STUR/LDUR/STP/LDP/STLR/LDAR` as well as `BL`-with-tracked-arg.
+  Single pass over the 60 MB `.text` runs in <15 s. Saved in `tmp/` as
+  `scan_a_block.py` (not committed — pool-c suggested productizing it as
+  `tools/xref_bin_scan.py`, which is pool-c's turf).
+- Per-address hit list saved to `tmp/a_block_hits.txt` (6,519 hits in 443
+  distinct bytes of the 4 KB page).
+- Main_loop extent measured as 0x7bf8 bytes by finding the first `RET X30`
+  after `0x7103747270`.
+- Ghidra MCP was **not** consulted for this pass — all findings come from
+  direct binary scan + inline disassembly in Python. The next pool should
+  use Ghidra to:
+  1. Confirm the containing function of `0x7103741a60` and dump the
+     decomp to find the DISARM (null-store) path.
+  2. Resolve the PLT stubs `0x71039c7570` and `0x71039c7670` to their
+     symbol names (this tells us what cached integer state DAT_710593a534
+     actually represents — probably `SceneManager::getCurrentSceneKind()`
+     or similar).
+  3. Identify the class of the object at `DAT_710593a510` by searching
+     the vtable at offset `+0x30` for a method signature
+     `void (Type*, int *)`.
