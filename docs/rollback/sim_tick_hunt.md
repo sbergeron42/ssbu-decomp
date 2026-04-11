@@ -6431,3 +6431,217 @@ Round 7 caller audit strengthens but does not change that verdict.
   `mcp__ghidra__decompile_function_by_address` and
   `mcp__ghidra__disassemble_function`; xref counts via
   `mcp__ghidra__get_function_xrefs`.
+
+---
+
+
+---
+
+## Pool C — Round 7: vtable slot investigation + FUN_710151a5d0 (2026-04-10)
+
+**Assignment.** Decompile `FUN_710151a5d0` (reported as inline registrar in
+Round 6) and the 3 DATA xrefs to `FUN_7101344cf0` (`0x7105060680`,
+`0x710506b0f8`, `0x710506c5b8`), identify the owning vtables, and name the
+abstract Task base class.
+
+**Result.** All 4 xrefs belong to a **resource-manager class hierarchy**, not
+a Task hierarchy. `0x710151a5d0` is **not a registrar** — it is a 1-instruction
+compiler thunk. The sim tick is confirmed NOT to live in this subsystem,
+cross-validating the Round 6 addendum pivot.
+
+Full evidence in `data/ghidra_cache/pool-c.txt` Round 7 section.
+
+### Method
+
+Parsed `.rela.dyn` (335,369 `R_AARCH64_RELATIVE` entries) from `data/main.elf`
+directly. For each slot address, walked 8-byte forward/backward until the
+first "hole" (no reloc at that offset) to delimit the enclosing vtable, then
+inspected the Itanium-ABI prefix (offset_to_top, typeinfo) at `vbase - 16`
+to confirm vtable start. Ran `tools/xref_bin_scan.py` on each vtable-base
+address to find ADRP+ADD+STR pointer-init stores (constructors).
+
+### Vtables found
+
+Every hit is a **19-slot Itanium-ABI primary vtable** (offset_to_top = 0,
+typeinfo = 0 — Nintendo SDK built with `-fno-rtti`). Each is immediately
+followed by a secondary sub-object prefix (offset_to_top = **-8**), so these
+classes all use **multi-inheritance with a secondary base at object offset
++0x8**.
+
+| Label | Vtable base | Slot 14 value | Inherit chain |
+|---|---|---|---|
+| **A** | `0x7105060610` | `0x7101344cf0` (direct) | base class (19 consecutive 0x10-stride leaf fns at slots 0-7) |
+| **B** | `0x710506b088` | `0x7101344cf0` (direct) | derived, inherits slots 7, 8, 14-16 unchanged |
+| **C** | `0x710506c548` | `0x7101344cf0` (direct) | derived, inherits slots 7, 8, 14-16 unchanged |
+| **D** | `0x710506c408` | `0x710151a5d0` (1-insn thunk) | derived, thunk-inherits slots 14-16 |
+
+All four vtables have **identical slots 7 and 8** (`0x7101343df0`,
+`0x7101343ee0`). Vtables A/B/C also share identical slots 14-16
+(`0x7101344cf0`, `0x710134c690`, `0x710134f5c0`). Vtable D's "local" slot
+14-16 pointers are thunks (see below).
+
+### `0x710151a5d0` is NOT an inline registrar
+
+Raw bytes at the "local" slot 14-16 of vtable D:
+
+```
+0x710151a5d0:  17f8a9c8   B 0x7101344cf0   (thunk → slot 14 of A/B/C)
+0x710151a5e0:  17f8c82c   B 0x710134c690   (thunk → slot 15 of A/B/C)
+0x710151a5f0:  17f8d3f4   B 0x710134f5c0   (thunk → slot 16 of A/B/C)
+```
+
+Each is a **single unconditional branch** with no `this`-pointer adjustment.
+These are compiler-emitted thunks for inherited methods through a
+non-primary base — but because the secondary base sub-object sits at a
+position-independent offset (`+0x8`), no actual adjustment is needed and
+each thunk is a bare tail-call.
+
+Round 6 Pool C's binary scanner walked through these 4-byte thunks, saw the
+`0x7101344cf0` target, and mis-reported `0x710151a5d0` as an "inline
+registrar". **Corrected.** There are no "4 + 1" task_tree_add entry points —
+all four vtables ultimately call the same function, three directly and one
+through a 1-insn thunk.
+
+### Vtable A is the base class (single-function xref confirms it)
+
+`tools/xref_bin_scan.py 0x7105060610` returns exactly one pointer-init:
+
+```
+0x7101343f04  STP X  source=0x7105060610  in fn 0x7101343ee0 (FUN_7101343ee0)
+```
+
+`FUN_7101343ee0` is itself slot 8 of all four vtables. Combined with its
+first two instructions restoring **both** vtable pointers —
+
+```c
+*param_1      = &PTR_LAB_7105060610;     // primary vtable
+param_1[1]    = &PTR_LAB_71050606b8;     // secondary vtable
+```
+
+— this is unambiguously the **base class's complete-object destructor**
+performing the Itanium-ABI vtable-fixup. It is the only function that writes
+`0x7105060610` into an object, so vtable A belongs to the base class itself.
+
+### Base class shape (from destructor body)
+
+Decompiling `FUN_7101343ee0` end-to-end reveals a **large resource-manager
+base class**, not a lightweight Task:
+
+- Restores primary + secondary vtables (lines 1-2)
+- Tears down **two chunked-deque containers**:
+  - `[param_1+0xc8 .. +0xe8]` — 64 entries/chunk × 8-byte slot (4096-byte
+    chunks)
+  - `[param_1+0xf8 .. +0x120]` — 32 entries/chunk × 16-byte slot (4096-byte
+    chunks)
+- Releases **~20 shared_ptr members** at `param_1[4..0x20]`, each using the
+  classic "dec refcount, if 0 call `vtable[+0x8]`" idiom
+- Frees a final member at `param_1[2]`
+
+**Object layout:** at minimum `0x110` bytes (field `[0x20]` is at offset
+`0x100`), with 20+ shared_ptr slots and two deferred-work deques embedded
+directly in the base object.
+
+This is **incompatible with a pead::Task-style base**. It matches a
+`cross2::ResMgr` / subsystem-manager pattern. The "task_tree_add" method at
+slot 14 is an **internal deferred-work scheduler** the base class offers to
+its derived classes, and `DAT_7105332120` is that deferred-work list — not a
+per-frame task pump.
+
+### Constructors for B, C, D (Ghidra boundaries broken)
+
+| Vtable | Stored from | Ghidra-reported fn |
+|---|---|---|
+| B `0x710506b088` | `0x710230bcd8` (`STP X8,X9,[X20]`) | `FUN_710230b7b0` (Ghidra carves a short unrelated dtor here; real ctor starts ~`0x710230bb50`) |
+| C `0x710506c548` | `0x710230bec4` | **same function** stores both B and C vtables — multi-inheritance ctor for a single class that embeds both sub-objects |
+| D `0x710506c408` | `0x71033027ac` | `FUN_7103301c00` region (Ghidra carves an unrelated initializer; real ctor is past `0x7103301f53`) |
+
+B and C are therefore **the primary and secondary base sub-objects of a
+single derived class**, not two independent classes. Only 2 derived classes
+(B+C combined = 1 class, and D = 1 class) share this abstract base, plus
+the base itself.
+
+### Vt[2] of each vtable — none is a sim tick
+
+The task asked to check `vtable[+0x10]` (slot 2) for sim-shaped patterns.
+Result: **every slot 2 implementation in this hierarchy is a "push N items
+onto the base-class deques" helper.**
+
+| Vtable | slot 2 target | Decomp summary |
+|---|---|---|
+| A `0x7105060610` | `0x7101343da0` | 4-instruction leaf (compiler-emitted base-class accessor; not a tick) |
+| B `0x710506b088` | `0x71014d6e80` | enqueues `{type=2, -1}` + up to 3 config-qwords from `DAT_71052c23b8/c0/d0`; has a `__cxa_guard_acquire` lazy-init to `global_param_init_sets_team_flag` + `FUN_7101763de0` |
+| C `0x710506c548` | `0x710151b6a0` | enqueues `{type=2, -1}` + 2 config-qwords (`DAT_71052c23c0`, `DAT_71052c23d0`) |
+| D `0x710506c408` | `0x710151a810` | enqueues `{type=2, -1}` + 1 config-qword (`DAT_71052c23d0`) |
+
+All three non-leaf implementations write to the **same two container deques**
+at `[+0xc8..+0xe8]` and `[+0xf8..+0x120]` that the base-class dtor tears
+down. The type-2 record and `DAT_71052c23xx` constants are **static global
+config**, not per-frame sim state. Vtable B's one-time lazy init to
+`global_param_init_sets_team_flag` is the only game-adjacent reference, and
+it is `__cxa_guard`-protected (runs once, ever).
+
+**Sim-shaped?** No iteration over FighterManager, no BattleObjectModuleAccessor
+module touches, no reads/writes to `0x71052c25b0..` (RNG state), no calls
+to `app::sv_math::rand`. None of these is a per-frame sim tick.
+
+### Vtable slots pointing at `FUN_7101344cf0`
+
+| Slot address | Owning vtable | Class role | Slot index in vtable |
+|---|---|---|---|
+| `0x7105060680` | `0x7105060610` | **base class** (abstract resource manager) | slot 14 |
+| `0x710506b0f8` | `0x710506b088` | derived class (B = primary sub-object of a multi-inherit class) | slot 14 |
+| `0x710506c5b8` | `0x710506c548` | derived class (C = secondary sub-object of the same class) | slot 14 |
+| `0x710506c478` | `0x710506c408` | derived class (D, separate) | slot 14 (thunk at `0x710151a5d0`) |
+
+### Abstract Task base class
+
+- **Vtable:** `0x7105060610`
+- **Class (working name):** `cross2::ResMgr` or similar resource/subsystem
+  manager base — **NOT** a Task base class
+- **Slot 14 method (`0x7101344cf0`):** internal "schedule deferred resource
+  work" method; the Round 6 "task_tree_add gatekeeper" mega-blob
+- **Hierarchy:** base + 2 derived classes (a single multi-inheritance class
+  sharing B+C sub-objects, plus the separate D class)
+
+### VERDICT
+
+**No sim task found.** The 4 DATA xrefs to `FUN_7101344cf0` all resolve to
+the same base-class virtual method on a **resource-manager class
+hierarchy**, not a task scheduler. `DAT_7105332120` (Round 5/6 "task list")
+is a **deferred resource-work list**, consistent with the Round 6 addendum's
+transform/animation-task-pool finding.
+
+This pool has now eliminated the "task_tree_add xref walk" path
+independently of Pool A's parallel `register_task_active` caller audit.
+Both paths converge on the same negative verdict: **the cross2app task
+subsystem the 4 workers have been chasing is not the sim tick subsystem.**
+
+### Recommended Round 8
+
+Both pool A's and pool C's Round 7 paths have exhausted the "find the sim
+task via caller audit" angle. Pivot to the Round 6 addendum's recommended
+next steps:
+
+1. **Enumerate `nn::os::CreateThread` call sites** in the binary via
+   `tools/xref_bin_scan.py --called-as-arg <PLT addr>` — each spawned thread
+   is a candidate for a dedicated sim thread.
+2. **Bin-scan the RNG page `0x71052c2xxx` for reader functions** (not
+   writer — writers were cataloged in Round 5). For each reader, walk up
+   to its containing thread-entry function. The thread whose entry
+   transitively reaches RNG reads is the sim.
+3. **GDB watchpoint on `DAT_71052c25b0`** during gameplay. Watchpoints on
+   xorshift128 state writes will fire ~every frame on the sim thread and
+   log PC + callstack directly. This is the fastest remaining path and is
+   now the unambiguous next step.
+
+### Artifacts this pass
+
+- `data/ghidra_cache/pool-c.txt` — Round 7 section appended with:
+  - `.rela.dyn` parse methodology
+  - Per-vtable slot dump (A, B, C, D) with boundary verification
+  - Raw disassembly of the three 1-insn thunks at `0x710151a5d0/5e0/5f0`
+  - `FUN_7101343ee0` destructor decomp + base-class object layout
+  - vt[2] decomps for B, C, D (all "enqueue" helpers)
+- No `src/` changes; no Ghidra renames committed.
+- Documentation-only pass per `WORKER-pool-c.md`.
+| `DAT_7105332128` | Task list spinlock (single byte) |
