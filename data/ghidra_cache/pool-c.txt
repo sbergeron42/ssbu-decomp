@@ -1378,3 +1378,53 @@ Parent wiring: task->+0x20 = parent object (from caller arg x12)
                parent->+0x90 = this task (reverse pointer, written at 0x7101348744)
 Task initial state: 1 (skip first frame), from 0x7101348748: strb w8,[x0,#0x70]
 Task config source: DAT_71053320d8 (queue_id at +0x60, priority at +0x64)
+
+== Round 7 seed: nn::os::CreateThread call sites (2026-04-10) ==
+
+All BL call sites to nn::os::CreateThread PLT entries across the binary:
+
+PLT 0x71039c0010 (nnosCreateThread, 1-arg variant):
+  0x7100027af4  (in FUN_7100027a70)
+
+PLT 0x71039c0790 (CreateThread_1, full variant): 13 sites
+  0x710013bf68
+  0x71001b2974
+  0x71036efa78  ] cross2app ThreadPool factory
+  0x71036efad8  ] (6 sites in 0x71036efXX..0x71036f3 range)
+  0x71036f0150  ]
+  0x71036f0df8  ]
+  0x71036f1448  ]
+  0x71036f3d60  ]
+  0x710373e4bc  *** close to main_loop (0x7103747270) ***
+  0x710373f21c
+  0x710373fa38
+  0x71037cc974
+  0x7103993ebc
+
+PLT 0x71039c0b00 (CreateThread_2, alt variant): 5 sites
+  0x71001b2998
+  0x710373e4a0  *** paired with 0x710373e4bc above ***
+  0x710373f214
+  0x710373fa30
+  0x7103993e9c
+
+Observations:
+- 0x71001b2974 and 0x71001b2998 are a pair in the same function
+- 0x710373e, 0x710373f21x, 0x710373fa3x are three pairs in 0x7103e..0x7103fa
+  - Same vicinity as main_loop at 0x7103747270 (same subsystem?)
+- 0x71036ef..0x71036f3 cluster = cross2app ThreadPool factory (6 sites)
+- Total: ~18 threads spawned across the binary
+- The sim thread is one of these. Priority order for investigation:
+  1. 0x710373e4bc/4a0 (closest to main_loop)
+  2. 0x710373f21c/214 (same subsystem)
+  3. 0x710373fa38/a30 (same subsystem)
+  4. 0x71001b2974/998 (early, standalone)
+  5. 0x7103993ebc/e9c (late, possibly engine task pool)
+
+Per Round 6 verdict: main_loop is not the sim; find the sim thread.
+Best approach: bin-scan for readers of RNG page 0x71052c2xxx, then trace
+each reader up to its containing thread entry function (via xref walks
+or by matching against the 18 threads above).
+
+GDB runtime watchpoint on DAT_71052c25b0 writes remains the fastest path
+to definitively capture the sim tick PC + stack.
