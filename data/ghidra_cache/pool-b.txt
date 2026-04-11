@@ -1501,3 +1501,246 @@ Observations:
  - This function ALONE cannot tell us whether receiver is a sim ticker.
    Need to identify plVar6's class (see param_3+8) and what slot 3 does.
 
+
+================================================================================
+ROUND 6 — task helper decomps + add_task caller enumeration (2026-04-10)
+================================================================================
+
+Ghidra MCP calls made this session (all succeeded):
+  mcp__ghidra__decompile_function_by_address 0x7103559340  (add_task candidate)
+  mcp__ghidra__decompile_function_by_address 0x7103559220  (remove_task candidate)
+  mcp__ghidra__get_function_xrefs FUN_7103559340  -> 49 callers
+  mcp__ghidra__get_function_xrefs FUN_7103559220  -> 15 callers
+  mcp__ghidra__decompile_function_by_address 0x7103757290  (sample add+remove caller)
+  mcp__ghidra__decompile_function_by_address 0x7103579a60  (sample add+remove caller)
+  mcp__ghidra__decompile_function_by_address 0x710359f900  (sample add+remove caller)
+  mcp__ghidra__decompile_function_by_address 0x7102500d30  (8x bulk add_task caller)
+  mcp__ghidra__decompile_function_by_address 0x71025ed8b0  (add+remove toggle caller)
+
+--------------------------------------------------------------------------------
+FUN_7103559340 - decomp summary
+--------------------------------------------------------------------------------
+Signature: void FUN_7103559340(shared_ptr<Task>* param_1)
+  param_1 layout: { Task* task; __shared_weak_count* ctrl; }
+
+Flow:
+  1. Pre-hooks on the task BEFORE taking the queue lock:
+       task->vt[0xa8](task, 0);     // activate-prepare with flag=0
+       task->vt[0x340](task);       // additional init hook
+       int gate = task->vt[0x38](task);
+       if (gate == 0) return;       // gate predicate
+  2. Take recursive_mutex at [DAT_7105332fe8 + 0x38].
+  3. Bump shared_ptr refcount (ExclusiveMonitor loop on ctrl+8).
+  4. Push a 0x18-byte entry into the vector at [root+0x20..+0x30]:
+       entry.task     = task
+       entry.ctrl     = ctrl
+       entry.op_byte  = 0          // <-- FLAG=0 IS THE KEY
+     Grow path calls FUN_710354d130 (reserve + emplace_back).
+  5. Post-push: task->vt[0x40](task, 0);    // confirm state-change
+  6. Release the local refcount on ctrl; if it hit zero, call task->vt[0x10]
+     (destructor) and __shared_weak_count::__release_weak.
+  7. Unlock the mutex.
+
+--------------------------------------------------------------------------------
+FUN_7103559220 - decomp summary
+--------------------------------------------------------------------------------
+Signature: void FUN_7103559220(shared_ptr<Task>* param_1)
+  Identical layout to FUN_7103559340.
+
+Flow (differences vs add_task):
+  - NO vt[0xa8] / vt[0x340] pre-hooks.
+  - Gate predicate inverted:
+       if (task->vt[0x38](task) != 0) return;   // only queue when state==0
+  - Entry op_byte = 1 (vs 0 for FUN_7103559340).
+  - Post-push call: task->vt[0x40](task, 1)     (vs 0 for FUN_7103559340).
+  - Same recursive_mutex, same vector, same refcount dance.
+
+--------------------------------------------------------------------------------
+INTERPRETATION - helpers are a state-transition queue, NOT add/remove
+--------------------------------------------------------------------------------
+The two helpers are NOT "add_task" and "remove_task" in the "register /
+unregister for per-frame ticking" sense. They are state-transition helpers
+that push deferred state-change commands for resource-like objects:
+
+  FUN_7103559340 = schedule_transition_to_state_0(task)   // "activate"
+  FUN_7103559220 = schedule_transition_to_state_1(task)   // "deactivate"
+
+Evidence:
+  - The vt[0x38] gate is inverted between the two: add rejects state==0 tasks,
+    remove rejects state!=0 tasks. Textbook "no-op if already in target state".
+  - The vt[0x40] post-call passes the target state byte (0 or 1) matching the
+    queue entry op_byte.
+  - The tiny toggle helper FUN_7103579a60 exposes this directly:
+        if (enable_bit)  FUN_7103559220();   // to state 1 = disable
+        else             FUN_7103559340();   // to state 0 = enable
+  - Singleton uses recursive_mutex (not plain mutex), consistent with resource
+    loads spawning sub-loads that re-enter the queue on the same thread.
+
+Task vtable slots inferred:
+  vt[0x10] = destructor (shared_ptr refcount-0 path)
+  vt[0x20] = "apply state 1" (commit deactivation)         (seen in main_loop)
+  vt[0x28] = "apply state 0" (commit activation)           (seen in main_loop)
+  vt[0x38] = get_state()           (predicate; != 0 when "live")
+  vt[0x40] = set_pending_state(u8) (side channel helper<->drain)
+  vt[0xa8] = prepare_activation(u8) (only called by FUN_7103559340)
+  vt[0x340] = additional pre-activation hook (huge offset -> deep class)
+
+Vtable is therefore at least 0x348 bytes wide (~0x69 entries). That is a
+very large base class - consistent with a cross2app "Resource" or
+"Renderable" abstract base, not a small sim-task interface.
+
+--------------------------------------------------------------------------------
+Caller sampling (5 of 49 add_task callers decompiled) - all resource-shaped
+--------------------------------------------------------------------------------
+
+FUN_7103757290 - Mii ModelRenderer registration, neighbor of main_loop
+  (0x7103757290 vs main_loop 0x7103747270).
+  String evidence (FNV-hashed identifiers XOR-decoded from stack literals):
+    lib::mii::ModelRenderer (crc_b_normal_opaque_l)
+    lib::mii::ModelRenderer (crc_b_mirror_opaque_l)
+    lib::mii::ModelRenderer (crc_b_shadow_0_opaque_l)
+    lib::mii::ModelRenderer (crc_b_shadow_1_opaque_l)
+    lib::mii::ModelRenderer (crc_b_shadow_2_opaque_l)
+    lib::mii::ModelRenderer (crc_b_shadow_3_opaque_l)
+    lib::mii::ModelRenderer (crc_b_outline_opaque_l)
+    lib::mii::ModelRenderer (crc_b_outline_translucent)
+    lib::mii::ModelRenderer (crc_b_player_id_)
+  Calls nn::mii::Database::Initialize + nn::mii::Database::Get +
+  nn::mii::Database::BuildDefault x6. This is Mii avatar data + renderer
+  registration. Calls FUN_7103559220 (state 1) at the end to retire the
+  PREVIOUS renderer instance. Pure rendering pipeline work.
+
+  VERDICT: DEAD END - Mii ModelRenderer registration, not sim.
+
+FUN_710359f900 - fighter model streaming (model.numdlb loader).
+  Signature: void FUN_710359f900(uint slot_index, uint archive_handle).
+  Reads a different singleton DAT_7105331f20 (the resource manager slot
+  table, sized *(+0x48), slot stride 0x48 at *(+0x40)). Opens
+  "model.numdlb" via FUN_710353dc20, bsearches for the model handle, then
+  stores a task pointer at [per_fighter_struct + slot*0x1240 + 0x30] and
+  schedules it via FUN_7103559340. Later calls FUN_7103559220 to retire
+  the previous model.
+
+  The 0x1240-byte stride indexed by slot is a per-fighter-slot renderer
+  cache entry. The "task" being scheduled is the MODEL LOAD OPERATION.
+
+  VERDICT: DEAD END - fighter model resource hot-swap, not sim.
+
+FUN_7103579a60 - 8-line toggle shim.
+  Signature: void FUN_7103579a60(Obj* param_1, bool enable).
+  Dispatches state transition via the helpers, updating a u8 status byte
+  at obj->inner+0x60/+0x61. Generic enable/disable plumbing on top of the
+  queue. Does not itself decide what the task is.
+
+  VERDICT: Infra only.
+
+FUN_7102500d30 - destructor-style bulk flush.
+  Calls add_task on EIGHT slots (param_1[3, 15, 18, 34, 50, 66, 82, 98],
+  each being a shared_ptr pair). Writes &PTR_FUN_71050bf7f8 as the
+  object's vtable at entry (identity trait), manipulates
+  lib::Singleton<lib::EffectManager>::instance_ via +0x2d8 = 1 flags on two
+  effect handles (param_1+0x72 and +0x394). Also touches DAT_7106dd43a8/43ac
+  and PTR_LAB_7104f72d30/50 stateful scoped-guard literals.
+
+  The 8-slot flush pattern is NOT tick registration - it's the object's
+  destructor flushing its queued resource handles before its own refcount
+  teardown. Each slot holds a shared_ptr<Task>, and they are retired en
+  masse as the owning object dies.
+
+  VERDICT: DEAD END - object destructor flushing resource handles. The
+  EffectManager reference pins this to effect / graphics territory.
+
+FUN_71025ed8b0 - task-swap with atomic hand-off.
+  Signature: void FUN_71025ed8b0(Obj* param_1, shared_ptr<Task>* new_task).
+  Swaps the old task at [param_1+0x30] for new_task using a mutex-guarded
+  transfer on an inner obj at *(param_1+0x30)+8 (fields +0xb0, +0xb8). Then
+  conditionally calls add_task (if *(param_1+0x81) == 0) or remove_task
+  (if *(param_1+0x81) != 0) on the new task. The fact that the conditional
+  picks between schedule-to-state-0 and schedule-to-state-1 based on a
+  status byte confirms again these are state transitions, not add/remove.
+
+  VERDICT: DEAD END - resource slot swap.
+
+--------------------------------------------------------------------------------
+All FUN_7103559340 callers - 49 total
+--------------------------------------------------------------------------------
+  0x710048d114  FUN_710048ce90
+  0x71005f10cc  FUN_71005f10b0  (2 sites)
+  0x71005f1104  FUN_71005f10b0
+  0x71006dd918  FUN_71006dd7d0  (4 sites)
+  0x71006dd9f4  FUN_71006dd7d0
+  0x71006dda2c  FUN_71006dd7d0
+  0x71006dda50  FUN_71006dd7d0
+  0x7101480594  FUN_7101480580
+  0x7101536124  FUN_71015360e0
+  0x7101537fc4  FUN_7101537f80
+  0x7101538c64  FUN_7101538c20
+  0x71015390a4  FUN_7101539060
+  0x71022d1d24  FUN_71022cd350
+  0x71023583e0  FUN_71023583b0
+  0x71024d3138  FUN_71024d30d0
+  0x71024d325c  FUN_71024d31f0
+  0x71024e8650  FUN_71024e8620  (4 sites)
+  0x71024e86e4  FUN_71024e8620
+  0x71024e8778  FUN_71024e8620
+  0x71024e880c  FUN_71024e8620
+  0x71024e95e0  FUN_71024e95b0
+  0x71024ea7b0  FUN_71024ea780
+  0x71024ed548  FUN_71024ed520
+  0x710250118c  FUN_7102500d30  (8 sites)
+  0x71025011d8  FUN_7102500d30
+  0x7102501224  FUN_7102500d30
+  0x7102501270  FUN_7102500d30
+  0x71025012bc  FUN_7102500d30
+  0x7102501308  FUN_7102500d30
+  0x7102501358  FUN_7102500d30
+  0x71025013a8  FUN_7102500d30
+  0x710260bac8  FUN_710260b9b0
+  0x71025ebb70  FUN_71025ebb50
+  0x71025ebe4c  FUN_71025ebe30
+  0x71025ed9f4  FUN_71025ed8b0  (4 sites)
+  0x71025eda30  FUN_71025ed8b0
+  0x71025edae4  FUN_71025ed8b0
+  0x71025edb1c  FUN_71025ed8b0
+  0x710317282c  FUN_7103172590
+  0x710317320c  FUN_7103172df0
+  0x7103175aac  FUN_7103175900  (2 sites)
+  0x7103175b24  FUN_7103175900
+  0x7103534c98  FUN_7103534b60
+  0x710356f38c  FUN_710356d7a0  (2 sites)
+  0x710356fda0  FUN_710356d7a0
+  0x71035705f0  FUN_7103570460
+  0x7103570400  FUN_7103570220
+  0x710359faf8  FUN_710359f900
+  0x7103579a9c  FUN_7103579a60
+
+Caller address ranges cluster into:
+  0x710048xxxx..0x71006dxxxx  - early-module init code (~6 callers)
+  0x71014xxxx..0x71015xxxx    - mid-module code         (~5 callers)
+  0x71022xxxx..0x71026xxxx    - resource / effect family (~25 callers)
+  0x71031xxxx..0x71035xxxx    - near the task helpers    (~13 callers)
+
+No 0x71000xxxx / BattleObjectWorld / FighterManager / fighter-ai addresses.
+No callers in the Module accessor region (0x71003xxxx..0x71004xxxx).
+
+--------------------------------------------------------------------------------
+All FUN_7103559220 callers - 15 total
+--------------------------------------------------------------------------------
+  0x710048cd8c   (bare call, not inside a named function in Ghidra's analysis)
+  0x7100580058   (bare call)
+  0x7100580114   (bare call)
+  0x71006dd9b8  FUN_71006dd7d0  (paired with add_task above)
+  0x71006dda44  FUN_71006dd7d0
+  0x71025ed810  FUN_71025ed7f0
+  0x71025eda7c  FUN_71025ed8b0  (paired)
+  0x71025eda98  FUN_71025ed8b0
+  0x710356d224  FUN_710356c910  (2 sites)
+  0x710356d310  FUN_710356c910
+  0x71035345cc   (bare call)
+  0x7103579a84  FUN_7103579a60  (paired)
+  0x710359fd10  FUN_710359f900  (paired)
+  0x7103758390  FUN_7103757290  (paired)
+  0x71037583d0  FUN_7103757290
+
+All 15 paths land in resource / renderer / effect territory. None reach sim.
+

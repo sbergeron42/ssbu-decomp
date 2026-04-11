@@ -4453,3 +4453,175 @@ singleton `DAT_7105332fe8`. This is the correct next hop.
   `DAT_7105332fe8` too.
 - No src/ changes. Documentation-only pass per `WORKER-pool-c.md`.
 - Ghidra renames: **none this session** (findings live in shared docs).
+
+---
+
+## Pool B — Round 6: task add/remove helpers + caller enumeration (2026-04-10)
+
+Decomped both small task-list helpers and sampled 5 of 49 add_task callers. The
+resulting picture **overturns the Round 5 naming** — these helpers are not
+`add_task` / `remove_task` for a tick pump. They are a deferred state-change
+queue for resource-like objects (Mii renderers, fighter-model loaders,
+effects). Full evidence dump in `data/ghidra_cache/pool-b.txt` round 6
+section.
+
+### Task base class
+
+- **Vtable stride:** at least `0x348` bytes wide (≈0x69 entries) — one of the
+  pre-hooks is `vt[0x340]`, so the base class has at minimum 0x69 virtual
+  methods. Consistent with a cross2app `Resource` / `Renderable` abstract
+  base, **not** a small sim-task interface.
+- **Inferred slots:**
+  - `vt[0x10]` — destructor (called from the shared_ptr refcount-0 path in
+    both helpers)
+  - `vt[0x20]` — "apply state 1" (commit deactivation) — the alt dispatch
+    main_loop's per-entry call at `0x710374cb70`
+  - `vt[0x28]` — "apply state 0" (commit activation) — main_loop's primary
+    dispatch at `0x710374cb68`
+  - `vt[0x38]` — `get_state()` predicate. Returns non-zero when the task is
+    "live". `add` path only enqueues when `!= 0`; `remove` path only
+    enqueues when `== 0`. Textbook "no-op if already in the target state".
+  - `vt[0x40]` — `set_pending_state(u8 state)`. Side channel between helper
+    and drain; called with `0` from `add`, `1` from `remove`.
+  - `vt[0xa8]` — `prepare_activation(u8)`, only called at the top of `add`,
+    always with arg `0`.
+  - `vt[0x340]` — additional pre-activation hook, called at the top of
+    `add`.
+
+### FUN_7103559340 signature (was "add_task candidate")
+
+- **Actual role:** `schedule_transition_to_state_0(shared_ptr<Task> &)` —
+  enqueues a "become active" state-change command.
+- Parameter is a 16-byte `shared_ptr<Task> { Task* task; __shared_weak_count*
+  ctrl; }` passed by pointer.
+- Singleton root: `DAT_7105332fe8`. Container `[root+0x20..+0x28..+0x30]` is a
+  `std::vector<PendingOp>` with **stride `0x18`** (16B shared_ptr + 1B op
+  flag, padded). Mutex at `[root+0x38]` is a **`std::recursive_mutex`** (not
+  plain mutex).
+- Each entry contains: `Task* task`, `__shared_weak_count* ctrl`, `u8 op = 0`.
+- Refcount dance: bump ctrl refcount before push, decrement after; calls
+  `task->vt[0x10]()` + `__shared_weak_count::__release_weak()` if local ref
+  hit zero.
+- Growth path: `FUN_710354d130` (reserve + emplace_back slow path).
+
+### FUN_7103559220 signature (was "remove_task candidate")
+
+- **Actual role:** `schedule_transition_to_state_1(shared_ptr<Task> &)` —
+  enqueues a "become inactive" state-change command.
+- Identical structure to 7340 except:
+  - No `vt[0xa8]` / `vt[0x340]` pre-hooks.
+  - `vt[0x38]` gate inverted (only queues when state == 0).
+  - Entry `op_byte = 1`.
+  - Post-push `vt[0x40](1)`.
+
+### What the "tasks" actually are — caller evidence
+
+Five callers decompiled (representative sample of 49 add-callers and 15
+remove-callers); **all 5 are resource / renderer / effect code**, **none**
+touch `BattleObjectModuleAccessor`, `FighterManager`, `BattleObjectWorld`, or
+any sim state.
+
+| Caller | Address | Kind | Evidence | Sim-shaped? |
+|---|---|---|---|---|
+| `FUN_7103757290` | 0x7103757290 | Mii ModelRenderer registration | 9 decoded FNV literals: `lib::mii::ModelRenderer (crc_b_normal_opaque_l)`, `..._mirror_opaque_l`, `..._shadow_0/1/2/3_opaque_l`, `..._outline_opaque_l`, `..._outline_translucent`, `..._player_id_`; calls `nn::mii::Database::Initialize`/`Get`/`BuildDefault` × 6 | **NO** |
+| `FUN_710359f900` | 0x710359f900 | Fighter model streaming | Loads `"model.numdlb"` via `FUN_710353dc20`, bsearches archive handle, stores task ptr at `[per_slot + slot*0x1240 + 0x30]`, then schedules state-0 then later state-1 | **NO** |
+| `FUN_7103579a60` | 0x7103579a60 | Generic toggle shim | 8-line wrapper: `if (enable_bit) 7220() else 7340()` + flag byte update on inner obj | Infra only |
+| `FUN_7102500d30` | 0x7102500d30 | Object-destructor bulk flush | Touches `lib::Singleton<lib::EffectManager>::instance_` (writes `+0x2d8 = 1` on two effect handles from `param_1+0x72/+0x394`), flushes 8 shared_ptr slots at `param_1[3/15/18/34/50/66/82/98]` through the state-0 queue during teardown | **NO** (effect teardown) |
+| `FUN_71025ed8b0` | 0x71025ed8b0 | Task-swap with atomic hand-off | Swaps `[param_1+0x30]` shared_ptr for a new one under the inner obj mutex (`+0xb0/+0xb8`), then schedules state-0 or state-1 on the new task depending on `*(param_1+0x81)`; tail-calls `FUN_71025eb5d0` | **NO** |
+
+### All 49 add callers + 15 remove callers — address-range clustering
+
+Full list is in `data/ghidra_cache/pool-b.txt`. Cluster summary:
+
+| Range | Callers | Subsystem |
+|---|---|---|
+| `0x71004xxxx..0x71006xxxx` | ~6 | early-module init |
+| `0x71014xxxx..0x71015xxxx` | ~5 | mid-module code |
+| `0x71022xxxx..0x71026xxxx` | ~25 | **resource / effect family (majority)** |
+| `0x71031xxxx..0x71035xxxx` | ~13 | near the task helpers themselves |
+
+**Zero callers in the `0x71000xxxx..0x71003xxxx` range where
+`BattleObjectModuleAccessor`, `FighterManager`, fighter AI, and the module
+dispatch live.** Zero `lua_bind` callers. Zero sim-hinted strings in any of
+the sampled callers. The caller distribution is overwhelmingly clustered in
+the resource / effect / renderer neighborhood (0x71022xxxx..0x71026xxxx is
+resource-system territory; 0x71037xxxx is where main_loop and the mii/model
+renderers live).
+
+### VERDICT — TASK-SYSTEM-PUMP HYPOTHESIS REFUTED
+
+**The `DAT_7105332fe8` task list is a deferred resource state-change queue,
+not a per-frame sim tick pump.** The main_loop frame body drains this queue
+once per frame at `0x7103747504..0x710374cbc0`, but what it drains are
+resource activations / deactivations (Mii renderers, fighter models, effects),
+not fighter-simulation ticks.
+
+Supporting facts:
+
+1. The two helpers schedule **state transitions** (value `0` vs `1`), not
+   registrations / unregistrations. The `vt[0x38]` gate and `vt[0x40]` setter
+   prove this is a binary-state toggle, not an enrollment API.
+2. The main_loop dispatch branches `vt[0x28]` / `vt[0x20]` mirror these two
+   states — "apply activation" and "apply deactivation" commits.
+3. **Every sampled caller registers a resource, not a simulation stepper.**
+   Five out of five. The three most sim-adjacent addresses in the 49-caller
+   list (the `0x71031xxxx` cluster near the task helpers) landed on the
+   fighter model loader (`FUN_710359f900` reading `"model.numdlb"`), which is
+   the asset side, not the simulation side.
+4. **Zero callers in the `0x71000xxxx..0x71003xxxx` range** where sim code
+   lives. If the sim tick were registered here, that range would have
+   multiple callers (FighterManager init, BattleObjectWorld init, etc.).
+5. The `0x340`-wide vtable rules out a lean sim-tick interface; it's a
+   deep base class, again consistent with a cross2app Resource / Renderable.
+
+**Consequence for the hunt:** Round 5's structural identification of the
+frame loop at `0x7103747504..0x710374cbc0` is still correct, but what lives
+there is a **resource-queue drain**, not a sim pump. The `task->vt[0x28]` /
+`vt[0x20]` per-frame dispatches are resource activation commits, which do
+only O(pending) work per frame (zero in steady state), so they cannot be the
+per-fighter sim advance.
+
+The sim tick must be in a **different** per-frame call inside main_loop's
+body, NOT inside this drain loop. Either:
+
+- One of the other bl-targets between the frame loop head (`0x7103747504`)
+  and the resource-drain iteration, OR
+- A call made from the main_loop body that dispatches through a vtable we
+  have not yet classified, OR
+- A call buried inside the ~19 KB inner-loop body at
+  `0x710374d150..0x7103748330` that Pool C annotated.
+
+### Recommended Round 7
+
+1. **Re-walk the frame body excluding the resource-drain loop.** The
+   per-frame calls at `0x7103747504..~0x710374cae0` are worth enumerating;
+   the one that actually steps fighters is in there, not inside the drain.
+2. **Enumerate `bl` targets inside the ~19 KB inner body** (Pool C's
+   `0x710374d150`), looking for calls that take a `FighterManager*`
+   instance (from `DAT_71053xxxxxx`-range singletons) as first arg.
+3. **Refocus on the `FighterManager::update` / per-fighter vtable
+   approach** — Pool A was on this angle in Round 5 and it still has legs.
+4. **Drop further effort on this task system.** Further caller decomps
+   will only find more resource / renderer registrations. The pattern is
+   saturated at 5 samples.
+
+### Functions touched this pass
+
+- `FUN_7103559340` — decompiled (add-to-state-0 helper).
+- `FUN_7103559220` — decompiled (add-to-state-1 helper).
+- `FUN_7103757290` — decompiled (Mii ModelRenderer registration).
+- `FUN_7103579a60` — decompiled (toggle shim).
+- `FUN_710359f900` — decompiled (fighter model streamer).
+- `FUN_7102500d30` — decompiled (EffectManager object destructor flush).
+- `FUN_71025ed8b0` — decompiled (task-swap helper).
+- `get_function_xrefs FUN_7103559340` — 49 entries captured.
+- `get_function_xrefs FUN_7103559220` — 15 entries captured.
+
+### Artifacts this pass
+
+- `data/ghidra_cache/pool-b.txt` — full evidence dump, Round 6 section
+  (decomp bodies summarized, all 64 caller addresses enumerated,
+  derivation chain for every vtable slot claim).
+- No `src/` changes. Documentation-only pass per `WORKER-pool-b.md`.
+- Ghidra renames: none this session (findings live here).
+- No `manual_extraction_needed.md` updates — every MCP call succeeded.
