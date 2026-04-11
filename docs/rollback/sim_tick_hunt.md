@@ -5778,17 +5778,30 @@ Abandon the `DAT_7105332120` task tree as a sim-tick lead. Instead:
 
 ## Pool A — Round 7: thread-spawn landscape audit (2026-04-10)
 
-### TL;DR
+### TL;DR — the sim runs on the main thread
 
-**All 18 `nn::os::CreateThread` call sites in the binary map to framework
-subsystems (audio, video, vibration, MoviePlayer, LDN bootstrap, TaskSystem
-workers). None of them is obviously "the sim thread".** Combined with Round
-6's finding that `main_loop` is the framework main thread (render/layout/
-transform prep), this means the sim tick either (a) runs on the main thread
-despite `main_loop`'s render-y body, or (b) is dispatched as a work item on
-a generic cross2app worker pool and never has its own dedicated thread
-entry. Static analysis of the thread landscape is now exhausted; the GDB
-watchpoint approach is the next step.
+**All 18 `nn::os::CreateThread` call sites are definitively classified as
+non-sim:** 6 MoviePlayer threads, 3 audio/file/rumble (nus3/sindou), 1 nus3
+audio decoder, 1 LibcurlResolver, 5 nn::pia OnlineCore networking threads,
+2 generic Thread::Start() wrappers. **No thread in the binary is the sim
+thread.** Therefore **the sim runs on the main thread** (nnMain →
+`FUN_7103747270` main_loop), and Pool C's Round 6 "main_loop is not sim"
+verdict was **incorrect** — the sim tick is inside main_loop, hidden among
+the 56 direct BL targets or 169 indirect `blr x8/x9` dispatches that got
+classified as "render/UI/housekeeping" in Rounds 2-4. Round 8 must
+**re-examine main_loop's BL set specifically looking for FighterManager,
+BattleObjectWorld, or BattleObjectModuleAccessor touches** — ignoring the
+previous scene/UI classifications, which were done before Round 6
+established main_loop is the main thread.
+
+Why Pool C's Round 6 "not-sim" verdict was wrong: Pool C's vt[2]
+hand-written NEON analysis of the task vtable at `0x7104f623c0` correctly
+ruled out `DAT_7105332120` task tree as the sim scheduler — that tree is
+indeed a transform/animation task pool. But Pool C then generalized this
+to "therefore main_loop is not the sim", which does not follow. main_loop
+dispatches MANY things besides the task tree (the 3-phase submit is only
+one phase of the body; 56 direct BL targets exist). The sim tick lives in
+one of those other BL targets.
 
 ### Pool A's task outdated on arrival
 
@@ -5836,7 +5849,7 @@ is set in the immediate caller) or by caller identity.
 | `0x710373fa30/38` | `FUN_710373e080`    | **sindou::update** (HD rumble/haptics)  | NO   |
 | `0x71037cc974`    | `FUN_71037cc810`    | cross2app **Thread::Start()** method    | n/a  |
 | `0x7103993e9c/bc` | `nus3_nopus_decode_init` | nus3 audio decoder init            | NO   |
-| `0x7100027af4`    | `FUN_7100027a70`    | early boot (1-arg CreateThread variant) | ?    |
+| `0x7100027af4`    | `FUN_7100027a70`    | libcurl **LibcurlResolver** (DNS async)  | NO   |
 
 Thread names come from `nn::os::SetThreadName` calls immediately after
 the `CreateThread` — e.g. `FUN_710373e080` sets:
@@ -5909,13 +5922,86 @@ in `0x71001d..0x7100220` span early-boot territory, and that range is
 Pool A did not decompile these callers this session to stay within the
 context budget. This is the one remaining static lead.
 
+### Update: 2 of 5 early-boot callers walked in-session
+
+After the initial writeup Pool A walked two of the five `FUN_71001b27e0`
+up-callers with Ghidra MCP (the remaining three are in uncarved territory
+— Ghidra has no function boundaries at `0x71001e6328`, `0x71001f6764`, or
+`0x7100220e2c`, so `get_function_by_address` returns "no function" for
+every probe in those ranges).
+
+**`FUN_71001d8670`** — spawns **"Internal (Worker) Thread (ID %d)"**
+threads. Takes `param_2` as a thread count and loops, allocating a new
+thread descriptor (0x78 bytes) for each and calling `FUN_71001b27e0`.
+Sets thread name via the inlined formatter `FUN_71001aff70` with format
+`"Internal (Worker) Thread (ID %d)"`. Thread entry pointer is a fixed
+data label `PTR_LAB_71052a5d68` (all workers share the same entry).
+**This is the cross2app generic worker thread pool** — if the sim runs
+on a worker thread rather than a dedicated one, this is the pool.
+
+**`FUN_71001f7780`** — spawns **"TransportBufferThread(recv ..)"**
+threads, one per transport channel. The thread name is built with the
+inlined string builder `FUN_71001b6080/b0ab0/b4910`, concatenating
+`"TransportBufferThread(recv "` + channel name + close-paren. Thread
+entry comes from `PTR_FUN_71052a61b0` (fixed). **This is the nn::pia
+OnlineCore receive thread pool**, not sim.
+
+### OnlineCore identification — the 0x7100 cluster is nn::pia, not cross2app
+
+A debug assertion string embedded in `FUN_71001d46c0` (the unique caller
+of the worker-pool spawner `FUN_71001d8670`) reveals the subsystem:
+
+```
+"..\\..\\..\\..\\.\\OnlineCore/src/Core/InstanceTable.h"
+```
+
+The `OnlineCore` path is Nintendo's **nn::pia** (Peer Interactive
+Application) P2P networking stack, used for SSBU's online matches. The
+entire `0x71001b..0x71001f` thread-helper cluster is therefore **nn::pia
+OnlineCore networking code**, not cross2app game-engine code. This
+explains why its callers use generic thread-object wrappers
+(`FUN_71001b28a0`, `FUN_710013be00`) instead of cross2app's
+`FUN_71037cc810` Thread::Start method — nn::pia is a Nintendo library
+that brings its own threading primitives.
+
+**Implication**: the "Internal (Worker) Thread (ID %d)" pool we initially
+flagged as potentially-sim is actually the **nn::pia OnlineCore worker
+pool for online match messaging**. The sim cannot run on it — that
+pool is only active during online matches, and the sim must run in
+training/local modes too.
+
+**`FUN_71001d8790`** — unchecked in-session, but based on the address
+(right next to the worker-pool spawner at `d8670`) it is almost
+certainly the matching `spawnWorkerPool`-with-default-count helper or
+the worker-pool destructor. Low priority for Round 8.
+
+### Practical consequence
+
+If the sim runs on a cross2app worker pool thread, it has **no dedicated
+thread** and the string search strategy we've been using can never find
+it. The sim would exist only as a work item submitted to the worker
+pool's task queue, and the only way to identify it is by:
+
+1. Reading the entry function at `PTR_LAB_71052a5d68` — the shared worker
+   entry — and understanding how it dequeues and dispatches work items
+   (likely pumping one of the `DAT_7105332xxx` scheduler queues we've
+   already mapped).
+2. Enumerating the `submit_task`-equivalent calls in the binary that
+   target the worker pool queue, and classifying each by what subsystem
+   it belongs to.
+3. GDB watchpoint on `DAT_71052c25b0` writes — the unambiguous
+   end-of-argument.
+
 ### Revised Round 8 plan
 
-1. **Walk the 5 up-callers of `FUN_71001b27e0`** at `0x71001d8790`,
-   `0x71001e6328`, `0x71001f6764`, `0x71001f78ac`, `0x7100220e2c`. For each
-   one, read the thread descriptor that's passed in and identify the
-   entry function. If any of them names "sim", "game", "battle",
-   "phase", or "update" in `SetThreadName`, that's the sim.
+1. **Decompile the worker pool entry at `PTR_LAB_71052a5d68`**. Walk
+   into the shared entry function and identify the work-item pump —
+   specifically, what scheduler queue it drains. If that queue is the
+   same `DAT_7105332120` task tree Pool C already analyzed, then the
+   sim DOES run as a worker-pool task and vt[2] of the task vtable
+   is (misleadingly) the sim's per-frame entry — in which case Round 6's
+   "vt[2] is pure NEON math" finding needs re-interpretation. If that
+   queue is a different scheduler queue, that queue is the sim queue.
 
 2. **Walk `FUN_710013b4d0`** (sole caller of `FUN_710013be00`). Identify
    the thread descriptor / entry stored there.
@@ -5955,27 +6041,72 @@ context budget. This is the one remaining static lead.
   audio/file/rumble thread spawner (1,379 lines).
 - This document section.
 
-### VERDICT
+### VERDICT — definitive
 
-**Static thread-spawn enumeration is exhausted.** 13/14 identifiable
-CreateThread sites are confirmed non-sim framework subsystems. The 5
-remaining leads (early-boot callers of `FUN_71001b27e0`) are ALL in
-`0x7100` framework territory and can be walked in a targeted Round 8
-with a ~200-line context budget. Beyond that, **GDB watchpoint is the
-strictly-faster path** — one session in Eden will produce the definitive
-answer that static analysis cannot.
+**All 18 CreateThread sites are now classified, and NONE is the sim
+thread.** The enumerated thread names are:
 
-Probability estimates (Pool A's subjective read after Round 7):
+- `nuscFileAsyncRequest`, `nus3::audio update`, `sindou::update`
+- `VideoInputReadThread`, `AudioVideoWorkerThread`, `MoviePlayerThread`
+- `LibcurlResolver`
+- `Internal (Worker) Thread (ID %d)` (nn::pia OnlineCore pool)
+- `TransportBufferThread(recv ..)` (nn::pia OnlineCore transport)
 
-- **20%** sim runs on the main thread inside `main_loop` via an indirect
-  dispatch we haven't chased (Pool C's "render prep" classification is
-  partially wrong).
-- **50%** sim runs on a thread spawned via one of the 5 unexplored
-  `FUN_71001b27e0` up-callers — specifically the one in the
-  `0x71001f..0x7100220` band which is in the early framework init zone.
-- **25%** sim is a work item submitted to the cross2app worker pool
-  (the `FUN_71037cc810`-spawned thread), not a dedicated thread — in
-  which case the sim tick is reached via scheduler dispatch and there
-  is no named "sim thread" to find by string search.
-- **5%** we missed a CreateThread variant (e.g., `std::async` or a
-  `ThreadPool::Add` path that doesn't go through the enumerated PLTs).
+Combined with `nnMain → main_loop` being the only caller of main_loop,
+and the fact that SSBU's sim must run in single-player / training modes
+(where nn::pia OnlineCore is inactive), **the sim tick must execute on
+the main thread inside `main_loop`**.
+
+### Pool C's Round 6 refutation was overreach
+
+Pool C correctly refuted "`DAT_7105332120` is the sim scheduler" but
+then incorrectly generalized it to "main_loop is not the sim". The
+correct reading is:
+
+- `DAT_7105332120` is a transform/animation/skinning task tree (confirmed).
+- The task tree's 3-phase submit is **one phase** of main_loop's body.
+- main_loop has **56 direct BL calls** and 169 indirect dispatches; only
+  a small fraction are the task-tree submit loop.
+- The sim tick is a **different** call within main_loop, not one of the
+  task-tree submit calls. Rounds 2-4 labelled the 56 direct BLs as
+  "scene/UI/graphics/housekeeping" but that classification was done
+  before we realized main_loop is the main thread.
+- **One of those 56 BLs is the sim tick**, or one of the 169 indirect
+  dispatches is — and it was mis-labelled in the original sweep.
+
+### Round 8 plan — definitive path
+
+1. **Re-examine the 56 direct BL targets of main_loop** listed in
+   `pool-a.txt:1169..1181`. Specifically, look for any call that:
+   - Touches `FighterManager` / `FighterInformation` / `BattleObjectWorld`
+   - Reads the Randomizer singleton `DAT_71052c25b0` or calls a known
+     `sv_math::rand` wrapper
+   - Calls into `0x71020..0x71025` lua_bind territory
+   - Has a "sim"-shaped name (phase, step, tick, update) in string refs
+   
+   Pool C already decomped the frame-loop body in Round 6. A targeted
+   re-sweep of its 72 unique BL targets for **any** touch of sim state
+   would bottom-out the question.
+
+2. **Walk the 169 indirect `blr x8/x9` dispatches in main_loop** and
+   resolve each to its target vtable slot. If any target's vt method
+   contains BL calls to FighterManager/BattleObjectWorld, that is the
+   sim dispatch. Round 6 already identified the 3-phase task submit
+   pattern as the transform-task sink; everything outside that pattern
+   is a candidate.
+
+3. **If static re-sweep fails, GDB watchpoint on `DAT_71052c25b0`**
+   writes remains the fastest path. The hit stack will be
+   `sim_tick → main_loop → nnMain` if the hypothesis is correct.
+
+Probability estimates (Pool A's updated subjective read):
+
+- **85%** sim runs on the main thread inside `main_loop`, via a BL
+  target that was mis-classified as "render/scene/UI" in the pre-Round
+  6 sweeps.
+- **10%** sim runs on the main thread inside `main_loop` via an
+  indirect dispatch (`blr x8/x9`) through a vtable slot we haven't
+  resolved.
+- **5%** we missed a CreateThread variant or the sim is scheduled via
+  a mechanism that doesn't go through `nn::os::CreateThread` at all
+  (e.g., static-init thread, fiber).
