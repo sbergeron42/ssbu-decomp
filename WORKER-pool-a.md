@@ -2,104 +2,122 @@
 
 ## Model: Opus
 
-## Task: ROLLBACK Round 8 — service-call safety audit of FUN_7103724a80 (the sim tick entry)
+## Task: ROLLBACK Round 10 — BattleObjectManager pool contents (the big one)
 
-## Priority: HIGHEST — BLOCKER for Eden-side resim prototype
+## Priority: HIGHEST — unblocks ~2 MB of rollback walker coverage
 
 ## Context
-Read `docs/rollback/sim_tick_FOUND.md` first. The sim tick entry is **`main_loop + 0x5384` → `bl FUN_7103724a80`**. This was captured by a GDB hardware watchpoint on the RNG state during live Switch gameplay.
+The Eden-side rollback snapshotter is live-validated against a real Smash process as of today. 3,772 bytes per snapshot currently captured. Next gap: the mutable gameplay state — fighter positions, items, effects, boss state. **Without BattleObject pool coverage, the first determinism test will diff on frame 1 and we won't know if it's walker incompleteness or a real correctness bug.**
 
-Eden-side rollback resim plans to call `FUN_7103724a80` headlessly N times to replay frames after a misprediction. **This is only safe if the function and its call tree do NOT synchronously invoke any host service** — otherwise, resim re-fires side effects (audio, graphics, filesystem, LDN, wait primitives) that the host has already committed.
+`memory_map.md` confirms: `DAT_71052B7548` = array of 5 `PoolHeader*`, one per BattleObject category. Each header has `+0x08 base` and `+0x18 count`. This task maps the 5 categories concretely.
 
-The rollback team is blocked on this safety question. Your answer unblocks the Eden prototype.
+## What To Find
 
-## The cached decomp
-**`data/ghidra_cache/FUN_7103724a80.txt`** — 267 lines, full Ghidra decomp. The orchestrator manually extracted it. **Read this with the `Read` tool, do NOT call MCP on `0x7103724a80`.**
+For **each of the 5 BattleObject pool categories** (indices 0-4):
 
-## What To Do
+1. **Category name** (what kind of object) — Fighter, Weapon, Item, Effect, Gimmick, etc.
+2. **Per-object struct size** (min-known, conservative upper bound is fine)
+3. **Stride between objects in the pool** (memory_map.md says cat 0 is stride 0x380 — verify + find the other 4)
+4. **Live predicate** — what determines which entries in `base[0..count]` are live?
+   - (a) the count field itself (everything [0..count) is live, [count..capacity) is dead)
+   - (b) a generational ID pattern in each object
+   - (c) an `is_active` bit somewhere in each object's header
+   - (d) something else
+5. **Representative steady-state count** for 1v1 match (2 fighters, no items, base stage)
 
-### 1. Read FUN_7103724a80 in full
-It's only 267 lines — read the whole thing. Understand its structure.
+## Methodology
 
-### 2. Enumerate every BL call
-For each direct BL and every indirect `blr` in the function body:
-- What address / symbol is it calling?
-- Is the callee a PLT stub to a `nn::*` or `nnsocket::*` symbol?
-- Does the callee route to one of the known scheduler primitives (`FUN_7103548240`, `FUN_7103549170`, `FUN_710354c720`)?
+### Start from the BattleObject registration/lookup functions
+We already have:
+- `tryFindBattleObjectById_71003ac560` — the lookup function (renamed in Round 2)
+- `DAT_71052B7548` = pool-header array
+- `get_battle_object_from_id @ 0x71003ac560` reads the high 4 bits of the object ID to select a pool category → that's the **category encoding**
 
-### 3. One-level recursion — check the suspicious callees
-For each BL target that isn't obviously safe (allocator, mutex, libc++ container helper), decompile it via `mcp__ghidra__decompile_function_by_address` and check its own BL set.
+Use `mcp__ghidra__decompile_function_by_address 0x71003ac560` — it's small and already partially named. The decompile will show:
+- How the category index is extracted from the ID
+- How the pool header is indexed (`DAT_71052B7548[category]`)
+- How `base + index * stride` is computed (→ that's your stride per category)
+- How the "is this entry live?" check works (→ that's your live predicate)
 
-Known safe patterns (you can skip these):
-- `je_aligned_alloc` / `jeFree_*` / `operator_delete_*` (jemalloc)
-- `std::__1::*` libc++ containers
-- `std::mutex::lock/unlock`, `recursive_mutex::*` (just CAS spinlocks)
-- `phx::Fiber::switch_to_fiber` (just yields — NOT a host syscall at the coop level)
-- `FUN_7103548240` / `FUN_7103549170` / `FUN_710354c720` (the scheduler plumbing Pool C already classified in Round 6)
-- `ExclusiveMonitorPass` / `ExclusiveMonitorsStatus` (bare atomics)
+### Find the pool constructor
+The sole writer of `DAT_71052B7548` is somewhere in the BattleObjectManager init. Use `tools/xref_bin_scan.py` on `0x71052B7548`:
+```bash
+python tools/xref_bin_scan.py store-offset 0x52B7548
+```
+The writer is the function that allocates the 5 pools. Decompile it — it will show:
+- The allocation size per pool (`je_aligned_alloc(align, stride * capacity)`) → gives you both stride and max capacity per category
+- The 5 distinct `je_aligned_alloc` calls, one per category
 
-**Known UNSAFE patterns** — flag these immediately:
-- `nn::os::Wait*`, `nn::os::*MessageQueue`, `nn::os::*Event`, `nn::os::SleepThread`
-- `nn::os::SignalLightEvent` / `WaitLightEvent` — this is how the scheduler wakes worker threads! **Any BL to this is a blocking side effect during resim.**
-- `nn::audio::*` — audio state committed to hardware
-- `nn::gr::*` / `nn::gfx::*` — graphics command submission
-- `nn::fs::*` — filesystem
-- `nn::ldn::*` / `nnsocket::*` — networking
-- `nn::diag::*` / `nn::dbg::*` — logging (safe-ish but still a side effect)
+### Find the per-category name
+Each pool's element class is named in `.dynsym` mangled symbols like `app::BattleObject::...`, `app::Weapon::...`, etc. Once you have the struct's vtable address from the constructor, use `mcp__ghidra__get_xrefs_to` on the vtable to find the concrete-object ctor, and the mangled ctor name reveals the class.
 
-### 4. Check the recursion depth
-The captured backtrace shows `FUN_7103724a80` recurses through `FUN_7103724d94` ↔ `FUN_71022df070`. Check those too:
-- Decompile `0x7103724d94` (small — should fit in MCP)
-- Decompile `0x71022df070`
-- Walk their BL sets for unsafe symbols
+### Find the live predicate
+Look at `tryFindBattleObjectById`'s logic. It either:
+- Reads count and compares index → live predicate is count-based
+- Reads a generational tag at a specific offset in the object → live predicate is generational (only live if `obj->gen == id_top_byte`)
+- Reads an active flag → live predicate is flag-based
 
-### 5. Write a verdict
-Clean/dirty/conditional:
-- **CLEAN**: no unsafe BL reachable. Eden can `dynarmic_call_guest(0x7103724a80, x24)` directly during resim.
-- **DIRTY**: list the specific unsafe BLs. Eden needs a service-quarantine shim that stubs those functions during resim mode.
-- **CONDITIONAL**: some branches are clean, others are dirty. List which paths are gated by what and whether the dirty paths are reachable in a normal gameplay frame.
+Document which, and the exact field offset + type.
+
+### Steady-state count
+For a 1v1 match, each category's count at runtime. You can estimate statically (by reading how the ctor initializes count to 0 and how fighter/weapon/item spawns increment it), or report "ask for dynamic confirmation" if static isn't conclusive.
+
+## Output
+
+Create `docs/rollback/battle_object_pools.md` with:
+
+```markdown
+# BattleObject pool layout — rollback walker reference
+
+## TL;DR
+5 categories, total live-object coverage in 1v1 steady state ≈ N objects × avg stride S = ~X KB
+
+## Pool header struct (at *DAT_71052B7548[i])
+| Offset | Type | Field | Notes |
+|--------|------|-------|-------|
+| +0x00 | ... | ... | ... |
+| +0x08 | void* | base | start of pool array |
+| +0x18 | u32 | count | current live count (or capacity — document which) |
+| ...   | ...  | ...      | ... |
+
+## Per-category layout
+
+### Category 0 — [Fighter?]
+- Class: `app::BattleObject_Fighter` (or similar)
+- Vtable: `0x710XXXXX`
+- Struct size: `0xNNN` bytes
+- Stride: `0x380` (per memory_map.md)
+- Max capacity: N
+- 1v1 steady-state count: ~2
+- Live predicate: [count-based / generational / flag-based] — details
+
+### Category 1 — [Weapon? / Item?]
+...
+
+### Category 2 — ...
+
+### Category 3 — ...
+
+### Category 4 — ...
+
+## Walker integration notes
+[concrete pseudocode for the rollback walker to iterate all live objects]
+
+## Open questions
+[anything that needs dynamic confirmation]
+```
 
 ## Stop-and-document rule
 If `mcp__ghidra__*` errors/timeouts on any address:
 1. Append to `data/ghidra_cache/manual_extraction_needed.md`
 2. **Do NOT retry.** Move on.
 
-## Output
-
-Create `docs/rollback/sim_tick_safety.md`:
-
-```markdown
-# FUN_7103724a80 — service-call safety audit
-
-## TL;DR
-[CLEAN / DIRTY / CONDITIONAL]
-
-[One-paragraph verdict — can Eden call this function headlessly during resim?]
-
-## Direct BLs inside FUN_7103724a80
-| Address | Target | Symbol | Verdict |
-|---------|--------|--------|---------|
-| 0xXXXX  | 0xYYYY | ...    | safe/unsafe/TBD |
-
-## Recursive walk (1-2 levels)
-| Path | Reaches service? |
-|------|------------------|
-| FUN_7103724a80 → FUN_XXXX → nn::os::... | YES — blocking |
-| ...  | ... |
-
-## Unsafe branches
-[List of specific call sites with exact addresses and what service they hit]
-
-## Service-quarantine shim requirements
-[List of functions Eden must stub during resim mode, OR "no shim needed"]
-
-## Confidence
-[HIGH — all paths traced / MEDIUM — some timeouts / LOW — analysis incomplete]
-```
+**Fall-back priority**: if you can only answer ONE category fully in the time you have, make it **Category 0 (fighters)** — that's 90% of the walker's value.
 
 ## Quality Rules
 - Documentation is the primary deliverable
-- If you DO decomp anything to src/, standard rules apply (no FUN_ names, no Ghidra vars, no raw vtable dispatch, cast density under 10%)
+- NO `FUN_` names in any committed src/ code (this task may not write any src/)
+- If you do write src/, standard quality rules apply
 
 ## Build
 ```bash
