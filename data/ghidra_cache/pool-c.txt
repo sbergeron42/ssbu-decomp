@@ -1067,3 +1067,208 @@ dirty bits means the whole function is a no-op most frames (only
 fires on window/swap-chain changes).
 
 Per-frame fighter state mutation? NO.
+
+== Session 2026-04-10 Round 5: main_loop vt[0x18] BeginFrame investigation ==
+
+=== RAW BYTES VERIFICATION (from original/main.elf + .rela.dyn) ===
+
+main_loop prologue (0x71037472a4..0x7103747304), literal Ghidra disassembly:
+  71037472a4: ldr x8,[x0]                 ; x8 = (*this)->vtable
+  71037472a8: ldr x8,[x8, #0x18]          ; vt[0x18]
+  71037472ac: mov x21,x0                  ; cache this in x21
+  71037472b0: blr x8                      ; call vt[0x18]   --- VERIFIED NO-OP (below)
+  71037472b4: adrp x8,0x710593a000
+  71037472b8: str x21,[x8, #0x4c0]        ; DAT_710593a4c0 = this (write-only, 0 readers)
+  71037472bc: bl 0x71039c7670             ; PLT -> nn::oe::FinishStartupLogo()
+  71037472c0: bl 0x71039c7570             ; PLT -> nn::oe::GetOperationMode()
+  71037472c4: adrp x9,0x710593a000
+  71037472c8: add x9,x9,#0x510
+  71037472cc: mov w8,w0                   ; w8 = OperationMode enum
+  71037472d0: str w0,[x9, #0x24]          ; DAT_710593a534 = op_mode (0=Handheld,1=Console)
+  71037472d4: ldr x0,[x9]                 ; x0 = DAT_710593a510 (op-mode listener ptr)
+  71037472d8: cbz x0,0x7103747304         ; if no listener installed, skip notify
+  71037472dc: cbz w8,0x71037472f0         ; mode==0 (Handheld)
+  71037472e0: cmp w8,#0x1                 ; mode==1 (Console)?
+  71037472e4: b.ne 0x7103747304           ;   no -> skip (mode >= 2 is invalid)
+  71037472e8: str w8,[sp, #0x270]         ;   yes -> store 1 to local
+  71037472ec: b 0x71037472f4
+  71037472f0: str wzr,[sp, #0x270]        ; store 0 to local
+  71037472f4: ldr x8,[x0]                 ; load listener vtable
+  71037472f8: ldr x8,[x8, #0x30]          ; vt[0x30]
+  71037472fc: add x1,sp,#0x270            ; arg1 = &local_op_mode
+  7103747300: blr x8                      ; notify listener: "current mode is X"
+  7103747304: ; begin post-boot code (still part of once-only init)
+
+=== vt[0x18] target verified EMPTY STUB ===
+
+Vtable at 0x710523bd38 slot 3 (+0x18) resolved via .rela.dyn:
+  slot 3 (+0x18): r_off=0x523bd50 addend=0x37243b0 -> 0x71037243b0
+
+Raw bytes at 0x71037243b0 (file offset 0x3724c38):
+  c0 03 5f d6 00 00 00 00 ...
+  insn0 = 0xd65f03c0 = ret
+
+CONFIRMED: Pool A's vtable extraction was correct. vt[0x18] is a literal
+ret instruction. The blr x8 at main_loop+0x40 is a no-op.
+
+All 13 relocated slots match Pool A's Round 4 extraction byte-for-byte:
+  slot 0  (+0x00): 0x7103724110    ; dtor
+  slot 1  (+0x08): 0x7103724300    ; dtor+delete
+  slot 2  (+0x10): 0x7103724340    ; list walker (field_0x18 gate)
+  slot 3  (+0x18): 0x71037243b0    ; ret  <-- vt[0x18]
+  slot 4  (+0x20): 0x71037243c0    ; ret
+  slot 5  (+0x28): 0x71017f4a80    ; ret (out-of-text-block)
+  slot 6  (+0x30): 0x71037243d0    ; ret
+  slot 7  (+0x38): 0x71037243e0    ; ret
+  slot 8  (+0x40): 0x710523bd78    ; back-ref data (list head)
+  slot 9  (+0x48): 0x710523bd78    ; same
+  slot 13 (+0x68): 0x7103725a20    ; ret
+  slot 14 (+0x70): 0x7103725a30    ; bl delete
+  slot 15 (+0x78): 0x7103725a40    ; 0x70-byte factory
+
+=== PLT stub identification (BIGGEST FINDING) ===
+
+Decoded ADRP+LDR of PLT entries, resolved via .rela.plt symbol table:
+
+  0x71039c7670 -> GOT slot 0x71052a1cf0 -> _ZN2nn2oe17FinishStartupLogoEv
+                                          (nn::oe::FinishStartupLogo)
+
+  0x71039c7570 -> GOT slot 0x71052a1c70 -> _ZN2nn2oe16GetOperationModeEv
+                                          (nn::oe::GetOperationMode)
+
+These are ONE-TIME BOOT routines, NOT per-frame hooks:
+- FinishStartupLogo(): tells the OS to dismiss the splash screen; called
+  ONCE per process during initialization.
+- GetOperationMode(): returns nn::oe::OperationMode enum:
+    OperationMode_Handheld = 0
+    OperationMode_Console  = 1   (docked)
+  Cached into DAT_710593a534.
+
+Pool B's guess that these were "begin frame" / "returns int frame phase"
+was WRONG. They are boot + console-mode-query.
+
+=== DAT_710593a534 is OperationMode, NOT frame phase ===
+
+Reader sample FUN_71014f75d0 at 0x71014f773c:
+  iVar16 = DAT_710593a534;
+  puVar21[1] = (uint)(iVar16 != 0);      // stores as docked_bool
+
+This is the exact semantics of nn::oe::OperationMode: the code treats it as
+"is docked?" boolean. The cbz / cmp #1 / b.ne pattern in main_loop matches
+exactly: {0=Handheld, 1=Console, >=2=invalid}.
+
+Pool B Round 3 scan found 27 readers scattered across the binary and
+concluded "cheap cached frame phase". Correct interpretation: "cached
+console operation mode" — which is ALSO why so many subsystems read it
+(input, audio, HID, render resolution, LDN all care about
+handheld-vs-docked).
+
+=== DAT_710593a4c0 has ZERO readers ===
+
+Ghidra xref table on 0x710593a4c0 returns exactly ONE reference:
+  0x71037472b8 in main_loop [WRITE]
+
+No readers exist. This is a diagnostic / crash-dump slot — main_loop
+publishes its this pointer once, and nothing in the binary ever reads
+it. Pool A's Round 4 theory that "DAT_710593a4c0 is the cached app
+driver whose vt[+0x10] is the per-frame tick" is REFUTED: you cannot
+tick a handle that has zero static readers.
+
+=== DAT_710593a510 interpretation update ===
+
+Pool B Round 3 identified:
+  - Only non-init writer: 0x7103741a60 inside FUN_7103741988 (named
+    game_ldn_initialize in Ghidra).
+  - game_ldn_initialize ALSO writes DAT_710593a534 at 0x7103741bb4.
+
+Game LDN (local wireless) init is where the listener pointer gets
+installed. LDN behavior differs between handheld and docked (antenna
+config), so it makes sense that LDN boot installs an
+"OperationModeChangeListener" and caches the current mode for other
+subsystems. The vt[0x30] notify call in main_loop's prologue then
+tells the newly-installed listener "current console mode is X" ONCE.
+
+NOT a MatchRunner. NOT a per-frame driver. One-time boot hand-off.
+
+=== THE ACTUAL FRAME LOOP (key positive finding) ===
+
+Back-branch scan of main_loop's 5902-insn disassembly:
+  Largest span: 0x710374cbc0 b -> 0x7103747504  (span 0x56bc = 22 KB)
+  Second:       0x710374c90c b -> 0x7103747504  (same head; break path)
+
+The outer per-frame loop runs from 0x7103747504 to 0x710374cbc0.
+Everything before 0x7103747504 (including vt[0x18], FinishStartupLogo,
+GetOperationMode, and listener-notify) is ONE-SHOT BOOT.
+
+Loop head at 0x7103747504 starts with:
+  adrp x20,0x7105334000
+  ldr  x8,[x20, #0x480]
+  ldr  x0,[x8, #0x28]
+  bl   0x71037cbb80         ; first per-frame call
+  ...
+  adrp x8,0x7105332000
+  ldr  x24,[x8, #0xfe8]     ; DAT_7105332fe8 = task-list singleton
+  add  x21,x24,#0x38        ; +0x38 = mutex
+  mov  x0,x21
+  bl   0x71039c1490         ; PLT = mutex lock
+  ldp  x25,x28,[x24, #0x20] ; x25 = start, x28 = end
+  cmp  x28,x25              ; empty list?
+
+Loop tail at 0x710374cb5c..0x710374cbc0:
+  cbz  x0,0x710374cb78
+  ldr  x8,[x0]              ; load task vtable
+  ldr  x8,[x8, #0x28]       ; vt[0x28]
+  b    0x710374cb74
+  ldr  x8,[x0]
+  ldr  x8,[x8, #0x20]       ; vt[0x20] (alt path)
+  blr  x8                   ; *** per-task dispatch ***
+  ...
+  mov  x0,x22
+  bl   0x710392e590         ; destructor/free
+  ldr  x8,[x21, #0x1f8]
+  ldrb w8,[x8, x28, LSL #0] ; byte-flag gate
+  cbz  w8,0x710374c910
+  add  x25,x25,#0x8         ; step
+  cmp  x24,x25
+  b.ne 0x710374caf0         ; inner loop
+  b    0x7103747504         ; *** FRAME LOOP BACK EDGE ***
+
+Structural classification: TASK-SYSTEM PUMP.
+- Singleton at [DAT_7105332fe8] holds a std::vector-like task list
+  (start at +0x20, end at +0x28, mutex at +0x38).
+- Per task: mutex-lock, dispatch task->vt[0x28] (or vt[0x20] on alt
+  path), destructor/free 0x710392e590.
+- Per-entry byte-flag array at [x21+0x1f8] gates whether the rest of
+  the loop body runs (early-exit restart of frame).
+
+=== SINGLETON IDENTIFICATION (DAT_7105332fe8) ===
+
+Ghidra xrefs:
+  WRITE:
+    0x71035a526c in FUN_71035a4130   ; same init function that writes
+                                     ; DAT_7105335e10 (Stage/viewport
+                                     ; singleton from Pool C Round 4).
+                                     ; Flagged for manual extraction.
+  READ:
+    0x7103559360 in FUN_7103559340   ; per-task add/remove helper?
+    0x7103559240 in FUN_7103559220   ; paired helper
+    0x7103747564 / 0x7103749cc0 / 0x710374a080 / 0x710374b52c in main_loop
+      (4 reads inside the frame loop body — confirms it is the loop's
+       driving singleton)
+    0x7100555e20 in FUN_7100555da0
+    0x71014559b4 in FUN_7101455950
+    scattered others
+
+FUN_71035a4130 writes BOTH DAT_7105332fe8 (task-list singleton) and
+DAT_7105335e10 (Stage/viewport singleton from Pool C Round 4). It is
+a top-level subsystem initializer; manual extraction still pending
+(Ghidra MCP 120s timeout).
+
+Next-hop recommendation:
+  - Decomp 0x7103559340 and 0x7103559220 (small helpers) to see their
+    semantics (add_task / remove_task / register?).
+  - Manual-extract FUN_7103747270 body 0x7103747504..0x710374cbc0 —
+    this is the frame pump.
+  - Once the task-list type is known, walk its member vtables for
+    ones whose vt[0x28] target calls into FighterManager or
+    BattleObjectWorld — that IS the sim tick.

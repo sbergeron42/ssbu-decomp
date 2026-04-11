@@ -3722,3 +3722,276 @@ the sim tick.
   `WORKER-pool-c.md`'s primary deliverable.
 - Ghidra renames: **none this session** (all new information is in
   shared docs, not symbols).
+
+---
+
+## Pool C — Round 5: BeginFrame hook (vt[0x18]) investigation (2026-04-10)
+
+**Summary.** The "vt[0x18] = beginFrame hook" hypothesis is **wrong**. vt[0x18]
+is a literal `ret` stub, confirmed both by raw ELF bytes and by the `.rela.dyn`
+relocation that populates the vtable. The two PLT stubs Pool B tentatively
+labelled "begin frame" are actually `nn::oe::FinishStartupLogo` and
+`nn::oe::GetOperationMode` — one-shot boot routines. The entire main_loop
+"prologue" block (0x71037472a4..0x7103747304) is ONE-TIME BOOT code, not a
+per-frame dispatcher. The true outer frame loop lives much deeper: body
+`0x7103747504..0x710374cbc0`, back edge `b 0x7103747504`. That is the target
+for the next round.
+
+### Vtable resolution — vt[0x18] IS empty
+
+Pool A's Round 4 relocation scan was correct. Re-verified this pass via two
+independent methods on `original/main.elf`:
+
+1. **.rela.dyn parse.** Slot 3 of the vtable at `0x710523bd38` has
+   relocation `r_type=R_AARCH64_RELATIVE (1027)` with addend `0x37243b0`,
+   giving runtime target `0x71037243b0`. All 13 populated slots match
+   Pool A's table byte-for-byte.
+2. **Raw bytes at 0x71037243b0** (file offset `0x3724c38`):
+   `c0 03 5f d6 00 00 00 00 ...` → insn0 = `0xd65f03c0` = `ret`.
+
+The `blr x8` at `main_loop+0x40` is a no-op. vt[0x18] is NOT the source of
+the `DAT_710593a510` write Pool B attributed to it — that attribution was
+incorrect. The actual writer of `DAT_710593a510` is `0x7103741a60` inside
+`game_ldn_initialize` (Pool B Round 3), which has no caller relationship
+to main_loop's prologue.
+
+### PLT stub resolution — the "begin frame" guess is wrong
+
+Decoded the ADRP+LDR pairs of each PLT stub to find their GOT entries, then
+looked those up in `.rela.plt` to get the symbol names:
+
+| PLT stub | GOT slot | Symbol |
+|---|---|---|
+| `0x71039c7670` | `0x71052a1cf0` | `_ZN2nn2oe17FinishStartupLogoEv` (`nn::oe::FinishStartupLogo`) |
+| `0x71039c7570` | `0x71052a1c70` | `_ZN2nn2oe16GetOperationModeEv` (`nn::oe::GetOperationMode`) |
+
+These are **one-time boot** routines:
+- `FinishStartupLogo()` tells the Switch OS to dismiss the system splash
+  screen once the game has its first frame ready. Called ONCE per process.
+- `GetOperationMode()` returns the `nn::oe::OperationMode` enum:
+  `OperationMode_Handheld = 0`, `OperationMode_Console = 1` (docked).
+
+### DAT_710593a534 is `nn::oe::OperationMode`, not a frame phase
+
+Direct consequence of the PLT resolution: `DAT_710593a534` caches the value
+returned by `GetOperationMode()`, so it is the cached console operation
+mode, not a "cached frame phase integer" as Pool B Round 3 concluded.
+
+Cross-validation from a reader — sample reader `FUN_71014f75d0` at
+`0x71014f773c`:
+
+```c
+iVar16 = DAT_710593a534;
+...
+puVar21[1] = (uint)(iVar16 != 0);        // stored as a docked-bool
+```
+
+This exactly matches the `OperationMode` semantics: 0 → Handheld, 1 → Console,
+treated as "is docked?" boolean. The `cbz w8 / cmp w8,#1 / b.ne` pattern in
+main_loop's prologue matches the enum domain `{0, 1, >=2 invalid}`.
+
+The 27 scattered readers Pool B found are consumers that care about docked
+vs handheld (input, audio, HID, render resolution, LDN) — a perfectly
+natural fan-out for an OperationMode cache.
+
+### DAT_710593a4c0 has **zero readers**
+
+Ghidra xref query on `0x710593a4c0`:
+
+```
+From 71037472b8 in FUN_7103747270 [WRITE]
+```
+
+One reference, total. No reader exists anywhere in the binary. `DAT_710593a4c0`
+is a **diagnostic / crash-dump slot**: main_loop publishes its `this` pointer
+once, and nothing ever consumes it. This definitively **retires Pool A's
+Round 4 theory** that "the real sim tick continuation is in
+`DAT_710593a4c0->vtable[+0x10]`". You cannot dispatch per-frame work through
+a handle that is never read.
+
+### DAT_710593a510 — one-shot OperationMode listener, not a MatchRunner
+
+The cbz-gated `vt[0x30]` dispatch at `main_loop+0x8c` takes `&local_op_mode`
+as arg1 and runs ONCE (not per frame, since the surrounding block is boot).
+Combined with Pool B Round 3's finding that the only non-init writer
+(`0x7103741a60`) lives inside `game_ldn_initialize`, the correct
+interpretation is:
+
+- `game_ldn_initialize` installs a **nn::oe::OperationModeChangeListener**
+  (or analogous) into `DAT_710593a510` and caches the current op-mode into
+  `DAT_710593a534`.
+- main_loop's boot sequence then notifies that listener of the current mode
+  via `vt[0x30](listener, &current_mode)` — one time.
+- After that, the slot continues to be read by the LDN subsystem (which
+  needs to know docked-vs-handheld for antenna config) — which is why
+  the nearby `FUN_7103741988` helper area reloads it with `LDR` from
+  `[X19, #0x20]`.
+
+Not a MatchRunner. Not a per-frame driver. One-shot boot hand-off.
+
+### The actual frame loop is deeper inside main_loop
+
+Scanned all 5902 instructions of `FUN_7103747270` for backward branches. The
+largest-span back branch (by far) is the one that identifies the outer frame
+loop:
+
+| Source | Target | Span | Notes |
+|---|---|---|---|
+| `0x710374cbc0` | `0x7103747504` | `0x56bc` (22 KB) | `b` — outer loop edge |
+| `0x710374c90c` | `0x7103747504` | `0x5408` (21 KB) | `b` — break path to same head |
+| `0x710374d150` | `0x7103748330` | `0x4e20` (19 KB) | `b` — inner loop inside body |
+
+The outer per-frame loop therefore runs from **`0x7103747504` to
+`0x710374cbc0`**, ~22 KB of body. Everything at `0x71037472a4..0x7103747504`
+(including vt[0x18], `FinishStartupLogo`, `GetOperationMode`, the listener
+notify, and ~0x200 bytes of follow-on init) is **one-shot boot**.
+
+Loop head disassembly (first few insns at `0x7103747504`):
+
+```
+adrp x20,0x7105334000
+ldr  x8,[x20, #0x480]          ; [DAT_7105334480]
+ldr  x0,[x8, #0x28]
+bl   0x71037cbb80              ; first per-frame call
+...
+adrp x8,0x7105332000
+ldr  x24,[x8, #0xfe8]          ; DAT_7105332fe8 = task-list singleton
+add  x21,x24,#0x38             ; +0x38 = mutex
+mov  x0,x21
+bl   0x71039c1490              ; PLT = mutex lock
+ldp  x25,x28,[x24, #0x20]      ; x25 = start, x28 = end (vector-like)
+cmp  x28,x25                   ; empty?
+```
+
+Loop tail at `0x710374cb5c..0x710374cbc0`:
+
+```
+cbz  x0,0x710374cb78
+ldr  x8,[x0]                   ; task vtable
+ldr  x8,[x8, #0x28]            ; vt[0x28]
+b    0x710374cb74
+ldr  x8,[x0]
+ldr  x8,[x8, #0x20]            ; alt: vt[0x20]
+blr  x8                        ; *** per-task dispatch ***
+...
+mov  x0,x22
+bl   0x710392e590              ; destructor / delete
+ldr  x8,[x21, #0x1f8]
+ldrb w8,[x8, x28, LSL #0]      ; per-entry byte flag
+cbz  w8,0x710374c910
+add  x25,x25,#0x8              ; step to next task
+cmp  x24,x25
+b.ne 0x710374caf0              ; inner loop
+b    0x7103747504              ; *** FRAME LOOP BACK EDGE ***
+```
+
+Structural classification: this is a **task-system pump**. A singleton at
+`[DAT_7105332fe8]` holds a `std::vector`-like task list (start `+0x20`, end
+`+0x28`, mutex `+0x38`, per-entry byte-flag array at `+0x1f8`). Each frame
+the loop acquires the mutex, iterates the list, dispatches `task->vt[0x28]`
+(or `vt[0x20]` on an alt path), frees entries via `0x710392e590`, and loops
+back. Multiple early-exit restart paths exist (both back branches target the
+same loop head).
+
+### Task-list singleton identification (`DAT_7105332fe8`)
+
+Writers / readers:
+
+| Address | Function | Access |
+|---|---|---|
+| `0x71035a526c` | `FUN_71035a4130` | WRITE (initializer) |
+| `0x7103559360` | `FUN_7103559340` | READ (candidate: task add) |
+| `0x7103559240` | `FUN_7103559220` | READ (candidate: task remove) |
+| `0x7103747564` | `main_loop` | READ (loop head) |
+| `0x7103749cc0` | `main_loop` | READ (inside body) |
+| `0x710374a080` | `main_loop` | READ (inside body) |
+| `0x710374b52c` | `main_loop` | READ (inside body) |
+| ... | | scattered consumers |
+
+Important: **`FUN_71035a4130` is the same function Pool C flagged for manual
+extraction in Round 4** (it was the sole writer of `DAT_7105335e10`, the
+Stage/viewport singleton). The same initializer brings up both the
+Stage/viewport singleton AND the task-list singleton, which means
+`FUN_71035a4130` is a top-level subsystem-cluster initializer. Unblocking its
+extraction is the single highest-leverage action for the hunt.
+
+### Cached handle audit summary
+
+| Symbol | Writers | Readers | Verdict |
+|---|---|---|---|
+| `DAT_710593a4c0` | 1 (main_loop) | **0** | debug/crash-dump only — NOT a dispatcher |
+| `DAT_710593a534` | 2 (main_loop, `game_ldn_initialize`) | ~27 | **cached `nn::oe::OperationMode`** |
+| `DAT_710593a510` | 1 non-init (`game_ldn_initialize`) | 3 (2 LDN + main_loop) | **OperationMode listener**, one-shot notify |
+
+No sim-shaped readers for any of the three cached handles in the
+`0x710593a4c0/510/534` cluster. All three are boot / console-mode / LDN
+plumbing. **None of them is the sim tick signal.**
+
+### VERDICT
+
+**STATIC ANALYSIS EXHAUSTED FOR THIS VTABLE / CACHE-HANDLE AXIS.**
+
+The chain Pool A/B converged on in Round 4 —
+`main_loop → vt[0x18] beginFrame → DAT_710593a510->vt[0x30] MatchRunner`
+— is false in every link:
+
+1. **vt[0x18] = `ret`** (empty stub, confirmed by bytes + .rela.dyn).
+2. The two post-vt[0x18] PLT calls are `nn::oe::FinishStartupLogo` +
+   `nn::oe::GetOperationMode`, **not** frame hooks.
+3. `DAT_710593a534` is the cached `nn::oe::OperationMode` (docked/handheld),
+   **not** a frame phase. The 27 scattered readers are docked-vs-handheld
+   consumers, not per-frame tick callers.
+4. `DAT_710593a510` is an `nn::oe`-style mode-change listener installed by
+   `game_ldn_initialize`, notified ONCE during boot. **Not** a MatchRunner.
+5. `DAT_710593a4c0` has zero readers — **not** a dispatcher, just a
+   diagnostic slot.
+
+**But Round 5 is NOT a dead end** — the back-branch scan produced the first
+positive structural lead: the outer frame loop lives at
+`0x7103747504..0x710374cbc0` and is a **task-system pump** driven by
+singleton `DAT_7105332fe8`. This is the correct next hop.
+
+### Recommended Round 6
+
+1. **Manual-extract `FUN_71035a4130`** (orchestrator-side; Ghidra MCP times
+   out at 120s). This function writes both `DAT_7105332fe8` (task-list
+   singleton — THE frame pump root) and `DAT_7105335e10` (Stage/viewport
+   singleton from Round 4). It will identify the task-list type definitively
+   and probably reveal the `pead::TaskSystem` / `cross2app::TaskManager`
+   class name via constructor or vtable publishing.
+2. **Decomp the two small task-list helpers** `FUN_7103559340` and
+   `FUN_7103559220` — these are probably `add_task()` / `remove_task()` or
+   `register_listener()` / `unregister_listener()`. Small functions, fast
+   to decomp, will reveal the task-object shape directly from their
+   argument vtable dispatches.
+3. **Walk the frame-loop body** `0x7103747504..0x710374cbc0`. The
+   `task->vt[0x28]` dispatch at `0x710374cb68` (and alt `vt[0x20]` path at
+   `0x710374cb70`) is the per-task entry point. Find any task whose
+   `vt[0x28]` target calls into `FighterManager`, `BattleObjectWorld`, or
+   iterates fighter slots — that task IS the sim tick.
+4. Optional: compile-time watchpoint strategy. If static pursuit stalls
+   again, the task-list root at `DAT_7105332fe8 + 0x20` is the ideal GDB
+   data watchpoint — any new task insertion means "a subsystem just
+   registered itself for per-frame ticking", and the inserting function's
+   call stack will name the subsystem.
+
+### Functions touched this pass
+
+- `FUN_7103747270` (main_loop) — full 5902-insn disassembly scanned for
+  back branches; prologue and loop head/tail regions annotated.
+- `FUN_71014f75d0` — decompiled as a sample reader of `DAT_710593a534`
+  (confirms OperationMode interpretation; cached as docked-bool).
+- PLT stubs `0x71039c7670` / `0x71039c7570` — resolved to `nn::oe`
+  imports via ADRP+LDR decode and `.rela.plt` lookup.
+- Vtable at `0x710523bd38` — re-verified via `.rela.dyn` + raw bytes.
+
+### Artifacts this pass
+
+- `data/ghidra_cache/pool-c.txt` — full evidence dump for Round 5
+  (prologue annotation, vtable re-verification, PLT decode, frame-loop
+  head/tail, singleton xrefs).
+- `data/ghidra_cache/manual_extraction_needed.md` — `FUN_71035a4130`
+  already listed (from Round 4); now doubly critical as the writer of
+  `DAT_7105332fe8` too.
+- No src/ changes. Documentation-only pass per `WORKER-pool-c.md`.
+- Ghidra renames: **none this session** (findings live in shared docs).
