@@ -31,10 +31,11 @@ These are the entry points a rollback walker traverses. Every address is the `.d
 |---|---|---|---|---|
 | `lib::Singleton<app::FighterManager>::instance_` | `0x71052b84f8` | `FighterManager__*_impl` .dynsym all deref `mgr+0` | `FighterManagerData` ≥ 0xB88 B | See `include/app/FighterManager.h`. Reaches up to 8 `FighterEntry*` at `+0x20..+0x60` plus `finalbg_ptr`, `movie_ptr` sub-objects. |
 | `lib::Singleton<app::StageManager>::instance_` | `0x71053299d8` | `StageManager__*_impl`, `src/app/StageManager.cpp:9` | `StageManagerData` ≥ 0x180 B | 3 stage-mode `entries[]` at `+0x110`, embedded `stage_info_vt` sub-object at `+0x128`. |
-| `lib::Singleton<app::ItemManager>::instance_` | **`0x71052c3070`** | `find_active_item_from_id @ 0x71015ca930` disassembly: `adrp x8, 0x71052c3000; ldr x9, [x8, #0x70]` | Manages `ItemEntry**` active/pending lists at `+0x10..+0x30` | Already used correctly in `src/app/fighter_status.cpp`, `fun_batch_e3_001.cpp`, `ItemHelpers.cpp`, `gameplay_functions.cpp`. **Latent bug**: `src/app/FighterManager.cpp:33,391` declares and reads `DAT_71052c2b88` as the ItemManager singleton — this is wrong; that address is the `.begin` pointer of a `std::vector<u32>{0xe3}` inside the item-kind lookup table. The wrong dereference reads bytes past the end of a 4-byte allocation. Should be fixed to `DAT_71052c3070` in a future FighterManager-territory pass. |
+| `lib::Singleton<app::ItemManager>::instance_` | **`0x71052c3070`** | `find_active_item_from_id @ 0x71015ca930` disassembly: `adrp x8, 0x71052c3000; ldr x9, [x8, #0x70]` | **0xD8 B (216 B)** — root struct only, follow pointers for sub-state | Root struct size confirmed **Round 10** from `FUN_7101344cf0 @ 0x71013494d4..0x710134953c`: `je_aligned_alloc(0x10, 0xd8)` → ctor (`0x71015d2260`) → store to slot. Known fields in `include/app/ItemManager.h` reach only +0x30 (active_end pointer); the remaining ~0xA8 B are unmapped sub-state pointers. Already used correctly in `src/app/fighter_status.cpp`, `fun_batch_e3_001.cpp`, `ItemHelpers.cpp`, `gameplay_functions.cpp`. **Latent bug**: `src/app/FighterManager.cpp:33,391` declares and reads `DAT_71052c2b88` as the ItemManager singleton — this is wrong; that address is the `.begin` pointer of a `std::vector<u32>{0xe3}` inside the item-kind lookup table. The wrong dereference reads bytes past the end of a 4-byte allocation. Should be fixed to `DAT_71052c3070` in a future FighterManager-territory pass. |
 | `lib::Singleton<lib::EffectManager>::instance_` | `0x7105333920` | `src/app/fighter_effects.cpp:133`; `FUN_710260b9b0` disassembly @ `0x710260bc2c..0x710260bc34` (`adrp x10, 0x7105333000; ldr x10, [x10, #0x920]`) | Pool record stride **0x300 B** (see EffectManager section below) | Particle pool manager. Double-deref: `*instance_ = EffectManager*` which points to a flat array of 768-byte particle records. Max index is top byte of a u32 id (≤256 entries). |
 | `lib::Singleton<app::BattleObjectWorld>::instance_` | **`0x71052b7558`** | `app::stage::get_gravity_position @ 0x71015ce700` disassembly: `adrp x8, 0x71052b7000; ldr x8, [x8, #0x558]`; also `BattleObjectWorld__*_impl` family pass the pointer through .dynsym | `BattleObjectWorld` ≥ 0x60 B | **NEW (Q6 resolved).** Not a per-BattleObject struct despite the name — holds global physics-world overrides (gravity pos/coeff, scale_z, move_speed, reverse/move flags). Small, but per-match mutable. See BattleObjectWorld section below. |
 | BattleObjectManager pool-header array | `DAT_71052b7548` (**not** `DAT_71052b7ef8` as in `WORKER-pool-c.md`) | `get_battle_object_from_id @ 0x71003ac560` | Array of 5 `PoolHeader*` (one per category) | The task file listed `DAT_71052b7ef8`; xrefs confirm that address is the BossManager singleton, not BattleObjectManager. Correction below. |
+| `lib::Singleton<app::BossManager>::instance_` | `0x71052b7ef8` | `is_boss_stop`, `is_boss_no_dead`, `send_event_on_boss_*` all deref this slot; constructor in `FUN_7101344cf0 @ 0x710134b16c..0x710134b440` | **0x10 B outer wrapper** → `inner` at `+0x8` → **0x238 B inner** → kind-id sub at inner+0x10 (0x30 B) | Root-set confirmed **Round 10** from `FUN_7101344cf0`. Outer wrapper is `je_aligned_alloc(0x10, 0x10)` (just `{ u8[8]; BossManagerInner*; }`). Inner state is `je_aligned_alloc(0x10, 0x238)`, zero-initialized then populated with vtable ptrs and four linked-list head/tail pairs. Existing `include/app/BossManager.h` documented fields to +0x164; real alloc is 0x238 so there is ~0xC8 B of uncharted state past the last named field (field writes observed up to +0x230 during ctor). |
 | Game global / RNG + (unknown) | `DAT_71052c25b0` | Dereferenced by `app::sv_math::rand` @ `0x7102275400` and every module's get-random impl | state body = **0xB4 B** (9 streams × 20 B, confirmed — no higher streams reached by dispatcher) | Holds 9 independent XorShift128 streams (per-namespace RNG). **Rollback-critical**. See "RNG" below. |
 
 ### Correction: `DAT_71052b7ef8`
@@ -249,7 +250,60 @@ There is a separate, small **fixed-5-entry secondary effect table at `DAT_710533
 This is likely the single biggest surprise cost in an SSBU rollback. Needs follow-up.
 
 ### 7. BossManager (`*DAT_71052b7ef8`)
-Mis-identified in the worker brief. Probably small (boss-only modes). Rollback-relevant only in Stadium/Classic modes.
+
+**Size confirmed (2026-04-11, Round 10)** from the constructor in `FUN_7101344cf0 @ 0x710134b16c..0x710134b440`. The manager is a two-level split:
+
+| Layer | Alloc | Size | Purpose |
+|---|---|---|---|
+| Outer wrapper at `*DAT_71052b7ef8` | `je_aligned_alloc(0x10, 0x10)` | **0x10 B** | `{ vtable* = 0x7104f73b60; BossManagerInner* inner; }` |
+| Inner state at `(*DAT_71052b7ef8)->inner` | `je_aligned_alloc(0x10, 0x238)` | **0x238 B** | All per-match boss state: `state`, entity list head/tail, `boss_kind_id`, `boss_target_id`, `no_dead_flag`, `stop_count`, four linked-list heads, finish-event params |
+| Kind-id sub at `inner+0x10` | `je_aligned_alloc(0x10, 0x30)` | **0x30 B** | Three pairs of s32 ids `{0x18e,0x16f / 0x188,0x180 / 0x175,0x172}` — static lookup, **not per-frame mutable** |
+
+Walker snapshot policy:
+```
+outer = *(void**) 0x71052b7ef8
+snapshot(outer, 0x10)
+inner = outer->inner                        // outer + 0x8
+snapshot(inner, 0x238)
+// inner+0x10 points to a 0x30 B static lookup — safe to EXCLUDE
+// from per-frame snapshot (build-once, never mutated after ctor).
+```
+
+**Per-frame bytes to snapshot: 0x10 + 0x238 = 0x248 = 584 B.**
+
+Rollback-relevant only in Classic / Adventure / Stadium modes. In a 1v1 smash match `inner->state == 0` and the entity list is empty, so **the snapshot may be skipped entirely in competitive game modes** — a walker can gate snapshotting on `outer->inner->state != 0 || inner->entity_list_begin != inner->entity_list_end` and save the 584 B per frame. For sim/resim in Eden this is noise either way; the conservative option is to always snapshot since the size is tiny.
+
+Known field coverage: `include/app/BossManager.h` documents BossManagerInner fields up to +0x164. The real alloc is 0x238 and the ctor writes as high as +0x230, so ~0xC8 B of uncharted fields remain past the last named one. For rollback correctness this doesn't matter (we snapshot the full 0x238 B opaque-wise); for future reverse-engineering, those 0xC8 bytes are a follow-up.
+
+### 7b. ItemManager (`*DAT_71052c3070`)
+
+**Size confirmed (2026-04-11, Round 10)** from the constructor in `FUN_7101344cf0 @ 0x71013494c8..0x7101349538`:
+
+```
+0x71013494d4  mov w1, #0xd8       ; size = 0xd8
+0x71013494d8  mov w0, #0x10       ; align = 0x10
+0x71013494dc  bl  je_aligned_alloc
+... standard OOM-retry via DAT_7105331f00 vt[+0x30] ...
+0x7101349534  bl  0x71015d2260    ; ItemManager ctor
+0x7101349538  str x19, [x20, #0x70]   ; *DAT_71052c3070 = mgr
+```
+
+**Root struct size: 0xD8 = 216 B** (single flat allocation, align 16).
+
+Walker snapshot policy:
+```
+mgr = *(void**) 0x71052c3070
+snapshot(mgr, 0xD8)
+// Then follow the two ItemEntry** pointer pairs at +0x10..+0x18 and
+// +0x28..+0x30 into the item pool; each item is a BattleObject in
+// category 2 (pool stride 0x60C0 B, see BattleObject Pool Sizes above).
+```
+
+**Per-frame bytes to snapshot (root only): 216 B.** The expensive part is the item-pool walk: the `ItemEntry**` lists at +0x10/+0x28 are begin/end pointers into an `std::vector<ItemEntry*>`-style array; each entry resolves to a category-2 BattleObject in the pool already accounted for in §1.
+
+Known field coverage: `include/app/ItemManager.h` documents fields to +0x30 (active list end). 0xD8 − 0x38 = 0xA0 B of uncharted post-list state remains. The ctor helper at `0x71015d2260` probably populates these (additional list heads, allocator context, or lua-state hooks) — follow-up reverse-engineering target.
+
+Before this root alloc, the ctor path (still in `FUN_7101344cf0`) loops over any pre-existing items by iterating the prior ItemManager's active list and calling `item->vt[0x520](item, 0)` on every `w_kind == 0x1a6` entry — this is the remove-item-kind-0x1a6 cleanup from a previous match. Match setup therefore cleans up one item kind *before* reallocating the manager itself; any rollback snapshot taken during that window (match boundary) will see a transient state.
 
 ### 8a. Match-runtime entry list (`*DAT_71052c26c0`)
 
@@ -323,6 +377,7 @@ Things I confirmed are built once at startup or match-load and then never writte
 5. **Sound system mutable state**: no `app::SoundManager` or `lib::SoundManager` singleton exists in the .dynsym; every sound accessor is a `SoundModule__*_impl` (see `0x7102081940..0x7102081ce0`) operating on the per-BattleObject `SoundModule` sub-object (module accessor offset `+0x148`). This means **there is no top-level sound state to snapshot separately** — all per-fighter sound state is already inside the BattleObject pool, captured by §1. The only open cost is the *audio engine's* playing-voice table, which lives behind the NintendoSDK `nn::atk` library and is likely impractical to rewind. Recommended default: **do not rewind audio**, advance it monotonically. This is the same trade-off Slippi makes for Melee's DSP state.
 6. ~~**`BattleObjectWorld` global state root address**~~ **Resolved (2026-04-10)**: `lib::Singleton<app::BattleObjectWorld>::instance_` = `0x71052b7558`. Struct ≥ 0x60 B, ≤ 0x100 B conservative. See §8 above.
 7. ~~**Higher RNG stream offsets in `*DAT_71052c25b0`**~~ **Resolved (2026-04-10)**: full decompile of `app::sv_math::rand @ 0x7102275400` dispatcher confirms exactly **9 streams, highest offset +0xb0**. Minimum snapshot body = 180 B. No further streams reachable from the rand path.
+8. ~~**ItemManager / BossManager root struct sizes**~~ **Resolved (2026-04-11, Round 10)** from `FUN_7101344cf0` disassembly. ItemManager = **0xD8 B** (single alloc), BossManager = **0x10 B outer + 0x238 B inner + 0x30 B kind-id sub** (three-level split; kind-id sub is static and can be excluded from per-frame snapshot). See §7 and §7b. The remaining unknown for both is the last ~0xA0/0xC8 B of field contents past the currently-named fields — doesn't block rollback walker design, which snapshots opaquely.
 
 ## Persistent vs Per-Match Summary
 
@@ -340,7 +395,8 @@ Things I confirmed are built once at startup or match-load and then never writte
 | Secondary effect table `DAT_7105333948` | per-match | YES | 2,160 B (5 × 0x1b0) |
 | BattleObjectWorld overrides `*0x71052b7558` | per-match | YES | ≤ 0x100 B (see §8) |
 | Per-fighter Lua VM × 8 | per-match | **YES (expensive)** | ~256 KB estimated |
-| BossManager | per-match (boss modes only) | YES if mode active | unknown |
+| ItemManager body `*0x71052c3070` | per-match | YES | 216 B root (§7b) + item-pool entries already in cat 2 pool |
+| BossManager chain `*0x71052b7ef8` | per-match (always allocated, active in boss modes only) | YES | 584 B (0x10 outer + 0x238 inner, see §7). Ignorable in 1v1 smash if gated on `inner->state != 0`. |
 | Sound manager | per-match | maybe-opt-out | unknown |
 | Item-kind lookup tables `DAT_71052c2960..2f90` | persistent | NO | ~1.8 KB |
 | `.arc` resource blobs | persistent (per match load) | NO | tens of MB |
