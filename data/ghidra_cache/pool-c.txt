@@ -1272,3 +1272,67 @@ Next-hop recommendation:
   - Once the task-list type is known, walk its member vtables for
     ones whose vt[0x28] target calls into FighterManager or
     BattleObjectWorld — that IS the sim tick.
+
+== Session 2026-04-10 Round 6: frame-loop body walk + fiber scheduler ==
+
+Body extract: data/ghidra_cache/main_loop_body.txt (5348 insns, 0x7103747504..0x710374cbc0)
+Full: data/ghidra_cache/main_loop_disasm.txt (5902 insns)
+
+Body calls:
+  - 224 direct BLs (72 unique targets)
+  - 169 indirect blr x8/x9
+  - 0 adrp references to RNG page 0x71052c2xxx
+
+Key targets decompiled:
+  - FUN_710354c720 = phx::Fiber-based wait_or_yield (TlsSlot-based, nn::os::GetTlsValue + switch_to_fiber)
+  - FUN_7103549170 = Scheduler::submit_task(node, runner, q, prio); signals nn::os::LightEvent
+  - FUN_7103548240 = generic task runner; calls (*self->vt[0x10/8])(self) then walks child list
+  - FUN_7103559340/220 = pending add/remove for the UNRELATED DAT_7105332fe8 listener queue
+  - FUN_71035763c0 = vertex color-decode math (render)
+  - FUN_71014b2a40 = primary caller of FUN_7101344cf0 (module set registrar)
+
+Task-tree root DAT_7105332120 (xref_bin_scan):
+  W: 0x7100440518 STP X in FUN_710043ff00 (init zeroing)
+  W: 0x7101348738 STLRB in FUN_7101344cf0 (task_tree_add)
+  W: 0x71037494c8 STR X in main_loop (unlink state==2 pass)
+  R: 0x710134872c LDR X in FUN_7101344cf0
+  R: 0x71037494a0 LDR X in main_loop
+
+Xrefs to FUN_7101344cf0 (task_tree_add):
+  - FUN_71014b2a60 in FUN_71014b2a40 (UNCONDITIONAL_CALL) — primary, module set registrar
+  - FUN_7101523b80 in FUN_7101523b60 (UNCONDITIONAL_CALL) — secondary
+  - 0x710151a5d0 (UNCONDITIONAL_CALL) — inline
+  - 0x7105060680 (DATA) — vtable slot
+  - 0x710506b0f8 (DATA) — vtable slot
+  - 0x710506c5b8 (DATA) — vtable slot
+
+FUN_7101344cf0 decomp TIMED OUT (>120s) — added to manual_extraction_needed.md
+
+main_loop -> FUN_7103747270 xrefs: only From 71002c5cec in nnMain (UNCONDITIONAL_CALL)
+Confirmed main_loop is the nnMain direct invocation.
+
+Three-phase submit pattern in body (each submits DAT_7105332120 tasks, then waits):
+  Phase 1: submit loop 0x7103749484, submit BL 0x71037494f8
+  Phase 2: submit loop 0x7103749520, submit BL 0x7103749594
+  Phase 3: submit loop 0x7103749ad8, submit BL 0x7103749b20
+  Waits: FUN_710354c720 at 0x710374755c, b2b0, b2e8, b57c, b5a4, b5cc
+         (11 total wait sites across the body)
+
+Task struct shape (inferred):
+  +0x00 vtable
+  +0x08 scheduler node (task + 0x8, runner receives this)
+  +0x48 next sibling (linked list through head DAT_7105332120)
+  +0x50 u8 spinlock
+  +0x68 u32 queue_id
+  +0x6c u32 priority
+  +0x70 u8 state {0=submit, 1=skip, 2=unlink-and-destroy}
+
+Tick function: vt[2] (byte offset +0x10), NOT vt[0x28] as Round 6 spec asked.
+Round 5's vt[0x28] belongs to the tail *cleanup* loop at 0x710374caf0..cbc0 that
+drains objects placed in +0x1f30 pending-destroy slots — freed immediately after
+dispatch via bl 0x710392e590 (operator delete).
+
+CONCLUSION: Sim tick is NOT directly in main_loop. Sim runs as a task
+registered through FUN_7101344cf0 and dispatched as vt[2] on a worker thread.
+Identification blocked on manual extraction of FUN_7101344cf0 + decomp of
+FUN_7101523b60, FUN_710151a5d0, and the 3 DATA xrefs.
