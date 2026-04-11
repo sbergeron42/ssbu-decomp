@@ -86,41 +86,83 @@ The mismatch almost certainly originated because Ghidra's symbol labeling applie
 
 ## BattleObject Pool Sizes (the largest per-match region)
 
-`get_battle_object_from_id @ 0x71003ac560` reveals the per-category object sizes hard-coded in the dispatch switch. Each category has a `PoolHeader` with the layout recovered below. Object lookup is `base + (id_low12 * obj_stride)`.
+**FULL MAPPING: see `docs/rollback/battle_object_pools.md` (2026-04-11).** The
+summary below is kept for quick reference; the dedicated doc has the walker
+pseudocode, alloc proofs, and per-field derivations.
 
-### PoolHeader layout (≥ 0x20 B)
-
-Recovered from `FUN_71003aeb50` (the "return object to pool" path called when a BattleObject dies). Each of the 5 `PoolHeader*` slots in `DAT_71052b7548[]` points to one of these:
+`get_battle_object_from_id @ 0x71003ac560` defines the 5-category dispatch
+by `id >> 0x1c & 0xf`. Each category's PoolHeader is **embedded at a fixed
+offset inside the BattleObjectManager body** (0x40000-byte allocation pointed
+to by `*DAT_71052b7548`), NOT a separate allocation:
 
 ```
-+0x00  vtable_ptr            (dispatch to category-specific destroy in slot +0x50)
-+0x08  obj_array_base        (pointer to the flat obj[] array, stride = category stride)
-+0x10  freelist_index_array  (pointer to a u16[] — free-slot indices, LIFO stack)
-+0x18  obj_count (u32)       // THE number we actually need — capacity of the pool
-+0x1c  freelist_head (u16)   // top-of-stack index for next free slot
-+0x1e  freelist_count (s16)  // decremented on free, so alive_count = obj_count - freelist_count
+BOM body (0x40000 B, allocated in FUN_71014f3ba0)
+ +0xA0  PoolHeader cat 0 (Fighter)
+ +0xE0  PoolHeader cat 1 (Weapon)
+ +0x120 PoolHeader cat 2 (Enemy/Boss)
+ +0x160 PoolHeader cat 3 (Gimmick/Area)
+ +0x1A0 PoolHeader cat 4 (Item)
+ ...rest is sub-object state
 ```
 
-The `+0x18` obj_count field is what determines worst-case pool bytes. Extraction status: **still not directly read** (would require decoding `FUN_7101344cf0`, 31 KB). However, the dispatcher math constants in `FUN_71003aeb50` give us an indirect clue: cases 0 and 2 divide a byte offset by `0xf940`/`0x60c0` via magic-number reciprocal multiplication (respectively `0x41bbb2f80a4553f7` shifted 0xe, `0xa957fab5402a55ff` shifted 0xe, etc.) and the result is masked to 16 bits → `uVar9 & 0xffff`. This proves **obj_count per category < 65536**, which is weak but consistent with our ≤ 256 guesstimates.
+Each PoolHeader is **0x40 bytes** (stride between slots). Earlier guess of
+0x28 B was wrong — it was reading the BOM **root pointer allocation** (a
+separate 0x28-byte struct allocated in FUN_7101344cf0 that holds the single
+ptr to the BOM body), not a PoolHeader.
 
-| Cat | Dispatch bits (id >> 28 & 0xF) | Object stride | Dominant usage | Max per-match instances (estimated) |
-|---|---|---|---|---|
-| 0 | 0x0 | **0xF940 = 62,784 B** (~61 KB) | `BattleObject` (Fighter) | 8 |
-| 1 | 0x1 | **0x3C30 = 15,408 B** (~15 KB) | `BattleObject` (Weapon / projectile) | ~64 (guess) |
-| 2 | 0x2 | **0x60C0 = 24,768 B** (~24 KB) | `BattleObject` (Item) | ~32 (guess) |
-| 3 | 0x3 | 0x300 = 768 B | unknown (possibly Enemy) | ? |
-| 4 | 0x4 | 0x2B0 = 688 B | unknown (possibly Gimmick/Area) | ? |
+### PoolHeader layout (0x40 B, proven)
 
-Concrete instance counts were NOT recoverable from the init function inspected (`FUN_7101344cf0`, 31 KB). The `+0x18` count field is set somewhere in that function or its callees; extracting it is a follow-up task.
+```
++0x00  void*  vtable_ptr            (destructor at vt slot +0x50)
++0x08  T*     obj_array_base        (flat array, stride = category stride)
++0x10  u16*   freelist_index_array  (u16[capacity] singly-linked freelist stack)
++0x18  u32    capacity              (max object count, immutable after init)
++0x1c  u16    freelist_head         (index of next free slot; 0xFFFF = exhausted)
++0x1e  s16    live_count            (++ on allocate, -- on free — THE live count)
++0x20..+0x40  mutex + sub-object fields (varies by category)
+```
 
-**Upper-bound worst case for a local 8-player match**, using the strides above and rough counts:
-- Fighter pool: 8 × 61 KB = **488 KB**
-- Weapon pool: 64 × 15 KB = **960 KB**
-- Item pool: 32 × 24 KB = **768 KB**
-- Cat 3 + Cat 4: negligible
-- **Total per-category storage ≈ 2.2 MB**
+`+0x1e` is `live_count` (incremented in FUN_71003ae080 allocate path,
+decremented in FUN_71003aee20 free path) — NOT a decrement-only "free count".
+It is the direct count of currently-live objects in the pool.
 
-Not all of those bytes are *mutable* per frame — each BattleObject's 60-odd-KB struct contains a lot of const template data copied from `.arc` resources at spawn and never written again. A per-module dirty analysis could shrink the savestate by 5–10×.
+### Per-category sizes — EXTRACTED from FUN_71014f3ba0 (pool populator)
+
+| Cat | Class (probable) | Stride | Capacity | obj_array alloc | Live @ 1v1 |
+|---|---|---|---|---|---|
+| 0 | Fighter | 0xF940 (62.25 KiB) | **24**  | 0x175E10 (1.50 MiB) | 2 |
+| 1 | Weapon  | 0x3C30 (15.05 KiB) | **400** | 0x5E0B10 (6.15 MiB) | 5–30 |
+| 2 | Enemy/Boss| 0x60C0 (24.19 KiB)| **4**   | 0x18310 (99 KiB)    | 0  |
+| 3 | Gimmick/Area| 0x300 (768 B)  | **256** | 0x30010 (192 KiB)   | 0–N stage |
+| 4 | Item    | 0x2B0 (688 B)      | **64**  | 0xAC10 (43 KiB)     | 0 (no items) |
+
+**Worst-case total BattleObject pool storage ≈ 8.0 MB** (the prior 2.2 MB
+estimate was off by ~4× because it undercounted the Weapon pool). Weapons
+are the dominant cost: 6.15 MiB of address space for 400 slots × 15 KB each.
+
+Capacities were proven by register-tracing the `je_aligned_alloc` size
+arguments in FUN_71014f3ba0's per-pool init loops, cross-checked against the
+immediate capacity stores `str w9, [x26, #<pool_hdr_offset>+0x18]`:
+
+- `str w9=0x18, [x26, #0xB8]`  → cat 0 capacity 24
+- `str w9=0x190, [x26, #0xF8]` → cat 1 capacity 400
+- `str w9=0x4, [x26, #0x138]`  → cat 2 capacity 4
+- `str w9=0x100, [x26, #0x178]`→ cat 3 capacity 256
+- `str w9=0x40, [x26, #0x1B8]` → cat 4 capacity 64
+
+### Live predicate — walk the freelist
+
+**Do NOT use `obj->id != 0x50000000` as liveness.** The free path does NOT
+clear `obj[+0x08]`; freed slots retain their last allocated id value. Walker
+MUST walk the freelist stack (head → freelist[head] → … → 0xFFFF) to identify
+free slots, then iterate all non-free slots. See `battle_object_pools.md`
+for the complete pseudocode and the rejected-alternative analysis.
+
+Not all bytes in a live object are mutable per frame — each BattleObject's
+struct contains template data copied from `.arc` resources at spawn and
+never written again. A per-module dirty analysis could shrink the savestate
+by 5–10×; see `include/app/BattleObjectModuleAccessor.h` for the module
+layout and `battle_object_pools.md` for the proposed next steps.
 
 ## Per-Match Mutable State (rollback-critical)
 
@@ -275,7 +317,7 @@ Things I confirmed are built once at startup or match-load and then never writte
 ## Open Questions
 
 1. ~~**Where is the actual `app::ItemManager` singleton slot?**~~ **Resolved**: `DAT_71052c3070`, see the correction above. Latent bug in `src/app/FighterManager.cpp:33,391` should be fixed by the next pool assigned FighterManager territory.
-2. **Exact BattleObject pool instance counts**: `+0x18` count fields of the 5 PoolHeaders are set somewhere in `FUN_7101344cf0` (BattleObjectManager init, 31 KB). Extracting them gives us exact worst-case pool sizes.
+2. ~~**Exact BattleObject pool instance counts**~~ **Resolved (2026-04-11)**: all 5 pools sized in `docs/rollback/battle_object_pools.md`. The populator is `FUN_71014f3ba0`, not `FUN_7101344cf0` (the latter only allocates the BOM root ptr slot). Capacities: Fighter 24, Weapon 400, Enemy 4, Gimmick 256, Item 64. Worst-case total ≈ 8.0 MB, of which 6.15 MB is the Weapon pool.
 3. ~~**EffectManager layout**~~ **Resolved (2026-04-10)**: record stride 0x300 B, max 256 entries, top-byte generational indexing. Worst case 768 KB. See §5 above. Still unknown: whether adjacent `.data` slots at `DAT_71053339xx` hold parallel pools (sound FX, trail meshes).
 4. **Lua VM size per fighter**: the wrapper struct at `lua_state - 8` is a `lib::L2CAgent` (`include/lib/L2CAgent.h`, sizeof=0x38), which holds the `lua_State*` at `+0x08` and the owning `BattleObject*` at `+0x1A0` of an outer struct. The `lua_State` itself (jemalloc-allocated in `lua_newstate`) is opaque; empirical sizing is the only realistic path (allocate a VM, instrument `je_aligned_alloc`, count reachable bytes). Estimate budget remains ~32 KB/fighter × 8 = **~256 KB** pending measurement.
 5. **Sound system mutable state**: no `app::SoundManager` or `lib::SoundManager` singleton exists in the .dynsym; every sound accessor is a `SoundModule__*_impl` (see `0x7102081940..0x7102081ce0`) operating on the per-BattleObject `SoundModule` sub-object (module accessor offset `+0x148`). This means **there is no top-level sound state to snapshot separately** — all per-fighter sound state is already inside the BattleObject pool, captured by §1. The only open cost is the *audio engine's* playing-voice table, which lives behind the NintendoSDK `nn::atk` library and is likely impractical to rewind. Recommended default: **do not rewind audio**, advance it monotonically. This is the same trade-off Slippi makes for Melee's DSP state.
