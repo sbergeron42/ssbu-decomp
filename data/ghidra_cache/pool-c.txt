@@ -951,3 +951,119 @@ So FUN_710353d000 writes to [0x710593a520] (heap ptr), not to 0x710593a530.
 # Source: mcp__ghidra__disassemble_function for each candidate.
 # Summary: 3 of 4 candidates have hidden indirect dispatches; all 3 are called directly from main_loop (FUN_7103747270).
 # See docs/rollback/sim_tick_hunt.md Round 3 section for detailed writeup.
+
+=================================================================
+ROUND 4 — FUN_71035c13d0 (observer double-sweep dispatcher)
+=================================================================
+Decompile of FUN_71035c13d0 (1048 bytes, second strongest sim-tick
+candidate from Pool C round 3). Pool B round 1 had already flagged it
+as "graphics dispatcher" — this round we verify and identify the
+subsystem owner.
+
+KEY FACT: First block in the function loads from DAT_7105336ce8 —
+the SAME render singleton used by:
+  - FUN_71036186d0 (camera projection, +0x490/+0xd8/+0xe0)
+  - FUN_710361d040 (camera view-matrix update)
+  - 12× FUN_71035763c0 (animation-blend SH lighting, +0x390..+0x3b8)
+
+Full access chain at entry:
+  render  = *(DAT_7105336ce8 + 0x10)
+  target  = *(render + 0xa8)             ; graphics buffer allocator
+  getter  = vt[0x18](&buf)               ; returns plVar10
+  gfx_mod = nu::ModuleInitializer<nu::GraphicsModule,...>::Instance()
+  cmd     = plVar10->vt[0x10](plVar10, *(gfx_mod+0x58), 0, 0)
+  if (cmd) {
+    if (param_1+0x160) {
+      cmd[0x80..0x8c] = param_1[0x140..0x14c]  ; 4×u32 viewport/scissor rect A
+      param_1[0x160] = 0
+    }
+    if (param_1+0x161) {
+      cmd[0x90..0x9c] = param_1[0x150..0x15c]  ; 4×u32 viewport/scissor rect B
+      param_1[0x161] = 0
+    }
+    plVar10->vt[0x18](plVar10, gfx_mod+0x58)   ; release buffer
+  }
+
+This is nu::GraphicsModule command-buffer update: two 4-u32 rects.
+Classic window-resize / swap-chain viewport latch.
+
+OBSERVER BROADCAST STRUCTURE
+============================
+After the viewport latch, two nested observer sweeps. Listener list
+is shared between both sweeps:
+
+  listener_list:  param_1+0x08..+0x10  (stride 0x10 per entry)
+    entry[0]: u64 data pointer (the dispatched `plVar12`)
+    entry[1]: u64 weak_ptr control block (lock()-guarded access)
+
+SWEEP 1: event queue A
+  events:  param_1+0x60..+0x68  (stride 0x40 per event)
+    event[0..7]: payload (u64 local_90 = *puVar13, local_88 = puVar13[1])
+    event[2]: arg1 passed to vt[0x38]
+    event[4]: arg2
+    event[6]: arg3 (u32)
+  dispatch: plVar12->vt[0x38](event[2], event[4], event[6], plVar12, &local_90)
+  (std::mutex lock around the sweep)
+
+SWEEP 2: event queue B
+  events:  param_1+0x78..+0x80  (stride 0x30 per event, treated as u32*
+           iteration steps +0xc = 12 u32s = 48 bytes)
+    puVar3[0]: u32 tag
+    puVar3[4..6]: u64 arg1
+    puVar3[8..a]: u64 arg2
+  dispatch: plVar12->vt[0x40](arg1, arg2, plVar12, tag)
+  (std::mutex lock around the sweep)
+
+OPTIONAL FLUSH: gated on param_1+0x130
+  foreach listener in list:
+    while (listener alive):
+      FUN_71035bda90(data_ptr)   ; per-listener finalize
+      advance
+
+END: both event queues reset
+  *(param_1+0x68) = *(param_1+0x60)   ; queue A tail = head (drain)
+  *(param_1+0x80) = *(param_1+0x78)   ; queue B tail = head (drain)
+
+LISTENER DISPATCH METHOD SLOTS
+==============================
+vt[0x38] — called per (event_A, listener) pair, 5 args
+vt[0x40] — called per (event_B, listener) pair, 4 args
+These slots are NOT in BattleObjectModuleAccessor (+0x38..+0x188) range.
+
+PARAM_1 FIELD MAP (derived from this function only)
+===================================================
++0x00..+0x08  : std::mutex (lock()/unlock() frames wrap both sweeps;
+                 there are TWO mutexes actually, one at the very top and
+                 one re-locked for sweep 2 — could be the same mutex
+                 unlocked then re-locked, or two separate mutexes)
++0x08         : listener_list.begin (shared_ptr<Listener> array)
++0x10         : listener_list.end
++0x60         : event_queue_A.begin (0x40-stride events)
++0x68         : event_queue_A.end
++0x78         : event_queue_B.begin (0x30-stride events)
++0x80         : event_queue_B.end
++0x130        : flush-listener-with-null-sentinel flag (bool)
++0x140..+0x14c: 4×u32 viewport/scissor rect A (width,height,x,y?)
++0x150..+0x15c: 4×u32 viewport/scissor rect B
++0x160        : rect A dirty flag (bool)
++0x161        : rect B dirty flag (bool)
+
+ROUND 4 VERDICT on FUN_71035c13d0
+=================================
+STILL DEAD END. The function hangs off DAT_7105336ce8 (the render
+singleton). Its input parameter is a graphics subsystem that owns
+two viewport rects, two event queues, and a listener list whose
+vt[0x38] and vt[0x40] methods take GraphicsModule-style packed
+args (u64 arg1, u64 arg2, u32 tag). This is a **graphics viewport
+change + listener broadcast**, confirming Pool B's original
+pass-1 classification.
+
+The observer pattern at sweep 1/2 is "for each graphics-surface
+listener, deliver each enqueued viewport-change / mode-change
+event". Rollback does not need to replay this — it is output-side
+only. No per-fighter state mutation. Zero fighter iteration. No
+BattleObjectModuleAccessor vtable slots touched. Early-out gate on
+dirty bits means the whole function is a no-op most frames (only
+fires on window/swap-chain changes).
+
+Per-frame fighter state mutation? NO.
