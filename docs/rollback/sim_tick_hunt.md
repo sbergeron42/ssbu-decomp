@@ -1575,3 +1575,74 @@ those slots are where per-fighter simulation state actually lives.
 No src/ changes — this entire session was research / doc / Ghidra
 labeling per WORKER-pool-a.md "Documentation is the primary
 deliverable."
+
+---
+
+## Pool A — Correction: FUN_71004f0710 is camera reset, not BattleObjectWorld
+
+The previous pool-a commit (`pool-a: DAT_710593a6a0 is the Mii fighter
+database...`) labeled `FUN_71004f0710` as "BattleObjectWorld frame
+reset" based on context from the FUN_71022cd350 teardown. That label
+was wrong.
+
+Decompilation of `FUN_71004f0710` shows it is a **camera reset to
+match-default state**, not BattleObjectWorld-related. Evidence:
+
+- Sets multiple `0x42aa0000` (85.0f — default FOV) fields on a camera
+  sub-object at `param_obj + 0x30`.
+- Writes `0x3f800000` (1.0f — default scale/zoom), `0xc1200000 /
+  0x41200000` (−10.0 / +10.0 — view bounds), `0x7f7fffff` (FLT_MAX
+  for an initial distance-to-target search).
+- Walks two sub-camera pointers at `param_obj->cam + 0x08` and
+  `+ 0x10` and re-initialises their transform matrices to default
+  values loaded from `_DAT_71044xxx` RODATA constants.
+- Writes identity transform pairs (`0x4218000042180000` = 38.0f)
+  for unit scale.
+- Ends by building a stack-local `PTR_LAB_7104f73ca0` observer and
+  calling the **named** function `change_active_camera(lVar12, 0, 0,
+  local_70, 0)`. This is the smoking gun — the function installs a
+  new active camera.
+
+**Renamed in Ghidra:** `FUN_71004f0710` → `Camera_resetToMatchDefaults_71004f0710`.
+
+This does not affect the rollback conclusions in the prior commit;
+it just cleans up a function label. It does, however, reveal that
+the match-shutdown path in `FUN_71022cd350` explicitly resets the
+camera back to default state on match end — which, combined with
+the fighter roster release and the Mii data release, paints
+`FUN_71022cd350` as the broad "exit a match, put everything back to
+pre-match defaults" function. A genuine `BattleObjectWorld::reset()`
+(if one exists) remains unlocated.
+
+### Session summary — pool A, 2026-04-10
+
+Hours of compute spent: one session. Functions decomped and
+classified: five. Committed findings: three (this makes four).
+Ghidra renames: four
+(`GameState_finalizeMatch_71014f10c0`,
+`MiiFighterDatabase_dtor_7103757140`,
+`FighterManager_releaseEightSlotPair_710066e850`,
+`Camera_resetToMatchDefaults_71004f0710`).
+
+Net effect for the rollback team:
+1. Pool-B's "40-read serializer" bombshell lead on `FUN_71014f10c0`
+   is **cleared** — it's a match-teardown releasing per-fighter Mii
+   face data, not a state encoder.
+2. Pool-B's "DAT_710593a6a0 is the scene root" identity is
+   **corrected** — it's actually the Mii fighter-face database, not
+   any form of scene/world runtime block. Full struct layout derived
+   from its destructor.
+3. FighterManager's primary/secondary 8-slot pair layout is
+   **documented** for the first time — useful for rollback's fighter
+   iteration design.
+4. The sim tick is **still not located**. Dispatcher A remains the
+   most likely candidate, but its walk is rooted in Mii database
+   territory, making a sim-tick interpretation implausible. The
+   walk's early-out-on-first-truthy-return is also inconsistent with
+   a "tick all fighters" dispatcher. Real sim tick is probably
+   nested deeper than `main_loop`'s direct children and may require
+   decompiling `FighterManager::ctor` or a `BattleObjectWorld::tick`
+   yet-to-be-found to locate.
+5. `FUN_71022b7100` (the other `DAT_710593a6a0` WRITE xref) timed
+   out on Ghidra MCP. Logged to `data/ghidra_cache/manual_extraction_needed.md`
+   for orchestrator extraction.
