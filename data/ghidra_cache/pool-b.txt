@@ -1278,3 +1278,143 @@ Cache files produced this pass:
   - docs/rollback/sim_tick_hunt.md                 (appended Pool B section)
   - Full Ghidra output for FUN_71022cd350 and FUN_71014f10c0 lives in the
     harness tool-results dir, not copied locally.
+
+================================================================
+ROUND 4 — FUN_7103619080 caller + tag identification
+================================================================
+
+## Caller in main_loop (0x710374b0f0..0x710374b128)
+  710374b0f0: adrp x8, 0x7105336000     # x8 = 0x7105336000
+  710374b0f4: ldr  x20, [x8, #0xce8]    # x20 = *(0x7105336ce8)
+  710374b0f8: mov  x0, x20
+  710374b0fc: mov  x21, x8              # x21 = 0x7105336000
+  710374b100: bl   0x710361d040
+  710374b104: mov  x0, x20
+  710374b108: bl   0x71036186d0         # camera dead-end (same x0!)
+  ...
+  710374b120: ldr  x0, [x21, #0xce8]    # x0 = *(0x7105336ce8)
+  710374b124: bl   0x7103619080         # ***VISITOR DISPATCH***
+
+=> Subsystem object source: **global [0x7105336ce8]**
+
+## Writer of [0x7105336ce8]
+  FUN_71035a4130 @ 0x71035a43a0 [WRITE]
+  FUN_71035a4130 is called by: game_ldn_initialize @ 0x7103744360
+  (FUN_71035a4130 decompile timed out in MCP — logged to manual_extraction_needed.md)
+
+=> The singleton is constructed and installed BY game_ldn_initialize.
+
+## Named readers of [0x7105336ce8]
+  fighter_init, set_visibility_of_fighter_and_item, set_final_stage_disp_status,
+  update_blink, renderer_get_color_rate, game_ldn_initialize,
+  plus 50+ internal FUN_*
+
+=> Subsystem used by fighter lifecycle + render + stage status + ldn init.
+   NOT a pure render manager. Not a pure ldn object. It's a cross-cutting
+   service used by fighter spawn, rendering, stage display, AND the ldn path.
+
+## Actual FUN_7103619080 decomp (corrects Round 3 description)
+The "type tag" in Round 3 was WRONG — it's actually the derived vtable:
+
+  lVar6 = *(long *)(param_1 + 0x518)       ; subsys = param_1->[0x518]
+  plVar4 = *(long **)(param_1 + 0x500)     ; vector begin
+  plVar5 = *(long **)(param_1 + 0x508)     ; vector end
+  for each element *plVar4:
+    if (*(char *)(*plVar4 + 0xf1) != 0) {  ; per-element flag gate
+      allocator = *(long **)(lVar6 + 0x50) ; <-- sub-object is subsys->[0x50], NOT param_1->[0x50]
+      if (!allocator) abort();
+      puVar2 = allocator->vt[6](allocator, &0x80, &0x10)  ; factory call
+      *puVar2 = &PTR_FUN_7105266f80        ; BASE vtable
+      *(u32*)(puVar2 + 1) = 0x60           ; size field at +0x8
+      ; clone subsys->[0x50] into puVar2[6] (+0x30) via vt[3] (slot 3 / offset 0x18)
+      ; clone subsys->[0x80] into puVar2[0xc] (+0x60) via vt[3] (slot 3)
+      *(u32*)(puVar2 + 0xe) = 0            ; u32 at +0x70 = 0
+      *puVar2 = &PTR_LAB_7105230f18        ; **OVERWRITE with DERIVED vtable**
+      ; dispatch:
+      (**(code **)(*(long *)*plVar4 + 0x18))(*plVar4, puVar2)  ; elem->vt[3](elem, packet)
+    }
+    plVar4++
+
+Key correction: **DAT_7105230f18 is the derived class vtable pointer**, not
+a separate type tag. The visitor does the canonical C++ constructor-chain
+(base vtable -> sub-objects -> derived vtable overwrite) before dispatching.
+
+## DAT_7105266f80 (base class vtable)
+  +0x00: FUN_7103812f50         ; destructor (resets vptr to base, destroys sub-obj at +0x60, then +0x30)
+  +0x08: DAT_7103812fe0         ; (data — deleting destructor table entry)
+  +0x10: __cxa_pure_virtual     ; ABSTRACT METHOD — this is a polymorphic base
+  +0x18: DAT_7103812ff0
+  ...
+
+=> Base class is **abstract** (at least one pure virtual at slot 2). Many derived
+   classes exist. 20+ factories build instances of derived variants.
+
+## Sibling derived-class factories (all build PTR_FUN_7105266f80-based packets)
+  FUN_71035b91b0  -> derived vtable PTR_FUN_71052313f0, size 0x100
+  FUN_7103819bb0  -> derived vtable PTR_FUN_7105267be8, size 0x80 (throws bad_function_call)
+  FUN_710363f4a0  -> derived vtable PTR_FUN_71052313b8, size 0x4000, stores u64 + bool
+  FUN_7103619080  -> derived vtable PTR_LAB_7105230f18, size 0x60  ; THE VISITOR
+  plus many FUN_710381* factories in the 0x71038100xx-0x71038200xx cluster
+
+=> There are 20+ derived packet classes. This is a LARGE polymorphic command
+   hierarchy — consistent with a command-stream / replay-stream / RPC system.
+
+## Sibling sender — FUN_71037857f0 (the 10-slot broadcast)
+This function is called 10x in main_loop (0x710374bd9c..0x710374bfe8),
+once per slot index 0..9, and it:
+  1. Loads subsystem via `ldr x8, [x28, #0xa90]; ldr x0, [x8]`  (DIFFERENT from Pool B singleton)
+  2. Iterates over 10 slots at param_1+0 (24 bytes each) and param_1+0x330 (8 bytes each)
+  3. When (param_4 & 1) is set, builds a packet via FUN_710363f4a0 +
+     four FUN_710381b* factories and calls `plVar6->vt[3](plVar6, packet)` on each
+  4. plVar6 = *(long **)(param_3 + 8) — a RECEIVER object passed in by main_loop
+  5. Main_loop passes each slot's config block from [0x710593a7c8 + i*0x40] — SAME PAGE
+     as Pool A's 0x710593a510
+
+=> Per-frame, this pushes configured packets to 10 receiver slots. The 10-slot
+   structure matches SSBU's max player count (8 + 2). The use of config blocks
+   from the 0x710593a000 page is the bridge to Pool A's finding.
+
+## Ring-buffer cursors on the receiver's sub-struct (from FUN_710363f4a0)
+  +0x48   byte "dirty" flag
+  +0x50   inline buffer (for small-buffer-optimized allocator sub-object)
+  +0x3f0  cursor advancing by 0xe8 bytes per packet
+  +0x418  cursor advancing by 8 bytes per packet
+  +0x4a0  cursor advancing by 0x10 bytes per packet
+
+=> Three parallel ring-buffer cursors per slot — classic replay/command-stream
+   layout (header ring, index ring, payload ring). This strongly suggests the
+   subsystem is a **ReplayRecorder / CommandStream / SnapshotRing** — exactly
+   what rollback netcode needs as a backing store.
+
+## Element type (the vt[3] receiver in FUN_7103619080)
+Unknown class name, but has:
+  - Byte flag at +0xf1 (enabled gate)
+  - vtable with slot 3 = `void method(this, Packet*)` — probably
+    onTick / writePacket / handleCommand
+  - Owned as `vector<Receiver*>` at subsys->[0x500]/[0x508]
+  - Added/removed dynamically (there's a lifetime manager somewhere)
+
+NOT confirmed as BattleObject / Fighter. Could be any Receiver-interface class.
+
+## Cross-reference with Pool A
+  Pool A's signal: [0x710593a510] — written by game_ldn_initialize directly
+  Pool B's signal: [0x7105336ce8] — written by FUN_71035a4130, called ONLY
+                                    by game_ldn_initialize @ 0x7103744360
+
+Both are written by game_ldn_initialize — **same init path**. They are
+DIFFERENT globals (not the same object). Most likely they are
+**two cooperating subsystems constructed by the same init function**:
+  - Pool A = ldn match state / match runner
+  - Pool B = command-stream broadcaster used by the match-runner
+
+And the 10-slot FUN_71037857f0 sender uses config records at
+[0x710593a7c8 + i*0x40] — from the SAME 4K PAGE as Pool A's 0x710593a510.
+That bridges the two findings: Pool A found the match-runner, Pool B
+found the broadcaster it drives each tick.
+
+VERDICT: Convergence LIKELY but not proven — the two hunting paths
+have converged on ONE init function (game_ldn_initialize) and ONE data
+page (0x710593a000) but different global slots. Round 5 should confirm
+by dumping game_ldn_initialize to see how the two globals relate.
+
+================================================================
