@@ -1138,3 +1138,89 @@ Rollback implication (revised from `main_loop.md` § 6d):
   `FUN_710013be00` (Thread::__init_and_start), `FUN_710013c030` (trampoline),
   `FUN_710013bcb0` (msgq receive), `FUN_710013bc98` (msgq send),
   `FUN_710013bba0` (msgq init), `FUN_710013c200` (Thread::start).
+
+---
+
+## Pool C — DAT_710593a530 match-state transition (CRITICAL CORRECTION)
+
+**TL;DR.** Pool C was asked to find the writer of `DAT_710593a530` (the match-state global that Pool B's breakthrough identified as gating Dispatcher A). After a full static sweep of the `.text` segment using direct binary analysis (because Ghidra's xref index misses code regions the auto-analyzer has not carved into functions), the finding is:
+
+- **Only one static writer exists**, and it writes `0` via `STP XZR, XZR`.
+- **No static writer of the value `3` exists anywhere in `.text`.**
+- **The `== 3` branch in `main_loop` (and in two other readers) is therefore dead under static analysis** — or depends on a runtime write path we cannot see without hardware tracing.
+
+This means Pool B's Dispatcher A lead (still "strongest remaining sim-tick candidate" as of the prior section) is **probably unreachable at runtime**, and the sim-tick hunt should de-prioritize Dispatcher A until dynamic evidence confirms the flag ever holds `3`.
+
+### Why Ghidra's xref said "only 2 reads, no writes"
+
+`mcp__ghidra__get_xrefs_to 0x710593a530` returned only:
+- `0x7103747bf8 in FUN_7103747270` (READ) — the `main_loop` site Pool B found
+- `0x71036552c8` (READ) — in a Ghidra-undefined code region
+
+Ghidra's xref index was incomplete. A **direct binary scan** of all ADRP-based accesses to page `0x710593a000` in the R+X segment revealed **one more reader** and **one writer** that Ghidra didn't index — all three in code regions Ghidra's auto-analyzer has not carved into functions:
+
+```
+READERS (3 total):
+  0x7101f17f7c  LDR W8,  [X8, #0x530]  -- in Ghidra-undefined fn at ~0x7101f17ef0, cmp #3, B.EQ
+  0x71036552c8  LDR W8,  [X8, #0x530]  -- in Ghidra-undefined fn at ~0x7103655274, cmp #3, B.NE
+  0x7103747bf8  LDR W9,  [X8, #0x530]  -- in main_loop FUN_7103747270, cmp #3, B.NE (the known one)
+
+WRITERS (1 total):
+  0x71004467ec  STP XZR, XZR, [X1, #0x40]
+                X1 = ADRP(0x710593a000) + 0x4f0 = 0x710593a4f0
+                --> 8 bytes of zeros at 0x710593a530 and 0x710593a538
+                in Ghidra-undefined fn starting at 0x7100446400
+```
+
+### The one writer is a BSS zeroing ctor from `.init_array`
+
+The function containing `0x71004467ec` starts at `0x7100446400` (nearest prior `RET` + prologue `SUB SP, SP, #0x20 / STP X29, X30, [SP, #0x10]`). It is **not** in Ghidra's function list but it **is** referenced by a dynamic relocation into `.init_array`:
+
+```
+.rela.dyn: reloc at .init_array[0x8a0] -> 0x446400
+```
+
+This is slot **276** (`0x8a0 / 8`) of the 306-entry `.init_array` dynamic relocation table. The function runs **once at program startup** as a global constructor, and the STP at `0x71004467ec` is simply zero-init for a BSS struct rooted at `0x710593a4f0`. The same ctor writes `X8` to `[0x710593a528]` (a sub-pointer), zeros at `[0x710593a530..0x710593a540)`, and later writes a `STLRB` to `[0x710593a540]`. Its total footprint is roughly `0x710593a4f0..0x710593a570`.
+
+**Conclusion: the lone static writer of `DAT_710593a530` is a one-shot BSS clear, not a state transition.**
+
+### The value `3` is never stored at this address by static code
+
+Additional search verified no alternative write paths exist:
+- No instruction stores a register that holds the literal constant `3` to this address via any ADRP-based or pointer-register-based addressing form (checked: `STR W/X`, `STRB`, `STRH`, `STUR W/X`, `STP W/X` off/pre/post-index, `STLR W/X/B`, `STXR W`).
+- No `BL` call passes the address `0x710593a530` in `X0..X7` as an argument register (would indicate a setter helper).
+- No code stores the address `0x710593a530` as a pointer literal into another global (would indicate indirect writes via a stored pointer).
+- The only `BL` found with an argument register in the nearby range `[0x710593a500, 0x710593a540]` is `BL 0x710353d000` at `0x7103741c90` with `X0 = 0x710593a520` — but `FUN_710353d000` is a `je_aligned_alloc`-backed factory that allocates a 0x260-byte object, writes `3` at **the heap object's `+0x40`** (not at `[X0 + 0x10]`), and stores the heap pointer via `*param_1 = __s` (so `[0x710593a520]` gets a heap pointer, not the value `3`).
+
+### State machine — no state machine
+
+Because no static code writes a non-zero value to `DAT_710593a530`, there is no state diagram to document. The variable is BSS (starts at 0), zeroed once at ctor time, and read in three places that all test `== 3`. All three test sites therefore statically never take the "match-active" branch.
+
+### Atomicity
+
+Moot, since there are no non-zero writers. For completeness: the single writer uses `STP` (plain, non-release). The readers all use plain `LDR W`. No exclusive / release / acquire forms are used against this address.
+
+### Implications for the sim-tick hunt and rollback
+
+1. **Pool B's Dispatcher A should be demoted from "strongest remaining sim-tick candidate".** The per-element vtable walk at `main_loop` lines 543..572 is gated on `DAT_710593a530 == 3`, a branch that under static analysis is never taken. Either:
+   - (a) The branch is dead code — plausible; it could be a debug/devkit path left in the retail binary.
+   - (b) The variable is written at runtime via a mechanism invisible to static analysis (IPC, devkit override, memory-mapped register, or a code path that composes the address in an unusual way that defeats ADRP-propagation scanning).
+2. **The match-active state machine is somewhere else.** Pool C could not find "the writer of 3 on match start" because it does not exist at this address. Candidates for the real match-state flag should be searched among the other `0x710593a___` region globals that DO receive non-zero static writes — e.g. the byte-store cluster around `+0x540..+0x5a0`, or the integer at `+0x534` which receives function-return values at `0x7103741bb4` and `0x71037472d0`.
+3. **Rollback arm/disarm signal is still unknown.** This was the "two-for-one" ask in the pool-C assignment; the answer is that `DAT_710593a530` is NOT the signal. A next pass should either (a) run GDB against eden/yuzu, set a watchpoint on `0x710593a530`, and enter/exit a match to see whether it is ever written at runtime, or (b) pick a different candidate for "match-active flag" by enumerating readers of the `0x710593a___` block and filtering for ones that branch on a non-zero comparison AND have writers that store non-zero values.
+
+### Ghidra undefined-code observation
+
+All three access sites that Ghidra's xref missed (`0x7101f17f7c`, `0x71036552c8`, `0x71004467ec`) lie in code regions the auto-analyzer has **not** carved into functions. `mcp__ghidra__get_function_by_address`, `decompile_function_by_address`, and `disassemble_function` all return "no function" at those addresses and at their nearest-prior function starts (`0x7101f17ef0`, `0x7103655274`, `0x7100446400`). This is the same class of Ghidra-DB gap Pool B hit on Dispatcher B's writer at `0x7103752f08..0x7103753fbf`. Logged to `data/ghidra_cache/manual_extraction_needed.md`.
+
+### Methodology note for next pool
+
+The right tool for "who writes this global" when Ghidra's xref index is incomplete is **direct ADRP-propagation scanning on the raw `.text` bytes**. The steps:
+
+1. Parse the ELF program headers to locate the R+X segment.
+2. Walk 4 bytes at a time. For each `ADRP` whose computed target page is within ±4 MB of the variable, start a small forward data-flow: track `{ADRP_Rd: page_base}` and propagate through `MOV Xd, Xn`, `ADD Xd, Xn, #imm` (both shifts), `SUB Xd, Xn, #imm`. Stop on `RET` or unconditional `B`.
+3. At every memory instruction, check whether its `Rn` is currently tracked and whether `(tracked_val + scaled_imm)` hits the target.
+4. Cover all store forms: `STR W/X`, `STRB/H`, `STUR W/X`, `STP W/X` off/pre/post, `STLR W/X/B`, `STXR W/X`, and the matching loads for read-tracking.
+5. Also check every `BL` where an argument register `X0..X7` holds the exact target (setter-helper pattern) and every store where the source register currently holds the target (pointer-init pattern).
+
+For the record, Pool C's scanner found 3 reads, 1 write, 0 setter-helper `BL` calls, 0 pointer-init stores, searching the full ~60 MB `.text`. Total scan time ~10 s per query. The script lived in the pool-c scratch buffer (not committed); a next pool that wants a reusable version should write it to `tools/xref_bin_scan.py`.
+

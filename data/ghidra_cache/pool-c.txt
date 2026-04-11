@@ -829,3 +829,119 @@ SIM TICK IS NOT A DELEGATE.
   - All known pead::Delegate2 instantiations target pia network threads.
 Rollback resim must call sim tick directly in a loop — it cannot be
 posted as a delegate (nothing would pop it).
+
+================================================================================
+=== Pool C session — DAT_710593a530 writer hunt ===
+================================================================================
+
+Task: find writer(s) of DAT_710593a530, the match-state global Pool B's
+breakthrough identified as gating Dispatcher A inside main_loop.
+
+Method: Ghidra's get_xrefs_to returned only 2 READs (main_loop + one
+Ghidra-undefined site). Because Ghidra's auto-analyzer has gaps in this
+binary, I switched to direct binary scanning of the raw .text bytes.
+
+--- Binary scan results ---
+
+READERS (3 total, all test == 3):
+  0x7101f17f7c  LDR W8, [X8, #0x530]  cmp #3, B.EQ  in Ghidra-undefined fn ~0x7101f17ef0
+  0x71036552c8  LDR W8, [X8, #0x530]  cmp #3, B.NE  in Ghidra-undefined fn ~0x7103655274
+  0x7103747bf8  LDR W9, [X8, #0x530]  cmp #3, B.NE  in main_loop FUN_7103747270 (known)
+
+WRITERS (1 total, writes 0):
+  0x71004467ec  STP XZR, XZR, [X1, #0x40]
+                X1 = ADRP(0x710593a000) + 0x4f0 = 0x710593a4f0
+                -> 8 bytes of zeros at 0x710593a530 and 0x710593a538
+                in Ghidra-undefined fn at 0x7100446400
+
+--- Writer function is a .init_array ctor ---
+
+.rela.dyn has reloc .init_array[0x8a0] -> 0x446400
+  => slot 276 of 306-entry .init_array
+  => runs once at program startup as a global ctor
+
+Disassembly of the write site:
+  0x71004467cc: ADRP X1, #0x710593a000
+  0x71004467d0: ADD X1, X1, #0x4f0
+  ...
+  0x71004467e4: STR X31, [X8, #0x0]
+  0x71004467e8: STR X8, [X1, #0x38]      # 0x710593a528 = some ptr (X8 from stack)
+  0x71004467ec: STP X31,X31, [X1, #0x40] # 0x710593a530 = 0, 0x710593a538 = 0
+  0x71004467f0: LDP X29,X30, [SP, #0x10]
+  0x71004467f4: ADD SP, SP, #0x20
+  0x71004467f8: RET
+
+The function (0x7100446400..~0x71004467f8) also writes other offsets in the
+struct rooted at 0x710593a4f0 — +0x528, +0x534, +0x540, +0x570 etc. get
+written in earlier instructions. Full listing of offsets touched by stores
+whose base is computed from ADRP(0x710593a000) in this function is in the
+sim_tick_hunt append.
+
+--- Value 3 is never stored at 0x710593a530 ---
+
+Additional searches ruled out alternative write paths:
+- No store of a register holding literal 3 via any addressing form
+- No BL call passing 0x710593a530 in X0..X7 (setter-helper pattern)
+- No code stores the address 0x710593a530 as a pointer literal into another global
+- The one BL with a near-target arg (0x7103741c90 with X0=0x710593a520) calls
+  FUN_710353d000, a je_aligned_alloc-backed 0x260-byte factory that writes 3
+  at the HEAP object's +0x40, not at [X0+0x10]
+
+--- Decompile: FUN_710353d000 (factory, red herring) ---
+
+void FUN_710353d000(undefined8 *param_1,long *param_2,undefined4 param_3,
+                    uint param_4,char *param_5,undefined8 param_6)
+{
+  __s = je_aligned_alloc(0x10, 0x260);   # heap alloc
+  if (!__s && DAT_7105331f00) {
+    # OOM retry via global retry handler at 0x7105331f00
+    # this is the resource-manager OOM handler — same one used by res mgr
+    ...
+    __s = je_aligned_alloc(0x10, 0x260);
+  }
+  memset(__s, 0, 0x260);
+  __s[6] = 0;
+  *(u32*)(__s + 8) = 3;                  # <-- 3 is written at HEAP+0x40
+  ...
+  *__s = &PTR_FUN_710522e9f0;             # vtable
+  *param_1 = __s;                         # store heap ptr to caller's slot
+  ...
+}
+
+The "3" written inside the factory is the initial value of some object field
+(vtable slot index? state enum?). It goes to the heap, not to 0x710593a530.
+
+--- Caller of FUN_710353d000 at 0x7103741c60 ---
+
+  0x7103741c60: ADRP X8, #0x710593a000
+  0x7103741c64: ADD X8, X8, #0x4f0       # X8 = 0x710593a4f0
+  0x7103741c6c: ADD X0, X8, #0x30        # X0 = 0x710593a520  <-- param_1
+  0x7103741c70: MOVZ W2, #0x5            # param_3 = 5
+  ...
+  0x7103741c90: BL 0x710353d000
+
+So FUN_710353d000 writes to [0x710593a520] (heap ptr), not to 0x710593a530.
+
+--- Conclusions ---
+
+1. DAT_710593a530 is BSS, zeroed once at ctor time, and never written
+   non-zero by any static code path.
+
+2. All three readers test == 3 but under static analysis the branch is never
+   taken. This is either dead code or a runtime-only code path.
+
+3. Pool B's Dispatcher A ("strongest remaining sim-tick candidate") is
+   probably unreachable at runtime under static analysis. Demote until
+   dynamic evidence confirms otherwise.
+
+4. The match-active flag, if it exists, is elsewhere. Good candidates to
+   search next:
+   - DAT_710593a534 (integer, receives non-zero writes from two sites)
+   - The byte-store cluster at +0x540..+0x5a0 (many writers)
+   - Globals under DAT_7105331fxx (resource-mgr block, known to have match
+     lifecycle state based on Pool B's Dispatcher B downgrade investigation)
+
+5. Pool C's assignment ("find writer of DAT_710593a530") is functionally
+   impossible: the writer of 3 does not exist statically. The assignment
+   should be re-scoped as "find the real match-state flag" for the next
+   session.
