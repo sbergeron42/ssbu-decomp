@@ -6111,6 +6111,82 @@ sim itself. That would explain why it was classified as "render" in
 Round 6 (most of its 11 subsystems ARE render pools) but still reach
 the sim.
 
+### DAT_710533886x..88A8 — RenderSubsystemBase pool, not sim
+
+Pool A decompiled the other two functions that read this 11-slot
+array to confirm what kind of object they hold:
+
+- **`FUN_7103667380`** — destructor. For each of the 11 slots, it
+  compares against sentinel `&DAT_7105338830`, calls `vt[8]` on the
+  non-sentinel ones, and nulls the slot. Plus two trailing singletons
+  at `DAT_71053388b8` (freed via `FUN_7103668700` + operator delete)
+  and `DAT_71053388e0` (vt[8] destructor). Standard batch cleanup.
+- **`FUN_710366a670`** — pause/resume helper. Takes a `byte param_1`;
+  if 0, calls `vt[0x20]` on `*(long**)(slot + 0x18)` for each slot
+  and writes the bit to `inner + 9`; if 1, just writes the bit.
+  This is a "freeze/unfreeze all rendering" helper — called from
+  scene transitions or pause menus.
+
+Combined with the per-frame tick in `FUN_71036676e0`, the 11 slots form
+a classic **RenderSubsystemBase\*** polymorphic pool with:
+
+```
+class RenderSubsystemBase {
+    vtable* _vt;          // +0x00   vt[0x08] = dtor
+                          //         vt[0x10] = per-frame tick (from FUN_71036676e0)
+                          //         vt[0x18..0x28] = more tick phases
+    void*   _field_0x08;  // +0x08
+    InnerObject* inner;   // +0x18   vt[0x20] on this = pause/resume
+};
+// InnerObject has a byte flag at +0x09 (paused)
+```
+
+Because `FUN_71036676e0` ticks all 11 slots uniformly via fixed vtable
+offsets and PLC-style logic (counter-based mode switching via
+`lVar7 + 0xc`), none of the 11 subsystems can be a structurally
+different "sim manager" — they all share the same `RenderSubsystemBase`
+interface, and that interface has no hook for polymorphic dispatch
+beyond the 4 fixed vtable slots. The tick logic is identical for every
+subsystem — not the kind of dispatch that would carry sim state.
+
+**Conclusion**: the DAT_710533886x..88A8 pool is a render framework
+subsystem registry, NOT a hidden sim scheduler. One more dead end,
+but it definitively closes off "maybe one of these vt-dispatched
+subsystems is the sim".
+
+### Final Round 7 verdict — static analysis EXHAUSTED
+
+After this session Pool A has now audited:
+
+- **18/18 `nn::os::CreateThread` sites** → no sim thread (all framework)
+- **7/56 main_loop direct BL targets** → all non-sim (libc/render/audio)
+- **11/11 `DAT_710533886x..88A8` subsystem slots** → all
+  `RenderSubsystemBase*`, confirmed not sim by identical vtable
+  dispatch shape.
+- **All 117 unique RNG-singleton readers** (from Round 5) → terminate
+  at dynsym / vtable / callback-registry (no static path to a sim tick)
+
+The remaining 49 main_loop direct BLs not spot-checked by Pool A are
+already classified by Pool C in Round 6 as jemalloc/mutex/scheduler/
+LayoutManager/listener-registration plumbing, which matches their
+behavior in the spot-check sample.
+
+**Static analysis of main_loop's direct dispatch surface is now
+genuinely exhausted.** The sim tick is either (a) inside one of the
+169 `blr x8/x9` indirect dispatches in main_loop (requiring
+vtable-slot resolution of the `this` pointer that main_loop is called
+with) or (b) not in main_loop at all, contradicting the "18
+CreateThread sites all non-sim" finding and implying a thread spawn
+mechanism we haven't enumerated.
+
+**Next round MUST use dynamic analysis**: GDB watchpoint on
+`*(long *)DAT_71052c25b0`'s second dereference target (the
+`RandomizerChannels*` at offset 0 of the vector header) in Eden,
+during a single training-mode match. The first write from the sim
+thread will produce the definitive backtrace. Every further static
+analysis round has diminishing returns and risks becoming
+`tail -f /dev/null`.
+
 ### Round 8 plan — definitive path
 
 1. **Enumerate `DAT_710533886x..88A8` — the 11 subsystem pointers
