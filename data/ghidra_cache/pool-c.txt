@@ -1689,3 +1689,95 @@ because an unrelated init function zeroes a struct at 0x7105334638 whose
 `+0x98` field lands at 0x71053346d0. The scanner is correct — this is a
 genuine write to that address — but the address itself was never meant to
 be the target. The real target is 0x710593a6d0.
+
+=== Round 10: ItemManager + BossManager struct sizes (disasm window from FUN_7101344cf0) ===
+Tool: python tools/disasm_window.py (new, writes AArch64 insn window via capstone)
+
+--- ItemManager (singleton at DAT_71052c3070) ---
+
+Store site: 0x7101349538  str x19, [x20, #0x70]   ; x20 = adrp 0x71052c3000
+Containing fn: FUN_7101344cf0 (BattleObjectManager init, 31 KB, too large for Ghidra MCP)
+
+Allocation window (0x71013494c8..0x7101349538):
+
+  0x71013494c8  adrp x20, 0x71052c3000
+  0x71013494cc  ldr  x19, [x20, #0x70]           ; current ItemManager*
+  0x71013494d0  cbnz x19, skip                   ; already built → skip
+  0x71013494d4  mov  w1, #0xd8                   ; SIZE = 0xd8
+  0x71013494d8  mov  w0, #0x10                   ; ALIGN = 0x10
+  0x71013494dc  bl   je_aligned_alloc            ; first attempt
+  0x71013494e0  mov  x19, x0
+  0x71013494e4  cbnz x0, ctor                    ; success → ctor
+  ; OOM retry via DAT_7105331f00 vt[+0x30]
+  0x71013494ec  ldr  x0, [DAT_7105331f00]
+  0x71013494f0  cbz  x0, null                    ; no handler → null out
+  ...  set up &err/&size on stack  ...
+  0x7101349510  blr  x8                          ; handler->vt[0x30](&err, &size)
+  0x7101349514  tbz  w0, #0, null                ; purge failed → null
+  0x7101349518  mov  w1, #0xd8
+  0x710134951c  mov  w0, #0x10
+  0x7101349520  bl   je_aligned_alloc            ; retry
+  ...
+  0x7101349530  mov  x0, x19
+  0x7101349534  bl   0x71015d2260                ; ItemManager ctor helper
+  0x7101349538  str  x19, [x20, #0x70]           ; *DAT_71052c3070 = x19
+
+=> ItemManager root struct size = **0xD8 = 216 B**, align 0x10.
+=> Classic alloc_with_oom_retry pattern (see CLAUDE.md § Resource Service Guidelines).
+=> Known field max offset in include/app/ItemManager.h is +0x30 (active_end pointer),
+   well under 0xD8. Room for ~0xA8 = 168 B of unknown fields past +0x30.
+
+--- BossManager (singleton at DAT_71052b7ef8) ---
+
+Two-level allocation: outer wrapper (0x10 B) holds pointer to inner state (0x238 B).
+
+(1) Outer BossManager alloc (0x710134b16c..0x710134b1b8):
+
+  0x710134b160  adrp x19, 0x71052b7000
+  0x710134b164  ldr  x20, [x19, #0xef8]          ; current BossManager*
+  0x710134b168  cbnz x20, skip                   ; already built → skip
+  0x710134b16c  mov  w0, #0x10                   ; ALIGN = 0x10
+  0x710134b170  mov  w1, #0x10                   ; SIZE  = 0x10
+  0x710134b174  bl   je_aligned_alloc
+  ; ... OOM retry path ...
+  0x710134b1b4  mov  w1, #0x10
+  0x710134b1b8  bl   je_aligned_alloc            ; retry
+
+(2) Inner state alloc (0x710134b1d0..0x710134b220):
+
+  0x710134b1c8  adrp x8, 0x7104f73000
+  0x710134b1cc  add  x8, x8, #0xb60               ; outer vtable = PTR 0x7104f73b60
+  0x710134b1d0  mov  w1, #0x238                   ; SIZE = 0x238
+  0x710134b1d4  mov  w0, #0x10                    ; ALIGN = 0x10
+  0x710134b1d8  str  x8, [x20]                    ; BossManager+0 = vtable
+  0x710134b1dc  bl   je_aligned_alloc
+  ; ... OOM retry path ...
+  0x710134b220  bl   je_aligned_alloc             ; retry
+
+(3) Sub-sub alloc (0x710134b230..0x710134b278): 0x30 B triple-pair buffer
+   Stored at BossManagerInner+0x10  (stp x8, x21 [x21, #0x10]).
+   Contents: three pairs of s32 constants { 0x18e,0x16f / 0x188,0x180 / 0x175,0x172 }
+   — some kind of kind-id lookup, not per-frame state.
+
+(4) Field init (0x710134b280..0x710134b438): large block of stp/str zeroing on x21.
+   Highest observed offset: x21 + 0x230 (str xzr).
+   Also: x21 + 0x1f8, +0x210, +0x218, +0x220, +0x228 all written.
+   Consistent with alloc size 0x238.
+
+(5) Wiring (0x710134b43c, 0x710134b440):
+   0x710134b43c  str  x21, [x20, #8]              ; BossManager+0x8 = Inner
+   0x710134b440  str  x20, [x19, #0xef8]          ; *DAT_71052b7ef8 = BossManager*
+
+=> BossManager (outer wrapper) size = **0x10 = 16 B**, align 0x10.
+   Matches include/app/BossManager.h exactly: { u8[8]; BossManagerInner* inner; }
+=> BossManagerInner size = **0x238 = 568 B**, align 0x10.
+   Existing header documented fields up to +0x164 ("≥ 0x170 B"); real alloc is 0x238.
+   Room for ~0xC8 = 200 B of additional fields past +0x164 (writes observed up to +0x230).
+=> One sub-object of 0x30 B hanging off Inner+0x10, read-mostly (static ids).
+
+Walker snapshot policy:
+- Snapshot *DAT_71052c3070 for 0xD8 bytes (ItemManager root).
+- Snapshot *DAT_71052b7ef8 for 0x10 bytes (BossManager outer wrapper).
+  Then follow wrapper+0x8 and snapshot 0x238 bytes (BossManagerInner).
+  Then follow Inner+0x10 and snapshot 0x30 bytes (kind-id triple-pair).
+Total BossManager chain: 0x10 + 0x238 + 0x30 = 0x278 = 632 B.
