@@ -2,67 +2,57 @@
 
 ## Model: Opus
 
-## Task: ROLLBACK — productize binary xref scanner + re-examine phase-6/7 dead-end candidates
+## Task: ROLLBACK Round 4 — investigate FUN_71035c13d0 (second strongest candidate) + cross-validation
 
-## Priority: HIGH — infrastructure work that unblocks future hunts + parallel angle on the sim tick
+## Priority: HIGH — backup angle in case Pool A and Pool B's leads converge or both fail
 
 ## Context
-Read `docs/rollback/sim_tick_hunt.md` first for full context. Last session you built an inline ADRP-propagation scanner that found a writer Ghidra's xref index missed (the `.init_array` BSS clearer for `DAT_710593a530`). Pools A and B both need this tool now and are reimplementing it inline.
+Read `docs/rollback/sim_tick_hunt.md` first. Last round you found that `FUN_71035c13d0` is the **second strongest sim-tick candidate** — a 1048-byte function with 7 indirect dispatches in an observer-pattern double-broadcast over weak_ptr lists. Pool A and Pool B are working on the strongest candidate (`FUN_7103619080` + `DAT_710593a510`) this round. Your job is to:
 
-You ALSO have ground-truth reason to revisit the phase-6/7 candidates Pool B classified as dead ends in pass 1 — Pool B's first-pass classification used a BL-only sweep, which is the same blind spot that hid the indirect dispatchers in main_loop itself. Some of those "dead end" classifications may have missed indirect dispatches.
+1. **Decompile FUN_71035c13d0 in detail** so we have a fallback if Pool A/B's leads don't converge
+2. **Cross-validate** Pool A and Pool B's findings if they finish before you do (read their committed diffs)
 
 ## What To Do
 
-### Part 1 — Productize the binary xref scanner (`tools/xref_bin_scan.py`)
+### 1. Deep-dive on FUN_71035c13d0
+You already noted last round that this function dispatches:
+- `vtable[3]`, `vtable[2]`, `vtable[7]`, `vtable[8]` through weak-ref `lock()`
+- It's a **double observer broadcast over weak_ptr lists**
 
-Write a reusable Python tool that takes:
-- An address or address range to find readers/writers for
-- An optional ELF path (default: `data/main.elf`)
-- An optional filter (`--writers-only`, `--readers-only`, `--non-zero-writes`, `--called-as-arg`)
+Now decompile the FULL function and answer:
+- What's the type of param_1? (the subsystem holding the observer lists)
+- What are the two lists being walked? Where do they live in param_1?
+- What are the listeners observing? (event objects? state changes? per-frame ticks?)
+- The `weak_ptr::lock()` pattern means listeners can be auto-removed when their owner dies — this is consistent with "subscribers register and unsubscribe over a match lifecycle"
+- Look for any field touch on the dispatched objects that resembles fighter state mutation
 
-The tool should:
-1. Parse the ELF program headers to locate the R+X segment
-2. Walk 4 bytes at a time
-3. For each `ADRP` whose computed target page is within ±4 MB of the variable, start a small forward data-flow:
-   - Track `{ADRP_Rd: page_base}`
-   - Propagate through `MOV Xd, Xn`, `ADD Xd, Xn, #imm` (both shifts), `SUB Xd, Xn, #imm`
-   - Stop on `RET` or unconditional `B`
-4. At every memory instruction, check whether its `Rn` is currently tracked and whether `(tracked_val + scaled_imm)` hits the target
-5. Cover all store forms: `STR W/X`, `STRB/H`, `STUR W/X`, `STP W/X` off/pre/post, `STLR W/X/B`, `STXR W/X`, and matching loads
-6. Also check every `BL` where an argument register `X0..X7` holds the exact target (setter-helper pattern) and every store where the source register holds the target (pointer-init pattern)
+### 2. Find the caller
+- `FUN_71035c13d0 ← FUN_7103747270 @ 0x710374af6c` — that's main_loop
+- Decompile the load of x0 immediately before the BL at `0x710374af6c`
+- What subsystem owns this observer dispatcher?
+- Same question as Pool B is asking about FUN_7103619080's caller
 
-Output format:
-```
-WRITERS:
-  0xADDRESS  STORE_FORM  in fn 0xFN_START  (FUN_NAME or undefined)
-  ...
-READERS:
-  0xADDRESS  LOAD_FORM   in fn 0xFN_START  (FUN_NAME or undefined)
-  ...
-SETTER-HELPER BL CALLS:
-  0xADDRESS  callee=0xCALLEE  arg=Xn
-  ...
-POINTER-INIT STORES:
-  0xADDRESS  source register held target
-  ...
+### 3. Cross-validate Pool A and Pool B (if they commit before you finish)
+After your initial deep-dive, check if Pool A and Pool B have committed:
+```bash
+git log --oneline master..worker/pool-a
+git log --oneline master..worker/pool-b
+git fetch origin && git log --oneline master..origin/master  # if pushed
 ```
 
-Test it against `0x710593a530` and verify it produces the same results Pool C found last session (3 reads, 1 writer in `.init_array`).
+If they have findings, read them and check:
+- Does Pool B's `FUN_7103619080` caller object match Pool A's `*DAT_710593a510` runner?
+- If yes: **converged** — the sim tick is identified
+- If no: which one is more likely to actually be on a per-frame path? Cast a tiebreak vote based on your observer/visitor pattern context
+- Does FUN_71035c13d0 share any state with either of those? (Same singleton? Same vtable address? Same element type?)
 
-### Part 2 — Re-examine the four phase-6/7 candidates
+### 4. Verdict
+Rank the three candidates by likelihood of being the sim tick:
+1. FUN_7103619080 (Pool B working on this)
+2. FUN_71035c13d0 (your task)
+3. ??? (any other lead you spot)
 
-Pool B's pass 1 classified these as dead ends using BL-only sweeps:
-- `FUN_7103593c40` (792 B, ring buffer advance)
-- `FUN_71035c13d0` (1,048 B, graphics observer pattern)
-- `FUN_71036186d0` (1,188 B)
-- `FUN_7103619080` (432 B)
-
-Re-examine each one specifically for **indirect function-pointer dispatches** (the same blind spot that hid Dispatcher A in main_loop):
-- Look for `LDR Xn, [Xm, #imm]; BLR Xn` patterns (vtable dispatch through a loaded pointer)
-- Look for `LDR Xn, [pointer]; BLR Xn` patterns (function pointer through a global)
-- For each indirect dispatch, document what's being called and on what
-
-If any of the four was misclassified due to indirect dispatch, that's the breakthrough.
+Document your ranking and the evidence.
 
 ## Stop-and-document rule
 If `mcp__ghidra__*` errors/timeouts:
@@ -71,32 +61,36 @@ If `mcp__ghidra__*` errors/timeouts:
 
 ## Output
 
-1. New tool: `tools/xref_bin_scan.py`
-2. Append to `docs/rollback/sim_tick_hunt.md`:
+Append to `docs/rollback/sim_tick_hunt.md`:
 
 ```markdown
-## Pool C — phase-6/7 indirect-dispatch re-examination (next-pass)
+## Pool C — Round 4: FUN_71035c13d0 deep dive + cross-validation
 
-### tools/xref_bin_scan.py
-Documented and tested. Pools A and B should switch to using it next session.
-Test result on 0x710593a530: matches manual scan from previous session.
+### FUN_71035c13d0 detailed analysis
+- Subsystem owner type: [class name / placeholder]
+- Observer list 1: [contents / what's being observed]
+- Observer list 2: [contents / what's being observed]
+- Per-frame fighter state mutation? [YES / NO / INCONCLUSIVE]
 
-### Phase-6/7 indirect dispatch sweep
-| Function | Indirect dispatches found | What gets called | Verdict |
-|----------|---------------------------|------------------|---------|
-| FUN_7103593c40 | N | ... | dead end / interesting |
-| FUN_71035c13d0 | N | ... | dead end / interesting |
-| FUN_71036186d0 | N | ... | dead end / interesting |
-| FUN_7103619080 | N | ... | dead end / interesting |
+### Caller in main_loop @ 0x710374af6c
+- Subsystem object: [global / chain]
+- Same as FUN_7103619080's caller? [YES / NO]
 
-### Most promising
-[function address + reason]
+### Cross-validation
+- Pool A finding: [summary]
+- Pool B finding: [summary]
+- Converged? [YES — sim tick identified / NO — leads diverge]
+
+### Final ranking (most → least likely sim tick)
+1. ...
+2. ...
+3. ...
 ```
 
 ## Quality Rules
-- `tools/xref_bin_scan.py` should be a clean Python script (no shell pipes)
 - NO `FUN_` names in committed src/ code
-- Documentation is the primary deliverable for the research portion
+- Cast density under 10%
+- Documentation is the primary deliverable
 
 ## Build
 ```bash
