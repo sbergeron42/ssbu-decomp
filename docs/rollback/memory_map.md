@@ -186,20 +186,92 @@ if (entry->id == effect_id && entry->flag_0x2d7 == 0) {
 ```
 
 - **Record stride: 0x300 = 768 B** per particle.
-- **Index encoding**: high byte of a 32-bit effect handle (`id >> 24`), so **max 256 entries**.
+- **Pool capacity: 128 entries** (corrected 2026-04-11). Previous "max 256" estimate was derived from index encoding only (`id >> 0x18` spans 0..255); the actual allocation inside `FUN_710055d080` is 128 × 0x300 = 0x18000 B backed by a single `memset(base, 0, 0x18000)`.
+- **Index encoding**: high byte of a 32-bit effect handle (`id >> 24`). Runtime bounds-check must reject indices ≥ 128 (not yet located, but the array itself only holds 128 slots).
 - **Validation**: `*(entry + 4) == effect_id` full u32 — stale handles fail this check, so the pool is a classic generational slab.
-- **Known fields per entry** (incomplete):
-  - `+0x00` (u32) status/type tag (set to `1` at teardown)
-  - `+0x04` (u32) full handle id (validation key)
-  - `+0x2d2` (u8) visibility flag
-  - `+0x2d4` (u8) active-mask-full flag
-  - `+0x2d7` (u8) teardown-in-progress flag
+- **Known fields per entry** (refined 2026-04-11 from ctor per-record init loop in `FUN_710055d080 @ 0x710055d27c..0x710055d450`):
+  - `+0x00`  u32 status/type tag (zero at init, set to `1` at teardown)
+  - `+0x04`  u32 full handle id (validation key; zero at init)
+  - `+0x10`  u64 (zero at init — likely ptr)
+  - `+0x18`  u64 (zero at init)
+  - `+0x20`  u64 (zero at init — likely ptr)
+  - `+0x38`  u64 pair (stp xzr,xzr) — two ptrs
+  - `+0x50`  s32 × 2 = `-1, -1` (two sentinel ids/indices)
+  - `+0x58`  u64
+  - `+0x60`  u64 pair (stp xzr,xzr)
+  - `+0x80..0x9f` vec4 loaded from static default (`&DAT_7104467ca0`)
+  - `+0x90..0xaf` vec4 loaded from static default (`&DAT_7104469360`)
+  - `+0x190` u64
+  - `+0x1d8` s32 = `-1`
+  - `+0x1e0, +0x1e8` (u64 ptr, s32 = `-1`) pair — start of 5-slot sub-table
+  - `+0x1f0, +0x1f8` same pair
+  - `+0x200, +0x208` same pair
+  - `+0x210, +0x218` same pair
+  - `+0x220, +0x228` same pair (ends at +0x230)
+  - `+0x2c4`  u32 (zero at init)
+  - `+0x2d2`  u8 visibility flag (set during teardown in `FUN_710260b9b0`)
+  - `+0x2d4`  u8 active-mask-full flag
+  - `+0x2d7`  u8 teardown-in-progress flag
+  - `+0x2e0`  u64 self-ref? Stored as `x20 + 0x2e8` each iteration
+  - `+0x2e8..+0x2f0` u64 pair
+  - `+0x2f0`  u64 (zero at init)
+  - Record ends at `+0x300`.
 
-**Upper-bound pool size: 256 × 0x300 = 786,432 B ≈ 768 KB worst case.** Realistic mid-match usage is probably 30–80 active particles, i.e. 23–60 KB of *active* records, but the whole 768 KB slab is the addressable region a rollback snapshot must handle if we choose to copy the slab wholesale. Selective snapshotting using the generation key lets us skip dead entries cheaply.
+**Pool footprint: 128 × 0x300 = 0x18000 = 98,304 B ≈ 96 KB.** Realistic mid-match usage is probably 30–80 active particles. Selective snapshotting using the generation key in `+0x04` lets us skip dead entries cheaply. Whole-slab copy is 96 KB, not 768 KB as previously feared.
 
-There is a separate, small **fixed-5-entry secondary effect table at `DAT_7105333948`** (stride 0x1b0, hard cap `idx <= 4`, total **2,160 B**) that lives directly in `.data` — no double-deref. Same validation pattern (`*(entry+0) == id`) and similar flag fields. Likely a reserved slot pool for stage/HUD effects; negligible for rollback but include it for completeness.
+### EffectManager head struct — Round 10 (2026-04-11)
 
-**Still unknown**: EffectManager body layout at `*DAT_7105333920` *before* the particle array — whether the first field is just the array base or whether the manager has a head struct of its own; whether there are secondary arrays (sound FX, trail meshes) behind adjacent singleton slots `DAT_71053339xx`.
+**Recovered** from the ctor at `FUN_710055d080` (sole non-shutdown writer of `DAT_7105333920`; second writer at `FUN_71022cd350 @ 0x71022d1ef0` not inspected but is likely a re-init or null-out path).
+
+**Singleton indirection is two-level** — previous "single deref" comment was wrong. The ctor allocates an 8-byte heap slot and stores the slot's address into `DAT_7105333920`:
+
+```
+710055d140: mov  w0, #0x10          ; align = 16
+710055d144: mov  w1, #0x8           ; size  = 8
+710055d148: bl   je_aligned_alloc   ; x0 = slot (8 B pointer holder)
+... stored at [sp, #0x68] then below: [x8, #0x920] = slot ...
+710055d1a0: mov  w0, #0x10          ; align = 16
+710055d1a4: mov  x1, #0x19890       ; size  = 104,592 B
+710055d1a8: bl   je_aligned_alloc   ; x27 = EffectManager*
+...
+710055da70: str  x27, [x9]          ; *slot = EffectManager*
+710055da74: str  x9,  [x8, #0x920]  ; DAT_7105333920 = &slot
+```
+
+Access pattern is therefore `(*(EffectManager**)*DAT_7105333920)`. Existing code that writes `lVar9 = *lib::Singleton::instance_` is reading the 8-byte slot (one deref); a second deref gives the EffectManager body. The particle-teardown code in `FUN_710260b9b0` uses only one deref — **which means `lib::Singleton::instance_` labels the slot allocation itself, and one deref of the slot gives the EffectManager body**. Rollback walker must chase both pointers.
+
+**Body layout — the bookkeeping is a TRAILER, not a header.** The 0x19890-byte allocation is organized as:
+
+| Offset | Size | Region | Contents |
+|--------|------|--------|----------|
+| `+0x00000` | `0x18000` (96 KB) | **primary particle pool** | 128 × 0x300 records. First `memset(base,0,0x18000)` zeros the whole region; per-record init loop writes default fields described in §5 above. |
+| `+0x18000` | `0x013b0` (5040 B) | **secondary record array** | 30 × `0xa8` records. Zeroed by `memset(base+0x18000,0,0x13b0)` then initialized by a second per-record loop at `0x710055d4dc..0x710055d53c` using stride `0xa8` and counter `-0x13b0 += 0xa8` (30 iters). Only one store inside the loop uses a nonzero value (`x14 = 0xffffff00ffffff`, a mask constant) — the rest are `str xzr`, so these are mostly pointer/state slots. **Purpose unknown** — candidates: emitter table, GPU command buffer list, or trail-mesh handles. |
+| `+0x193b0` | `0x004e0` (1248 B) | **global head struct** | Scattered non-zero field stores at explicit offsets `0x193b0..0x19880`. Includes at least one f32 default `1.0f` (`orr w8, wzr, #0x3f800000`), several u64 pointer loads from `.rodata` static tables (`adrp 0x7103570000/0x7103571000 + offsets`), and two `q0` (16-byte vector) stores at `+0x19880`. |
+
+**First particle offset: `0x00000`** — particles start at the base of the allocation, not after a header.
+**Head struct offset: `0x18000..0x19890`** — head is a trailing region of 0x1890 B total (secondary array + global head).
+**Total EffectManager allocation: `0x19890` B = 104,592 B ≈ 102 KB**.
+
+The global head (`0x193b0..0x19890`) is the snapshot-critical region the rollback walker must capture verbatim — it holds phase counters, free-list heads, current-frame emitter caches, etc. (exact fields not yet named, but the 1248-byte range is small enough that whole-range snapshotting is acceptable).
+
+The secondary 30×0xa8 array (`0x18000..0x193b0`) is also per-match mutable and should be snapshotted; its contents are not yet understood but the total 5040 B is cheap.
+
+**Revised EffectManager snapshot cost: ≤ 104,592 B worst case** (whole slab), or ~30 KB with generation-key filtering on dead particles + mandatory copy of the 6 KB trailer.
+
+### Adjacent .data slots (`0x7105333900..0x710533398f`) — Round 10
+
+Enumerated via `tools/xref_bin_scan.py 0x7105333900-0x7105333990 --writers-only`. **None of the adjacent slots are parallel effect pools.** The region is a mixed grab-bag of unrelated singletons:
+
+| Offset | Writer fn | Purpose (inferred) | Rollback relevant? |
+|--------|-----------|--------------------|---------------------|
+| `+0x900..0x910` | `FUN_7100450e20` (2× `STP Q`) | 32-byte vtable+ptrs blob, one-shot ctor | Unknown — low priority |
+| `+0x920` | `FUN_710055d080` | **EffectManager singleton slot** (this §) | **YES** |
+| `+0x930..0x940` | `FUN_7103642e50`, `FUN_71036435b0`, `FUN_71036514bc` (repeated `STP X`) | Repeatedly mutated 16-byte state from sound/voice path (6+ writers) — some kind of current-voice or current-BGM handle | Probably audio — see §5 comment on `nn::atk`, skip |
+| `+0x948` | `FUN_710055d080` (0x710055f124 + 0x71005618f8), `FUN_71022cd350` (0x71022d16ec) | Allocated `je_aligned_alloc(0x10, 0x1370) = 4976 B` by the SAME outer init function as EffectManager; passed through ctor `0x7103564910`. **Not** a 5-entry 0x1b0-stride table as previously stated in §5 — that note was wrong. Still a separate singleton of some kind, co-initialized alongside EffectManager. | Likely YES (same init fn suggests related subsystem) — ~5 KB. Walker should chase this pointer. |
+| `+0x950..0x970` | `FUN_71004407f0` | Separate singleton init (STR W + STP X block) | Unknown |
+| `+0x978..0x98c` | `FUN_710356a1e0` | Small 24-byte struct with one `STRB` flag | Unknown, low priority |
+
+**Key correction to §5**: the "fixed-5-entry secondary effect table at `DAT_7105333948`, stride 0x1b0, total 2160 B" claim was wrong. `DAT_7105333948` is actually a pointer slot that holds a heap-allocated `0x1370` B singleton initialized by the same outer ctor function — not an inline 5-entry table. The "5 × 0x1b0 inline" interpretation was likely a misread of a Ghidra pseudocode loop that happened to reference that address as an array base.
 
 ### 6. Per-fighter Lua VM state
 `camera_functions.cpp` shows that `lua_state - 8` yields a wrapper struct whose `+0x1A0` field is the owning `BattleObject`. This means **each fighter owns a Lua VM instance** — not a shared global VM. The Lua stack of every active fighter is per-frame mutable and must be snapshotted. Memory size per VM is unknown; Lua 5.x with typical ACMD script depth is usually 8–64 KB per instance. **8 fighters × say 32 KB ≈ 256 KB Lua state per frame**.
@@ -242,7 +314,86 @@ are task/callback registration slots, not bulk gameplay state.
 
 Combined cost for this wrapper: **~1,880 B** on top of `FUN_71014b2a40`'s 1,520 B. Together, ~**3.4 KB of shallow "match runtime" state** that a rollback walker must traverse and snapshot before it gets to the 2 MB BattleObject-pool bulk. Trivial cost; mostly useful as a list of root addresses the walker needs.
 
+### Match-runtime sub-allocation sizes — Round 10 (2026-04-11)
 
+**Full decompile** of the two match-setup wrappers `FUN_71014b2a40` (owns `DAT_71052c26c0`) and `FUN_7101523b60` (owns `DAT_71052c2800..2860`) produces an exact sub-allocation list. Earlier notes in §8a and §8a.2 estimated totals by inspecting partial traces; these numbers are now verified against every `je_aligned_alloc` call in each ctor.
+
+#### `DAT_71052c26c0` (match-setup entry list) — `FUN_71014b2a40`
+
+| # | Size | Role (inferred) |
+|---|------|-----|
+| 1 | 0x08 | singleton pointer slot holder |
+| 2 | 0x50 | root container (vtable `&PTR_FUN_7105069db0`, 4 head/tail linked-list pairs at `+0x08..0x48`) |
+| 3 | 0x20 | Entry A list-node wrapper (shared_ptr control block) |
+| 4 | 0x330 | Entry A payload (Hash40 keys `0x2c844e173b`, `0x33731d4b56`, 0x104 B memset region) |
+| 5 | 0x20 | Entry B list-node wrapper |
+| 6 | 0x210 | Entry B payload (vtable `&PTR_LAB_7104f72d30`, static table refs `DAT_71014b5580/5a60/68e0/6c30/7170`) |
+| 7 | 0x20 | Entry C list-node wrapper |
+| 8 | 0x50 | Entry C container (vtable `&PTR_LAB_7105069e60`) |
+| 9 | 0x30 | Entry C sub-item 1 (vtable `&PTR_LAB_7105069ed0`, ctor `FUN_71014c1840`) |
+| 10 | 0x30 | Entry C sub-item 2 (vtable `&PTR_LAB_7105069f08`, ctor `FUN_71014c0c60`) |
+| 11 | 0x30 | Entry C sub-item 3 (vtable `&PTR_LAB_7105069f40`, ctor `FUN_71014c1240`) |
+| 12 | 0x20 | Entry C intrusive list-node 1 (inserted between head/tail) |
+| 13 | 0x20 | Entry C intrusive list-node 2 |
+| 14 | 0x20 | Entry C intrusive list-node 3 |
+| 15 | 0x20 | Entry D list-node wrapper |
+| 16 | 0x18 | Entry D payload (minimal: vtable + u64 + u32) |
+
+**Total `*DAT_71052c26c0` reachable state: 0x8 + 0x50 + (4× Entry wrappers = 0x80) + 0x330 + 0x210 + (0x50 + 3×0x30 + 3×0x20 = 0x170) + 0x18 = 0x7a0 = 1,952 B.**
+
+Revised estimate: **1,952 B** (previous guess 1,520 B missed Entry C's 3 intrusive list-nodes of 0x20 and the 0x8 singleton slot holder). Entry C is a 3-stage task pipeline with shared_ptr refcounting, not a flat 0x50 container.
+
+#### `DAT_71052c2800` (main match-state root) — `FUN_7101523b60`
+
+| # | Size | Role |
+|---|------|-----|
+| 1 | 0x10 | singleton wrapper (vtable `&PTR_LAB_710506cd68` + inner ptr) |
+| 2 | 0x270 | root struct (initialized with many 0's and self-ref `*lVar5 = lVar5`) |
+| 3 | 0x40 | Hash40 lookup cache at `root+0xf8` (Hash40 keys `0x1750629f16`, `0x9edd2b0fd` via `FUN_71035407a0`) |
+| 4 | 0x2e0 | Sub-object A at `root+0x100` (Hash40 `0x26e5f4cf48`, many `1.0f` defaults at offsets 0x78/0x110/0x150/0x158/0x1b0/0x1b8/0x210/0x214/0x21c/0x260, 0x120-byte memset region at `+0x120`) |
+| 5 | 0x80 | Sub-object B at `root+0x118` (vtable `&PTR_LAB_7105180b40`, 4 intrusive linked-list head/sentinel pairs, u32=2 init count) |
+| 6 | 0xc8 | Sub-object C at `root+0x258` (vtable `&PTR_LAB_710506cd48`, 3 `FUN_71015260xx` callback slot ptrs, 3 `DAT_71015287xx` data ptrs) |
+
+**Total `*DAT_71052c2800` reachable state: 0x10 + 0x270 + 0x40 + 0x2e0 + 0x80 + 0xc8 = 0x768 = 1,896 B.**
+
+Revised estimate: **1,896 B** (previous guess 1,752 B was close — the extra 144 B comes from the 0x40 Hash40 lookup cache at `+0xf8` which wasn't listed separately before).
+
+#### `DAT_71052c2860` (small score/stats singleton) — `FUN_7101523b60`
+
+| # | Size | Role |
+|---|------|-----|
+| 1 | 0x10 | wrapper (vtable `&PTR_LAB_710506deb0`) |
+| 2 | 0x48 | payload (`+0x20` = f32 `1.0f` default, rest zero) |
+
+**Total: 0x58 = 88 B.** ✓ Matches previous estimate exactly.
+
+#### `DAT_71052c2858` (minimal flag store) — `FUN_7101523b60`
+
+| # | Size | Role |
+|---|------|-----|
+| 1 | 0x08 | pointer slot holder |
+| 2 | 0x10 | payload (u64=0 + u32 sentinel `0xFFFFFFFF`) |
+
+**Total: 0x18 = 24 B.** ✓ Matches previous estimate exactly.
+
+#### `DAT_710593a6a0` (Mii fighter database)
+
+**Not extracted this round.** Writer `FUN_71022b7100` is 90,656 bytes of code — already flagged in `data/ghidra_cache/manual_extraction_needed.md` as low-priority manual-extraction candidate. Earlier rounds (Round 4/6/7) recovered some size information; this round did not add to it. Walker integrator can use prior-round sizes for now.
+
+#### Aggregate match-runtime snapshot (rollback walker target)
+
+| Singleton | Total bytes | `je_aligned_alloc` calls |
+|---|---|---|
+| `*DAT_71052c26c0` (entry list) | 1,952 B | 16 |
+| `*DAT_71052c2800` (match-state root) | 1,896 B | 6 |
+| `*DAT_71052c2860` (score/stats) | 88 B | 2 |
+| `*DAT_71052c2858` (minimal state) | 24 B | 2 |
+| `*DAT_710593a6a0` (Mii DB) | TBD (see above) | TBD |
+| **Subtotal (excluding Mii)** | **3,960 B ≈ 3.9 KB** | **26** |
+
+Aggregate match-runtime snapshot ex-BattleObject-pools and ex-Mii: **≈ 3.9 KB**. Negligible against the 2 MB BattleObject bulk; value is in confirming the walker must chase 26 heap pointers from the 4 singleton roots, and the sub-objects are all `je_aligned_alloc`'d (heap-tracked, not inline) so each needs a separate copy.
+
+All 26 sub-allocations use the same OOM-retry pattern via `DAT_7105331f00 + vtable[0x30]`, confirming they're all behind the resource service's standard `alloc_with_oom_retry()` helper (see `CLAUDE.md § Resource Service Guidelines`).
 
 ### 8b. BattleObjectWorld (`*DAT_71052b7558`) — physics-world overrides
 **NEW (2026-04-10, Q6 resolved.)** Despite the name suggesting "per-BattleObject" state, this is a singleton holding **per-match global physics overrides** that stage scripts can mutate. Recovered from `app::stage::get_gravity_position @ 0x71015ce700` disassembly and the `BattleObjectWorld__*_impl` .dynsym family.
@@ -294,8 +445,10 @@ Things I confirmed are built once at startup or match-load and then never writte
 | StageManager body | per-match | YES | unknown, likely tens of KB |
 | StageManager dynamic stage entries[3] | per-match | YES | unknown, per-stage |
 | RNG streams in `*DAT_71052c25b0` | per-match | **YES (critical)** | ~200 B (9 streams × 20 B) |
-| EffectManager particles | per-match | YES | ≤ 768 KB worst case (256 × 0x300, see §5); realistic 20–60 KB active |
-| Secondary effect table `DAT_7105333948` | per-match | YES | 2,160 B (5 × 0x1b0) |
+| EffectManager particles (primary) | per-match | YES | 96 KB worst case (128 × 0x300, see §5 — corrected Round 10); realistic 20–60 KB active |
+| EffectManager secondary array (in same alloc) | per-match | YES | 5,040 B (30 × 0xa8, trailer region) |
+| EffectManager global head (in same alloc) | per-match | YES | 1,248 B (trailer region) |
+| Secondary singleton `*DAT_7105333948` | per-match | YES | ~4,976 B (`je_aligned_alloc(0x10, 0x1370)` — not an inline table as previously stated) |
 | BattleObjectWorld overrides `*0x71052b7558` | per-match | YES | ≤ 0x100 B (see §8) |
 | Per-fighter Lua VM × 8 | per-match | **YES (expensive)** | ~256 KB estimated |
 | BossManager | per-match (boss modes only) | YES if mode active | unknown |
@@ -305,7 +458,7 @@ Things I confirmed are built once at startup or match-load and then never writte
 | jemalloc internal metadata | persistent | **NO — never touch** | — |
 | Global config (SDK heap setup) | persistent | NO | — |
 
-**Current lower-bound estimate for a per-frame savestate: ~3.3 MB raw worst case** (~2.2 MB BattleObject pools + ~0.77 MB EffectManager particle slab + ~0.26 MB Lua state (estimated) + ~0.04 MB manager bodies + ~0.2 KB RNG + small odds-and-ends). With the EffectManager generational key used to skip dead slots and module-level dirty tracking on BattleObjects, this can plausibly be brought down to the **250–600 KB** range. The biggest remaining unknown is the Lua VM size — if it turns out to be the textbook 32 KB/fighter figure we stay in budget, if it's closer to 100 KB/fighter rollback becomes harder.
+**Current lower-bound estimate for a per-frame savestate: ~2.6 MB raw worst case** (~2.2 MB BattleObject pools + ~102 KB EffectManager primary allocation + ~5 KB secondary singleton `*DAT_7105333948` + ~0.26 MB Lua state (estimated) + ~0.04 MB manager bodies + ~0.2 KB RNG + small odds-and-ends). The EffectManager slab is ~670 KB smaller than the previous "768 KB" figure after Round 10 recovery (actual cap is 128 particles, not 256). With the generational key used to skip dead slots and module-level dirty tracking on BattleObjects, this can plausibly be brought down to the **250–600 KB** range. The biggest remaining unknown is the Lua VM size — if it turns out to be the textbook 32 KB/fighter figure we stay in budget, if it's closer to 100 KB/fighter rollback becomes harder.
 
 ## Recommended Next Steps
 
@@ -320,7 +473,9 @@ Things I confirmed are built once at startup or match-load and then never writte
 - `get_battle_object_from_id @ 0x71003ac560` — BattleObject pool strides and category count
 - `app::sv_math::rand @ 0x7102275400` — RNG stream layout in `*DAT_71052c25b0` (9 streams confirmed, no more)
 - `FUN_7100417d10` — item-kind lookup table static init (confirmed persistent)
-- `FUN_710260b9b0` (disassembly, not decompile) — EffectManager singleton @ `0x7105333920`, pool stride `0x300`, top-byte generational index, secondary 5-slot table @ `0x7105333948` stride `0x1b0`
+- `FUN_710260b9b0` (disassembly, not decompile) — EffectManager singleton @ `0x7105333920`, pool stride `0x300`, top-byte generational index
+- `FUN_710055d080` (disassembly, not decompile — function too large for Ghidra MCP decomp) — EffectManager ctor. Two `je_aligned_alloc` calls (8 B slot + 0x19890 B body), per-record init loops, trailer layout. Second writer `FUN_71022cd350 @ 0x71022d1ef0` not inspected.
+- `tools/xref_bin_scan.py 0x7105333900-0x7105333990 --writers-only` — adjacent .data slot enumeration (Round 10)
 - `app::stage::get_gravity_position @ 0x71015ce700` — `BattleObjectWorld` singleton @ `0x71052b7558`
 - `BattleObjectWorld__*_impl` family @ `0x7101fca1f0..0x7101fca2f0` — struct layout (`+0x04..+0x5c`)
 - `include/app/FighterManager.h`, `include/app/ItemManager.h`, `src/app/StageManager.cpp`, `include/lib/L2CAgent.h` — singleton / wrapper struct layouts
