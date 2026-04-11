@@ -1428,3 +1428,165 @@ or by matching against the 18 threads above).
 
 GDB runtime watchpoint on DAT_71052c25b0 writes remains the fastest path
 to definitively capture the sim tick PC + stack.
+
+================================================================================
+ROUND 7 (2026-04-10) vtable slot investigation + FUN_710151a5d0
+================================================================================
+
+Goal (from WORKER-pool-c.md): enumerate the 3 DATA xrefs to FUN_7101344cf0
+(0x7105060680, 0x710506b0f8, 0x710506c5b8) and the "inline registrar" at
+0x710151a5d0. Find the owning vtable starts and identify the abstract Task
+base class.
+
+### Method
+
+1. Parsed .rela.dyn (335,369 R_AARCH64_RELATIVE entries) from data/main.elf.
+2. Walked 8-byte forward/backward from each target slot until the first "hole"
+   (no reloc at that offset) to find each vtable fragment.
+3. Verified Itanium C++ ABI prefix at vtable base - 16 (offset_to_top = 0,
+   typeinfo = 0 since Nintendo SDK is -fno-rtti).
+4. Ran tools/xref_bin_scan.py on each vtable-start address to find
+   ADRP+ADD+STR pointer-init stores (constructors).
+5. Disassembled the "inline registrar" at 0x710151a5d0 raw bytes to decode
+   its 1-instruction body.
+
+### Vtables found
+
+All four are Itanium ABI primary vtables (offset_to_top = 0, typeinfo = 0),
+each 19 slots long. Every vtable is followed by a secondary sub-object prefix
+(offset_to_top = -8) these classes all use multi-inheritance with a
+secondary base at offset +0x8 of the object.
+
+| Label | Vtable base | Raw target region | Slot 14 | Slot 14 inherited? |
+|---|---|---|---|---|
+| A | 0x7105060610 | 0x1343d80..0x1354d80 | 0x7101344cf0 | direct (base class) |
+| B | 0x710506b088 | 0x14d6590..0x14d7ef0 | 0x7101344cf0 | direct inherit |
+| C | 0x710506c548 | 0x151ba90..0x151b4f0 | 0x7101344cf0 | direct inherit |
+| D | 0x710506c408 | 0x151a620..0x151a920 | 0x710151a5d0 | thunk (see below) |
+
+All 4 vtables share identical values at slots 7, 8 (0x7101343df0, 0x7101343ee0)
+this confirms a common base class. Vtables A/B/C additionally share slots
+14-16 identically (0x7101344cf0, 0x710134c690, 0x710134f5c0). Vtable D has
+local slot 14-16 values (0x710151a5d0, 0x710151a5e0, 0x710151a5f0) but
+those are thunks (see next section).
+
+### 0x710151a5d0 is NOT an "inline registrar"
+
+Round 6 writeup labeled 0x710151a5d0 as an inline registrar based on a
+binary scan of FUN_7101344cf0 byte references. That was a misread.
+
+Raw disassembly of the three D-local slot implementations:
+
+  0x710151a5d0:  17f8a9c8  ->  B 0x7101344cf0  (slot 14)
+  0x710151a5d4:  00000000  padding
+  0x710151a5e0:  17f8c82c  ->  B 0x710134c690  (slot 15)
+  0x710151a5e4:  00000000  padding
+  0x710151a5f0:  17f8d3f4  ->  B 0x710134f5c0  (slot 16)
+  0x710151a5f4:  00000000  padding
+
+Each is a 1-instruction B to the base-class slot function compiler-emitted
+thunks for inherited methods in a class with non-primary base inheritance
+(no this adjustment needed because the secondary base sits at +0x8 and the
+base class method is position-independent). Pool C Round 6's binary scan saw
+the B 0x7101344cf0 target inside the thunk and reported it as a caller.
+
+Correction: there are no "4+1" task_tree_add callers. All 4 vtables
+effectively share the same slot 14 method 0x7101344cf0 three direct,
+one through a 1-insn thunk. Zero inline registrars.
+
+### Vtable A constructor (= base class identification)
+
+tools/xref_bin_scan.py 0x7105060610 produced:
+
+  POINTER-INIT STORES:
+    0x7101343f04  STP X (off)  source=0x7105060610  in fn 0x7101343ee0 (FUN_7101343ee0)
+
+Vtable A is written by a single function: FUN_7101343ee0 at offset +0x24.
+And FUN_7101343ee0 is ITSELF at slot 8 of all 4 vtables meaning this
+function is a member of the class. Combined with the vtable-restore pattern
+it uses:
+
+  *param_1 = &PTR_LAB_7105060610;     // restore primary vtable
+  param_1[1] = &PTR_LAB_71050606b8;   // restore secondary vtable
+
+this is unambiguously the BASE CLASS complete-object destructor, doing
+the Itanium ABI vtable fixup during destruction.
+
+FUN_7101343ee0 destructor body (decompiled, full):
+- restores both vtable pointers (primary 0x7105060610 + secondary 0x71050606b8)
+- processes two chunked container deques at [param_1+0xc8..+0xe8] and
+  [param_1+0xf8..+0x120]:
+    * first deque: 0x40 entries per chunk of 8-byte slots (4096-byte pages)
+    * second deque: 0x20 entries per chunk of 16-byte slots (4096-byte pages)
+- releases ~20 shared_ptr members at param_1[4..0x20] each is the classic
+  "decrement refcount, if zero call vtable[+0x8]" pattern
+- frees the last member at param_1[2]
+
+Object shape: ~0x110 bytes minimum, 20+ shared_ptr slots, 2 chunked
+container deques. This is NOT a lightweight Task object it is a large
+resource/subsystem manager.
+
+### Constructors for B/C/D
+
+| Vtable | Stored from | In fn (Ghidra boundaries broken) |
+|---|---|---|
+| B 0x710506b088 | 0x710230bcd8 | FUN_710230b7b0 (Ghidra carves short unrelated dtor here; real ctor starts near 0x710230bb50) |
+| C 0x710506c548 | 0x710230bec4 | same function stores BOTH vtables (multi-inheritance ctor) |
+| D 0x710506c408 | 0x71033027ac | FUN_7103301c00 (Ghidra carves unrelated initializer; real ctor is past 0x7103301f53) |
+
+B and C share a constructor = they belong to the SAME derived class (which
+has both primary and secondary bases in the same inheritance graph).
+Vtable D has a different constructor, so it is a different derived class.
+
+### Vtable D slot 0 = enqueue helper (not a task tick)
+
+FUN_710151a620 (vtable D slot 0) is a short function that appends to the
+SAME two container deques that the base-class dtor cleans up:
+- increments the +0xe8 count, writes two qwords from DAT_71052c2388 and
+  DAT_71052c23d0 into a chunk slot
+- increments the +0x120 count, writes {type=2, value=0xFFFFFFFFFFFFFFFF}
+  into a 16-byte slot
+
+The container stride (8-byte and 16-byte entries in 4096-byte chunks) matches
+the base-class dtor exactly. So the containers are BASE CLASS members,
+not D-specific, and vtable D's slot 0 is an "enqueue deferred work" helper
+that all 4 derived classes presumably also have.
+
+### Identifying the abstract base class
+
+The base class (vtable at 0x7105060610) has these observable properties:
+1. 19 virtual methods + 19 secondary-base virtual methods (multi-inheritance)
+2. ~0x110 byte object footprint (field [0x20] offset 0x100+)
+3. 20+ shared_ptr members released in the destructor
+4. Two chunked-container deques (stride 8-byte and 16-byte)
+5. Slot 14 (0x7101344cf0) is the Round 6 "task_tree_add gatekeeper" mega-blob
+6. Slots 0-7 are consecutive 0x10-byte stride leaf functions (compiler-emitted
+   trivial overrides at 0x1343d80..0x1343df0) characteristic of small
+   accessors defined together in one source file
+
+This is NOT a pead::Task or similar lightweight task base class. It is
+a RESOURCE / SUBSYSTEM MANAGER base class with an internal deferred-work
+queue. The "task_tree_add" at slot 14 is the manager's method for scheduling
+work, not a per-frame tick hook.
+
+This cross-validates the Round 6 addendum finding (DAT_7105332120 is a
+transform/animation task pool) and Pool A's Round 7 finding (register_task_active
+callers are all non-sim renderers / effect spawners / activation helpers).
+
+Working hypothesis: this is the cross2app ResourceManager base class
+(sometimes called cross2::ResMgr or similar), with 4 derived
+subsystem-specific managers. The "task_tree_add" is an internal
+"schedule deferred resource operation" method, not a sim tick registrar.
+
+### Vt[2] (+0x10 per-frame tick) raw targets
+
+| Vtable | slot 2 target | size hint |
+|---|---|---|
+| A 0x7105060610 | 0x7101343da0 | 4-insn leaf (inherited base-class accessor) |
+| B 0x710506b088 | 0x71014d6e80 | larger not inherited |
+| C 0x710506c548 | 0x710151b6a0 | larger not inherited |
+| D 0x710506c408 | 0x710151a810 | larger not inherited |
+
+Vtable A's slot 2 is a 4-insn leaf (compiler-emitted trivial function) this
+rules out the base-class default slot 2 as a per-frame tick. B/C/D override
+slot 2, but they are resource-manager-scope methods, not sim ticks.
