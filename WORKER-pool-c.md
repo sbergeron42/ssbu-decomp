@@ -2,52 +2,50 @@
 
 ## Model: Opus
 
-## Task: ROLLBACK Round 6 — walk the frame-loop body and classify each per-task vt[0x28] dispatch
+## Task: ROLLBACK Round 7 — investigate FUN_710151a5d0 + the 3 vtable-slot xrefs to FUN_7101344cf0
 
-## Priority: HIGHEST — directly identifies which task(s) the sim tick lives in
+## Priority: HIGHEST — vtable slots reveal the abstract Task base class
 
 ## Context
-Read `docs/rollback/sim_tick_hunt.md` first. You found the actual frame loop in Round 5: `0x7103747504..0x710374cbc0` inside main_loop. The loop iterates a task list and dispatches `task->vt[0x28]` (or alt `vt[0x20]`) on each.
+Read `docs/rollback/sim_tick_hunt.md` first. **Round 6 architectural breakthrough**: main_loop is a fiber-scheduled task pump, sim runs as a task on a worker thread. Tasks register through `FUN_7101344cf0` (the gatekeeper).
 
-Pool A is decoding the task-list initializer. Pool B is decoding the add/remove helpers and enumerating registrants. **Your job: walk the actual frame-loop body and identify the concrete tasks dispatched per-frame**, by tracing each per-task BL through to a concrete vtable.
+You found in Round 6 that there are 5 callers of `FUN_7101344cf0`:
+- 2 normal function callers (Pool B is decomping these)
+- 1 inline registrar `FUN_710151a5d0`
+- **3 vtable slots: `0x7105060680`, `0x710506b0f8`, `0x710506c5b8`**
+
+The 3 vtable slots are the most interesting — **they mean some base class has a method that calls `task_tree_add` from inside a virtual method**. That base class is a Task framework class (probably `pead::Task` or similar). Identifying it would name the abstract type the entire task system uses.
 
 ## What To Do
 
-### 1. Re-read the frame-loop body
-- Use `Read` on `data/ghidra_cache/main_loop_7103747270.txt` and find the section corresponding to `0x7103747504..0x710374cbc0`
-- This is ~22 KB of body — find every BL inside the loop
-- Pay special attention to the indirect dispatches (`blr xN` after vtable loads), and the `0x710374cb68 task->vt[0x28]` dispatch you identified in Round 5
+### 1. Decompile FUN_710151a5d0 (inline registrar)
+- `mcp__ghidra__decompile_function_by_address 0x710151a5d0`
+- Document parameters and what task it registers
+- Identify the task's vtable
 
-### 2. Enumerate the indirect dispatches inside the loop
-For each `blr` inside the frame loop:
-- What's loaded into the called register?
-- Is it a vtable slot off a task pointer? Off a different singleton?
-- Document the dispatch shape
+### 2. For each of the 3 vtable slots, find the owning vtable
+- The slot addresses are `0x7105060680`, `0x710506b0f8`, `0x710506c5b8`
+- Each is a single function pointer entry inside some vtable
+- Use `tools/xref_bin_scan.py` or `mcp__ghidra__get_xrefs_to` on each address
+- Find the **start** of each vtable (look backward for an aligned `.rodata` boundary)
+- Once you have the vtable address, use `mcp__ghidra__get_xrefs_to <vtable_addr>` to find the **constructor** that uses it
+- The constructor names the class
 
-### 3. Trace the task vtable concretely
-At the loop tail (`0x710374cb68`), `task->vt[0x28]` is called. The task is `*(start)` where `start = task_list[0x20]`. Each loop iteration advances `start += 8` (single-pointer step), so the vector elements are `Task*` pointers.
+### 3. Identify the abstract Task base class
+- All 3 vtable slots probably belong to **the same vtable** (the abstract Task base class)
+- Or they're 3 sibling derived classes that share an interface
+- Either way, the parent class is a candidate for the task base type
+- Look for FNV-hashed string constants in the constructor that might encode the class name
 
-To find the concrete task vtables:
-- Use `tools/xref_bin_scan.py` to find every store of any value into the offset range `[*DAT_7105332fe8 + 0x20..+0x28]`
-- Each writer is an `add_task` callsite
-- Each writer's source value (the `Task*` being stored) traces back to a constructor with a vtable
-- That vtable is a concrete task type
-
-### 4. For each concrete task vtable, decompile vt[0x28]
-- Each vt[0x28] is a per-frame tick method
-- Look for sim-shaped patterns:
-  - Iterating `FighterManager` entries
-  - Touching `BattleObjectModuleAccessor` vtable slots `+0x38..+0x188`
-  - Calling `FighterStatus::*` (vtable at `0x7104f7f2e8` from Pool A's earlier find)
-  - Reading/writing RNG state (`DAT_71052c25b0` area)
-  - Touching `FighterAI` state
-- The first vt[0x28] that hits ANY of these IS the sim tick
-
-### 5. Cross-validate
-- If Pool A or Pool B finished first, read their committed findings
-- Pool A names the task-list type and possibly initial registered tasks
-- Pool B names every add_task caller
-- Cross-reference: which subsystems' add_task calls match the per-task vtables you found?
+### 4. For each task vtable found, decompile vt[2]
+- `vtable[+0x10]` is the per-frame tick
+- Decompile vt[2] for each candidate
+- Sim-shaped patterns:
+  - Iterating fighters via `FighterManager`
+  - Touching `BattleObjectModuleAccessor` modules
+  - Reading/writing RNG (`DAT_71052c25b0` area)
+  - Calling `app::sv_math::rand` (`0x7102275320`)
+- **Stop and report immediately if you find one that hits sim state.**
 
 ## Stop-and-document rule
 If `mcp__ghidra__*` errors/timeouts:
@@ -59,25 +57,33 @@ If `mcp__ghidra__*` errors/timeouts:
 Append to `docs/rollback/sim_tick_hunt.md`:
 
 ```markdown
-## Pool C — Round 6: frame-loop body walk + per-task classification
+## Pool C — Round 7: vtable slot investigation + FUN_710151a5d0
 
-### Indirect dispatches inside frame loop body (0x7103747504..0x710374cbc0)
-| BL site | Target | Source | Notes |
-|---------|--------|--------|-------|
-| 0xXXXX  | task->vt[0x28] | task list | per-task tick |
-| 0xXXXX  | other->vt[N]   | ...      | ...           |
+### FUN_710151a5d0
+- Registers task: [vtable 0xXXXX]
+- Task class: [name or unknown]
 
-### Concrete task vtables
-| Vtable | Class | vt[0x28] target | Sim-shaped? |
-|--------|-------|------------------|-------------|
-| 0xXXXX | ...   | 0xXXXX          | YES/NO      |
+### Vtable slots pointing at FUN_7101344cf0
+| Slot address | Owning vtable | Class | Method offset within vtable |
+|--------------|---------------|-------|----------------------------|
+| 0x7105060680 | 0xXXXX | ... | +0xNN |
+| 0x710506b0f8 | 0xXXXX | ... | +0xNN |
+| 0x710506c5b8 | 0xXXXX | ... | +0xNN |
 
-### Sim tick verdict
-[FOUND at task vtable 0xXXXX, vt[0x28] = FUN_YYYY, registered by subsystem Z]
-[OR: Multiple sim-shaped tasks — list candidates]
+### Abstract Task base class
+- Vtable: 0xXXXX
+- Class: [name or "abstract Task — no symbol"]
+- Method that calls task_tree_add: [purpose]
+
+### vt[2] of each candidate task
+| Vtable | vt[2] target | Sim-shaped? | Notes |
+|--------|--------------|-------------|-------|
+| 0xXXXX | FUN_YYYY | YES/NO | ... |
+
+### VERDICT
+[FOUND SIM TASK at vtable 0xXXXX]
+[OR: vtables identified but none sim-shaped]
 ```
-
-If you find the sim tick, write a TL;DR at the top of the section so the rollback team can read it instantly.
 
 ## Quality Rules
 - NO `FUN_` names in committed src/ code
