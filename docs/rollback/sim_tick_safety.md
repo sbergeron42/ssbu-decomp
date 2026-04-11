@@ -306,3 +306,122 @@ clean. The only uncovered paths are:
 This is sufficient to start the Eden prototype. Branch coverage of the
 fighter module can happen during integration testing, not as a static-
 analysis precondition.
+
+---
+
+### Allocator reachability — Round 10
+
+Static audit: does FUN_7103724a80's subtree reach je_aligned_alloc
+in steady state (1v1 match, two fighters, no new spawns)?
+
+**Verdict**: **CLEAN at the outer shell level.** No je_aligned_alloc call
+in the outer-shell subtree is reachable on a per-frame hot path. Every
+subtree alloc call observed is gated on a task-lifecycle / vector-growth
+event that is either one-shot per match or amortized to O(1) across
+frames. Steady-state sim ticks (running 1v1 fighters in a stable
+animation loop, no new spawns) hit NONE of the outer-shell allocs.
+
+The caveat from Rounds 8 and 9 still stands: the concrete task body
+`.run()` methods dispatched through `vt[+0x60/+0x40/+0x90]` are NOT
+covered by this audit because they land in the unresolved fighter-sim
+region that spans most of the 60 MB .text. Any allocator call inside
+those targets is invisible to a static subtree walk.
+
+#### Callers of je_aligned_alloc inside the subtree
+
+The subtree audited is the full direct-BL closure of FUN_7103724a80
+already catalogued in Rounds 8 and 9: FUN_7103724a80 itself, its seven
+direct callees (`FUN_7103724f60`, `FUN_7103724500`, `FUN_7103725180`,
+`FUN_7103723360`, `FUN_7103723e80`, `FUN_71003cb050`, `FUN_71037243f0`),
+FUN_71022df070 (the Round-9 recursion body), and FUN_71022df070's two
+scheduler-query callees (`FUN_7103726540`, `FUN_7103726690`).
+
+Of those 11 functions, only **two** contain a direct BL to
+`je_aligned_alloc` (`0x710392dce0`). All others are allocator-free.
+
+| Caller | Call sites | Gate / Why it fires | Steady-state? |
+|--------|-----------|---------------------|---------------|
+| `FUN_7103724a80` | `0x7103724be0` (first try) + `0x7103724c20` (OOM retry) — **same allocation**, two attempts | `std::vector<void*>::push_back` growth on the outer task's child-queue at `[param_1[5]+0x30..+0x40]`. Fires only when `queue.size() == queue.capacity()`. Capacity doubles (`uVar10 = lVar9 >> 2`) on each grow, so the growth count is `O(log N)` over the whole match, amortized `O(1)` per push. Push itself fires only in the state-1 branch (`param_1[6] == 1`) when the task has a pending child to enqueue. | **NO** — amortized O(1). After the first few frames of a match the vector reaches steady capacity and the else branch (`*plVar7 = lVar21; [+0x38] += 8`) executes in-place without allocation. Eventually fires zero times per frame. |
+| `FUN_7103725180` | `0x7103725330` (first try) + `0x7103725374` (OOM retry) — 0x80 B task wrapper; `0x710372553c` + `0x7103725580` — 0x70 B submit struct; `0x7103725858` + `0x710372589c` — 0x70 B rb-tree node | Three alloc sites, ALL gated on the `(*plVar16->vt[+0x48])(plVar16) & 1 != 0` branch — "task is in a state where its output has been consumed and a fresh instance must be built and resubmitted". Also a fourth allocator path via `(**(code**)(*plVar20[0xd] + 0x10))(...)` which is a factory helper gated on `plVar20[0xe] == NULL` (first-ever lookup for this named task — lazy init). | **NO** — the fresh-instance path only fires on task rebuild/resubmit events, which are task-lifecycle transitions, not per-frame. The factory-lazy-init path fires exactly once per named task, at first lookup. A 1v1 steady-state match with no new named-task submissions exercises NEITHER path. Under steady state, `FUN_7103725180` either (a) lookup-misses and returns 0 at the top (no alloc), or (b) lookup-hits, the cache is already populated, vt[+0x48] returns 0, and it dispatches via the cached pointer and returns (no alloc). |
+
+Round 8's table had flagged the 0x7103724be0/c20 pair as the "OOM retry
+of a 16-byte alloc". That description was from the 16-byte allocation's
+literal immediate mov — but the actual alloc is `ppuVar11 = uVar8 * 8`,
+a variable-size vector-capacity multiplication, not a fixed 16 bytes.
+Round 10 corrects this classification: the alloc is a std::vector grow,
+not a fixed-size task-node creation.
+
+#### Why none of the child functions allocate
+
+Verified by inspection of each Round 8/9 catalogue entry:
+
+- `FUN_7103724f60`: pure FNV-hash compare + atomics + `jeFree` only.
+- `FUN_7103724500`: `strcmp` + `FUN_7103723e80` (which also does not alloc) + vtable dtor. No `je_*` alloc BL.
+- `FUN_7103723e80`: libc++ rb-tree node erase + scheduler `FUN_710354c720` (known-safe) + `jeFree`.
+- `FUN_7103723360`: leaf constructor, zero BLs.
+- `FUN_71003cb050`: list-iterator pointer swap, only vtable dispatches on `param_1/param_2` at `+0x18/+0x20`. No direct calls.
+- `FUN_71037243f0`: rb-tree flush loop calling `FUN_7103723e80`. No alloc.
+- `FUN_71022df070` (Round 9): 49 lines, 4 direct BLs (two to `FUN_7103726540`, one to `FUN_7103726690`, one recursive back to `FUN_7103724a80`). No allocator BL.
+- `FUN_7103726540`: pure string-copy + FNV hash into caller-provided buffer. Zero external BLs.
+- `FUN_7103726690`: rb-tree lookup + predicate return. Zero external BLs.
+
+#### Eden implication
+
+**The OOM shim can be downgraded from "must-neutralize" to
+"monitor-and-alert", provided the concrete task-body methods are
+verified clean separately.**
+
+Concretely:
+
+1. **Keep the no-op `DAT_7105331f00->vt[+0x30]` override installed** for
+   the resim window. The override cost is a single 64-byte guest-side
+   stub table and a pointer swap at entry/exit — negligible.
+
+2. **Change the override body from "always return 0" to "log + return 0"**.
+   If the override fires during resim, that is now a concrete signal
+   that the concrete task body (not the outer shell) requested an
+   allocation. The log tells Eden exactly which task class triggered
+   it, so follow-up static audits can target the specific concrete
+   class rather than auditing all of the fighter module.
+
+3. **Do NOT drop the shim entirely.** Two reasons:
+   - The vector-grow path in `FUN_7103724a80` does still fire in early
+     match frames (first N frames, where N ≈ log2(max child queue
+     depth)). If resim is invoked during those warmup frames and the
+     vector's underlying allocation happens to be at the capacity
+     boundary, a real `je_aligned_alloc` call will hit jemalloc.
+     jemalloc itself is deterministic and harmless for rollback —
+     but we still don't want the OOM retry callback to fire a host
+     service call.
+   - The concrete task methods at `vt[+0x60/+0x40/+0x90]` are the
+     unresolved portion; they could still issue allocator calls that
+     need the OOM retry to have a safe gate.
+
+4. **New: gate the resim window on "warm capacity" check.** Before
+   entering resim, Eden can read `[sim_root->child_queue_cap]` and
+   verify that the vector's current size is strictly less than
+   capacity. If it is, the vector-grow alloc is guaranteed not to
+   fire for at least one more push. This makes the outer shell
+   provably allocation-free for that resim window.
+
+The Task-2 question in this round's brief was whether the OOM shim
+could be dropped **entirely** as a cleanup win. The answer is: **not
+entirely, but the shim becomes passive (log + no-op) rather than
+load-bearing**. That is still a meaningful simplification — Eden no
+longer needs to engineer a "safe" OOM response, just a telemetry
+hook, and the resim initialization cost drops from "vtable
+installation + careful lifetime management" to "pointer swap + log
+tap".
+
+#### Residual unknowns
+
+- The concrete task class passed as `x24` from `main_loop` still has
+  unaudited `vt[+0x28]` and `vt[+0x30]` slots. Same open question as
+  Round 8.
+- The `vt[+0x60/+0x40/+0x90]` dispatches inside `FUN_71022df070` land
+  in the fighter sim body. These are where any real per-frame
+  allocator activity would live.
+- The `(**plVar20[0xd]->vt[0x10])()` factory helper in FUN_7103725180
+  was not followed into its target; if it happens to be called from
+  the per-frame path (I argue it isn't, but this is inferred, not
+  proven), that is a potential alloc source.
