@@ -1336,3 +1336,45 @@ CONCLUSION: Sim tick is NOT directly in main_loop. Sim runs as a task
 registered through FUN_7101344cf0 and dispatched as vt[2] on a worker thread.
 Identification blocked on manual extraction of FUN_7101344cf0 + decomp of
 FUN_7101523b60, FUN_710151a5d0, and the 3 DATA xrefs.
+
+== Session 2026-04-10 Round 6 addendum: ground-truth task vtable ==
+
+Correction: FUN_7101344cf0 is a Ghidra mega-blob with zero direct BL callers.
+The real task_tree_add code is at 0x71013486c0..0x7101348738 inside that blob,
+extracted from the full disassembly dump.
+
+GROUND TRUTH task vtable: 0x7104f623c0 (fixed compile-time constant)
+  Stored by: 0x71013486e4 (str x8,[x0]) where x8 = 0x7104f62000 + 0x3c0
+
+Task class vtable slots (via .rela.dyn R_AARCH64_RELATIVE type 1027):
+  slot[0] (0x7104f623c0) -> 0x71003ab470  (dtor candidate)
+  slot[1] (0x7104f623c8) -> 0x71003ab4f0  (deleting dtor candidate)
+  slot[2] (0x7104f623d0) -> 0x71003ab590  (vt[2] = what generic runner calls)
+  slot[3,4] -> no relocation
+  slot[5] -> 0x71003abd20
+  slot[6] -> 0x71003abd30
+  slot[7] -> 0x71003abd40
+
+PROBLEM: All three candidate virtual methods decode as pure NEON matrix/quat math
+with no BL branches in their first 40 insns. Ghidra reports "no function at
+or containing address" for all of them. They are hand-optimized leaf NEON
+kernels, not high-level C++ virtual methods.
+
+REVISED HYPOTHESIS: DAT_7105332120 is a TRANSFORM/ANIMATION task pool, not a
+generic per-frame subsystem scheduler. main_loop is the cross2app framework
+main thread (render/layout/transform prep), NOT the sim main loop.
+
+Sim tick verdict: NOT reachable from main_loop. Sim runs on a separate thread
+spawned elsewhere. Round 7 should pivot to:
+  - Enumerate nn::os::CreateThread call sites
+  - Find RNG-page readers (0x71052c2xxx) and walk up to thread entry
+  - GDB watchpoint on DAT_71052c25b0 writes (fastest path)
+
+Adjacent vtable clusters worth examining:
+  0x7104f62300..0x7104f623a8 (22 slots, 0x71003a9020+, stride 0x10 trampoline table)
+  0x7104f62410..0x7104f62478 (0x71003af2d0, 0x71003b00f0+, stride 0x10)
+
+Parent wiring: task->+0x20 = parent object (from caller arg x12)
+               parent->+0x90 = this task (reverse pointer, written at 0x7101348744)
+Task initial state: 1 (skip first frame), from 0x7101348748: strb w8,[x0,#0x70]
+Task config source: DAT_71053320d8 (queue_id at +0x60, priority at +0x64)

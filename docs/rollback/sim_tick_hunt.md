@@ -4884,3 +4884,249 @@ object registered through `FUN_7101344cf0`.
   `0x7103747504..0x710374cbc0` (5348 insns)
 - `data/ghidra_cache/pool-c.txt` — appended Round 6 evidence log
 - `data/ghidra_cache/manual_extraction_needed.md` — added `FUN_7101344cf0`
+
+### Round 6 addendum — ground-truth `task_tree_add` and concrete task vtable (2026-04-10)
+
+Re-examination after the initial Round 6 writeup revealed that
+`FUN_7101344cf0` (reported as the task-add function) is a huge
+mega-blob that Ghidra has merged from many sub-functions, and has
+**zero direct BL callers** in the binary. The "caller" functions
+`FUN_71014b2a40` / `FUN_7101523b60` call it with **no arguments**,
+which is a tell-tale sign that Ghidra has mis-carved the boundaries —
+these callers actually invoke a small **initializer** stub at the top
+of the mega-blob, not a `task_tree_add(Task*)` function.
+
+By scanning the mega-blob's disassembly for the `STLRB` store at
+`0x7101348738` that writes to `DAT_7105332120` (discovered via
+`xref_bin_scan.py`), the actual task-insertion code falls out:
+
+```asm
+; Task object construction and insertion — 0x71013486c0..0x7101348738
+; Caller provides: x12 = parent context (from [sp, #0x20])
+; Newly allocated: x0 = task object (via je_aligned_alloc(0x10, 0x78))
+
+0x71013486c0: stp xzr,xzr,[x0, #0x48]     ; task->next = 0, task->flag = 0
+0x71013486c4: ldr x12,[sp, #0x20]          ; x12 = parent/wrapped object
+0x71013486c8: adrp x8,0x7104f62000
+0x71013486cc: add  x8,x8,#0x3c0            ; *** x8 = TASK VTABLE (0x7104f623c0) ***
+0x71013486d0: adrp x9,0x7105332000
+0x71013486d4: add  x9,x9,#0xd8             ; x9 = &DAT_71053320d8 (config block)
+0x71013486d8: str  xzr,[x0, #0x60]         ; task->+0x60 = 0
+0x71013486dc: strb wzr,[x0, #0x58]         ; task->+0x58 = 0
+0x71013486e0: strb wzr,[x0, #0x70]         ; task->state = 0 (submit)
+0x71013486e4: str  x8,[x0]                 ; *** task->vtable = 0x7104f623c0 ***
+0x71013486e8: stp  xzr,x12,[x0, #0x18]     ; task->+0x18 = 0, task->+0x20 = parent
+0x71013486ec: stp  xzr,x9,[x0, #0x8]       ; task->+0x08 = 0, task->+0x10 = &config
+0x71013486f0: ldr  w8,[x9, #0x60]          ; w8 = config->queue_id
+0x71013486f4: str  w8,[x0, #0x68]          ; task->queue_id = configured queue
+0x71013486f8: ldr  w8,[x9, #0x64]          ; w8 = config->priority
+0x71013486fc: str  w8,[x0, #0x6c]          ; task->priority = configured prio
+
+; Spinlock acquire on DAT_7105332128
+0x7101348700: adrp x8,0x7105332000
+0x7101348704: add  x8,x8,#0x128            ; x8 = &DAT_7105332128 (spinlock byte)
+0x7101348708: mov  w9,#0x1
+0x710134870c: ldaxrb w10,[x8]
+0x7101348710: stxrb  w11,w9,[x8]
+0x7101348714: and  w10,w10,#0x1
+0x7101348718: cmp  w11,#0x0
+0x710134871c: ccmp w10,#0x0,#0x0,eq
+0x7101348720: b.ne 0x710134870c
+
+; Prefix-insert into DAT_7105332120 list head
+0x7101348724: adrp x8,0x7105332000
+0x7101348728: add  x8,x8,#0x120            ; x8 = &DAT_7105332120 (list head)
+0x710134872c: ldr  x9,[x8]                 ; x9 = current head
+0x7101348730: str  x9,[x0, #0x48]          ; task->next = old head
+0x7101348734: str  x0,[x8], #0x8           ; *head = task; x8 += 8 (= &spinlock)
+0x7101348738: stlrb wzr,[x8]               ; release spinlock (zero it)
+
+; After insertion: mark task as "ready" and wire parent->child link
+0x710134873c: ldr  x9,[sp, #0x18]          ; x9 = caller local
+0x7101348740: mov  w8,#0x1
+0x7101348744: str  x0,[x12, #0x90]         ; parent->+0x90 = task (parent tracks child)
+0x7101348748: strb w8,[x0, #0x70]          ; task->state = 1 (skip next pass)
+```
+
+#### Key findings (corrections to primary Round 6 writeup)
+
+1. **The task vtable is a fixed compile-time constant: `0x7104f623c0`.**
+   Every task inserted via this code path shares the same vtable. Subsystem
+   identity comes from the **wrapped parent object** at `task + 0x20`, not
+   from a per-task subclass. This is a thin-wrapper / delegation pattern.
+
+2. **Task state is initialized to 1 (skip)**, not 0 (submit) as I first
+   inferred from the struct zeroing. The `strb w8,[x0,#0x70]` at
+   `0x7101348748` sets `task->state = 1` immediately after insertion, which
+   means **newly added tasks are skipped on their first frame** and only
+   become submittable after some other code advances the state.
+
+3. **Task ownership wired back to parent at `parent + 0x90`.** After
+   insertion, `0x7101348744: str x0, [x12, #0x90]` stores the task pointer
+   into the parent object at offset +0x90. This means parent objects
+   track their own per-frame task and can cancel/unlink it by writing
+   state=2 into `task->+0x70`.
+
+4. **Task struct layout (confirmed from the constructor)**:
+
+| Offset | Value set in ctor | Meaning |
+|---|---|---|
+| +0x00 | `0x7104f623c0` | vtable (fixed) |
+| +0x08 | 0 | (unused/padding) |
+| +0x10 | `&DAT_71053320d8` | config block (queue & priority source) |
+| +0x18 | 0 | (unused) |
+| +0x20 | **parent** (caller arg x12) | wrapped subsystem object |
+| +0x48 | old list head | next ptr |
+| +0x58 | 0 | byte flag |
+| +0x60 | 0 | qword (weak_ptr?) |
+| +0x68 | `config->+0x60` (queue id) | |
+| +0x6c | `config->+0x64` (priority) | |
+| +0x70 | 1 (after insertion) | state (skip on first frame) |
+
+#### Vtable at `0x7104f623c0` — slot enumeration via `.rela.dyn`
+
+```
+slot[0] (0x7104f623c0) -> 0x71003ab470   ; dtor (complete object)?
+slot[1] (0x7104f623c8) -> 0x71003ab4f0   ; deleting dtor?
+slot[2] (0x7104f623d0) -> 0x71003ab590   ; *** vt[2] — generic runner calls this ***
+slot[3,4]                                ; no relocation (null or static-init)
+slot[5] (0x7104f623e8) -> 0x71003abd20
+slot[6] (0x7104f623f0) -> 0x71003abd30
+slot[7] (0x7104f623f8) -> 0x71003abd40
+```
+
+Surrounding relocation context (0x7104f62300..0x7104f62480):
+
+- `0x7104f62300..0x7104f623a8`: 22 consecutive slots pointing to
+  `0x71003a9020..0x71003a9170` with exact 16-byte stride — looks like a
+  **trampoline table** (each trampoline is 4 insns). Possibly a
+  state-machine dispatch table for a sibling class, or a parent-class
+  vtable in a multi-inheritance layout.
+- `0x7104f623c0..0x7104f623f8`: our task vtable (7 slots)
+- `0x7104f62410..0x7104f62478`: another cluster with targets in
+  `0x71003af2d0`, `0x71003b00f0..0x71003b0200` — another class vtable
+  for a related type.
+
+#### vt[0..2] are not carved functions in Ghidra
+
+Raw instruction decode at all three target addresses (`0x71003ab470`,
+`0x71003ab4f0`, `0x71003ab590`) shows **pure NEON/SIMD math** with no BL
+branches in the first 40 instructions. Ghidra reports "no function at or
+containing address" for all three — they sit in a region Ghidra's
+auto-analyzer never carved into functions.
+
+Sample (vt[2] = 0x71003ab590):
+```
+0x71003ab590: 4f801b94   fmul v20.4s, v28.4s, v0.s[0]
+0x71003ab594: 4fa01af4   fmls v20.4s, v23.4s, v0.s[1]
+0x71003ab598: 4f819300   fmla v0.4s,  v24.4s, v1.s[0]
+0x71003ab59c: 4fa11320   fmla v0.4s,  v25.4s, v1.s[1]
+0x71003ab5a0: 4f811b80   fmla v0.4s,  v28.4s, v1.s[0]
+0x71003ab5a4: 4fa11ae0   fmla v0.4s,  v23.4s, v1.s[1]
+0x71003ab5a8: 6e3fdca1   fmul v1.2d,  v5.2d,  v31.2d
+...
+```
+
+This is **pure 4x4 matrix / quaternion multiplication code** — a tight
+NEON block with no function call and no memory loads from the task
+object. It is not a high-level virtual `run()` method. There are three
+possibilities:
+
+**(a)** Ghidra's relocation interpretation is wrong — unlikely, the
+`R_AARCH64_RELATIVE` reloc type (1027) and manual ELF parse agree.
+
+**(b)** The vtable slots point into a region of **4-instruction
+trampolines** that jump to their real implementation, and I'm reading
+past the trampoline into the next stub. The 16-byte stride of the
+adjacent 22-slot table at `0x7104f62300` supports this — if each entry
+is a 4-insn trampoline, a disassembly at the trampoline start should
+end in a `b <real_function>` within 4 insns. The fact that the first
+4 insns of `FUN_71003ab590` are `fmul / fmls / fmla / fmla` (no
+branches) rules out this interpretation — a trampoline would show a
+branch by insn 4.
+
+**(c)** The "task" at `0x7104f623c0` is a **specialized math task** —
+e.g., a matrix-update or transform-blend task whose `run()` method is
+a hand-optimized NEON kernel that takes the parent context in x0 and
+reads transform matrices from fixed offsets on it. In this model, the
+task system is primarily a **transform / animation task queue**, not a
+general subsystem scheduler. The 3-phase submit in `main_loop` is
+transform-update / IK / skeleton-blend / etc.
+
+Hypothesis (c) is the most consistent with the observed facts:
+
+- Pure NEON leaf math in vt[2]
+- Task system lives at cross2app's very low `.text` addresses
+  (`0x71003ab4xx`), which is where framework runtime code lives (jemalloc
+  is at similar addresses)
+- Render-heavy body of `main_loop` (12 color-decode + 10 layout emit)
+  matches a "main thread runs render prep, worker threads run transform
+  kernels" pattern
+- The **zero RNG references** across `main_loop` no longer needs the
+  "sim runs on a worker thread" interpretation — instead, **`main_loop`
+  is not the sim tick at all**. SSBU's sim may run as a separate
+  **thread** spawned elsewhere, and `main_loop` is the
+  cross2app/LayoutManager/transform-update main thread.
+
+#### Revised sim tick verdict
+
+**`main_loop` (`FUN_7103747270`) is not on the sim code path.** It is
+the cross2app framework main thread running render prep, LayoutManager
+layer emission, transform/skeleton worker-task submission, and
+viewport/camera math. The sim tick runs on a **separate thread**
+spawned elsewhere in the binary, likely earlier during boot from
+`nnMain` or from one of the subsystem init functions.
+
+The task tree at `DAT_7105332120` is a **transform/animation task
+pool**, not a generic per-frame subsystem scheduler. Its tasks run
+hand-optimized NEON kernels on worker threads for rigid-body /
+skinning / blending work.
+
+#### Recommended Round 7 re-direction
+
+Abandon the `DAT_7105332120` task tree as a sim-tick lead. Instead:
+
+1. **Find all `nn::os::CreateThread` call sites in the binary.** Each
+   spawned thread is a candidate for the sim thread. Grep the binary
+   for `nn::os::CreateThread` PLT calls via
+   `tools/xref_bin_scan.py` with `--called-as-arg` on the PLT address.
+
+2. **Find threads that read the RNG page `0x71052c2xxx`.** Only a
+   handful of functions in the binary reference this page. For each,
+   walk up to its containing thread entry function. That thread is the
+   sim.
+
+3. **GDB breakpoint on any write to `DAT_71052c25b0`** (RNG state root
+   from memory notes). The breakpoint will fire during gameplay on the
+   sim thread, and the PC + stack trace will name the sim tick function
+   directly. This is the fastest path.
+
+4. **Re-examine the data tables at `0x7104f62300` and `0x7104f62410`.**
+   If the task tree's vtable cluster is for transform/animation tasks,
+   the other data tables in the same region probably describe sibling
+   task types (skinning, IK, blend, etc.). Identifying this cluster's
+   C++ class names would confirm the "transform task pool" hypothesis.
+
+#### Functions touched this addendum
+
+- `FUN_7101523b60` (secondary task_tree init caller) — decompiled
+- Raw ELF bytes at `0x71003ab470`, `0x71003ab4f0`, `0x71003ab590` — decoded
+- `.rela.dyn` entries `0x4f62300..0x4f62480` — enumerated
+- Mega-blob disassembly at `0x71013486c0..0x7101348738` — task
+  constructor extracted from the Ghidra output saved locally
+
+#### Concrete addresses for next round
+
+| Address | Meaning |
+|---|---|
+| `0x7104f623c0` | Task class vtable (fixed, compile-time) |
+| `0x71003ab470` | Task vt[0] — dtor candidate (pure NEON leaf) |
+| `0x71003ab4f0` | Task vt[1] — deleting dtor candidate (pure NEON leaf) |
+| `0x71003ab590` | Task vt[2] — runner invokes (pure NEON leaf, hand-written) |
+| `0x71003abd20..d40` | Task vt[5..7] — secondary virtual methods |
+| `0x7104f62300` | 22-slot trampoline table (0x71003a9020+) — sibling class |
+| `0x7104f62410` | Another class vtable cluster (0x71003af2d0..0x71003b0200) |
+| `0x71013486c0..0x7101348738` | Ground-truth `task_tree_add` code |
+| `DAT_71053320d8` | Task config block (queue_id at +0x60, priority at +0x64) |
+| `DAT_7105332120` | Task list head |
+| `DAT_7105332128` | Task list spinlock (single byte) |
