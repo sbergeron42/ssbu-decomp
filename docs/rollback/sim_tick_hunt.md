@@ -2879,3 +2879,215 @@ concluding "dead end". The concrete filter is trivial — grep the
 disassembly for `blr` / `br x` — but Pool B's pass-1 did not do it,
 and the cost of that omission was three missed live leads from a pool
 of four candidates (75% false-negative rate on this set).
+
+---
+
+## Pool C — Round 4: FUN_71035c13d0 deep dive + cross-validation (2026-04-10)
+
+### FUN_71035c13d0 detailed analysis
+
+Full Ghidra decomp cached at `data/ghidra_cache/pool-c.txt` under
+"ROUND 4 — FUN_71035c13d0 (observer double-sweep dispatcher)".
+
+- **Subsystem owner type:** graphics/viewport listener manager rooted at
+  `DAT_7105335e10` (NOT the Mii manager, NOT the MatchRunner, NOT the
+  main_loop application driver). See caller analysis below.
+- **Observer list 1 (event queue A):** `param_1+0x60..+0x68`, stride
+  `0x40`. Each event carries a u64 payload at `+0x00/+0x08`, u64 args at
+  `+0x10/+0x20`, and a u32 at `+0x30`. Dispatched to listener `vt[0x38]`
+  with 5 args `(event.arg1, event.arg2, event.u32_tag, listener, &event_payload)`.
+- **Observer list 2 (event queue B):** `param_1+0x78..+0x80`, stride
+  `0x30`. Each event is u32 tag + two u64 args. Dispatched to listener
+  `vt[0x40]` with 4 args.
+- **Shared listener list:** `param_1+0x08..+0x10`, stride `0x10`. Each
+  entry is `{obj_ptr, weak_ctrl_ptr}` — classic `std::vector<std::weak_ptr<T>>`.
+- **Pre-sweep viewport latch (gated on dirty bits `+0x160`/`+0x161`):**
+  allocates a `nu::GraphicsModule` command buffer via
+  `(*(DAT_7105336ce8 + 0x10))->[0xa8]->vt[0x18]`, copies two 4×u32 rects
+  from `param_1+0x140..+0x14c` and `+0x150..+0x15c` into `buffer+0x80..+0x8c`
+  and `buffer+0x90..+0x9c`, then releases the buffer. This is the classic
+  window-resize / scissor rect update path.
+- **Per-frame fighter state mutation?** **NO.** Zero fighter iteration,
+  zero `BattleObjectModuleAccessor` vtable touches, zero FighterManager
+  references. Both sweeps are early-out no-ops unless dirty bits are set
+  or events have been enqueued.
+- **Vtable slots dispatched:** `vt[0x38]` and `vt[0x40]` on the shared
+  listener interface. Neither slot is in the
+  `BattleObjectModuleAccessor` `+0x38..+0x188` module range.
+
+### Caller in main_loop @ 0x710374af6c
+
+Literal disassembly of the call site:
+
+```
+0x710374af5c: bl   0x7103632850             ; scene UI state machine (dead end)
+0x710374af60: bl   0x710361e7e0             ; sibling helper (uncategorized)
+0x710374af64: adrp x8, 0x7105335000
+0x710374af68: ldr  x0, [x8, #0xe10]         ; x0 = *DAT_7105335e10
+0x710374af6c: bl   0x71035c13d0             ; <-- OUR TARGET
+```
+
+So `param_1` is loaded from a **global singleton at `DAT_7105335e10`**,
+not from any field of main_loop's cached `this` pointer (`x21`), not
+from `DAT_710593a510` (Pool A/B's MatchRunner), and not from
+`DAT_710593a6a0` (Pool A/B's Mii manager).
+
+### Identity of DAT_7105335e10 (subsystem owner)
+
+`tools/xref_bin_scan.py 0x7105335e10` returned:
+- **1 writer** at `0x71035a5054` in `FUN_71035a4130` (install path;
+  decomp timed out — logged in `manual_extraction_needed.md`)
+- **24 readers**, dominated by:
+  - `StageBase` @ `0x71025d2dc0` — reads 3× (creation/teardown)
+  - `create_stage` @ `0x7102633c90` — reads 3×
+  - `FUN_71035b9660`, `FUN_71035b9750`, `FUN_71035bb620`, `FUN_71035c13d0`,
+    ~8 more phase-6 graphics-cluster helpers
+  - A handful of `FUN_71014xxxx` / `FUN_710133c4a0` Lua-bind readers
+  - `main_loop @ 0x710374af68` (the dispatch site above)
+
+The presence of **`StageBase`** and **`create_stage`** as readers is the
+smoking gun: `DAT_7105335e10` is a **Stage / scene viewport / surface
+listener singleton**, installed once by `FUN_71035a4130` (stage init)
+and read throughout the phase-6 graphics cluster for per-frame viewport
+dispatch.
+
+Combined with the function's internal use of:
+- `DAT_7105336ce8` (the render-singleton family used by camera proj/view
+  math and SH-ambient lighting)
+- `nu::GraphicsModule::Instance()` (explicit demangled name)
+- 4-u32 viewport/scissor rect copies
+
+…the identity lock is tight: **`DAT_7105335e10` is an app-level stage
+viewport / window listener manager**, and `FUN_71035c13d0` is its
+"dispatch queued viewport events to all registered listeners" method.
+
+**Same subsystem as FUN_7103619080's caller?** **NO.**
+`FUN_7103619080`'s caller at `0x710374b120: ldr x0, [x21, #0xce8]`
+loads from an offset on the cached main_loop `this` pointer (`x21` set
+at `0x71037472ac: mov x21, x0` at main_loop entry). That is a sub-object
+of the application driver, NOT a free-standing global. Different
+singleton, different subsystem.
+
+**Same subsystem as FUN_7103593c40's caller?** **NO.**
+`FUN_7103593c40`'s caller at `0x7103749a64: ldr x0, [x8, #0xb00]`
+loads from `DAT_7105334b00` — a third, unrelated singleton. Three
+phase-6/7 candidates, three different roots, zero overlap.
+
+### Cross-validation — Pool A and Pool B Round 4 findings
+
+Read via `git log --oneline master..worker/pool-{a,b}`:
+- Pool A round 4: "identify the MatchRunner type at `*DAT_710593a510`"
+  (commit `e79f481`, WORKER-pool-a.md only — no shared-doc append yet).
+- Pool B round 4: "identify what FUN_7103619080 dispatches (caller + tags)"
+  (commit `e03c49f`, WORKER-pool-b.md only — no shared-doc append yet).
+
+Both pools are investigating **independent** candidates (the MatchRunner
+pointer at `DAT_710593a510` and the visitor loop at `FUN_7103619080`).
+Neither shares a root with `FUN_71035c13d0`.
+
+**The main_loop prologue fast path already identifies the real
+per-frame dispatcher.** Disassembly of main_loop's first ~0x80 bytes:
+
+```
+0x71037472a4: ldr  x8, [x0]                 ; x8 = (*this)->vtable
+0x71037472a8: ldr  x8, [x8, #0x18]          ; vt[0x18] = beginFrame hook
+0x71037472ac: mov  x21, x0                  ; x21 = cached `this` (app driver)
+0x71037472b0: blr  x8                       ; beginFrame() -- installs DAT_710593a510
+0x71037472b4: str  x21, [DAT_710593a4c0]    ; publish this
+0x71037472bc: bl   0x71039c7670             ; PLT stub (imported)
+0x71037472c0: bl   0x71039c7570             ; PLT stub returning int frame phase
+0x71037472d0: str  w0, [DAT_710593a534]     ; cache phase integer
+0x71037472d4: ldr  x0, [DAT_710593a510]     ; load MatchRunner
+0x71037472d8: cbz  x0, 0x7103747304         ; *** GATE: if null, SKIP ***
+0x71037472dc..ec:  branch on phase {0, 1, >=2}
+0x71037472f4: ldr  x8, [x0]                 ; x8 = MatchRunner->vtable
+0x71037472f8: ldr  x8, [x8, #0x30]          ; vt[0x30] = per-frame driver
+0x71037472fc: add  x1, sp, #0x270           ; arg1 = &local_phase_int
+0x7103747300: blr  x8                       ; *** PER-FRAME DISPATCH ***
+```
+
+The sequence is:
+1. `main_loop` is called **once** by `nnMain` with `x0 = app_driver`
+   (a polymorphic object whose `vtable[0x18]` is a `beginFrame()` hook
+   that installs/updates `DAT_710593a510` as a side effect).
+2. main_loop caches `this` at `DAT_710593a4c0` and the frame-phase int
+   at `DAT_710593a534`.
+3. If `DAT_710593a510` is non-null, it invokes `MatchRunner->vt[0x30]`
+   with a pointer to the cached phase int as arg1. **This is the real
+   per-frame match driver invocation.**
+4. The rest of main_loop runs scene/graphics/HUD work including the
+   three phase-6 dispatchers FUN_71035c13d0 / FUN_7103593c40 /
+   FUN_7103619080 — all rooted in independent singletons unrelated to
+   the MatchRunner.
+
+Pool A's MatchRunner lead and Pool B's "DAT_710593a510 is the
+match-active signal" lead **converge on the same `blr x8` at
+`0x7103747300`**. That is the per-frame sim tick entry point. It is
+NOT one of main_loop's direct `BL` children — it is an indirect call
+through the MatchRunner's vtable, which is exactly why the 84
+direct-child BL sweep missed it.
+
+**Converged? YES.** Pool A + Pool B leads converge. The sim tick lives
+inside `(*DAT_710593a510)->vt[0x30]` at `main_loop+0x90`.
+
+### Final ranking (most -> least likely sim tick)
+
+1. **`(*DAT_710593a510)->vt[0x30]` at `main_loop+0x90`** (Pool A/B) —
+   **strongest by far**. Only per-frame vtable dispatch in main_loop
+   that is *gated on the presence of a non-null MatchRunner* and
+   *branches on the cached frame-phase integer*. The 27 external
+   readers of `DAT_710593a534` cross-validate that the cached int is
+   a "game phase" key, consistent with "match running / in CSS /
+   paused". Next step: Pool A should walk the MatchRunner's vtable
+   `+0x30` target down to the fighter iteration.
+
+2. **`FUN_7103619080`** (Pool B) — per-element visitor/command-packet
+   broadcast with `+0xf1` dirty-flag gate. Rooted in
+   `[app_driver + 0xce8]`, a sub-object of main_loop's `this` — so it
+   belongs to the **application/UI driver neighborhood**, not the
+   match runtime. Likely an input-event or render-command producer.
+   Interesting but second-tier — the per-element nature is shape-only
+   evidence; the element count and element type haven't been confirmed
+   to be fighter-sized.
+
+3. **`FUN_71035c13d0`** (this pass) — graphics viewport change / listener
+   broadcast. Rooted in `DAT_7105335e10` (Stage/viewport singleton,
+   cross-validated via StageBase + create_stage readers). Confirms
+   Pool B's pass-1 "graphics dispatcher" verdict in full. Adds the
+   caller singleton identity as new information. **DEAD END for sim.**
+
+4. `FUN_7103593c40` — ring-buffer shared_ptr release from `DAT_7105334b00`.
+   Fourth distinct singleton, indirect calls fire only during object
+   teardown (vt[1] = destructor). Not a dispatcher.
+
+5. `FUN_71036186d0` — pure camera/viewport math, zero `blr`. Confirmed
+   dead end in round 3.
+
+### Recommendation for rollback / sim-tick hunt
+
+**Retire all four phase-6/7 candidates.** They are three independent
+graphics/UI subsystems plus one pure math function — not related to
+the sim tick.
+
+**The sim tick hunt's next hop is inside `MatchRunner->vt[0x30]`**
+(the function at `*(*(DAT_710593a510))+0x30`). Pool A should:
+1. Decompile the `FUN_7103741988` area to locate the writer at
+   `0x7103741a60` and confirm what type of object is installed into
+   `DAT_710593a510` — that identifies the MatchRunner class.
+2. Once the class is known, read vtable slot `+0x30` and decompile the
+   target. That function is invoked per-frame with `(this, int *phase)`
+   and IS the match-active driver.
+3. Walk its calls: if it iterates `FighterManager` entries,
+   `BattleObjectWorld`, or calls a `tick()`-shaped method on each of
+   them, the sim tick is found.
+
+### Artifacts this pass
+
+- `data/ghidra_cache/pool-c.txt` — full Ghidra decomp of `FUN_71035c13d0`
+  with annotated field map, sweep structure, and subsystem interpretation.
+- `data/ghidra_cache/manual_extraction_needed.md` — `FUN_71035a4130`
+  logged (sole writer of `DAT_7105335e10`, timed out after 120s).
+- No src/ changes. Documentation-only pass per
+  `WORKER-pool-c.md`'s primary deliverable.
+- Ghidra renames: **none this session** (all new information is in
+  shared docs, not symbols).
