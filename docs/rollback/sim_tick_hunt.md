@@ -6074,9 +6074,53 @@ correct reading is:
 - **One of those 56 BLs is the sim tick**, or one of the 169 indirect
   dispatches is — and it was mis-labelled in the original sweep.
 
+### Round 7 addendum — 5 misc BL targets spot-checked, all non-sim
+
+Pool A spot-decompiled the 5 "Misc subsystems" BL targets from Pool C's
+table to double-check before pivoting to indirect dispatch analysis:
+
+| Target            | Classification                         | Evidence                                  |
+|-------------------|----------------------------------------|-------------------------------------------|
+| `0x71036edd50`    | je_aligned_alloc wrapper (4 KB+ buf)   | calls `je_aligned_alloc(0x1000, uVar1)`   |
+| `0x7103618ef0`    | viewport/resolution scale update       | writes to DAT_710523717x cache            |
+| `0x71036676e0`    | **render resource pool barrier**       | ticks 10+ fixed `DAT_710533886x..88a8` subsystems via vt[0x10/18/20/28]; ends with `FUN_7103668b60(*DAT_71053388b8)` |
+| `0x71036f7410`    | **NV12 video frame drain callback**    | references `"nv12-y-stride"`, `"width"`, `"height"`, calls `movie::Buffer::Buffer`, `movie::MediaData::*` |
+| `0x71037cbb80`    | **dock/handheld mode change handler**  | calls `nn::oe::TryPopNotificationMessage(0x1e)` + `nn::oe::GetOperationMode()`, sets 720×1280 or 1080×1920 |
+
+Two more direct BLs also spot-checked (from main_loop's early list):
+
+| Target            | Classification                         |
+|-------------------|----------------------------------------|
+| `0x71002c51f0`    | libc++ std::string assign/copy         |
+| `0x71003cb050`    | libc++ shared_ptr-like pImpl swap      |
+
+**None of the spot-checked 7 targets touches FighterManager,
+BattleObjectWorld, or the Randomizer singleton.** This reinforces Pool
+C's original "no sim in direct BLs" finding and shifts the entire
+remaining hypothesis to **indirect dispatch inside main_loop**: one of
+the 169 `blr x8/x9` sites is the sim tick, via a vtable slot on a
+scene-subsystem object.
+
+Notably, `FUN_71036676e0` iterates **11 fixed subsystem objects** at
+`DAT_710533886x..88A8` by calling `vt[0x10]`, `vt[0x18]`, `vt[0x20]`,
+`vt[0x28]` on each. If any of those 11 subsystems is a scene-level
+"Battle" / "Fighter" / "BattleObjectWorld" manager, the sim tick lives
+inside one of those vtable methods — reached **via** `FUN_71036676e0`,
+making that direct BL a *parent* of the sim dispatch rather than the
+sim itself. That would explain why it was classified as "render" in
+Round 6 (most of its 11 subsystems ARE render pools) but still reach
+the sim.
+
 ### Round 8 plan — definitive path
 
-1. **Re-examine the 56 direct BL targets of main_loop** listed in
+1. **Enumerate `DAT_710533886x..88A8` — the 11 subsystem pointers
+   iterated by `FUN_71036676e0`.** For each DAT address, find its
+   initializer (grep binary for stores to those addresses) and
+   identify the concrete C++ class. If any of the 11 is a fighter /
+   battle / scene subsystem, its `vt[0x10/18/20/28]` methods are the
+   sim tick candidates.
+
+2. **Re-examine the 56 direct BL targets of main_loop** listed in
    `pool-a.txt:1169..1181`. Specifically, look for any call that:
    - Touches `FighterManager` / `FighterInformation` / `BattleObjectWorld`
    - Reads the Randomizer singleton `DAT_71052c25b0` or calls a known
