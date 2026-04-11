@@ -4453,3 +4453,335 @@ singleton `DAT_7105332fe8`. This is the correct next hop.
   `DAT_7105332fe8` too.
 - No src/ changes. Documentation-only pass per `WORKER-pool-c.md`.
 - Ghidra renames: **none this session** (findings live in shared docs).
+---
+
+## Pool A — Round 6: FUN_71035a4130 task-list initializer (analysis)
+
+**Source:** orchestrator manually extracted the 5,861-line, 204 KB decomp to
+`data/ghidra_cache/FUN_71035a4130.txt` (Ghidra MCP times out on this
+function). This round reads that cached decomp + targeted MCP follow-ups
+on the small helpers.
+
+### Writer set confirmation (`tools/xref_bin_scan.py 0x7105332fe8`)
+
+```
+WRITERS:
+  0x71035a526c  STR X   in fn 0x71035a4130 (FUN_71035a4130)   [SOLE]
+READERS (21):
+  0x7100555e20 FUN_7100555da0
+  0x71013430fc FUN_7101342830
+  0x710134f2c4 FUN_7101344cf0
+  0x710144fc5c FUN_710144f610
+  0x7101453c68 FUN_7101451ae0
+  0x71014559b4 FUN_7101455950
+  0x7101456270 FUN_7101455950
+  0x7101459324 FUN_7101458914
+  0x710159f5c4 FUN_710159f520
+  0x710159f5fc FUN_710159f520
+  0x7103559240 FUN_7103559220           register_task_active
+  0x7103559360 FUN_7103559340           register_task_inactive
+  0x71035ac290 FUN_71035a4130           (self - initializer tail)
+  0x710362689c FUN_71036260d0
+  0x7103646c14 FUN_710364630c
+  0x710365ac20 FUN_7103659b80
+  0x7103747564 main_loop (loop head)
+  0x7103749cc0 main_loop (body)
+  0x710374a080 main_loop (body)
+  0x710374b52c main_loop (body)
+  0x710374f0f8 FUN_710374d270
+```
+
+**Confirmed:** `FUN_71035a4130` is the sole writer of `DAT_7105332fe8`.
+Round 5's scan stands. Every other touch is a read.
+
+### Task-list store site (cached decomp lines 851..947)
+
+```c
+LAB_71035a50d0:
+  puVar19[5] = 0;                                  // [+0x28]
+  puVar19[6] = 0;                                  // [+0x30]
+  *puVar19 = &PTR_FUN_710522ed28;                  // [+0x00] vtable = 0x710522ed28
+  puVar19[1] = puVar19 + 1;                        // [+0x08] list head prev = &[+0x08]
+  puVar19[2] = puVar19 + 1;                        // [+0x10] list head next = &[+0x08]
+  puVar19[3] = 0;                                  // [+0x18] list size = 0
+  puVar19[4] = 0;                                  // [+0x20] vector begin
+  std::recursive_mutex::recursive_mutex(puVar19+7);// [+0x38] mutex
+  *(u8*)(puVar19 + 0xd) = 1;                       // [+0x68] flag = 1 (running?)
+  // ...capacity check on (puVar19[6] - puVar19[4])...
+  lVar25 = je_aligned_alloc(0x10, 0x1800);         // reserve 256 * 24 = 0x1800
+  puVar19[4] = base;                               // [+0x20] begin = base
+  puVar19[5] = base;                               // [+0x28] end = base (empty)
+  puVar19[6] = base + 0x1800;                      // [+0x30] cap_end
+  *(u8*)((long)puVar19 + 0x62) = 0;                // [+0x62]
+  *(u16*)(puVar19 + 0xc) = 0;                      // [+0x60]
+  puVar19[0xb] = 0;                                // [+0x58]
+  DAT_7105332fe8 = puVar19;                        // PUBLISH
+```
+
+Allocation size: **0x70 bytes**. No initial tasks are registered here —
+`FUN_71035a4130` only creates the empty task list and publishes it. All
+task registration happens later, from subsystem-specific code.
+
+### Task-list singleton layout (`TaskSystem` at `DAT_7105332fe8`)
+
+| Offset | Type | Field | Derivation |
+|--------|------|-------|------------|
+| +0x00  | `void**` | vtable (= `0x710522ed28`) | store in initializer |
+| +0x08  | `Node*` | list head prev (self-ref when empty) | `puVar19[1] = puVar19+1` |
+| +0x10  | `Node*` | list head next (self-ref when empty) | `puVar19[2] = puVar19+1` |
+| +0x18  | `size_t` | list size | `puVar19[3] = 0`; dtor iterates until `[3]==0` |
+| +0x20  | `Entry*` | vector begin (24-byte elements) | allocator stride 0x18 |
+| +0x28  | `Entry*` | vector end | `add_task` bumps by 0x18 |
+| +0x30  | `Entry*` | vector cap_end | `+0x1800` = 256 * 24 |
+| +0x38  | `std::recursive_mutex` (32 B) | mutex | `recursive_mutex::~recursive_mutex(this+7)` in dtor |
+| +0x58  | `u64` | aux field | `puVar19[0xb] = 0` |
+| +0x60  | `u16` | aux field | `*(u16*)(puVar19+0xc) = 0` |
+| +0x62  | `u8`  | aux flag | `*(u8*)(puVar19+0x62) = 0` |
+| +0x64  | `u32` | aux field | `*(u32*)(this+100) = 0` |
+| +0x68  | `u8`  | "running" flag (initially 1) | `*(u8*)(puVar19+0xd) = 1` |
+
+The singleton holds **two parallel containers**:
+
+- `std::list<std::shared_ptr<Task>>` at `[+0x08 .. +0x18]` (libc++ layout:
+  embedded end-node at +0x08, size at +0x18)
+- `std::vector<Entry>` at `[+0x20 .. +0x30]` where
+  `struct Entry { Task* raw; __shared_weak_count* ctrl; bool active; /*7 pad*/ };`
+  (24-byte stride, 256-element initial capacity)
+
+**Round 5's "+0x1f8 byte flag array" annotation was incorrect** — the
+0x70-byte TaskSystem struct has no field at +0x1f8. The bool flag is at
++0x10 of each 24-byte `Entry` in the vector, not a separate side-array.
+The loop-tail `ldrb w8,[x8, x28]` that Round 5 flagged as a "per-entry
+flag" reads from a different base — by that point in `main_loop`'s body
+the register allocator has reloaded `x21`/`x24`/`x28` with unrelated
+values. Resolving it requires a full decomp of the main_loop body, which
+timed out again this round (re-logged).
+
+### Task-list vtable at `0x710522ed28`
+
+Extracted via `.rela.dyn` scan (`R_AARCH64_RELATIVE`, 4 non-zero slots
+before the next vtable at `0x710522ed48`):
+
+| Slot | VA | Target | Purpose |
+|------|----|--------|---------|
+| +0x00 | `0x710522ed28` | `0x710354cc80` | destructor (confirmed — restores `*this = &vtable` then tears down mutex + vector + list) |
+| +0x08 | `0x710522ed30` | `0x710354cdd0` | (likely deleting dtor) |
+| +0x20 | `0x710522ed48` | — | **next class** (`PTR_LAB_710522ed48`) |
+
+The TaskSystem class is small — only ~4 vtable slots. **vt[0x28]
+(slot 5) in Round 5's frame-loop tail is NOT a method on TaskSystem**,
+it's a method on the per-entry `Task*`. TaskSystem only manages the
+container; the tick polymorphism lives on the individual tasks.
+
+**Class name: unresolved.** No RTTI typeinfo at vt[-0x08] (PIE binary,
+no reloc at `0x710522ed20`), no dynsym symbol name on this vtable, no
+nearby RTTI string. Candidate names (unconfirmed): `pead::TaskSystem`,
+`cross2app::TaskManager`. Working label: **`app::TaskSystem`** — tracked
+in docs only, NOT committed to headers until a string lead appears.
+
+### Destructor evidence (`FUN_710354cc80`, slot 0 of the vtable)
+
+```c
+void TaskSystem_dtor(TaskSystem* this) {
+  this->vtable = &PTR_FUN_710522ed28;
+  std::recursive_mutex::~recursive_mutex(&this->mutex);   // +0x38
+  // tear down vector<Entry>:
+  Entry* end = this->vec_end;                             // [+0x28]
+  for (Entry* p = end - 1; p >= this->vec_begin; --p) {   // stride -0x18
+    __shared_weak_count* ctrl = *(p + 8);                 // Entry::ctrl at +0x08
+    if (ctrl) {
+      // atomic dec ref via ldxr/stxr; if 0, call ctrl->vtable[0x10](ctrl)
+    }
+  }
+  je_free(this->vec_begin);
+  // tear down list<shared_ptr<Task>>:
+  if (this->list_size != 0) {
+    ListNode* head = this->list_head_next;
+    // walks { prev, next, Task* raw, __shared_weak_count* ctrl } nodes
+    for (ListNode* n = head; n != &this->list_head; ) {
+      ListNode* next = n->next;
+      if (n->shared_ptr.ctrl) { /* decrement + maybe free */ }
+      je_free(n);
+      n = next;
+    }
+  }
+}
+```
+
+This confirms every field in the layout table above. List-node layout
+inferred from the dtor: `{prev, next, Task* raw, __shared_weak_count* ctrl}`
+= 32 B per node.
+
+### The two task-registration helpers
+
+Both `FUN_7103559220` and `FUN_7103559340` were decompiled via MCP
+(successful — small functions). Both:
+
+1. Load `DAT_7105332fe8` into local var.
+2. Call `task->vtable[0x38]()` (slot 7) — a gate predicate returning int.
+3. Lock `TaskSystem::mutex`.
+4. Build a temporary `Entry = { task_raw, ctrl, bool }`, bumping ctrl refcount.
+5. If vector at capacity — call `FUN_710354d130(this+0x20, &entry)`
+   (standard `vector::emplace_back` growth helper).
+6. Otherwise write 24 bytes at `vec_end` and advance `this->vec_end += 0x18`.
+7. Call `task->vtable[0x40](task, bool)` (slot 8) — an `on_registered` callback.
+8. Decrement the local ctrl refcount.
+9. Unlock mutex.
+
+The two differ only in:
+
+| | `FUN_7103559220` | `FUN_7103559340` |
+|--|--|--|
+| Gate polarity | `if (vt[0x38]() == 0)` | `if (vt[0x38]() != 0)` |
+| Entry `.active` | `1` | `0` |
+| Extra setup | — | calls `vt[0xa8]()` and `vt[0x340]()` before gate |
+| Arg to `vt[0x40]` | `1` | `0` |
+| Xref count | 15 callers | 49 callers |
+
+Working names (pool A, not yet committed to src/):
+
+- `FUN_7103559220` -> `register_task_active`
+- `FUN_7103559340` -> `register_task_inactive`
+
+The skew (49 vs 15) suggests most subsystems start their task in the
+inactive state and enable it later via a separate path (likely vt[0x40]
+flipping `Entry::active`).
+
+### Task base class (inferred from the registration helpers)
+
+```c
+struct Task {                  // abstract
+  void** vtable;               // +0x00
+  // ... concrete subclass fields ...
+};
+
+// Task vtable (NOT task-list vtable) — slots used so far:
+//   slot 4  (+0x20)  alternate tick? (frame loop "alt path" per Round 5)
+//   slot 5  (+0x28)  primary tick    (frame loop main path per Round 5)
+//   slot 7  (+0x38)  registration gate, returns int
+//   slot 8  (+0x40)  on_registered(bool active) callback
+//   slot 21 (+0xa8)  teardown/pre-register hook (only FUN_7103559340)
+//   slot 104(+0x340) large vtable — confirms Task is a rich polymorphic base
+```
+
+A vtable with 104+ slots is large — this is not a narrow "tick" interface,
+it's a full subsystem base class. Likely candidates: `pead::Task`,
+`nn::util::Task`, `cross2app::IUpdatable`. Working label: **`app::Task`**
+until a string lead appears.
+
+### Initial tasks registered in `FUN_71035a4130`?
+
+**NONE.** The cached decomp was scanned end-to-end. After `DAT_7105332fe8`
+is published at line 947, the function continues with unrelated
+subsystem setup (`FUN_7103574120` x17 on `*plVar33 + (n*0x100 + 0x20)`,
+a 0x2b0-byte param-block allocation at lines 981..1087 full of float
+literals, then more singletons). No call back into `FUN_7103559220`
+or `FUN_7103559340` anywhere in the 5,861 lines, and no direct pointer
+write to `DAT_7105332fe8 + 0x20..+0x30` from elsewhere in the function.
+
+The task list starts **empty**. Every task is added later, from each
+subsystem's own initializer. This means the sim tick task is registered
+by whichever subsystem "owns" match simulation, not by the cluster
+initializer — consistent with a layered engine where the game-logic
+layer adds itself to the frame pump during stage/match boot, not during
+app boot.
+
+### Who calls `register_task_active` (FUN_7103559220)? (15 callers)
+
+| Caller | Function | Module guess |
+|--|--|--|
+| `0x710356d224` | `FUN_710356c910` | framework / scheduler |
+| `0x710356d310` | `FUN_710356c910` | framework / scheduler |
+| `0x71025ed810` | `FUN_71025ed7f0` | ? |
+| `0x710359fd10` | `FUN_710359f900` | framework |
+| `0x710048cd8c` | (bare) | early-boot |
+| `0x7100580058` | (bare) | early-boot |
+| `0x7100580114` | (bare) | early-boot |
+| `0x71006dd9b8` | `FUN_71006dd7d0` | ? |
+| `0x71006dda44` | `FUN_71006dd7d0` | ? |
+| `0x7103758390` | `FUN_7103757290` | pool-a territory |
+| `0x71037583d0` | `FUN_7103757290` | pool-a territory |
+| `0x71025eda7c` | `FUN_71025ed8b0` | ? |
+| `0x71025eda98` | `FUN_71025ed8b0` | ? |
+| `0x71035345cc` | (bare) | framework |
+| `0x7103579a84` | `FUN_7103579a60` | framework |
+
+`FUN_7103559340` has ~49 callers spanning `0x71005xxxxx` through
+`0x7103579xxx` — too many to enumerate inline, full list in Ghidra xrefs.
+
+### VERDICT
+
+**Task system pinned down. Sim-tick identity still unresolved.**
+
+Confirmed:
+
+- `DAT_7105332fe8` is a 0x70-byte custom TaskSystem singleton (list +
+  vector + recursive_mutex), allocated once by `FUN_71035a4130`, vtable
+  at `0x710522ed28` with ~4 slots, destructor at `0x710354cc80`.
+- Entries are `{ shared_ptr<Task>, bool active }` with 24 B stride.
+- Registration goes through `FUN_7103559220` (active) or
+  `FUN_7103559340` (inactive) — both mutex-guarded, both dispatch a
+  pre-gate vt[0x38] and a post-insert vt[0x40] on the task.
+- Task base class has a large vtable (>=104 slots). Per-frame tick is
+  `task->vt[0x28]` per Round 5's disassembly. Class name unrecovered.
+- `FUN_71035a4130` does NOT seed any initial tasks — the list starts
+  empty and is populated from subsystem-specific code paths.
+
+Remaining unknowns:
+
+- Task-list class name (no RTTI, no dynsym — needs a string lead)
+- Task base class name (same)
+- Which of the ~64 `add_task` call sites registers the fighter-touching
+  sim tick
+
+### Recommended Round 7
+
+1. **Audit the 15 `register_task_active` callers first.** Much smaller
+   set than the inactive-register path, and "register as active from the
+   start" fits a core per-frame pump better than "register disabled,
+   enable later". Start with `FUN_7103757290` (pool-a already has
+   `pool-a_FUN_7103757140.md` adjacent) and `FUN_710356c910` /
+   `FUN_710359f900` (framework-layer registrants).
+2. **For each caller, read its first argument into the add_task call**
+   — that's the concrete Task subclass. Its vtable `vt[0x28]` is what
+   runs every frame. Grep each `vt[0x28]` body for
+   `BattleObjectModuleAccessor`, `FighterManager`, `BattleObjectSlow`
+   touches — the one that hits is the sim tick.
+3. **If static enumeration stalls,** switch to the GDB strategy:
+   breakpoint at `FUN_7103559220` + `FUN_7103559340`, log every
+   `param_1[0]` (task pointer) + its vtable + the caller's return PC
+   during app boot. Reboot into a match and see which tasks appear
+   between "empty vector" and "first sim frame". The one whose LR
+   points into a Fighter/Match/Game module is the sim tick owner.
+4. Do not spend more compute manually chasing the main_loop body
+   decomp — Ghidra MCP can't handle it. Future rounds should work
+   from the registration call graph, not the loop itself.
+
+### Functions touched this pass (pool A)
+
+- `FUN_71035a4130` — cached decomp (204 KB) read end-to-end;
+  layout lines 851..947 extracted and annotated.
+- `FUN_7103559220`, `FUN_7103559340` — decompiled via MCP, both
+  registration helpers fully annotated.
+- `FUN_710354cc80` — TaskSystem destructor, decompiled via MCP,
+  used to cross-validate the singleton field layout.
+- `FUN_710374d270` — decompiled; turns out it reads
+  `*DAT_710593aa90` not `DAT_7105332fe8` for its actual iteration,
+  the task-list read was incidental (probably an `ldr x8, [adrp]`
+  that went dead after inlining).
+- `main_loop` (`FUN_7103747270`) — **RE-TIMED-OUT** on Ghidra MCP at
+  120s. Re-logged in `manual_extraction_needed.md`. Do not retry.
+- `.rela.dyn` scan at `0x710522ed28..0x710522f400` — raw extraction
+  via `data/main.elf` to recover vtable slot targets (PIE — all
+  slots are relocations, zero in file).
+
+### Artifacts this pass
+
+- `data/ghidra_cache/FUN_71035a4130.txt` — copied from main repo into
+  pool-a worktree for direct reads (204 KB, 5861 lines).
+- `data/ghidra_cache/manual_extraction_needed.md` — appended
+  `0x7103747270 (main_loop)` retry note.
+- No `src/` changes. Documentation-only pass per `WORKER-pool-a.md`.
+- No Ghidra renames this session (class names still unconfirmed —
+  refusing to publish `pead::TaskSystem` / `app::Task` to Ghidra
+  without an RTTI / string hit).
