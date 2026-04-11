@@ -229,3 +229,80 @@ no-op OOM shim only.
 - `docs/rollback/sim_tick_FOUND.md` — Round 8 watchpoint capture
 - Pool C Round 6 scheduler plumbing classification (in `docs/rollback/` history)
 - `include/app/modules/` — no relevant vtables; concrete task classes are unnamed
+
+---
+
+## Round 9 addendum — FUN_71022df070 audited (orchestrator, manual)
+
+The Round 8 blocker ("audit `0x71022df070`") is resolved. The function was
+too small to justify another pool (49 lines) — orchestrator audited it
+directly from the cached decomp at `data/ghidra_cache/FUN_71022df070.txt`.
+
+### Full BL and BLR inventory
+
+**Direct BLs (all 4):**
+
+| Line | Target | Classification |
+|------|--------|---------------|
+| 21 | `FUN_7103726540(param_2[1], 0)` | scheduler internal (Pool C Round 6) — CLEAN |
+| 25 | `FUN_7103726690(plVar1)` | scheduler state query (same 0x7103726xxx region) — CLEAN |
+| 36 | `FUN_7103724a80(plVar1)` | RECURSION into the parent — already audited clean (Pool A Round 8) |
+| 40 | `FUN_7103726540(...)` | same as line 21 — CLEAN |
+
+**Indirect vtable dispatches (all 3):**
+
+| Line | Dispatch | Interpretation |
+|------|----------|---------------|
+| 15 | `param_1->vt[+0x60]` (slot 12) | per-tick fast path, runs when `[+0x1c] == 0` |
+| 31 | `plVar3->vt[+0x40]` (slot 8) on `param_1[0x11]` | query/getter with two stack output structs |
+| 45 | `param_1->vt[+0x90]` (slot 18) | exit hook after children complete |
+
+### Structural notes
+
+- `plVar1 = param_1 + 10` (byte offset `+0x50`) is the parameter passed to the
+  recursive `FUN_7103724a80` call — confirming the parent→child DAG walk.
+- Fields at `[+0xe]`, `[+0xf]`, `[+0x10]`, `[+0x11]`, `[+0x1c]`, `[+0xdc]`,
+  `[+0xe1]` are the task object's state/flags/child-pointer slots.
+- The predicate `[lVar4+0x30] == [lVar4+0x38]` checks if a vector at
+  `param_1[0xf]` is empty (begin == end).
+
+### Safety verdict
+
+**CLEAN at the outer-shell level.** `FUN_71022df070` itself makes zero
+direct service calls. Its indirect dispatches (`vt[+0x60]`, `vt[+0x40]`,
+`vt[+0x90]`) ARE the sim body — they land in concrete per-type task
+methods whose implementations are the fighter/battle-object update
+functions. These cannot be exhaustively audited statically because they
+span ~60 MB of game logic.
+
+### Combined verdict (Rounds 8 + 9)
+
+The entire outer shell from `main_loop` to `FUN_71022df070` is proven
+clean. The only uncovered paths are:
+
+1. The concrete sim body vtables (`vt[+0x60/+0x40/+0x90]` on the specific
+   task class) — these are WHERE the fighter sim runs, so they're the
+   whole point of calling the sim BL. "Auditing" them fully is equivalent
+   to decompiling the entire fighter module.
+2. The one conditional OOM retry path in `FUN_7103724a80` itself
+   (Pool A Round 8) — Eden must shim `DAT_7105331f00->vt[+0x30]` anyway.
+
+### Recommendation for Eden
+
+**Ship-unblocked with defense-in-depth strategy:**
+
+1. Install Pool A's shim on `DAT_7105331f00->vt[+0x30]` during resim window
+2. Install resim-mode PLT fault on every `nn::*` stub (Pool A rec #3)
+3. First resim attempt: `dynarmic_call_guest(0x7103724a80, sim_root)` with
+   the guards in place
+4. If the PLT fault fires, log the stub name + PC and fall back to host-mode
+   single-player-style rollback (snapshot restore, skip resim, accept a
+   1-frame input delay hit)
+5. Track any PLT fires over a large test run; if the set is small and
+   deterministic, add per-stub shims. If it's large or unbounded, the
+   resim approach is not viable and Eden needs a different architecture
+   (save-state restore only, no resim)
+
+This is sufficient to start the Eden prototype. Branch coverage of the
+fighter module can happen during integration testing, not as a static-
+analysis precondition.
