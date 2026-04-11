@@ -1995,3 +1995,259 @@ The right tool for "who writes this global" when Ghidra's xref index is incomple
 5. Also check every `BL` where an argument register `X0..X7` holds the exact target (setter-helper pattern) and every store where the source register currently holds the target (pointer-init pattern).
 
 For the record, Pool C's scanner found 3 reads, 1 write, 0 setter-helper `BL` calls, 0 pointer-init stores, searching the full ~60 MB `.text`. Total scan time ~10 s per query. The script lived in the pool-c scratch buffer (not committed); a next pool that wants a reusable version should write it to `tools/xref_bin_scan.py`.
+
+---
+
+## Pool C — Round 3: productized scanner + phase-6/7 indirect-dispatch re-examination
+
+### `tools/xref_bin_scan.py` (productized)
+
+The ADRP-propagation scanner from the previous round is now a committed
+tool. Invocation:
+
+```bash
+python tools/xref_bin_scan.py 0x710593a530
+python tools/xref_bin_scan.py 0x710593a530 --non-zero-writes
+python tools/xref_bin_scan.py 0x710593a000-0x710593a600   # range form
+python tools/xref_bin_scan.py 0x710593a530 --writers-only
+python tools/xref_bin_scan.py 0x710593a530 --called-as-arg
+```
+
+Coverage:
+- ADRP seeding + `MOV Xd, Xn`, `ADD Xd, Xn, #imm{,<<12}`, `SUB Xd, Xn, #imm{,<<12}` propagation
+- Load/store forms: `LDR/STR W/X/B/H/S/D/Q` (unsigned-imm), `LDUR/STUR W/X/B/H`, `LDP/STP W/X/D/S/Q` (offset/pre/post), `LDAR/STLR W/X/B/H`, `LDXR/STXR W/X`
+- Setter-helper `BL` detection (target address passed in `X0..X7`)
+- Pointer-init store detection (Rt holds the target as a value)
+- `RET`/uncond-`B` end a basic block and clear the tracked-register state
+- Function attribution via `data/functions.csv` (nearest-prior function)
+- `--runtime-base` defaults to `0x7100000000` (SSBU runtime load addr)
+
+**Test result on `0x710593a530`:** 1 writer, 3 readers, 0 BL args, 0 ptr
+init — matches Pool C's earlier manual scan byte-for-byte:
+
+```
+WRITERS:
+  0x71004467ec  STP X (off)     ea=0x710593a530  in fn 0x7100446630
+READERS:
+  0x7101f17f7c  LDR W           ea=0x710593a530  in fn 0x7101f17bfc
+  0x71036552c8  LDR W           ea=0x710593a530  in fn 0x7103654b20
+  0x7103747bf8  LDR W           ea=0x710593a530  in fn 0x7103747270 (main_loop)
+# summary: W=1 R=3 B=0 P=0
+```
+
+(The `in fn ...` column uses `data/functions.csv`'s nearest-prior
+entry. The true writer container at `0x7100446400` and the reader
+containers at `0x7101f17ef0` / `0x7103655274` are Ghidra-undefined so
+they don't appear in the csv — the attribution points at the nearest
+named neighbor, which is good enough for human review.)
+
+Pools A and B should switch to `tools/xref_bin_scan.py` next session
+instead of reimplementing the inline scanner each time.
+
+### Phase-6/7 dead-end re-examination
+
+Pool B's pass-1 classification used a BL-only sweep, which is blind to
+indirect dispatches of the form `LDR Xn, [Xm, #imm]; BLR Xn`. Re-examined
+all four candidates by pulling fresh disassembly and grepping for `blr`:
+
+| Function          | Size  | `blr` found | What gets called                                               | Verdict                    |
+|-------------------|-------|-------------|----------------------------------------------------------------|----------------------------|
+| `FUN_7103593c40`  | 792 B | **2**       | vtable[1] on two shared-ptr-held objects (`+0x3f0`, `+0x418`)  | interesting — shared_ptr release, probably not sim-tick |
+| `FUN_71035c13d0`  | 1048 B | **7**      | vtable[3], vtable[2], vtable[7], vtable[8] through weak-ref `lock()` | **STRONG** — observer-pattern dispatch |
+| `FUN_71036186d0`  | 1188 B | **0**       | (direct calls only: camera/matrix math)                        | confirmed dead end         |
+| `FUN_7103619080`  | 432 B  | **6**      | vtable[6] allocator + vtable[2]/[3] per-element visitor        | **STRONGEST** — visitor with flag-gated dispatch |
+
+**Pool B's BL-only classification missed 15 indirect dispatches across
+three of four candidates.** The only one that is genuinely a BL-only
+dead end is `FUN_71036186d0` (a pure-math camera/viewport setup with no
+virtual calls at all).
+
+Crucial additional fact: **`mcp__ghidra__get_xrefs_to` confirms all three
+of the non-dead candidates are called directly from main_loop
+(`FUN_7103747270`)**:
+
+- `FUN_7103619080` ← `FUN_7103747270 @ 0x710374b124`
+- `FUN_71035c13d0` ← `FUN_7103747270 @ 0x710374af6c`
+- `FUN_7103593c40` ← `FUN_7103747270 @ 0x7103749a90`
+
+So every indirect dispatch inside these three functions is reachable
+from the same per-frame entry that already hosts Pool B's Dispatcher A.
+main_loop's indirect reach is significantly larger than the BL-only
+view suggested.
+
+### `FUN_7103619080` — strongest candidate
+
+432-byte visitor loop. Structure (x0 = param1, a subsystem object
+loaded at call site via `LDR X0, [X21, #0xce8]`):
+
+```
+x22 = [x0, #0x500]        ; vector begin pointer
+x23 = [x0, #0x508]         ; vector end pointer
+while (x22 != x23) {
+    obj = *x22             ; element is an object pointer
+    if (obj->flags[0xf1] != 0) {
+        subsys = x0->[0x518]
+        factory = subsys->[0x50]
+        // vtable[6] factory call — allocate + zero + return new node
+        new_node = factory->vt[6](factory, &sz, &align)
+        new_node->hdr  = &DAT_7105266f80
+        new_node->size = 0x60
+        // vtable[2] copy of subsys->[0x50] into new_node->[0x30]
+        if (cloned = factory->vt[2]()) store at new_node->[0x30]
+        // vtable[2] copy of subsys->[0x80] into new_node->[0x60]
+        if (cloned = subsys->[0x80]->vt[2]()) store at new_node->[0x60]
+        new_node->type_tag = &DAT_7105230f18
+        // vtable[3] method call — hand new_node to the element
+        obj->vt[3](obj, new_node)
+    }
+    x22 += 8
+}
+```
+
+Key observations:
+1. The `obj->flags[0xf1]` byte is the per-element "enabled" predicate —
+   exactly the kind of boolean you'd expect on a match-active gate.
+2. The loop **builds a new heap node per element** (allocator vtable[6]
+   + two copy-constructs), populates it with two cloned sub-structures
+   from `subsys->[0x50]` and `subsys->[0x80]`, tags it with two static
+   type descriptors (`DAT_7105266f80`, `DAT_7105230f18`), then passes it
+   to `obj->vt[3]`. **This is a command/visitor packet being dispatched
+   per element.** It's the exact shape of a per-tick snapshot or event
+   broadcast.
+3. Vtable slot [3] is the same slot used by Pool B's Dispatcher A
+   (`this->something->vt[3]` at 0x71037475d8). The two dispatchers may
+   be driving the same virtual interface on different element lists.
+4. The two static tags at `DAT_7105266f80` (= 0x60-byte type) and
+   `DAT_7105230f18` (= some descriptor) would uniquely identify this
+   command type if resolved. A next pass should dump those two globals
+   to see if they name a packet type.
+
+**If Pool B's Dispatcher A ends up unreachable at runtime (because of
+the `DAT_710593a530 == 3` dead branch documented above),
+`FUN_7103619080` is the best fallback candidate for the per-element
+sim-tick broadcast.**
+
+### `FUN_71035c13d0` — second strongest
+
+1048-byte "double observer sweep":
+
+```
+if (x19->[0x160] || x19->[0x161]) {
+    // refresh a cached "thing" via a global singleton chain:
+    //   ldr x8, [adrp(0x7105336000) + 0xce8]   ; global A
+    //   ldr x8, [x8 + 0x10]                    ; subsys
+    //   ldr x0, [x8 + 0xa8]                    ; target
+    //   vt[3](x0, &out)                         ; BLR #1 — getter
+    x20 = result
+    // copy x19->[0x140..0x160] into *out (16 floats)
+    // clear x19->[0x160/161] bytes
+    x20->vt[2]() ; BLR — reader
+    x20->vt[3]() ; BLR — setter
+}
+
+// sweep #1: x19->[0x60..0x68] paired with iterator x19->[0x8..0x10]
+foreach pair {
+    elem = iter->[0x8]; obj = lock(elem)   // weak_ptr::lock
+    if (obj) {
+        inst = *iter
+        // refcount ++, --
+        stream = iter_extra
+        stream->vt[7](stream, &outer_buf)   ; BLR — observer.onX(packet)
+        refcount-- / dtor if zero
+    }
+    iter += 0x10
+}
+
+// sweep #2: x19->[0x78..0x80] paired with x19->[0x8..0x10]
+foreach pair {
+    ... same pattern, calls stream->vt[8](stream, w1, <q0, q1>)
+}
+```
+
+This is **two independent observer broadcasts** over the same
+iter-list (x19 + 0x8..+0x10) with two different downstream event
+streams (x19 + 0x60..+0x68 and x19 + 0x78..+0x80), calling
+`vt[7]` and `vt[8]` respectively. Every element is dereferenced through
+`lock()` (`FUN_71039c21b0` — weak_ptr::lock, confirmed by the ldxr/stxr
+refcount cmpxchg that follows).
+
+**Interpretation:** this is probably a graphics/audio per-frame "tick
+your observers" method — the weak_ptr iteration pattern, the two
+streams, and the per-element vector math (q0/q1 passed at the vt[8]
+call) are more consistent with render or audio event broadcast than
+with rollback sim state. But it is NOT a dead end; the BL-only sweep
+hid seven virtual calls worth of reach.
+
+### `FUN_7103593c40` — shared_ptr release, probably not sim-tick
+
+792-byte ring-buffer-advance function. The body is all scalar arithmetic
+on `[x0 + 0x502..+0x540]` (two pairs of 16-bit ring cursors plus a
+fraction) followed by two near-identical shared_ptr release blocks:
+
+```
+x8 = x19->[0x3f8]
+if (x8 && *x8 == x19->[0x400] && --x19->[0x408] >= 0) {
+    ptr = x19->[0x3f0]
+    x19->[0x3f0/3f8/400] = 0
+    if (ptr && *x8 == x19->[0x400]) {       // re-check
+        dtor = (*ptr)->vt[1]
+        dtor(ptr)                             ; BLR — object destructor
+    }
+}
+// identical block for x19->[0x418..+0x430]
+```
+
+Both `blr` calls are vtable slot 1 (= destructor), invoked only when a
+refcount hits zero. This is standard `std::shared_ptr` release, not a
+dispatch to game logic. Classify as "interesting but almost certainly
+not sim-tick" — the indirect calls only fire during object teardown.
+
+### `FUN_71036186d0` — confirmed dead end
+
+1188 bytes, **zero `blr` instructions**. Pure matrix/camera setup:
+reads a global camera state at `[x21]`, computes viewport derivatives,
+writes them to `[x20 + 0x20..+0x298]`, and calls three direct helpers
+(`FUN_71035727d0`, `FUN_7103569a80` x3, `FUN_710365c8d0` x2,
+`FUN_71039c6040`). Pool B's classification stands: this really is a
+BL-only function and the BL-only sweep was sufficient to verify it.
+
+### Most promising (ranked)
+
+1. **`FUN_7103619080` — visitor/command-packet broadcast with per-element
+   flag gate.** Strongest pattern match for per-tick element broadcast.
+   Reachable from main_loop.
+2. **`FUN_71035c13d0` — double observer broadcast over weak_ptr lists.**
+   Second strongest; pattern fits render/audio event broadcast but could
+   also be a sim observer list depending on what the two stream objects
+   are.
+3. (Low) `FUN_7103593c40` — ring-buffer advance plus shared_ptr release;
+   indirect calls only fire during object teardown.
+4. (Dead) `FUN_71036186d0` — camera/viewport math, no virtual dispatch.
+
+### Recommended next pass
+
+1. Resolve the two static type tags stored into the visitor packet in
+   `FUN_7103619080` (`DAT_7105266f80` and `DAT_7105230f18`). If either
+   is a vtable or a string literal / RTTI name, it will uniquely
+   identify the command type and therefore the interface whose `vt[3]`
+   is being invoked.
+2. Run `tools/xref_bin_scan.py` on `0x7105266f80` and `0x7105230f18` —
+   any `LDR` reader of these tags is a consumer of the same packet
+   type, which gives you the full set of dispatch targets.
+3. Dump the struct at `main_loop`'s `x21 + 0xce8` to identify which
+   subsystem owns the x0 parameter passed into `FUN_7103619080` — that
+   will tell us what list of objects is being visited.
+4. If `FUN_7103619080` turns out to be sim-state related, the `+0xf1`
+   gate byte on each element is the real match-active predicate that
+   `DAT_710593a530 == 3` was standing in for.
+
+### Methodology lesson
+
+**BL-only sweeps are a systematic blind spot.** Any future "is this
+function a sim-tick candidate" classification must look for indirect
+dispatch patterns (`LDR Xn, [...]; BLR Xn` and `BR Xn`) before
+concluding "dead end". The concrete filter is trivial — grep the
+disassembly for `blr` / `br x` — but Pool B's pass-1 did not do it,
+and the cost of that omission was three missed live leads from a pool
+of four candidates (75% false-negative rate on this set).
+

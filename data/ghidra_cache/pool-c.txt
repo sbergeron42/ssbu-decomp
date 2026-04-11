@@ -945,3 +945,9 @@ So FUN_710353d000 writes to [0x710593a520] (heap ptr), not to 0x710593a530.
    impossible: the writer of 3 does not exist statically. The assignment
    should be re-scoped as "find the real match-state flag" for the next
    session.
+
+
+# ========== Round 3: phase-6/7 indirect-dispatch re-examination ==========
+# Source: mcp__ghidra__disassemble_function for each candidate.
+# Summary: 3 of 4 candidates have hidden indirect dispatches; all 3 are called directly from main_loop (FUN_7103747270).
+# See docs/rollback/sim_tick_hunt.md Round 3 section for detailed writeup.
