@@ -5926,6 +5926,44 @@ code.
    cluster at `0x7104f62410` — sibling task class enumeration to confirm
    the "transform task pool" interpretation of `DAT_7105332120`.
 
+### Addendum — both functions are vtable slots, not free init calls
+
+Xref lookup (`mcp__ghidra__get_function_xrefs`) reveals:
+
+| Function | Xref | Type |
+|---|---|---|
+| `FUN_71014b2a40` | `0x7105069c78` | DATA (1 xref total) |
+| `FUN_7101523b60` | `0x710506cce8` | DATA (1 xref total) |
+
+**Both functions have exactly one xref each, and both are DATA xrefs into
+the `0x7105069xxx` / `0x710506cxxx` vtable cluster** — the same region
+that holds the `PTR_FUN_7105069db0` container vtable and sibling
+wrappers. In other words, these functions are not freestanding
+initializers called from `nnMain`; they are **virtual method slots** in
+still-unnamed parent classes, invoked via `obj->vt[N]()` from framework
+code during object construction or state transitions.
+
+This changes the picture in two useful ways:
+
+1. **When these run is controlled by the parent object's lifecycle.** If
+   the parent is instantiated once at game boot, these run once. If
+   instantiated at match start, they run per match. Either way, the
+   `FUN_7101344cf0()` call at the top is still argless and still does
+   not register a task with `DAT_7105332120`.
+
+2. **The "5 Ghidra-xref'd callers" of `FUN_7101344cf0` includes the 3
+   DATA xrefs** that pool-c is investigating in a separate thread. Those
+   3 are also almost certainly vtable slots in the same cluster, meaning
+   the ENTIRE `FUN_7101344cf0` xref graph is: 5 virtual methods in the
+   `PTR_FUN_7105069xxx` family, each doing `call_init_stub() +
+   singleton_setup()`. That is consistent with a **lazy-init pattern**
+   on a small family of cross2app match / UI managers, each of which
+   triggers the task-system singleton to come up on first use.
+
+The Round 6 addendum's NEON-math vt[2] at `0x71003ab590` remains the
+decisive evidence: the task system itself is not the sim scheduler. The
+Round 7 caller audit strengthens but does not change that verdict.
+
 ### Artifacts this pass
 
 - `data/ghidra_cache/pool-b.txt` — Round 7 section appended with full
@@ -5934,4 +5972,5 @@ code.
   pass per `WORKER-pool-b.md`).
 - `FUN_71014b2a40` and `FUN_7101523b60` decomps re-verified via
   `mcp__ghidra__decompile_function_by_address` and
-  `mcp__ghidra__disassemble_function`.
+  `mcp__ghidra__disassemble_function`; xref counts via
+  `mcp__ghidra__get_function_xrefs`.
