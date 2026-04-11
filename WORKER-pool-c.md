@@ -2,63 +2,52 @@
 
 ## Model: Opus
 
-## Task: ROLLBACK Round 5 — investigate main_loop's `this->vtable[0x18]` BeginFrame hook
+## Task: ROLLBACK Round 6 — walk the frame-loop body and classify each per-task vt[0x28] dispatch
 
-## Priority: HIGHEST — runs BEFORE the prologue and may BE the per-frame entry
+## Priority: HIGHEST — directly identifies which task(s) the sim tick lives in
 
 ## Context
-Read `docs/rollback/sim_tick_hunt.md` first. Pool A's Round 4 disassembly of main_loop's prologue revealed:
+Read `docs/rollback/sim_tick_hunt.md` first. You found the actual frame loop in Round 5: `0x7103747504..0x710374cbc0` inside main_loop. The loop iterates a task list and dispatches `task->vt[0x28]` (or alt `vt[0x20]`) on each.
 
-```
-0x71037472a4: ldr  x8, [x0]                 ; x8 = (*this)->vtable
-0x71037472a8: ldr  x8, [x8, #0x18]          ; vt[0x18] = beginFrame hook
-0x71037472ac: mov  x21, x0                  ; x21 = cached `this` (app driver)
-0x71037472b0: blr  x8                       ; *** beginFrame() *** -- runs FIRST
-0x71037472b4: str  x21, [DAT_710593a4c0]    ; publish this
-```
-
-The very first thing main_loop does after caching `this` is invoke `vt[0x18]` on its `this` pointer. This call:
-- Runs BEFORE the prologue installer (`DAT_710593a510` is set as a side effect of THIS call)
-- Is an indirect dispatch through `this`'s vtable
-- The vtable belongs to the class constructed by `FUN_7103723fa0` at vtable address `0x710523bd38` (Pool A's Round 4 work — they extracted 16 vtable slots, but slot `0x18 / 8 = 3` was listed as "ret (empty stub)")
-
-**WAIT — Pool A said slot 3 is empty. But the prologue clearly calls slot 0x18 (= slot 3 if /8) and gets back a function pointer that does work.** Either:
-- Pool A's slot extraction was wrong (the .rela.dyn parse missed slot 3)
-- The "this" passed to main_loop is NOT the class constructed by FUN_7103723fa0
-- The vtable layout is different in the running binary than what static parsing showed
-
-**This is the lead.** Resolve the contradiction.
+Pool A is decoding the task-list initializer. Pool B is decoding the add/remove helpers and enumerating registrants. **Your job: walk the actual frame-loop body and identify the concrete tasks dispatched per-frame**, by tracing each per-task BL through to a concrete vtable.
 
 ## What To Do
 
-### 1. Verify the vtable address being used at runtime
-- main_loop's prologue at `0x71037472a4` does `ldr x8, [x0]` — load the vtable pointer from the `this` object
-- The `this` is whatever `nnMain` constructs and passes — Pool A says it's `FUN_7103723fa0`'s output (vtable at `0x710523bd38`)
-- Re-verify: is the vtable at `0x710523bd38` actually slot-0x18-empty? Or did Pool A miss a relocation?
-- Use `tools/xref_bin_scan.py` to dump every relocation that points into `0x710523bd38..0x710523bdc0`
-- If slot 3 IS populated, what does it point to?
+### 1. Re-read the frame-loop body
+- Use `Read` on `data/ghidra_cache/main_loop_7103747270.txt` and find the section corresponding to `0x7103747504..0x710374cbc0`
+- This is ~22 KB of body — find every BL inside the loop
+- Pay special attention to the indirect dispatches (`blr xN` after vtable loads), and the `0x710374cb68 task->vt[0x28]` dispatch you identified in Round 5
 
-### 2. If slot 0x18 is genuinely a function, decompile it
-- Whatever it is, it's the FIRST per-frame call. It writes `DAT_710593a510` as a side effect (we know this from Pool A's prologue analysis).
-- What ELSE does it do?
-- Does it call into `FighterManager`? `BattleObjectWorld`? Iterate fighter slots?
-- Look for any vtable dispatch on a `BattleObjectModuleAccessor*` pointer or any of the known module headers
+### 2. Enumerate the indirect dispatches inside the loop
+For each `blr` inside the frame loop:
+- What's loaded into the called register?
+- Is it a vtable slot off a task pointer? Off a different singleton?
+- Document the dispatch shape
 
-### 3. If slot 0x18 is genuinely empty
-- Then `nnMain` is NOT passing `FUN_7103723fa0`'s output. Pool A's chain is broken at the FIRST step.
-- Re-decompile `nnMain` (or read the cached version if Pool A logged it) and find the EXACT object passed to main_loop
-- That object's vtable is what we need
+### 3. Trace the task vtable concretely
+At the loop tail (`0x710374cb68`), `task->vt[0x28]` is called. The task is `*(start)` where `start = task_list[0x20]`. Each loop iteration advances `start += 8` (single-pointer step), so the vector elements are `Task*` pointers.
 
-### 4. Investigate `DAT_710593a4c0` and `DAT_710593a534`
-While you're at it, audit these two cached handles main_loop publishes:
-- `DAT_710593a4c0` = cached `this` (the application driver)
-- `DAT_710593a534` = cached frame phase int (Pool C's Round 3 noted 27 readers)
-- Use `tools/xref_bin_scan.py` to find readers/writers
-- Are any of the readers in the `0x71036xxxxx` (sim driver suspect) range?
-- Are any readers' callees on a per-frame path?
+To find the concrete task vtables:
+- Use `tools/xref_bin_scan.py` to find every store of any value into the offset range `[*DAT_7105332fe8 + 0x20..+0x28]`
+- Each writer is an `add_task` callsite
+- Each writer's source value (the `Task*` being stored) traces back to a constructor with a vtable
+- That vtable is a concrete task type
 
-## CRITICAL — Stop and ask if this round dies
-This is round 5. If `vt[0x18]` is empty AND the cached handles have no sim-shaped readers, **STOP** and write a clear "static analysis is exhausted" verdict.
+### 4. For each concrete task vtable, decompile vt[0x28]
+- Each vt[0x28] is a per-frame tick method
+- Look for sim-shaped patterns:
+  - Iterating `FighterManager` entries
+  - Touching `BattleObjectModuleAccessor` vtable slots `+0x38..+0x188`
+  - Calling `FighterStatus::*` (vtable at `0x7104f7f2e8` from Pool A's earlier find)
+  - Reading/writing RNG state (`DAT_71052c25b0` area)
+  - Touching `FighterAI` state
+- The first vt[0x28] that hits ANY of these IS the sim tick
+
+### 5. Cross-validate
+- If Pool A or Pool B finished first, read their committed findings
+- Pool A names the task-list type and possibly initial registered tasks
+- Pool B names every add_task caller
+- Cross-reference: which subsystems' add_task calls match the per-task vtables you found?
 
 ## Stop-and-document rule
 If `mcp__ghidra__*` errors/timeouts:
@@ -70,25 +59,25 @@ If `mcp__ghidra__*` errors/timeouts:
 Append to `docs/rollback/sim_tick_hunt.md`:
 
 ```markdown
-## Pool C — Round 5: BeginFrame hook (vt[0x18]) investigation
+## Pool C — Round 6: frame-loop body walk + per-task classification
 
-### Vtable resolution
-- Pool A claimed vtable[0x18] = empty stub at 0x710523bd38+0x18
-- Re-verification: [confirmed empty / Pool A missed slot — actual target is 0xXXXX / wrong vtable entirely]
+### Indirect dispatches inside frame loop body (0x7103747504..0x710374cbc0)
+| BL site | Target | Source | Notes |
+|---------|--------|--------|-------|
+| 0xXXXX  | task->vt[0x28] | task list | per-task tick |
+| 0xXXXX  | other->vt[N]   | ...      | ...           |
 
-### vt[0x18] body (if found)
-[what it does — does it iterate fighters?]
+### Concrete task vtables
+| Vtable | Class | vt[0x28] target | Sim-shaped? |
+|--------|-------|------------------|-------------|
+| 0xXXXX | ...   | 0xXXXX          | YES/NO      |
 
-### Cached handle audit
-- DAT_710593a4c0 readers: [N — list interesting ones]
-- DAT_710593a534 readers: [N — list interesting ones]
-- Any sim-shaped readers? [details]
-
-### VERDICT
-[SIM TICK FOUND at 0xXXXX]
-[OR: BeginFrame hook is empty / does only X — sim tick is elsewhere]
-[OR: STATIC ANALYSIS EXHAUSTED — recommend GDB watchpoint approach]
+### Sim tick verdict
+[FOUND at task vtable 0xXXXX, vt[0x28] = FUN_YYYY, registered by subsystem Z]
+[OR: Multiple sim-shaped tasks — list candidates]
 ```
+
+If you find the sim tick, write a TL;DR at the top of the section so the rollback team can read it instantly.
 
 ## Quality Rules
 - NO `FUN_` names in committed src/ code

@@ -1272,3 +1272,159 @@ Next-hop recommendation:
   - Once the task-list type is known, walk its member vtables for
     ones whose vt[0x28] target calls into FighterManager or
     BattleObjectWorld — that IS the sim tick.
+
+== Session 2026-04-10 Round 6: frame-loop body walk + fiber scheduler ==
+
+Body extract: data/ghidra_cache/main_loop_body.txt (5348 insns, 0x7103747504..0x710374cbc0)
+Full: data/ghidra_cache/main_loop_disasm.txt (5902 insns)
+
+Body calls:
+  - 224 direct BLs (72 unique targets)
+  - 169 indirect blr x8/x9
+  - 0 adrp references to RNG page 0x71052c2xxx
+
+Key targets decompiled:
+  - FUN_710354c720 = phx::Fiber-based wait_or_yield (TlsSlot-based, nn::os::GetTlsValue + switch_to_fiber)
+  - FUN_7103549170 = Scheduler::submit_task(node, runner, q, prio); signals nn::os::LightEvent
+  - FUN_7103548240 = generic task runner; calls (*self->vt[0x10/8])(self) then walks child list
+  - FUN_7103559340/220 = pending add/remove for the UNRELATED DAT_7105332fe8 listener queue
+  - FUN_71035763c0 = vertex color-decode math (render)
+  - FUN_71014b2a40 = primary caller of FUN_7101344cf0 (module set registrar)
+
+Task-tree root DAT_7105332120 (xref_bin_scan):
+  W: 0x7100440518 STP X in FUN_710043ff00 (init zeroing)
+  W: 0x7101348738 STLRB in FUN_7101344cf0 (task_tree_add)
+  W: 0x71037494c8 STR X in main_loop (unlink state==2 pass)
+  R: 0x710134872c LDR X in FUN_7101344cf0
+  R: 0x71037494a0 LDR X in main_loop
+
+Xrefs to FUN_7101344cf0 (task_tree_add):
+  - FUN_71014b2a60 in FUN_71014b2a40 (UNCONDITIONAL_CALL) — primary, module set registrar
+  - FUN_7101523b80 in FUN_7101523b60 (UNCONDITIONAL_CALL) — secondary
+  - 0x710151a5d0 (UNCONDITIONAL_CALL) — inline
+  - 0x7105060680 (DATA) — vtable slot
+  - 0x710506b0f8 (DATA) — vtable slot
+  - 0x710506c5b8 (DATA) — vtable slot
+
+FUN_7101344cf0 decomp TIMED OUT (>120s) — added to manual_extraction_needed.md
+
+main_loop -> FUN_7103747270 xrefs: only From 71002c5cec in nnMain (UNCONDITIONAL_CALL)
+Confirmed main_loop is the nnMain direct invocation.
+
+Three-phase submit pattern in body (each submits DAT_7105332120 tasks, then waits):
+  Phase 1: submit loop 0x7103749484, submit BL 0x71037494f8
+  Phase 2: submit loop 0x7103749520, submit BL 0x7103749594
+  Phase 3: submit loop 0x7103749ad8, submit BL 0x7103749b20
+  Waits: FUN_710354c720 at 0x710374755c, b2b0, b2e8, b57c, b5a4, b5cc
+         (11 total wait sites across the body)
+
+Task struct shape (inferred):
+  +0x00 vtable
+  +0x08 scheduler node (task + 0x8, runner receives this)
+  +0x48 next sibling (linked list through head DAT_7105332120)
+  +0x50 u8 spinlock
+  +0x68 u32 queue_id
+  +0x6c u32 priority
+  +0x70 u8 state {0=submit, 1=skip, 2=unlink-and-destroy}
+
+Tick function: vt[2] (byte offset +0x10), NOT vt[0x28] as Round 6 spec asked.
+Round 5's vt[0x28] belongs to the tail *cleanup* loop at 0x710374caf0..cbc0 that
+drains objects placed in +0x1f30 pending-destroy slots — freed immediately after
+dispatch via bl 0x710392e590 (operator delete).
+
+CONCLUSION: Sim tick is NOT directly in main_loop. Sim runs as a task
+registered through FUN_7101344cf0 and dispatched as vt[2] on a worker thread.
+Identification blocked on manual extraction of FUN_7101344cf0 + decomp of
+FUN_7101523b60, FUN_710151a5d0, and the 3 DATA xrefs.
+
+== Session 2026-04-10 Round 6 addendum: ground-truth task vtable ==
+
+Correction: FUN_7101344cf0 is a Ghidra mega-blob with zero direct BL callers.
+The real task_tree_add code is at 0x71013486c0..0x7101348738 inside that blob,
+extracted from the full disassembly dump.
+
+GROUND TRUTH task vtable: 0x7104f623c0 (fixed compile-time constant)
+  Stored by: 0x71013486e4 (str x8,[x0]) where x8 = 0x7104f62000 + 0x3c0
+
+Task class vtable slots (via .rela.dyn R_AARCH64_RELATIVE type 1027):
+  slot[0] (0x7104f623c0) -> 0x71003ab470  (dtor candidate)
+  slot[1] (0x7104f623c8) -> 0x71003ab4f0  (deleting dtor candidate)
+  slot[2] (0x7104f623d0) -> 0x71003ab590  (vt[2] = what generic runner calls)
+  slot[3,4] -> no relocation
+  slot[5] -> 0x71003abd20
+  slot[6] -> 0x71003abd30
+  slot[7] -> 0x71003abd40
+
+PROBLEM: All three candidate virtual methods decode as pure NEON matrix/quat math
+with no BL branches in their first 40 insns. Ghidra reports "no function at
+or containing address" for all of them. They are hand-optimized leaf NEON
+kernels, not high-level C++ virtual methods.
+
+REVISED HYPOTHESIS: DAT_7105332120 is a TRANSFORM/ANIMATION task pool, not a
+generic per-frame subsystem scheduler. main_loop is the cross2app framework
+main thread (render/layout/transform prep), NOT the sim main loop.
+
+Sim tick verdict: NOT reachable from main_loop. Sim runs on a separate thread
+spawned elsewhere. Round 7 should pivot to:
+  - Enumerate nn::os::CreateThread call sites
+  - Find RNG-page readers (0x71052c2xxx) and walk up to thread entry
+  - GDB watchpoint on DAT_71052c25b0 writes (fastest path)
+
+Adjacent vtable clusters worth examining:
+  0x7104f62300..0x7104f623a8 (22 slots, 0x71003a9020+, stride 0x10 trampoline table)
+  0x7104f62410..0x7104f62478 (0x71003af2d0, 0x71003b00f0+, stride 0x10)
+
+Parent wiring: task->+0x20 = parent object (from caller arg x12)
+               parent->+0x90 = this task (reverse pointer, written at 0x7101348744)
+Task initial state: 1 (skip first frame), from 0x7101348748: strb w8,[x0,#0x70]
+Task config source: DAT_71053320d8 (queue_id at +0x60, priority at +0x64)
+
+== Round 7 seed: nn::os::CreateThread call sites (2026-04-10) ==
+
+All BL call sites to nn::os::CreateThread PLT entries across the binary:
+
+PLT 0x71039c0010 (nnosCreateThread, 1-arg variant):
+  0x7100027af4  (in FUN_7100027a70)
+
+PLT 0x71039c0790 (CreateThread_1, full variant): 13 sites
+  0x710013bf68
+  0x71001b2974
+  0x71036efa78  ] cross2app ThreadPool factory
+  0x71036efad8  ] (6 sites in 0x71036efXX..0x71036f3 range)
+  0x71036f0150  ]
+  0x71036f0df8  ]
+  0x71036f1448  ]
+  0x71036f3d60  ]
+  0x710373e4bc  *** close to main_loop (0x7103747270) ***
+  0x710373f21c
+  0x710373fa38
+  0x71037cc974
+  0x7103993ebc
+
+PLT 0x71039c0b00 (CreateThread_2, alt variant): 5 sites
+  0x71001b2998
+  0x710373e4a0  *** paired with 0x710373e4bc above ***
+  0x710373f214
+  0x710373fa30
+  0x7103993e9c
+
+Observations:
+- 0x71001b2974 and 0x71001b2998 are a pair in the same function
+- 0x710373e, 0x710373f21x, 0x710373fa3x are three pairs in 0x7103e..0x7103fa
+  - Same vicinity as main_loop at 0x7103747270 (same subsystem?)
+- 0x71036ef..0x71036f3 cluster = cross2app ThreadPool factory (6 sites)
+- Total: ~18 threads spawned across the binary
+- The sim thread is one of these. Priority order for investigation:
+  1. 0x710373e4bc/4a0 (closest to main_loop)
+  2. 0x710373f21c/214 (same subsystem)
+  3. 0x710373fa38/a30 (same subsystem)
+  4. 0x71001b2974/998 (early, standalone)
+  5. 0x7103993ebc/e9c (late, possibly engine task pool)
+
+Per Round 6 verdict: main_loop is not the sim; find the sim thread.
+Best approach: bin-scan for readers of RNG page 0x71052c2xxx, then trace
+each reader up to its containing thread entry function (via xref walks
+or by matching against the 18 threads above).
+
+GDB runtime watchpoint on DAT_71052c25b0 writes remains the fastest path
+to definitively capture the sim tick PC + stack.
