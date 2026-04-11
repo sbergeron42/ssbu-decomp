@@ -3722,3 +3722,255 @@ the sim tick.
   `WORKER-pool-c.md`'s primary deliverable.
 - Ghidra renames: **none this session** (all new information is in
   shared docs, not symbols).
+---
+
+## Pool B — Round 5: FUN_71037857f0 deep dive (2026-04-10)
+
+**TL;DR — NOT THE SIM TICK.** The "10-slot broadcaster" that Round 4
+flagged as the strongest tick-shaped lead is the per-frame dispatch
+into a `LayoutManager` render-layer command stream. The 10 slots are
+10 **named layout layers**, not 8 players + 2 pads. The receiver is a
+graphics / UI-layout command recorder; its `vt[3]` appends `Packet*`
+nodes to a triple-cursor ring buffer. No fighter-state iteration, no
+`BattleObject` or `FighterManager` access, no module-accessor traffic.
+
+Round 5 was supposed to disambiguate "replay-recording tick vs sim
+tick proper". The actual answer is **neither** — it is a layout
+subsystem command-stream flush, fully in the render-path family, not
+on the sim/replay path at all. Round 4 over-read the "10 slots"
+coincidence.
+
+### Function structure — FUN_71037857f0(container*, uint slot, probe*, uint flags)
+
+Full decomp cached in `data/ghidra_cache/pool-b.txt` under
+"ROUND 5: FUN_71037857f0". Key points:
+
+```c
+void dispatch_layout_slot(LayoutMgr* ctr, uint slot, LocalProbe* pr, uint flags) {
+    if (slot > 9) abort();
+
+    // Early-exit: slot has nothing to emit (begin==end on per-slot sub-vector)
+    LayoutSlot* s = &ctr->slots[slot];   // slots stride 0x18 at container+0
+    if (s->range_begin == s->range_end) return;
+
+    // Resolve global current-frame stamp (only consumed when flags.0 is set).
+    GlobalFrameCtx* g = *(GlobalFrameCtx**)(DAT_7105334480 + 0x68);
+    LayoutSink* sink = pr->sink;          // = *(LayoutSink**)(pr + 8)
+
+    // ... frame-stamp plumbing into locals puStack_50 / local_48 ...
+
+    CmdStream* cs = *(CmdStream**)(&ctr->per_slot_cs[slot]);
+                    //   = ctr->per_slot_cs[slot]   (array of 10 CmdStream* at ctr+0x330)
+
+    if ((flags & 1) == 0) {
+        // ===== ADVANCE-ONLY (no packet build) =====
+        // Finalise the currently-open entry (if cs->open_flag == 1),
+        // then walk three parallel ring cursors forward:
+        //   header ring  at +0x3f0   stride 0xe8   backing region +0x50
+        //   index  ring  at +0x418   stride 0x08   backing region +0x3f8
+        //   payload ring at +0x4a0   stride 0x10   backing region +0x420
+        // Wraps by pointer equality (ring_base + stride -> back to ring_base).
+    } else {
+        // ===== BUILD + DISPATCH =====
+        Packet* hdr = make_header_packet(cs, &local_probe, 1);
+        if (hdr) {
+            Packet* p1 = clone_block_A(cs, &ctr->src_block_0x2d0);
+            sink->vt[3](sink, p1);
+            Packet* p2 = clone_block_B(cs, &ctr->src_block_0x2f0);
+            sink->vt[3](sink, p2);
+            Packet* p3 = clone_block_C(cs, &ctr->src_block_0x310);
+            sink->vt[3](sink, p3);
+            Packet* p4 = clone_block_D(cs);
+            sink->vt[3](sink, p4);
+            sink->vt[3](sink, hdr);
+            // Trailing synthesized packet derived from cs+0x50 region:
+            uint64_t sz = 0x80, align = 0x10;
+            void* buf = (*cs->ring_block)->vt[0x30](cs->ring_block, &sz, &align);
+            FUN_71035b91b0(buf, cs+0x30, cs+0x60);
+            sink->vt[3](sink, buf);
+        }
+    }
+}
+```
+
+Every call site in `main_loop` passes `container = *(void**)0x710593aa90`
+(a singleton pointer — see below), a per-call **stack-local probe**
+loaded from `0x710593a748 + i*0x20` (stride 0x20, slot ordering
+`{4,3,0,1,2,5,6,7,8,9}`), and a shared `flags` dword from `[sp+0x258]`.
+Each probe is `{ vtable=0x710522eea0, cs=[config+0x00], u64_1=[config+0x08], u64_2=[config+0x10] }`.
+
+**Round 4 misread the stride as 0x40 and called this a per-player loop
+(8 + 2 pad). The actual stride is 0x20 and the base is 0x710593a748,
+not 0x710593a7c8. The 10 slots are layout layers.**
+
+### The "10 slots" are the 10 LayoutManager render-layer categories
+
+The receivers at `0x710593a748 + i*0x20` are **named services** resolved
+at startup by string-keyed `std::map` lookup from a `LayoutManager`
+registry — not fighters, not LDN peers, not network connections.
+
+`FUN_710375a630` is the sole writer of `DAT_710593aa90`. It is a lazy
+singleton installer that allocates a 0x448-byte `LayoutManager`
+object, zero-inits it, then runs a 10-iteration loop over a static
+table at `&PTR_s_LayoutManager__Normal__710523cb40` — an array of 10
+C-strings passed through FNV-1a hashing and registered into the
+container's slot table. The 10 names (from `list_strings`, all with
+`"LayoutManager (...)"` prefix) are:
+
+| # | Name | Address |
+|---|---|---|
+| 0 | `LayoutManager (Normal)`          | `0x710439abe5` |
+| 1 | `LayoutManager (EffectBG)`        | `0x710425cdaf` |
+| 2 | `LayoutManager (Final)`           | `0x710427e513` |
+| 3 | `LayoutManager (Mirror Main)`     | `0x71042c28a3` |
+| 4 | `LayoutManager (AuroraVision)`    | `0x710430607d` |
+| 5 | `LayoutManager (3D BG)`           | `0x71043279aa` |
+| 6 | `LayoutManager (OffScreen/Model)` | `0x7104347cff` |
+| 7 | `LayoutManager (MovieEditWork)`   | `0x7104430b1b` |
+| 8 | `LayoutManager (Sharp)`           | `0x7104452365` |
+| 9 | `LayoutManager (OffScreen)`       | `0x710445237b` |
+
+(Slot-to-name mapping is approximate — the exact permutation depends
+on which index each name gets during the FNV registration loop. The
+call-site slot ordering `{4,3,0,1,2,5,6,7,8,9}` in main_loop is the
+order the render pass is walked, not the registration order.)
+
+The memcmp jump table at `0x710374b680..b830` in main_loop dispatches
+on the SSO string length of each registry key and routes short-name
+variants (`"IU_SHARP"`, `"IU_FINAL"`, `"IU_FG_3D"`, `"M_E_WORK"`, and
+a length-6 name compared against `0x710439abd3`) to their matching
+slot in `0x710593a748..+0x140`. These short names are the
+**composition-shader / image-unit sub-targets** referenced by the
+LayoutManager (`IU_*` = Image Unit = post-process compositor pass,
+`M_E_*` = Mesh Effect work buffer). They are render targets, not
+fighters.
+
+### Receiver vt[3] body
+
+Not decompiled in full — unnecessary. The call-site `sink->vt[3]` is
+a `void (this, Packet*)` that appends `Packet*` to the sink's own
+triple-cursor ring. From Round 4's factory walk:
+
+- header ring  at `+0x3f0` stride `0xe8` — fixed-size command header
+- index  ring  at `+0x418` stride `0x08` — packet offset into header ring
+- payload ring at `+0x4a0` stride `0x10` — 16-byte payload descriptor
+
+Three parallel rings with pointer-equality wrap is the canonical
+shape of a **GPU command buffer / display list recorder**, exactly
+the shape NVN/GX2/DirectX-style render-layer command streams use.
+
+### Per-slot source data
+
+The three 0x20-byte source blocks at `container+0x2d0`, `+0x2f0`,
+`+0x310` are **cloned into every packet the container emits** — they
+are NOT per-slot data, they are per-*frame* constants inherited by
+all 10 packets (camera/view matrices, viewport rect, render-state
+snapshot — the usual per-frame render constants). No element of this
+data path touches `FighterManager`, `BattleObject`, or
+`BattleObjectModuleAccessor`.
+
+### VERDICT — RENDER / LAYOUT SYSTEM, NOT A TICK
+
+**This is not the simulation tick. It is not the replay-recording
+tick either.** It is the per-frame flush of the 10-layer
+`LayoutManager` render-command stream. Each of main_loop's 10 calls
+to `FUN_71037857f0` submits one render-layer's accumulated packets
+(per-frame constants + 1 synthesized trailer) into the backing GPU
+command buffer, or walks the ring cursors forward when there is
+nothing to emit. The ring-buffer / 10-slot / per-frame signature that
+made Round 4 flag this as tick-shaped is real, but the "tick" it
+represents is a **graphics frame**, not a sim/replay frame.
+
+Confidence: **high**.
+
+- Sole writer of the container singleton is a `LayoutManager`
+  installer with 10 literal `LayoutManager (...)` strings, one per
+  slot.
+- Short-key route table matches classic image-unit / mesh-effect
+  render target names.
+- Packet factories clone per-frame camera/view state, not fighter
+  state. No offset on the receiver or container matches a known
+  fighter or BattleObject struct layout.
+- `vt[3]` signature `(this, Packet*)` with a 3-cursor ring sink is
+  the standard GX2/NVN command-stream recorder shape.
+
+### Cross-reference impact on earlier rounds
+
+- **Pool A's `[0x710593a510]` (MatchRunner) lead is unaffected.**
+  It lives in the same 4 KB page (`0x710593a000`) as the LayoutManager
+  globals but is a different object. The Round 4 "same 4 KB page"
+  convergence was a packaging coincidence, not a structural one —
+  this page holds multiple unrelated renderer-side singletons.
+- **Pool B Round 4's `FUN_7103619080` verdict needs re-reading.** The
+  Round 4 "best reading" was "per-tick commit/flush broadcast to a
+  set of command-stream writers" and speculated it might be the
+  replay-recording tick. That structural reading is correct; only the
+  "maybe sim/replay" label is wrong. `FUN_7103619080` is structurally
+  identical to `FUN_71037857f0` (factory + ring-push via `vt[3]`)
+  and is almost certainly **another renderer command-stream
+  broadcaster** for a different subsystem — not sim, not replay.
+  The receivers (element flag at `+0xf1`, vtable slot 3
+  `(this, Packet*)`) match the LayoutManager sink class shape.
+- The `game_ldn_initialize` convergence (both globals initialised
+  from the same function) is **still interesting** but downgraded —
+  it's LDN calling through to install renderer-side snapshot
+  recorders at init, not "LDN + sim are the same subsystem". LDN
+  can push display/recording state into the layout manager at init
+  without making the layout manager a sim driver.
+
+### Recommendation — pivot to dynamic analysis
+
+Rounds 1..5 have now ruled out every static-analysis lead reachable
+from `main_loop` via the "child-function shape" heuristic. The four
+Pool-B phase-5/6/7 children are all render/housekeeping, the Pool-C
+observer dispatcher is graphics, the Pool-A MatchRunner is the
+active-match driver at the boot-context level (not a per-frame tick),
+and the 10-slot broadcaster is a render-pass stream flush. None of
+them iterate `FighterManager` or mutate `BattleObject` state.
+
+**Static analysis of `main_loop`'s direct and 2-deep children has been
+exhausted.** The sim tick is either (a) further nested than anyone has
+gone yet (3+ deep, inside what Round 1 labelled a pure-graphics or
+pure-input call), or (b) driven by a callback registered at startup
+and invoked from a context that does not textually appear as a `bl`
+from main_loop (e.g. `nn::os::EventHandler`, a graphics VSYNC
+callback, or the LDN match-runner vt slot).
+
+**Switch to dynamic analysis.** The cheapest next step is a GDB
+hardware watchpoint on a well-known per-frame fighter field — e.g.
+`FighterStatus::situation_kind` of the first `BattleObject` in a
+loaded match — and let the CPU tell us which function's `bl` frame
+is hot when that field is written. Round 6 should set that up and
+read back the call stack from a running 13.0.4 instance rather than
+guessing further from static decomp.
+
+### Methodology note
+
+Round 4 made one avoidable error: treating "10 slots x per-frame call"
+as structurally identifying a per-player tick without verifying that
+any per-slot datum belonged to a fighter. The LayoutManager's 10
+layers are a coincidence with SSBU's 8+2 player cap; shape-matching
+on headcount is not sufficient, the per-slot source data has to be
+traced to a known fighter type before committing. The corrective
+rule: **before calling a 10-slot loop a "per-player tick", find one
+per-slot load that resolves to a FighterManager entry or a
+BattleObject pointer.** If you can't produce that chain, the 10-slot
+shape is not evidence.
+
+Round 4 also misread the call-site stride (0x40 vs the actual 0x20)
+because it only skimmed the first two call sites. The first two sites
+pass base addresses 0x710593a7a8 and 0x710593a7c8 which are +0x20
+apart, not +0x40 — Round 4 doubled the stride. All 10 sites dumped
+here: slot 0->0x748, 1->0x768, 2->0x788, 3->0x7a8, 4->0x7c8,
+5->0x7e8, 6->0x808, 7->0x828, 8->0x848, 9->0x868.
+
+### Artifacts this pass
+
+- `data/ghidra_cache/pool-b.txt` — appended Round 5 decomp of
+  `FUN_71037857f0` with per-path annotation and ring-buffer offsets.
+- No `src/` or `include/` changes. Documentation-only pass per
+  `WORKER-pool-b.md`'s primary deliverable.
+- No Ghidra renames this session — the involved classes
+  (`LayoutManager`, `LayoutSink`, `CmdStream`) are worth naming but
+  only after the full renderer subsystem decomp, which is out of
+  scope for sim-tick hunt.

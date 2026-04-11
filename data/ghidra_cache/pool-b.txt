@@ -1418,3 +1418,86 @@ page (0x710593a000) but different global slots. Round 5 should confirm
 by dumping game_ldn_initialize to see how the two globals relate.
 
 ================================================================
+
+=== ROUND 5: FUN_71037857f0 (10-slot broadcaster) ===
+Signature: void FUN_71037857f0(long param_1, uint param_2, long param_3, uint param_4)
+- param_1: container struct (10-slot header region, stride 0x18 at base; +0x330 is 10-ptr array; +0x2d0/0x2f0/0x310 are three 0x20-byte source blocks)
+- param_2: slot index (0..9, checked `if (9 < param_2) abort()`)
+- param_3: local probe struct on main_loop stack; receiver `plVar6 = *(long**)(param_3 + 8)`
+- param_4: mode flag; bit 0 chooses SEND path (true) vs ADVANCE path (false)
+
+Pseudocode essentials:
+  if (param_2 > 9) abort();
+  // Early-exit: slot has nothing to emit
+  lVar5 = param_1 + param_2*0x18;
+  if (*(long*)(lVar5+0x18) == *(long*)(lVar5+0x20)) return;  // begin==end
+
+  // Load plVar6 = receiver (one receiver, not per-slot)
+  lVar5 = *(long*)(DAT_7105334480 + 0x68);   // some global singleton sub-member
+  plVar6 = *(long**)(param_3 + 8);
+
+  // Get a time/frame stamp pair
+  if (*(long**)(lVar5+0x40) == NULL) { puStack_50 = 0; local_48 = 0; }
+  else if (**(long**)(lVar5+0x40) == *(long*)(lVar5+0x48)) {
+      lVar5 = *(long*)(lVar5+0x38);
+      if (lVar5 != 0) { puStack_50 = *(u64**)(lVar5+8); local_48 = *puStack_50; }
+      else { ... zero ... }
+  }
+
+  plVar4 = *(long**)(param_1 + param_2*8 + 0x330);   // per-slot sub-object ptr
+  if ((param_4 & 1) == 0) {
+    // === ADVANCE-ONLY PATH (no send) ===
+    lVar5 = *plVar4;   // per-slot command-stream struct
+    if (*(char*)(lVar5+0x48) == 0) {
+        // zero out current pos
+        *(u64*)(*(long*)(lVar5+0x4a0)+8) = 0;
+        **(u64**)(lVar5+0x4a0) = 0;
+    } else {
+        // finalise current entry: read committed size from header at +0x3f0[+0xb8]
+        lVar2 = *(long*)(lVar5+0x3f0);
+        FUN_7100031d70(lVar2);                       // maybe a publish helper
+        uVar3 = *(u64*)(lVar2+0xb8);
+        s = (*DAT_7105940430)(uVar3);  **(long**)(lVar5+0x4a0) += s;
+        s = (*DAT_7105940448)(uVar3);  *(long*)(*(long*)(lVar5+0x4a0)+8) += s;
+        *(u8*)(lVar5+0x48) = 0;
+    }
+    // Ring-buffer wrap-and-advance the three cursors:
+    //   header ring   @ +0x3f0 stride 0xe8 backing region @ lVar5+0x50
+    //   index ring    @ +0x418 stride 0x08 backing region @ lVar5+0x3f8
+    //   payload ring  @ +0x4a0 stride 0x10 backing region @ lVar5+0x420
+    // wraps by pointer equality (ring_base + 0x60 -> back to ring_base+0x50, etc.)
+  }
+  else {
+    // === SEND PATH (build 5 packets and push each via plVar6->vt[0x18]) ===
+    local_60 = &PTR_LAB_710522ed88;   // local probe struct (vtable at 0x710522ed88)
+    local_58 = lVar5;                 // capture "lVar5" snapshot for the probe
+    lVar2 = FUN_710363f4a0(*plVar4, &local_60, 1);   // build header/cloned packet
+    if (lVar2 != 0) {
+      // Packet 1..5: clone sub-objects pointed to by param_1+{0x2d0,0x2f0,0x310}
+      p1 = FUN_710381ba20(lVar5, param_1+0x2d0);  plVar6->vt[3](plVar6, p1);
+      p2 = FUN_710381bde0(lVar5, param_1+0x2f0);  plVar6->vt[3](plVar6, p2);
+      p3 = FUN_710381bc00(lVar5, param_1+0x310);  plVar6->vt[3](plVar6, p3);
+      p4 = FUN_710381b8a0(lVar5);                 plVar6->vt[3](plVar6, p4);
+      plVar6->vt[3](plVar6, lVar2);               // push original header packet too (5th)
+      // Then one more synthesized via lVar5+0x50..0x60 + a slot-3 helper of plVar4->vt[+0x30]
+      local_38 = 0x80; local_40 = 0x10;
+      plVar4b = *(long**)(lVar5+0x50);   // abort if NULL
+      if (plVar4b == NULL) abort();
+      uVar3 = plVar4b->vt[+0x30](plVar4b, &local_38, &local_40);
+      FUN_71035b91b0(uVar3, lVar5+0x30, lVar5+0x60);
+      plVar6->vt[3](plVar6, uVar3);
+    }
+  }
+  return;
+
+NOTE: The actual slot used at the call sites 0x710374bd9c..0x710374bfe8 passes param_1
+= some base near x28, param_2 = 0..9. The probe struct at param_3 is stack-allocated
+in main_loop and wraps vtable 0x710522eea0.
+
+Observations:
+ - param_4 bit-0 separates "just advance the rings" from "also build+send packets".
+ - vt[3] of plVar6 is actually slot index 3 -> (*plVar6 + 0x18) -> offset 0x18 from vtable base
+   (i.e. 4th virtual method, because 0x18 = 3*8).
+ - This function ALONE cannot tell us whether receiver is a sim ticker.
+   Need to identify plVar6's class (see param_3+8) and what slot 3 does.
+
