@@ -2001,3 +2001,151 @@ Then every resim call becomes:
   dynarmic_call_guest(0x7103724a80, sim_root);
 
 Pool-b Round 8 complete. Round 7's open question #2 answered.
+
+== 2026-04-11 session: EffectManager Round 10 ==
+
+== DAT_7105333920 xrefs: 2 writers ==
+  0x710055da74  STR X  in FUN_710055d080 (ctor/init path)
+  0x71022d1ef0  STR X  in FUN_71022cd350 (second writer, not inspected - could be re-init)
+
+== FUN_710055d080 EffectManager ctor (disassembly extract) ==
+Entry at 0x710055d080. Guard check + 2 allocations:
+
+ 710055d134: adrp x8, 0x7105333000
+ 710055d138: ldr  x9, [x8, #0x920]       ; load DAT_7105333920
+ 710055d13c: cbnz x9, 0x710055da78       ; skip init if already set
+ 710055d140: mov  w0, #0x10              ; align = 16
+ 710055d144: mov  w1, #0x8               ; size  = 8
+ 710055d148: bl   0x710392dce0           ; je_aligned_alloc(16, 8)
+ ... (OOM retry path) ...
+ 710055d194: mov  w21, #0x9890
+ 710055d198: movk w21, #0x1, LSL #16     ; w21 = 0x19890 = 104592
+ 710055d1a0: mov  w0, #0x10              ; align = 16
+ 710055d1a4: mov  x1, x21                ; size  = 0x19890
+ 710055d1a8: bl   0x710392dce0           ; je_aligned_alloc(16, 0x19890)
+ 710055d1ac: mov  x27, x0                ; x27 = EffectManager*
+ ...
+ 710055d1f8: orr  w2, wzr, #0x18000      ; len = 0x18000 = 98304
+ 710055d1fc: mov  x0, x27
+ 710055d200: mov  w1, wzr
+ 710055d204: bl   0x71039bfcf0           ; memset(x27, 0, 0x18000)
+ 710055d238: add  x21, x27, #0x18, LSL #12   ; x21 = x27 + 0x18000 (end of particle array)
+ 710055d278: mov  x20, x27                   ; x20 = x27 (start of particle array)
+
+== Per-particle init loop (fields in [0, 0x300) for each of 128 records) ==
+ 710055d27c: str  xzr, [x20, #0x10]
+ 710055d280: str  xzr, [x20, #0x20]
+ 710055d284: add  x28, x20, #0x2e8
+ 710055d288: stp  xzr, xzr, [x20, #0x38]
+ ... [q0, q1 ldp/stp at 0x80, 0x90 loads defaults from static vecs] ...
+ 710055d2ac: stp  w23, w23, [x20, #0x50]   ; w23 = -1  (two s32 sentinels at +0x50, +0x54)
+ 710055d2b0: str  xzr, [x20]
+ 710055d2b4: str  xzr, [x20, #0x190]
+ 710055d2b8: str  w23, [x20, #0x1d8]       ; s32 = -1
+ 710055d2bc: str  xzr, [x20, #0x1e0]
+ 710055d2c0: str  w23, [x20, #0x1e8]       ; s32 = -1
+ 710055d2c4: str  xzr, [x20, #0x1f0]
+ 710055d2c8: str  w23, [x20, #0x1f8]
+ 710055d2cc: str  xzr, [x20, #0x200]
+ 710055d2d0: str  w23, [x20, #0x208]
+ 710055d2d4: str  xzr, [x20, #0x210]
+ 710055d2d8: str  w23, [x20, #0x218]
+ 710055d2dc: str  xzr, [x20, #0x220]
+ 710055d2e0: str  w23, [x20, #0x228]
+ 710055d2e4: str  xzr, [x20, #0x230]      ; 5-slot sub-table (ptr+id pairs) at [0x1e0..0x238)
+ ... more field stores ...
+ 710055d434: str  xzr, [x20, #0x2f0]
+ 710055d438: str  x28, [x20, #0x2e0]      ; stores earlier x28 = x20+0x2e8 (self-ref anchor?)
+ 710055d43c: str  xzr, [x20, #0x2e8]
+ 710055d440: str  xzr, [x20, #0x18]
+ 710055d444: str  wzr, [x20, #0x2c4]
+ 710055d448: add  x20, x20, #0x300        ; next particle
+ 710055d44c: cmp  x20, x21
+ 710055d450: b.ne 0x710055d27c            ; loop: 128 iterations × 0x300 stride
+
+== Secondary memset + 30-entry init loop ==
+ 710055d454: mov  w2, #0x13b0             ; len = 0x13b0 = 5040
+ 710055d458: mov  x0, x21                 ; x21 = x27 + 0x18000
+ 710055d45c: mov  w1, wzr
+ 710055d460: bl   0x71039bfcf0            ; memset(x27+0x18000, 0, 0x13b0)
+ 710055d464: mov  w8,  #0x93b0            ; w8  = 0x193b0
+ 710055d46c: mov  w10, #0x8004            ; w10 = 0x18004
+ 710055d47c: mov  x11, #-0x13b0           ; loop counter -5040..0 step +0xa8
+ ...
+ 710055d4dc: add  x26, x10, x11
+ 710055d4e0: add  x28, x27, x11
+ 710055d4e4: adds x11, x11, #0xa8         ; stride 0xa8 = 168 B per entry
+ 710055d4e8..538: init fields in each 0xa8-byte entry
+ 710055d53c: b.ne 0x710055d4dc
+ ; 30 iterations × 0xa8 = 0x13b0. Secondary array occupies [0x18000, 0x193b0).
+
+== Global head struct at [0x193b0, 0x19890) ==
+ After the second loop: scattered explicit field stores at offsets 0x193b0..0x19880.
+ These form the "head" bookkeeping for the EffectManager: counters, phase flags,
+ possibly free-list heads, emitter caches, etc.
+ Two vector (q0) stores at 0x19880 are the final init before:
+ 710055da70: str  x27, [x9]                ; [singleton_slot] = EffectManager*
+ 710055da74: str  x9,  [x8, #0x920]        ; DAT_7105333920 = &singleton_slot
+
+ Two-level indirection: DAT_7105333920 -> 8-byte heap slot -> EffectManager*.
+
+== Adjacent .data slot enumeration (xref_bin_scan 0x7105333900..98f) ==
+ +0x900..0x910 (STP Q×2)       FUN_7100450e20          - unrelated 32-byte vtable/blob ctor
+ +0x920                         FUN_710055d080 [WRITE]  - EffectManager singleton slot (our target)
+ +0x930..0x940 (STP X repeats)  FUN_7103642e50          - sound/voice state (6 repeated writers)
+                                FUN_71036435b0
+                                FUN_71036514bc
+ +0x948                         FUN_710055d080 (0x710055f124, 0x71005618f8) [WRITE]
+                                FUN_71022cd350 (0x71022d16ec) [WRITE]
+                                - "secondary" singleton also allocated by the same
+                                ctor function. je_aligned_alloc(0x10, 0x1370)=4976 B,
+                                ctor at 0x7103564910. NOT a 5-entry 0x1b0-stride
+                                table — memory_map.md §5 was WRONG about this one.
+                                Parallel pool of SOME kind initialized alongside
+                                EffectManager.
+ +0x950..0x970 (STR W + STP X)  FUN_71004407f0          - another singleton init (unrelated)
+ +0x978..0x98c (STP X, STUR X)  FUN_710356a1e0          - another small struct (unrelated)
+
+
+== Task 2: Match-runtime sub-alloc enumeration ==
+
+== FUN_71014b2a40 (DAT_71052c26c0 owner) — full je_aligned_alloc list ==
+FUN_71014b2a40: calls FUN_7101344cf0() first, then lazy-inits *DAT_71052c26c0
+ Root: je_aligned_alloc(0x10, 0x08) slot + je_aligned_alloc(0x10, 0x50) container
+ Entry A: alloc(0x20) wrap + alloc(0x330) payload {Hash40 0x2c844e173b, 0x33731d4b56}
+ Entry B: alloc(0x20) wrap + alloc(0x210) payload {&PTR_LAB_7104f72d30, static refs}
+ Entry C: alloc(0x20) wrap + alloc(0x50) container
+          + 3 × alloc(0x30) sub-items {vtables 7105069ed0, 7105069f08, 7105069f40}
+          + 3 × alloc(0x20) intrusive list nodes
+ Entry D: alloc(0x20) wrap + alloc(0x18) payload
+ Subtotal: 0x8+0x50+4*0x20+0x330+0x210+0x50+3*0x30+3*0x20+0x18 = 0x7a0 = 1,952 B
+
+== FUN_7101523b60 (DAT_71052c2800/2860/2858 owner) — full je_aligned_alloc list ==
+FUN_7101523b60: calls FUN_7101344cf0() first, then lazy-inits 3 singletons:
+
+ *DAT_71052c2800 chain:
+   alloc(0x10) wrapper {&PTR_LAB_710506cd68}
+   alloc(0x270) root (self-ref at +0, many zeroed fields)
+   alloc(0x40)  Hash40 lookup cache at root+0xf8 (keys 0x1750629f16, 0x9edd2b0fd)
+   alloc(0x2e0) sub-obj A at root+0x100 (Hash40 0x26e5f4cf48, 1.0f defaults, 0x120B memset at +0x120)
+   alloc(0x80)  sub-obj B at root+0x118 (&PTR_LAB_7105180b40, 4 intrusive head/sentinel)
+   alloc(0xc8)  sub-obj C at root+0x258 (&PTR_LAB_710506cd48, FUN_71015260xx refs)
+   subtotal: 0x10+0x270+0x40+0x2e0+0x80+0xc8 = 0x768 = 1,896 B
+
+ *DAT_71052c2860 chain:
+   alloc(0x10) wrapper {&PTR_LAB_710506deb0}
+   alloc(0x48) payload {f32 +0x20 = 1.0f}
+   subtotal: 0x58 = 88 B
+
+ *DAT_71052c2858 chain:
+   alloc(0x08) slot holder
+   alloc(0x10) payload {u64=0, u32=0xFFFFFFFF}
+   subtotal: 0x18 = 24 B
+
+Total from FUN_7101523b60: 0x768 + 0x58 + 0x18 = 0x7d8 = 2,008 B
+
+== DAT_710593a6a0 (Mii DB) — not extracted this round ==
+ Writer FUN_71022b7100 is 90,656 B of code, already in
+ data/ghidra_cache/manual_extraction_needed.md. Prior rounds captured
+ partial size data; no new info from this session.
+
