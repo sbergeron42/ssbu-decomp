@@ -2,76 +2,80 @@
 
 ## Model: Opus
 
-## Task: ROLLBACK CO-PRIORITY-1 — Decompile FUN_71014f10c0 (the 40-read serializer)
+## Task: ROLLBACK — find what writes to `mii_manager + 0x24e8` (the back-reference to the real scene root)
 
-## Priority: HIGHEST — potentially reveals built-in walker / save-state implementation
+## Priority: HIGH — most valuable lead after the previous breakthrough was demolished
 
 ## Context
-The sim tick hunt converged on a list-walking dispatcher inside main_loop (Dispatcher A) that calls `vtable[+0x28]` on every node in a list rooted at `[**(DAT_710593a6a0+0x24e8)+0x2da8]`. See `docs/rollback/sim_tick_hunt.md` for full context.
+Read `docs/rollback/sim_tick_hunt.md` first for full context. TL;DR:
 
-`FUN_71014f10c0` reads `DAT_710593a6a0` ~40 times in a row. That's almost certainly a **serializer**. The rollback team identifies three plausible identities:
-
-1. **Match replay encoder** — RULED OUT (Smash replays store inputs, not state)
-2. **LDN sync/resync encoder** — would be a bombshell. Smash already having an "encode match state" function would mean rollback save-state is a wrapper around a built-in function.
-3. **Debug/telemetry dumper** — still useful as a structural reference; enumerates what's reachable from the root.
-
-**Either way, this function tells us the spec for the savestate walker.**
+- The previous "Dispatcher A is the sim tick" finding was wrong. `DAT_710593a6a0` is the **Mii fighter face database** (`MiiFighterDatabase`), not the scene root. Pool A confirmed this last session via its destructor.
+- BUT — Dispatcher A's chain is `mii_manager + 0x24e8 → some other subsystem → +0x2da8 → list head`. The `+0x24e8` field is a **non-owning back-reference** to some other subsystem that the Mii manager needs a handle to.
+- Whatever subsystem `+0x24e8` points to has its own list at `+0x2da8`. **If that subsystem turns out to be FighterManager, BattleObjectWorld, or the actual scene root, the original sim-tick hypothesis is rescued** (modulo the `DAT_710593a530 == 3` dead-flag issue, which is pool B's problem now).
 
 ## What To Do
 
-1. **Decompile `FUN_71014f10c0`** via `mcp__ghidra__decompile_function_by_address 0x71014f10c0`
-2. **CRITICAL — STOP-AND-DOCUMENT RULE**: If Ghidra MCP fails (timeout, "too large", error), **DO NOT retry**. Immediately:
-   - Append the address + error message to `data/ghidra_cache/manual_extraction_needed.md`
-   - Move on to the next function in your workplan
-   - The orchestrator will manually extract and the pool can read it from `data/ghidra_cache/<addr>.txt` next session
+### 1. Find the writer of `MiiFighterDatabase + 0x24e8`
+The Mii manager singleton is at `*DAT_710593a6a0`. We need to find what code stores into `(*DAT_710593a6a0) + 0x24e8`.
 
-3. **Classify the function**:
-   - Does it call `nn::os::SendMessageQueue` or LDN-namespaced functions? → LDN sync encoder (bombshell)
-   - Does it call `nn::diag` / `nn::dbg` / `printf` / log functions? → Debug dumper
-   - Does it write to a buffer parameter? → Encoder of some kind (good either way)
-   - Does it have a counterpart `FUN_XXX` that decodes? → Round-trip serializer (most useful)
+**Methodology** (Pool C established this last session — Ghidra's xref index misses code in undefined regions, so use direct binary scanning):
 
-4. **Document the field walk**:
-   - For each `DAT_710593a6a0` deref, what offset is being accessed?
-   - This gives us the **list of all live state fields** the walker enumerates from the scene root
-   - This IS the spec for the snapshotter, regardless of identity
+1. Read `data/ghidra_cache/pool-c.txt` first — Pool C's session notes describe the ADRP-propagation scanner technique
+2. Scan the ELF `.text` segment for ADRP+offset patterns that compute `*DAT_710593a6a0 + 0x24e8`
+3. The key pattern to find: a function that does `LDR Xn, [DAT_710593a6a0]; STR Xm, [Xn, #0x24e8]`
+4. The writer is almost certainly inside `FUN_71022b7100` (the Mii manager constructor — Pool B's previous session said it was 1.7 MB of disassembly and timed out Ghidra MCP — log to `manual_extraction_needed.md` if it times out again)
+
+### 2. Identify the back-referenced subsystem
+Once you find the value being stored at `+0x24e8`:
+- What's its source? An ADRP-loaded global? A function return? Another singleton?
+- If it's a known singleton (FighterManager, BattleObjectWorld, etc.), document the cross-reference
+- If it's a new singleton, find ITS constructor and identify the type
+
+### 3. Sanity-check Dispatcher A
+With the back-referenced subsystem identified:
+- Does it actually have a list at `+0x2da8`?
+- What's the list element type (look at the destructor or constructor)?
+- Are list elements polymorphic (vtable + various concrete types)?
+- Does any element type look like a "fighter" or "battle object"?
+
+## Stop-and-document rule
+If `mcp__ghidra__*` returns an error/timeout/"too large":
+1. Append to `data/ghidra_cache/manual_extraction_needed.md`:
+   ```
+   ## 0xXXXXXXXX (FUN_XXXXXXXX)
+   - Pool: pool-a
+   - Reason: timeout / too large / unknown error
+   - Why we need it: [one-line context]
+   ```
+2. **Do NOT retry.** Move on.
+
+`FUN_71022b7100` already failed once; expect it to fail again. The binary-scanner approach is your primary tool for this task — Ghidra is the fallback.
 
 ## Output
 
 Append a new section to `docs/rollback/sim_tick_hunt.md`:
 
 ```markdown
-## Pool A — FUN_71014f10c0 classification (next-session)
+## Pool A — mii_manager+0x24e8 back-reference (next-pass)
 
-### Identity verdict
-[LDN sync encoder / Debug dumper / Other] — evidence
+### Writer site
+- Address: 0xXXXXXXXX (in FUN_XXXXXXXX or undefined region)
+- Stored value source: [ADRP global / function return / other]
+- Source identification: [global address / called function / constant]
 
-### Field walk from DAT_710593a6a0
-| Read # | Offset | Type read | Purpose |
-|--------|--------|-----------|---------|
-| 1 | +0xNN | u32 | ... |
-| ... | ... | ... | ... |
+### Back-referenced subsystem
+- Type: [identified class name OR "unknown subsystem at 0xXXXX"]
+- Constructor: 0xXXXXXXXX
+- Has list at +0x2da8: YES/NO
+- List element type: [class name / size / vtable presence]
 
-### Implications for rollback walker
-[bombshell scenario / spec reference / dead end]
+### Dispatcher A revisited
+[REHABILITATED — list contains tickable game objects, sim tick lives here]
+[OR: STILL DEAD — back-reference is to a non-tick subsystem (e.g. UI, audio)]
 ```
 
-If it's the LDN sync encoder, ALSO write `docs/rollback/savestate_walker.md` documenting how to call it from rollback.
-
-## Stop-and-document rule (applies to ALL Ghidra calls)
-If `mcp__ghidra__*` returns an error, timeout, or "request failed":
-1. Note the address and error
-2. Append to `data/ghidra_cache/manual_extraction_needed.md` (create if missing) in this format:
-   ```
-   ## 0xXXXXXXXX (FUN_XXXXXXXX or known name)
-   - Pool: pool-a
-   - Reason: timeout / too large / unknown error
-   - Why we need it: [one-line context]
-   ```
-3. Move on. Do NOT retry the same address.
-
 ## Quality Rules
-- NO `FUN_` names in committed src/ code (research docs may reference them)
+- NO `FUN_` names in committed src/ code
 - Cast density under 10%
 - Documentation is the primary deliverable
 
