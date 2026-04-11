@@ -6230,3 +6230,204 @@ Probability estimates (Pool A's updated subjective read):
 - **5%** we missed a CreateThread variant or the sim is scheduled via
   a mechanism that doesn't go through `nn::os::CreateThread` at all
   (e.g., static-init thread, fiber).
+
+---
+
+---
+
+## Pool B — Round 7: task_tree_add caller decomps (2026-04-10)
+
+Assignment: decomp `FUN_71014b2a40` and `FUN_7101523b60` (the 2 of 5
+`FUN_7101344cf0` callers not covered by pool-c), find every task_tree_add
+callsite inside each, identify registered object vtables, look at vt[2].
+
+Pool C already analysed both in Round 6 as "match-setup wrappers"
+(pool-c.txt lines 677–725). This round re-verifies at the **disassembly
+level** to confirm the Round 6 addendum's "Ghidra mis-carved the mega-blob"
+finding, and to establish definitively whether these functions register
+any task.
+
+### FUN_71014b2a40 — disassembly of the call site
+
+```asm
+0x71014b2a40: sub  sp,sp,#0x80
+0x71014b2a44: stp  x28,x27,[sp, #0x20]
+0x71014b2a48: stp  x26,x25,[sp, #0x30]
+0x71014b2a4c: stp  x24,x23,[sp, #0x40]
+0x71014b2a50: stp  x22,x21,[sp, #0x50]
+0x71014b2a54: stp  x20,x19,[sp, #0x60]
+0x71014b2a58: stp  x29,x30,[sp, #0x70]
+0x71014b2a5c: add  x29,sp,#0x70
+0x71014b2a60: bl   0x7101344cf0          ; *** the "call" ***
+0x71014b2a64: adrp x20,0x71052c2000      ; continues with DAT_71052c26c0 init
+```
+
+**The BL at `0x71014b2a60` fires immediately after the prologue with zero
+argument setup.** No store to x0 (would-be task ptr), no setup of x12 (the
+"parent context" the Round 6 addendum identified as the wrapped object at
+`task + 0x20`), no setup of any argument register at all. This is an
+**argless call** — not a `task_tree_add(Task*)`.
+
+The remainder of `FUN_71014b2a40` (≈2100 lines of decomp) is singleton-init
+for `DAT_71052c26c0` (the 4-slot match-runtime linked list), and has **no
+other BL** to any address in the `0x71013447xx..0x71013488xx` range where
+the Round 6 addendum's ground-truth task_tree_add code actually lives.
+
+**Count of `FUN_7101344cf0` calls inside `FUN_71014b2a40`: 1 (at the top).**
+
+### FUN_7101523b60 — disassembly of the call site
+
+```asm
+0x7101523b60: sub  sp,sp,#0x70
+0x7101523b64: str  x27,[sp, #0x10]
+0x7101523b68: stp  x26,x25,[sp, #0x20]
+0x7101523b6c: stp  x24,x23,[sp, #0x30]
+0x7101523b70: stp  x22,x21,[sp, #0x40]
+0x7101523b74: stp  x20,x19,[sp, #0x50]
+0x7101523b78: stp  x29,x30,[sp, #0x60]
+0x7101523b7c: add  x29,sp,#0x60
+0x7101523b80: bl   0x7101344cf0          ; *** the "call" ***
+0x7101523b84: adrp x22,0x71052c2000      ; continues with DAT_71052c2800 init
+```
+
+**Identical pattern.** Prologue → BL → `DAT_71052c2xxx` singleton setup.
+Zero argument setup before the BL. The remainder of `FUN_7101523b60`
+(≈720 lines of decomp) lazy-initializes three per-match singletons
+(`DAT_71052c2800`, `DAT_71052c2860`, `DAT_71052c2858`) and has no other BL
+into the task-system address range.
+
+**Count of `FUN_7101344cf0` calls inside `FUN_7101523b60`: 1 (at the top).**
+
+### Pattern: both call the same argless init stub
+
+A true `task_tree_add(Task*)` would require `x0 = Task*` set up before the
+BL. Neither callsite does that. Both are idempotent-init singleton calls
+into the **top** of the `FUN_7101344cf0` mega-blob, not into the task
+constructor code at `0x71013486c0` that Round 6 decoded by raw-scanning
+for the STLRB store.
+
+This mechanically confirms the Round 6 addendum's mis-carving hypothesis:
+`FUN_7101344cf0` is at least two merged functions,
+
+- **(a)** an argless init stub at `0x7101344cf0` that initializes the
+  task-system singletons (`DAT_71053320d8` config, `DAT_7105332120` list
+  head, `DAT_7105332128` spinlock) — the thing all 5 Ghidra-xref'd
+  "callers" actually call, and
+- **(b)** a real task-constructor subroutine at `0x71013486c0` that takes
+  `x12 = parent` from `[sp, #0x20]`, allocates 0x78 B, sets
+  `task->vtable = 0x7104f623c0`, inserts into `DAT_7105332120`, and wires
+  `parent->+0x90 = task` — which has **zero direct BL callers** in the
+  binary (confirmed by pool-c xref_bin_scan.py in Round 6). Reachable
+  only via internal fallthrough from some other point in the mega-blob.
+
+### Vtables touched in these two functions (NOT task registrants)
+
+None of these are passed to the task system. They are stored in per-match
+doubly-linked lists via direct pointer stores into `DAT_71052c26c0` /
+`DAT_71052c2800`, which is a different data structure from
+`DAT_7105332120`.
+
+**FUN_71014b2a40** (root: `DAT_71052c26c0`):
+
+| Vtable | Payload size | Slot |
+|---|---|---|
+| `PTR_FUN_7105069db0` | 0x50 container header | root |
+| `PTR_LAB_7105069df0` | 0x330 | entry 0 wrapper |
+| `PTR_LAB_7105069e28` | 0x210 | entry 1 wrapper |
+| `PTR_LAB_7105069e60` | 0x50 | entry 2 wrapper (+ 3 sub-items) |
+| `PTR_LAB_7105069ed0/f08/f40` | 0x30 each | entry 2 sub-items |
+| `PTR_LAB_7105069e98` | 0x18 | entry 3 wrapper |
+
+**FUN_7101523b60** (roots: `DAT_71052c2800`, `DAT_71052c2860`, `DAT_71052c2858`):
+
+| Vtable | Payload size | Root |
+|---|---|---|
+| `PTR_LAB_710506cd68` | 0x10 wrapper + 0x270 payload | `DAT_71052c2800` |
+| `PTR_LAB_7105180b40` | 0x80 linked-list sub-node | (sub of 0x270) |
+| `PTR_LAB_710506cd48` | 0xc8 task-table sub-node | (sub of 0x270) |
+| `PTR_LAB_710506deb0` | 0x10 wrapper + 0x48 payload | `DAT_71052c2860` |
+| (unnamed) | 0x08 + 0x10 | `DAT_71052c2858` |
+
+None equal `0x7104f623c0` (the concrete task vtable). `PTR_LAB_710506cd48`
+has raw function pointers (`DAT_7101525e90`, `LAB_7101525ea0`,
+`DAT_7101525f50`) stored at offsets +0x30/+0x40/+0x50 — that's an internal
+dispatch table, not a virtual task interface, and it lives in a per-match
+singleton list, not the task tree.
+
+### VERDICT — Round 7 premise is void
+
+**The 5 callers of `FUN_7101344cf0` are not task registrants.** They are
+callers of an idempotent init stub at the top of a mis-carved mega-blob.
+Both pool-b targets hit the stub with zero arguments. The real
+`task_tree_add(Task*)` subroutine inside the mega-blob has no direct BL
+callers and is reached only via internal fallthrough — meaning task
+insertions into `DAT_7105332120` happen on paths invisible to the
+decompiler.
+
+Combined with the Round 6 addendum's finding that the real task vtable
+(`0x7104f623c0`) has vt[2] = pure NEON 4x4 matrix math (`0x71003ab590`),
+the conclusion compounds: **the `DAT_7105332120` task tree is not where
+the sim tick lives**. It is a transform/animation task pool whose tasks
+are hand-optimised NEON leaf kernels, populated internally by framework
+code.
+
+### Authoritative next direction (from Round 6 addendum, re-endorsed)
+
+1. **Enumerate `nn::os::CreateThread` call sites** (already Round 7 seeded
+   in `main_loop_bl_named.txt`) and find threads that read the RNG page
+   `0x71052c2xxx`. The thread containing those reads is the sim thread.
+2. **GDB watchpoint on `DAT_71052c25b0`** during gameplay — the fire lands
+   on the sim thread and the PC+stack names the sim tick in one shot.
+   This is the fastest path now that static analysis has saturated.
+3. **Re-examine the 22-slot trampoline table at `0x7104f62300`** and the
+   cluster at `0x7104f62410` — sibling task class enumeration to confirm
+   the "transform task pool" interpretation of `DAT_7105332120`.
+
+### Addendum — both functions are vtable slots, not free init calls
+
+Xref lookup (`mcp__ghidra__get_function_xrefs`) reveals:
+
+| Function | Xref | Type |
+|---|---|---|
+| `FUN_71014b2a40` | `0x7105069c78` | DATA (1 xref total) |
+| `FUN_7101523b60` | `0x710506cce8` | DATA (1 xref total) |
+
+**Both functions have exactly one xref each, and both are DATA xrefs into
+the `0x7105069xxx` / `0x710506cxxx` vtable cluster** — the same region
+that holds the `PTR_FUN_7105069db0` container vtable and sibling
+wrappers. In other words, these functions are not freestanding
+initializers called from `nnMain`; they are **virtual method slots** in
+still-unnamed parent classes, invoked via `obj->vt[N]()` from framework
+code during object construction or state transitions.
+
+This changes the picture in two useful ways:
+
+1. **When these run is controlled by the parent object's lifecycle.** If
+   the parent is instantiated once at game boot, these run once. If
+   instantiated at match start, they run per match. Either way, the
+   `FUN_7101344cf0()` call at the top is still argless and still does
+   not register a task with `DAT_7105332120`.
+
+2. **The "5 Ghidra-xref'd callers" of `FUN_7101344cf0` includes the 3
+   DATA xrefs** that pool-c is investigating in a separate thread. Those
+   3 are also almost certainly vtable slots in the same cluster, meaning
+   the ENTIRE `FUN_7101344cf0` xref graph is: 5 virtual methods in the
+   `PTR_FUN_7105069xxx` family, each doing `call_init_stub() +
+   singleton_setup()`. That is consistent with a **lazy-init pattern**
+   on a small family of cross2app match / UI managers, each of which
+   triggers the task-system singleton to come up on first use.
+
+The Round 6 addendum's NEON-math vt[2] at `0x71003ab590` remains the
+decisive evidence: the task system itself is not the sim scheduler. The
+Round 7 caller audit strengthens but does not change that verdict.
+
+### Artifacts this pass
+
+- `data/ghidra_cache/pool-b.txt` — Round 7 section appended with full
+  disassemblies of the two callsites and the verdict.
+- No `src/` changes. No Ghidra renames committed (documentation-only
+  pass per `WORKER-pool-b.md`).
+- `FUN_71014b2a40` and `FUN_7101523b60` decomps re-verified via
+  `mcp__ghidra__decompile_function_by_address` and
+  `mcp__ghidra__disassemble_function`; xref counts via
+  `mcp__ghidra__get_function_xrefs`.

@@ -2,93 +2,87 @@
 
 ## Model: Opus
 
-## Task: ROLLBACK Round 6 — decompile add_task / remove_task helpers (FUN_7103559340, FUN_7103559220)
+## Task: ROLLBACK Round 7 — decomp the 5 callers of FUN_7101344cf0 (task_tree_add)
 
-## Priority: HIGHEST — directly identifies the task base class and registration API
+## Priority: HIGHEST — directly identifies the registered task vtables
 
 ## Context
-Read `docs/rollback/sim_tick_hunt.md` first. Round 5 found the actual per-frame loop is a task-system pump iterating `[*DAT_7105332fe8 + 0x20..+0x28]`. Two small helpers were identified as task add/remove candidates:
+Read `docs/rollback/sim_tick_hunt.md` first. **Round 6 architectural breakthrough**: main_loop is a fiber-scheduled task pump, sim runs as a task on a worker thread. Tasks are registered through `FUN_7101344cf0`. The 5 callers are the entire task registration set. **One of them registers the sim tick.**
 
-- `FUN_7103559340` (probable `add_task()`) — caller `0x7103559360` reads `DAT_7105332fe8`
-- `FUN_7103559220` (probable `remove_task()`) — caller `0x7103559240` reads `DAT_7105332fe8`
+Pool A is reading the cached `FUN_7101344cf0.txt` to understand the gatekeeper. Pool C is investigating one of the callers + the 3 vtable-slot xrefs. **Your job: decomp the other two callers, identify the task vtables they register, and look at vt[2].**
 
-Both are small. Decomping them reveals:
-1. The task base class shape (from the argument vtable)
-2. The registration API (so we can xref it to find every task registration in the binary — that's the list of all per-frame ticks)
+## Targets
+
+### `FUN_71014b2a40` (primary caller)
+- Pool C noted this is "a large init routine that constructs a 0x50 ModuleSet container with `PTR_FUN_7105069db0` and 4 shared_ptr slots"
+- It's the **biggest** caller — most likely to be registering multiple tasks
+- Decompile and find every call to `FUN_7101344cf0` inside it
+- For each call, document the object being registered
+
+### `FUN_7101523b60` (secondary registrar)
+- Smaller than 71014b2a40
+- Decompile and find what task it registers
+- Document the object's vtable
 
 ## What To Do
 
-### 1. Decompile FUN_7103559340 (add_task candidate)
-- `mcp__ghidra__decompile_function_by_address 0x7103559340`
-- Document its parameters
-- The `Task*` argument's vtable layout (look for any `task->vt[N]` or `param->vt[N]` calls)
-- Where in `DAT_7105332fe8`'s container the new task gets inserted
+### 1. Decompile `FUN_71014b2a40`
+- `mcp__ghidra__decompile_function_by_address 0x71014b2a40`
+- Find every `FUN_7101344cf0` call inside it
+- For each call, look at the argument: what's being registered?
+- The argument's vtable IS a candidate sim task
 
-### 2. Decompile FUN_7103559220 (remove_task candidate)
-- Same approach
-- Confirm symmetry with add_task
-- Document any cleanup the remove path does (destructor calls, refcount, etc.)
+### 2. Decompile `FUN_7101523b60`
+- Same approach, smaller function
 
-### 3. Identify the task base class
-- The vtable addresses revealed by the add/remove paths
-- Use `mcp__ghidra__get_xrefs_to <vtable_address>` to find every constructor that uses this vtable
-- Each constructor is a concrete task type
-- **One of those task types IS the sim tick** (or contains it)
+### 3. For each registered object, find its vtable's vt[2]
+- `vtable[+0x10]` is the per-frame tick (Pool C confirmed this in Round 6)
+- Decompile vt[2] for each candidate
+- Look for sim-shaped patterns:
+  - Iterating fighters via `FighterManager`
+  - Touching `BattleObjectModuleAccessor` modules
+  - Reading/writing RNG (`DAT_71052c25b0` area)
+  - Calling `app::sv_math::rand` (`0x7102275320`)
+  - Calling FighterStatus vtable methods (`0x7104f7f2e8`)
+- **The first vt[2] that hits ANY sim-state IS the sim tick.**
 
-### 4. Enumerate all add_task callers
-This is the goldmine query:
-```
-mcp__ghidra__get_function_xrefs FUN_7103559340
-```
-- Every caller is a function that registers a task to the per-frame pump
-- Each caller's identity tells you what subsystem registers a tick
-- **The caller that registers the sim tick is the sim system's init function**
-
-### 5. For each add_task caller, classify the task being registered
-- Look at the function the caller is in
-- What subsystem does it belong to? (FighterManager? BattleObjectWorld? Stage? Camera? UI?)
-- The argument being added — is it a known type or a new one?
-- If you find one whose class touches `BattleObjectModuleAccessor`, `FighterManager`, or other sim-shaped state — **that's the sim tick caller**
-
-### 6. Cross-reference with Pool A (if they finish first)
-Pool A is decoding `FUN_71035a4130` (the task-list initializer). If they identify any tasks registered directly by the initializer, cross-reference with your add_task caller list.
+### 4. Document the sim task
+If you find it, document:
+- The registering function (`FUN_71014b2a40` or `FUN_7101523b60`)
+- The task object's vtable address
+- The class name (if `.dynsym`-confirmed)
+- The vt[2] target address (the sim function)
+- A summary of what vt[2] does (what state it touches)
 
 ## Stop-and-document rule
 If `mcp__ghidra__*` errors/timeouts:
 1. Append to `data/ghidra_cache/manual_extraction_needed.md`
 2. **Do NOT retry.** Move on.
 
+`FUN_71014b2a40` is large — if it times out, log it and move to `FUN_7101523b60`.
+
 ## Output
 
 Append to `docs/rollback/sim_tick_hunt.md`:
 
 ```markdown
-## Pool B — Round 6: task add/remove helpers + caller enumeration
+## Pool B — Round 7: task_tree_add caller decomps
 
-### Task base class
-- Vtable: 0xXXXXX
-- Methods inferred from add/remove + frame-loop dispatch:
-  - vt[0x28]: tick (per-frame method called by main_loop)
-  - vt[0x20]: alt tick path
-  - vt[N]: ...
+### FUN_71014b2a40 (primary registrar)
+- Registers N tasks
+- Task vtables: [list]
+- vt[2] of each:
+  - vtable 0xXXXXX vt[2] = FUN_YYYY — does Z (sim-shaped: Y/N)
+  - ...
 
-### add_task signature
-- Function: FUN_7103559340 (renamed: addTask)
-- Signature: (TaskList* this, Task* task)
-- Container insertion: vector push_back / linked list / other
-
-### remove_task signature
-- Function: FUN_7103559220 (renamed: removeTask)
-- Signature: ...
-
-### Every add_task caller (the task registration site list)
-| Caller fn | Task subsystem | Sim-shaped? |
-|-----------|----------------|-------------|
-| FUN_XXXX  | ...            | YES/NO      |
+### FUN_7101523b60 (secondary registrar)
+- Registers N tasks
+- Task vtables: [list]
+- vt[2] of each: ...
 
 ### VERDICT
-[FOUND SIM TICK — task X registered by FUN_YYYY which belongs to subsystem Z]
-[OR: Task system mapped but no sim-shaped task registrant found yet — next step: walk vt[0x28] of each registered task]
+[FOUND SIM TASK at vtable 0xXXXX, registered by FUN_YYYY, vt[2] = FUN_ZZZZ touches A/B/C]
+[OR: All 5 callers decomped, none register a sim-shaped task — sim might be registered dynamically not statically]
 ```
 
 ## Quality Rules
