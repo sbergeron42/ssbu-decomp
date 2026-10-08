@@ -17,6 +17,7 @@ import subprocess
 import sys
 import os
 from pathlib import Path
+from dependency_tracking import ensure_build_signature, needs_rebuild
 
 PROJECT_ROOT = Path(__file__).parent.parent
 ORIGINAL_ELF = PROJECT_ROOT / "data" / "main.elf"
@@ -79,14 +80,19 @@ def build_incremental():
     build_dir = PROJECT_ROOT / "build"
     build_dir.mkdir(exist_ok=True)
     src_files = list((PROJECT_ROOT / "src").rglob("*.cpp"))
+    stamp = build_dir / ".verify_local_compile.sha256"
+    ensure_build_signature(stamp, CLANG, CFLAGS)
 
     compiled = 0
     for src in src_files:
         obj = build_dir / (src.stem + ".o")
-        if obj.exists() and obj.stat().st_mtime >= src.stat().st_mtime:
+        depfile = obj.with_suffix(".d")
+        if not needs_rebuild(src, obj, depfile, PROJECT_ROOT,
+                             extra_dependencies=(stamp,)):
             continue
-        cmd = f'"{CLANG}" {CFLAGS} -c "{src}" -o "{obj}"'
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        cmd = f'"{CLANG}" {CFLAGS} -MMD -MF "{depfile}" -MT "{obj}" -c "{src}" -o "{obj}"'
+        result = subprocess.run(cmd, cwd=str(PROJECT_ROOT), shell=True,
+                                capture_output=True, text=True)
         if result.returncode != 0:
             print(f"  ERROR compiling {src.name}:")
             print(result.stderr[:500])

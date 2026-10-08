@@ -24,6 +24,7 @@ import re
 import struct
 import sys
 from pathlib import Path
+from relocation_guard import is_verified_match, unresolved_offsets
 
 PROJECT_ROOT = Path(__file__).parent.parent
 ORIGINAL_ELF = PROJECT_ROOT / "data" / "main.elf"
@@ -254,11 +255,10 @@ def patch_relocations(code_bytes, relocs, orig_addr, sym_addr_lookup=None,
         relocs: list of (r_offset, r_type, symbol_name, r_addend)
         orig_addr: the function's original virtual address in the binary
         sym_addr_lookup: optional dict of symbol_name -> address for named symbols
-        orig_bytes: original binary bytes for this function (fallback for
-                    section-relative relocations where symbol address is unknown)
+        orig_bytes: deprecated compatibility parameter; not used for patching
 
     Returns:
-        set of offsets that were successfully patched
+        set of offsets independently resolved and patched
     """
     patched = set()
     for r_offset, r_type, sym_name, r_addend in relocs:
@@ -271,13 +271,7 @@ def patch_relocations(code_bytes, relocs, orig_addr, sym_addr_lookup=None,
             if entries:
                 target = entries[0][0]
         if target is None:
-            # Fallback: copy the original instruction bytes directly.
-            # This handles section-relative relocs (e.g. .rodata refs)
-            # where we can't compute the target but the original binary
-            # already has the correct encoding.
-            if orig_bytes and r_offset + 4 <= len(orig_bytes):
-                code_bytes[r_offset:r_offset + 4] = orig_bytes[r_offset:r_offset + 4]
-                patched.add(r_offset)
+            # Unknown relocation targets are NOT verified instructions.
             continue
 
         S = target       # symbol address
@@ -438,7 +432,7 @@ def main():
     results_by_addr = {}
     details = []
     unmatched_names = []
-    reloc_stats = {'patched': 0, 'unpatched': 0}
+    reloc_stats = {'patched': 0, 'unpatched': 0, 'unverified_functions': 0}
 
     with open(ORIGINAL_ELF, 'rb') as orig_f:
         for mangled, size, decomp_bytes, relocs in all_funcs:
@@ -461,11 +455,15 @@ def main():
 
             # Patch relocations in-place
             code = bytearray(decomp_bytes)
+            unresolved = set()
             if relocs:
                 patched_offsets = patch_relocations(
-                    code, relocs, orig_addr, csv_lookup, orig_bytes)
+                    code, relocs, orig_addr, csv_lookup)
+                unresolved = unresolved_offsets(relocs, patched_offsets)
                 reloc_stats['patched'] += len(patched_offsets)
-                reloc_stats['unpatched'] += len(relocs) - len(patched_offsets)
+                reloc_stats['unpatched'] += len(unresolved)
+                if unresolved:
+                    reloc_stats['unverified_functions'] += 1
             decomp_bytes = bytes(code)
 
             num_insns = size // 4
@@ -475,7 +473,7 @@ def main():
                     match_count += 1
             total_bytes_compared += size
             total_bytes_matched += match_count * 4
-            if match_count == num_insns:
+            if is_verified_match(match_count, num_insns, unresolved):
                 verified += 1
                 status = 'M'
             else:
@@ -517,6 +515,8 @@ def main():
             total_bytes_matched * 100 // total_bytes_compared if total_bytes_compared else 0))
         print("  Relocations patched: %d  (unresolved: %d)" % (
             reloc_stats['patched'], reloc_stats['unpatched']))
+        print("  Functions with unresolved relocations: %d" %
+              reloc_stats['unverified_functions'])
     print()
 
     if details and not summary_only:
